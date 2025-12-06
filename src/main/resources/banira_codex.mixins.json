@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "xin.vanilla.banira.internal.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "banira_codex.refmap.json",
+  "mixins": [
+    "accessors.ServerPlayerAccessor"
+  ],
+  "client": [
+    "injections.MinecraftClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

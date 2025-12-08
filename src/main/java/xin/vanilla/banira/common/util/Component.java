@@ -682,7 +682,7 @@ public class Component implements Cloneable, Serializable {
         if (component instanceof IFormattableTextComponent) {
             Color color = component.getStyle().getColor();
             if (color != null && color.serialize().startsWith("#")) {
-                Style style = component.getStyle().withColor(Color.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.argbToHex(color.serialize())).name().toLowerCase()));
+                Style style = component.getStyle().withColor(Color.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.parseArgb(color.serialize())).name().toLowerCase()));
                 ((IFormattableTextComponent) component).setStyle(style);
             }
         }

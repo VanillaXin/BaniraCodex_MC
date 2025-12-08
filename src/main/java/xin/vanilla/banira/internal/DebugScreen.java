@@ -14,7 +14,7 @@ import xin.vanilla.banira.client.component.Text;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.util.*;
-import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.util.Component;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.RandomStringUtils;
@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DebugScreen extends Screen {
 
+    private static final CircularList<String> textures = CircularList.asList("textures/gui/sakura_cat.png", "textures/gui/aotake_cat.png");
     /**
      * 键盘与鼠标事件管理器
      */
@@ -37,6 +38,7 @@ public class DebugScreen extends Screen {
     private int contentLength = 20;
     private int fontSize = 9;
     private boolean warp = false;
+    private int contentTextureIndex = 0;
 
     @Override
     protected void init() {
@@ -75,11 +77,10 @@ public class DebugScreen extends Screen {
         } else if (mouseHelper.isRightPressing()) {
             AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal(content)
                             .stack(matrixStack)
-                            .font(super.font)
-                            .color(Color.argb(0xFF000000)))
+                            .font(super.font))
                     .x(mouseX).y(mouseY).padding(0).fontSize(fontSize)
                     .wrap(warp).maxWidth(warp ? AbstractGuiUtils.multilineTextWidth(this.content) / 2 : 0)
-                    .texture(TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/sakura_cat.png")));
+                    .texture(TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), textures.get(contentTextureIndex))));
         }
     }
 
@@ -118,6 +119,12 @@ public class DebugScreen extends Screen {
             } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MINUS)) {
                 this.contentLines--;
                 genContent();
+            }
+        } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_T)) {
+            if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {
+                this.contentTextureIndex++;
+            } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MINUS)) {
+                this.contentTextureIndex--;
             }
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_F)) {
             if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {

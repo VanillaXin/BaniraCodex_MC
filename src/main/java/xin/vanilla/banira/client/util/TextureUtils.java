@@ -279,12 +279,9 @@ public final class TextureUtils {
 
         // 首先检查第一个像素，确定起始状态
         int firstPixel = image.getPixelRGBA(contentStartX, 0);
-        int firstAlpha = (firstPixel >> 24) & 0xFF;
-        int firstRed = (firstPixel >> 16) & 0xFF;
-        int firstGreen = (firstPixel >> 8) & 0xFF;
-        int firstBlue = firstPixel & 0xFF;
-        boolean firstIsBlack = firstAlpha > 0 && firstRed < BLACK_THRESHOLD &&
-                firstGreen < BLACK_THRESHOLD && firstBlue < BLACK_THRESHOLD;
+        Color firstColor = Color.abgr(firstPixel);
+        boolean firstIsBlack = !firstColor.isEmpty() && firstColor.red() < BLACK_THRESHOLD &&
+                firstColor.green() < BLACK_THRESHOLD && firstColor.blue() < BLACK_THRESHOLD;
 
         // 添加起始分割点
         horizontalDivs.add(0);
@@ -293,12 +290,10 @@ public final class TextureUtils {
         boolean lastWasBlack = firstIsBlack;
         for (int x = contentStartX + 1; x <= contentEndX; x++) {
             int pixel = image.getPixelRGBA(x, 0);
-            int alpha = (pixel >> 24) & 0xFF;
-            int red = (pixel >> 16) & 0xFF;
-            int green = (pixel >> 8) & 0xFF;
-            int blue = pixel & 0xFF;
+            Color color = Color.abgr(pixel);
 
-            boolean isBlack = alpha > 0 && red < BLACK_THRESHOLD && green < BLACK_THRESHOLD && blue < BLACK_THRESHOLD;
+            boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
+                    color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
 
             // 检测到状态变化
             if (isBlack != lastWasBlack) {
@@ -322,12 +317,10 @@ public final class TextureUtils {
 
         // 首先检查第一个像素，确定起始状态
         int firstVPixel = image.getPixelRGBA(0, contentStartY);
-        int firstVAlpha = (firstVPixel >> 24) & 0xFF;
-        int firstVRed = (firstVPixel >> 16) & 0xFF;
-        int firstVGreen = (firstVPixel >> 8) & 0xFF;
-        int firstVBlue = firstVPixel & 0xFF;
-        boolean firstVIsBlack = firstVAlpha > 0 && firstVRed < BLACK_THRESHOLD &&
-                firstVGreen < BLACK_THRESHOLD && firstVBlue < BLACK_THRESHOLD;
+        Color firstVColor = Color.fromAbgr(firstVPixel);
+
+        boolean firstVIsBlack = !firstVColor.isEmpty() && firstVColor.red() < BLACK_THRESHOLD &&
+                firstVColor.green() < BLACK_THRESHOLD && firstVColor.blue() < BLACK_THRESHOLD;
 
         // 添加起始分割点
         verticalDivs.add(0);
@@ -336,12 +329,9 @@ public final class TextureUtils {
         lastWasBlack = firstVIsBlack;
         for (int y = contentStartY + 1; y <= contentEndY; y++) {
             int pixel = image.getPixelRGBA(0, y);
-            int alpha = (pixel >> 24) & 0xFF;
-            int red = (pixel >> 16) & 0xFF;
-            int green = (pixel >> 8) & 0xFF;
-            int blue = pixel & 0xFF;
-
-            boolean isBlack = alpha > 0 && red < BLACK_THRESHOLD && green < BLACK_THRESHOLD && blue < BLACK_THRESHOLD;
+            Color color = Color.fromAbgr(pixel);
+            boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
+                    color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
 
             // 检测到状态变化
             if (isBlack != lastWasBlack) {
@@ -386,12 +376,9 @@ public final class TextureUtils {
         // 扫描整个右参考线，找到所有黑色像素段的最上和最下边界
         for (int y = contentStartY; y <= contentEndY; y++) {
             int pixel = image.getPixelRGBA(width - 1, y);
-            int alpha = (pixel >> 24) & 0xFF;
-            int red = (pixel >> 16) & 0xFF;
-            int green = (pixel >> 8) & 0xFF;
-            int blue = pixel & 0xFF;
-            boolean isBlack = alpha > 0 && red < BLACK_THRESHOLD &&
-                    green < BLACK_THRESHOLD && blue < BLACK_THRESHOLD;
+            Color color = Color.fromAbgr(pixel);
+            boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
+                    color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
             if (isBlack) {
                 if (topmostBlackY == -1) {
                     topmostBlackY = y;
@@ -422,12 +409,9 @@ public final class TextureUtils {
         // 扫描整个下参考线，找到所有黑色像素段的最左和最右边界
         for (int x = contentStartX; x <= contentEndX; x++) {
             int pixel = image.getPixelRGBA(x, height - 1);
-            int alpha = (pixel >> 24) & 0xFF;
-            int red = (pixel >> 16) & 0xFF;
-            int green = (pixel >> 8) & 0xFF;
-            int blue = pixel & 0xFF;
-            boolean isBlack = alpha > 0 && red < BLACK_THRESHOLD &&
-                    green < BLACK_THRESHOLD && blue < BLACK_THRESHOLD;
+            Color color = Color.fromAbgr(pixel);
+            boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
+                    color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
 
             if (isBlack) {
                 if (leftmostBlackX == -1) {
@@ -450,7 +434,7 @@ public final class TextureUtils {
         // 解析最右下角像素点作为文字颜色
         int textColor = 0x00FFFFFF;
         int bottomRightPixel = image.getPixelRGBA(width - 1, height - 1);
-        Color bottomRightColor = Color.rgba(bottomRightPixel);
+        Color bottomRightColor = Color.abgr(bottomRightPixel);
         if (!bottomRightColor.isEmpty()) {
             textColor = bottomRightColor.getArgb();
         }

@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.api.ResourceFactory;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
+import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.LanguageHelper;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -54,6 +55,7 @@ public class BaniraCodex {
 
     public BaniraCodex() {
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
     }
 
     /**

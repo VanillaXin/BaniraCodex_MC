@@ -1,0 +1,23 @@
+{
+  "command.banira_codex.concise": "Like %s",
+  "word.banira_codex.enabled": "enabled",
+  "word.banira_codex.disabled": "disabled",
+  "message.banira_codex.previous_page": "Previous Page",
+  "message.banira_codex.next_page": "Next Page",
+  "message.banira_codex.not_show_button": "Click to toggle display state",
+  "message.banira_codex.click_to_suggest": "Click to suggest",
+  "message.banira_codex.click_to_copy_detail": "Click to copy detail",
+  "message.banira_codex.command_disabled": "§eThe command is disabled!",
+  "message.banira_codex.server_config_status": "The server has %s the config: %s.",
+  "message.banira_codex.player_virtual_op": "Virtual permission list of player '%s':\n%s",
+  "message.banira_codex.server_config_mode": "Server config has been reset to mode %s. Some settings will take effect only after restarting the server.",
+  "message.banira_codex.notify_help": "Welcome to %s! Use the command '%s' to view the help message.",
+  "message.banira_codex.server_default_language": "The default language of the server is set to %s.",
+  "message.banira_codex.player_default_language": "The default language of the player is set to %s.",
+  "message.banira_codex.mod_status": "%s's enable status is set to: %s.",
+  "message.banira_codex.mod_disabled": "§cMOD has been temporarily disabled.",
+  "message.banira_codex.config_key_absent": "§cConfig modification failed: '%s§c' does not exist.",
+  "message.banira_codex.config_value_parse_error": "§cConfig modification failed: Failed to parse '%s§c'.",
+  "message.banira_codex.config_value_set_error": "§cConfig modification failed: '%s§c' → '%s§c'.",
+  "message.banira_codex.config_value_set_success": "§2Config modification successful: '%s§2' → '%s§2'."
+}

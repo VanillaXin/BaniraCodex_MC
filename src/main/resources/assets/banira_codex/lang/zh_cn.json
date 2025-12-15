@@ -1,0 +1,23 @@
+{
+  "command.banira_codex.concise": "详见%s",
+  "word.banira_codex.enabled": "已启用",
+  "word.banira_codex.disabled": "已禁用",
+  "message.banira_codex.previous_page": "上一页",
+  "message.banira_codex.next_page": "下一页",
+  "message.banira_codex.not_show_button": "点击切换显示状态",
+  "message.banira_codex.click_to_suggest": "点击以填充",
+  "message.banira_codex.click_to_copy_detail": "点击以复制详情",
+  "message.banira_codex.command_disabled": "§e该指令已被服务器禁用！",
+  "message.banira_codex.server_config_status": "服务器%s配置： %s",
+  "message.banira_codex.player_virtual_op": "玩家『%s』的虚拟权限列表：\n%s",
+  "message.banira_codex.server_config_mode": "服务器配置已重置为模式 %s，部分设置需重启服务器后才能生效。",
+  "message.banira_codex.notify_help": "欢迎使用%s，使用指令『%s』以获取帮助信息！",
+  "message.banira_codex.server_default_language": "服务器默认语言被设置为：%s。",
+  "message.banira_codex.player_default_language": "玩家默认语言被设置为：%s。",
+  "message.banira_codex.mod_status": "%s的启用状态被设置为：%s。",
+  "message.banira_codex.mod_disabled": "§cMOD已被临时禁用。",
+  "message.banira_codex.config_key_absent": "§c配置修改失败：『§f%s§c』不存在。",
+  "message.banira_codex.config_value_parse_error": "§c配置修改失败：『§f%s§c』解析失败。",
+  "message.banira_codex.config_value_set_error": "§c配置修改失败：『§f%s§c』->『§f%s§c』。",
+  "message.banira_codex.config_value_set_success": "§2配置修改成功：『§f%s§2』->『§f%s§2』。"
+}

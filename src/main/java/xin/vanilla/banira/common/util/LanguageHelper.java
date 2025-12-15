@@ -25,7 +25,7 @@ public class LanguageHelper {
     private static final String DEFAULT_LANGUAGE = "en_us";
 
     /**
-     *  modId -> instance
+     * modId -> instance
      */
     private static final Map<String, LanguageHelper> HELPERS = new HashMap<>();
 
@@ -150,6 +150,10 @@ public class LanguageHelper {
 
     public static String getClientLanguage() {
         return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+    }
+
+    public static String getServerLanguage() {
+        return CustomConfig.getDefaultLanguage();
     }
 
     public static String getServerPlayerLanguage(ServerPlayerEntity player) {

@@ -47,6 +47,9 @@ minecraft {
                     source sourceSets.main
                 }
             }
+
+            jvmArgs.add "-XX:+AllowEnhancedClassRedefinition"
+            jvmArgs.add "-XX:HotswapAgent=fatjar"
         }
 
         client {}

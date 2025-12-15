@@ -27,7 +27,13 @@ import java.util.concurrent.ThreadLocalRandom;
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DebugScreen extends Screen {
 
-    private static final CircularList<String> textures = CircularList.asList("textures/gui/sakura_cat.png", "textures/gui/aotake_cat.png");
+    private static final CircularList<String> textures = CircularList.asList(
+            "textures/gui/sakura_cat.png"
+            , "textures/gui/aotake_cat.png"
+            , "textures/gui/narcissus_cat.png"
+            , "textures/gui/snowflake_cat.png"
+    );
+
     /**
      * 键盘与鼠标事件管理器
      */

@@ -9,14 +9,14 @@ import net.minecraft.util.ResourceLocation;
 @FunctionalInterface
 public interface ResourceFactory {
 
-    String getModId();
+    String modId();
 
     default ResourceLocation empty() {
         return create("", "");
     }
 
     default ResourceLocation create(String path) {
-        return create(getModId(), path);
+        return create(modId(), path);
     }
 
     default ResourceLocation create(String namespace, String path) {

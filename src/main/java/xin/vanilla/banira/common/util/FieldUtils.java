@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 @SuppressWarnings("sunapi")
-public class FieldUtils {
+public final class FieldUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String UNSAFE_FIELD_NAME;
@@ -37,6 +37,9 @@ public class FieldUtils {
         } catch (Exception e) {
             throw new RuntimeException("Unable to access Unsafe instance", e);
         }
+    }
+
+    private FieldUtils() {
     }
 
     public static Class<?> getClass(Object o) {

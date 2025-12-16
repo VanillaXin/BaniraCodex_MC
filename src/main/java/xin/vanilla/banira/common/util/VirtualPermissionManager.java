@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
-public class VirtualPermissionManager {
+public final class VirtualPermissionManager {
 
     /**
      * 服务端虚拟权限表
@@ -29,6 +29,9 @@ public class VirtualPermissionManager {
      * permissionKey {@code modId + ":" + id}
      */
     private static final Map<String, Set<String>> OP_MAP_CLIENT = deserializeClient();
+
+    private VirtualPermissionManager() {
+    }
 
     /**
      * 添加权限（合并原有权限）

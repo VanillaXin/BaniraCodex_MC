@@ -6,9 +6,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.client.component.Text;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 /**
@@ -33,48 +33,48 @@ public class FontDrawArgs implements Cloneable {
     /**
      * 上外边距
      */
-    private int marginTop = 2;
+    private int marginTop;
     /**
      * 下外边距
      */
-    private int marginBottom = 2;
+    private int marginBottom;
     /**
      * 左外边距
      */
-    private int marginLeft = 2;
+    private int marginLeft;
     /**
      * 右外边距
      */
-    private int marginRight = 2;
+    private int marginRight;
     /**
      * 上内边距
      */
-    private int paddingTop = 4;
+    private int paddingTop;
     /**
      * 下内边距
      */
-    private int paddingBottom = 4;
+    private int paddingBottom;
     /**
      * 左内边距
      */
-    private int paddingLeft = 8;
+    private int paddingLeft;
     /**
      * 右内边距
      */
-    private int paddingRight = 8;
+    private int paddingRight;
 
     /**
      * 背景颜色
      */
-    private int bgArgb = 0x88000000;
+    private int bgArgb = 0x00000000;
     /**
      * 背景圆角半径
      */
-    private int bgBorderRadius = 2;
+    private int bgBorderRadius;
     /**
      * 背景边框厚度
      */
-    private int bgBorderThickness = 1;
+    private int bgBorderThickness;
     /**
      * 背景材质
      */
@@ -156,6 +156,37 @@ public class FontDrawArgs implements Cloneable {
 
     public static FontDrawArgs of(String text, MatrixStack stack, FontRenderer font) {
         return new FontDrawArgs(Text.literal(text).stack(stack).font(font));
+    }
+
+    public static FontDrawArgs ofPopo(Text text) {
+        return new FontDrawArgs(text).defaultPopoStyle();
+    }
+
+    public static FontDrawArgs ofPopo(String text) {
+        return new FontDrawArgs(Text.literal(text)).defaultPopoStyle();
+    }
+
+    public static FontDrawArgs ofPopo(String text, MatrixStack stack) {
+        return new FontDrawArgs(Text.literal(text).stack(stack)).defaultPopoStyle();
+    }
+
+    public static FontDrawArgs ofPopo(String text, MatrixStack stack, FontRenderer font) {
+        return new FontDrawArgs(Text.literal(text).stack(stack).font(font)).defaultPopoStyle();
+    }
+
+    private FontDrawArgs defaultPopoStyle() {
+        this.marginTop = 2;
+        this.marginBottom = 2;
+        this.marginLeft = 2;
+        this.marginRight = 2;
+        this.paddingTop = 4;
+        this.paddingBottom = 4;
+        this.paddingLeft = 8;
+        this.paddingRight = 8;
+        this.bgArgb = 0x88000000;
+        this.bgBorderRadius = 2;
+        this.bgBorderThickness = 1;
+        return this;
     }
 
 }

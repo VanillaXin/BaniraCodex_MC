@@ -19,7 +19,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.component.Text;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.data.TransformDrawArgs;
@@ -27,6 +26,7 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.enums.EnumRotationCenter;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.*;
@@ -73,8 +73,9 @@ public final class AbstractGuiUtils {
 
                 // 启用深度测试
                 RenderSystem.enableDepthTest();
-                // 设置深度函数, 小于等于当前深度的像素通过测试, 允许相同深度的像素显示
-                RenderSystem.depthFunc(GL11.GL_LEQUAL);
+                // 设置深度函数
+                RenderSystem.depthFunc(GL11.GL_LEQUAL); // 小于等于当前深度的像素通过测试, 允许相同深度的像素显示
+                // RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
                 // 执行绘制
                 drawFunc.accept(stack);
@@ -1298,6 +1299,28 @@ public final class AbstractGuiUtils {
         if (needsScale) {
             stack.popPose();
         }
+    }
+
+    /**
+     * 绘制弹出层消息
+     */
+    public static void drawPopupMessageWithSeason(FontDrawArgs args) {
+        ResourceLocation texture;
+        switch (DateUtils.getSeason()) {
+            case SUMMER:
+                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/aotake_cat.png");
+                break;
+            case AUTUMN:
+                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/narcissus_cat.png");
+                break;
+            case WINTER:
+                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/snowflake_cat.png");
+                break;
+            default:
+                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/sakura_cat.png");
+                break;
+        }
+        AbstractGuiUtils.drawPopupMessage(args.texture(texture));
     }
 
     /**

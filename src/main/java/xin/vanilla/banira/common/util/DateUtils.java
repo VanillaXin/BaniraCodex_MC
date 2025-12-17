@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.NonNull;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -736,5 +737,288 @@ public final class DateUtils {
             else break;
         }
         return continuousDays;
+    }
+
+    /**
+     * 根据纬度判断是否属于南半球
+     */
+    public static boolean isSouthernHemisphereByLatitude(double latitude) {
+        return latitude < 0;
+    }
+
+    /**
+     * 根据Locale的Country代码判断是否属于南半球(不够准确)
+     */
+    public static Boolean isSouthernHemisphereByLocale(Locale locale) {
+        if (locale == null) {
+            locale = Locale.getDefault();
+        }
+        String country = locale.getCountry().toUpperCase();
+        // 南半球主要Country代码（ISO 3166-1 alpha-2）
+        if (country.equals("AU") || // 澳大利亚
+                country.equals("NZ") || // 新西兰
+                country.equals("ZA") || // 南非
+                country.equals("AR") || // 阿根廷
+                country.equals("CL") || // 智利
+                country.equals("UY") || // 乌拉圭
+                country.equals("FJ") || // 斐济
+                country.equals("PG") || // 巴布亚新几内亚
+                country.equals("WS") || // 萨摩亚
+                country.equals("TO") || // 汤加
+                country.equals("VU") || // 瓦努阿图
+                country.equals("NC") || // 新喀里多尼亚
+                country.equals("PF") || // 法属波利尼西亚
+                country.equals("CK") || // 库克群岛
+                country.equals("NU") || // 纽埃
+                country.equals("PW") || // 帕劳
+                country.equals("MH") || // 马绍尔群岛
+                country.equals("FM") || // 密克罗尼西亚
+                country.equals("KI") || // 基里巴斯
+                country.equals("TV") || // 图瓦卢
+                country.equals("NR") || // 瑙鲁
+                country.equals("SB") || // 所罗门群岛
+                country.equals("RE") || // 留尼汪
+                country.equals("MU") || // 毛里求斯
+                country.equals("SC") || // 塞舌尔
+                country.equals("MV") || // 马尔代夫（接近赤道，但通常算南半球）
+                country.equals("MG") || // 马达加斯加
+                country.equals("BW") || // 博茨瓦纳
+                country.equals("NA") || // 纳米比亚
+                country.equals("ZW") || // 津巴布韦
+                country.equals("ZM") || // 赞比亚
+                country.equals("MW") || // 马拉维
+                country.equals("MZ") || // 莫桑比克
+                country.equals("LS") || // 莱索托
+                country.equals("SZ")) { // 斯威士兰
+            return true;
+        }
+
+        // 横跨赤道的Country代码
+        if (country.equals("ID") || // 印度尼西亚（横跨赤道，但主要部分在南半球）
+                country.equals("KE") || // 肯尼亚（横跨赤道）
+                country.equals("UG") || // 乌干达（横跨赤道）
+                country.equals("SO") || // 索马里（横跨赤道）
+                country.equals("EC") || // 厄瓜多尔（横跨赤道）
+                country.equals("CO") || // 哥伦比亚（横跨赤道）
+                country.equals("BR")) { // 巴西（横跨赤道，但大部分在南半球）
+            return null;
+        }
+
+        return false;
+    }
+
+    /**
+     * 根据系统默认Locale判断是否属于南半球
+     */
+    public static Boolean isSouthernHemisphereByLocale() {
+        return isSouthernHemisphereByLocale(Locale.getDefault());
+    }
+
+    /**
+     * 判断时区是否属于南半球
+     */
+    public static boolean isSouthernHemisphere(ZoneId zoneId) {
+        if (zoneId == null) {
+            zoneId = ZoneId.systemDefault();
+        }
+        String zoneIdStr = zoneId.getId().toLowerCase();
+
+        // 南半球主要时区标识
+        return zoneIdStr.contains("australia") ||
+                zoneIdStr.contains("auckland") ||
+                zoneIdStr.contains("wellington") ||
+                zoneIdStr.contains("sydney") ||
+                zoneIdStr.contains("melbourne") ||
+                zoneIdStr.contains("brisbane") ||
+                zoneIdStr.contains("adelaide") ||
+                zoneIdStr.contains("perth") ||
+                zoneIdStr.contains("darwin") ||
+                zoneIdStr.contains("hobart") ||
+                zoneIdStr.contains("johannesburg") ||
+                zoneIdStr.contains("cape town") ||
+                zoneIdStr.contains("pretoria") ||
+                zoneIdStr.contains("santiago") ||
+                zoneIdStr.contains("buenos aires") ||
+                zoneIdStr.contains("montevideo") ||
+                zoneIdStr.contains("sao paulo") ||
+                zoneIdStr.contains("rio de janeiro") ||
+                zoneIdStr.contains("fiji") ||
+                zoneIdStr.contains("papua") ||
+                zoneIdStr.contains("new guinea") ||
+                zoneIdStr.equals("pacific/auckland") ||
+                zoneIdStr.equals("pacific/chatham") ||
+                zoneIdStr.equals("pacific/fiji") ||
+                zoneIdStr.equals("pacific/port_moresby") ||
+                zoneIdStr.equals("australia/sydney") ||
+                zoneIdStr.equals("australia/melbourne") ||
+                zoneIdStr.equals("australia/brisbane") ||
+                zoneIdStr.equals("australia/adelaide") ||
+                zoneIdStr.equals("australia/perth") ||
+                zoneIdStr.equals("australia/darwin") ||
+                zoneIdStr.equals("australia/hobart") ||
+                zoneIdStr.equals("africa/johannesburg") ||
+                zoneIdStr.equals("africa/cape_town") ||
+                zoneIdStr.equals("america/santiago") ||
+                zoneIdStr.equals("america/argentina/buenos_aires") ||
+                zoneIdStr.equals("america/montevideo") ||
+                zoneIdStr.equals("america/sao_paulo") ||
+                zoneIdStr.equals("america/rio_branco");
+    }
+
+    /**
+     * 综合判断是否属于南半球
+     */
+    public static boolean isSouthernHemisphere(Double latitude, ZoneId zoneId, Locale locale) {
+        if (latitude != null) {
+            return isSouthernHemisphereByLatitude(latitude);
+        }
+        if (zoneId != null) {
+            return isSouthernHemisphere(zoneId);
+        }
+        Boolean localeResult = isSouthernHemisphereByLocale(locale);
+        if (localeResult != null) {
+            return localeResult;
+        }
+        return false;
+    }
+
+    /**
+     * 综合判断系统默认设置是否属于南半球
+     */
+    public static boolean isSouthernHemisphere() {
+        return isSouthernHemisphere(null, ZoneId.systemDefault(), Locale.getDefault());
+    }
+
+    /**
+     * 根据日期和半球信息获取季节
+     * 北半球：春季（3-5月）、夏季（6-8月）、秋季（9-11月）、冬季（12-2月）
+     * 南半球：春季（9-11月）、夏季（12-2月）、秋季（3-5月）、冬季（6-8月）
+     *
+     * @param month      月份（1-12）
+     * @param isSouthern 是否南半球
+     * @return 季节枚举
+     */
+    private static EnumSeason getSeasonByMonth(int month, boolean isSouthern) {
+        if (isSouthern) {
+            // 南半球季节
+            if (month >= 9 && month <= 11) {
+                return EnumSeason.SPRING;
+            } else if (month == 12 || month <= 2) {
+                return EnumSeason.SUMMER;
+            } else if (month >= 3 && month <= 5) {
+                return EnumSeason.AUTUMN;
+            } else { // month >= 6 && month <= 8
+                return EnumSeason.WINTER;
+            }
+        } else {
+            // 北半球季节
+            if (month >= 3 && month <= 5) {
+                return EnumSeason.SPRING;
+            } else if (month >= 6 && month <= 8) {
+                return EnumSeason.SUMMER;
+            } else if (month >= 9 && month <= 11) {
+                return EnumSeason.AUTUMN;
+            } else { // month == 12 || month <= 2
+                return EnumSeason.WINTER;
+            }
+        }
+    }
+
+    /**
+     * 根据日期和多种方式综合判断获取季节
+     */
+    public static EnumSeason getSeason(Date date, Double latitude, ZoneId zoneId, Locale locale) {
+        if (date == null) {
+            date = new Date();
+        }
+
+        int month = getMonthOfDate(date);
+        boolean isSouth = isSouthernHemisphere(latitude, zoneId, locale);
+
+        return getSeasonByMonth(month, isSouth);
+    }
+
+    /**
+     * 根据日期和时区获取季节
+     * 北半球：春季（3-5月）、夏季（6-8月）、秋季（9-11月）、冬季（12-2月）
+     * 南半球：春季（9-11月）、夏季（12-2月）、秋季（3-5月）、冬季（6-8月）
+     */
+    public static EnumSeason getSeason(Date date, ZoneId zoneId) {
+        return getSeason(date, null, zoneId, null);
+    }
+
+    /**
+     * 根据日期和纬度获取季节
+     */
+    public static EnumSeason getSeason(Date date, double latitude) {
+        return getSeason(date, latitude, null, null);
+    }
+
+    /**
+     * 根据当前日期和系统默认设置获取季节
+     */
+    public static EnumSeason getSeason() {
+        return getSeason(null, null, null, null);
+    }
+
+    /**
+     * 根据日期获取季节
+     */
+    public static EnumSeason getSeason(Date date) {
+        return getSeason(date, null, null, null);
+    }
+
+    /**
+     * 根据时区获取当前季节
+     */
+    public static EnumSeason getSeason(ZoneId zoneId) {
+        return getSeason(null, null, zoneId, null);
+    }
+
+    /**
+     * 根据纬度获取当前季节
+     */
+    public static EnumSeason getSeason(double latitude) {
+        return getSeason(null, latitude, null, null);
+    }
+
+    /**
+     * 获取季节的本地化名称
+     */
+    public static String getSeasonLocalizedName(EnumSeason season, String languageTag) {
+        if (season == null) {
+            return "";
+        }
+
+        Locale locale = getLocalFromLanguageTag(languageTag);
+        String language = locale.getLanguage().toLowerCase();
+
+        // 根据语言返回本地化名称
+        if (language.startsWith("zh")) {
+            return season.getChineseName();
+        } else {
+            return season.getEnglishName();
+        }
+    }
+
+    /**
+     * 获取季节的本地化名称
+     */
+    public static String getSeasonLocalizedName(EnumSeason season) {
+        return getSeasonLocalizedName(season, null);
+    }
+
+    /**
+     * 获取当前季节的本地化名称
+     */
+    public static String getSeasonLocalizedName(String languageTag) {
+        return getSeasonLocalizedName(getSeason(), languageTag);
+    }
+
+    /**
+     * 获取当前季节的本地化名称
+     */
+    public static String getSeasonLocalizedName() {
+        return getSeasonLocalizedName(getSeason(), null);
     }
 }

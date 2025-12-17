@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.component;
+package xin.vanilla.banira.client.gui.component;
 
 import java.util.ArrayList;
 import java.util.Collections;

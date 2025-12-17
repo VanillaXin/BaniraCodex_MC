@@ -8,7 +8,6 @@ import net.minecraft.command.arguments.ItemParser;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
@@ -212,17 +211,7 @@ public final class ItemUtils {
         try {
             ResourceLocation itemId = getItemRegistry(itemStack);
             if (itemId == null) return "";
-            StringBuilder result = new StringBuilder();
-            result.append(itemId);
-            // 保存物品到NBT
-            CompoundNBT nbt = new CompoundNBT();
-            itemStack.save(nbt);
-            // 移除id字段
-            nbt.remove("id");
-            if (!nbt.isEmpty()) {
-                result.append(nbt);
-            }
-            return result.toString();
+            return itemId + serializeItemStackTag(itemStack);
         } catch (Exception e) {
             LOGGER.error("Failed to serialize item stack", e);
             return "";
@@ -245,6 +234,17 @@ public final class ItemUtils {
             LOGGER.error("Failed to deserialize item stack from string: {}", itemString, e);
             return ItemStack.EMPTY;
         }
+    }
+
+    /**
+     * 将物的的NBT序列化为字符串
+     */
+    public static String serializeItemStackTag(ItemStack itemStack) {
+        String result = "";
+        if (itemStack.hasTag() && itemStack.getTag() != null) {
+            result = itemStack.getTag().toString();
+        }
+        return result;
     }
 
     // endregion

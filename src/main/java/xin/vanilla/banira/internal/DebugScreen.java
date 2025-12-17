@@ -8,20 +8,21 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.component.Text;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.ItemSelectScreen;
+import xin.vanilla.banira.client.gui.StringInputScreen;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.*;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.common.util.Component;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.common.util.RandomStringUtils;
-import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Date;
@@ -29,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DebugScreen extends Screen {
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private static final CircularList<String> textures = CircularList.asList(
             "textures/gui/sakura_cat.png"
@@ -83,14 +85,14 @@ public class DebugScreen extends Screen {
         );
 
         int hudY = 1;
-        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal("contentLines：" + contentLines)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal("contentLength：" + contentLength)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal("fontSize：" + fontSize)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal("warp：" + warp)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("contentLines：" + contentLines)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("contentLength：" + contentLength)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("fontSize：" + fontSize)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("warp：" + warp)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
         if (mouseHelper.isLeftPressing()) {
-            AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal(content)
+            AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal(content)
                             .stack(stack)
                             .font(super.font)
                             .align(EnumAlignment.CENTER))
@@ -98,7 +100,7 @@ public class DebugScreen extends Screen {
                     .wrap(warp).maxWidth(warp ? AbstractGuiUtils.multilineTextWidth(this.content) / 2 : 0)
             );
         } else if (mouseHelper.isRightPressing()) {
-            AbstractGuiUtils.drawPopupMessage(FontDrawArgs.of(Text.literal(content)
+            AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal(content)
                             .stack(stack)
                             .font(super.font)
                             .align(EnumAlignment.CENTER))
@@ -158,6 +160,38 @@ public class DebugScreen extends Screen {
             }
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL) && keyManager.isKeyPressed(GLFWKey.GLFW_KEY_W)) {
             this.warp = !this.warp;
+        } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
+            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived1((itemStack) ->
+                LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack))
+            )));
+        } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
+            StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("name")
+                            .title(Text.literal("enter_name").shadow(true))
+                            .validator((input) -> {
+                                if (StringUtils.isNullOrEmptyEx(input.value())) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.value()).toString();
+                                }
+                                return null;
+                            })
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("author")
+                            .title(Text.literal("enter_author_name").shadow(true))
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("version")
+                            .title(Text.literal("enter_version").shadow(true))
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("description")
+                            .title(Text.literal("enter_description").shadow(true))
+                            .allowEmpty(true)
+                    )
+                    .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
+            Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
         }
         this.keyManager.keyReleased(keyCode);
         return super.keyReleased(keyCode, scanCode, modifiers);

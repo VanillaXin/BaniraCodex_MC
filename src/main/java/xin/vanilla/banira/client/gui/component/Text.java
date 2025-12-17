@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.component;
+package xin.vanilla.banira.client.gui.component;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Setter;
@@ -68,8 +68,8 @@ public class Text implements Cloneable {
         return new Text().text(Component.empty()).hoverText(Component.empty());
     }
 
-    public static Text translatable(EnumI18nType type, String key, Object... args) {
-        return new Text(Component.translatableClient(type, key, args));
+    public static Text translatable(String modId, EnumI18nType type, String key, Object... args) {
+        return new Text(Component.translatableClient(type, key, args).modId(modId));
     }
 
     public Text clone() {

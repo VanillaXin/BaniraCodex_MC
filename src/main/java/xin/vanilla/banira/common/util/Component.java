@@ -69,6 +69,7 @@ public class Component implements Cloneable, Serializable {
     /**
      * 语言代码
      */
+    @Getter
     @Setter
     private String languageCode;
     /**
@@ -178,7 +179,14 @@ public class Component implements Cloneable, Serializable {
     /**
      * 获取语言代码
      */
-    public @NonNull String languageCode() {
+    public @NonNull String languageCodeOrDefault(String defaultLanguage) {
+        return this.languageCode == null ? defaultLanguage : this.languageCode;
+    }
+
+    /**
+     * 获取语言代码
+     */
+    public @NonNull String languageCodeOrDefault() {
         return this.languageCode == null ? CustomConfig.getDefaultLanguage() : this.languageCode;
     }
 
@@ -350,10 +358,10 @@ public class Component implements Cloneable, Serializable {
     }
 
     public Component appendArg(Object... objs) {
-        return this.appendArg(this.getArgs().size(), objs);
+        return this.appendArgIndex(this.getArgs().size(), objs);
     }
 
-    public Component appendArg(int index, Object... objs) {
+    public Component appendArgIndex(int index, Object... objs) {
         for (int i = 0; i < objs.length; i++) {
             Object obj = objs[i];
             if (obj instanceof Component) {
@@ -451,7 +459,7 @@ public class Component implements Cloneable, Serializable {
      * 获取文本
      */
     public String toString() {
-        return this.getString(this.languageCode(), false, true);
+        return this.getString(this.languageCodeOrDefault(), false, true);
     }
 
     /**
@@ -460,7 +468,7 @@ public class Component implements Cloneable, Serializable {
      * @param igStyle 是否忽略样式
      */
     public String toString(boolean igStyle) {
-        return this.getString(this.languageCode(), igStyle, true);
+        return this.getString(this.languageCodeOrDefault(), igStyle, true);
     }
 
     /**
@@ -522,7 +530,7 @@ public class Component implements Cloneable, Serializable {
                 } else {
                     LanguageHelper helper = LanguageHelper.forMod(this.modId);
                     String fullKey = helper.getKey(this.i18nType, this.text);
-                    result.append(helper.getTranslation(fullKey, languageCode));
+                    result.append(helper.getTranslation(fullKey, this.languageCodeOrDefault(languageCode)));
                 }
             }
         }
@@ -535,7 +543,7 @@ public class Component implements Cloneable, Serializable {
      * 获取文本组件
      */
     public ITextComponent toTextComponent() {
-        return this.toTextComponent(this.languageCode());
+        return this.toTextComponent(this.languageCodeOrDefault());
     }
 
     /**
@@ -557,7 +565,7 @@ public class Component implements Cloneable, Serializable {
                         text = this.text;
                     } else {
                         LanguageHelper helper = LanguageHelper.forMod(this.modId);
-                        text = helper.getTranslation(this.i18nType, this.text, languageCode);
+                        text = helper.getTranslation(this.i18nType, this.text, this.languageCodeOrDefault(languageCode));
                     }
                     String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                     for (String s : split) {
@@ -666,7 +674,7 @@ public class Component implements Cloneable, Serializable {
      * @return 格式化颜色后的文本组件
      */
     public ITextComponent toChatComponent() {
-        return this.toChatComponent(this.languageCode());
+        return this.toChatComponent(this.languageCodeOrDefault());
     }
 
     /**
@@ -823,7 +831,7 @@ public class Component implements Cloneable, Serializable {
         JsonObject result = new JsonObject();
         JsonUtils.set(result, "text", component.text());
         JsonUtils.set(result, "i18nType", component.i18nType().name());
-        JsonUtils.set(result, "languageCode", component.languageCode());
+        JsonUtils.set(result, "languageCode", component.languageCodeOrDefault());
         JsonUtils.set(result, "color", component.color().argb());
         JsonUtils.set(result, "bgColor", component.bgColor().argb());
         JsonUtils.set(result, "shadow", component.shadow());

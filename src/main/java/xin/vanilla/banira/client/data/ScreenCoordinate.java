@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.component;
+package xin.vanilla.banira.client.data;
 
 import com.google.gson.JsonObject;
 import lombok.Data;

@@ -1,12 +1,15 @@
 package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.common.data.FixedList;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@OnlyIn(Dist.CLIENT)
 public class KeyboardHelper {
     private final Map<Integer, FixedList<Boolean>> keyPressedRecords = new HashMap<>();
 

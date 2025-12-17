@@ -4,7 +4,6 @@ package xin.vanilla.banira.client.data;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.client.component.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRotationCenter;
 
 /**

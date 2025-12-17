@@ -9,6 +9,7 @@ import net.minecraft.potion.EffectInstance;
 import net.minecraft.resources.IResource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -26,6 +27,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
+@OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TextureUtils {
     /**

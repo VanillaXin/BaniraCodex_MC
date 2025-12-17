@@ -63,16 +63,35 @@ public final class AbstractGuiUtils {
      */
     public static void renderByDepth(MatrixStack stack, EnumRenderDepth depth, Consumer<MatrixStack> drawFunc) {
         if (depth != null) {
-            RenderSystem.disableDepthTest();
-            stack.pushPose();
-            stack.translate(0, 0, depth.getDepth());
-        }
+            // 保存当前深度测试状态
+            boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+            int depthFunc = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
 
-        drawFunc.accept(stack);
+            try {
+                stack.pushPose();
+                stack.translate(0, 0, depth.getDepth());
 
-        if (depth != null) {
-            stack.popPose();
-            RenderSystem.enableDepthTest();
+                // 启用深度测试
+                RenderSystem.enableDepthTest();
+                // 设置深度函数, 小于等于当前深度的像素通过测试, 允许相同深度的像素显示
+                RenderSystem.depthFunc(GL11.GL_LEQUAL);
+
+                // 执行绘制
+                drawFunc.accept(stack);
+            } finally {
+                // 恢复矩阵状态
+                stack.popPose();
+
+                // 恢复之前的深度测试状态
+                if (!depthTest) {
+                    RenderSystem.disableDepthTest();
+                } else {
+                    RenderSystem.enableDepthTest();
+                }
+                RenderSystem.depthFunc(depthFunc);
+            }
+        } else {
+            drawFunc.accept(stack);
         }
     }
 

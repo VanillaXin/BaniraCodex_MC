@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.util;
 
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -10,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+@OnlyIn(Dist.CLIENT)
 public final class GLFWKeyUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 

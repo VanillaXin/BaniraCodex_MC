@@ -3,6 +3,9 @@ package xin.vanilla.banira.client.data;
 @SuppressWarnings("unused")
 public class GLFWKey {
 
+    private GLFWKey() {
+    }
+
     /**
      * Boolean values.
      */

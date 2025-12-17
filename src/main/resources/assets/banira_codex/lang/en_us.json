@@ -1,5 +1,7 @@
 {
   "command.banira_codex.concise": "Like %s",
+  "word.banira_codex.banira_codex": "Banira Codex",
+  "word.banira_codex.vanilla_xin": "Vanilla Xin",
   "word.banira_codex.enabled": "enabled",
   "word.banira_codex.disabled": "disabled",
   "message.banira_codex.previous_page": "Previous Page",

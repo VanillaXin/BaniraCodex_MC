@@ -1,6 +1,8 @@
 package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 import xin.vanilla.banira.common.data.FixedList;
@@ -8,6 +10,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 
 import java.nio.DoubleBuffer;
 
+@OnlyIn(Dist.CLIENT)
 public class MouseHelper {
     private final FixedList<Boolean> mouseLeftPressedRecord = new FixedList<>(5);
     private final FixedList<Boolean> mouseRightPressedRecord = new FixedList<>(5);

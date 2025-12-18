@@ -298,7 +298,7 @@ public class StringInputScreen extends Screen {
                     // 验证输入并更新错误状态
                     String error = widget.validator().apply(new Results().value(widget.name(), finalI, input.getValue()));
                     boolean hasError = StringUtils.isNotNullOrEmpty(error);
-                    input.hasError(hasError);
+                    input.error(hasError);
                     // 更新错误文本映射
                     if (hasError) {
                         errorTextMap.put(finalI, Text.literal(error).color(Color.argb(0xFFFF0000)));
@@ -397,7 +397,7 @@ public class StringInputScreen extends Screen {
             if (i < inputFields.size()) {
                 BaniraTextFieldWidget input = inputFields.get(i).input();
                 boolean hasError = StringUtils.isNotNullOrEmpty(error);
-                input.hasError(hasError);
+                input.error(hasError);
                 if (hasError) {
                     Text errorTextItem = Text.literal(error).color(Color.argb(0xAAFF0000));
                     this.errorText.add(errorTextItem);
@@ -466,7 +466,7 @@ public class StringInputScreen extends Screen {
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
             BaniraTextFieldWidget input = field.input();
-            if (input.hasError() && input.isMouseOver(mouseX, mouseY)) {
+            if (input.error() && input.isMouseOver(mouseX, mouseY)) {
                 Text errorTextItem = this.errorTextMap.get(i).stack(stack);
                 if (errorTextItem != null) {
                     AbstractGuiUtils.drawPopupMessageWithSeason(FontDrawArgs.ofPopo(errorTextItem)

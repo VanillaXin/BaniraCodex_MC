@@ -33,13 +33,15 @@ import java.util.function.BiFunction;
  * 自定义样式的文本输入框
  */
 @Accessors(chain = true, fluent = true)
-public class BaniraTextFieldWidget extends TextFieldWidget {
+public class BaniraTextField extends TextFieldWidget {
     private static final int DEFAULT_BG_COLOR = 0x88000000;
     private static final int ERROR_BG_COLOR = 0x44FF0000;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
     private static final int TEXT_COLOR_UNEDITABLE = 0xFF707070;
     private static final int HINT_COLOR = 0xFF707070;
     private static final int CURSOR_COLOR = 0xFFE0E0E0;
+
+    private static long LAST_CLICK_TIME = 0L;
 
     // 内边距
     private static final int PADDING_LEFT = 5;
@@ -101,14 +103,14 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
      */
     private static final int MAX_HISTORY_SIZE = 50;
 
-    private static final Set<WeakReference<BaniraTextFieldWidget>> INSTANCES = new HashSet<>();
+    private static final Set<WeakReference<BaniraTextField>> INSTANCES = new HashSet<>();
 
-    public BaniraTextFieldWidget(FontRenderer font, int x, int y, int width, int height, ITextComponent message) {
+    public BaniraTextField(FontRenderer font, int x, int y, int width, int height, ITextComponent message) {
         this(font, x, y, width, height, message, DEFAULT_BG_COLOR);
     }
 
-    public BaniraTextFieldWidget(FontRenderer font, int x, int y, int width, int height, ITextComponent message,
-                                 int bgColor) {
+    public BaniraTextField(FontRenderer font, int x, int y, int width, int height, ITextComponent message,
+                           int bgColor) {
         super(font, x, y, width, height, message);
         this.bgColor = bgColor;
         this.font = font;
@@ -356,7 +358,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         int cursorInVisible = cursorPos - displayPos;
         boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
         // 光标缓慢闪烁
-        boolean shouldShowCursor = this.isFocused() && (System.currentTimeMillis() / 750) % 2 == 0 && cursorVisible;
+        boolean shouldShowCursor = this.isFocused() && ((System.currentTimeMillis() - LAST_CLICK_TIME) / 750) % 2 == 0 && cursorVisible;
 
         // 计算文本绘制位置
         int textX = this.x + PADDING_LEFT;
@@ -431,11 +433,11 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         // 绘制光标
         if (shouldShowCursor) {
             if (isAtEnd) {
-                // 在文本末尾绘制竖线光标
-                AbstractGuiUtils.fill(stack, cursorX, textY - 1, 1, 9, CURSOR_COLOR);
+                // 在文本末尾绘制下划线光标
+                this.font.drawShadow(stack, "_", cursorX, textY, currentTextColor);
             } else {
-                // 在文本中间绘制下划线光标
-                this.font.drawShadow(stack, "_", (float) cursorX, (float) textY, currentTextColor);
+                // 在文本中间绘制竖线光标
+                AbstractGuiUtils.fill(stack, cursorX, textY - 1, 1, 9, CURSOR_COLOR);
             }
         }
     }
@@ -485,7 +487,11 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
     @Override
     @ParametersAreNonnullByDefault
     public void setValue(String value) {
+        String oldValue = this.getValue();
         super.setValue(value);
+        if (!value.equals(oldValue)) {
+            this.error = false;
+        }
         int valueLength = value.length();
         if (this.displayPos > valueLength) {
             this.displayPos = valueLength;
@@ -522,6 +528,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
             }
 
             super.setValue(newValue);
+            this.error = false;
             int newCursorPos = Math.min(start + text.length(), newValue.length());
             super.setCursorPosition(newCursorPos);
             this.highlightPos = newCursorPos;
@@ -532,6 +539,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
             // 没有选中文本，正常插入
             if (!text.isEmpty()) {
                 this.saveToHistory();
+                this.error = false;
             }
             super.insertText(text);
             cursorPos = this.getCursorPosition();
@@ -556,8 +564,12 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         }
 
         // 删除单词
+        String oldValue = this.getValue();
         this.saveToHistory();
         super.deleteWords(num);
+        if (!this.getValue().equals(oldValue)) {
+            this.error = false;
+        }
         // 重置高亮位置并更新显示位置
         int cursorPos = this.getCursorPosition();
         this.highlightPos = cursorPos;
@@ -580,8 +592,12 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         }
 
         // 删除字符
+        String oldValue = this.getValue();
         this.saveToHistory();
         super.deleteChars(num);
+        if (!this.getValue().equals(oldValue)) {
+            this.error = false;
+        }
         // 重置高亮位置并更新显示位置
         int cursorPos = this.getCursorPosition();
         this.highlightPos = cursorPos;
@@ -706,6 +722,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
 
         if (this.isFocused() && isInBounds && button == 0) {
             // 通知所有其他 BaniraTextFieldWidget 取消焦点
+            LAST_CLICK_TIME = System.currentTimeMillis();
             notifyOtherInstancesToLoseFocus();
 
             // 计算点击位置对应的文本位置
@@ -747,7 +764,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
     private void notifyOtherInstancesToLoseFocus() {
         synchronized (INSTANCES) {
             INSTANCES.removeIf(ref -> {
-                BaniraTextFieldWidget instance = ref.get();
+                BaniraTextField instance = ref.get();
                 if (instance == null) {
                     return true;
                 }
@@ -797,6 +814,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         String previousValue = this.undoHistory.pollLast();
         if (previousValue != null) {
             super.setValue(previousValue);
+            this.error = false;
             // 重置光标和高亮位置
             int cursorPos = Math.min(this.getCursorPosition(), previousValue.length());
             super.setCursorPosition(cursorPos);
@@ -824,6 +842,7 @@ public class BaniraTextFieldWidget extends TextFieldWidget {
         String nextValue = this.redoHistory.pollLast();
         if (nextValue != null) {
             super.setValue(nextValue);
+            this.error = false;
             // 重置光标和高亮位置
             int cursorPos = Math.min(this.getCursorPosition(), nextValue.length());
             super.setCursorPosition(cursorPos);

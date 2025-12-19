@@ -196,7 +196,7 @@ public class ItemSelectScreen extends Screen {
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
-        this.inputField = new BaniraTextFieldWidget(this.font, bgX, bgY, 180, 12, Component.empty().toTextComponent())
+        this.inputField = new BaniraTextField(this.font, bgX, bgY, 180, 12, Component.empty().toTextComponent())
                 .hint("搜索物品...");
         this.inputField.setValue(this.inputFieldText);
         this.addButton(this.inputField);

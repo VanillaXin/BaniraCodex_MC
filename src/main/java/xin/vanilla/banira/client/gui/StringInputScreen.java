@@ -12,7 +12,7 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumStringInputRegex;
 import xin.vanilla.banira.client.gui.component.BaniraButton;
-import xin.vanilla.banira.client.gui.component.BaniraTextFieldWidget;
+import xin.vanilla.banira.client.gui.component.BaniraTextField;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.component.TextList;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -63,7 +63,7 @@ public class StringInputScreen extends Screen {
     @Data
     @Accessors(chain = true, fluent = true)
     public static class InputField {
-        private BaniraTextFieldWidget input;
+        private BaniraTextField input;
         private BaniraButton button;
         private Text title;
         private String value = "";
@@ -268,7 +268,7 @@ public class StringInputScreen extends Screen {
             int fieldY = startY + TITLE_HEIGHT + INPUT_FIELD_SPACING * i + scrollOffset;
             int inputWidth = (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) ? 175 : 200;
 
-            BaniraTextFieldWidget input = new BaniraTextFieldWidget(
+            BaniraTextField input = new BaniraTextField(
                     this.font,
                     this.width / 2 - 100,
                     fieldY,
@@ -395,7 +395,7 @@ public class StringInputScreen extends Screen {
             String error = widget.validator().apply(results);
             // 设置输入框的错误状态
             if (i < inputFields.size()) {
-                BaniraTextFieldWidget input = inputFields.get(i).input();
+                BaniraTextField input = inputFields.get(i).input();
                 boolean hasError = StringUtils.isNotNullOrEmpty(error);
                 input.error(hasError);
                 if (hasError) {
@@ -465,7 +465,7 @@ public class StringInputScreen extends Screen {
         // 绘制错误提示
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
-            BaniraTextFieldWidget input = field.input();
+            BaniraTextField input = field.input();
             if (input.error() && input.isMouseOver(mouseX, mouseY)) {
                 Text errorTextItem = this.errorTextMap.get(i).stack(stack);
                 if (errorTextItem != null) {

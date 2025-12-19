@@ -13,7 +13,6 @@ import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,23 +82,13 @@ public final class PlayerUtils {
      * 获取玩家身上的所有物品
      *
      * @param player 玩家
-     * @return 玩家身上的所有物品列表（副本）
+     * @return 玩家身上的所有物品列表副本
+     * @deprecated Use {@link ItemUtils#getAllPlayerItems}
      */
+    @Deprecated
     @Nonnull
     public static List<ItemStack> getAllPlayerItems(@Nonnull PlayerEntity player) {
-        List<ItemStack> items = new ArrayList<>();
-        PlayerInventory inventory = player.inventory;
-        if (inventory == null) {
-            return items;
-        }
-        // 获取所有槽位的物品
-        for (int i = 0; i < inventory.getContainerSize(); i++) {
-            ItemStack stack = inventory.getItem(i);
-            if (!stack.isEmpty()) {
-                items.add(stack.copy());
-            }
-        }
-        return items;
+        return ItemUtils.getAllPlayerItems(player);
     }
 
     /**

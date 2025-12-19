@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.Getter;
@@ -10,42 +8,29 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.client.util.SearchTreeManager;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.tags.ITag;
-import net.minecraft.tags.ITagCollection;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.component.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.KeyEventManager;
 import xin.vanilla.banira.common.data.ArraySet;
-import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.common.util.Component;
+import xin.vanilla.banira.common.util.ItemUtils;
+import xin.vanilla.banira.common.util.NumberUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 public class ItemSelectScreen extends Screen {
@@ -57,8 +42,6 @@ public class ItemSelectScreen extends Screen {
 
     private final static Component TITLE = Component.literal("ItemSelectScreen");
 
-    private final List<ItemStack> allItemList = this.getAllItemList();
-    private final List<ItemStack> playerItemList = this.getPlayerItemList();
     // 每行显示数量
     private final int itemPerLine = 9;
     // 每页显示行数
@@ -67,7 +50,7 @@ public class ItemSelectScreen extends Screen {
     /**
      * 输入框
      */
-    private TextFieldWidget inputField;
+    private BaniraTextField inputField;
     /**
      * 输入框文本
      */
@@ -84,10 +67,6 @@ public class ItemSelectScreen extends Screen {
      * 物品按钮
      */
     private final List<OperationButton> ITEM_BUTTONS = new ArrayList<>();
-    /**
-     * 显示的标签
-     */
-    private final Map<ResourceLocation, ITag<Item>> visibleTags = Maps.newTreeMap();
     /**
      * 当前选择的物品 ID
      */
@@ -199,6 +178,11 @@ public class ItemSelectScreen extends Screen {
         this.inputField = new BaniraTextField(this.font, bgX, bgY, 180, 12, Component.empty().toTextComponent())
                 .hint("搜索物品...");
         this.inputField.setValue(this.inputFieldText);
+        // 添加文本变化监听
+        this.inputField.setResponder(text -> {
+            this.inputFieldText = text;
+            this.updateSearchResults();
+        });
         this.addButton(this.inputField);
 
         int buttonY = (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin));
@@ -344,10 +328,6 @@ public class ItemSelectScreen extends Screen {
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
             Minecraft.getInstance().setScreen(args.parentScreen());
             return true;
-        } else if ((keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
-            this.updateSearchResults();
-            // this.updateLayout();
-            return true;
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
@@ -369,20 +349,6 @@ public class ItemSelectScreen extends Screen {
         return false;
     }
 
-
-    private List<ItemStack> getAllItemList() {
-        return ItemUtils.getAllItems();
-    }
-
-    private List<ItemStack> getPlayerItemList() {
-        List<ItemStack> result = new ArrayList<>();
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-        if (player != null) {
-            result = PlayerUtils.getAllPlayerItems(player);
-        }
-        return result;
-    }
-
     private void updateLayout() {
         this.bgX = this.width / 2 - 92;
         this.bgY = this.height / 2 - 65;
@@ -397,7 +363,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.inventoryMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, (this.inventoryMode ? "item_select_list_inventory_mode" : "item_select_list_all_mode"), (this.inventoryMode ? playerItemList.size() : allItemList.size()));
+            Text text = Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, (this.inventoryMode ? "item_select_list_inventory_mode" : "item_select_list_all_mode"), (this.inventoryMode ? ItemUtils.getAllPlayerItems().size() : ItemUtils.getAllItems().size()));
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.ITEM.getCode(), new OperationButton(OperationButtonType.ITEM.getCode(), context -> {
@@ -415,7 +381,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.WRITABLE_BOOK);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, "set_count_s", ((ItemStack) (this.currentItem)).getCount());
+            Text text = Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, "set_count_s", this.currentItem.getCount());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.NBT.getCode(), new OperationButton(OperationButtonType.NBT.getCode(), context -> {
@@ -460,43 +426,33 @@ public class ItemSelectScreen extends Screen {
                             bgColor = 0xEE707070;
                         }
                         context.button.setX(itemX - 1).setY(itemY - 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 2).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 2)
-                                .setId(ItemUtils.getItemRegistryString(itemStack));
+                                .setId(ItemUtils.serializeItemStack(itemStack));
 
                         AbstractGuiUtils.fill(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), bgColor);
                         AbstractGuiUtils.renderItem(this.itemRenderer, itemStack, (int) context.button.getX() + 1, (int) context.button.getY() + 1, false);
 
                         // 绘制物品详情悬浮窗
                         if (context.button.isHovered()) {
-                            List<ITextComponent> list = itemStack.getTooltipLines(Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL);
-                            List<ITextComponent> list1 = Lists.newArrayList(list);
-                            Item item = itemStack.getItem();
-                            ItemGroup itemgroup = item.getItemCategory();
-                            if (itemgroup == null && item == Items.ENCHANTED_BOOK) {
-                                Map<Enchantment, Integer> map = EnchantmentHelper.getEnchantments(itemStack);
-                                if (map.size() == 1) {
-                                    Enchantment enchantment = map.keySet().iterator().next();
-                                    for (ItemGroup itemGroup1 : ItemGroup.TABS) {
-                                        if (itemGroup1.hasEnchantmentCategory(enchantment.category)) {
-                                            itemgroup = itemGroup1;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            this.visibleTags.forEach((resourceLocation, itemITag) -> {
-                                if (itemITag.contains(item)) {
-                                    list1.add(1, (Component.literal("#" + resourceLocation).color(Color.argb(0xFF8A2BE2)).toTextComponent()));
-                                }
+                            boolean advanced = Screen.hasShiftDown();
+                            List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
 
-                            });
-                            if (itemgroup != null) {
-                                list1.add(1, itemgroup.getDisplayName().copy().withStyle(TextFormatting.BLUE));
+                            Component tooltipComponent = Component.empty();
+                            for (int idx = 0; idx < tooltipList.size(); idx++) {
+                                Component component = tooltipList.get(idx);
+                                if (idx > 0) {
+                                    tooltipComponent = tooltipComponent.append("\n");
+                                }
+                                tooltipComponent = tooltipComponent.append(component);
                             }
+                            Text tooltipText = new Text(tooltipComponent);
 
                             FontRenderer font = itemStack.getItem().getFontRenderer(itemStack);
-                            GuiUtils.preItemToolTip(itemStack);
-                            this.renderWrappedToolTip(context.matrixStack, list1, (int) context.keyManager.getMouseX(), (int) context.keyManager.getMouseY(), (font == null ? this.font : font));
-                            GuiUtils.postItemToolTip();
+                            AbstractGuiUtils.drawPopupMessageWithSeason(
+                                    FontDrawArgs.ofPopo(tooltipText.stack(context.matrixStack).font(font == null ? this.font : font))
+                                            .x(context.keyManager.getMouseX())
+                                            .y(context.keyManager.getMouseY())
+                                            .padding(0)
+                            );
                         }
                     } else {
                         context.button.setX(0).setY(0).setWidth(0).setHeight(0).setId("");
@@ -506,61 +462,20 @@ public class ItemSelectScreen extends Screen {
         }
     }
 
-    private List<ItemStack> getItemList() {
-        return this.inventoryMode ? this.playerItemList : this.allItemList;
-    }
-
     /**
      * 更新搜索结果
      */
     private void updateSearchResults() {
         String s = this.inputField == null ? null : this.inputField.getValue();
         this.itemList.clear();
-        this.visibleTags.clear();
-        if (StringUtils.isNotNullOrEmpty(s)) {
-            // # 物品标签
-            if (s.startsWith("#")) {
-                s = s.substring(1);
-                this.updateVisibleTags(s);
-                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_TAGS).search(s.toLowerCase(Locale.ROOT)));
-            }
-            // $ 描述
-            else if (s.startsWith("$")) {
-                s = s.substring(1);
-                this.itemList.addAll(this.searchByDescription(s));
-            } else {
-                // @ modId
-                if (s.startsWith("@")) s = s.replaceAll("^@(\\S+)", "$1:");
-                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_NAMES).search(s.toLowerCase(Locale.ROOT)));
-            }
+        ClientPlayerEntity player = Minecraft.getInstance().player;
+        if (this.inventoryMode && player != null) {
+            this.itemList.addAll(ItemUtils.searchPlayerItems(player, s));
         } else {
-            this.itemList.addAll(new ArrayList<>(this.getItemList()));
+            this.itemList.addAll(ItemUtils.searchItems(s));
         }
         scrollBar.setScrollOffset(0);
     }
-
-    private void updateVisibleTags(String string) {
-        int i = string.indexOf(':');
-        Predicate<ResourceLocation> predicate;
-        if (i == -1) {
-            predicate = (resourceLocation) -> resourceLocation.getPath().contains(string);
-        } else {
-            String modId = string.substring(0, i).trim();
-            String itemId = string.substring(i + 1).trim();
-            predicate = (resourceLocation) -> resourceLocation.getNamespace().contains(modId) && (StringUtils.isNullOrEmpty(itemId) || resourceLocation.getPath().contains(itemId));
-        }
-
-        ITagCollection<Item> itagcollection = ItemTags.getAllTags();
-        itagcollection.getAvailableTags().stream().filter(predicate).forEach((resourceLocation) -> this.visibleTags.put(resourceLocation, itagcollection.getTag(resourceLocation)));
-    }
-
-    private List<ItemStack> searchByDescription(String keyword) {
-        return this.getItemList().stream()
-                .filter(item -> item.getTooltipLines(Minecraft.getInstance().player, ITooltipFlag.TooltipFlags.ADVANCED)
-                        .stream().anyMatch(component -> component.getString().contains(keyword))
-                ).collect(Collectors.toList());
-    }
-
 
     /**
      * 绘制按钮

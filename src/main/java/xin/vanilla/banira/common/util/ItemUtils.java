@@ -5,19 +5,29 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.command.arguments.ItemInput;
 import net.minecraft.command.arguments.ItemParser;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.data.Color;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +48,17 @@ public final class ItemUtils {
      * 物品堆信息缓存
      */
     private static final Map<String, ItemStackInfo> itemStackInfoCache = new ConcurrentHashMap<>();
+
+    /**
+     * Tooltip缓存
+     */
+    @OnlyIn(Dist.CLIENT)
+    private static final Map<String, List<Component>> tooltipCache = new ConcurrentHashMap<>();
+
+    /**
+     * Mod名称缓存
+     */
+    private static final Map<String, String> modNameCache = new ConcurrentHashMap<>();
 
     /**
      * 物品堆信息类
@@ -249,7 +270,7 @@ public final class ItemUtils {
 
     // endregion
 
-    // region 获取所有物品列表
+    // region 所有物品
 
     /**
      * 清除物品缓存
@@ -257,6 +278,8 @@ public final class ItemUtils {
     public static void clearCache() {
         allItemsCache = Collections.emptyList();
         itemStackInfoCache.clear();
+        tooltipCache.clear();
+        modNameCache.clear();
     }
 
     /**
@@ -279,6 +302,9 @@ public final class ItemUtils {
     private static List<ItemStack> buildAllItemsList() {
         List<ItemStack> items = new ArrayList<>();
         Set<Item> addedItems = new HashSet<>();
+
+        items.add(new ItemStack(Items.AIR));
+        addedItems.add(Items.AIR);
 
         try {
             // 首先从创造模式搜索标签中获取所有物品变体
@@ -376,7 +402,7 @@ public final class ItemUtils {
 
             // 获取描述, 仅客户端
             try {
-                if (Minecraft.getInstance() != null && Minecraft.getInstance().player != null) {
+                if (Minecraft.getInstance().player != null) {
                     List<ITextComponent> tooltip = stack.getTooltipLines(
                             Minecraft.getInstance().player,
                             ITooltipFlag.TooltipFlags.NORMAL
@@ -600,5 +626,360 @@ public final class ItemUtils {
         return ItemStack.EMPTY;
     }
 
-    // endregion
+    // endregion 所有物品
+
+    // region 玩家物品
+
+    /**
+     * 获取玩家身上的所有物品
+     *
+     * @return 玩家身上的所有物品列表副本
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static List<ItemStack> getAllPlayerItems() {
+        try {
+            PlayerEntity player = Minecraft.getInstance().player;
+            if (player != null) {
+                return getAllPlayerItems(player);
+            }
+        } catch (Throwable ignored) {
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * 获取玩家身上的所有物品
+     *
+     * @param player 玩家
+     * @return 玩家身上的所有物品列表副本
+     */
+    @Nonnull
+    public static List<ItemStack> getAllPlayerItems(@Nonnull PlayerEntity player) {
+        List<ItemStack> items = new ArrayList<>();
+        items.add(new ItemStack(Items.AIR));
+
+        PlayerInventory inventory = player.inventory;
+        if (inventory == null) {
+            return items;
+        }
+        // 获取所有槽位的物品
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (!stack.isEmpty()) {
+                items.add(stack.copy());
+            }
+        }
+        return items;
+    }
+
+    /**
+     * 模糊搜索玩家物品
+     * <p>
+     * - @：搜索注册ID
+     * <p>
+     * - #：搜索标签
+     * <p>
+     * - $：搜索描述
+     *
+     * @param player  玩家
+     * @param keyword 搜索关键字
+     * @return 匹配的物品列表
+     */
+    public static List<ItemStack> searchPlayerItems(@Nonnull PlayerEntity player, String keyword) {
+        List<ItemStack> playerItems = getAllPlayerItems(player);
+        if (StringUtils.isNullOrEmpty(keyword)) {
+            return playerItems;
+        }
+
+        String trimmedKeyword = keyword.trim();
+        if (trimmedKeyword.isEmpty()) {
+            return playerItems;
+        }
+
+        return playerItems.stream()
+                .filter(stack -> {
+                    if (stack == null || stack.isEmpty()) return false;
+                    ItemStackInfo info = getItemStackInfo(stack);
+                    return matchesKeyword(info, trimmedKeyword);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 模糊搜索玩家物品
+     * 支持多个关键字
+     * <p>
+     * - @：搜索注册ID
+     * <p>
+     * - #：搜索标签
+     * <p>
+     * - $：搜索描述
+     *
+     * @param player   玩家
+     * @param keywords 搜索关键字数组
+     * @return 匹配的物品列表
+     */
+    public static List<ItemStack> searchPlayerItems(@Nonnull PlayerEntity player, String... keywords) {
+        List<ItemStack> playerItems = getAllPlayerItems(player);
+        if (keywords == null || keywords.length == 0) {
+            return playerItems;
+        }
+
+        List<String> validKeywords = Arrays.stream(keywords)
+                .filter(StringUtils::isNotNullOrEmpty)
+                .map(String::trim)
+                .filter(k -> !k.isEmpty())
+                .collect(Collectors.toList());
+
+        if (validKeywords.isEmpty()) {
+            return playerItems;
+        }
+
+        return playerItems.stream()
+                .filter(stack -> {
+                    if (stack == null || stack.isEmpty()) return false;
+                    ItemStackInfo info = getItemStackInfo(stack);
+                    for (String keyword : validKeywords) {
+                        if (!matchesKeyword(info, keyword)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // endregion 玩家物品管理
+
+    // region Tooltip
+
+    /**
+     * 获取Mod名称
+     */
+    @Nonnull
+    public static String getModName(@Nonnull String modId) {
+        if (StringUtils.isNullOrEmpty(modId) || "minecraft".equals(modId)) {
+            return "Minecraft";
+        }
+        return modNameCache.computeIfAbsent(modId, id -> {
+            try {
+                return ModList.get().getModContainerById(id)
+                        .map(container -> container.getModInfo().getDisplayName())
+                        .orElse(id);
+            } catch (Exception e) {
+                LOGGER.debug("Failed to get mod name for: {}", id, e);
+                return id;
+            }
+        });
+    }
+
+    /**
+     * 获取物品的完整Tooltip列表
+     *
+     * @param itemStack 物品堆
+     * @param player    玩家
+     * @param advanced  是否显示高级信息
+     * @return Tooltip列表
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable PlayerEntity player, boolean advanced) {
+        if (itemStack.isEmpty()) {
+            List<Component> tooltip = new ArrayList<>();
+            ITextComponent hoverName = itemStack.getHoverName();
+            if (hoverName instanceof IFormattableTextComponent) {
+                tooltip.add(Component.object(hoverName));
+            } else {
+                tooltip.add(Component.literal(hoverName.getString()));
+            }
+            if (advanced) {
+                ResourceLocation registryName = getItemRegistry(itemStack);
+                if (registryName != null) {
+                    Component registryComponent = Component.literal(registryName.toString())
+                            .color(Color.argb(0xFF404040));
+                    tooltip.add(registryComponent);
+                }
+            }
+            return tooltip;
+        }
+
+        String cacheKey = serializeItemStack(itemStack) + "|advanced:" + advanced;
+        if (player != null) {
+            cacheKey += "|player:" + player.getUUID();
+        }
+
+        return tooltipCache.computeIfAbsent(cacheKey, k -> {
+            List<Component> result = new ArrayList<>();
+
+            try {
+                // 获取基础tooltip
+                List<ITextComponent> baseTooltip = new ArrayList<>();
+                if (player != null) {
+                    baseTooltip.addAll(itemStack.getTooltipLines(
+                            player,
+                            advanced ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL
+                    ));
+                } else {
+                    baseTooltip.add(itemStack.getHoverName());
+                }
+
+                if (baseTooltip.isEmpty()) {
+                    return result;
+                }
+
+                Item item = itemStack.getItem();
+                ResourceLocation registryName = getItemRegistry(itemStack);
+                String registryString = registryName != null ? registryName.toString() : null;
+                boolean baseTooltipContainsRegistry = false;
+
+                // 1. 物品名称
+                ITextComponent nameComponent = baseTooltip.get(0);
+                Component name;
+                if (nameComponent instanceof IFormattableTextComponent) {
+                    name = Component.object(nameComponent);
+                } else {
+                    name = Component.literal(nameComponent.getString());
+                }
+                result.add(name);
+
+                // 检查基础tooltip是否包含注册ID
+                for (ITextComponent textComponent : baseTooltip) {
+                    String text = textComponent.getString();
+                    if (registryString != null && text.contains(registryString)) {
+                        baseTooltipContainsRegistry = true;
+                        break;
+                    }
+                }
+
+                // 普通模式：物品名称 -> 描述 -> 物品ID
+                if (!advanced) {
+                    // 2. 描述
+                    for (int i = 1; i < baseTooltip.size(); i++) {
+                        ITextComponent textComponent = baseTooltip.get(i);
+                        if (textComponent instanceof IFormattableTextComponent) {
+                            IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
+                            if (StringUtils.isNotNullOrEmpty(c.getString())) {
+                                result.add(Component.object(textComponent));
+                            }
+                        } else {
+                            String text = textComponent.getString();
+                            if (StringUtils.isNotNullOrEmpty(text)) {
+                                result.add(Component.literal(text));
+                            }
+                        }
+                    }
+                    // 3. 物品ID
+                    if (registryName != null && !baseTooltipContainsRegistry) {
+                        Component registryComponent = Component.literal(registryName.toString())
+                                .color(Color.argb(0xFF404040));
+                        result.add(registryComponent);
+                    }
+                    return result;
+                }
+
+                // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
+                // 2. 物品组信息
+                ItemGroup itemGroup = item.getItemCategory();
+                if (itemGroup == null && item == Items.ENCHANTED_BOOK) {
+                    // 附魔书的特殊处理
+                    Map<Enchantment, Integer> enchantments = EnchantmentHelper.getEnchantments(itemStack);
+                    if (enchantments.size() == 1) {
+                        Enchantment enchantment = enchantments.keySet().iterator().next();
+                        for (ItemGroup group : ItemGroup.TABS) {
+                            if (group.hasEnchantmentCategory(enchantment.category)) {
+                                itemGroup = group;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (itemGroup != null) {
+                    IFormattableTextComponent groupName = itemGroup.getDisplayName().copy();
+                    groupName.withStyle(TextFormatting.BLUE);
+                    Component groupComponent = Component.object(groupName);
+                    result.add(groupComponent);
+                }
+
+                // 3. 描述
+                for (int i = 1; i < baseTooltip.size(); i++) {
+                    ITextComponent textComponent = baseTooltip.get(i);
+                    if (textComponent instanceof IFormattableTextComponent) {
+                        IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
+                        if (StringUtils.isNotNullOrEmpty(c.getString())) {
+                            result.add(Component.object(textComponent));
+                        }
+                    } else {
+                        String text = textComponent.getString();
+                        if (StringUtils.isNotNullOrEmpty(text)) {
+                            result.add(Component.literal(text));
+                        }
+                    }
+                }
+
+                // 5. 标签列表
+                try {
+                    List<ResourceLocation> tagIds = new ArrayList<>(item.getTags());
+                    tagIds.sort(Comparator.comparing(ResourceLocation::toString));
+                    for (ResourceLocation tagId : tagIds) {
+                        Component tagComponent = Component.literal("#" + tagId)
+                                .color(Color.argb(0xFF8A2BE2));
+                        result.add(tagComponent);
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Failed to get tags for item: {}", getItemRegistryString(itemStack), e);
+                }
+
+                // 6. 物品ID
+                if (registryName != null && !baseTooltipContainsRegistry) {
+                    Component registryComponent = Component.literal(registryName.toString())
+                            .color(Color.argb(0xFF404040));
+                    result.add(registryComponent);
+                }
+
+                // 7. 模组名称
+                if (registryName != null && !"minecraft".equals(registryName.getNamespace())) {
+                    String modName = getModName(registryName.getNamespace());
+                    Component modComponent = Component.literal(modName)
+                            .color(Color.argb(0xFF808080));
+                    result.add(modComponent);
+                }
+
+                return result;
+            } catch (Exception e) {
+                LOGGER.error("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
+                if (result.isEmpty()) {
+                    ITextComponent hoverName = itemStack.getHoverName();
+                    if (hoverName instanceof IFormattableTextComponent) {
+                        result.add(Component.object(hoverName));
+                    } else {
+                        result.add(Component.literal(hoverName.getString()));
+                    }
+                }
+                return result;
+            }
+        });
+    }
+
+    /**
+     * 获取物品的完整Tooltip列表
+     *
+     * @param itemStack 物品堆
+     * @param advanced  是否显示高级信息
+     * @return Tooltip列表
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
+        try {
+            PlayerEntity player = Minecraft.getInstance().player;
+            return getItemTooltip(itemStack, player, advanced);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get client player for tooltip", e);
+            return getItemTooltip(itemStack, null, advanced);
+        }
+    }
+
+    // endregion Tooltip
+
 }

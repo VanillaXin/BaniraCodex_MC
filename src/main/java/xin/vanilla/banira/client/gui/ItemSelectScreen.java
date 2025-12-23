@@ -180,8 +180,10 @@ public class ItemSelectScreen extends Screen {
         this.inputField.setValue(this.inputFieldText);
         // 添加文本变化监听
         this.inputField.setResponder(text -> {
-            this.inputFieldText = text;
-            this.updateSearchResults();
+            if (!text.equals(this.inputFieldText)) {
+                this.inputFieldText = text;
+                this.updateSearchResults();
+            }
         });
         this.addButton(this.inputField);
 

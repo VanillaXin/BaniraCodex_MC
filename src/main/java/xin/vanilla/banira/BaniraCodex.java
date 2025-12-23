@@ -19,6 +19,7 @@ import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.LanguageHelper;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.network.NetworkInit;
 
 @Mod(BaniraCodex.MODID)
 @Accessors(fluent = true)
@@ -36,7 +37,7 @@ public class BaniraCodex {
      * 服务端实例
      */
     @Getter
-    private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, true);
+    private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
 
     /**
      * 语言管理器
@@ -54,8 +55,17 @@ public class BaniraCodex {
     );
 
     public BaniraCodex() {
+        // 注册服务器启动和关闭事件
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
+
+        // 注册事件
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
+
+        // 注册网络通道
+        NetworkInit.register();
     }
 
     /**
@@ -65,15 +75,15 @@ public class BaniraCodex {
         CustomConfig.loadCustomConfig(false);
     }
 
-    private void onServerStarting(FMLServerStartingEvent event) {
+    private void onServerStarting(final FMLServerStartingEvent event) {
         serverInstance().setKey(event.getServer()).setValue(true);
         playerDataManager.clearCache();
     }
 
-    private void onServerStarted(FMLServerStartedEvent event) {
+    private void onServerStarted(final FMLServerStartedEvent event) {
     }
 
-    private void onServerStopping(FMLServerStoppingEvent event) {
+    private void onServerStopping(final FMLServerStoppingEvent event) {
         serverInstance().setValue(false);
     }
 

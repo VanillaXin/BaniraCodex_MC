@@ -10,8 +10,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraftforge.fml.network.PacketDistributor;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 
 public final class MessageUtils {
@@ -120,20 +118,6 @@ public final class MessageUtils {
      */
     public static void broadcastPacket(IPacket<?> packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player -> player.connection.send(packet));
-    }
-
-    /**
-     * 发送数据包至服务器
-     */
-    public static <MSG> void sendPacketToServer(SimpleChannel channel, MSG msg) {
-        channel.sendToServer(msg);
-    }
-
-    /**
-     * 发送数据包至玩家
-     */
-    public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayerEntity player) {
-        channel.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
 }

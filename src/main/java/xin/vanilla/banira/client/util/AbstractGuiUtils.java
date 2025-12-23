@@ -6,7 +6,6 @@ import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -26,6 +25,8 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.enums.EnumRotationCenter;
+import xin.vanilla.banira.client.gui.component.BaniraButton;
+import xin.vanilla.banira.client.gui.component.BaniraTextField;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -1571,18 +1572,17 @@ public final class AbstractGuiUtils {
 
     // region 重写方法签名
 
-    public static TextFieldWidget newTextFieldWidget(int x, int y, int width, int height, Component content) {
+    public static BaniraTextField newTextFieldWidget(int x, int y, int width, int height, Component content) {
         return newTextFieldWidget(getFont(), x, y, width, height, content);
     }
 
-    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
-        return new TextFieldWidget(font, x, y, width, height, content.toTextComponent());
+    public static BaniraTextField newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
+        return new BaniraTextField(font, x, y, width, height, content.toTextComponent());
     }
 
-    public static Button newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
-        return new Button(x, y, width, height, content.toTextComponent(), onPress);
+    public static BaniraButton newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
+        return new BaniraButton(x, y, width, height, content.toTextComponent(), onPress);
     }
 
     // endregion 重写方法签名
 }
-

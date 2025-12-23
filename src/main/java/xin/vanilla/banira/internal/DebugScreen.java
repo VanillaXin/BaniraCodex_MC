@@ -16,6 +16,7 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.StringInputScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -37,6 +38,7 @@ public class DebugScreen extends Screen {
             , "textures/gui/aotake_cat.png"
             , "textures/gui/narcissus_cat.png"
             , "textures/gui/snowflake_cat.png"
+            , "textures/gui/sakura_moe.png"
     );
 
     /**
@@ -161,9 +163,9 @@ public class DebugScreen extends Screen {
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL) && keyManager.isKeyPressed(GLFWKey.GLFW_KEY_W)) {
             this.warp = !this.warp;
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
-            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived1((itemStack) ->
-                LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack))
-            )));
+            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
+                LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));
+            })));
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                     .setParentScreen(this)
@@ -192,6 +194,14 @@ public class DebugScreen extends Screen {
                     )
                     .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+        } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
+            AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
+            args.parentScreen(this)
+                    .defaultAdvancement(BaniraCodex.resourceFactory().empty())
+                    .onDataReceived(input -> {
+                        LOGGER.debug("Selected advancement: {}", input);
+                    });
+            Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
         }
         this.keyManager.keyReleased(keyCode);
         return super.keyReleased(keyCode, scanCode, modifiers);

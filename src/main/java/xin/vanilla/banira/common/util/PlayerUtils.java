@@ -1,5 +1,7 @@
 package xin.vanilla.banira.common.util;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -14,12 +16,39 @@ import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Accessors(fluent = true)
 public final class PlayerUtils {
+
+    /**
+     * 已安装mod的玩家列表</br>
+     * 玩家UUID:是否已同步数据</br>
+     * 在该map的玩家都为已安装mod</br>
+     * 布尔值为false时为未同步数据，将会在玩家tick事件中检测并同步数据
+     */
+    @Getter
+    private static final Map<String, Boolean> playerDataStatus = new ConcurrentHashMap<>();
 
     private PlayerUtils() {
     }
+
+    /**
+     * 复制玩家客户端设置
+     *
+     * @param originalPlayer 原始玩家
+     * @param targetPlayer   目标玩家
+     */
+    public static void cloneClientSettings(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
+        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
+        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+
+        target.language(original.language());
+    }
+
+    // region 玩家信息
 
     public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
         return player.getUUID();
@@ -63,18 +92,7 @@ public final class PlayerUtils {
                 : BaniraCodex.serverInstance().key().getPlayerList().getPlayer(UUID.fromString(uuid));
     }
 
-    /**
-     * 复制玩家客户端设置
-     *
-     * @param originalPlayer 原始玩家
-     * @param targetPlayer   目标玩家
-     */
-    public static void cloneClientSettings(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
-
-        target.language(original.language());
-    }
+    // endregion 玩家信息
 
     // region 玩家物品管理
 
@@ -333,5 +351,24 @@ public final class PlayerUtils {
     }
 
     // endregion 玩家物品管理
+
+    // region 玩家状态
+
+    /**
+     * 玩家是否安装mod
+     */
+    public static boolean isPlayerModInstalled(@Nonnull PlayerEntity player) {
+        return PlayerUtils.playerDataStatus.containsKey(PlayerUtils.getPlayerUUIDString(player));
+    }
+
+    /**
+     * 玩家数据是否同步</br>
+     * 默认为同步
+     */
+    public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player) {
+        return PlayerUtils.playerDataStatus.getOrDefault(PlayerUtils.getPlayerUUIDString(player), true);
+    }
+
+    // endregion 玩家状态
 
 }

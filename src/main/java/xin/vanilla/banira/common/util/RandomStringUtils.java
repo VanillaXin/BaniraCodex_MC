@@ -8,6 +8,8 @@ import java.util.stream.IntStream;
  * 随机字符串生成工具类
  */
 public final class RandomStringUtils {
+    private RandomStringUtils() {
+    }
 
     // 预定义字符集
     private static final String DIGITS = "0123456789";
@@ -19,8 +21,6 @@ public final class RandomStringUtils {
     private static final String ASCII_PRINTABLE =
             " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
-    private RandomStringUtils() {
-    }
 
     /**
      * 生成随机字符串

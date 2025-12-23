@@ -11,15 +11,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public final class StringUtils {
+    private StringUtils() {
+    }
 
     public static final String FORMAT_REGEX = "%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
 
-    private StringUtils() {
-    }
 
     /**
      * 将字符串转为 boolean
@@ -313,19 +312,25 @@ public final class StringUtils {
      * 根据分隔符翻转字符串
      */
     public static String reverseBySeparatorElegant(String str, String separator) {
-        return str == null
-                ? null
-                : (separator == null || separator.isEmpty()
-                ? new StringBuilder(str).reverse().toString()
-                : Arrays.stream(str.split(separator, -1))
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toList(),
-                        list -> {
-                            Collections.reverse(list);
-                            return String.join(separator, list);
-                        }
-                ))
-        );
+        if (str == null) {
+            return null;
+        }
+        if (isNullOrEmpty(separator)) {
+            return new StringBuilder(str).reverse().toString();
+        }
+
+        int sepLen = separator.length();
+        List<String> parts = new ArrayList<>();
+        int from = 0;
+        int idx;
+        while ((idx = str.indexOf(separator, from)) >= 0) {
+            parts.add(str.substring(from, idx));
+            from = idx + sepLen;
+        }
+        parts.add(str.substring(from));
+
+        Collections.reverse(parts);
+        return String.join(separator, parts);
     }
 
     /**

@@ -43,10 +43,13 @@ import java.util.stream.Collectors;
  */
 @OnlyIn(Dist.CLIENT)
 public final class AbstractGuiUtils {
+    private AbstractGuiUtils() {
+    }
 
     public static final int ITEM_ICON_SIZE = 16;
 
     private static final Random random = new Random();
+
 
     // region 设置深度
 

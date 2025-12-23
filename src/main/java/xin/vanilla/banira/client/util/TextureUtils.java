@@ -10,12 +10,8 @@ import net.minecraft.resources.IResource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.TextureStitchEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.ResourceFactory;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -24,12 +20,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @OnlyIn(Dist.CLIENT)
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TextureUtils {
+    private TextureUtils() {
+    }
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
     /**
      * 默认主题文件名
      */
@@ -43,10 +43,10 @@ public final class TextureUtils {
      */
     public static final String DEFAULT_EFFECT_DIR = "textures/mob_effect/";
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Map<ResourceLocation, NativeImage> CACHE = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
 
-    private TextureUtils() {
-    }
 
     public static ResourceLocation loadCustomTexture(ResourceFactory factory, String textureName) {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
@@ -106,10 +106,6 @@ public final class TextureUtils {
         }
         return effectIcon;
     }
-
-    private static final Map<ResourceLocation, NativeImage> CACHE = new HashMap<>();
-    private static final Map<ResourceLocation, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new HashMap<>();
-    private static final Map<ResourceLocation, NinePatchInfo> NINE_PATCH_CACHE = new HashMap<>();
 
     /**
      * 九宫格信息
@@ -460,11 +456,11 @@ public final class TextureUtils {
         return info;
     }
 
-    @SubscribeEvent
-    public static void resourceReloadEvent(TextureStitchEvent.Post event) {
-        if (BaniraCodex.MODID.equals(event.getMap().location().getNamespace())) {
-            clearAll();
-            LOGGER.debug("Cleared texture cache");
-        }
+    /**
+     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 BaniraEventBus 触发。
+     */
+    public static void resourceReloadEvent() {
+        clearAll();
+        LOGGER.debug("Cleared texture cache");
     }
 }

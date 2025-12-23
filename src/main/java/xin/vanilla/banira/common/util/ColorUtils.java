@@ -6,7 +6,6 @@ import xin.vanilla.banira.common.enums.EnumMCColor;
 import javax.annotation.Nullable;
 
 public final class ColorUtils {
-
     private ColorUtils() {
     }
 

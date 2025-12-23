@@ -16,10 +16,11 @@ import static org.lwjgl.BufferUtils.createByteBuffer;
  */
 @OnlyIn(Dist.CLIENT)
 public final class DialogUtils {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private DialogUtils() {
     }
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
 
     /**
      * 对话框图标类型

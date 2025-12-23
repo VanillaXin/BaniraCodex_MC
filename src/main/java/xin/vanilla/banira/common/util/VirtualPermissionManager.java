@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public final class VirtualPermissionManager {
+    private VirtualPermissionManager() {
+    }
 
     /**
      * 服务端虚拟权限表
@@ -30,8 +32,6 @@ public final class VirtualPermissionManager {
      */
     private static final Map<String, Set<String>> OP_MAP_CLIENT = deserializeClient();
 
-    private VirtualPermissionManager() {
-    }
 
     /**
      * 添加权限（合并原有权限）

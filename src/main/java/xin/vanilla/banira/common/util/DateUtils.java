@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class DateUtils {
+    public DateUtils() {
+    }
 
     public static final String ISO_YM_FORMAT = "yyyyMM";
     public static final String ISO_YMD_FORMAT = "yyyyMMdd";
@@ -45,8 +47,6 @@ public final class DateUtils {
     private static final String[] WEEK_NAMES = new String[]{"星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"};
     private static final String[] WEEK_NAMES_SIMPLE = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
-    public DateUtils() {
-    }
 
     public static String getWeekName(int week) {
         return WEEK_NAMES[week - 1];

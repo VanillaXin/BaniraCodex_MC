@@ -15,10 +15,14 @@ import java.util.function.Predicate;
 
 @SuppressWarnings("sunapi")
 public final class FieldUtils {
+    private FieldUtils() {
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String UNSAFE_FIELD_NAME;
     private static final Unsafe UNSAFE;
+
 
     /**
      * 缓存字段
@@ -37,9 +41,6 @@ public final class FieldUtils {
         } catch (Exception e) {
             throw new RuntimeException("Unable to access Unsafe instance", e);
         }
-    }
-
-    private FieldUtils() {
     }
 
     public static Class<?> getClass(Object o) {

@@ -12,13 +12,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class JsonUtils {
+    private JsonUtils() {
+    }
+
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
     public static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
 
     private static final Pattern ARRAY_INDEX_PATTERN = Pattern.compile("^\\[(-?\\d+)]");
-
-    private JsonUtils() {
-    }
 
 
     private static JsonElement handleArrayAccess(JsonElement current, String key, Matcher matcher) {

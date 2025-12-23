@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
 public final class GLFWKeyUtils {
+    private GLFWKeyUtils() {
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final Map<String, Integer> KEY_NAME_TO_CODE = new HashMap<>();
@@ -55,8 +58,6 @@ public final class GLFWKeyUtils {
         }
     }
 
-    private GLFWKeyUtils() {
-    }
 
     public static List<Integer> getKeyCodes(String... keyNames) {
         List<Integer> codes = new ArrayList<>();

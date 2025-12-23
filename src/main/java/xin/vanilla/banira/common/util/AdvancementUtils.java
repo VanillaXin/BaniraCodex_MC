@@ -20,7 +20,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
-public class AdvancementUtils {
+public final class AdvancementUtils {
+    private AdvancementUtils() {
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**

@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @Accessors(fluent = true)
 public final class PacketUtils {
+    private PacketUtils() {
+    }
 
     /**
      * 分片网络包缓存
@@ -21,8 +23,6 @@ public final class PacketUtils {
     @Getter
     private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
 
-    private PacketUtils() {
-    }
 
     /**
      * 发送数据包至服务器

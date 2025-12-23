@@ -13,6 +13,9 @@ import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
 
 public final class MessageUtils {
+    private MessageUtils() {
+    }
+
 
     /**
      * 广播消息

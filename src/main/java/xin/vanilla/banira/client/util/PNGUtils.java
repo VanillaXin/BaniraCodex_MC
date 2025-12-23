@@ -19,6 +19,8 @@ import java.util.zip.InflaterInputStream;
 
 @OnlyIn(Dist.CLIENT)
 public final class PNGUtils {
+    private PNGUtils() {
+    }
 
     // PNG 文件签名
     private static final byte[] PNG_SIGNATURE = {(byte) 137, 80, 78, 71, 13, 10, 26, 10};
@@ -36,8 +38,6 @@ public final class PNGUtils {
     // 解压缩缓冲区大小
     private static final int INFLATE_BUFFER_SIZE = 1024;
 
-    private PNGUtils() {
-    }
 
     /**
      * 根据关键字读取PNG文件中的zTxt信息

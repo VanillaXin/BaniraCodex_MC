@@ -7,17 +7,14 @@ import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.api.ResourceFactory;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
-import xin.vanilla.banira.common.util.BaniraScheduler;
-import xin.vanilla.banira.common.util.LanguageHelper;
-import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
@@ -55,17 +52,14 @@ public class BaniraCodex {
     );
 
     public BaniraCodex() {
-        // 注册服务器启动和关闭事件
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
-
-        // 注册事件
+        // 注册事件总线
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
-
+        MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
         // 注册网络通道
         NetworkInit.register();
+
+        registerBaniraEvent();
     }
 
     /**
@@ -75,16 +69,30 @@ public class BaniraCodex {
         CustomConfig.loadCustomConfig(false);
     }
 
-    private void onServerStarting(final FMLServerStartingEvent event) {
-        serverInstance().setKey(event.getServer()).setValue(true);
-        playerDataManager.clearCache();
-    }
+    private void registerBaniraEvent() {
+        BaniraEventBus.registerServerStarting(server ->
+                serverInstance().setKey(server).setValue(true)
+        );
+        BaniraEventBus.registerServerStarting(server ->
+                playerDataManager.clearCache()
+        );
+        BaniraEventBus.registerServerStarting(server ->
+                AdvancementUtils.clearAdvancementData()
+        );
+        BaniraEventBus.registerServerStopping(server ->
+                serverInstance().setValue(false)
+        );
+        BaniraEventBus.registerPlayerSave(player ->
+                playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
+        );
 
-    private void onServerStarted(final FMLServerStartedEvent event) {
-    }
-
-    private void onServerStopping(final FMLServerStoppingEvent event) {
-        serverInstance().setValue(false);
+        if (FMLEnvironment.dist.isClient()) {
+            BaniraEventBus.registerPlayerLoggedOut(player ->
+                    AdvancementUtils.clearAdvancementData()
+            );
+            BaniraEventBus.registerClientGuiChanged(LogoModifier::modifyLogo);
+            BaniraEventBus.registerClientTextureReload(TextureUtils::resourceReloadEvent);
+        }
     }
 
 }

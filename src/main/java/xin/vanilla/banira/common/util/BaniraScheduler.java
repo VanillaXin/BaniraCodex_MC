@@ -15,6 +15,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class BaniraScheduler {
+    private BaniraScheduler() {
+    }
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -26,8 +28,6 @@ public final class BaniraScheduler {
     private static final AtomicLong clientExecutedCount = new AtomicLong(0);
     private static final AtomicLong clientTicks = new AtomicLong(0);
 
-    private BaniraScheduler() {
-    }
 
     public static void schedule(@Nonnull MinecraftServer server, int delayTicks, @Nonnull Runnable action) {
         long executeAt = server.getTickCount() + Math.max(0, delayTicks);

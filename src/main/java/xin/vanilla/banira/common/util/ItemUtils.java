@@ -35,6 +35,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public final class ItemUtils {
+    private ItemUtils() {
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final ResourceLocation UNKNOWN_ITEM = BaniraCodex.resourceFactory().create("unknown_item");
@@ -60,6 +63,7 @@ public final class ItemUtils {
      */
     private static final Map<String, String> modNameCache = new ConcurrentHashMap<>();
 
+
     /**
      * 物品堆信息类
      */
@@ -75,9 +79,6 @@ public final class ItemUtils {
             this.description = description;
             this.tags = tags;
         }
-    }
-
-    private ItemUtils() {
     }
 
     // region 获取物品信息

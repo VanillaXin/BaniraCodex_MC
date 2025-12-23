@@ -10,16 +10,16 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  */
 @OnlyIn(Dist.CLIENT)
 public final class MinecraftUtils {
-
     private MinecraftUtils() {
     }
+
 
     /**
      * 获取当前连接的服务器IP
      *
      * @return 若未连接服务器则返回空字符串
      */
-    public static String getServerIP() {
+    public static String getServerIp() {
         Minecraft minecraft = Minecraft.getInstance();
         ServerData currentServer = minecraft.getCurrentServer();
         return currentServer != null ? currentServer.ip : "";

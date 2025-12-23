@@ -33,8 +33,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public final class CommandUtils {
+    private CommandUtils() {
+    }
 
     private static final Logger LOGGER = LogManager.getLogger();
+
 
     public static boolean checkModStatus(CommandContext<CommandSource> context, Supplier<Boolean> modDisabled) {
         if (modDisabled.get()) {

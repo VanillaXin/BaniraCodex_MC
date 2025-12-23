@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Accessors(fluent = true)
 public final class PlayerUtils {
+    private PlayerUtils() {
+    }
 
     /**
      * 已安装mod的玩家列表</br>
@@ -32,8 +34,6 @@ public final class PlayerUtils {
     @Getter
     private static final Map<String, Boolean> playerDataStatus = new ConcurrentHashMap<>();
 
-    private PlayerUtils() {
-    }
 
     /**
      * 复制玩家客户端设置

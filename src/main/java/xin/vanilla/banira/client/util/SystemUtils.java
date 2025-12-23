@@ -12,10 +12,11 @@ import java.nio.file.Paths;
  * 系统工具类
  */
 public final class SystemUtils {
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private SystemUtils() {
     }
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
 
     /**
      * 打开指定路径的文件夹

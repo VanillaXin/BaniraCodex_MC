@@ -15,7 +15,6 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.StringInputScreen;
@@ -73,18 +72,27 @@ public class DebugScreen extends Screen {
 
         AbstractGuiUtils.fill(stack, 10, 10, this.width - 20, this.height - 20, 0x44000000, 8);
 
-        // 白色矩形
-        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.BACKGROUND, (s) ->
-                AbstractGuiUtils.fill(s, (super.width - 50) / 2, (super.height - 50) / 2, 50, 50, 0xFFFFFFFF)
-        );
-        // 红色矩形
-        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.OVERLAY, (s) ->
-                AbstractGuiUtils.fill(s, (super.width - 10) / 2, (super.height - 10) / 2, 10, 10, 0xFFFF0000)
-        );
-        // 黑色矩形
-        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.FOREGROUND, (s) ->
-                AbstractGuiUtils.fill(s, (super.width - 30) / 2, (super.height - 30) / 2, 30, 30, 0xFF000000)
-        );
+        // // 白色矩形
+        // AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.BACKGROUND, (s) ->
+        //         AbstractGuiUtils.fill(s, (super.width - 50) / 2, (super.height - 50) / 2, 50, 50, 0xFFFFFFFF)
+        // );
+        // // 红色矩形
+        // AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.OVERLAY, (s) ->
+        //         AbstractGuiUtils.fill(s, (super.width - 10) / 2, (super.height - 10) / 2, 10, 10, 0xFFFF0000)
+        // );
+        // // 黑色矩形
+        // AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.FOREGROUND, (s) ->
+        //         AbstractGuiUtils.fill(s, (super.width - 30) / 2, (super.height - 30) / 2, 30, 30, 0xFF000000)
+        // );
+
+        AbstractGuiUtils.drawCircle(stack, super.width / 2f, super.height / 2f, 15, 0x33FFFFFF);
+        AbstractGuiUtils.drawEllipse(stack, super.width / 2f, super.height / 2f, 10, 15, 45f, 0x33FFFFFF);
+        AbstractGuiUtils.drawCircleOutline(stack, super.width / 2f, super.height / 2f, 25, 2, 0x33FFFFFF);
+        AbstractGuiUtils.drawSector(stack, super.width / 2f, super.height / 2f, 35, 0, 75, 0x33FFFFFF);
+        AbstractGuiUtils.drawArc(stack, super.width / 2f, super.height / 2f, 35, 180, 255, 5, 0x33FFFFFF);
+        AbstractGuiUtils.drawBox(stack, (super.width - 60) / 2f, (super.height - 60) / 2f, 60, 60, 0, 15, 15, 15, 0x33000000);
+        AbstractGuiUtils.drawBox(stack, (super.width - 70) / 2f, (super.height - 70) / 2f, 70, 70, 16, 0x33000000);
+        AbstractGuiUtils.drawBoxOutline(stack, (super.width - 90) / 2f, (super.height - 90) / 2f, 90, 90, 8, 2, 0x33FFFFFF);
 
         int hudY = 1;
         AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("contentLines：" + contentLines)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));

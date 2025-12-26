@@ -7,16 +7,21 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL11C;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
@@ -1185,6 +1190,691 @@ public final class AbstractGuiUtils {
     }
 
     //  endregion 绘制形状
+
+    // region 绘制圆
+
+    private static void setColor(BufferBuilder builder, int argb) {
+        builder.color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+    }
+
+    private static void addVertexWithColor(BufferBuilder builder, Matrix4f m4, float x, float y, float z, int argb) {
+        builder.vertex(m4, x, y, z);
+        setColor(builder, argb);
+        builder.endVertex();
+    }
+
+    /**
+     * 计算圆角分段数
+     */
+    private static int calculateOptimalSegments(float radius) {
+        if (radius <= 0) return 0;
+        return Math.min(Math.max(32, (int) (radius * 2.5f + 16)), 128);
+    }
+
+    /**
+     * 计算圆形高质量分段数
+     */
+    private static int calculateCircleSegments(float radius) {
+        if (radius <= 0) return 0;
+        return Math.min(Math.max(64, (int) (radius * 6.0f + 32)), 256);
+    }
+
+    private static void setupBlendRender() {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableTexture();
+    }
+
+    private static void finishBlendRender() {
+        Tessellator.getInstance().end();
+        RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
+    }
+
+    /**
+     * 绘制圆角矩形框
+     */
+    public static void drawBox(MatrixStack stack, float x, float y, float w, float h, float r, int color) {
+        drawBox(stack, x, y, w, h, r, calculateOptimalSegments(r), color);
+    }
+
+    /**
+     * 绘制带可变四角圆角的填充矩形
+     */
+    public static void drawBox(MatrixStack stack, float x, float y, float w, float h,
+                               float topLeft, float topRight, float bottomLeft, float bottomRight, int color) {
+        float maxRadius = Math.max(Math.max(topLeft, topRight), Math.max(bottomLeft, bottomRight));
+        drawBox(stack, x, y, w, h, topLeft, topRight, bottomLeft, bottomRight, calculateOptimalSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制带可变四角圆角的填充矩形
+     */
+    public static void drawBox(MatrixStack stack, float x, float y, float w, float h,
+                               float topLeft, float topRight, float bottomLeft, float bottomRight,
+                               int part, int color) {
+        float halfW = w * 0.5f;
+        float halfH = h * 0.5f;
+        topLeft = clampRadius(topLeft, halfW, halfH);
+        topRight = clampRadius(topRight, halfW, halfH);
+        bottomLeft = clampRadius(bottomLeft, halfW, halfH);
+        bottomRight = clampRadius(bottomRight, halfW, halfH);
+
+        if (topLeft <= 0f && topRight <= 0f && bottomLeft <= 0f && bottomRight <= 0f) {
+            fill(stack, (int) x, (int) y, (int) (x + w), (int) (y + h), color);
+            return;
+        }
+        if (part < 1) part = 1;
+
+        List<float[]> verts = new ArrayList<>();
+        verts.add(new float[]{x + topLeft, y});
+        if (topRight > 0) addArc(verts, x + w - topRight, y + topRight, topRight, 270f, 360f, part);
+        else verts.add(new float[]{x + w, y});
+
+        verts.add(new float[]{x + w, y + topRight});
+        if (bottomRight > 0) addArc(verts, x + w - bottomRight, y + h - bottomRight, bottomRight, 0f, 90f, part);
+        else verts.add(new float[]{x + w, y + h});
+
+        verts.add(new float[]{x + w - bottomRight, y + h});
+        if (bottomLeft > 0) addArc(verts, x + bottomLeft, y + h - bottomLeft, bottomLeft, 90f, 180f, part);
+        else verts.add(new float[]{x, y + h});
+
+        verts.add(new float[]{x, y + h - bottomLeft});
+        if (topLeft > 0) addArc(verts, x + topLeft, y + topLeft, topLeft, 180f, 270f, part);
+        else verts.add(new float[]{x, y});
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        setupBlendRender();
+        RenderSystem.disableCull();
+        builder.begin(GL11C.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+
+        float centerX = x + w * 0.5f;
+        float centerY = y + h * 0.5f;
+
+        if (verts.size() >= 2) {
+            for (int i = 0; i < verts.size(); i++) {
+                float[] a = verts.get(i);
+                float[] b = verts.get((i + 1) % verts.size());
+                addVertexWithColor(builder, m4, centerX, centerY, 0f, color);
+                addVertexWithColor(builder, m4, a[0], a[1], 0f, color);
+                addVertexWithColor(builder, m4, b[0], b[1], 0f, color);
+            }
+        }
+
+        Tessellator.getInstance().end();
+        RenderSystem.enableTexture();
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    private static float clampRadius(float r, float halfW, float halfH) {
+        if (r <= 0f) return 0f;
+        return Math.min(r, Math.min(halfW, halfH));
+    }
+
+    private static void addArc(List<float[]> verts, float cx, float cy, float r, float startDeg, float endDeg, int part) {
+        for (int i = 0; i <= part; i++) {
+            float t = (float) i / part;
+            float ang = (float) Math.toRadians(startDeg + (endDeg - startDeg) * t);
+            verts.add(new float[]{cx + (float) Math.cos(ang) * r, cy + (float) Math.sin(ang) * r});
+        }
+    }
+
+    /**
+     * 绘制圆角矩形单色边框
+     */
+    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, int color) {
+        drawBoxOutline(stack, x, y, w, h, r, 1, color);
+    }
+
+    /**
+     * 绘制圆角矩形单色边框
+     */
+    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, float lineWeight, int color) {
+        drawBoxOutline(stack, x, y, w, h, r, lineWeight, color, color);
+    }
+
+    /**
+     * 绘制圆角矩形双色边框
+     */
+    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, float lineWeight, int colorIn, int colorOut) {
+        drawBoxOutline(stack, x, y, w, h, r, calculateOptimalSegments(r), lineWeight, colorIn, colorOut);
+    }
+
+    /**
+     * 绘制圆角矩形双色边框
+     */
+    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, int part, float lineWeight, int colorIn, int colorOut) {
+        if (r <= 0 || lineWeight <= 0) {
+            fillOutLine(stack, (int) x, (int) y, (int) w, (int) h, (int) lineWeight, colorIn);
+            return;
+        }
+
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        Matrix4f m4 = stack.last().pose();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        float r1 = r + lineWeight;
+        double piece = Math.PI / 2.0 / (part + 1);
+        float[] cosValues = new float[part + 1];
+        float[] sinValues = new float[part + 1];
+        for (int i = 1; i <= part; i++) {
+            double angle = piece * i;
+            cosValues[i] = (float) Math.cos(angle);
+            sinValues[i] = (float) Math.sin(angle);
+        }
+
+        addVertexWithColor(builder, m4, x - r, y, 0, colorIn);
+        addVertexWithColor(builder, m4, x - r1, y, 0, colorOut);
+        addVertexWithColor(builder, m4, x - r, y + h, 0, colorIn);
+        addVertexWithColor(builder, m4, x - r1, y + h, 0, colorOut);
+
+        for (int i = 1; i <= part; i++) {
+            float xOff = cosValues[i];
+            float yOff = sinValues[i];
+            addVertexWithColor(builder, m4, x - xOff * r, y + h + yOff * r, 0, colorIn);
+            addVertexWithColor(builder, m4, x - xOff * r1, y + h + yOff * r1, 0, colorOut);
+        }
+
+        addVertexWithColor(builder, m4, x, y + r + h, 0, colorIn);
+        addVertexWithColor(builder, m4, x, y + r1 + h, 0, colorOut);
+        addVertexWithColor(builder, m4, x + w, y + r + h, 0, colorIn);
+        addVertexWithColor(builder, m4, x + w, y + r1 + h, 0, colorOut);
+
+        for (int i = 1; i <= part; i++) {
+            float xOff = sinValues[i];
+            float yOff = cosValues[i];
+            addVertexWithColor(builder, m4, x + w + xOff * r, y + h + yOff * r, 0, colorIn);
+            addVertexWithColor(builder, m4, x + w + xOff * r1, y + h + yOff * r1, 0, colorOut);
+        }
+
+        addVertexWithColor(builder, m4, x + w + r, y + h, 0, colorIn);
+        addVertexWithColor(builder, m4, x + w + r1, y + h, 0, colorOut);
+        addVertexWithColor(builder, m4, x + w + r, y, 0, colorIn);
+        addVertexWithColor(builder, m4, x + w + r1, y, 0, colorOut);
+
+        for (int i = 1; i <= part; i++) {
+            float xOff = cosValues[i];
+            float yOff = sinValues[i];
+            addVertexWithColor(builder, m4, x + w + xOff * r, y - yOff * r, 0, colorIn);
+            addVertexWithColor(builder, m4, x + w + xOff * r1, y - yOff * r1, 0, colorOut);
+        }
+
+        addVertexWithColor(builder, m4, x + w, y - r, 0, colorIn);
+        addVertexWithColor(builder, m4, x + w, y - r1, 0, colorOut);
+        addVertexWithColor(builder, m4, x, y - r, 0, colorIn);
+        addVertexWithColor(builder, m4, x, y - r1, 0, colorOut);
+
+        for (int i = 1; i <= part; i++) {
+            float xOff = sinValues[i];
+            float yOff = cosValues[i];
+            addVertexWithColor(builder, m4, x - xOff * r, y - yOff * r, 0, colorIn);
+            addVertexWithColor(builder, m4, x - xOff * r1, y - yOff * r1, 0, colorOut);
+        }
+
+        addVertexWithColor(builder, m4, x - r, y, 0, colorIn);
+        addVertexWithColor(builder, m4, x - r1, y, 0, colorOut);
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制圆角矩形
+     */
+    public static void drawBox(MatrixStack stack, float x, float y, float w, float h, float r, int part, int color) {
+        if (r <= 0) {
+            fill(stack, (int) x, (int) y, (int) w, (int) h, color);
+            return;
+        }
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double piece = Math.PI / 2.0 / (part + 1);
+        float[] cosValues = new float[part + 1];
+        float[] sinValues = new float[part + 1];
+        for (int i = 1; i <= part; i++) {
+            double angle = piece * i;
+            cosValues[i] = (float) (Math.cos(angle) * r);
+            sinValues[i] = (float) (Math.sin(angle) * r);
+        }
+
+        addVertexWithColor(builder, m4, x - r, y, 0, color);
+        addVertexWithColor(builder, m4, x - r, y + h, 0, color);
+
+        for (int i = 1; i <= part; i++) {
+            addVertexWithColor(builder, m4, x - cosValues[i], y - sinValues[i], 0, color);
+            addVertexWithColor(builder, m4, x - cosValues[i], y + h + sinValues[i], 0, color);
+        }
+
+        addVertexWithColor(builder, m4, x, y - r, 0, color);
+        addVertexWithColor(builder, m4, x, y + r + h, 0, color);
+        addVertexWithColor(builder, m4, x + w, y - r, 0, color);
+        addVertexWithColor(builder, m4, x + w, y + r + h, 0, color);
+
+        for (int i = 1; i <= part; i++) {
+            addVertexWithColor(builder, m4, x + w + sinValues[i], y - cosValues[i], 0, color);
+            addVertexWithColor(builder, m4, x + w + sinValues[i], y + h + cosValues[i], 0, color);
+        }
+
+        addVertexWithColor(builder, m4, x + w + r, y, 0, color);
+        addVertexWithColor(builder, m4, x + w + r, y + h, 0, color);
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制填充圆形
+     */
+    public static void drawCircle(MatrixStack stack, float centerX, float centerY, float radius, int color) {
+        drawCircle(stack, centerX, centerY, radius, calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制填充圆形
+     */
+    public static void drawCircle(MatrixStack stack, float centerX, float centerY, float radius, int segments, int color) {
+        if (radius <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleStep = 2.0 * Math.PI / segments;
+        float[] xCoords = new float[segments + 1];
+        float[] yCoords = new float[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            xCoords[i] = centerX + (float) (Math.cos(angle) * radius);
+            yCoords[i] = centerY + (float) (Math.sin(angle) * radius);
+        }
+
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i <= segments; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            if (i < segments) {
+                addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+            }
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制圆形边框
+     */
+    public static void drawCircleOutline(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int color) {
+        drawCircleOutline(stack, centerX, centerY, radius, lineWidth, calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制圆形边框（
+     */
+    public static void drawCircleOutline(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int segments, int color) {
+        if (radius <= 0 || lineWidth <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        float innerRadius = Math.max(0, radius - lineWidth);
+        double angleStep = 2.0 * Math.PI / segments;
+
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            addVertexWithColor(builder, m4, centerX + cos * radius, centerY + sin * radius, 0, color);
+            addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制填充椭圆
+     */
+    public static void drawEllipse(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipse(stack, centerX, centerY, radiusX, radiusY, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制填充椭圆
+     */
+    public static void drawEllipse(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, int segments, int color) {
+        if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleStep = 2.0 * Math.PI / segments;
+        float[] xCoords = new float[segments + 1];
+        float[] yCoords = new float[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            xCoords[i] = centerX + (float) (Math.cos(angle) * radiusX);
+            yCoords[i] = centerY + (float) (Math.sin(angle) * radiusY);
+        }
+
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i <= segments; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            if (i < segments) {
+                addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+            }
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制椭圆边框
+     */
+    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipseOutline(stack, centerX, centerY, radiusX, radiusY, lineWidth, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制椭圆边框
+     */
+    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int segments, int color) {
+        if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        float innerRadiusX = Math.max(0, radiusX - lineWidth);
+        float innerRadiusY = Math.max(0, radiusY - lineWidth);
+        double angleStep = 2.0 * Math.PI / segments;
+
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            addVertexWithColor(builder, m4, centerX + cos * radiusX, centerY + sin * radiusY, 0, color);
+            addVertexWithColor(builder, m4, centerX + cos * innerRadiusX, centerY + sin * innerRadiusY, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制填充椭圆
+     *
+     * @param rotation 旋转角度, 0为正右, 顺时针
+     */
+    public static void drawEllipse(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipse(stack, centerX, centerY, radiusX, radiusY, rotation, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制填充椭圆
+     *
+     * @param rotation 旋转角度, 0为正右, 顺时针
+     */
+    public static void drawEllipse(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
+        drawEllipseRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), segments, color);
+    }
+
+    /**
+     * 绘制填充椭圆
+     *
+     * @param rotation 旋转弧度, 0为正右, 顺时针
+     */
+    public static void drawEllipseRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipseRad(stack, centerX, centerY, radiusX, radiusY, rotation, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制填充椭圆（带旋转，弧度，指定分段数）
+     *
+     * @param rotation 旋转弧度, 0为正右, 顺时针
+     */
+    public static void drawEllipseRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
+        if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleStep = 2.0 * Math.PI / segments;
+        float cosRot = (float) Math.cos(rotation);
+        float sinRot = (float) Math.sin(rotation);
+
+        float[] xCoords = new float[segments + 1];
+        float[] yCoords = new float[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            float x = (float) (Math.cos(angle) * radiusX);
+            float y = (float) (Math.sin(angle) * radiusY);
+            xCoords[i] = centerX + x * cosRot - y * sinRot;
+            yCoords[i] = centerY + x * sinRot + y * cosRot;
+        }
+
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i <= segments; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            if (i < segments) {
+                addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+            }
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制椭圆边框
+     *
+     * @param rotation 旋转角度, 0为正右, 顺时针
+     */
+    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipseOutline(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制椭圆边框
+     *
+     * @param rotation 旋转角度, 0为正右, 顺时针
+     */
+    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+        drawEllipseOutlineRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), lineWidth, segments, color);
+    }
+
+    /**
+     * 绘制椭圆边框
+     *
+     * @param rotation 旋转弧度, 0为正右, 顺时针
+     */
+    public static void drawEllipseOutlineRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+        float maxRadius = Math.max(radiusX, radiusY);
+        drawEllipseOutlineRad(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
+    }
+
+    /**
+     * 绘制椭圆边框
+     *
+     * @param rotation 旋转弧度, 0为正右, 顺时针
+     */
+    public static void drawEllipseOutlineRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+        if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        float innerRadiusX = Math.max(0, radiusX - lineWidth);
+        float innerRadiusY = Math.max(0, radiusY - lineWidth);
+        double angleStep = 2.0 * Math.PI / segments;
+        float cosRot = (float) Math.cos(rotation);
+        float sinRot = (float) Math.sin(rotation);
+
+        for (int i = 0; i <= segments; i++) {
+            double angle = i * angleStep;
+            float xOuter = (float) (Math.cos(angle) * radiusX);
+            float yOuter = (float) (Math.sin(angle) * radiusY);
+            float xInner = (float) (Math.cos(angle) * innerRadiusX);
+            float yInner = (float) (Math.sin(angle) * innerRadiusY);
+
+            addVertexWithColor(builder, m4, centerX + xOuter * cosRot - yOuter * sinRot, centerY + xOuter * sinRot + yOuter * cosRot, 0, color);
+            addVertexWithColor(builder, m4, centerX + xInner * cosRot - yInner * sinRot, centerY + xInner * sinRot + yInner * cosRot, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制扇形
+     *
+     * @param startAngle 起始角度, 0为正右
+     * @param endAngle   结束角度, start至end顺时针旋转
+     */
+    public static void drawSector(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+        drawSectorRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制扇形
+     *
+     * @param startAngle 起始角度, 0为正右
+     * @param endAngle   结束角度, start至end顺时针旋转
+     */
+    public static void drawSector(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
+        drawSectorRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), segments, color);
+    }
+
+    /**
+     * 绘制扇形
+     *
+     * @param startAngle 起始弧度, 0为正右
+     * @param endAngle   结束弧度, start至end顺时针旋转
+     */
+    public static void drawSectorRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+        drawSectorRad(stack, centerX, centerY, radius, startAngle, endAngle, calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制扇形
+     *
+     * @param startAngle 起始弧度, 0为正右
+     * @param endAngle   结束弧度, start至end顺时针旋转
+     */
+    public static void drawSectorRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
+        if (radius <= 0 || segments < 2) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleRange = endAngle - startAngle;
+        if (angleRange < 0) angleRange += 2.0 * Math.PI;
+        double angleStep = angleRange / segments;
+
+        float[] xCoords = new float[segments + 1];
+        float[] yCoords = new float[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            double angle = startAngle + i * angleStep;
+            xCoords[i] = centerX + (float) (Math.cos(angle) * radius);
+            yCoords[i] = centerY + (float) (Math.sin(angle) * radius);
+        }
+
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i <= segments; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            if (i < segments) {
+                addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+            }
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制圆弧边框
+     *
+     * @param startAngle 起始角度, 0为正右
+     * @param endAngle   结束角度, start至end顺时针旋转
+     */
+    public static void drawArc(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+        drawArcRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制圆弧边框
+     *
+     * @param startAngle 起始角度, 0为正右
+     * @param endAngle   结束角度, start至end顺时针旋转
+     */
+    public static void drawArc(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+        drawArcRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, segments, color);
+    }
+
+    /**
+     * 绘制圆弧边框
+     *
+     * @param startAngle 起始弧度, 0为正右
+     * @param endAngle   结束弧度, start至end顺时针旋转
+     */
+    public static void drawArcRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+        drawArcRad(stack, centerX, centerY, radius, startAngle, endAngle, lineWidth, calculateCircleSegments(radius), color);
+    }
+
+    /**
+     * 绘制圆弧边框
+     *
+     * @param startAngle 起始弧度, 0为正右
+     * @param endAngle   结束弧度, start至end顺时针旋转
+     */
+    public static void drawArcRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+        if (radius <= 0 || lineWidth <= 0 || segments < 2) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        float innerRadius = Math.max(0, radius - lineWidth);
+        double angleRange = endAngle - startAngle;
+        if (angleRange < 0) angleRange += 2.0 * Math.PI;
+        double angleStep = angleRange / segments;
+
+        for (int i = 0; i <= segments; i++) {
+            double angle = startAngle + i * angleStep;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            addVertexWithColor(builder, m4, centerX + cos * radius, centerY + sin * radius, 0, color);
+            addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    // endregion 绘制圆
 
     //  region 绘制弹出层提示
 

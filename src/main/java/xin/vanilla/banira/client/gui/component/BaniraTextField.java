@@ -333,7 +333,7 @@ public class BaniraTextField extends TextFieldWidget {
 
         // 绘制背景
         int currentBgColor = this.error ? ERROR_BG_COLOR : this.bgColor;
-        AbstractGuiUtils.fill(stack, this.x, this.y, this.width, this.height, currentBgColor, 1);
+        AbstractGuiUtils.drawRoundedRect(stack, this.x, this.y, this.width, this.height, currentBgColor, 1);
 
         // 获取文本和状态
         String value = this.getValue();

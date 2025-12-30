@@ -14,6 +14,7 @@ import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
@@ -70,7 +71,11 @@ public class DebugScreen extends Screen {
     public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
         mouseHelper.tick(mouseX, mouseY);
 
-        AbstractGuiUtils.fill(stack, 10, 10, this.width - 20, this.height - 20, 0x44000000, 8);
+        ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width - 20, this.height - 20, 0x44000000);
+        bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
+        AbstractGuiUtils.drawShape(bgRect);
+
+        // AbstractGuiUtils.drawLine(stack, 20, 20, 150, 150, 1, 0x33FFFFFF);
 
         // // 白色矩形
         // AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.BACKGROUND, (s) ->
@@ -85,14 +90,34 @@ public class DebugScreen extends Screen {
         //         AbstractGuiUtils.fill(s, (super.width - 30) / 2, (super.height - 30) / 2, 30, 30, 0xFF000000)
         // );
 
-        AbstractGuiUtils.drawCircle(stack, super.width / 2f, super.height / 2f, 15, 0x33FFFFFF);
-        AbstractGuiUtils.drawEllipse(stack, super.width / 2f, super.height / 2f, 10, 15, 45f, 0x33FFFFFF);
-        AbstractGuiUtils.drawCircleOutline(stack, super.width / 2f, super.height / 2f, 25, 2, 0x33FFFFFF);
-        AbstractGuiUtils.drawSector(stack, super.width / 2f, super.height / 2f, 35, 0, 75, 0x33FFFFFF);
-        AbstractGuiUtils.drawArc(stack, super.width / 2f, super.height / 2f, 35, 180, 255, 5, 0x33FFFFFF);
-        AbstractGuiUtils.drawBox(stack, (super.width - 60) / 2f, (super.height - 60) / 2f, 60, 60, 0, 15, 15, 15, 0x33000000);
-        AbstractGuiUtils.drawBox(stack, (super.width - 70) / 2f, (super.height - 70) / 2f, 70, 70, 16, 0x33000000);
-        AbstractGuiUtils.drawBoxOutline(stack, (super.width - 90) / 2f, (super.height - 90) / 2f, 90, 90, 8, 2, 0x33FFFFFF);
+        ShapeDrawArgs circle = ShapeDrawArgs.circle(stack, super.width / 2f, super.height / 2f, 15, 0x33FFFFFF);
+        AbstractGuiUtils.drawShape(circle);
+
+        // ShapeDrawArgs ellipse = ShapeDrawArgs.ellipse(stack, super.width / 2f, super.height / 2f, 7.5f, 15, 0x33FFFFFF);
+        // ellipse.ellipse().rotation((System.currentTimeMillis() / 50d) % 360);
+        // AbstractGuiUtils.drawShape(ellipse);
+
+        ShapeDrawArgs ellipseRing = ShapeDrawArgs.ellipse(stack, super.width / 2f, super.height / 2f, 7.5f, 15, 0x33FFFFFF);
+        ellipseRing.ellipse().rotation((System.currentTimeMillis() / 50d) % 360).border(2);
+        AbstractGuiUtils.drawShape(ellipseRing);
+
+        // ShapeDrawArgs ring = ShapeDrawArgs.circle(stack, super.width / 2f, super.height / 2f, 17, 0x33FFFFFF);
+        // ring.circle().border(0.5f);
+        // AbstractGuiUtils.drawShape(ring);
+
+        // ShapeDrawArgs sector = ShapeDrawArgs.sector(stack, (super.width - 35) / 2f, (super.height - 35) / 2f, 35, 0, 75, 0x33FFFFFF);
+        // AbstractGuiUtils.drawShape(sector);
+
+        // ShapeDrawArgs sectoredRing = ShapeDrawArgs.sectorRing(stack, super.width / 2f, super.height / 2f, 35, 30, 180, 255, 0x33FFFFFF);
+        // AbstractGuiUtils.drawShape(sectoredRing);
+
+        ShapeDrawArgs rect1 = ShapeDrawArgs.rect(stack, (super.width - 60) / 2f, (super.height - 60) / 2f, 60, 60, 0x33000000);
+        rect1.rect().topRight(15).bottomLeft(15).bottomRight(15);
+        AbstractGuiUtils.drawShape(rect1);
+
+        ShapeDrawArgs rect11 = ShapeDrawArgs.rect(stack, (super.width - 70) / 2f, (super.height - 70) / 2f, 70, 70, 0x33000000);
+        rect11.rect().border(4).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).topLeft(2).topRight(15).bottomLeft(15).bottomRight(15);
+        AbstractGuiUtils.drawShape(rect11);
 
         int hudY = 1;
         AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("contentLines：" + contentLines)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));

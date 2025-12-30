@@ -55,10 +55,10 @@ public class BaniraButton extends Button {
         }
 
         // 绘制背景
-        AbstractGuiUtils.fill(stack, this.x, this.y, this.width, this.height, currentBgColor, 2);
+        AbstractGuiUtils.drawRoundedRect(stack, this.x, this.y, this.width, this.height, currentBgColor, 2);
 
         // 绘制边框
-        AbstractGuiUtils.fillOutLine(stack, this.x, this.y, this.width, this.height, 1, this.borderColor, 2);
+        AbstractGuiUtils.drawRoundedRectOutLineRough(stack, this.x, this.y, this.width, this.height, 1, this.borderColor, 2);
 
         // 绘制文本
         FontRenderer font = Minecraft.getInstance().font;

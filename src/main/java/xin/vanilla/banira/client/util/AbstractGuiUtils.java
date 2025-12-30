@@ -24,6 +24,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.data.TransformDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -827,13 +828,13 @@ public final class AbstractGuiUtils {
                 int bgHeight = (int) (totalHeight + args.paddingTop() + args.paddingBottom());
 
                 // 绘制圆角矩形背景
-                AbstractGuiUtils.fill(stack, bgX, bgY, bgWidth, bgHeight, args.bgArgb(), args.bgBorderRadius());
+                AbstractGuiUtils.drawRoundedRect(stack, bgX, bgY, bgWidth, bgHeight, args.bgArgb(), args.bgBorderRadius());
 
                 // 绘制边框
                 if (args.bgBorderThickness() > 0) {
                     int borderArgb = ColorUtils.softenArgb(args.bgArgb());
 
-                    AbstractGuiUtils.fillOutLine(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
+                    AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
                 }
             }
 
@@ -1001,7 +1002,302 @@ public final class AbstractGuiUtils {
     //  region 绘制形状
 
     /**
-     * 绘制一个“像素”矩形
+     * 统一绘制形状方法
+     */
+    public static void drawShape(ShapeDrawArgs args) {
+        if (args == null || args.stack() == null) return;
+
+        switch (args.type()) {
+            case RECT:
+                drawRectShape(args);
+                break;
+            case CIRCLE:
+                drawCircleShape(args);
+                break;
+            case ELLIPSE:
+                drawEllipseShape(args);
+                break;
+            case SECTOR:
+                drawSectorShape(args);
+                break;
+            case SECTOR_RING:
+                drawSectorRingShape(args);
+                break;
+        }
+    }
+
+    /**
+     * 绘制矩形形状
+     */
+    private static void drawRectShape(ShapeDrawArgs args) {
+        ShapeDrawArgs.RectParams rect = args.rect();
+        MatrixStack stack = args.stack();
+        int color = args.color();
+
+        if (rect.border() > 0) {
+            if (rect.hasRadius()) {
+                ShapeDrawArgs.RoundedCornerMode mode = rect.cornerMode();
+                drawRoundedRectOutLine(stack, rect.x(), rect.y(), rect.width(), rect.height(),
+                        rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight(),
+                        rect.border(), color, mode);
+            } else {
+                fillOutLine(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), (int) rect.border(), color);
+            }
+        } else {
+            if (rect.hasRadius() && rect.isUniformRadius()) {
+                ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
+                if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && rect.topLeft() <= 10)) {
+                    drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) rect.topLeft());
+                } else {
+                    drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), color);
+                }
+            } else if (rect.hasRadius() && !rect.isUniformRadius()) {
+                float maxRadius = Math.max(Math.max(rect.topLeft(), rect.topRight()), Math.max(rect.bottomLeft(), rect.bottomRight()));
+                ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
+                if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && maxRadius <= 10)) {
+                    drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) maxRadius);
+                } else {
+                    drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight(), color);
+                }
+            } else {
+                fill(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color);
+            }
+        }
+    }
+
+    /**
+     * 绘制圆形形状
+     */
+    private static void drawCircleShape(ShapeDrawArgs args) {
+        ShapeDrawArgs.CircleParams circle = args.circle();
+        MatrixStack stack = args.stack();
+        int color = args.color();
+
+        int segments = circle.segments();
+        if (segments <= 0) {
+            segments = calculateCircleSegments(circle.radius());
+        }
+
+        if (circle.border() > 0) {
+            drawCircleRing(stack, circle.centerX(), circle.centerY(), circle.radius(), circle.border(), segments, color);
+        } else {
+            drawCircle(stack, circle.centerX(), circle.centerY(), circle.radius(), segments, color);
+        }
+    }
+
+    /**
+     * 绘制椭圆形状
+     */
+    private static void drawEllipseShape(ShapeDrawArgs args) {
+        ShapeDrawArgs.EllipseParams ellipse = args.ellipse();
+        MatrixStack stack = args.stack();
+        int color = args.color();
+
+        int segments = ellipse.segments();
+        if (segments <= 0) {
+            float maxRadius = Math.max(ellipse.radiusX(), ellipse.radiusY());
+            segments = calculateCircleSegments(maxRadius);
+        }
+
+        if (ellipse.border() > 0) {
+            if (ellipse.rotation() != 0) {
+                drawEllipseRing(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), ellipse.rotation(), ellipse.border(), segments, color);
+            } else {
+                drawEllipseRing(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), ellipse.border(), segments, color);
+            }
+        } else {
+            if (ellipse.rotation() != 0) {
+                drawEllipseRad(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), Math.toRadians(ellipse.rotation()), segments, color);
+            } else {
+                drawEllipse(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), segments, color);
+            }
+        }
+    }
+
+    /**
+     * 绘制扇形形状
+     */
+    private static void drawSectorShape(ShapeDrawArgs args) {
+        ShapeDrawArgs.SectorParams sector = args.sector();
+        MatrixStack stack = args.stack();
+        int color = args.color();
+
+        int segments = sector.segments();
+        if (segments <= 0) {
+            segments = calculateCircleSegments(sector.radius());
+        }
+
+        if (sector.useRadians()) {
+            drawSectorRad(stack, sector.centerX(), sector.centerY(), sector.radius(), sector.startAngle(), sector.endAngle(), segments, color);
+        } else {
+            drawSector(stack, sector.centerX(), sector.centerY(), sector.radius(), sector.startAngle(), sector.endAngle(), segments, color);
+        }
+    }
+
+    /**
+     * 绘制有宽度的线段
+     */
+    public static void drawLine(MatrixStack stack, float x1, float y1, float x2, float y2, float lineWidth, int color) {
+        if (lineWidth <= 0) return;
+
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length <= 0) return;
+
+        float nx = dx / length;
+        float ny = dy / length;
+        float perpX = -ny;
+        float perpY = nx;
+        float halfWidth = lineWidth * 0.5f;
+
+        // 计算四个顶点
+        float x1Top = x1 + perpX * halfWidth;
+        float y1Top = y1 + perpY * halfWidth;
+        float x1Bottom = x1 - perpX * halfWidth;
+        float y1Bottom = y1 - perpY * halfWidth;
+        float x2Top = x2 + perpX * halfWidth;
+        float y2Top = y2 + perpY * halfWidth;
+        float x2Bottom = x2 - perpX * halfWidth;
+        float y2Bottom = y2 - perpY * halfWidth;
+
+        setupBlendRender();
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+
+        addVertexWithColor(builder, m4, x1Top, y1Top, 0, color);
+        addVertexWithColor(builder, m4, x2Top, y2Top, 0, color);
+        addVertexWithColor(builder, m4, x1Bottom, y1Bottom, 0, color);
+
+        addVertexWithColor(builder, m4, x2Top, y2Top, 0, color);
+        addVertexWithColor(builder, m4, x2Bottom, y2Bottom, 0, color);
+        addVertexWithColor(builder, m4, x1Bottom, y1Bottom, 0, color);
+
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制扇环形状
+     */
+    private static void drawSectorRingShape(ShapeDrawArgs args) {
+        ShapeDrawArgs.SectorRingParams params = args.sectorRing();
+        MatrixStack stack = args.stack();
+        int color = args.color();
+
+        int segments = params.segments();
+        if (segments <= 0) {
+            segments = calculateCircleSegments(params.outerRadius());
+        }
+
+        float actualInnerRadius = params.getActualInnerRadius();
+
+        if (actualInnerRadius > 0) {
+            drawFilledSectorRing(stack, params, actualInnerRadius, segments, color);
+        } else {
+            drawFilledSectorRingFromCenter(stack, params, segments, color);
+        }
+    }
+
+    /**
+     * 绘制实心扇环
+     */
+    private static void drawFilledSectorRing(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, float innerRadius, int segments, int color) {
+        float centerX = params.centerX();
+        float centerY = params.centerY();
+        float outerRadius = params.outerRadius();
+        double startAngle = params.startAngle();
+        double endAngle = params.endAngle();
+        boolean useRadians = params.useRadians();
+
+        if (innerRadius >= outerRadius || innerRadius < 0) return;
+
+        double startRad, endRad;
+        if (useRadians) {
+            startRad = startAngle;
+            endRad = endAngle;
+        } else {
+            startRad = Math.toRadians(startAngle);
+            endRad = Math.toRadians(endAngle);
+        }
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleRange = endRad - startRad;
+        if (angleRange < 0) angleRange += 2.0 * Math.PI;
+        double angleStep = angleRange / segments;
+
+        for (int i = 0; i <= segments; i++) {
+            double angle = startRad + i * angleStep;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            addVertexWithColor(builder, m4, centerX + cos * outerRadius, centerY + sin * outerRadius, 0, color);
+            addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制实心扇环
+     */
+    private static void drawFilledSectorRingFromCenter(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, int segments, int color) {
+        float centerX = params.centerX();
+        float centerY = params.centerY();
+        float radius = params.outerRadius();
+        double startAngle = params.startAngle();
+        double endAngle = params.endAngle();
+        boolean useRadians = params.useRadians();
+
+        double startRad, endRad;
+        if (useRadians) {
+            startRad = startAngle;
+            endRad = endAngle;
+        } else {
+            startRad = Math.toRadians(startAngle);
+            endRad = Math.toRadians(endAngle);
+        }
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double angleRange = endRad - startRad;
+        if (angleRange < 0) angleRange += 2.0 * Math.PI;
+        double angleStep = angleRange / segments;
+
+        float[] xCoords = new float[segments + 1];
+        float[] yCoords = new float[segments + 1];
+        for (int i = 0; i <= segments; i++) {
+            double angle = startRad + i * angleStep;
+            xCoords[i] = centerX + (float) (Math.cos(angle) * radius);
+            yCoords[i] = centerY + (float) (Math.sin(angle) * radius);
+        }
+
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i <= segments; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            if (i < segments) {
+                addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+            }
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    // endregion 绘制形状
+
+    // region 绘制矩形
+
+    /**
+     * 绘制像素点
      *
      * @param x    像素的 X 坐标
      * @param y    像素的 Y 坐标
@@ -1012,21 +1308,61 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制一个正方形
+     * 绘制正方形
      */
     public static void fill(MatrixStack stack, int x, int y, int width, int argb) {
         AbstractGuiUtils.fill(stack, x, y, width, width, argb);
     }
 
     /**
-     * 绘制一个矩形
+     * 绘制矩形
      */
     public static void fill(MatrixStack stack, int x, int y, int width, int height, int argb) {
-        AbstractGuiUtils.fill(stack, x, y, width, height, argb, 0);
+        AbstractGuiUtils.drawRoundedRect(stack, x, y, width, height, argb, 0);
     }
 
     /**
-     * 绘制一个圆角矩形
+     * 绘制矩形
+     */
+    public static void fillEx(MatrixStack stack, float x, float y, float width, float height, int color) {
+        if (width <= 0 || height <= 0) return;
+
+        setupBlendRender();
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+
+        addVertexWithColor(builder, m4, x, y, 0, color);
+        addVertexWithColor(builder, m4, x, y + height, 0, color);
+        addVertexWithColor(builder, m4, x + width, y, 0, color);
+
+        addVertexWithColor(builder, m4, x + width, y, 0, color);
+        addVertexWithColor(builder, m4, x, y + height, 0, color);
+        addVertexWithColor(builder, m4, x + width, y + height, 0, color);
+
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制矩形边框
+     *
+     * @param thickness 边框厚度
+     * @param argb      边框颜色
+     */
+    public static void fillOutLine(MatrixStack stack, int x, int y, int width, int height, int thickness, int argb) {
+        // 上边
+        AbstractGuiUtils.fill(stack, x, y, width - thickness, thickness, argb);
+        // 下边
+        AbstractGuiUtils.fill(stack, x + thickness, y + height - thickness, width - thickness, thickness, argb);
+        // 左边
+        AbstractGuiUtils.fill(stack, x, y + thickness, thickness, height - thickness, argb);
+        // 右边
+        AbstractGuiUtils.fill(stack, x + width - thickness, y, thickness, height - thickness, argb);
+    }
+
+    /**
+     * 绘制圆角矩形
      *
      * @param x      矩形的左上角X坐标
      * @param y      矩形的左上角Y坐标
@@ -1035,8 +1371,7 @@ public final class AbstractGuiUtils {
      * @param argb   矩形的颜色
      * @param radius 圆角半径(0-10)
      */
-    public static void fill(MatrixStack stack, int x, int y, int width, int height, int argb, int radius) {
-        // 如果半径为0，则直接绘制普通矩形
+    public static void drawRoundedRect(MatrixStack stack, int x, int y, int width, int height, int argb, int radius) {
         if (radius <= 0) {
             AbstractGui.fill(stack, x, y, x + width, y + height, argb);
             return;
@@ -1045,10 +1380,10 @@ public final class AbstractGuiUtils {
         // 限制半径最大值为10
         radius = Math.min(radius, 10);
 
-        // 1. 绘制中间的矩形部分（去掉圆角占用的区域）
+        // 绘制中心矩形
         AbstractGuiUtils.fill(stack, x + radius + 1, y + radius + 1, width - 2 * (radius + 1), height - 2 * (radius + 1), argb);
 
-        // 2. 绘制四条边（去掉圆角占用的部分）
+        // 绘制四条边
         // 上边
         AbstractGuiUtils.fill(stack, x + radius + 1, y, width - 2 * radius - 2, radius, argb);
         AbstractGuiUtils.fill(stack, x + radius + 1, y + radius, width - 2 * (radius + 1), 1, argb);
@@ -1062,7 +1397,7 @@ public final class AbstractGuiUtils {
         AbstractGuiUtils.fill(stack, x + width - radius, y + radius + 1, radius, height - 2 * radius - 2, argb);
         AbstractGuiUtils.fill(stack, x + width - radius - 1, y + radius + 1, 1, height - 2 * (radius + 1), argb);
 
-        // 3. 绘制四个圆角
+        // 绘制四个圆角
         // 左上角
         AbstractGuiUtils.drawCircleQuadrant(stack, x + radius, y + radius, radius, argb, 1);
         // 右上角
@@ -1074,7 +1409,7 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制一个圆的四分之一部分（圆角辅助函数）
+     * 绘制四分之一圆
      *
      * @param centerX  圆角中心点X坐标
      * @param centerY  圆角中心点Y坐标
@@ -1110,24 +1445,7 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制一个矩形边框
-     *
-     * @param thickness 边框厚度
-     * @param argb      边框颜色
-     */
-    public static void fillOutLine(MatrixStack stack, int x, int y, int width, int height, int thickness, int argb) {
-        // 上边
-        AbstractGuiUtils.fill(stack, x, y, width, thickness, argb);
-        // 下边
-        AbstractGuiUtils.fill(stack, x, y + height - thickness, width, thickness, argb);
-        // 左边
-        AbstractGuiUtils.fill(stack, x, y, thickness, height, argb);
-        // 右边
-        AbstractGuiUtils.fill(stack, x + width - thickness, y, thickness, height, argb);
-    }
-
-    /**
-     * 绘制一个圆角矩形边框
+     * 绘制圆角矩形边框
      *
      * @param x         矩形左上角X坐标
      * @param y         矩形左上角Y坐标
@@ -1137,39 +1455,87 @@ public final class AbstractGuiUtils {
      * @param argb      边框颜色
      * @param radius    圆角半径（0-10）
      */
-    public static void fillOutLine(MatrixStack stack, int x, int y, int width, int height, int thickness, int argb, int radius) {
+    public static void drawRoundedRectOutLineRough(MatrixStack stack, int x, int y, int width, int height, int thickness, int argb, int radius) {
+        drawRoundedRectOutLineRough(stack, x, y, width, height, thickness, argb, radius, radius, radius, radius);
+    }
+
+    /**
+     * 绘制圆角矩形边框（粗糙模式，支持四个不同的圆角半径）
+     */
+    public static void drawRoundedRectOutLineRough(MatrixStack stack, int x, int y, int width, int height, int thickness, int argb,
+                                                   int topLeft, int topRight, int bottomLeft, int bottomRight) {
         if (thickness <= 0) return;
-        if (radius <= 0) {
-            // 若没有圆角，直接绘制普通边框
+
+        float halfW = width * 0.5f;
+        float halfH = height * 0.5f;
+        topLeft = (int) Math.min(Math.min(topLeft, 10), Math.min(halfW, halfH));
+        topRight = (int) Math.min(Math.min(topRight, 10), Math.min(halfW, halfH));
+        bottomLeft = (int) Math.min(Math.min(bottomLeft, 10), Math.min(halfW, halfH));
+        bottomRight = (int) Math.min(Math.min(bottomRight, 10), Math.min(halfW, halfH));
+
+        if (topLeft <= 0 && topRight <= 0 && bottomLeft <= 0 && bottomRight <= 0) {
             AbstractGuiUtils.fillOutLine(stack, x, y, width, height, thickness, argb);
+            return;
+        }
+
+        // 绘制四条内边
+        // 上边
+        int topStartX = topLeft > 0 ? x + topLeft + 1 : x + thickness;
+        int topEndX = topRight > 0 ? x + width - topRight - 1 : x + width - thickness;
+        if (topEndX > topStartX) {
+            AbstractGuiUtils.fill(stack, topStartX, y, topEndX - topStartX, thickness, argb);
+        }
+
+        // 下边
+        int bottomStartX = bottomLeft > 0 ? x + bottomLeft + 1 : x + thickness;
+        int bottomEndX = bottomRight > 0 ? x + width - bottomRight - 1 : x + width - thickness;
+        if (bottomEndX > bottomStartX) {
+            AbstractGuiUtils.fill(stack, bottomStartX, y + height - thickness, bottomEndX - bottomStartX, thickness, argb);
+        }
+
+        // 左边
+        int leftStartY = topLeft > 0 ? y + topLeft + 1 : y + thickness;
+        int leftEndY = bottomLeft > 0 ? y + height - bottomLeft - 1 : y + height - thickness;
+        if (leftEndY > leftStartY) {
+            AbstractGuiUtils.fill(stack, x, leftStartY, thickness, leftEndY - leftStartY, argb);
+        }
+
+        // 右边
+        int rightStartY = topRight > 0 ? y + topRight + 1 : y + thickness;
+        int rightEndY = bottomRight > 0 ? y + height - bottomRight - 1 : y + height - thickness;
+        if (rightEndY > rightStartY) {
+            AbstractGuiUtils.fill(stack, x + width - thickness, rightStartY, thickness, rightEndY - rightStartY, argb);
+        }
+
+        // 绘制四个角
+        // 左上角
+        if (topLeft == 0) {
+            AbstractGuiUtils.fill(stack, x, y, thickness, thickness, argb);
         } else {
-            // 限制圆角半径的最大值为10
-            radius = Math.min(radius, 10);
-
-            // 1. 绘制四条边（去掉圆角区域）
-            // 上边
-            AbstractGuiUtils.fill(stack, x + radius, y, width - 2 * radius, thickness, argb);
-            // 下边
-            AbstractGuiUtils.fill(stack, x + radius, y + height - thickness, width - 2 * radius, thickness, argb);
-            // 左边
-            AbstractGuiUtils.fill(stack, x, y + radius, thickness, height - 2 * radius, argb);
-            // 右边
-            AbstractGuiUtils.fill(stack, x + width - thickness, y + radius, thickness, height - 2 * radius, argb);
-
-            // 2. 绘制四个圆角
-            // 左上角
-            drawCircleBorder(stack, x + radius, y + radius, radius, thickness, argb, 1);
-            // 右上角
-            drawCircleBorder(stack, x + width - radius - 1, y + radius, radius, thickness, argb, 2);
-            // 左下角
-            drawCircleBorder(stack, x + radius, y + height - radius - 1, radius, thickness, argb, 3);
-            // 右下角
-            drawCircleBorder(stack, x + width - radius - 1, y + height - radius - 1, radius, thickness, argb, 4);
+            drawCircleBorder(stack, x + topLeft, y + topLeft, topLeft, thickness, argb, 1);
+        }
+        // 右上角
+        if (topRight == 0) {
+            AbstractGuiUtils.fill(stack, x + width - thickness, y, thickness, thickness, argb);
+        } else {
+            drawCircleBorder(stack, x + width - topRight - 1, y + topRight, topRight, thickness, argb, 2);
+        }
+        // 左下角
+        if (bottomLeft == 0) {
+            AbstractGuiUtils.fill(stack, x, y + height - thickness, thickness, thickness, argb);
+        } else {
+            drawCircleBorder(stack, x + bottomLeft, y + height - bottomLeft - 1, bottomLeft, thickness, argb, 3);
+        }
+        // 右下角
+        if (bottomRight == 0) {
+            AbstractGuiUtils.fill(stack, x + width - thickness, y + height - thickness, thickness, thickness, argb);
+        } else {
+            drawCircleBorder(stack, x + width - bottomRight - 1, y + height - bottomRight - 1, bottomRight, thickness, argb, 4);
         }
     }
 
     /**
-     * 绘制一个圆角的边框区域
+     * 绘制圆角边框
      *
      * @param centerX   圆角中心点X坐标
      * @param centerY   圆角中心点Y坐标
@@ -1189,7 +1555,244 @@ public final class AbstractGuiUtils {
         }
     }
 
-    //  endregion 绘制形状
+    /**
+     * 绘制非统一圆角矩形边框
+     * 分别绘制矩形内边（原边长-两端圆角半径之和），再判断四个角是否有半径，若有则绘制，若无则补齐直角边（不能重叠）
+     *
+     * @param x           矩形左上角X坐标
+     * @param y           矩形左上角Y坐标
+     * @param width       矩形宽度
+     * @param height      矩形高度
+     * @param topLeft     左上角圆角半径
+     * @param topRight    右上角圆角半径
+     * @param bottomLeft  左下角圆角半径
+     * @param bottomRight 右下角圆角半径
+     * @param border      边框厚度
+     * @param color       边框颜色
+     */
+    private static void drawRoundedRectOutLine(MatrixStack stack, float x, float y, float width, float height,
+                                               float topLeft, float topRight, float bottomLeft, float bottomRight,
+                                               float border, int color, ShapeDrawArgs.RoundedCornerMode mode) {
+        if (border <= 0) return;
+
+        // 计算绘制模式
+        float maxRadius = Math.max(Math.max(topLeft, topRight), Math.max(bottomLeft, bottomRight));
+        boolean useRough = false;
+        if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH) {
+            useRough = true;
+        } else if (mode == ShapeDrawArgs.RoundedCornerMode.AUTO) {
+            useRough = maxRadius <= 10;
+        }
+
+        // 粗糙模式
+        if (useRough) {
+            drawRoundedRectOutLineRough(stack, (int) x, (int) y, (int) width, (int) height,
+                    (int) border, color, (int) topLeft, (int) topRight, (int) bottomLeft, (int) bottomRight);
+        }
+        // 精细模式
+        else {
+            drawRoundedRectOutLineFine(stack, x, y, width, height,
+                    topLeft, topRight, bottomLeft, bottomRight, border, color);
+        }
+    }
+
+    /**
+     * 绘制圆角矩形边框
+     */
+    private static void drawRoundedRectOutLineFine(MatrixStack stack, float x, float y, float width, float height,
+                                                   float topLeft, float topRight, float bottomLeft, float bottomRight,
+                                                   float border, int color) {
+        if (border <= 0) return;
+
+        // 限制圆角半径
+        float halfW = width * 0.5f;
+        float halfH = height * 0.5f;
+        topLeft = clampRadius(topLeft, halfW, halfH);
+        topRight = clampRadius(topRight, halfW, halfH);
+        bottomLeft = clampRadius(bottomLeft, halfW, halfH);
+        bottomRight = clampRadius(bottomRight, halfW, halfH);
+
+        if (topLeft <= 0 && topRight <= 0 && bottomLeft <= 0 && bottomRight <= 0) {
+            fillOutLine(stack, (int) x, (int) y, (int) width, (int) height, (int) border, color);
+            return;
+        }
+
+        // 上边
+        float topStartX;
+        // 左上角为实心扇形
+        if (topLeft > 0 && topLeft <= border) {
+            topStartX = (x + border);
+        }
+        // 左上角为扇环
+        else if (topLeft > 0) {
+            topStartX = (x + topLeft);
+        }
+        // 左上角为直角
+        else {
+            topStartX = (x + border);
+        }
+
+        float topEndX;
+        if (topRight > 0 && topRight <= border) {
+            topEndX = (x + width - border);
+        } else if (topRight > 0) {
+            topEndX = (x + width - topRight);
+        } else {
+            topEndX = (x + width);
+        }
+        if (topEndX > topStartX) {
+            fillEx(stack, topStartX, y, topEndX - topStartX, border, color);
+        }
+
+        // 下边
+        float bottomStartX;
+        if (bottomLeft > 0 && bottomLeft <= border) {
+            bottomStartX = (x + border);
+        } else if (bottomLeft > 0) {
+            bottomStartX = (x + bottomLeft);
+        } else {
+            bottomStartX = (x);
+        }
+
+        float bottomEndX;
+        if (bottomRight > 0 && bottomRight <= border) {
+            bottomEndX = (x + width - border);
+        } else if (bottomRight > 0) {
+            bottomEndX = (x + width - bottomRight);
+        } else {
+            bottomEndX = (x + width - border);
+        }
+        if (bottomEndX > bottomStartX) {
+            fillEx(stack, bottomStartX, (y + height - border), bottomEndX - bottomStartX, border, color);
+        }
+
+        // 左边
+        float leftStartY;
+        if (topLeft > 0 && topLeft <= border) {
+            leftStartY = (y + border);
+        } else if (topLeft > 0) {
+            leftStartY = (y + topLeft);
+        } else {
+            leftStartY = (y);
+        }
+
+        float leftEndY;
+        if (bottomLeft > 0 && bottomLeft <= border) {
+            leftEndY = (y + height - border);
+        } else if (bottomLeft > 0) {
+            leftEndY = (y + height - bottomLeft);
+        } else {
+            leftEndY = (y + height - border);
+        }
+        if (leftEndY > leftStartY) {
+            fillEx(stack, x, leftStartY, border, leftEndY - leftStartY, color);
+        }
+
+        // 右边
+        float rightStartY;
+        if (topRight > 0 && topRight <= border) {
+            rightStartY = (y + border);
+        } else if (topRight > 0) {
+            rightStartY = (y + topRight);
+        } else {
+            rightStartY = (y + border);
+        }
+
+        float rightEndY;
+        if (bottomRight > 0 && bottomRight <= border) {
+            rightEndY = (y + height - border);
+        } else if (bottomRight > 0) {
+            rightEndY = (y + height - bottomRight);
+        } else {
+            rightEndY = (y + height);
+        }
+        if (rightEndY > rightStartY) {
+            fillEx(stack, (x + width - border), rightStartY, border, rightEndY - rightStartY, color);
+        }
+
+        // 绘制四个圆角
+        // 计算分段数
+        float maxRadius = Math.max(Math.max(topLeft, topRight), Math.max(bottomLeft, bottomRight));
+        int segments = calculateOptimalSegments(maxRadius);
+
+        // 左上角
+        if (topLeft > 0) {
+            float centerX = x + topLeft;
+            float centerY = y + topLeft;
+            if (topLeft <= border) {
+                // 绘制实心扇形
+                drawSector(stack, centerX, centerY, topLeft, 180, 270, segments, color);
+                // 填充边与圆角之间的连接区域
+                float radiusSize = topLeft;
+                float remainingSize = border - radiusSize;
+                fillEx(stack, centerX, centerY - radiusSize, remainingSize, radiusSize, color);
+                fillEx(stack, centerX - radiusSize, centerY, radiusSize, remainingSize, color);
+                fillEx(stack, centerX, centerY, remainingSize, remainingSize, color);
+            } else {
+                // 绘制扇环
+                drawSectorRing(stack, centerX, centerY, topLeft, 180, 270, border, segments, color);
+            }
+        }
+
+        // 右上角
+        if (topRight > 0) {
+            float centerX = x + width - topRight;
+            float centerY = y + topRight;
+            if (topRight <= border) {
+                // 绘制实心扇形
+                drawSector(stack, centerX, centerY, topRight, 270, 360, segments, color);
+                // 填充边与圆角之间的连接区域
+                float radiusSize = topRight;
+                float remainingSize = border - radiusSize;
+                fillEx(stack, centerX - remainingSize, centerY - radiusSize, remainingSize, radiusSize, color);
+                fillEx(stack, centerX, centerY, radiusSize, remainingSize, color);
+                fillEx(stack, centerX - remainingSize, centerY, remainingSize, remainingSize, color);
+            } else {
+                // 绘制扇环
+                drawSectorRing(stack, centerX, centerY, topRight, 270, 360, border, segments, color);
+            }
+        }
+
+        // 右下角
+        if (bottomRight > 0) {
+            float centerX = x + width - bottomRight;
+            float centerY = y + height - bottomRight;
+            if (bottomRight <= border) {
+                // 绘制实心扇形
+                drawSector(stack, centerX, centerY, bottomRight, 0, 90, segments, color);
+                // 填充边与圆角之间的连接区域
+                float radiusSize = topRight;
+                float remainingSize = border - radiusSize;
+                fillEx(stack, centerX, centerY - remainingSize, radiusSize, remainingSize, color);
+                fillEx(stack, centerX - remainingSize, centerY, remainingSize, radiusSize, color);
+                fillEx(stack, centerX - remainingSize, centerY - remainingSize, remainingSize, remainingSize, color);
+            } else {
+                // 绘制扇环
+                drawSectorRing(stack, centerX, centerY, bottomRight, 0, 90, border, segments, color);
+            }
+        }
+
+        // 左下角
+        if (bottomLeft > 0) {
+            float centerX = x + bottomLeft;
+            float centerY = y + height - bottomLeft;
+            if (bottomLeft <= border) {
+                // 绘制实心扇形
+                drawSector(stack, centerX, centerY, bottomLeft, 90, 180, segments, color);
+                // 填充边与圆角之间的连接区域
+                float radiusSize = topRight;
+                float remainingSize = border - radiusSize;
+                fillEx(stack, centerX - radiusSize, centerY - remainingSize, radiusSize, remainingSize, color);
+                fillEx(stack, centerX, centerY, remainingSize, radiusSize, color);
+                fillEx(stack, centerX, centerY - remainingSize, remainingSize, remainingSize, color);
+            } else {
+                // 绘制扇环
+                drawSectorRing(stack, centerX, centerY, bottomLeft, 90, 180, border, segments, color);
+            }
+        }
+    }
+
+    // endregion 绘制矩形
 
     // region 绘制圆
 
@@ -1234,25 +1837,22 @@ public final class AbstractGuiUtils {
     /**
      * 绘制圆角矩形框
      */
-    public static void drawBox(MatrixStack stack, float x, float y, float w, float h, float r, int color) {
-        drawBox(stack, x, y, w, h, r, calculateOptimalSegments(r), color);
+    public static void drawRoundedRect(MatrixStack stack, float x, float y, float w, float h, float r, int color) {
+        drawRoundedRect(stack, x, y, w, h, r, calculateOptimalSegments(r), color);
     }
 
     /**
      * 绘制带可变四角圆角的填充矩形
      */
-    public static void drawBox(MatrixStack stack, float x, float y, float w, float h,
-                               float topLeft, float topRight, float bottomLeft, float bottomRight, int color) {
+    public static void drawRoundedRect(MatrixStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int color) {
         float maxRadius = Math.max(Math.max(topLeft, topRight), Math.max(bottomLeft, bottomRight));
-        drawBox(stack, x, y, w, h, topLeft, topRight, bottomLeft, bottomRight, calculateOptimalSegments(maxRadius), color);
+        drawRoundedRect(stack, x, y, w, h, topLeft, topRight, bottomLeft, bottomRight, calculateOptimalSegments(maxRadius), color);
     }
 
     /**
      * 绘制带可变四角圆角的填充矩形
      */
-    public static void drawBox(MatrixStack stack, float x, float y, float w, float h,
-                               float topLeft, float topRight, float bottomLeft, float bottomRight,
-                               int part, int color) {
+    public static void drawRoundedRect(MatrixStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int part, int color) {
         float halfW = w * 0.5f;
         float halfH = h * 0.5f;
         topLeft = clampRadius(topLeft, halfW, halfH);
@@ -1322,108 +1922,9 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制圆角矩形单色边框
-     */
-    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, int color) {
-        drawBoxOutline(stack, x, y, w, h, r, 1, color);
-    }
-
-    /**
-     * 绘制圆角矩形单色边框
-     */
-    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, float lineWeight, int color) {
-        drawBoxOutline(stack, x, y, w, h, r, lineWeight, color, color);
-    }
-
-    /**
-     * 绘制圆角矩形双色边框
-     */
-    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, float lineWeight, int colorIn, int colorOut) {
-        drawBoxOutline(stack, x, y, w, h, r, calculateOptimalSegments(r), lineWeight, colorIn, colorOut);
-    }
-
-    /**
-     * 绘制圆角矩形双色边框
-     */
-    public static void drawBoxOutline(MatrixStack stack, float x, float y, float w, float h, float r, int part, float lineWeight, int colorIn, int colorOut) {
-        if (r <= 0 || lineWeight <= 0) {
-            fillOutLine(stack, (int) x, (int) y, (int) w, (int) h, (int) lineWeight, colorIn);
-            return;
-        }
-
-        BufferBuilder builder = Tessellator.getInstance().getBuilder();
-        Matrix4f m4 = stack.last().pose();
-        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
-
-        float r1 = r + lineWeight;
-        double piece = Math.PI / 2.0 / (part + 1);
-        float[] cosValues = new float[part + 1];
-        float[] sinValues = new float[part + 1];
-        for (int i = 1; i <= part; i++) {
-            double angle = piece * i;
-            cosValues[i] = (float) Math.cos(angle);
-            sinValues[i] = (float) Math.sin(angle);
-        }
-
-        addVertexWithColor(builder, m4, x - r, y, 0, colorIn);
-        addVertexWithColor(builder, m4, x - r1, y, 0, colorOut);
-        addVertexWithColor(builder, m4, x - r, y + h, 0, colorIn);
-        addVertexWithColor(builder, m4, x - r1, y + h, 0, colorOut);
-
-        for (int i = 1; i <= part; i++) {
-            float xOff = cosValues[i];
-            float yOff = sinValues[i];
-            addVertexWithColor(builder, m4, x - xOff * r, y + h + yOff * r, 0, colorIn);
-            addVertexWithColor(builder, m4, x - xOff * r1, y + h + yOff * r1, 0, colorOut);
-        }
-
-        addVertexWithColor(builder, m4, x, y + r + h, 0, colorIn);
-        addVertexWithColor(builder, m4, x, y + r1 + h, 0, colorOut);
-        addVertexWithColor(builder, m4, x + w, y + r + h, 0, colorIn);
-        addVertexWithColor(builder, m4, x + w, y + r1 + h, 0, colorOut);
-
-        for (int i = 1; i <= part; i++) {
-            float xOff = sinValues[i];
-            float yOff = cosValues[i];
-            addVertexWithColor(builder, m4, x + w + xOff * r, y + h + yOff * r, 0, colorIn);
-            addVertexWithColor(builder, m4, x + w + xOff * r1, y + h + yOff * r1, 0, colorOut);
-        }
-
-        addVertexWithColor(builder, m4, x + w + r, y + h, 0, colorIn);
-        addVertexWithColor(builder, m4, x + w + r1, y + h, 0, colorOut);
-        addVertexWithColor(builder, m4, x + w + r, y, 0, colorIn);
-        addVertexWithColor(builder, m4, x + w + r1, y, 0, colorOut);
-
-        for (int i = 1; i <= part; i++) {
-            float xOff = cosValues[i];
-            float yOff = sinValues[i];
-            addVertexWithColor(builder, m4, x + w + xOff * r, y - yOff * r, 0, colorIn);
-            addVertexWithColor(builder, m4, x + w + xOff * r1, y - yOff * r1, 0, colorOut);
-        }
-
-        addVertexWithColor(builder, m4, x + w, y - r, 0, colorIn);
-        addVertexWithColor(builder, m4, x + w, y - r1, 0, colorOut);
-        addVertexWithColor(builder, m4, x, y - r, 0, colorIn);
-        addVertexWithColor(builder, m4, x, y - r1, 0, colorOut);
-
-        for (int i = 1; i <= part; i++) {
-            float xOff = sinValues[i];
-            float yOff = cosValues[i];
-            addVertexWithColor(builder, m4, x - xOff * r, y - yOff * r, 0, colorIn);
-            addVertexWithColor(builder, m4, x - xOff * r1, y - yOff * r1, 0, colorOut);
-        }
-
-        addVertexWithColor(builder, m4, x - r, y, 0, colorIn);
-        addVertexWithColor(builder, m4, x - r1, y, 0, colorOut);
-
-        setupBlendRender();
-        finishBlendRender();
-    }
-
-    /**
      * 绘制圆角矩形
      */
-    public static void drawBox(MatrixStack stack, float x, float y, float w, float h, float r, int part, int color) {
+    public static void drawRoundedRect(MatrixStack stack, float x, float y, float w, float h, float r, int part, int color) {
         if (r <= 0) {
             fill(stack, (int) x, (int) y, (int) w, (int) h, color);
             return;
@@ -1508,16 +2009,16 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制圆形边框
+     * 绘制圆环
      */
-    public static void drawCircleOutline(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int color) {
-        drawCircleOutline(stack, centerX, centerY, radius, lineWidth, calculateCircleSegments(radius), color);
+    public static void drawCircleRing(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int color) {
+        drawCircleRing(stack, centerX, centerY, radius, lineWidth, calculateCircleSegments(radius), color);
     }
 
     /**
-     * 绘制圆形边框（
+     * 绘制圆环
      */
-    public static void drawCircleOutline(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int segments, int color) {
+    public static void drawCircleRing(MatrixStack stack, float centerX, float centerY, float radius, float lineWidth, int segments, int color) {
         if (radius <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
@@ -1581,17 +2082,17 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      */
-    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int color) {
+    public static void drawEllipseRing(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
-        drawEllipseOutline(stack, centerX, centerY, radiusX, radiusY, lineWidth, calculateCircleSegments(maxRadius), color);
+        drawEllipseRing(stack, centerX, centerY, radiusX, radiusY, lineWidth, calculateCircleSegments(maxRadius), color);
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      */
-    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int segments, int color) {
+    public static void drawEllipseRing(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
@@ -1644,7 +2145,7 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制填充椭圆（带旋转，弧度，指定分段数）
+     * 绘制填充椭圆
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
@@ -1684,40 +2185,40 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+    public static void drawEllipseRing(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
-        drawEllipseOutline(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
+        drawEllipseRing(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipseOutline(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
-        drawEllipseOutlineRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), lineWidth, segments, color);
+    public static void drawEllipseRing(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+        drawEllipseRingRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), lineWidth, segments, color);
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseOutlineRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+    public static void drawEllipseRingRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
-        drawEllipseOutlineRad(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
+        drawEllipseRingRad(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
     }
 
     /**
-     * 绘制椭圆边框
+     * 绘制椭圆环
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseOutlineRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+    public static void drawEllipseRingRad(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
@@ -1815,42 +2316,42 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制圆弧边框
+     * 绘制扇环
      *
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawArc(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
-        drawArcRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, calculateCircleSegments(radius), color);
+    public static void drawSectorRing(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+        drawSectorRingRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, calculateCircleSegments(radius), color);
     }
 
     /**
-     * 绘制圆弧边框
+     * 绘制扇环
      *
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawArc(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
-        drawArcRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, segments, color);
+    public static void drawSectorRing(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+        drawSectorRingRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, segments, color);
     }
 
     /**
-     * 绘制圆弧边框
+     * 绘制扇环
      *
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawArcRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
-        drawArcRad(stack, centerX, centerY, radius, startAngle, endAngle, lineWidth, calculateCircleSegments(radius), color);
+    public static void drawSectorRingRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+        drawSectorRingRad(stack, centerX, centerY, radius, startAngle, endAngle, lineWidth, calculateCircleSegments(radius), color);
     }
 
     /**
-     * 绘制圆弧边框
+     * 绘制扇环
      *
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawArcRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+    public static void drawSectorRingRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
         if (radius <= 0 || lineWidth <= 0 || segments < 2) return;
 
         Matrix4f m4 = stack.last().pose();
@@ -2185,13 +2686,13 @@ public final class AbstractGuiUtils {
                 int borderRadius = bgArgs.bgBorderRadius();
                 int borderThickness = bgArgs.bgBorderThickness();
                 // 绘制圆角矩形背景
-                AbstractGuiUtils.fill(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, bgArgs.bgArgb(), borderRadius);
+                AbstractGuiUtils.drawRoundedRect(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, bgArgs.bgArgb(), borderRadius);
 
                 // 计算边框颜色
                 int borderArgb = ColorUtils.softenArgb(bgArgs.bgArgb());
 
                 // 绘制圆角矩形边框
-                AbstractGuiUtils.fillOutLine(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, borderThickness, borderArgb, borderRadius);
+                AbstractGuiUtils.drawRoundedRectOutLineRough(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, borderThickness, borderArgb, borderRadius);
             }
 
             // 绘制文本

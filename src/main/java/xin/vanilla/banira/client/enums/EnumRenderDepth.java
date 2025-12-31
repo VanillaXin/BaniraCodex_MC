@@ -1,16 +1,22 @@
 package xin.vanilla.banira.client.enums;
 
 import lombok.Getter;
+import lombok.experimental.Accessors;
 
 /**
  * 渲染深度
  */
 @Getter
+@Accessors(fluent = true)
 public enum EnumRenderDepth {
     /**
      * 背景
      */
-    BACKGROUND(1),
+    BACKGROUND(0),
+    /**
+     * 默认
+     */
+    DEFAULT(1),
     /**
      * 前景
      */

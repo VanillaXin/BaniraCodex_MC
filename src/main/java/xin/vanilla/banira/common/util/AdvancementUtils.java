@@ -15,6 +15,7 @@ import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -132,7 +133,7 @@ public final class AdvancementUtils {
         if (advancementData == null) {
             return "";
         }
-        return advancementData.getDisplayInfo().getTitle().getString();
+        return advancementData.displayInfo().getTitle().getString();
     }
 
     /**
@@ -142,7 +143,7 @@ public final class AdvancementUtils {
         if (advancementData == null) {
             return "";
         }
-        return advancementData.getDisplayInfo().getDescription().getString();
+        return advancementData.displayInfo().getDescription().getString();
     }
 
     /**
@@ -152,7 +153,7 @@ public final class AdvancementUtils {
         if (advancementData == null) {
             return "";
         }
-        return advancementData.getId().toString();
+        return advancementData.id().toString();
     }
 
     // endregion
@@ -162,12 +163,10 @@ public final class AdvancementUtils {
     /**
      * 获取所有进度列表
      */
+    @Nonnull
     public static List<AdvancementData> getAllAdvancements() {
-        // 在客户端确保已请求数据
-        if (FMLEnvironment.dist.isClient()) {
-            ensureAdvancementData();
-        }
-        return new ArrayList<>(advancementData().asList());
+        List<AdvancementData> list = advancementData().asList();
+        return CollectionUtils.isNotNullOrEmpty(list) ? new ArrayList<>(list) : new ArrayList<>();
     }
 
     /**
@@ -176,7 +175,8 @@ public final class AdvancementUtils {
     @OnlyIn(Dist.CLIENT)
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
-                .filter(o -> o.getDisplayInfo().getIcon().getItem() != Items.AIR)
+                .filter(Objects::nonNull)
+                .filter(o -> o.displayInfo().getIcon().getItem() != Items.AIR)
                 .collect(Collectors.toList());
     }
 
@@ -357,7 +357,7 @@ public final class AdvancementUtils {
         }
 
         return getAllAdvancements().stream()
-                .filter(data -> data != null && data.getId().toString().equals(registry))
+                .filter(data -> data != null && data.id().toString().equals(registry))
                 .findFirst();
     }
 

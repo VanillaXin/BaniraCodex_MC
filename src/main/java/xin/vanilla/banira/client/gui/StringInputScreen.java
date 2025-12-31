@@ -11,10 +11,8 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumStringInputRegex;
-import xin.vanilla.banira.client.gui.component.BaniraButton;
-import xin.vanilla.banira.client.gui.component.BaniraTextField;
-import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.component.TextList;
+import xin.vanilla.banira.client.gui.component.*;
+import xin.vanilla.banira.client.gui.helper.LayoutConfig;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
@@ -22,7 +20,6 @@ import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Component;
 import xin.vanilla.banira.common.util.StringUtils;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,13 +28,7 @@ import java.util.function.Supplier;
 /**
  * 内容输入 Screen
  */
-public class StringInputScreen extends Screen {
-    private static final int INPUT_FIELD_HEIGHT = 12;
-    private static final int INPUT_FIELD_SPACING = 25;
-    private static final int TITLE_HEIGHT = 12;
-    private static final int BUTTON_HEIGHT = 20;
-    private static final int BUTTON_WIDTH = 95;
-    private static final int SCROLL_SPEED = 10;
+public class StringInputScreen extends BaniraScreen {
 
     private final Args args;
     private final List<InputField> inputFields = new ArrayList<>();
@@ -45,19 +36,21 @@ public class StringInputScreen extends Screen {
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
     private Text runningErrorText = Text.empty();
 
-    private int scrollOffset = 0;
-    private int maxScrollOffset = 0;
-    private int contentHeight = 0;
-    private int startY = 0;
+    private int contentAreaTop = 0;
+    private int contentAreaBottom = 0;
+    private int scrollableContentHeight = 0;
+    private int visibleContentHeight = 0;
+    private int buttonY = 0;
 
     private BaniraButton submitButton;
     private BaniraButton cancelButton;
 
     public StringInputScreen(Args args) {
-        super(args.getTitle() != null ? args.getTitle().toComponent().toTextComponent() : Component.literal("StringInputScreen").toTextComponent());
+        super(args.getTitle() != null ? args.getTitle().toComponent() : Component.literal("StringInputScreen"));
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
+        this.previousScreen(args.getParentScreen());
     }
 
     @Data
@@ -246,11 +239,14 @@ public class StringInputScreen extends Screen {
     }
 
     @Override
-    protected void init() {
+    protected void initEvent() {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
+            Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
+
+        // 初始化滚动条
+        super.initScrollBar(new ScrollBar());
 
         // 计算布局
         calculateLayout();
@@ -265,7 +261,7 @@ public class StringInputScreen extends Screen {
             Widget widget = args.getWidgets().get(i);
             InputField inputField = new InputField();
 
-            int fieldY = startY + TITLE_HEIGHT + INPUT_FIELD_SPACING * i + scrollOffset;
+            int fieldY = contentAreaTop + LayoutConfig.StringInput.TITLE_HEIGHT + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - getScrollOffset();
             int inputWidth = (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) ? 175 : 200;
 
             BaniraTextField input = new BaniraTextField(
@@ -273,7 +269,7 @@ public class StringInputScreen extends Screen {
                     this.width / 2 - 100,
                     fieldY,
                     inputWidth,
-                    INPUT_FIELD_HEIGHT,
+                    LayoutConfig.StringInput.INPUT_FIELD_HEIGHT,
                     widget.message().toComponent().toTextComponent()
             );
 
@@ -311,7 +307,7 @@ public class StringInputScreen extends Screen {
                 });
             }
 
-            this.addButton(input);
+            super.addButton(input);
             inputField.input(input);
             inputField.title(widget.title());
             inputField.y(fieldY);
@@ -324,55 +320,149 @@ public class StringInputScreen extends Screen {
                         this.width / 2 + 78,
                         fieldY,
                         20,
-                        INPUT_FIELD_HEIGHT,
+                        LayoutConfig.StringInput.INPUT_FIELD_HEIGHT,
                         Component.literal("...").toTextComponent(),
                         button -> {
                             try {
                                 if (widget.type() == WidgetType.FILE) {
-                                    input.setValue(DialogUtils.chooseFileString("", widget.fileFilter()));
+                                    DialogUtils.chooseFileString("", input::setValue);
                                 } else if (widget.type() == WidgetType.COLOR) {
-                                    input.setValue(DialogUtils.chooseRgbHex(""));
+                                    DialogUtils.chooseRgbHex("", input::setValue);
                                 }
                             } catch (Exception ignored) {
                             }
                         }
                 );
-                this.addButton(fileButton);
+                super.addButton(fileButton);
                 inputField.button(fileButton);
             }
 
             this.inputFields.add(inputField);
         }
 
-        // 创建按钮
-        int buttonY = startY + contentHeight - BUTTON_HEIGHT - 5 + scrollOffset;
-
         this.submitButton = new BaniraButton(
                 this.width / 2 + 5,
-                buttonY,
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
+                this.buttonY,
+                LayoutConfig.StringInput.BUTTON_WIDTH,
+                LayoutConfig.StringInput.BUTTON_HEIGHT,
                 Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent(),
                 button -> handleSubmit()
         );
-        this.addButton(this.submitButton);
+        super.addButton(this.submitButton);
 
         this.cancelButton = new BaniraButton(
                 this.width / 2 - 100,
-                buttonY,
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
+                this.buttonY,
+                LayoutConfig.StringInput.BUTTON_WIDTH,
+                LayoutConfig.StringInput.BUTTON_HEIGHT,
                 Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent(),
-                button -> Minecraft.getInstance().setScreen(args.getParentScreen())
+                button -> Minecraft.getInstance().setScreen(this.previousScreen())
         );
-        this.addButton(this.cancelButton);
+        super.addButton(this.cancelButton);
+
+        // 注册按钮区域为点击拦截区域
+        super.clearInterceptAreas();
+        super.registerInterceptArea((args) -> {
+            if (this.submitButton != null && this.submitButton.isMouseOver(args.mouseX(), args.mouseY())) {
+                // 使提交按钮处理点击
+                if (args.clicked() && this.submitButton.mouseClicked(args.mouseX(), args.mouseY(), args.button())) {
+                    return true;
+                } else if (this.submitButton.mouseReleased(args.mouseX(), args.mouseY(), args.button())) {
+                    return true;
+                }
+            }
+            if (this.cancelButton != null && this.cancelButton.isMouseOver(args.mouseX(), args.mouseY())) {
+                // 使取消按钮处理点击
+                if (args.clicked() && this.cancelButton.mouseClicked(args.mouseX(), args.mouseY(), args.button())) {
+                    return true;
+                } else if (this.cancelButton.mouseReleased(args.mouseX(), args.mouseY(), args.button())) {
+                    return true;
+                }
+            }
+            return (this.submitButton != null && this.submitButton.isMouseOver(args.mouseX(), args.mouseY())) ||
+                    (this.cancelButton != null && this.cancelButton.isMouseOver(args.mouseX(), args.mouseY()));
+        });
+
+        initScrollBar();
+    }
+
+    @Override
+    protected void updateLayout() {
+        calculateLayout();
+        initScrollBar();
+        updateInputFieldsPosition();
     }
 
     private void calculateLayout() {
-        contentHeight = args.getWidgets().size() * INPUT_FIELD_SPACING + TITLE_HEIGHT + BUTTON_HEIGHT + 15;
-        startY = Math.max(10, (this.height - Math.min(contentHeight, this.height - 40)) / 2);
-        maxScrollOffset = Math.max(0, contentHeight - (this.height - 40));
-        scrollOffset = Math.max(0, Math.min(maxScrollOffset, scrollOffset));
+        // 计算按钮区域
+        this.buttonY = this.height - LayoutConfig.StringInput.BUTTON_HEIGHT - LayoutConfig.StringInput.BUTTON_MARGIN;
+
+        // 计算内容区域底部
+        this.contentAreaBottom = this.height - LayoutConfig.StringInput.BUTTON_HEIGHT - LayoutConfig.StringInput.BUTTON_MARGIN - LayoutConfig.StringInput.BUTTON_MARGIN;
+
+        // 计算内容区域顶部
+        this.contentAreaTop = LayoutConfig.StringInput.BUTTON_HEIGHT;
+
+        // 计算可见内容高度
+        this.visibleContentHeight = this.contentAreaBottom - this.contentAreaTop;
+
+        if (args.getWidgets().isEmpty()) {
+            this.scrollableContentHeight = 0;
+        } else {
+            this.scrollableContentHeight = args.getWidgets().size() * LayoutConfig.StringInput.INPUT_FIELD_SPACING;
+        }
+
+        // 更新滚动条参数
+        if (super.scrollBar() != null) {
+            super.scrollBar().updateScrollParams(this.scrollableContentHeight, this.visibleContentHeight);
+        }
+    }
+
+    /**
+     * 初始化滚动条位置和尺寸
+     */
+    private void initScrollBar() {
+        if (super.scrollBar() == null) return;
+
+        int scrollBarX = this.width / 2 + 100 + LayoutConfig.StringInput.SCROLL_BAR_MARGIN;
+        int scrollBarY = this.contentAreaTop;
+        int scrollBarHeight = this.visibleContentHeight;
+
+        super.scrollBar()
+                .x(scrollBarX)
+                .y(scrollBarY)
+                .width(LayoutConfig.StringInput.SCROLL_BAR_WIDTH)
+                .height(scrollBarHeight);
+
+        // 设置滚动变化回调
+        super.scrollBar().onScrollChanged(offset -> {
+            updateInputFieldsPosition();
+        });
+    }
+
+    /**
+     * 获取当前滚动偏移量（像素）
+     */
+    private int getScrollOffset() {
+        return super.scrollBar() != null ? super.scrollBar().scrollOffset() : 0;
+    }
+
+    /**
+     * 更新输入框位置
+     */
+    private void updateInputFieldsPosition() {
+        int scrollOffset = getScrollOffset();
+        for (int i = 0; i < inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            int fieldY = contentAreaTop + LayoutConfig.StringInput.TITLE_HEIGHT + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - scrollOffset;
+            field.input().y = fieldY;
+            field.y(fieldY);
+
+            // 更新按钮位置
+            if (field.button() != null) {
+                field.button().y = fieldY;
+            }
+        }
     }
 
     private void handleSubmit() {
@@ -382,7 +472,7 @@ public class StringInputScreen extends Screen {
         }
 
         if (results.isEmpty() || this.submitButton.getMessage().getString().equals(BaniraCodex.languager().getTranslationClient(EnumI18nType.OPTION, "cancel"))) {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
+            Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
@@ -416,7 +506,7 @@ public class StringInputScreen extends Screen {
             }
 
             if (StringUtils.isNullOrEmptyEx(results.runningResult())) {
-                Minecraft.getInstance().setScreen(args.getParentScreen());
+                Minecraft.getInstance().setScreen(this.previousScreen());
             } else {
                 this.runningErrorText = Text.literal(results.runningResult()).color(Color.argb(0xFFFF0000));
             }
@@ -424,54 +514,53 @@ public class StringInputScreen extends Screen {
     }
 
     @Override
-    @ParametersAreNonnullByDefault
-    public void render(MatrixStack stack, int mouseX, int mouseY, float delta) {
+    protected void renderEvent(MatrixStack stack, float partialTicks) {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
+            Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
         // 更新输入框位置
-        for (int i = 0; i < inputFields.size(); i++) {
-            InputField field = inputFields.get(i);
-            int fieldY = startY + TITLE_HEIGHT + INPUT_FIELD_SPACING * i + scrollOffset;
-            field.input().y = fieldY;
-            field.y(fieldY);
-            field.value(field.input().getValue());
+        updateInputFieldsPosition();
 
-            // 更新按钮位置
-            if (field.button() != null) {
-                field.button().y = fieldY;
-            }
+        if (this.submitButton != null) {
+            this.submitButton.y = this.buttonY;
+        }
+        if (this.cancelButton != null) {
+            this.cancelButton.y = this.buttonY;
         }
 
-        // 更新按钮位置
-        int buttonY = startY + contentHeight - BUTTON_HEIGHT - 5 + scrollOffset;
-        this.submitButton.y = buttonY;
-        this.cancelButton.y = buttonY;
-
         this.renderBackground(stack);
-        super.render(stack, mouseX, mouseY, delta);
 
         // 绘制标题
+        int scrollOffset = getScrollOffset();
         for (int i = 0; i < args.getWidgets().size(); i++) {
             Widget widget = args.getWidgets().get(i);
-            int titleY = startY + INPUT_FIELD_SPACING * i + scrollOffset + 2;
+            int titleY = contentAreaTop + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - scrollOffset + 2;
             AbstractGuiUtils.drawLimitedText(FontDrawArgs.of(widget.title().stack(stack))
                     .x(this.width / 2.0f - 100)
                     .y(titleY));
+        }
+
+        // 渲染按钮
+        super.renderButtons(stack, partialTicks);
+
+        // 更新并渲染滚动条
+        if (super.scrollBar() != null) {
+            super.scrollBar().updateScrollParams(this.scrollableContentHeight, this.visibleContentHeight);
+            super.scrollBar().render(stack);
         }
 
         // 绘制错误提示
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
             BaniraTextField input = field.input();
-            if (input.error() && input.isMouseOver(mouseX, mouseY)) {
+            if (input.error() && input.isMouseOver((int) mouseHelper.mouseX(), (int) mouseHelper.mouseY())) {
                 Text errorTextItem = this.errorTextMap.get(i).stack(stack);
                 if (errorTextItem != null) {
                     AbstractGuiUtils.drawPopupMessageWithSeason(FontDrawArgs.ofPopo(errorTextItem)
-                            .x(mouseX + 5)
-                            .y(mouseY + 5)
+                            .x(mouseHelper.mouseX() + 5)
+                            .y(mouseHelper.mouseY() + 5)
                             .padding(0)
                             .maxWidth(200)
                             .position(EnumEllipsisPosition.MIDDLE)
@@ -484,7 +573,8 @@ public class StringInputScreen extends Screen {
         String runningErrorTextContent = this.runningErrorText.content();
         if (StringUtils.isNotNullOrEmpty(runningErrorTextContent)) {
             this.runningErrorText = Text.empty();
-            DialogUtils.openMessageBox("Something Error!", runningErrorTextContent, DialogUtils.DialogIconType.error, DialogUtils.DialogButtonType.ok);
+            DialogUtils.openMessageBox("Something Error!", runningErrorTextContent, DialogUtils.DialogIconType.error, DialogUtils.DialogButtonType.ok, result -> {
+            });
         }
 
         // 更新提交按钮文本
@@ -498,38 +588,53 @@ public class StringInputScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
-            return true;
+    protected void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+        if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_4) {
+            Minecraft.getInstance().setScreen(this.previousScreen());
+            eventArgs.consumed(true);
         }
-        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        this.scrollOffset = (int) (this.scrollOffset - delta * SCROLL_SPEED);
-        this.scrollOffset = Math.max(0, Math.min(maxScrollOffset, scrollOffset));
-        return true;
+    protected void handlePopupOption(MouseReleasedHandleArgs eventArgs) {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
-                || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input().isFocused()))) {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
-            return true;
+    protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
+    }
+
+    @Override
+    protected void mouseMovedEvent() {
+    }
+
+    @Override
+    protected void mouseScrolledEvent(MouseScoredHandleArgs eventArgs) {
+        if (super.scrollBar() != null && this.scrollableContentHeight > this.visibleContentHeight) {
+            int currentOffset = super.scrollBar().scrollOffset();
+            int targetOffset = currentOffset - (int) (eventArgs.delta() * (LayoutConfig.StringInput.SCROLL_SPEED - 1));
+            super.scrollBar().setScrollOffset(targetOffset);
+            eventArgs.consumed(true);
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return false;
+    protected void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
+        if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE
+                || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input().isFocused()))) {
+            Minecraft.getInstance().setScreen(this.previousScreen());
+            eventArgs.consumed(true);
+        }
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
+    protected void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
+    }
+
+    @Override
+    protected void removedEvent() {
+    }
+
+    @Override
+    protected void closeEvent() {
     }
 }

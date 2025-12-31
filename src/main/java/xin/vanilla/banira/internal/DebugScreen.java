@@ -2,7 +2,6 @@ package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
@@ -17,20 +16,22 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
+import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.StringInputScreen;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.util.*;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.KeyboardHelper;
+import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.*;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class DebugScreen extends Screen {
+public class DebugScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final CircularList<String> textures = CircularList.asList(
@@ -41,11 +42,6 @@ public class DebugScreen extends Screen {
             , "textures/gui/sakura_moe.png"
     );
 
-    /**
-     * 键盘与鼠标事件管理器
-     */
-    protected final KeyEventManager keyManager = new KeyEventManager();
-    private final MouseHelper mouseHelper = new MouseHelper();
     private String content = "";
     private int contentLines = 2;
     private int contentLength = 20;
@@ -53,10 +49,6 @@ public class DebugScreen extends Screen {
     private boolean warp = false;
     private int contentTextureIndex = 0;
 
-    @Override
-    protected void init() {
-        super.init();
-    }
 
     protected DebugScreen(ITextComponent textComponent) {
         super(textComponent);
@@ -67,9 +59,17 @@ public class DebugScreen extends Screen {
     }
 
     @Override
-    @ParametersAreNonnullByDefault
-    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
-        mouseHelper.tick(mouseX, mouseY);
+    protected void initEvent() {
+
+    }
+
+    @Override
+    protected void updateLayout() {
+
+    }
+
+    @Override
+    public void renderEvent(MatrixStack stack, float partialTicks) {
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width - 20, this.height - 20, 0x44000000);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -116,7 +116,7 @@ public class DebugScreen extends Screen {
         AbstractGuiUtils.drawShape(rect1);
 
         ShapeDrawArgs rect11 = ShapeDrawArgs.rect(stack, (super.width - 70) / 2f, (super.height - 70) / 2f, 70, 70, 0x33000000);
-        rect11.rect().border(4).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).topLeft(2).topRight(15).bottomLeft(15).bottomRight(15);
+        rect11.rect().border(4).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).topLeft(4).topRight(35).bottomLeft(35).bottomRight(16);
         AbstractGuiUtils.drawShape(rect11);
 
         int hudY = 1;
@@ -126,45 +126,62 @@ public class DebugScreen extends Screen {
         AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal("warp：" + warp)).x(5).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
-        if (mouseHelper.isLeftPressing()) {
+        if (mouseHelper.isPressingLeftEx()) {
             AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal(content)
                             .stack(stack)
                             .font(super.font)
                             .align(EnumAlignment.CENTER))
-                    .x(mouseX).y(mouseY).fontSize(fontSize).align(EnumAlignment.CENTER)
+                    .x(mouseHelper.mouseX()).y(mouseHelper.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
                     .wrap(warp).maxWidth(warp ? AbstractGuiUtils.multilineTextWidth(this.content) / 2 : 0)
             );
-        } else if (mouseHelper.isRightPressing()) {
+        } else if (mouseHelper.isPressingRightEx()) {
             AbstractGuiUtils.drawPopupMessage(FontDrawArgs.ofPopo(Text.literal(content)
                             .stack(stack)
                             .font(super.font)
                             .align(EnumAlignment.CENTER))
-                    .x(mouseX).y(mouseY).padding(0).fontSize(fontSize).align(EnumAlignment.CENTER)
+                    .x(mouseHelper.mouseX()).y(mouseHelper.mouseY()).padding(0).fontSize(fontSize).align(EnumAlignment.CENTER)
                     .wrap(warp).maxWidth(warp ? AbstractGuiUtils.multilineTextWidth(this.content) / 2 : 0)
                     .texture(TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), textures.get(contentTextureIndex))));
         }
     }
 
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            if (Minecraft.getInstance().screen == null && KeyboardHelper.isKeyPressing(GLFW.GLFW_KEY_DELETE)) {
-                Minecraft.getInstance().setScreen(new DebugScreen(Component.empty()));
-            }
-        }
-    }
-
-    /**
-     * 键盘按下事件
-     */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.keyManager.keyPressed(keyCode);
-        return super.keyPressed(keyCode, scanCode, modifiers);
+    protected void removedEvent() {
+
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    protected void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+
+    }
+
+    @Override
+    protected void handlePopupOption(MouseReleasedHandleArgs eventArgs) {
+
+    }
+
+    @Override
+    protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
+
+    }
+
+    @Override
+    protected void mouseMovedEvent() {
+
+    }
+
+    @Override
+    protected void mouseScrolledEvent(MouseScoredHandleArgs eventArgs) {
+
+    }
+
+    @Override
+    protected void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
+
+    }
+
+    @Override
+    public void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
         if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_E)) {
             if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {
                 this.contentLength++;
@@ -225,6 +242,33 @@ public class DebugScreen extends Screen {
                             .title(Text.literal("enter_description").shadow(true))
                             .allowEmpty(true)
                     )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("color")
+                            .title(Text.literal("select_color").shadow(true))
+                            .type(StringInputScreen.WidgetType.COLOR)
+                            .allowEmpty(true)
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("file")
+                            .title(Text.literal("select_file").shadow(true))
+                            .type(StringInputScreen.WidgetType.FILE)
+                            .allowEmpty(true)
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("1")
+                            .title(Text.literal("enter_1").shadow(true))
+                            .allowEmpty(true)
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("2")
+                            .title(Text.literal("enter_2").shadow(true))
+                            .allowEmpty(true)
+                    )
+                    .addWidget(new StringInputScreen.Widget()
+                            .name("3")
+                            .title(Text.literal("enter_3").shadow(true))
+                            .allowEmpty(true)
+                    )
                     .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
         } else if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
@@ -236,13 +280,11 @@ public class DebugScreen extends Screen {
                     });
             Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
         }
-        this.keyManager.keyReleased(keyCode);
-        return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
+    protected void closeEvent() {
+
     }
 
     private void genContent() {
@@ -277,4 +319,19 @@ public class DebugScreen extends Screen {
         }
         this.content = content.substring(0, content.length() - 1);
     }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return true;
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            if (Minecraft.getInstance().screen == null && KeyboardHelper.isKeyPressing(GLFW.GLFW_KEY_DELETE)) {
+                Minecraft.getInstance().setScreen(new DebugScreen(Component.empty()));
+            }
+        }
+    }
+
 }

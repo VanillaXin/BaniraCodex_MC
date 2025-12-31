@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.ITextComponent;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -72,12 +73,12 @@ public class BaniraButton extends Button {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && this.active && this.visible && this.isMouseOver(mouseX, mouseY)) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_1 && this.active && this.visible && this.isMouseOver(mouseX, mouseY)) {
             this.mousePressedOnButton = true;
             this.playDownSound(Minecraft.getInstance().getSoundManager());
             return true;
         }
-        if (button == 0) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_1) {
             this.mousePressedOnButton = false;
         }
         return false;
@@ -85,7 +86,7 @@ public class BaniraButton extends Button {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && this.mousePressedOnButton) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_1 && this.mousePressedOnButton) {
             this.mousePressedOnButton = false;
             if (this.active && this.visible && this.isMouseOver(mouseX, mouseY)) {
                 this.onPress();

@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -19,9 +18,6 @@ public class KeyEventManager {
     private final Set<Integer> pressedKeys = new LinkedHashSet<>();
     @Deprecated
     private int modifiers = GLFWKey.GLFW_KEY_UNKNOWN;
-    private final Set<Integer> pressedMouses = new LinkedHashSet<>();
-    @Getter
-    private double mousedScroll, mouseDownX, mouseDownY, mouseX, mouseY;
 
     @Deprecated
     public void keyPressed(int keyCode, int modifiers) {
@@ -43,46 +39,13 @@ public class KeyEventManager {
         this.pressedKeys.remove(keyCode);
     }
 
-    public void mouseClicked(int mouseButton, double mouseX, double mouseY) {
-        this.pressedMouses.add(mouseButton);
-        this.mouseDownX = mouseX;
-        this.mouseDownY = mouseY;
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-    }
-
-    public void mouseReleased(int mouseButton, double mouseX, double mouseY) {
-        this.pressedMouses.remove(mouseButton);
-        this.mouseDownX = -1;
-        this.mouseDownY = -1;
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-    }
-
-    public void mouseMoved(double mouseX, double mouseY) {
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-    }
-
-    public void mouseScrolled(double mousedScroll, double mouseX, double mouseY) {
-        this.mousedScroll = mousedScroll;
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-    }
-
     private boolean active = false;
 
-    public void refresh(double mouseX, double mouseY) {
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
+    public void tick() {
         if (!Minecraft.getInstance().isWindowActive()) {
             if (this.active) LOGGER.debug("Window is not active, clear all pressed keys and mouses");
             this.active = false;
             this.pressedKeys.clear();
-            this.pressedMouses.clear();
-            this.mouseDownX = -1;
-            this.mouseDownY = -1;
-            this.mousedScroll = 0;
             this.modifiers = GLFWKey.GLFW_KEY_UNKNOWN;
         } else {
             this.active = true;
@@ -91,6 +54,13 @@ public class KeyEventManager {
 
     public boolean isKeyPressed(int keyCode) {
         return this.pressedKeys.contains(keyCode);
+    }
+
+    /**
+     * 按键是否只按下一个
+     */
+    public boolean onlyKeyPressed(int keyCode) {
+        return this.pressedKeys.size() == 1 && this.isKeyPressed(keyCode);
     }
 
     public boolean isCtrlPressed() {
@@ -153,80 +123,36 @@ public class KeyEventManager {
         return this.pressedKeys.size() == 3 && this.isCtrlPressed() && this.isShiftPressed() && this.isAltPressed();
     }
 
-    public boolean ieEscapePressed() {
+    public boolean isEscapePressed() {
         return this.isKeyPressed(GLFWKey.GLFW_KEY_ESCAPE);
     }
 
-    public boolean ieEnterPressed() {
+    public boolean isEnterPressed() {
         return this.isKeyPressed(GLFWKey.GLFW_KEY_ENTER) || this.isKeyPressed(GLFWKey.GLFW_KEY_KP_ENTER);
     }
 
-    public boolean ieBackspacePressed() {
+    public boolean isBackspacePressed() {
         return this.isKeyPressed(GLFWKey.GLFW_KEY_BACKSPACE);
     }
 
-    public boolean ieDeletePressed() {
+    public boolean isDeletePressed() {
         return this.isKeyPressed(GLFWKey.GLFW_KEY_DELETE);
     }
 
     public boolean onlyEscapePressed() {
-        return this.pressedKeys.size() == 1 && this.ieEscapePressed();
+        return this.pressedKeys.size() == 1 && this.isEscapePressed();
     }
 
     public boolean onlyEnterPressed() {
-        return this.pressedKeys.size() == 1 && this.ieEnterPressed();
+        return this.pressedKeys.size() == 1 && this.isEnterPressed();
     }
 
     public boolean onlyBackspacePressed() {
-        return this.pressedKeys.size() == 1 && this.ieBackspacePressed();
+        return this.pressedKeys.size() == 1 && this.isBackspacePressed();
     }
 
     public boolean onlyDeletePressed() {
-        return this.pressedKeys.size() == 1 && this.ieDeletePressed();
-    }
-
-    public boolean isMousePressed(int mouseButton) {
-        return this.pressedMouses.contains(mouseButton);
-    }
-
-    public boolean isMouseLeftPressed() {
-        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_LEFT);
-    }
-
-    public boolean isMouseRightPressed() {
-        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
-    }
-
-    public boolean isMouseMiddlePressed() {
-        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_MIDDLE);
-    }
-
-    public boolean onlyMouseLeftPressed() {
-        return this.pressedMouses.size() == 1 && this.isMouseLeftPressed();
-    }
-
-    public boolean onlyMouseRightPressed() {
-        return this.pressedMouses.size() == 1 && this.isMouseRightPressed();
-    }
-
-    public boolean onlyMouseMiddlePressed() {
-        return this.pressedMouses.size() == 1 && this.isMouseMiddlePressed();
-    }
-
-    public boolean onlyMouseLeftRightPressed() {
-        return this.pressedMouses.size() == 2 && this.isMouseLeftPressed() && this.isMouseRightPressed();
-    }
-
-    public boolean isMouseDragged() {
-        return this.mouseDownX != GLFWKey.GLFW_KEY_UNKNOWN && this.mouseDownY != GLFWKey.GLFW_KEY_UNKNOWN;
-    }
-
-    public boolean isMouseDragged(int mouseButton) {
-        return this.isMouseDragged() && this.pressedMouses.contains(mouseButton);
-    }
-
-    public boolean isMouseMoved() {
-        return Math.abs(this.mouseX - this.mouseDownX) > 1 || Math.abs(this.mouseY - this.mouseDownY) > 1;
+        return this.pressedKeys.size() == 1 && this.isDeletePressed();
     }
 
     /**
@@ -246,35 +172,10 @@ public class KeyEventManager {
     }
 
     /**
-     * 鼠标是否按下
+     * 按键是否只按下一个
      */
-    public boolean isMousePressed(String mouseNames) {
-        if (StringUtils.isNullOrEmptyEx(mouseNames)) return false;
-        return GLFWKeyUtils.matchMouse(mouseNames, this.pressedMouses.stream().mapToInt(i -> i).toArray());
-    }
-
-    /**
-     * 鼠标是否按顺序按下
-     */
-    public boolean isMousePressedInOrder(String mouseNames) {
-        if (StringUtils.isNullOrEmptyEx(mouseNames)) return false;
-        return GLFWKeyUtils.matchMouseInOrder(mouseNames, this.pressedMouses.stream().mapToInt(i -> i).toArray());
-    }
-
-    public boolean isKeyAndMousePressed(String names) {
-        if (StringUtils.isNullOrEmptyEx(names)) return false;
-        StringBuilder keyNames = new StringBuilder();
-        StringBuilder mouseNames = new StringBuilder();
-        String[] parts = names.split("\\+");
-        for (String part : parts) {
-            if (part.startsWith("Mouse")) {
-                mouseNames.append(part).append("+");
-            } else {
-                keyNames.append(part).append("+");
-            }
-        }
-        return (StringUtils.isNullOrEmptyEx(keyNames.toString()) || this.isKeyPressed(keyNames.toString()))
-                && (StringUtils.isNullOrEmptyEx(mouseNames.toString()) || this.isMousePressed(mouseNames.toString()));
+    public boolean onlyKeyPressed(String keyNames) {
+        return this.pressedKeys.size() == 1 && this.isKeyPressed(keyNames);
     }
 
 }

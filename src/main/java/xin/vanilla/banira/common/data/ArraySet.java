@@ -22,7 +22,7 @@ public class ArraySet<E> implements Collection<E> {
     public ArraySet(Collection<? extends E> elements) {
         if (elements != null) {
             for (E element : elements) {
-                if (!list.contains(element)) {
+                if (element != null && !list.contains(element)) {
                     list.add(element);
                 }
             }
@@ -36,7 +36,7 @@ public class ArraySet<E> implements Collection<E> {
      */
     @Override
     public boolean add(E e) {
-        if (!list.contains(e)) {
+        if (e != null && !list.contains(e)) {
             list.add(e);
             return true;
         }
@@ -56,7 +56,7 @@ public class ArraySet<E> implements Collection<E> {
         }
         boolean modified = false;
         for (E element : elements) {
-            if (add(element)) {
+            if (element != null && add(element)) {
                 modified = true;
             }
         }
@@ -77,7 +77,7 @@ public class ArraySet<E> implements Collection<E> {
         boolean modified = false;
         int insertIndex = index;
         for (E element : c) {
-            if (!list.contains(element)) {
+            if (element != null && !list.contains(element)) {
                 list.add(insertIndex, element);
                 insertIndex++;
                 modified = true;

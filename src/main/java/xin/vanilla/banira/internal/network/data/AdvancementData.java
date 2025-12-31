@@ -18,12 +18,20 @@ import javax.annotation.Nonnull;
  * 进度信息
  */
 @Data
-@Accessors(chain = true)
+@Accessors(chain = true, fluent = true)
 public class AdvancementData {
-    @Nonnull
     private final ResourceLocation id;
-    @Nonnull
     private final DisplayInfo displayInfo;
+
+    @Nonnull
+    public ResourceLocation id() {
+        return id == null ? BaniraCodex.resourceFactory().empty() : id;
+    }
+
+    @Nonnull
+    public DisplayInfo displayInfo() {
+        return displayInfo == null ? emptyDisplayInfo() : displayInfo;
+    }
 
     public AdvancementData(@Nonnull ResourceLocation id, DisplayInfo displayInfo) {
         this.id = id;

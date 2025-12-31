@@ -1,25 +1,35 @@
 package xin.vanilla.banira.client.util;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 
 import java.nio.DoubleBuffer;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
+@Accessors(fluent = true)
 public class MouseHelper {
     private final FixedList<Boolean> mouseLeftPressedRecord = new FixedList<>(5);
     private final FixedList<Boolean> mouseRightPressedRecord = new FixedList<>(5);
-    private int mouseLeftPressedX = -1;
-    private int mouseLeftPressedY = -1;
-    private int mouseRightPressedX = -1;
-    private int mouseRightPressedY = -1;
-    private int mouseX;
-    private int mouseY;
+    private double mouseLeftPressedX = -1;
+    private double mouseLeftPressedY = -1;
+    private double mouseRightPressedX = -1;
+    private double mouseRightPressedY = -1;
+    @Getter
+    private double mouseX;
+    @Getter
+    private double mouseY;
+    private final Set<Integer> pressedMouses = new LinkedHashSet<>();
+    private double mousedScroll, mouseDownX, mouseDownY;
 
     private static long getWindowHandle() {
         return Minecraft.getInstance().getWindow().getWindow();
@@ -38,10 +48,10 @@ public class MouseHelper {
     }
 
     private boolean isMouseRightPressing(long windowHandle) {
-        return GLFW.glfwGetMouseButton(windowHandle, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+        return GLFW.glfwGetMouseButton(windowHandle, GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
     }
 
-    public void tick(int mouseX, int mouseY) {
+    public void tick(double mouseX, double mouseY) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         boolean mouseLeftPressing = isMouseLeftPressing();
@@ -61,21 +71,34 @@ public class MouseHelper {
             }
         }
         mouseRightPressedRecord.add(mouseRightPressing);
+
+        if (!Minecraft.getInstance().isWindowActive()) {
+            this.mouseLeftPressedX = -1;
+            this.mouseLeftPressedY = -1;
+            this.mouseRightPressedX = -1;
+            this.mouseRightPressedY = -1;
+            this.mouseX = -1;
+            this.mouseY = -1;
+            this.pressedMouses.clear();
+            this.mousedScroll = 0;
+            this.mouseDownX = -1;
+            this.mouseDownY = -1;
+        }
     }
 
-    public boolean isLeftPressing() {
+    public boolean isPressingLeftEx() {
         return Boolean.TRUE.equals(mouseLeftPressedRecord.getLast());
     }
 
-    public boolean isRightPressing() {
+    public boolean isPressingRightEx() {
         return Boolean.TRUE.equals(mouseRightPressedRecord.getLast());
     }
 
-    public boolean isLeftPressed() {
+    public boolean isPressedLeftEx() {
         return mouseLeftPressedRecord.size() > 1 && mouseLeftPressedRecord.get(mouseLeftPressedRecord.size() - 2) && !mouseLeftPressedRecord.getLast();
     }
 
-    public boolean isRightPressed() {
+    public boolean isPressedRightEx() {
         return mouseRightPressedRecord.size() > 1 && mouseRightPressedRecord.get(mouseRightPressedRecord.size() - 2) && !mouseRightPressedRecord.getLast();
     }
 
@@ -96,12 +119,100 @@ public class MouseHelper {
     }
 
     public boolean isLeftPressedInRect(int x, int y, int width, int height) {
-        return isLeftPressed() && isHoverInRect(x, y, width, height) && isLeftHoverInRect(x, y, width, height);
+        return isPressedLeftEx() && isHoverInRect(x, y, width, height) && isLeftHoverInRect(x, y, width, height);
     }
 
     public boolean isRightPressedInRect(int x, int y, int width, int height) {
-        return isRightPressed() && isHoverInRect(x, y, width, height) && isRightHoverInRect(x, y, width, height);
+        return isPressedRightEx() && isHoverInRect(x, y, width, height) && isRightHoverInRect(x, y, width, height);
     }
+
+    public void mouseClicked(double mouseX, double mouseY, int mouseButton) {
+        this.pressedMouses.add(mouseButton);
+        this.mouseDownX = mouseX;
+        this.mouseDownY = mouseY;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            this.mouseLeftPressedX = mouseX;
+            this.mouseLeftPressedY = mouseY;
+        } else if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+            this.mouseRightPressedX = mouseX;
+            this.mouseRightPressedY = mouseY;
+        }
+    }
+
+    public void mouseReleased(double mouseX, double mouseY, int mouseButton) {
+        this.pressedMouses.remove(mouseButton);
+        this.mouseDownX = -1;
+        this.mouseDownY = -1;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            this.mouseLeftPressedX = -1;
+            this.mouseLeftPressedY = -1;
+        } else if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+            this.mouseRightPressedX = -1;
+            this.mouseRightPressedY = -1;
+        }
+    }
+
+    public void mouseMoved(double mouseX, double mouseY) {
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+    }
+
+    public void mouseScrolled(double mouseX, double mouseY, double mousedScroll) {
+        this.mousedScroll = mousedScroll;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+    }
+
+    public boolean isPressed(int mouseButton) {
+        return this.pressedMouses.contains(mouseButton);
+    }
+
+    public boolean isPressedLeft() {
+        return this.isPressed(GLFWKey.GLFW_MOUSE_BUTTON_LEFT);
+    }
+
+    public boolean isPressedRight() {
+        return this.isPressed(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
+    }
+
+    public boolean isPressedMiddle() {
+        return this.isPressed(GLFWKey.GLFW_MOUSE_BUTTON_MIDDLE);
+    }
+
+    public boolean onlyPressedLeft() {
+        return this.pressedMouses.size() == 1 && this.isPressedLeft();
+    }
+
+    public boolean onlyPressedRight() {
+        return this.pressedMouses.size() == 1 && this.isPressedRight();
+    }
+
+    public boolean onlyPressedMiddle() {
+        return this.pressedMouses.size() == 1 && this.isPressedMiddle();
+    }
+
+    public boolean onlyPressedLeftRight() {
+        return this.pressedMouses.size() == 2 && this.isPressedLeft() && this.isPressedRight();
+    }
+
+    public boolean isDragged() {
+        return this.mouseDownX != GLFWKey.GLFW_KEY_UNKNOWN && this.mouseDownY != GLFWKey.GLFW_KEY_UNKNOWN;
+    }
+
+    public boolean isDragged(int mouseButton) {
+        return this.isDragged() && this.pressedMouses.contains(mouseButton);
+    }
+
+    public boolean isMoved() {
+        return (this.mouseDownX != -1 && Math.abs(this.mouseX - this.mouseDownX) > 1) || (this.mouseDownY != -1 && Math.abs(this.mouseY - this.mouseDownY) > 1);
+    }
+
+
+    // region static
 
     public static KeyValue<Double, Double> getRawCursorPos() {
         long window = getWindowHandle();
@@ -161,5 +272,7 @@ public class MouseHelper {
         long window = getWindowHandle();
         GLFW.glfwSetCursorPos(window, rawX, rawY);
     }
+
+    // endregion static
 
 }

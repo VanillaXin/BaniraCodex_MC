@@ -53,6 +53,11 @@ public class ShapeDrawArgs {
     private SectorRingParams sectorRing = new SectorRingParams();
 
     /**
+     * 多边形参数
+     */
+    private PolygonParams polygon = new PolygonParams();
+
+    /**
      * 形状类型枚举
      */
     public enum ShapeType {
@@ -76,6 +81,10 @@ public class ShapeDrawArgs {
          * 扇环
          */
         SECTOR_RING,
+        /**
+         * 多边形
+         */
+        POLYGON,
     }
 
     /**
@@ -150,9 +159,9 @@ public class ShapeDrawArgs {
         private float border = 0;
 
         /**
-         * 矩形圆角模式
+         * 矩形圆角模式（默认 FINE 以统一 Screen 内组件绘制精度）
          */
-        private RoundedCornerMode cornerMode = RoundedCornerMode.AUTO;
+        private RoundedCornerMode cornerMode = RoundedCornerMode.FINE;
 
         /**
          * 设置圆角半径
@@ -450,6 +459,47 @@ public class ShapeDrawArgs {
     }
 
     /**
+     * 多边形参数
+     */
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class PolygonParams {
+        /**
+         * 中心X坐标
+         */
+        private float centerX;
+
+        /**
+         * 中心Y坐标
+         */
+        private float centerY;
+
+        /**
+         * 外接圆半径
+         */
+        private float radius;
+
+        /**
+         * 边数
+         * >= 3
+         */
+        private int sides = 3;
+
+        /**
+         * 旋转角度</br>
+         * 0为正右, 顺时针
+         */
+        private double rotation = 0;
+
+        /**
+         * 边框厚度</br>
+         * 0为无边框实心多边形
+         */
+        private float border = 0;
+    }
+
+    /**
      * 创建矩形绘制参数
      */
     public static ShapeDrawArgs rect(MatrixStack stack, float x, float y, float width, float height, int color) {
@@ -524,5 +574,16 @@ public class ShapeDrawArgs {
                 .color(color)
                 .type(ShapeType.SECTOR_RING)
                 .sectorRing(new SectorRingParams().centerX(centerX).centerY(centerY).outerRadius(outerRadius).anglesRad(startAngle, endAngle));
+    }
+
+    /**
+     * 创建多边形绘制参数
+     */
+    public static ShapeDrawArgs polygon(MatrixStack stack, float centerX, float centerY, float radius, int sides, int color) {
+        return new ShapeDrawArgs()
+                .stack(stack)
+                .color(color)
+                .type(ShapeType.POLYGON)
+                .polygon(new PolygonParams().centerX(centerX).centerY(centerY).radius(radius).sides(sides));
     }
 }

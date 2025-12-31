@@ -5,8 +5,8 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
-import xin.vanilla.banira.common.api.ResourceFactory;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -26,13 +26,13 @@ public class NetworkHandler {
     /**
      * 创建网络处理器实例
      *
-     * @param channelName     通道名称
-     * @param resourceFactory 资源工厂
+     * @param channelName 通道名称
+     * @param IIdentifier 资源工厂
      * @return NetworkHandler 实例
      */
-    public static NetworkHandler create(String channelName, ResourceFactory resourceFactory) {
+    public static NetworkHandler create(String channelName, IIdentifier IIdentifier) {
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                resourceFactory.create(channelName),
+                IIdentifier.create(channelName),
                 () -> PROTOCOL_VERSION,
                 clientVersion -> true,      // 客户端版本始终有效
                 serverVersion -> true       // 服务端版本始终有效

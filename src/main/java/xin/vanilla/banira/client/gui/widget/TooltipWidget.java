@@ -1,0 +1,425 @@
+package xin.vanilla.banira.client.gui.widget;
+
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.text.ITextComponent;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.data.*;
+import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.common.util.ItemUtils;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 提示Widget。提供 drawPopupMessage 等静态绘制方法。
+ * <p>
+ * 绘制逻辑：
+ * <ul>
+ *   <li>可指定是否「使用纹理绘制」（默认 true）</li>
+ *   <li>使用纹理绘制为真时：使用纹理绘制；否则使用颜色绘制</li>
+ *   <li>指定了季节则使用对应季节的纹理或颜色绘制</li>
+ * </ul>
+ */
+@Accessors(chain = true, fluent = true)
+public class TooltipWidget extends BaseWidget implements ITextWidget {
+    @Getter
+    private Text text = Text.empty();
+
+    @Getter
+    @Nullable
+    private ItemStack itemStack;
+
+    @Getter
+    @Setter
+    private boolean seasonTooltip = true;
+
+    @Getter
+    @Setter
+    private boolean vanillaTooltip = false;
+
+    /**
+     * 是否使用纹理绘制，默认 true
+     */
+    @Getter
+    @Setter
+    private boolean useTextureDrawing = true;
+
+    private transient final List<ITextComponent> tooltip = new ArrayList<>();
+
+    public TooltipWidget(BaniraScreen screen) {
+        super(screen);
+    }
+
+    public TooltipWidget(BaniraScreen screen, ScreenCoordinate bounds) {
+        super(screen, bounds);
+    }
+
+    public TooltipWidget(BaniraScreen screen, ScreenCoordinate bounds, Component text) {
+        super(screen, bounds);
+        this.text = Text.from(text);
+    }
+
+    public TooltipWidget(BaniraScreen screen, ScreenCoordinate bounds, Text text) {
+        super(screen, bounds);
+        this.text = text;
+    }
+
+    @Override
+    public void render(MatrixStack stack, float partialTicks) {
+        if (!visible) return;
+        if (mouseInside) {
+            int mouseX = (int) screen.inputState().mouseX();
+            int mouseY = (int) screen.inputState().mouseY();
+            stack.pushPose();
+            // vanillaTooltip 使用屏幕坐标，不应用 translate
+            if (!vanillaTooltip) {
+                stack.translate(-absoluteX(), -absoluteY(), 0);
+            }
+            if (itemStack != null && !itemStack.isEmpty()) {
+                drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
+            } else if (vanillaTooltip) {
+                if (tooltip.isEmpty()) {
+                    tooltip.add(text.toComponent().toChat());
+                }
+                screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
+            } else {
+                BaniraColorConfig theme = screen.getEffectiveTheme();
+                EnumSeason season = screen.season();
+                drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(useTextureDrawing), theme, season);
+            }
+            stack.popPose();
+        }
+        renderChildren(stack, partialTicks);
+    }
+
+
+    /**
+     * 获取指定季节的提示纹理路径
+     */
+    public static String getSeasonTexturePath(EnumSeason season) {
+        if (season == null || season == EnumSeason.AUTO) {
+            season = DateUtils.getSeason();
+        }
+        switch (season) {
+            case SUMMER:
+                return "textures/gui/aotake_cat.png";
+            case AUTUMN:
+                return "textures/gui/narcissus_cat.png";
+            case WINTER:
+                return "textures/gui/snowflake_cat.png";
+            default:
+                return "textures/gui/sakura_cat.png";
+        }
+    }
+
+    /**
+     * 绘制弹出层消息。
+     * 渲染规则：popupUseTexture 为真时使用纹理绘制，否则使用颜色绘制；指定季节则使用对应季节的纹理或颜色。
+     *
+     * @param theme  主题配置，颜色绘制时使用（非空时直接使用，否则按 season 解析季节预设）
+     * @param season 季节，纹理绘制时选择季节纹理，颜色绘制时解析季节主题
+     */
+    public static void drawPopupMessage(MatrixStack stack, FontDrawArgs args,
+                                        @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
+        FontDrawArgs drawArgs = args.clone();
+        boolean useTextureMode = drawArgs.popupUseTexture();
+
+        if (useTextureMode) {
+            useTexture(drawArgs, season);
+            drawPopupMessageInternal(stack, drawArgs, null);
+        } else {
+            useColor(drawArgs, theme, season);
+            drawPopupMessageInternal(stack, drawArgs, resolveTheme(theme, season));
+        }
+    }
+
+    private static void useTexture(FontDrawArgs drawArgs, @Nullable EnumSeason season) {
+        if (drawArgs.texture() == null) {
+            EnumSeason s = (season != null && season != EnumSeason.AUTO) ? season : DateUtils.getSeason();
+            drawArgs.texture(Texture.of(TextureUtils.loadCustomTexture(Identifier.id(), getSeasonTexturePath(s))));
+        }
+        drawArgs.bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
+    }
+
+    private static void useColor(FontDrawArgs drawArgs, @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
+        BaniraColorConfig resolved = resolveTheme(theme, season);
+        drawArgs.bgArgb(resolved.popupBg()).bgBorderRadius(2).bgBorderThickness(1).texture(null);
+        drawArgs.text().color(Color.argb(resolved.textPrimary()));
+    }
+
+    private static BaniraColorConfig resolveTheme(@Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
+        if (theme != null) return theme;
+        return BaniraColorConfig.forSeason(season == null || season == EnumSeason.AUTO ? DateUtils.getSeason() : season);
+    }
+
+    /**
+     * 使用当前季节颜色绘制
+     */
+    public static void drawPopupMessageWithSeason(MatrixStack stack, FontDrawArgs args) {
+        drawPopupMessage(stack, args.clone(), null, null);
+    }
+
+    /**
+     * 使用当前季节纹理绘制
+     */
+    public static void drawPopupMessageWithSeasonTexture(MatrixStack stack, FontDrawArgs args) {
+        drawPopupMessageWithSeasonTexture(stack, args, DateUtils.getSeason());
+    }
+
+    /**
+     * 使用指定季节纹理绘制
+     */
+    public static void drawPopupMessageWithSeasonTexture(MatrixStack stack, FontDrawArgs args, EnumSeason season) {
+        FontDrawArgs drawArgs = args.clone().popupUseTexture(true);
+        drawPopupMessage(stack, drawArgs, null, season);
+    }
+
+    /**
+     * 使用默认样式绘制
+     */
+    public static void drawPopupMessage(MatrixStack stack, FontDrawArgs args) {
+        drawPopupMessage(stack, args.clone(), null, null);
+    }
+
+    /**
+     * 绘制物品提示
+     *
+     * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
+     */
+    public static void drawItemTooltip(MatrixStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
+        boolean advanced = Screen.hasShiftDown();
+        List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
+        Component tooltipComponent = Component.empty();
+        for (int idx = 0; idx < tooltipList.size(); idx++) {
+            Component component = tooltipList.get(idx);
+            if (idx > 0) tooltipComponent = tooltipComponent.append("\n");
+            tooltipComponent = tooltipComponent.append(component);
+        }
+        Text tooltipText = new Text(tooltipComponent);
+        FontRenderer font = itemStack.getItem().getFontRenderer(itemStack);
+        FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font)).x(x).y(y);
+        if (season != null) {
+            drawPopupMessageWithSeasonTexture(stack, drawArgs, season);
+        } else {
+            drawPopupMessage(stack, drawArgs);
+        }
+    }
+
+    /**
+     * 绘制物品提示
+     */
+    public static void drawItemTooltip(MatrixStack stack, ItemStack itemStack, double x, double y, boolean season) {
+        drawItemTooltip(stack, itemStack, x, y, season ? EnumSeason.AUTO : null);
+    }
+
+    private static void drawPopupMessageInternal(MatrixStack stack, FontDrawArgs args, @Nullable BaniraColorConfig theme) {
+        boolean useThemeColor = (theme != null);
+        float calculatedTextureScale = 1.0f;
+        int calculatedPaddingLeft;
+        int calculatedPaddingRight;
+        int calculatedPaddingTop;
+        int calculatedPaddingBottom;
+        if (args.popupPaddingAuto()) {
+            if (useThemeColor) {
+                calculatedPaddingLeft = FontDrawArgs.getPopupPaddingLeft();
+                calculatedPaddingRight = FontDrawArgs.getPopupPaddingRight();
+                calculatedPaddingTop = FontDrawArgs.getPopupPaddingTop();
+                calculatedPaddingBottom = FontDrawArgs.getPopupPaddingBottom();
+            } else {
+                calculatedPaddingLeft = 0;
+                calculatedPaddingRight = 0;
+                calculatedPaddingTop = 0;
+                calculatedPaddingBottom = 0;
+            }
+        } else {
+            calculatedPaddingLeft = args.paddingLeft();
+            calculatedPaddingRight = args.paddingRight();
+            calculatedPaddingTop = args.paddingTop();
+            calculatedPaddingBottom = args.paddingBottom();
+        }
+
+        FontDrawArgs calcArgs = args.clone()
+                .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
+                .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
+        KeyValue<Integer, Integer> textSize = LabelWidget.calculateLimitedTextSize(calcArgs);
+        int textWidth = textSize.key();
+        int textHeight = textSize.val();
+
+        final TextureUtils.NinePatchInfo ninePatchInfo = args.texture() != null ? TextureUtils.parseNinePatch(args.texture()) : null;
+
+        if (ninePatchInfo != null) {
+            Color color = Color.argb(ninePatchInfo.textColor);
+            if (!color.isEmpty()) args.text().color(color);
+            FontRenderer font = args.text().font();
+            float targetFontSize = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
+            if (ninePatchInfo.rightGuideHeight > 0) {
+                calculatedTextureScale = targetFontSize / ninePatchInfo.rightGuideHeight;
+            }
+            if (ninePatchInfo.bottomGuideLeftPadding > 0)
+                calculatedPaddingLeft += (int) (ninePatchInfo.bottomGuideLeftPadding * calculatedTextureScale);
+            if (ninePatchInfo.bottomGuideRightPadding > 0)
+                calculatedPaddingRight += (int) (ninePatchInfo.bottomGuideRightPadding * calculatedTextureScale);
+            if (ninePatchInfo.rightGuideTopPadding > 0)
+                calculatedPaddingTop += (int) (ninePatchInfo.rightGuideTopPadding * calculatedTextureScale);
+            if (ninePatchInfo.rightGuideBottomPadding > 0)
+                calculatedPaddingBottom += (int) (ninePatchInfo.rightGuideBottomPadding * calculatedTextureScale);
+            FontDrawArgs recalcArgs = args.clone()
+                    .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
+                    .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
+            textSize = LabelWidget.calculateLimitedTextSize(recalcArgs);
+            textWidth = textSize.key();
+            textHeight = textSize.val();
+        }
+
+        final int finalCalculatedPaddingLeft = calculatedPaddingLeft;
+        final int finalCalculatedPaddingRight = calculatedPaddingRight;
+        final int finalCalculatedPaddingTop = calculatedPaddingTop;
+        final int finalCalculatedPaddingBottom = calculatedPaddingBottom;
+        final float textureScale = calculatedTextureScale;
+
+        int msgWidth = textWidth;
+        int msgHeight = textHeight;
+        double adjustedX = args.x();
+        double adjustedY = args.y();
+        int finalMaxWidth = args.maxWidth();
+
+        if (args.inScreen()) {
+            KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+            int screenWidth = screenSize.key();
+            int screenHeight = screenSize.val();
+
+            // 换行时需用屏幕可用宽度计算文本尺寸，否则气泡高度未考虑换行导致内容溢出
+            if (args.wrap()) {
+                int effectiveMaxWidth = finalMaxWidth > 0 ? finalMaxWidth : Math.max(0, screenWidth - args.marginLeft() - args.marginRight());
+                if (effectiveMaxWidth > 0) {
+                    FontDrawArgs maxWidthRecalcArgs = args.clone()
+                            .paddingLeft(finalCalculatedPaddingLeft).paddingRight(finalCalculatedPaddingRight)
+                            .paddingTop(finalCalculatedPaddingTop).paddingBottom(finalCalculatedPaddingBottom)
+                            .maxWidth(effectiveMaxWidth);
+                    KeyValue<Integer, Integer> maxWidthTextSize = LabelWidget.calculateLimitedTextSize(maxWidthRecalcArgs);
+                    msgWidth = maxWidthTextSize.key();
+                    msgHeight = maxWidthTextSize.val();
+                    if (finalMaxWidth <= 0) finalMaxWidth = effectiveMaxWidth;
+                }
+            }
+
+            adjustedX = args.x() - msgWidth / 2.0;
+            adjustedY = args.y() - msgHeight - 5;
+
+            boolean hasTopSpace = adjustedY >= args.marginTop();
+            boolean hasLeftSpace = adjustedX >= args.marginLeft();
+            boolean hasRightSpace = adjustedX + msgWidth <= screenWidth - args.marginRight();
+
+            if (!hasTopSpace) {
+                adjustedY = args.y() + 1 + 5;
+            } else {
+                if (!hasLeftSpace) adjustedX = args.marginLeft();
+                else if (!hasRightSpace) adjustedX = screenWidth - msgWidth - args.marginRight();
+            }
+
+            adjustedX = Math.max(args.marginLeft(), Math.min(adjustedX, screenWidth - msgWidth - args.marginRight()));
+            adjustedY = Math.max(args.marginTop(), Math.min(adjustedY, screenHeight - msgHeight - args.marginBottom()));
+
+            if (args.wrap()) {
+                int actualAvailableWidth = screenWidth - (int) adjustedX - args.marginRight();
+                if (finalMaxWidth > 0) actualAvailableWidth = Math.min(actualAvailableWidth, finalMaxWidth);
+                actualAvailableWidth = Math.max(actualAvailableWidth, finalCalculatedPaddingLeft + finalCalculatedPaddingRight);
+                finalMaxWidth = actualAvailableWidth;
+            }
+        }
+
+        final double finalAdjustedX = adjustedX;
+        final double finalAdjustedY = adjustedY;
+        final int finalMsgWidth = msgWidth;
+        final int finalMsgHeight = msgHeight;
+        final int finalMaxWidthForText = finalMaxWidth;
+
+        AbstractGuiUtils.renderByDepth(args.text().stack(), EnumRenderDepth.POPUP_TIPS, (s) -> {
+            if (args.texture() != null && ninePatchInfo != null) {
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                NinePatchImageWidget.drawNinePatch(s, args.texture(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, textureScale);
+                RenderSystem.disableBlend();
+            } else if (args.texture() != null) {
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                Texture tex = args.texture();
+                AbstractGuiUtils.bindTexture(tex.location());
+                AbstractGuiUtils.blit(s, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
+                        tex.u0(), tex.v0(), tex.uWidth(), tex.vHeight(),
+                        tex.uvWidth(), tex.uvHeight());
+                RenderSystem.disableBlend();
+            } else if (useThemeColor && theme != null) {
+                int radius = args.bgBorderRadius();
+                int borderThickness = args.bgBorderThickness();
+                ShapeDrawArgs.RoundedCornerMode cornerMode = args.popupCornerMode() != null ? args.popupCornerMode() : ShapeDrawArgs.RoundedCornerMode.FINE;
+                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBg());
+                fillArgs.rect().radius(radius).cornerMode(cornerMode);
+                BaseShapeWidget.drawShape(fillArgs);
+                if (borderThickness > 0) {
+                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBorder());
+                    borderArgs.rect().radius(radius).border(borderThickness).cornerMode(cornerMode);
+                    BaseShapeWidget.drawShape(borderArgs);
+                }
+            } else {
+                int borderRadius = args.bgBorderRadius();
+                int borderThickness = args.bgBorderThickness();
+                AbstractGuiUtils.drawRoundedRect(args.text().stack(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, args.bgArgb(), borderRadius);
+                int borderArgb = ColorUtils.softenArgb(args.bgArgb());
+                AbstractGuiUtils.drawRoundedRectOutLineRough(args.text().stack(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, borderThickness, borderArgb, borderRadius);
+            }
+
+            FontDrawArgs clone = args.clone()
+                    .x(finalAdjustedX).y(finalAdjustedY)
+                    .bgArgb(0x00000000).position(EnumEllipsisPosition.MIDDLE)
+                    .paddingLeft(finalCalculatedPaddingLeft).paddingRight(finalCalculatedPaddingRight)
+                    .paddingTop(finalCalculatedPaddingTop).paddingBottom(finalCalculatedPaddingBottom);
+            if (args.wrap() && finalMaxWidthForText > 0) clone.maxWidth(finalMaxWidthForText);
+            else if (args.maxWidth() > 0) clone.maxWidth(args.maxWidth());
+            LabelWidget.drawLimitedText(clone);
+        });
+    }
+
+    public TooltipWidget text(String text) {
+        this.text = Text.literal(text);
+        tooltip.clear();
+        return this;
+    }
+
+    public TooltipWidget text(Component component) {
+        this.text = Text.from(component);
+        tooltip.clear();
+        return this;
+    }
+
+    public TooltipWidget text(Text text) {
+        this.text = text;
+        tooltip.clear();
+        return this;
+    }
+
+    public TooltipWidget itemStack(@Nullable ItemStack itemStack) {
+        this.itemStack = itemStack;
+        return this;
+    }
+}

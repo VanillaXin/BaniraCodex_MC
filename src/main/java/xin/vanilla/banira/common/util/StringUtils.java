@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 
 import lombok.NonNull;
+import xin.vanilla.banira.common.data.KeyValue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -207,6 +208,91 @@ public final class StringUtils {
             }
         }
         return result.toString();
+    }
+
+    /**
+     * 将字符串转换为小写蛇形命名
+     */
+    public static String toSnakeCase(String input) {
+        if (isNullOrEmptyEx(input)) return "";
+
+        StringBuilder result = new StringBuilder();
+        boolean firstChar = true;
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+
+            if (Character.isLetterOrDigit(c)) {
+                if (!firstChar && Character.isUpperCase(c)) {
+                    char prevChar = input.charAt(i - 1);
+                    if (Character.isLetterOrDigit(prevChar) && !Character.isUpperCase(prevChar)) {
+                        result.append('_');
+                    } else if (i < input.length() - 1) {
+                        char nextChar = input.charAt(i + 1);
+                        if (Character.isLowerCase(nextChar)) {
+                            result.append('_');
+                        }
+                    }
+                }
+                result.append(Character.toLowerCase(c));
+                firstChar = false;
+            } else if (c != '_') {
+                if (!firstChar && i < input.length() - 1) {
+                    char nextChar = input.charAt(i + 1);
+                    if (Character.isLetterOrDigit(nextChar)) {
+                        result.append('_');
+                    }
+                }
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * 将字符串转换为大写蛇形命名
+     */
+    public static String toSnakeCaseUpper(String input) {
+        return toSnakeCase(input).toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * 检查字符串是否被 left 和 right 包裹
+     */
+    public static boolean isWrappedBy(String str, KeyValue<String, String> keyValue) {
+        return isWrappedBy(str, keyValue.left(), keyValue.right());
+    }
+
+    /**
+     * 检查字符串是否被 left 和 right 包裹
+     */
+    public static boolean isWrappedBy(String str, String left, String right) {
+        if (str == null || left == null || right == null) {
+            return false;
+        }
+        if (str.length() < left.length() + right.length()) {
+            return false;
+        }
+        return str.startsWith(left) && str.endsWith(right);
+    }
+
+    /**
+     * 删除字符串的 left 和 right
+     */
+    public static String unwrap(String str, KeyValue<String, String> keyValue) {
+        return unwrap(str, keyValue.left(), keyValue.right());
+    }
+
+    /**
+     * 删除字符串的 left 和 right 包裹
+     */
+    public static String unwrap(String str, String left, String right) {
+        if (str == null || left == null || right == null) {
+            return str;
+        }
+        if (isWrappedBy(str, left, right)) {
+            return str.substring(left.length(), str.length() - right.length());
+        }
+        return str;
     }
 
     public static String padOptimizedLeft(Object value, int length, String padChar) {

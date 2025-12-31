@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 
@@ -44,17 +45,17 @@ public final class CommandUtils {
             CommandSource source = context.getSource();
             Entity entity = source.getEntity();
             if (entity instanceof ServerPlayerEntity) {
-                MessageUtils.sendMessage((ServerPlayerEntity) entity, Component.translatable(EnumI18nType.MESSAGE, "mod_disabled"));
+                MessageUtils.sendMessage((ServerPlayerEntity) entity, Component.trans(EnumI18nType.FORMAT, "mod_disabled"));
             }
         }
         return modDisabled.get();
     }
 
     public static String getLanguage(CommandSource source) {
-        String lang = LanguageHelper.getServerLanguage();
+        String lang = Translator.getServerLanguage();
         if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
             try {
-                lang = LanguageHelper.getPlayerLanguage(source.getPlayerOrException());
+                lang = Translator.getPlayerLanguage(source.getPlayerOrException());
             } catch (Exception ignored) {
             }
         }
@@ -208,9 +209,9 @@ public final class CommandUtils {
                         .color(EnumMCColor.AQUA.getColor())
                         .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                         .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(command)
-                                .toTextComponent())
+                                .toVanilla())
                         );
-                MessageUtils.sendMessage(player, Component.translatable(BaniraCodex.MODID, EnumI18nType.MESSAGE, "notify_help", modName, button));
+                MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "notify_help", modName, button));
                 playerData.setNotified(true);
             }
         }
@@ -312,8 +313,8 @@ public final class CommandUtils {
 
         ForgeConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
         if (cv == null) {
-            Component component = Component.translatable(EnumI18nType.MESSAGE, "config_key_absent", configKey);
-            source.sendFailure(component.toChatComponent(lang));
+            Component component = Component.trans(EnumI18nType.FORMAT, "config_key_absent", configKey);
+            source.sendFailure(component.toChat(lang));
             return 0;
         }
 
@@ -323,23 +324,23 @@ public final class CommandUtils {
             parsed = parseStringToType(configValue, type);
         } catch (Exception e) {
             LOGGER.error(e);
-            Component component = Component.translatable(EnumI18nType.MESSAGE, "config_value_parse_error", configValue, e.getMessage());
-            source.sendFailure(component.toChatComponent(lang));
+            Component component = Component.trans(EnumI18nType.FORMAT, "config_value_parse_error", configValue, e.getMessage());
+            source.sendFailure(component.toChat(lang));
             return 0;
         }
 
         if (validateConfigValueWithSpec(cv, parsed)) {
             ((ForgeConfigSpec.ConfigValue) cv).set(parsed);
         } else {
-            Component component = Component.translatable(EnumI18nType.MESSAGE, "config_value_set_error", configKey, configValue);
-            source.sendFailure(component.toChatComponent(lang));
+            Component component = Component.trans(EnumI18nType.FORMAT, "config_value_set_error", configKey, configValue);
+            source.sendFailure(component.toChat(lang));
             return 0;
         }
 
         tryApplyServerConfigBake(configClazz);
 
-        Component component = Component.translatable(EnumI18nType.MESSAGE, "config_value_set_success", configKey, parsed);
-        source.sendSuccess(component.toChatComponent(lang), true);
+        Component component = Component.trans(EnumI18nType.FORMAT, "config_value_set_success", configKey, parsed);
+        source.sendSuccess(component.toChat(lang), true);
 
         return 1;
     }

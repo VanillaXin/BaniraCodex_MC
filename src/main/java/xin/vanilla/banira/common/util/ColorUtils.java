@@ -155,6 +155,17 @@ public final class ColorUtils {
         return (0.2126f * r + 0.7152f * g + 0.0722f * b) / 255f;
     }
 
+    /**
+     * ARGB 颜色反色
+     */
+    public static int invertArgb(int argb) {
+        int a = (argb >> 24) & 0xFF;
+        int r = 0xFF - ((argb >> 16) & 0xFF);
+        int g = 0xFF - ((argb >> 8) & 0xFF);
+        int b = 0xFF - (argb & 0xFF);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
     public static boolean isArgbEmpty(int argb) {
         int alpha = (argb >> 24) & 0xFF;
         return alpha == 0x00;

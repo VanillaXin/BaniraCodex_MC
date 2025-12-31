@@ -6,13 +6,10 @@ import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
@@ -22,21 +19,23 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.data.TransformDrawArgs;
-import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
-import xin.vanilla.banira.client.enums.EnumRotationCenter;
-import xin.vanilla.banira.client.gui.component.BaniraButton;
-import xin.vanilla.banira.client.gui.component.BaniraTextField;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.component.TextList;
+import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.common.util.NumberUtils;
+import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -57,20 +56,10 @@ public final class AbstractGuiUtils {
     private static final Random random = new Random();
 
 
-    // region 设置深度
-
-    /**
-     * 以默认深度绘制
-     */
     public static void renderByDepth(MatrixStack stack, Consumer<MatrixStack> drawFunc) {
         AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.DEFAULT, drawFunc);
     }
 
-    /**
-     * 以指定深度绘制
-     *
-     * @param depth 深度
-     */
     public static void renderByDepth(MatrixStack stack, EnumRenderDepth depth, Consumer<MatrixStack> drawFunc) {
         if (depth != null) {
             renderByDepth(stack, depth.depth(), drawFunc);
@@ -79,13 +68,7 @@ public final class AbstractGuiUtils {
         }
     }
 
-    /**
-     * 以指定深度绘制
-     *
-     * @param depth 深度
-     */
     public static void renderByDepth(MatrixStack stack, int depth, Consumer<MatrixStack> drawFunc) {
-        // 保存当前深度测试状态
         boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         int depthFunc = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
 
@@ -93,19 +76,13 @@ public final class AbstractGuiUtils {
             stack.pushPose();
             stack.translate(0, 0, depth);
 
-            // 启用深度测试
             RenderSystem.enableDepthTest();
-            // 设置深度函数
-            RenderSystem.depthFunc(GL11.GL_LEQUAL); // 小于等于当前深度的像素通过测试, 允许相同深度的像素显示
-            // RenderSystem.depthFunc(GL11.GL_ALWAYS);
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
 
-            // 执行绘制
             drawFunc.accept(stack);
         } finally {
-            // 恢复矩阵状态
             stack.popPose();
 
-            // 恢复之前的深度测试状态
             if (!depthTest) {
                 RenderSystem.disableDepthTest();
             } else {
@@ -115,9 +92,6 @@ public final class AbstractGuiUtils {
         }
     }
 
-    // endregion 设置深度
-
-    // region 绘制纹理
 
     public static void bindTexture(ResourceLocation resourceLocation) {
         Minecraft.getInstance().getTextureManager().bind(resourceLocation);
@@ -143,20 +117,6 @@ public final class AbstractGuiUtils {
         );
     }
 
-    /**
-     * 使用指定的纹理坐标和尺寸信息绘制一个矩形区域。
-     *
-     * @param x0            矩形的左上角x坐标。
-     * @param y0            矩形的左上角y坐标。
-     * @param destWidth     目标矩形的宽度，决定了图像在屏幕上的宽度。
-     * @param destHeight    目标矩形的高度，决定了图像在屏幕上的高度。
-     * @param u0            源图像上矩形左上角的u轴坐标。
-     * @param v0            源图像上矩形左上角的v轴坐标。
-     * @param srcWidth      源图像上矩形的宽度，用于确定从源图像上裁剪的部分。
-     * @param srcHeight     源图像上矩形的高度，用于确定从源图像上裁剪的部分。
-     * @param textureWidth  整个纹理的宽度，用于计算纹理坐标。
-     * @param textureHeight 整个纹理的高度，用于计算纹理坐标。
-     */
     public static void blit(MatrixStack stack, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
         AbstractGui.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
@@ -202,7 +162,7 @@ public final class AbstractGuiUtils {
         double tranX = 0, tranY = 0;
         double tranW = 0, tranH = 0;
         // 旋转角度为0不需要进行变换
-        if (args.angle() % 360 == 0) args.center(EnumRotationCenter.TOP_LEFT);
+        if (args.angle() % 360 == 0) args.center(EnumPosition.TOP_LEFT);
         switch (args.center()) {
             case CENTER:
                 tranW = args.getWidthScaled() / 2.0;
@@ -298,126 +258,274 @@ public final class AbstractGuiUtils {
 
     // endregion 绘制纹理
 
+
+    // region 文本高度
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(Text... text) {
+        return getTextHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(Collection<Text> text) {
+        return getTextHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(TextList text) {
+        return getTextHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentHeight(Component... text) {
+        return getComponentHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentHeight(Collection<Component> text) {
+        return getComponentHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringHeight(String... text) {
+        return getStringHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringHeight(Collection<String> text) {
+        return getStringHeight(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(FontRenderer font, Text... text) {
+        return getStringHeight(font, Arrays.stream(text).map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(FontRenderer font, Collection<Text> text) {
+        return getStringHeight(font, text.stream().map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextHeight(FontRenderer font, TextList text) {
+        return getStringHeight(font, text.stream().map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentHeight(FontRenderer font, Component... text) {
+        return getStringHeight(font, Arrays.stream(text).map(component -> component.getString(Translator.getClientLanguage())).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentHeight(FontRenderer font, Collection<Component> text) {
+        return getStringHeight(font, text.stream().map(component -> component.getString(Translator.getClientLanguage())).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringHeight(FontRenderer font, String... text) {
+        return getStringHeight(font, Arrays.asList(text));
+    }
+
+    /**
+     * 获取多行文本的高度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringHeight(FontRenderer font, Collection<String> text) {
+        return text.stream().mapToInt(t -> StringUtils.replaceLineBreak(t).split("\n").length * font.lineHeight).sum();
+    }
+
+    // endregion 文本高度
+
+
+    // region 文本宽度
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(Text... text) {
+        return getTextWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(Collection<Text> text) {
+        return getTextWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(TextList text) {
+        return getTextWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentWidth(Component... text) {
+        return getComponentWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentWidth(Collection<Component> text) {
+        return getComponentWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringWidth(String... text) {
+        return getStringWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringWidth(Collection<String> text) {
+        return getStringWidth(AbstractGuiUtils.getFont(), text);
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(FontRenderer font, Text... text) {
+        return getStringWidth(font, Arrays.stream(text).map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(FontRenderer font, Collection<Text> text) {
+        return getStringWidth(font, text.stream().map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getTextWidth(FontRenderer font, TextList text) {
+        return getStringWidth(font, text.stream().map(Text::content).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentWidth(FontRenderer font, Component... text) {
+        return getStringWidth(font, Arrays.stream(text).map(component -> component.getString(Translator.getClientLanguage())).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getComponentWidth(FontRenderer font, Collection<Component> text) {
+        return getStringWidth(font, text.stream().map(component -> component.getString(Translator.getClientLanguage())).collect(Collectors.toList()));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringWidth(FontRenderer font, String... text) {
+        return getStringWidth(font, Arrays.asList(text));
+    }
+
+    /**
+     * 获取多行文本的宽度，以\n为换行符
+     *
+     * @param text 要绘制的文本
+     */
+    public static int getStringWidth(FontRenderer font, Collection<String> text) {
+        return text.stream()
+                .map(t -> StringUtils.replaceLineBreak(t).split("\n"))
+                .flatMap(Arrays::stream)
+                .mapToInt(font::width)
+                .max().orElse(0);
+    }
+
+    // endregion 文本宽度
+
+
     // region 绘制文字
-
-
-    /**
-     * 获取多行文本的高度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextHeight(Text text) {
-        return AbstractGuiUtils.multilineTextHeight(text.font(), text.content());
-    }
-
-    /**
-     * 获取多行文本的高度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextHeight(String text) {
-        return multilineTextHeight(getFont(), text);
-    }
-
-    /**
-     * 获取多行文本的高度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextHeight(FontRenderer font, String text) {
-        return StringUtils.replaceLineBreak(text).split("\n").length * font.lineHeight;
-    }
-
-    public static int getStringWidth(String... texts) {
-        return getStringWidth(getFont(), texts);
-    }
-
-    public static int getStringWidth(FontRenderer font, String... texts) {
-        return getStringWidth(font, Arrays.asList(texts));
-    }
-
-    public static int getStringWidth(Collection<String> texts) {
-        return getStringWidth(getFont(), texts);
-    }
-
-    public static int getStringWidth(FontRenderer font, Collection<String> texts) {
-        int width = 0;
-        for (String s : texts) {
-            width = Math.max(width, font.width(s));
-        }
-        return width;
-    }
-
-    public static int getStringHeight(String... texts) {
-        return AbstractGuiUtils.getStringHeight(getFont(), texts);
-    }
-
-    public static int getStringHeight(FontRenderer font, String... texts) {
-        return AbstractGuiUtils.getStringHeight(font, Arrays.asList(texts));
-    }
-
-    public static int getStringHeight(Collection<String> texts) {
-        return AbstractGuiUtils.getStringHeight(getFont(), texts);
-    }
-
-    public static int getStringHeight(FontRenderer font, Collection<String> texts) {
-        return AbstractGuiUtils.multilineTextHeight(font, String.join("\n", texts));
-    }
-
-    public static int getTextWidth(Collection<Text> texts) {
-        return AbstractGuiUtils.getTextWidth(getFont(), texts);
-    }
-
-    public static int getTextWidth(FontRenderer font, Collection<Text> texts) {
-        int width = 0;
-        for (Text text : texts) {
-            for (String string : StringUtils.replaceLineBreak(text.content()).split("\n")) {
-                width = Math.max(width, font.width(string));
-            }
-        }
-        return width;
-    }
-
-    public static int getTextHeight(Collection<Text> texts) {
-        return AbstractGuiUtils.getTextHeight(getFont(), texts);
-    }
-
-    public static int getTextHeight(FontRenderer font, Collection<Text> texts) {
-        return AbstractGuiUtils.multilineTextHeight(font, texts.stream().map(Text::content).collect(Collectors.joining("\n")));
-    }
-
-    /**
-     * 获取多行文本的宽度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextWidth(Text text) {
-        return AbstractGuiUtils.multilineTextWidth(text.font(), text.content());
-    }
-
-    /**
-     * 获取多行文本的宽度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextWidth(String text) {
-        return multilineTextWidth(getFont(), text);
-    }
-
-    /**
-     * 获取多行文本的宽度，以\n为换行符
-     *
-     * @param text 要绘制的文本
-     */
-    public static int multilineTextWidth(FontRenderer font, String text) {
-        int width = 0;
-        if (StringUtils.isNotNullOrEmpty(text)) {
-            for (String s : StringUtils.replaceLineBreak(text).split("\n")) {
-                width = Math.max(width, font.width(s));
-            }
-        }
-        return width;
-    }
 
     /**
      * 绘制多行文本，以\n为换行符
@@ -439,483 +547,15 @@ public final class AbstractGuiUtils {
                     argb = args.text().colorArgb();
                 }
                 clone.text().text(lines[i]).color(Color.argb(argb));
-                AbstractGuiUtils.drawLimitedText(clone.y(y + i * clone.text().font().lineHeight));
+                LabelWidget.drawLimitedText(clone.y(y + i * clone.text().font().lineHeight));
             }
         }
     }
 
-    /**
-     * 将文本按最大宽度自动换行
-     *
-     * @param text     要换行的文本
-     * @param maxWidth 最大宽度
-     * @return 换行后的文本列表
-     */
-    private static List<String> wrapText(FontRenderer font, String text, int maxWidth) {
-        List<String> wrappedLines = new ArrayList<>();
-        if (maxWidth <= 0 || text == null || text.isEmpty()) {
-            if (text != null && !text.isEmpty()) {
-                wrappedLines.add(text);
-            }
-            return wrappedLines;
-        }
-
-        // 定义分隔符模式，\p{Punct} 匹配所有标点符号
-        String separatorPattern = "[\\s\\p{Punct}]+";
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(separatorPattern);
-
-        // 使用正则表达式分割文本，保留分隔符
-        List<String> segments = StringUtils.splitStrings(text, pattern);
-
-        // 如果文本中没有分隔符，直接按字符处理
-        if (segments.isEmpty()) {
-            return splitLongSegment(font, text, maxWidth);
-        }
-
-        StringBuilder currentLine = new StringBuilder();
-
-        for (String segment : segments) {
-            // 判断是否是分隔符
-            boolean isSeparator = pattern.matcher(segment).matches();
-
-            // 构建测试行
-            String testLine;
-            if (currentLine.length() == 0) {
-                testLine = segment;
-            } else if (isSeparator) {
-                testLine = currentLine + segment;
-            } else {
-                // 检查前一个字符是否是分隔符
-                String lastChar = currentLine.length() > 0 ?
-                        String.valueOf(currentLine.charAt(currentLine.length() - 1)) : "";
-                boolean lastIsSeparator = !lastChar.isEmpty() && pattern.matcher(lastChar).matches();
-
-                if (lastIsSeparator) {
-                    testLine = currentLine + segment;
-                } else {
-                    testLine = currentLine + " " + segment;
-                }
-            }
-
-            int testWidth = font.width(testLine);
-
-            if (testWidth > maxWidth && currentLine.length() > 0) {
-                // 当前行已满，保存当前行并开始新行
-                wrappedLines.add(currentLine.toString());
-
-                // 处理当前段
-                if (isSeparator) {
-                    // 分隔符保留在下一行开头
-                    currentLine = new StringBuilder(segment);
-                } else {
-                    // 检查单个段是否超过最大宽度
-                    if (font.width(segment) > maxWidth) {
-                        // 强制换行
-                        List<String> splitSegments = splitLongSegment(font, segment, maxWidth);
-                        if (!splitSegments.isEmpty()) {
-                            currentLine = new StringBuilder(splitSegments.get(0));
-                            // 将剩余部分添加到新行
-                            for (int i = 1; i < splitSegments.size(); i++) {
-                                wrappedLines.add(splitSegments.get(i));
-                            }
-                        } else {
-                            currentLine = new StringBuilder();
-                        }
-                    } else {
-                        // 开始新行
-                        currentLine = new StringBuilder(segment);
-                    }
-                }
-            } else {
-                currentLine = new StringBuilder(testLine);
-            }
-        }
-
-        // 添加最后一行
-        if (currentLine.length() > 0) {
-            wrappedLines.add(currentLine.toString());
-        }
-
-        // 若仍然超过最大宽度，进行强制换行
-        List<String> finalLines = new ArrayList<>();
-        for (String line : wrappedLines) {
-            if (font.width(line) > maxWidth) {
-                finalLines.addAll(splitLongSegment(font, line, maxWidth));
-            } else {
-                finalLines.add(line);
-            }
-        }
-
-        return finalLines.isEmpty() ? wrappedLines : finalLines;
-    }
-
-    /**
-     * 将超长的文本段按最大宽度强制换行
-     *
-     * @param segment  要分割的文本段
-     * @param maxWidth 最大宽度
-     * @return 分割后的文本列表
-     */
-    private static List<String> splitLongSegment(FontRenderer font, String segment, int maxWidth) {
-        List<String> lines = new ArrayList<>();
-        if (segment == null || segment.isEmpty() || maxWidth <= 0) {
-            if (segment != null && !segment.isEmpty()) {
-                lines.add(segment);
-            }
-            return lines;
-        }
-
-        StringBuilder currentLine = new StringBuilder();
-
-        // 逐字符处理
-        for (int i = 0; i < segment.length(); i++) {
-            char c = segment.charAt(i);
-            String testLine = currentLine.toString() + c;
-            int testWidth = font.width(testLine);
-
-            if (testWidth > maxWidth && currentLine.length() > 0) {
-                lines.add(currentLine.toString());
-                currentLine = new StringBuilder(String.valueOf(c));
-            } else {
-                currentLine.append(c);
-            }
-        }
-
-        // 添加最后一行
-        if (currentLine.length() > 0) {
-            lines.add(currentLine.toString());
-        }
-
-        return lines;
-    }
-
-    /**
-     * 计算文字绘制后的最终宽高
-     *
-     * @param args 绘制参数
-     */
-    public static KeyValue<Integer, Integer> calculateLimitedTextSize(@Nonnull FontDrawArgs args) {
-        Text text = args.text();
-        if (StringUtils.isNullOrEmpty(text.content())) {
-            return new KeyValue<>(0, 0);
-        }
-
-        String ellipsis = "...";
-        FontRenderer font = text.font();
-        int ellipsisWidth = font.width(ellipsis);
-
-        // 缩放比例
-        float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
-
-        // 实际绘制区域
-        double drawX = args.x() + args.paddingLeft();
-        // 可用宽度 = 原始可用宽度 / 缩放比例
-        int availableWidth = args.maxWidth() > 0 ? (int) ((args.maxWidth() - args.paddingLeft() - args.paddingRight()) / scale) : 0;
-
-        if (args.inScreen() && availableWidth > 0 && !args.wrap()) {
-            KeyValue<Integer, Integer> screenSize = getScreenSize();
-            int screenWidth = screenSize.key();
-
-            // 确保文本不超出屏幕右边界
-            if (drawX + availableWidth > screenWidth - args.marginRight()) {
-                availableWidth = Math.max(0, screenWidth - (int) drawX - args.marginRight());
-            }
-            // 确保文本不超出屏幕左边界
-            if (drawX < args.marginLeft()) {
-                availableWidth = Math.max(0, availableWidth - args.marginLeft() + (int) args.x());
-            }
-        }
-
-        // 拆分文本行
-        List<String> lines = new ArrayList<>();
-        String[] originalLines = StringUtils.replaceLineBreak(text.content()).split("\n");
-
-        // 如果启用自动换行且设置了最大宽度，对每行进行换行处理
-        if (args.wrap() && availableWidth > 0) {
-            for (String originalLine : originalLines) {
-                lines.addAll(wrapText(font, originalLine, availableWidth));
-            }
-        } else {
-            lines.addAll(Arrays.asList(originalLines));
-        }
-
-        int actualMaxLine = args.maxLine();
-        if (actualMaxLine <= 0 || actualMaxLine >= lines.size()) {
-            actualMaxLine = lines.size();
-        }
-
-        List<String> outputLines = new ArrayList<>();
-        if (actualMaxLine > 1 && lines.size() > actualMaxLine) {
-            switch (args.position()) {
-                case START:
-                    // 显示最后 maxLine 行，开头加省略号
-                    outputLines.add(ellipsis);
-                    outputLines.addAll(lines.subList(lines.size() - actualMaxLine + 1, lines.size()));
-                    break;
-                case MIDDLE:
-                    // 显示前后各一部分，中间加省略号
-                    int midStart = actualMaxLine / 2;
-                    int midEnd = lines.size() - (actualMaxLine - midStart) + 1;
-                    outputLines.addAll(lines.subList(0, midStart));
-                    outputLines.add(ellipsis);
-                    outputLines.addAll(lines.subList(midEnd, lines.size()));
-                    break;
-                case END:
-                    // 显示前 maxLine 行，结尾加省略号
-                    outputLines.addAll(lines.subList(0, actualMaxLine - 1));
-                    outputLines.add(ellipsis);
-                    break;
-                default:
-                    outputLines.addAll(lines);
-                    break;
-            }
-        } else {
-            if (actualMaxLine == 1) {
-                outputLines.add(lines.get(0));
-            } else {
-                // 正常显示所有行
-                outputLines.addAll(lines);
-            }
-        }
-
-        // 处理每行的截断
-        List<String> finalLines = new ArrayList<>();
-        for (String line : outputLines) {
-            // 若宽度超出可用宽度，进行截断并加省略号
-            line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, line);
-            finalLines.add(line);
-        }
-
-        // 计算文本区域尺寸
-        int maxLineWidth = getStringWidth(font, finalLines);
-        if (availableWidth > 0) {
-            maxLineWidth = Math.min(maxLineWidth, availableWidth);
-        }
-        // 实际行高使用
-        float actualLineHeight = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
-        int totalHeight = (int) (finalLines.size() * actualLineHeight);
-
-        // 最终宽高
-        int finalWidth = (int) Math.ceil(maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
-        int finalHeight = totalHeight + args.paddingTop() + args.paddingBottom();
-
-        return new KeyValue<>(finalWidth, finalHeight);
-    }
-
-    private static String ellipsisString(@Nonnull FontDrawArgs args, String ellipsis, FontRenderer font, int ellipsisWidth, int availableWidth, String line) {
-        if (availableWidth > 0 && font.width(line) > availableWidth) {
-            if (args.position() == EnumEllipsisPosition.START) {
-                // 截断前部
-                while (font.width(ellipsis + line) > availableWidth && line.length() > 1) {
-                    line = line.substring(1);
-                }
-                line = ellipsis + line;
-            } else if (args.position() == EnumEllipsisPosition.END) {
-                // 截断后部
-                while (font.width(line + ellipsis) > availableWidth && line.length() > 1) {
-                    line = line.substring(0, line.length() - 1);
-                }
-                line = line + ellipsis;
-            } else {
-                // 截断两侧（默认处理）
-                int halfWidth = (availableWidth - ellipsisWidth) / 2;
-                String start = line, end = line;
-                while (font.width(start) > halfWidth && start.length() > 1) {
-                    start = start.substring(0, start.length() - 1);
-                }
-                while (font.width(end) > halfWidth && end.length() > 1) {
-                    end = end.substring(1);
-                }
-                line = start + ellipsis + end;
-            }
-        }
-        return line;
-    }
-
-    /**
-     * 绘制限制长度的文本，超出部分以省略号表示，可选择省略号的位置
-     */
-    public static void drawLimitedText(@Nonnull FontDrawArgs args) {
-        Text text = args.text();
-        if (StringUtils.isNotNullOrEmpty(text.content())) {
-            String ellipsis = "...";
-            FontRenderer font = text.font();
-            int ellipsisWidth = font.width(ellipsis);
-
-            // 计算缩放比例
-            float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
-
-            // 实际绘制区域
-            double drawX = args.x() + args.paddingLeft();
-            double drawY = args.y() + args.paddingTop();
-            // 可用宽度需 = 原始可用宽度 / 缩放比例
-            int availableWidth = args.maxWidth() > 0 ? (int) ((args.maxWidth() - args.paddingLeft() - args.paddingRight()) / scale) : 0;
-
-            if (args.inScreen() && availableWidth > 0) {
-                KeyValue<Integer, Integer> screenSize = getScreenSize();
-                int screenWidth = screenSize.key();
-
-                // 确保文本不超出屏幕右边界
-                if (drawX + availableWidth > screenWidth - args.marginRight()) {
-                    availableWidth = Math.max(0, screenWidth - (int) drawX - args.marginRight());
-                }
-                // 确保文本不超出屏幕左边界
-                if (drawX < args.marginLeft()) {
-                    drawX = args.marginLeft();
-                    availableWidth = Math.max(0, availableWidth - args.marginLeft() + (int) args.x());
-                }
-            }
-
-            // 拆分文本行
-            List<String> lines = new ArrayList<>();
-            String[] originalLines = StringUtils.replaceLineBreak(text.content()).split("\n");
-
-            // 若启用自动换行且设置了最大宽度，对每行进行换行处理
-            if (args.wrap() && availableWidth > 0) {
-                for (String originalLine : originalLines) {
-                    lines.addAll(wrapText(font, originalLine, availableWidth));
-                }
-            } else {
-                lines.addAll(Arrays.asList(originalLines));
-            }
-
-            int actualMaxLine = args.maxLine();
-            if (actualMaxLine <= 0 || actualMaxLine >= lines.size()) {
-                actualMaxLine = lines.size();
-            }
-
-            List<String> outputLines = new ArrayList<>();
-            if (actualMaxLine > 1 && lines.size() > actualMaxLine) {
-                switch (args.position()) {
-                    case START:
-                        // 显示最后 maxLine 行，开头加省略号
-                        outputLines.add(ellipsis);
-                        outputLines.addAll(lines.subList(lines.size() - actualMaxLine + 1, lines.size()));
-                        break;
-                    case MIDDLE:
-                        // 显示前后各一部分，中间加省略号
-                        int midStart = actualMaxLine / 2;
-                        int midEnd = lines.size() - (actualMaxLine - midStart) + 1;
-                        outputLines.addAll(lines.subList(0, midStart));
-                        outputLines.add(ellipsis);
-                        outputLines.addAll(lines.subList(midEnd, lines.size()));
-                        break;
-                    case END:
-                        // 显示前 maxLine 行，结尾加省略号
-                        outputLines.addAll(lines.subList(0, actualMaxLine - 1));
-                        outputLines.add(ellipsis);
-                        break;
-                    default:
-                        outputLines.addAll(lines);
-                        break;
-                }
-            } else {
-                if (actualMaxLine == 1) {
-                    outputLines.add(lines.get(0));
-                } else {
-                    // 正常显示所有行
-                    outputLines.addAll(lines);
-                }
-            }
-
-            // 计算文本区域尺寸
-            int maxLineWidth = getStringWidth(font, outputLines);
-            if (availableWidth > 0) {
-                maxLineWidth = Math.min(maxLineWidth, availableWidth);
-            }
-            // 实际行高使用
-            final float actualLineHeight = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
-            float totalHeight = outputLines.size() * actualLineHeight;
-
-            // 绘制背景
-            MatrixStack stack = text.stack();
-            if (args.bgArgb() != 0) {
-                int bgX = (int) args.x();
-                int bgY = (int) args.y();
-                // 背景宽度需要考虑缩放后的文本宽度
-                int bgWidth = (int) (maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
-                int bgHeight = (int) (totalHeight + args.paddingTop() + args.paddingBottom());
-
-                // 绘制圆角矩形背景
-                AbstractGuiUtils.drawRoundedRect(stack, bgX, bgY, bgWidth, bgHeight, args.bgArgb(), args.bgBorderRadius());
-
-                // 绘制边框
-                if (args.bgBorderThickness() > 0) {
-                    int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-
-                    AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
-                }
-            }
-
-            // 应用缩放变换
-            boolean needsScale = Math.abs(scale - 1.0f) > 0.001f;
-            if (needsScale) {
-                stack.pushPose();
-                // 移动到绘制起始位置
-                stack.translate(drawX, drawY, 0);
-                // 应用缩放
-                stack.scale(scale, scale, 1.0f);
-                // 调整绘制坐标
-                drawX = 0;
-                drawY = 0;
-            }
-
-            // 绘制文本
-            int index = 0;
-            for (String line : outputLines) {
-                // 若宽度超出可用宽度，进行截断并加省略号
-                line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, line);
-
-                // 计算水平偏移
-                float xOffset;
-                EnumAlignment alignment = args.align() != null ? args.align() : text.align();
-                switch (alignment) {
-                    case CENTER:
-                        xOffset = (maxLineWidth - font.width(line)) / 2.0f;
-                        break;
-                    case END:
-                        xOffset = maxLineWidth - font.width(line);
-                        break;
-                    default:
-                        xOffset = 0;
-                        break;
-                }
-
-                // 计算垂直位置
-                float yPos;
-                if (needsScale) {
-                    yPos = (float) drawY + index * font.lineHeight;
-                } else {
-                    yPos = (float) drawY + index * actualLineHeight;
-                }
-
-                // 绘制文本背景
-                if (!text.bgColorEmpty()) {
-                    if (needsScale) {
-                        AbstractGuiUtils.fill(stack, (int) (xOffset), (int) (yPos), font.width(line), font.lineHeight, text.bgColorArgb());
-                    } else {
-                        AbstractGuiUtils.fill(stack, (int) (drawX + xOffset), (int) (yPos), font.width(line), font.lineHeight, text.bgColorArgb());
-                    }
-                }
-
-                // 绘制文本
-                if (text.shadow()) {
-                    font.drawShadow(stack, text.copyWithoutChildren().text(line).toComponent().toTextComponent(LanguageHelper.getClientLanguage()), (float) drawX + xOffset, yPos, text.colorArgb());
-                } else {
-                    font.draw(stack, text.copyWithoutChildren().text(line).toComponent().toTextComponent(LanguageHelper.getClientLanguage()), (float) drawX + xOffset, yPos, text.colorArgb());
-                }
-
-                index++;
-            }
-
-            // 恢复矩阵状态
-            if (needsScale) {
-                stack.popPose();
-            }
-        }
-    }
+    // wrapText, splitLongSegment, calculateLimitedTextSize, ellipsisString, drawLimitedText 已迁移至 LabelWidget
 
     // endregion 绘制文字
+
 
     // region 绘制图标
 
@@ -944,7 +584,7 @@ public final class AbstractGuiUtils {
      * @param showText       是否显示效果等级和持续时间
      */
     public static void drawEffectIcon(MatrixStack stack, FontRenderer font, EffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
-        ResourceLocation effectIcon = TextureUtils.getEffectTexture(BaniraCodex.resourceFactory(), effectInstance);
+        ResourceLocation effectIcon = TextureUtils.getEffectTexture(Identifier.id(), effectInstance);
         if (effectIcon != null) {
             AbstractGuiUtils.bindTexture(effectIcon);
             AbstractGuiUtils.blit(stack, x, y, 0, 0, width, height, width, height);
@@ -957,7 +597,7 @@ public final class AbstractGuiUtils {
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
                 int argb = 0xFFFFFFFF;
-                font.drawShadow(stack, amplifierString.color(Color.argb(argb)).toTextComponent(), fontX, fontY, argb);
+                font.draw(stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
@@ -966,7 +606,7 @@ public final class AbstractGuiUtils {
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
                 int argb = 0xFFFFFFFF;
-                font.drawShadow(stack, durationString.color(Color.argb(argb)).toTextComponent(), fontX, fontY, argb);
+                font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
         }
     }
@@ -995,153 +635,10 @@ public final class AbstractGuiUtils {
         AbstractGuiUtils.drawEffectIcon(stack, font, effectInstance, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
     }
 
-    public static void renderItem(ItemRenderer itemRenderer, ItemStack itemStack, int x, int y, boolean showText) {
-        AbstractGuiUtils.renderItem(itemRenderer, getFont(), itemStack, x, y, showText);
-    }
+    //  endregion 绘制图标（renderItem 已迁移至 ItemWidget）
 
-    public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
-        itemRenderer.renderGuiItem(itemStack, x, y);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
-        }
-    }
 
-    //  endregion 绘制图标
-
-    //  region 绘制形状
-
-    /**
-     * 统一绘制形状方法
-     */
-    public static void drawShape(ShapeDrawArgs args) {
-        if (args == null || args.stack() == null) return;
-
-        switch (args.type()) {
-            case RECT:
-                drawRectShape(args);
-                break;
-            case CIRCLE:
-                drawCircleShape(args);
-                break;
-            case ELLIPSE:
-                drawEllipseShape(args);
-                break;
-            case SECTOR:
-                drawSectorShape(args);
-                break;
-            case SECTOR_RING:
-                drawSectorRingShape(args);
-                break;
-        }
-    }
-
-    /**
-     * 绘制矩形形状
-     */
-    private static void drawRectShape(ShapeDrawArgs args) {
-        ShapeDrawArgs.RectParams rect = args.rect();
-        MatrixStack stack = args.stack();
-        int color = args.color();
-
-        if (rect.border() > 0) {
-            if (rect.hasRadius()) {
-                ShapeDrawArgs.RoundedCornerMode mode = rect.cornerMode();
-                drawRoundedRectOutLine(stack, rect.x(), rect.y(), rect.width(), rect.height(),
-                        rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight(),
-                        rect.border(), color, mode);
-            } else {
-                fillOutLine(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), (int) rect.border(), color);
-            }
-        } else {
-            if (rect.hasRadius() && rect.isUniformRadius()) {
-                ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
-                if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && rect.topLeft() <= 10)) {
-                    drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) rect.topLeft());
-                } else {
-                    drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), color);
-                }
-            } else if (rect.hasRadius() && !rect.isUniformRadius()) {
-                float maxRadius = Math.max(Math.max(rect.topLeft(), rect.topRight()), Math.max(rect.bottomLeft(), rect.bottomRight()));
-                ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
-                if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && maxRadius <= 10)) {
-                    drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) maxRadius);
-                } else {
-                    drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight(), color);
-                }
-            } else {
-                fill(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color);
-            }
-        }
-    }
-
-    /**
-     * 绘制圆形形状
-     */
-    private static void drawCircleShape(ShapeDrawArgs args) {
-        ShapeDrawArgs.CircleParams circle = args.circle();
-        MatrixStack stack = args.stack();
-        int color = args.color();
-
-        int segments = circle.segments();
-        if (segments <= 0) {
-            segments = calculateCircleSegments(circle.radius());
-        }
-
-        if (circle.border() > 0) {
-            drawCircleRing(stack, circle.centerX(), circle.centerY(), circle.radius(), circle.border(), segments, color);
-        } else {
-            drawCircle(stack, circle.centerX(), circle.centerY(), circle.radius(), segments, color);
-        }
-    }
-
-    /**
-     * 绘制椭圆形状
-     */
-    private static void drawEllipseShape(ShapeDrawArgs args) {
-        ShapeDrawArgs.EllipseParams ellipse = args.ellipse();
-        MatrixStack stack = args.stack();
-        int color = args.color();
-
-        int segments = ellipse.segments();
-        if (segments <= 0) {
-            float maxRadius = Math.max(ellipse.radiusX(), ellipse.radiusY());
-            segments = calculateCircleSegments(maxRadius);
-        }
-
-        if (ellipse.border() > 0) {
-            if (ellipse.rotation() != 0) {
-                drawEllipseRing(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), ellipse.rotation(), ellipse.border(), segments, color);
-            } else {
-                drawEllipseRing(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), ellipse.border(), segments, color);
-            }
-        } else {
-            if (ellipse.rotation() != 0) {
-                drawEllipseRad(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), Math.toRadians(ellipse.rotation()), segments, color);
-            } else {
-                drawEllipse(stack, ellipse.centerX(), ellipse.centerY(), ellipse.radiusX(), ellipse.radiusY(), segments, color);
-            }
-        }
-    }
-
-    /**
-     * 绘制扇形形状
-     */
-    private static void drawSectorShape(ShapeDrawArgs args) {
-        ShapeDrawArgs.SectorParams sector = args.sector();
-        MatrixStack stack = args.stack();
-        int color = args.color();
-
-        int segments = sector.segments();
-        if (segments <= 0) {
-            segments = calculateCircleSegments(sector.radius());
-        }
-
-        if (sector.useRadians()) {
-            drawSectorRad(stack, sector.centerX(), sector.centerY(), sector.radius(), sector.startAngle(), sector.endAngle(), segments, color);
-        } else {
-            drawSector(stack, sector.centerX(), sector.centerY(), sector.radius(), sector.startAngle(), sector.endAngle(), segments, color);
-        }
-    }
+    // drawShape 及 draw*Shape 已迁移至 BaseShapeWidget
 
     /**
      * 绘制有宽度的线段
@@ -1212,7 +709,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制实心扇环
      */
-    private static void drawFilledSectorRing(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, float innerRadius, int segments, int color) {
+    public static void drawFilledSectorRing(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, float innerRadius, int segments, int color) {
         float centerX = params.centerX();
         float centerY = params.centerY();
         float outerRadius = params.outerRadius();
@@ -1254,7 +751,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制实心扇环
      */
-    private static void drawFilledSectorRingFromCenter(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, int segments, int color) {
+    public static void drawFilledSectorRingFromCenter(MatrixStack stack, ShapeDrawArgs.SectorRingParams params, int segments, int color) {
         float centerX = params.centerX();
         float centerY = params.centerY();
         float radius = params.outerRadius();
@@ -1303,6 +800,7 @@ public final class AbstractGuiUtils {
 
     // endregion 绘制形状
 
+
     // region 绘制矩形
 
     /**
@@ -1340,13 +838,10 @@ public final class AbstractGuiUtils {
 
         Matrix4f m4 = stack.last().pose();
         BufferBuilder builder = Tessellator.getInstance().getBuilder();
-        builder.begin(GL11C.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+        builder.begin(GL11C.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
 
+        addVertexWithColor(builder, m4, x + width, y, 0, color);
         addVertexWithColor(builder, m4, x, y, 0, color);
-        addVertexWithColor(builder, m4, x, y + height, 0, color);
-        addVertexWithColor(builder, m4, x + width, y, 0, color);
-
-        addVertexWithColor(builder, m4, x + width, y, 0, color);
         addVertexWithColor(builder, m4, x, y + height, 0, color);
         addVertexWithColor(builder, m4, x + width, y + height, 0, color);
 
@@ -1579,9 +1074,9 @@ public final class AbstractGuiUtils {
      * @param border      边框厚度
      * @param color       边框颜色
      */
-    private static void drawRoundedRectOutLine(MatrixStack stack, float x, float y, float width, float height,
-                                               float topLeft, float topRight, float bottomLeft, float bottomRight,
-                                               float border, int color, ShapeDrawArgs.RoundedCornerMode mode) {
+    public static void drawRoundedRectOutLine(MatrixStack stack, float x, float y, float width, float height,
+                                              float topLeft, float topRight, float bottomLeft, float bottomRight,
+                                              float border, int color, ShapeDrawArgs.RoundedCornerMode mode) {
         if (border <= 0) return;
 
         // 计算绘制模式
@@ -1803,6 +1298,7 @@ public final class AbstractGuiUtils {
 
     // endregion 绘制矩形
 
+
     // region 绘制圆
 
     private static void setColor(BufferBuilder builder, int argb) {
@@ -1826,7 +1322,7 @@ public final class AbstractGuiUtils {
     /**
      * 计算圆形高质量分段数
      */
-    private static int calculateCircleSegments(float radius) {
+    public static int calculateCircleSegments(float radius) {
         if (radius <= 0) return 0;
         return Math.min(Math.max(64, (int) (radius * 6.0f + 32)), 256);
     }
@@ -1934,47 +1430,7 @@ public final class AbstractGuiUtils {
      * 绘制圆角矩形
      */
     public static void drawRoundedRect(MatrixStack stack, float x, float y, float w, float h, float r, int part, int color) {
-        if (r <= 0) {
-            fill(stack, (int) x, (int) y, (int) w, (int) h, color);
-            return;
-        }
-
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tessellator.getInstance().getBuilder();
-        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
-
-        double piece = Math.PI / 2.0 / (part + 1);
-        float[] cosValues = new float[part + 1];
-        float[] sinValues = new float[part + 1];
-        for (int i = 1; i <= part; i++) {
-            double angle = piece * i;
-            cosValues[i] = (float) (Math.cos(angle) * r);
-            sinValues[i] = (float) (Math.sin(angle) * r);
-        }
-
-        addVertexWithColor(builder, m4, x - r, y, 0, color);
-        addVertexWithColor(builder, m4, x - r, y + h, 0, color);
-
-        for (int i = 1; i <= part; i++) {
-            addVertexWithColor(builder, m4, x - cosValues[i], y - sinValues[i], 0, color);
-            addVertexWithColor(builder, m4, x - cosValues[i], y + h + sinValues[i], 0, color);
-        }
-
-        addVertexWithColor(builder, m4, x, y - r, 0, color);
-        addVertexWithColor(builder, m4, x, y + r + h, 0, color);
-        addVertexWithColor(builder, m4, x + w, y - r, 0, color);
-        addVertexWithColor(builder, m4, x + w, y + r + h, 0, color);
-
-        for (int i = 1; i <= part; i++) {
-            addVertexWithColor(builder, m4, x + w + sinValues[i], y - cosValues[i], 0, color);
-            addVertexWithColor(builder, m4, x + w + sinValues[i], y + h + cosValues[i], 0, color);
-        }
-
-        addVertexWithColor(builder, m4, x + w + r, y, 0, color);
-        addVertexWithColor(builder, m4, x + w + r, y + h, 0, color);
-
-        setupBlendRender();
-        finishBlendRender();
+        drawRoundedRect(stack, x, y, w, h, r, r, r, r, part, color);
     }
 
     /**
@@ -2384,346 +1840,91 @@ public final class AbstractGuiUtils {
         finishBlendRender();
     }
 
+    /**
+     * 绘制多边形
+     *
+     * @param stack    矩阵栈
+     * @param centerX  中心X坐标
+     * @param centerY  中心Y坐标
+     * @param radius   外接圆半径
+     * @param sides    边数（n边形，n >= 3）
+     * @param rotation 旋转角度
+     */
+    public static void drawPolygon(MatrixStack stack, float centerX, float centerY, float radius, int sides, double rotation, int color) {
+        if (radius <= 0 || sides < 3) return;
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        double rotationRad = Math.toRadians(rotation);
+        double angleStep = 2.0 * Math.PI / sides;
+
+        // 计算所有顶点坐标
+        float[] xCoords = new float[sides];
+        float[] yCoords = new float[sides];
+        for (int i = 0; i < sides; i++) {
+            double angle = i * angleStep + rotationRad;
+            xCoords[i] = centerX + (float) (Math.cos(angle) * radius);
+            yCoords[i] = centerY + (float) (Math.sin(angle) * radius);
+        }
+
+        // 使用三角形条带模式绘制（从中心点开始）
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        for (int i = 1; i < sides; i++) {
+            addVertexWithColor(builder, m4, xCoords[i], yCoords[i], 0, color);
+            addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+        }
+
+        // 闭合多边形
+        addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
+        addVertexWithColor(builder, m4, centerX, centerY, 0, color);
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
+    /**
+     * 绘制多边形边框
+     */
+    public static void drawPolygonBorder(MatrixStack stack, ShapeDrawArgs.PolygonParams polygon, int color) {
+        float centerX = polygon.centerX();
+        float centerY = polygon.centerY();
+        float radius = polygon.radius();
+        int sides = polygon.sides();
+        double rotation = polygon.rotation();
+        float borderWidth = polygon.border();
+
+        if (radius <= 0 || sides < 3 || borderWidth <= 0) return;
+
+        double rotationRad = Math.toRadians(rotation);
+        double angleStep = 2.0 * Math.PI / sides;
+        float innerRadius = Math.max(0, radius - borderWidth);
+
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tessellator.getInstance().getBuilder();
+        builder.begin(GL11C.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        // 绘制每条边的边框
+        for (int i = 0; i <= sides; i++) {
+            double angle = (i % sides) * angleStep + rotationRad;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            addVertexWithColor(builder, m4, centerX + cos * radius, centerY + sin * radius, 0, color);
+            addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
+        }
+
+        setupBlendRender();
+        finishBlendRender();
+    }
+
     // endregion 绘制圆
 
-    //  region 绘制弹出层提示
 
-    /**
-     * 绘制九宫格纹理背景
-     *
-     * @param texture    纹理资源位置
-     * @param x          绘制起始X坐标
-     * @param y          绘制起始Y坐标
-     * @param destWidth  目标宽度（缩放后的最终宽度）
-     * @param destHeight 目标高度（缩放后的最终高度）
-     * @param scale      缩放比例（用于根据右参考线高度缩放）
-     */
-    public static void drawNinePatch(MatrixStack stack, ResourceLocation texture, int x, int y, int destWidth, int destHeight, float scale) {
-        TextureUtils.NinePatchInfo info = TextureUtils.parseNinePatch(texture);
-        bindTexture(texture);
-        if (info == null) {
-            KeyValue<Integer, Integer> texSize = TextureUtils.getTextureSize(texture);
-            blit(stack, x, y, 0, 0, destWidth, destHeight, texSize.key(), texSize.val());
-            return;
-        }
+    //  endregion 绘制弹出层提示（drawNinePatch 已迁移至 NinePatchImageWidget）
 
-        // 内容区域的边界（引导线占1像素）
-        int contentStartX = 1;
-        int contentStartY = 1;
-
-        // 原始尺寸
-        float originalDestWidth = destWidth / scale;
-        float originalDestHeight = destHeight / scale;
-
-        // 原始尺寸的固定和可拉伸区域
-        int totalFixedWidth = 0;
-        int totalFixedHeight = 0;
-        int totalStretchableWidth = 0;
-        int totalStretchableHeight = 0;
-
-        // 原始尺寸水平方向的固定和可拉伸区域
-        for (int i = 0; i < info.horizontalDivisions.length - 1; i++) {
-            int regionWidth = info.horizontalDivisions[i + 1] - info.horizontalDivisions[i];
-            if (info.horizontalStretchable[i]) {
-                totalStretchableWidth += regionWidth;
-            } else {
-                totalFixedWidth += regionWidth;
-            }
-        }
-
-        // 原始尺寸垂直方向的固定和可拉伸区域
-        for (int i = 0; i < info.verticalDivisions.length - 1; i++) {
-            int regionHeight = info.verticalDivisions[i + 1] - info.verticalDivisions[i];
-            if (info.verticalStretchable[i]) {
-                totalStretchableHeight += regionHeight;
-            } else {
-                totalFixedHeight += regionHeight;
-            }
-        }
-
-        // 原始尺寸需要拉伸的尺寸
-        float stretchWidth = Math.max(0, originalDestWidth - totalFixedWidth);
-        float stretchHeight = Math.max(0, originalDestHeight - totalFixedHeight);
-
-        // 拉伸比例
-        float stretchWidthRatio = totalStretchableWidth > 0 ? stretchWidth / totalStretchableWidth : 1.0f;
-        float stretchHeightRatio = totalStretchableHeight > 0 ? stretchHeight / totalStretchableHeight : 1.0f;
-
-        // 应用缩放变换
-        boolean needsScale = Math.abs(scale - 1.0f) > 0.001f;
-        if (needsScale) {
-            stack.pushPose();
-            // 移动到绘制起始位置
-            stack.translate(x, y, 0);
-            // 应用缩放
-            stack.scale(scale, scale, 1.0f);
-            x = 0;
-            y = 0;
-        }
-
-        // 绘制各个区域
-        float currentY = y;
-        for (int v = 0; v < info.verticalDivisions.length - 1; v++) {
-            int srcVStart = contentStartY + info.verticalDivisions[v];
-            int srcVEnd = contentStartY + info.verticalDivisions[v + 1] - 1;
-            int srcVHeight = srcVEnd - srcVStart + 1;
-
-            float destVHeight;
-            if (info.verticalStretchable[v]) {
-                destVHeight = srcVHeight * stretchHeightRatio;
-            } else {
-                destVHeight = srcVHeight;
-            }
-
-            float currentX = x;
-            for (int h = 0; h < info.horizontalDivisions.length - 1; h++) {
-                int srcHStart = contentStartX + info.horizontalDivisions[h];
-                int srcHEnd = contentStartX + info.horizontalDivisions[h + 1] - 1;
-                int srcHWidth = srcHEnd - srcHStart + 1;
-
-                float destHWidth;
-                if (info.horizontalStretchable[h]) {
-                    destHWidth = srcHWidth * stretchWidthRatio;
-                } else {
-                    destHWidth = srcHWidth;
-                }
-
-                // 绘制当前区域
-                blit(stack, (int) currentX, (int) currentY, (int) destHWidth, (int) destVHeight,
-                        srcHStart, srcVStart, srcHWidth, srcVHeight,
-                        info.texWidth, info.texHeight);
-
-                currentX += destHWidth;
-            }
-
-            currentY += destVHeight;
-        }
-
-        // 恢复矩阵状态
-        if (needsScale) {
-            stack.popPose();
-        }
-    }
-
-    /**
-     * 绘制弹出层消息
-     */
-    public static void drawPopupMessageWithSeason(FontDrawArgs args) {
-        ResourceLocation texture;
-        switch (DateUtils.getSeason()) {
-            case SUMMER:
-                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/aotake_cat.png");
-                break;
-            case AUTUMN:
-                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/narcissus_cat.png");
-                break;
-            case WINTER:
-                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/snowflake_cat.png");
-                break;
-            default:
-                texture = TextureUtils.loadCustomTexture(BaniraCodex.resourceFactory(), "textures/gui/sakura_cat.png");
-                break;
-        }
-        AbstractGuiUtils.drawPopupMessage(args.texture(texture));
-    }
-
-    /**
-     * 绘制弹出层消息
-     */
-    public static void drawPopupMessage(FontDrawArgs args) {
-        // 计算文字最终绘制大小
-        KeyValue<Integer, Integer> textSize = calculateLimitedTextSize(args);
-        int textWidth = textSize.key();
-        int textHeight = textSize.val();
-
-        // 检查是否是.9.png格式纹理
-        final TextureUtils.NinePatchInfo ninePatchInfo = args.texture() != null ? TextureUtils.parseNinePatch(args.texture()) : null;
-
-        float calculatedTextureScale = 1.0f;
-        int calculatedPaddingLeft = args.paddingLeft();
-        int calculatedPaddingRight = args.paddingRight();
-        int calculatedPaddingTop = args.paddingTop();
-        int calculatedPaddingBottom = args.paddingBottom();
-
-        if (ninePatchInfo != null) {
-            Color color = Color.argb(ninePatchInfo.textColor);
-            if (!color.isEmpty()) {
-                args.text().color(color);
-            }
-            // 计算背景绘制大小与内外边距
-            FontRenderer font = args.text().font();
-            float targetFontSize = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
-
-            // 根据右参考线的高度计算缩放比例
-            if (ninePatchInfo.rightGuideHeight > 0) {
-                calculatedTextureScale = targetFontSize / ninePatchInfo.rightGuideHeight;
-            }
-
-            // 根据下参考线计算内边距
-            if (ninePatchInfo.bottomGuideLeftPadding > 0) {
-                calculatedPaddingLeft += (int) (ninePatchInfo.bottomGuideLeftPadding * calculatedTextureScale);
-            }
-            if (ninePatchInfo.bottomGuideRightPadding > 0) {
-                calculatedPaddingRight += (int) (ninePatchInfo.bottomGuideRightPadding * calculatedTextureScale);
-            }
-
-            // 计算上内边距
-            if (ninePatchInfo.rightGuideTopPadding > 0) {
-                calculatedPaddingTop += (int) (ninePatchInfo.rightGuideTopPadding * calculatedTextureScale);
-            }
-
-            // 计算下内边距
-            if (ninePatchInfo.rightGuideBottomPadding > 0) {
-                calculatedPaddingBottom += (int) (ninePatchInfo.rightGuideBottomPadding * calculatedTextureScale);
-            }
-
-            // 重新计算文本尺寸
-            FontDrawArgs recalcArgs = args.clone()
-                    .paddingLeft(calculatedPaddingLeft)
-                    .paddingRight(calculatedPaddingRight)
-                    .paddingTop(calculatedPaddingTop)
-                    .paddingBottom(calculatedPaddingBottom);
-            textSize = calculateLimitedTextSize(recalcArgs);
-            textWidth = textSize.key();
-            textHeight = textSize.val();
-        }
-
-        final float textureScale = calculatedTextureScale;
-        final int finalCalculatedPaddingLeft = calculatedPaddingLeft;
-        final int finalCalculatedPaddingRight = calculatedPaddingRight;
-        final int finalCalculatedPaddingTop = calculatedPaddingTop;
-        final int finalCalculatedPaddingBottom = calculatedPaddingBottom;
-
-        // 计算消息框的总宽度和高度
-        int msgWidth = textWidth;
-        int msgHeight = textHeight;
-
-        // 计算调整后的坐标
-        double adjustedX = args.x();
-        double adjustedY = args.y();
-        int finalMaxWidth = args.maxWidth();
-
-        if (args.inScreen()) {
-            KeyValue<Integer, Integer> screenSize = getScreenSize();
-            int screenWidth = screenSize.key();
-            int screenHeight = screenSize.val();
-
-            // 若启用了自动换行，根据 maxWidth 计算文本尺寸
-            if (args.wrap() && finalMaxWidth > 0) {
-                FontDrawArgs maxWidthRecalcArgs = args.clone()
-                        .paddingLeft(finalCalculatedPaddingLeft)
-                        .paddingRight(finalCalculatedPaddingRight)
-                        .paddingTop(finalCalculatedPaddingTop)
-                        .paddingBottom(finalCalculatedPaddingBottom)
-                        .maxWidth(finalMaxWidth);
-                KeyValue<Integer, Integer> maxWidthTextSize = calculateLimitedTextSize(maxWidthRecalcArgs);
-                msgWidth = maxWidthTextSize.key();
-                msgHeight = maxWidthTextSize.val();
-            }
-
-            // 初始化调整后的坐标
-            // 横向居中
-            adjustedX = args.x() - msgWidth / 2.0;
-            // 放置于鼠标上方
-            adjustedY = args.y() - msgHeight - 5;
-
-            // 检查顶部空间是否充足
-            boolean hasTopSpace = adjustedY >= args.marginTop();
-            // 检查左右空间是否充足
-            boolean hasLeftSpace = adjustedX >= args.marginLeft();
-            boolean hasRightSpace = adjustedX + msgWidth <= screenWidth - args.marginRight();
-
-            // 若顶部空间不足，调整到鼠标下方
-            if (!hasTopSpace) {
-                adjustedY = args.y() + 1 + 5;
-            }
-            //
-            else {
-                // 若左侧空间不足，靠右
-                if (!hasLeftSpace) {
-                    adjustedX = args.marginLeft();
-                }
-                // 若右侧空间不足，靠左
-                else if (!hasRightSpace) {
-                    adjustedX = screenWidth - msgWidth - args.marginRight();
-                }
-            }
-
-            // 若调整后仍然超出屏幕范围，强制限制在屏幕内
-            adjustedX = Math.max(args.marginLeft(), Math.min(adjustedX, screenWidth - msgWidth - args.marginRight()));
-            adjustedY = Math.max(args.marginTop(), Math.min(adjustedY, screenHeight - msgHeight - args.marginBottom()));
-
-            // 若启用了自动换行，计算实际的可用宽度用于文本绘制时的换行限制
-            if (args.wrap()) {
-                int actualAvailableWidth = screenWidth - (int) adjustedX - args.marginRight();
-                // 如果设置了 maxWidth，取两者中的较小值
-                if (finalMaxWidth > 0) {
-                    actualAvailableWidth = Math.min(actualAvailableWidth, finalMaxWidth);
-                }
-                // 确保可用宽度不小于内边距
-                actualAvailableWidth = Math.max(actualAvailableWidth, finalCalculatedPaddingLeft + finalCalculatedPaddingRight);
-                // 更新 finalMaxWidth 为实际使用的可用宽度
-                finalMaxWidth = actualAvailableWidth;
-            }
-        }
-
-        final int finalMaxWidthForText = finalMaxWidth;
-
-        double finalAdjustedX = adjustedX;
-        double finalAdjustedY = adjustedY;
-        int finalMsgWidth = msgWidth;
-        int finalMsgHeight = msgHeight;
-        AbstractGuiUtils.renderByDepth(args.text().stack(), EnumRenderDepth.POPUP_TIPS, (stack) -> {
-
-            // 绘制背景
-            FontDrawArgs bgArgs = args.clone().x(finalAdjustedX).y(finalAdjustedY);
-            if (bgArgs.texture() != null && ninePatchInfo != null) {
-                // 九宫格纹理绘制
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                drawNinePatch(stack, bgArgs.texture(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, textureScale);
-                RenderSystem.disableBlend();
-            } else if (bgArgs.texture() != null) {
-                // 普通纹理绘制
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                bindTexture(bgArgs.texture());
-                KeyValue<Integer, Integer> texSize = TextureUtils.getTextureSize(bgArgs.texture());
-                blit(stack, (int) bgArgs.x(), (int) bgArgs.y(), 0, 0, finalMsgWidth, finalMsgHeight, texSize.key(), texSize.val());
-                RenderSystem.disableBlend();
-            } else {
-                int borderRadius = bgArgs.bgBorderRadius();
-                int borderThickness = bgArgs.bgBorderThickness();
-                // 绘制圆角矩形背景
-                AbstractGuiUtils.drawRoundedRect(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, bgArgs.bgArgb(), borderRadius);
-
-                // 计算边框颜色
-                int borderArgb = ColorUtils.softenArgb(bgArgs.bgArgb());
-
-                // 绘制圆角矩形边框
-                AbstractGuiUtils.drawRoundedRectOutLineRough(bgArgs.text().stack(), (int) bgArgs.x(), (int) bgArgs.y(), finalMsgWidth, finalMsgHeight, borderThickness, borderArgb, borderRadius);
-            }
-
-            // 绘制文本
-            FontDrawArgs clone = args.clone()
-                    .x(finalAdjustedX)
-                    .y(finalAdjustedY)
-                    .bgArgb(0x00000000)
-                    .position(EnumEllipsisPosition.MIDDLE)
-                    .paddingLeft(finalCalculatedPaddingLeft)
-                    .paddingRight(finalCalculatedPaddingRight)
-                    .paddingTop(finalCalculatedPaddingTop)
-                    .paddingBottom(finalCalculatedPaddingBottom);
-            if (args.wrap() && finalMaxWidthForText > 0) {
-                clone.maxWidth(finalMaxWidthForText);
-            } else if (args.maxWidth() > 0) {
-                clone.maxWidth(args.maxWidth());
-            }
-            AbstractGuiUtils.drawLimitedText(clone);
-        });
-    }
-
-    //  endregion 绘制弹出层提示
 
     // region 杂项
 
@@ -2771,21 +1972,28 @@ public final class AbstractGuiUtils {
         return new KeyValue<>(Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight());
     }
 
+    /**
+     * 启用裁剪（Scissor），将后续渲染限制在指定矩形区域内。
+     * 使用 GUI 坐标（左上角为原点）。
+     */
+    public static void enableScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
+        Minecraft mc = Minecraft.getInstance();
+        MainWindow window = mc.getWindow();
+        int scale = (int) window.getGuiScale();
+        int x = guiX * scale;
+        int y = window.getHeight() - (guiY + guiHeight) * scale;
+        int w = Math.max(0, guiWidth * scale);
+        int h = Math.max(0, guiHeight * scale);
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(x, y, w, h);
+    }
+
+    /**
+     * 禁用裁剪
+     */
+    public static void disableScissor() {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
     // endregion 杂项
-
-    // region 重写方法签名
-
-    public static BaniraTextField newTextFieldWidget(int x, int y, int width, int height, Component content) {
-        return newTextFieldWidget(getFont(), x, y, width, height, content);
-    }
-
-    public static BaniraTextField newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
-        return new BaniraTextField(font, x, y, width, height, content.toTextComponent());
-    }
-
-    public static BaniraButton newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
-        return new BaniraButton(x, y, width, height, content.toTextComponent(), onPress);
-    }
-
-    // endregion 重写方法签名
 }

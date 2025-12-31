@@ -1,18 +1,16 @@
-package xin.vanilla.banira.common.api;
+package xin.vanilla.banira.common.util;
 
 
 import net.minecraft.util.ResourceLocation;
 
-/**
- * 资源创建器接口
- */
-@FunctionalInterface
-public interface ResourceFactory {
+public interface IIdentifier {
 
     String modId();
 
+    IIdentifier instance();
+
     default ResourceLocation empty() {
-        return create("", "");
+        return create("empty");
     }
 
     default ResourceLocation create(String path) {
@@ -23,7 +21,7 @@ public interface ResourceFactory {
         return new ResourceLocation(namespace, path);
     }
 
-    default ResourceLocation parse(String location) {
-        return ResourceLocation.tryParse(location);
+    default ResourceLocation parse(String identifier) {
+        return ResourceLocation.tryParse(identifier);
     }
 }

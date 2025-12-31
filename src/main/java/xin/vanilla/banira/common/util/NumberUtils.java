@@ -138,4 +138,61 @@ public final class NumberUtils {
         return d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replaceAll("0+$", "").replaceAll("[.]$", "");
     }
 
+    /**
+     * 自动将数值转换为合适的类型
+     */
+    @SuppressWarnings("unchecked")
+    public static <R extends Number> R autoConvertType(Number number) {
+        if (number == null) {
+            return null;
+        }
+
+        if (number instanceof BigDecimal) {
+            BigDecimal bd = (BigDecimal) number;
+            if (bd.scale() == 0) {
+                long longValue = bd.longValue();
+                if (longValue >= Byte.MIN_VALUE && longValue <= Byte.MAX_VALUE) {
+                    return (R) Byte.valueOf((byte) longValue);
+                } else if (longValue >= Short.MIN_VALUE && longValue <= Short.MAX_VALUE) {
+                    return (R) Short.valueOf((short) longValue);
+                } else if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                    return (R) Integer.valueOf((int) longValue);
+                } else {
+                    return (R) Long.valueOf(longValue);
+                }
+            } else {
+                double doubleValue = bd.doubleValue();
+                float floatValue = bd.floatValue();
+                if (doubleValue == floatValue && !Float.isInfinite(floatValue)) {
+                    return (R) Float.valueOf(floatValue);
+                } else {
+                    return (R) Double.valueOf(doubleValue);
+                }
+            }
+        }
+
+        double doubleValue = number.doubleValue();
+
+        if (doubleValue == Math.floor(doubleValue) && !Double.isInfinite(doubleValue)) {
+            long longValue = number.longValue();
+
+            if (longValue >= Byte.MIN_VALUE && longValue <= Byte.MAX_VALUE) {
+                return (R) Byte.valueOf((byte) longValue);
+            } else if (longValue >= Short.MIN_VALUE && longValue <= Short.MAX_VALUE) {
+                return (R) Short.valueOf((short) longValue);
+            } else if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                return (R) Integer.valueOf((int) longValue);
+            } else {
+                return (R) Long.valueOf(longValue);
+            }
+        } else {
+            float floatValue = number.floatValue();
+            if (doubleValue == floatValue && !Float.isInfinite(floatValue)) {
+                return (R) Float.valueOf(floatValue);
+            } else {
+                return (R) Double.valueOf(doubleValue);
+            }
+        }
+    }
+
 }

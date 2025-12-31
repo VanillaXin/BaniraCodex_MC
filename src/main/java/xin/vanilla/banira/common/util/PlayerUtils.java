@@ -10,6 +10,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
@@ -60,7 +61,7 @@ public final class PlayerUtils {
 
     public static ITextComponent getPlayerName(PlayerEntity player) {
         return player == null
-                ? Component.empty().toTextComponent()
+                ? Component.empty().toVanilla()
                 : player.getName();
     }
 
@@ -74,7 +75,7 @@ public final class PlayerUtils {
     @Nonnull
     public static ITextComponent getPlayerDisplayName(PlayerEntity player) {
         return player == null
-                ? Component.empty().toTextComponent()
+                ? Component.empty().toVanilla()
                 : player.getDisplayName();
     }
 

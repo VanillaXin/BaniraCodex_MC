@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -78,7 +77,7 @@ public class FontDrawArgs implements Cloneable {
     /**
      * 背景材质
      */
-    private ResourceLocation texture;
+    private Texture texture;
 
     /**
      * 是否限制在屏幕内
@@ -110,6 +109,23 @@ public class FontDrawArgs implements Cloneable {
      */
     private float fontSize = 9.0f;
 
+    /**
+     * 弹出层圆角模式
+     */
+    private ShapeDrawArgs.RoundedCornerMode popupCornerMode = ShapeDrawArgs.RoundedCornerMode.FINE;
+
+    /**
+     * 弹出层是否使用纹理绘制：true 时使用纹理，false 时使用颜色。
+     */
+    private boolean popupUseTexture = true;
+
+    /**
+     * 弹出层边距 AUTO：最终绘制时根据绘制模式决定边距。颜色绘制时加边距，材质绘制时不加（材质自带）
+     */
+    private boolean popupPaddingAuto = false;
+
+    private static final int POPUP_PADDING_TOP = 4, POPUP_PADDING_BOTTOM = 4, POPUP_PADDING_LEFT = 8, POPUP_PADDING_RIGHT = 8;
+
     private FontDrawArgs(Text text) {
         this.text = text;
     }
@@ -139,7 +155,7 @@ public class FontDrawArgs implements Cloneable {
     }
 
     public int maxWidth() {
-        return Math.max(0, Math.min(AbstractGuiUtils.getScreenSize().getKey(), maxWidth));
+        return Math.max(0, Math.min(AbstractGuiUtils.getScreenSize().key(), maxWidth));
     }
 
     public static FontDrawArgs of(Text text) {
@@ -179,14 +195,27 @@ public class FontDrawArgs implements Cloneable {
         this.marginBottom = 2;
         this.marginLeft = 2;
         this.marginRight = 2;
-        this.paddingTop = 4;
-        this.paddingBottom = 4;
-        this.paddingLeft = 8;
-        this.paddingRight = 8;
+        this.popupPaddingAuto = true;
         this.bgArgb = 0x88000000;
         this.bgBorderRadius = 2;
         this.bgBorderThickness = 1;
         return this;
+    }
+
+    public static int getPopupPaddingTop() {
+        return POPUP_PADDING_TOP;
+    }
+
+    public static int getPopupPaddingBottom() {
+        return POPUP_PADDING_BOTTOM;
+    }
+
+    public static int getPopupPaddingLeft() {
+        return POPUP_PADDING_LEFT;
+    }
+
+    public static int getPopupPaddingRight() {
+        return POPUP_PADDING_RIGHT;
     }
 
 }

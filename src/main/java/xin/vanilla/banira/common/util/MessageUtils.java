@@ -11,6 +11,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.data.Component;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -24,7 +25,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayerEntity player, Component message) {
-        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
+        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChat()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -34,7 +35,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
+        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toChat()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -53,7 +54,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, Component message) {
-        player.sendMessage(message.toChatComponent(LanguageHelper.getPlayerLanguage(player)), player.getUUID());
+        player.sendMessage(message.toChat(Translator.getPlayerLanguage(player)), player.getUUID());
     }
 
     /**
@@ -63,7 +64,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, String message) {
-        player.sendMessage(Component.literal(message).toChatComponent(), player.getUUID());
+        player.sendMessage(Component.literal(message).toChat(), player.getUUID());
     }
 
     /**
@@ -74,7 +75,7 @@ public final class MessageUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(PlayerEntity player, String key, Object... args) {
-        player.sendMessage(Component.translatable(key, args).languageCode(LanguageHelper.getPlayerLanguage(player)).toChatComponent(), player.getUUID());
+        player.sendMessage(Component.trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat(), player.getUUID());
     }
 
     /**
@@ -92,9 +93,9 @@ public final class MessageUtils {
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(Component.translatable(key, args).languageCode(LanguageHelper.getServerLanguage()).toChatComponent(), false);
+            source.sendSuccess(Component.trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            source.sendFailure(Component.translatable(key, args).languageCode(LanguageHelper.getServerLanguage()).toChatComponent());
+            source.sendFailure(Component.trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -111,7 +112,7 @@ public final class MessageUtils {
      * 发送操作栏消息
      */
     public static void sendActionBarMessage(ServerPlayerEntity player, Component message) {
-        player.connection.send(new SChatPacket(message.toChatComponent(LanguageHelper.getPlayerLanguage(player)), ChatType.GAME_INFO, player.getUUID()));
+        player.connection.send(new SChatPacket(message.toChat(Translator.getPlayerLanguage(player)), ChatType.GAME_INFO, player.getUUID()));
     }
 
     /**

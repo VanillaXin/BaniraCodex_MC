@@ -12,123 +12,120 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.gui.component.*;
-import xin.vanilla.banira.client.gui.helper.LayoutConfig;
-import xin.vanilla.banira.client.gui.helper.OperationButtonRender;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.AdvancementUtils;
-import xin.vanilla.banira.common.util.Component;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 public class AdvancementSelectScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private static final int INPUT_H = 16;
+    private static final int OP_BTN_SIZE = AbstractGuiUtils.ITEM_ICON_SIZE + 2;
+    private static final int OP_BTN_GAP = 2;
+    private static final int ITEM_SPACING = 1;
+    /**
+     * 列表项高度
+     */
+    private static final int ROW_HEIGHT = 22;
+    private static final int MAX_LINES = 5;
+    private static final int BTN_H = 20;
+    private static final int PANEL_MARGIN = 6;
+    private static final int SCROLL_W = 5;
+
     private final Args args;
 
     private static final Component TITLE = Component.literal("AdvancementSelectScreen");
 
-    /**
-     * 输入框
-     */
-    private BaniraTextField inputField;
-    /**
-     * 输入框文本
-     */
     private String inputFieldText = "";
-    /**
-     * 搜索结果
-     */
     private final List<AdvancementData> advancementList = new ArrayList<>();
-    /**
-     * 操作按钮
-     */
-    private final Map<Integer, OperationButton> OP_BUTTONS = new HashMap<>();
-    /**
-     * 进度按钮
-     */
-    private final List<OperationButton> ADVANCEMENT_BUTTONS = new ArrayList<>();
-    /**
-     * 当前选择的进度
-     */
+    @Nullable
+    private InputWidget searchInputWidget;
+    private final List<ButtonWidget> advancementButtonWidgets = new ArrayList<>();
+    @Nullable
+    private ScrollbarWidget scrollbarWidget;
     private ResourceLocation currentAdvancement;
-    /**
-     * 显示模式
-     */
     private boolean displayMode = true;
 
-    private int bgX;
-    private int bgY;
-    private double effectBgX;
-    private double effectBgY;
+    private BaseWidget selectedAdvancementWidget;
+    private ItemWidget typeButtonItemWidget;
+    private ItemWidget advancementButtonItemWidget;
+    private TooltipWidget typeTooltip;
+    private TooltipWidget advancementTooltip;
 
-    /**
-     * 上一次的加载状态，用于检测加载完成
-     */
+    private int panelLeft;
+    private int panelTop;
+    private int panelW;
+    private int panelH;
+
     private boolean wasLoading = false;
 
-    /**
-     * 操作按钮类型
-     */
     @Getter
-    enum OperationButtonType {
+    @Accessors(fluent = true)
+    enum ButtonType {
         TYPE(1),
         ADVANCEMENT(2),
-        PROBABILITY(6),
         ;
 
         final int code;
 
-        OperationButtonType(int code) {
+        ButtonType(int code) {
             this.code = code;
         }
 
-        static OperationButtonType valueOf(int code) {
-            return Arrays.stream(values()).filter(v -> v.getCode() == code).findFirst().orElse(null);
+        static ButtonType valueOf(int code) {
+            return Arrays.stream(values()).filter(v -> v.code() == code).findFirst().orElse(null);
         }
     }
 
     public AdvancementSelectScreen(Args args) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
         this.currentAdvancement = args.defaultAdvancement();
+        BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
     @Data
     @Accessors(chain = true, fluent = true)
     public static final class Args {
-        /**
-         * 父级 Screen
-         */
         private Screen parentScreen;
-        /**
-         * 默认值
-         */
-        private ResourceLocation defaultAdvancement = BaniraCodex.resourceFactory().empty();
-        /**
-         * 输入数据回调
-         */
+        private ResourceLocation defaultAdvancement = Identifier.id().empty();
         private Consumer<ResourceLocation> onDataReceived1;
-        /**
-         * 输入数据回调
-         */
         private Function<ResourceLocation, String> onDataReceived2;
-        /**
-         * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
-         */
         private Supplier<Boolean> shouldClose;
+        /**
+         * 季节主题，null 时从父界面继承
+         */
+        @Nullable
+        private EnumSeason season;
+        /**
+         * 自定义主题配置，null 时从父界面继承
+         */
+        @Nullable
+        private BaniraColorConfig theme;
 
         public Args onDataReceived(Consumer<ResourceLocation> onDataReceived) {
             this.onDataReceived1 = onDataReceived;
@@ -147,321 +144,371 @@ public class AdvancementSelectScreen extends BaniraScreen {
             if (this.onDataReceived2() == null)
                 Objects.requireNonNull(this.onDataReceived1());
         }
-
     }
 
     @Override
-    protected void initEvent() {
-        super.initScrollBar(new ScrollBar());
-
+    protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
             Minecraft.getInstance().setScreen(args.parentScreen());
 
-        // 确保本地有进度数据
         AdvancementUtils.ensureAdvancementData();
-
-        // 初始化加载状态跟踪
         this.wasLoading = AdvancementUtils.isLoading();
-
         this.updateSearchResults();
-        this.updateLayout();
-        // 创建文本输入框
-        this.inputField = AbstractGuiUtils.newTextFieldWidget(
-                this.font,
-                bgX,
-                bgY,
-                LayoutConfig.AdvancementSelect.PANEL_WIDTH,
-                LayoutConfig.AdvancementSelect.INPUT_FIELD_HEIGHT,
-                Component.empty()
-        ).hint("搜索进度...");
-        this.inputField.setResponder(text -> {
+    }
+
+    @Override
+    protected void initWidgets() {
+        boolean useSeasonTooltip = true;
+
+        int w = width;
+        int h = height;
+        int listH = MAX_LINES * ROW_HEIGHT;
+        int listW = 200;
+        int scrollGap = 2;
+
+        int panelW = PANEL_MARGIN + listW + scrollGap + SCROLL_W + PANEL_MARGIN;
+        int panelH = PANEL_MARGIN + INPUT_H + 4 + listH + 4 + BTN_H + PANEL_MARGIN;
+
+        int totalW = OP_BTN_SIZE + OP_BTN_GAP + panelW;
+        this.panelLeft = (w - totalW) / 2 + OP_BTN_SIZE + OP_BTN_GAP;
+        this.panelTop = (h - panelH) / 2;
+        this.panelW = panelW;
+        this.panelH = panelH;
+
+        int inputY = this.panelTop + PANEL_MARGIN;
+        int inputX = this.panelLeft + PANEL_MARGIN;
+        int inputW = this.panelW - PANEL_MARGIN * 2 - SCROLL_W - scrollGap;
+        int listY = inputY + INPUT_H + 4;
+        int listX = this.panelLeft + PANEL_MARGIN;
+        int listItemW = listW - 2;
+        int scrollX = listX + listW + scrollGap;
+        int btnY = listY + listH + 4;
+        int btnAreaW = this.panelW - PANEL_MARGIN * 2 - SCROLL_W - scrollGap;
+        int btnW = (btnAreaW - PANEL_MARGIN) / 2;
+        int cancelX = this.panelLeft + PANEL_MARGIN;
+        int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
+
+        // 输入框
+        searchInputWidget = new InputWidget(this);
+        searchInputWidget.id("search_input");
+        searchInputWidget.renderCoordinate(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
+        searchInputWidget.value(this.inputFieldText);
+        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_advancement"));
+        searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
                 this.updateSearchResults();
             }
         });
-        this.inputField.setValue(this.inputFieldText);
-        this.addButton(this.inputField);
+        addWidget(searchInputWidget);
 
-        int buttonY = (int) (this.bgY + (LayoutConfig.AdvancementSelect.PANEL_HEIGHT_OFFSET +
-                (AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN) * LayoutConfig.AdvancementSelect.MAX_LINES +
-                LayoutConfig.AdvancementSelect.MARGIN));
-        int buttonWidth = (int) (LayoutConfig.AdvancementSelect.BUTTON_WIDTH - LayoutConfig.AdvancementSelect.MARGIN * 2);
+        // 滚动条（先添加，确保列表项悬浮提示绘制在滚动条上层）
+        scrollbarWidget = new ScrollbarWidget(this);
+        scrollbarWidget.id("scroll");
+        scrollbarWidget.renderCoordinate(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
+        scrollbarWidget.orientation(ScrollbarWidget.Orientation.VERTICAL);
+        scrollbarWidget.minValue(0);
+        scrollbarWidget.maxValue(0);
+        scrollbarWidget.visibleSize(MAX_LINES);
+        scrollbarWidget.scrollStep(1.0);
+        scrollbarWidget.onValueChanged(v -> refreshAdvancementButtons());
+        scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
+        addWidget(scrollbarWidget);
 
-        // 创建提交按钮
-        this.addButton(new BaniraButton(
-                (int) (this.bgX + LayoutConfig.AdvancementSelect.BUTTON_WIDTH + LayoutConfig.AdvancementSelect.MARGIN),
-                buttonY,
-                buttonWidth,
-                LayoutConfig.AdvancementSelect.BUTTON_HEIGHT,
-                Component.translatableClient(EnumI18nType.OPTION, "submit").toTextComponent(),
-                button -> {
-                    if (this.currentAdvancement == null) {
+        // 操作按钮
+        int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
+        int opBtnY = this.panelTop;
+        String[] btnIds = {"type", "advancement"};
+        for (int i = 0; i < btnIds.length; i++) {
+            String btnId = btnIds[i];
+            ButtonWidget btn = new ButtonWidget(this);
+            btn.id(btnId);
+            btn.renderCoordinate(new ScreenCoordinate(opBtnX, opBtnY + i * (OP_BTN_SIZE + OP_BTN_GAP), OP_BTN_SIZE, OP_BTN_SIZE));
+            btn.text(Text.empty());
+            btn.paddingLeft(0).paddingRight(0).paddingTop(0).paddingBottom(0);
+
+            int opCode = parseOperationButtonType(btnId);
+            ItemWidget iconWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
+            iconWidget.showCountText(false);
+            ScreenCoordinate tooltipBounds = new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE);
+            if (opCode == ButtonType.TYPE.code()) {
+                typeButtonItemWidget = iconWidget;
+                iconWidget.itemStack(new net.minecraft.item.ItemStack(this.displayMode ? Items.MAP : Items.BOOK));
+                iconWidget.enableTooltip(false);
+                typeTooltip = new TooltipWidget(this, tooltipBounds);
+                typeTooltip.seasonTooltip(useSeasonTooltip);
+                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                        (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
+                        (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
+                btn.addChild(typeTooltip);
+            } else {
+                advancementButtonItemWidget = iconWidget;
+                AdvancementData sel = findAdvancementData(currentAdvancement);
+                iconWidget.itemStack(sel != null ? sel.displayInfo().getIcon().copy() : new net.minecraft.item.ItemStack(Items.END_CRYSTAL));
+                iconWidget.enableTooltip(false);
+                advancementTooltip = new TooltipWidget(this, tooltipBounds);
+                advancementTooltip.seasonTooltip(useSeasonTooltip);
+                advancementTooltip.text(Text.empty());
+                btn.addChild(advancementTooltip);
+            }
+            btn.addChild(iconWidget);
+            btn.onClick(b -> handleOperationInternal(opCode));
+            addWidget(btn);
+        }
+
+        // 进度列表按钮
+        advancementButtonWidgets.clear();
+        int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
+        int textMaxW = listItemW - iconW - 4;
+        for (int i = 0; i < MAX_LINES; i++) {
+            ButtonWidget btn = new ButtonWidget(this);
+            btn.id("advancement_btn_" + i);
+            btn.renderCoordinate(new ScreenCoordinate(listX, listY + i * (ROW_HEIGHT + ITEM_SPACING), listItemW, ROW_HEIGHT - 2));
+            btn.text(Text.empty());
+            btn.paddingLeft(iconW).paddingRight(4);
+            btn.visible(false);
+
+            ItemWidget iconWidget = new ItemWidget(this, new ScreenCoordinate(2, 2, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
+            iconWidget.showCountText(false);
+            iconWidget.enableTooltip(false);
+            iconWidget.seasonTooltip(useSeasonTooltip);
+            iconWidget.visible(false);
+            btn.addChild(iconWidget);
+
+            LabelWidget labelWidget = new LabelWidget(this, new ScreenCoordinate(iconW, 2, textMaxW, ROW_HEIGHT - 4));
+            labelWidget.text(Text.empty());
+            labelWidget.textWrap(false).textEllipsisPosition(EnumEllipsisPosition.MIDDLE).textVerticalAlign(EnumAlignment.CENTER);
+            labelWidget.visible(false);
+            btn.addChild(labelWidget);
+
+            TooltipWidget itemTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, listItemW, ROW_HEIGHT - 2));
+            itemTooltip.text(Text.empty());
+            itemTooltip.seasonTooltip(useSeasonTooltip);
+            itemTooltip.visible(false);
+            btn.addChild(itemTooltip);
+
+            btn.onClick(b -> {
+                Object advId = b.property("advancementId");
+                if (advId instanceof String) {
+                    handleAdvancement((String) advId);
+                    if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(false);
+                    selectedAdvancementWidget = btn;
+                }
+            });
+
+            advancementButtonWidgets.add(btn);
+            addWidget(btn);
+        }
+
+        // 确认与取消按钮
+        ButtonWidget cancelButtonWidget = new ButtonWidget(this);
+        cancelButtonWidget.id("cancel");
+        cancelButtonWidget.renderCoordinate(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
+        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        addWidget(cancelButtonWidget);
+
+        ButtonWidget submitButtonWidget = new ButtonWidget(this);
+        submitButtonWidget.id("submit");
+        submitButtonWidget.renderCoordinate(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
+        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.onClick(b -> {
+            if (this.currentAdvancement == null) {
+                Minecraft.getInstance().setScreen(args.parentScreen());
+            } else {
+                ResourceLocation resourceLocation = this.currentAdvancement;
+                if (args.onDataReceived1() != null) {
+                    args.onDataReceived1().accept(resourceLocation);
+                    LOGGER.debug("Advancement selected: {}", resourceLocation);
+                    Minecraft.getInstance().setScreen(args.parentScreen());
+                } else if (args.onDataReceived2() != null) {
+                    String result = args.onDataReceived2().apply(resourceLocation);
+                    if (StringUtils.isNullOrEmpty(result)) {
+                        LOGGER.debug("Advancement selected: {}", resourceLocation);
                         Minecraft.getInstance().setScreen(args.parentScreen());
                     } else {
-                        // 获取选择的数据，并执行回调
-                        ResourceLocation resourceLocation = this.currentAdvancement;
-                        if (args.onDataReceived1() != null) {
-                            args.onDataReceived1().accept(resourceLocation);
-                            Minecraft.getInstance().setScreen(args.parentScreen());
-                        } else if (args.onDataReceived2() != null) {
-                            String result = args.onDataReceived2().apply(resourceLocation);
-                            if (StringUtils.isNotNullOrEmpty(result)) {
-                                // this.errorText = Text.literal(result).setColorArgb(0xFFFF0000);
-                            } else {
-                                Minecraft.getInstance().setScreen(args.parentScreen());
-                            }
-                        }
+                        LOGGER.debug("Advancement validation failed: {}", result);
                     }
                 }
-        ));
+            }
+        });
+        addWidget(submitButtonWidget);
 
-        // 创建取消按钮
-        this.addButton(new BaniraButton(
-                (int) (this.bgX + LayoutConfig.AdvancementSelect.MARGIN),
-                buttonY,
-                buttonWidth,
-                LayoutConfig.AdvancementSelect.BUTTON_HEIGHT,
-                Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent(),
-                button -> Minecraft.getInstance().setScreen(args.parentScreen())
-        ));
+        updateSearchResults();
+    }
+
+    @Nullable
+    private AdvancementData findAdvancementData(ResourceLocation id) {
+        if (id == null) return null;
+        String idStr = id.toString();
+        if (StringUtils.isNullOrEmpty(idStr) || ":".equals(idStr)) return null;
+        try {
+            for (AdvancementData d : advancementList) {
+                if (idStr.equals(d.id().toString())) return d;
+            }
+            for (AdvancementData d : AdvancementUtils.getAllAdvancements()) {
+                if (idStr.equals(d.id().toString())) return d;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("findAdvancementData failed for id={}", idStr, e);
+        }
+        return null;
     }
 
     @Override
-    public void renderEvent(MatrixStack matrixStack, float partialTicks) {
-        super.keyManager.tick();
-        // 绘制背景
-        this.renderBackground(matrixStack);
-        int panelWidth = LayoutConfig.AdvancementSelect.PANEL_WIDTH;
-        int panelHeight = LayoutConfig.AdvancementSelect.PANEL_HEIGHT_OFFSET +
-                (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN) * LayoutConfig.AdvancementSelect.MAX_LINES) +
-                LayoutConfig.AdvancementSelect.BUTTON_HEIGHT +
-                (int) (LayoutConfig.AdvancementSelect.MARGIN * 2) + 5;
-        AbstractGuiUtils.drawRoundedRect(
-                matrixStack,
-                (int) (this.bgX - LayoutConfig.AdvancementSelect.MARGIN),
-                (int) (this.bgY - LayoutConfig.AdvancementSelect.MARGIN),
-                (int) (panelWidth + LayoutConfig.AdvancementSelect.MARGIN * 2),
-                panelHeight,
-                LayoutConfig.Colors.BACKGROUND,
-                2
-        );
-        int listAreaHeight = (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN) * LayoutConfig.AdvancementSelect.MAX_LINES + LayoutConfig.AdvancementSelect.MARGIN);
-        AbstractGuiUtils.drawRoundedRectOutLineRough(
-                matrixStack,
-                (int) (this.effectBgX - LayoutConfig.AdvancementSelect.MARGIN),
-                (int) (this.effectBgY - LayoutConfig.AdvancementSelect.MARGIN),
-                LayoutConfig.AdvancementSelect.LIST_WIDTH,
-                listAreaHeight,
-                1,
-                LayoutConfig.Colors.BORDER,
-                1
-        );
+    public void renderEvent(MatrixStack stack, float partialTicks) {
+        ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
+        panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
+        BaseShapeWidget.drawShape(panelBg);
 
-        super.renderButtons(matrixStack, partialTicks);
+        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
+        super.renderWidgets(stack, partialTicks);
 
-        // 保存输入框的文本, 防止窗口重绘时输入框内容丢失
-        this.inputFieldText = this.inputField.getValue();
+        if (searchInputWidget != null) {
+            this.inputFieldText = searchInputWidget.value();
+        }
 
-        // 检测加载状态变化
         boolean isLoading = AdvancementUtils.isLoading();
         if (this.wasLoading && !isLoading) {
             this.updateSearchResults();
+            LOGGER.debug("Advancement data loaded, updating search results");
         }
         this.wasLoading = isLoading;
 
-        if (isLoading) {
-            String loadingText = "加载中...";
-            int textWidth = this.font.width(loadingText);
-            int textX = this.width / 2 - textWidth / 2;
-            int textY = (int) (this.effectBgY + (AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN) * LayoutConfig.AdvancementSelect.MAX_LINES / 2.0 - this.font.lineHeight / 2.0);
-            this.font.drawShadow(matrixStack, loadingText, textX, textY, 0xFFFFFFFF);
-        }
-
-        this.renderButton(matrixStack);
+        refreshAdvancementButtons();
     }
-
-    @Override
-    protected void removedEvent() {
-    }
-
 
     @Override
     public void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
-        if (mouseHelper.isPressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
+        if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
             Minecraft.getInstance().setScreen(args.parentScreen());
             flag.set(true);
-        } else if (mouseHelper.onlyPressedLeft() || mouseHelper.onlyPressedRight()) {
-            OP_BUTTONS.forEach((key, value) -> {
-                if (value.hovered()) {
-                    value.pressed(true);
-                }
-            });
-            // 进度按钮
-            ADVANCEMENT_BUTTONS.forEach(bt -> bt.pressed(bt.hovered()));
         }
         eventArgs.consumed(flag.get());
-    }
 
-    @Override
-    protected void handlePopupOption(MouseReleasedHandleArgs eventArgs) {
-    }
+        super.mouseClickedEvent(eventArgs);
 
-    @Override
-    public void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
-        AtomicBoolean flag = new AtomicBoolean(false);
-        AtomicBoolean updateSearchResults = new AtomicBoolean(false);
-        if (mouseHelper.onlyPressedLeft() || mouseHelper.onlyPressedRight()) {
-            // 控制按钮
-            OP_BUTTONS.forEach((key, value) -> {
-                if (value.hovered() && value.pressed()) {
-                    this.handleOperation(value, flag, updateSearchResults);
-                }
-                value.pressed(false);
-            });
-            // 进度按钮
-            ADVANCEMENT_BUTTONS.forEach(bt -> {
-                if (bt.hovered() && bt.pressed()) {
-                    this.handleAdvancement(bt, flag);
-                }
-                bt.pressed(false);
-            });
-            if (updateSearchResults.get()) {
-                this.updateSearchResults();
+        if (searchInputWidget != null && searchInputWidget.focused()) {
+            BaseWidget inputBase = searchInputWidget;
+            double mouseX = eventArgs.mouseX();
+            double mouseY = eventArgs.mouseY();
+            if (!inputBase.isMouseInside(mouseX, mouseY)) {
+                this.unfocusWidget(searchInputWidget);
             }
         }
-        eventArgs.consumed(flag.get());
-    }
-
-    @Override
-    public void mouseMovedEvent() {
-        // 控制按钮
-        OP_BUTTONS.forEach((key, value) -> value.hovered(value.isMouseOverEx(mouseHelper)));
-        // 进度按钮
-        ADVANCEMENT_BUTTONS.forEach(bt -> bt.hovered(bt.isMouseOverEx(mouseHelper)));
-    }
-
-    @Override
-    protected void mouseScrolledEvent(MouseScoredHandleArgs eventArgs) {
     }
 
     @Override
     public void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
-        if (super.keyManager.onlyEscapePressed() || (super.keyManager.onlyBackspacePressed() && !this.inputField.isFocused())) {
+        super.keyPressedEvent(eventArgs);
+        if (eventArgs.consumed()) {
+            return;
+        }
+
+        if (super.inputState.isEscapePressed() ||
+                (super.inputState.isBackspacePressed() &&
+                        (searchInputWidget == null || !searchInputWidget.focused()))) {
             Minecraft.getInstance().setScreen(args.parentScreen());
             eventArgs.consumed(true);
-        } else if (super.keyManager.onlyEnterPressed() && this.inputField.isFocused()) {
+        } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
             eventArgs.consumed(true);
         }
     }
 
     @Override
-    protected void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
+    protected void refreshWidget() {
+        super.refreshWidget();
+        updateSearchResults();
     }
 
-    @Override
-    protected void closeEvent() {
-    }
+    private void refreshAdvancementButtons() {
+        if (advancementButtonWidgets.isEmpty()) return;
 
-    public void updateLayout() {
-        this.bgX = this.width / 2 - LayoutConfig.AdvancementSelect.BG_X_OFFSET;
-        this.bgY = this.height / 2 - LayoutConfig.AdvancementSelect.BG_Y_OFFSET;
-        this.effectBgX = this.bgX + LayoutConfig.AdvancementSelect.MARGIN;
-        this.effectBgY = this.bgY + LayoutConfig.AdvancementSelect.PANEL_HEIGHT_OFFSET;
+        int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
-        // 初始化操作按钮
-        this.OP_BUTTONS.put(OperationButtonType.TYPE.getCode(), new OperationButton(OperationButtonType.TYPE.getCode(), context -> {
-            // 绘制背景
-            OperationButtonRender.renderOperationButtonBackground(context);
-            ItemStack itemStack = new ItemStack(this.displayMode ? Items.CHEST : Items.COMPASS);
-            OperationButtonRender.renderOperationButtonIcon(context, this.itemRenderer, itemStack);
-            int total = AdvancementUtils.getAllAdvancements().size();
-            int displayableCount = AdvancementUtils.getDisplayableAdvancements().size();
-            Text text = Text.translatable(BaniraCodex.MODID,
-                    EnumI18nType.TIPS,
-                    (this.displayMode ? "advancement_select_list_icon_mode" : "advancement_select_list_all_mode"),
-                    (this.displayMode ? displayableCount : total));
-            OperationButtonRender.setOperationButtonTooltip(context, text);
-        }).x(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - (int) LayoutConfig.AdvancementSelect.MARGIN - LayoutConfig.Button.OPERATION_BUTTON_X_OFFSET)
-                .y(this.bgY + (int) LayoutConfig.AdvancementSelect.MARGIN)
-                .width(AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.Button.OPERATION_BUTTON_SIZE_OFFSET)
-                .height(AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.Button.OPERATION_BUTTON_SIZE_OFFSET));
-        this.OP_BUTTONS.put(OperationButtonType.ADVANCEMENT.getCode(), new OperationButton(OperationButtonType.ADVANCEMENT.getCode(), context -> {
-            // 绘制背景
-            OperationButtonRender.renderOperationButtonBackground(context);
-            ItemStack iconStack = new ItemStack(Items.BARRIER);
-            String title = "-";
-            if (this.currentAdvancement != null) {
-                Optional<AdvancementData> dataOpt = AdvancementUtils.findAdvancementByRegistry(this.currentAdvancement.toString());
-                if (dataOpt.isPresent()) {
-                    AdvancementData data = dataOpt.get();
-                    iconStack = data.displayInfo().getIcon();
-                    title = data.displayInfo().getTitle().getString();
+        boolean found = false;
+        for (int i = 0; i < advancementButtonWidgets.size(); i++) {
+            ButtonWidget buttonWidget = advancementButtonWidgets.get(i);
+            int index = scrollOffset + i;
+            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
+            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
+            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
+            if (iw == null || lw == null) continue;
+
+            if (index >= 0 && index < advancementList.size()) {
+                AdvancementData advancementData = advancementList.get(index);
+                String advancementId = advancementData.id().toString();
+                String displayName = AdvancementUtils.getDisplayName(advancementData);
+                String description = AdvancementUtils.getDescription(advancementData);
+                iw.itemStack(advancementData.displayInfo().getIcon().copy());
+                iw.visible(true);
+                lw.text(Text.literal(displayName).color(Color.argb(getEffectiveTheme().listItemText())));
+                lw.visible(true);
+                if (tw != null) {
+                    String tip = buildDeduplicatedTooltip(displayName, description, advancementId);
+                    tw.text(Text.literal(tip));
+                    tw.visible(true);
                 }
+                buttonWidget.property("advancementId", advancementId);
+                buttonWidget.visible(true);
+                buttonWidget.enabled(true);
+            } else {
+                iw.itemStack(new ItemStack(Items.AIR));
+                iw.visible(false);
+                lw.text(Text.empty());
+                lw.visible(false);
+                if (tw != null) {
+                    tw.text(Text.empty());
+                    tw.visible(false);
+                }
+                buttonWidget.property("advancementId", "");
+                buttonWidget.visible(false);
+                buttonWidget.enabled(false);
             }
-            OperationButtonRender.renderOperationButtonIcon(context, this.itemRenderer, iconStack);
-            OperationButtonRender.setOperationButtonTooltip(context, Text.literal(title));
-        }).x(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - (int) LayoutConfig.AdvancementSelect.MARGIN - LayoutConfig.Button.OPERATION_BUTTON_X_OFFSET)
-                .y(this.bgY + (int) LayoutConfig.AdvancementSelect.MARGIN + AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.Button.OPERATION_BUTTON_SIZE_OFFSET + LayoutConfig.Button.OPERATION_BUTTON_SPACING)
-                .width(AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.Button.OPERATION_BUTTON_SIZE_OFFSET)
-                .height(AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.Button.OPERATION_BUTTON_SIZE_OFFSET));
 
-        // 初始化滚动条位置
-        double bgHeight = (AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN) * LayoutConfig.AdvancementSelect.MAX_LINES - LayoutConfig.AdvancementSelect.MARGIN;
-        super.scrollBar().x(effectBgX + LayoutConfig.AdvancementSelect.LIST_WIDTH + 2)
-                .y(effectBgY - LayoutConfig.AdvancementSelect.MARGIN + 1)
-                .width(5)
-                .height((int) (bgHeight + LayoutConfig.AdvancementSelect.MARGIN + 1));
+            if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(false);
+            if (currentAdvancement != null && currentAdvancement.toString().equals(buttonWidget.property("advancementId"))) {
+                selectedAdvancementWidget = buttonWidget;
+                found = true;
+            }
+        }
+        if (!found) selectedAdvancementWidget = null;
 
-        // 进度列表
-        this.ADVANCEMENT_BUTTONS.clear();
-        for (int i = 0; i < LayoutConfig.AdvancementSelect.MAX_LINES; i++) {
-            ADVANCEMENT_BUTTONS.add(new OperationButton(i, context -> {
-                int i1 = context.button.operation();
-                int scrollRow = advancementList.size() > LayoutConfig.AdvancementSelect.MAX_LINES ? super.scrollBar().scrollOffset() : 0;
-                int index = scrollRow + i1;
-                if (index >= 0 && index < advancementList.size()) {
-                    AdvancementData advancementData = advancementList.get(index);
-                    double effectX = effectBgX;
-                    double effectY = effectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + LayoutConfig.AdvancementSelect.MARGIN);
-                    // 绘制背景
-                    int bgColor;
-                    if (context.button.hovered() || (advancementData.id().equals(this.currentAdvancement))) {
-                        bgColor = LayoutConfig.Colors.SELECTED_BACKGROUND;
-                    } else {
-                        bgColor = LayoutConfig.Colors.BUTTON_BACKGROUND;
-                    }
-                    context.button.x(effectX - 1).y(effectY - 1).width(100).height(AbstractGuiUtils.ITEM_ICON_SIZE + 2)
-                            .id(advancementData.id().toString());
-
-                    AbstractGuiUtils.fill(context.matrixStack, (int) context.button.x(), (int) context.button.y(), (int) context.button.width(), (int) context.button.height(), bgColor);
-                    FontDrawArgs drawArgs = FontDrawArgs.of(Text.literal(advancementData.displayInfo().getTitle().getString()).stack(context.matrixStack).font(this.font))
-                            .x(context.button.x() + AbstractGuiUtils.ITEM_ICON_SIZE + (int) LayoutConfig.AdvancementSelect.MARGIN * 2)
-                            .y(context.button.y() + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 - this.font.lineHeight) / 2.0)
-                            .maxWidth((int) context.button.width() - AbstractGuiUtils.ITEM_ICON_SIZE - 4)
-                            .wrap(false);
-                    AbstractGuiUtils.drawLimitedText(drawArgs);
-                    this.itemRenderer.renderGuiItem(advancementData.displayInfo().getIcon(), (int) (context.button.x() + LayoutConfig.AdvancementSelect.MARGIN), (int) context.button.y());
-                    context.button.tooltip(Text.literal(advancementData.displayInfo().getTitle().getString() + "\n" + advancementData.displayInfo().getDescription().getString()));
-                } else {
-                    context.button.x(0).y(0).width(0).height(0).id("");
-                }
-            }));
+        if (typeTooltip != null) {
+            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                    (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
+                    (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
+        }
+        if (typeButtonItemWidget != null) {
+            typeButtonItemWidget.itemStack(new ItemStack(this.displayMode ? Items.MAP : Items.BOOK));
+        }
+        if (advancementButtonItemWidget != null) {
+            AdvancementData sel = findAdvancementData(currentAdvancement);
+            boolean hasSelection = sel != null;
+            advancementButtonItemWidget.visible(hasSelection);
+            advancementButtonItemWidget.itemStack(hasSelection ? sel.displayInfo().getIcon().copy() : new ItemStack(Items.AIR));
+        }
+        if (advancementTooltip != null) {
+            AdvancementData sel = findAdvancementData(currentAdvancement);
+            if (sel != null) {
+                String displayName = AdvancementUtils.getDisplayName(sel);
+                String description = AdvancementUtils.getDescription(sel);
+                String advancementId = sel.id().toString();
+                advancementTooltip.text(Text.literal(buildDeduplicatedTooltip(displayName, description, advancementId)));
+            } else {
+                advancementTooltip.text(Text.transAuto(BaniraCodex.MODID, "advancement_select_advancement"));
+            }
         }
     }
 
-    /**
-     * 更新搜索结果
-     */
     private void updateSearchResults() {
-        String s = this.inputField == null ? null : this.inputField.getValue();
+        String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
         this.advancementList.clear();
 
         AdvancementUtils.ensureAdvancementData();
 
-        // 根据显示模式和搜索关键字获取进度列表
         if (StringUtils.isNotNullOrEmpty(s)) {
             if (this.displayMode) {
                 this.advancementList.addAll(AdvancementUtils.searchDisplayableAdvancements(s));
@@ -475,59 +522,73 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 this.advancementList.addAll(AdvancementUtils.getAllAdvancements());
             }
         }
-        super.scrollBar().setScrollOffset(0);
+
+        if (scrollbarWidget != null) {
+            scrollbarWidget.maxValue(Math.max(0, advancementList.size() - MAX_LINES));
+            if (scrollbarWidget.value() > scrollbarWidget.maxValue()) {
+                scrollbarWidget.setValue(0);
+            }
+        }
+
+        refreshAdvancementButtons();
+        LOGGER.debug("Search results updated: count={}, query={}", advancementList.size(), s);
     }
 
-    /**
-     * 绘制按钮
-     */
-    private void renderButton(MatrixStack matrixStack) {
-        for (OperationButton button : OP_BUTTONS.values()) button.render(matrixStack, super.keyManager, mouseHelper);
-        for (OperationButton button : ADVANCEMENT_BUTTONS) button.render(matrixStack, super.keyManager, mouseHelper);
-
-        // 更新并渲染滚动条
-        int totalRows = advancementList.size();
-        super.scrollBar().updateScrollParams(totalRows, LayoutConfig.AdvancementSelect.MAX_LINES);
-        super.scrollBar().render(matrixStack);
-    }
-
-    private void handleAdvancement(OperationButton bt, AtomicBoolean flag) {
-        if (mouseHelper.isPressedLeft()) {
-            if (StringUtils.isNotNullOrEmpty(bt.id())) {
-                try {
-                    ResourceLocation resourceLocation = new ResourceLocation(bt.id());
-                    this.currentAdvancement = resourceLocation;
-                    LOGGER.debug("Select advancement: {}", resourceLocation);
-                    flag.set(true);
-                } catch (IllegalArgumentException e) {
-                    LOGGER.warn("Invalid advancement id format: {}", bt.id());
-                } catch (Exception e) {
-                    LOGGER.error("Unexpected error handling advancement click", e);
-                }
+    private void handleAdvancement(String advancementId) {
+        if (StringUtils.isNotNullOrEmpty(advancementId)) {
+            try {
+                ResourceLocation resourceLocation = Identifier.id().parse(advancementId);
+                this.currentAdvancement = resourceLocation;
+                LOGGER.debug("Select advancement: {}", resourceLocation);
+                refreshAdvancementButtons();
+            } catch (IllegalArgumentException e) {
+                LOGGER.debug("Invalid advancement id format: {}", advancementId);
+            } catch (Exception e) {
+                LOGGER.debug("Unexpected error handling advancement click", e);
             }
         }
     }
 
-    private void handleOperation(OperationButton bt, AtomicBoolean flag, AtomicBoolean updateSearchResults) {
-        if (bt.operation() == OperationButtonType.TYPE.getCode()) {
-            this.displayMode = !this.displayMode;
-            updateSearchResults.set(true);
-            flag.set(true);
+    private static String buildDeduplicatedTooltip(String displayName, String description, String advancementId) {
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.isNotNullOrEmpty(displayName)) parts.add(displayName);
+        if (StringUtils.isNotNullOrEmpty(description) && !description.equals(displayName)) parts.add(description);
+        if (StringUtils.isNotNullOrEmpty(advancementId)
+                && !advancementId.equals(displayName)
+                && !advancementId.equals(description)) {
+            parts.add(advancementId);
         }
-        // 编辑进度ID
-        else if (bt.operation() == OperationButtonType.ADVANCEMENT.getCode()) {
+        return new LinkedHashSet<>(parts).stream().collect(Collectors.joining("\n"));
+    }
+
+    private int parseOperationButtonType(String buttonId) {
+        if ("type".equals(buttonId) || "1".equals(buttonId)) return ButtonType.TYPE.code();
+        if ("advancement".equals(buttonId) || "2".equals(buttonId)) return ButtonType.ADVANCEMENT.code();
+        try {
+            return Integer.parseInt(buttonId);
+        } catch (NumberFormatException e) {
+            LOGGER.debug("Unknown operation button id: {}", buttonId);
+            return 0;
+        }
+    }
+
+    private void handleOperationInternal(int operationCode) {
+        if (operationCode == ButtonType.TYPE.code()) {
+            this.displayMode = !this.displayMode;
+            this.updateSearchResults();
+        } else if (operationCode == ButtonType.ADVANCEMENT.code()) {
             String effectString = this.currentAdvancement != null ? this.currentAdvancement.toString() : "";
-            StringInputScreen.Args args = new StringInputScreen.Args()
+            StringInputScreen.Args inputArgs = new StringInputScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new StringInputScreen.Widget()
-                            .title(Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, "enter_advancement_json").shadow(true))
-                            .message(Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, "enter_something"))
+                            .title(Text.transAuto(BaniraCodex.MODID, "enter_advancement_id"))
+                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
                             .defaultValue(effectString)
                             .validator((input) -> {
                                 try {
-                                    new ResourceLocation(input.value());
+                                    Identifier.id().parse(input.value());
                                 } catch (IllegalArgumentException e) {
-                                    return Component.translatableClient(EnumI18nType.TIPS, "advancement_json_s_error", input.value()).toString();
+                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_advancement_id_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -535,15 +596,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
                     .setCallback(input -> {
                         String id = input.firstValue();
                         try {
-                            this.currentAdvancement = new ResourceLocation(id);
+                            this.currentAdvancement = Identifier.id().parse(id);
                         } catch (IllegalArgumentException e) {
-                            LOGGER.warn("Invalid advancement id format: {}", id);
+                            LOGGER.debug("Invalid advancement id format: {}", id);
                         } catch (Exception e) {
-                            LOGGER.error("Unexpected error parsing advancement id: {}", id, e);
+                            LOGGER.debug("Unexpected error parsing advancement id: {}", id, e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(args));
+            Minecraft.getInstance().setScreen(new StringInputScreen(inputArgs));
         }
     }
-
 }

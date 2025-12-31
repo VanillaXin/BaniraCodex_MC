@@ -1,4 +1,4 @@
-package xin.vanilla.banira.common.util;
+package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -13,6 +13,7 @@ import net.minecraft.util.text.*;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.Serializable;
@@ -164,6 +165,13 @@ public class Component implements Cloneable, Serializable {
         return this;
     }
 
+    public Component languageCodeIfEmpty(String languageCode) {
+        if (this.isLanguageCodeEmpty()) {
+            this.languageCode(languageCode);
+        }
+        return this;
+    }
+
     // region NonNull Getter
 
     /**
@@ -235,6 +243,10 @@ public class Component implements Cloneable, Serializable {
     // endregion NonNull Getter
 
     // region 样式元素是否为空(用于父组件样式传递)
+
+    public boolean isModIdEmpty() {
+        return this.modId == null;
+    }
 
     /**
      * 语言代码是否为空
@@ -401,6 +413,7 @@ public class Component implements Cloneable, Serializable {
         return this;
     }
 
+
     /**
      * 将另一个组件的样式应用到当前组件
      */
@@ -444,7 +457,7 @@ public class Component implements Cloneable, Serializable {
     public Style getStyle() {
         Style style = Style.EMPTY;
         if (!this.color().isEmpty() && this.color().rgb() != 0xFFFFFF)
-            style = style.withColor(Color.fromRgb(color().rgb()));
+            style = style.withColor(net.minecraft.util.text.Color.fromRgb(color().rgb()));
         style = style.setUnderlined(this.underlined())
                 .setStrikethrough(this.strikethrough())
                 .setObfuscated(this.obfuscated())
@@ -528,7 +541,7 @@ public class Component implements Cloneable, Serializable {
                     // 未设置 modId 时，退化为直接输出 key，避免错误跨 mod 翻译
                     result.append(this.text);
                 } else {
-                    LanguageHelper helper = LanguageHelper.forMod(this.modId);
+                    ITranslator helper = Translator.of(this.modId);
                     String fullKey = helper.getKey(this.i18nType, this.text);
                     result.append(helper.getTranslation(fullKey, this.languageCodeOrDefault(languageCode)));
                 }
@@ -539,11 +552,12 @@ public class Component implements Cloneable, Serializable {
         return StringUtils.format(result.toString(), this.getArgs().stream().map(component -> component.getString(languageCode, igStyle, finalIgColor)).toArray());
     }
 
+
     /**
      * 获取文本组件
      */
-    public ITextComponent toTextComponent() {
-        return this.toTextComponent(this.languageCodeOrDefault());
+    public ITextComponent toVanilla() {
+        return this.toVanilla(this.languageCodeOrDefault());
     }
 
     /**
@@ -551,7 +565,7 @@ public class Component implements Cloneable, Serializable {
      *
      * @param languageCode 语言代码
      */
-    public ITextComponent toTextComponent(String languageCode) {
+    public ITextComponent toVanilla(String languageCode) {
         List<IFormattableTextComponent> components = new ArrayList<>();
         if (this.i18nType == EnumI18nType.ORIGINAL) {
             components.add((IFormattableTextComponent) this.original);
@@ -564,7 +578,7 @@ public class Component implements Cloneable, Serializable {
                         // 未设置 modId 时，退化为直接输出 key
                         text = this.text;
                     } else {
-                        LanguageHelper helper = LanguageHelper.forMod(this.modId);
+                        ITranslator helper = Translator.of(this.modId);
                         text = helper.getTranslation(this.i18nType, this.text, this.languageCodeOrDefault(languageCode));
                     }
                     String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
@@ -612,16 +626,17 @@ public class Component implements Cloneable, Serializable {
                             }
                         }
                         if (components.size() > i) {
-                            components.get(i).append(formattedArg.toTextComponent());
+                            components.get(i).append(formattedArg.toVanilla());
                         }
                         i++;
                     }
                 } else {
-                    components.add(new StringTextComponent(this.text).withStyle(this.getStyle()));
+                    this.args.forEach(arg -> arg.languageCodeIfEmpty(languageCode));
+                    components.add(new StringTextComponent(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
                 }
             }
         }
-        components.addAll(this.getChildren().stream().map(component -> (IFormattableTextComponent) component.toTextComponent(languageCode)).collect(Collectors.toList()));
+        components.addAll(this.getChildren().stream().map(component -> (IFormattableTextComponent) component.toVanilla(languageCode)).collect(Collectors.toList()));
         if (components.isEmpty()) {
             components.add(new StringTextComponent(""));
         }
@@ -635,22 +650,22 @@ public class Component implements Cloneable, Serializable {
     /**
      * 获取翻译文本组件
      */
-    public ITextComponent toTranslatedTextComponent() {
+    public ITextComponent toVanillaTrans() {
         IFormattableTextComponent result = new StringTextComponent("");
         if (!this.color().isEmpty() || !this.bgColor().isEmpty()) {
             if (this.i18nType != EnumI18nType.PLAIN) {
                 Object[] objects = this.getArgs().stream().map(component -> {
                     if (component.i18nType == EnumI18nType.PLAIN) {
-                        return component.toTextComponent();
+                        return component.toVanilla();
                     } else {
-                        return component.toTranslatedTextComponent();
+                        return component.toVanillaTrans();
                     }
                 }).toArray();
                 if (StringUtils.isNullOrEmptyEx(this.modId)) {
                     // 未设置 modId 时，退化为直接输出 key
                     result = new StringTextComponent(this.text).withStyle(this.getStyle());
                 } else {
-                    LanguageHelper helper = LanguageHelper.forMod(this.modId);
+                    ITranslator helper = Translator.of(this.modId);
                     String fullKey = helper.getKey(this.i18nType, this.text);
                     if (CollectionUtils.isNotNullOrEmpty(objects)) {
                         result = new TranslationTextComponent(fullKey, objects);
@@ -663,7 +678,7 @@ public class Component implements Cloneable, Serializable {
             }
         }
         for (Component child : this.getChildren()) {
-            result.append(child.toTranslatedTextComponent());
+            result.append(child.toVanillaTrans());
         }
         return result;
     }
@@ -673,8 +688,8 @@ public class Component implements Cloneable, Serializable {
      *
      * @return 格式化颜色后的文本组件
      */
-    public ITextComponent toChatComponent() {
-        return this.toChatComponent(this.languageCodeOrDefault());
+    public ITextComponent toChat() {
+        return this.toChat(this.languageCodeOrDefault());
     }
 
     /**
@@ -682,15 +697,15 @@ public class Component implements Cloneable, Serializable {
      *
      * @return 格式化颜色后的文本组件
      */
-    public ITextComponent toChatComponent(String languageCode) {
-        return rewriteColor(this.toTextComponent(languageCode));
+    public ITextComponent toChat(String languageCode) {
+        return rewriteColor(this.toVanilla(languageCode));
     }
 
     public static ITextComponent rewriteColor(ITextComponent component) {
         if (component instanceof IFormattableTextComponent) {
-            Color color = component.getStyle().getColor();
+            net.minecraft.util.text.Color color = component.getStyle().getColor();
             if (color != null && color.serialize().startsWith("#")) {
-                Style style = component.getStyle().withColor(Color.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.parseArgb(color.serialize())).name().toLowerCase()));
+                Style style = component.getStyle().withColor(net.minecraft.util.text.Color.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.parseArgb(color.serialize())).name().toLowerCase()));
                 ((IFormattableTextComponent) component).setStyle(style);
             }
         }
@@ -700,11 +715,12 @@ public class Component implements Cloneable, Serializable {
         return component;
     }
 
+
     /**
      * 获取空文本组件
      */
     public static Component empty() {
-        return new Component();
+        return new Component().shadow(false);
     }
 
     /**
@@ -716,99 +732,119 @@ public class Component implements Cloneable, Serializable {
 
     /**
      * 获取文本组件
-     *
-     * @param text 文本
      */
     public static Component literal(String text) {
-        return new Component().text(text);
+        return new Component().text(text).shadow(false);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param key  翻译键
-     * @param args 参数
-     */
-    public static Component translatable(String key, Object... args) {
+    public static Component trans(String key) {
+        return new Component(key, EnumI18nType.NONE);
+    }
+
+    public static Component trans(String modId, String key) {
+        return new Component(modId, key, EnumI18nType.NONE);
+    }
+
+    public static Component trans(String key, Object... args) {
         return new Component(key, EnumI18nType.NONE).appendArg(args);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param type 翻译类型
-     * @param key  翻译键
-     * @param args 参数
-     */
-    public static Component translatable(EnumI18nType type, String key, Object... args) {
+    public static Component trans(String modId, String key, Object... args) {
+        return new Component(modId, key, EnumI18nType.NONE).appendArg(args);
+    }
+
+    public static Component trans(EnumI18nType type, String key, Object... args) {
         return new Component(key, type).appendArg(args);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param modId 所属 modId
-     * @param type  翻译类型
-     * @param key   翻译键
-     * @param args  参数
-     */
-    public static Component translatable(String modId, EnumI18nType type, String key, Object... args) {
-        return new Component(key, type).modId(modId).appendArg(args);
+    public static Component trans(String modId, EnumI18nType type, String key, Object... args) {
+        return new Component(modId, key, type).appendArg(args);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param key  翻译键
-     * @param args 参数
-     */
-    public static Component translatableClient(String key, Object... args) {
-        return new Component(key, EnumI18nType.NONE).languageCode(LanguageHelper.getClientLanguage()).appendArg(args);
+    public static Component trans(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
+        return new Component(key, type).languageCode(Translator.getPlayerLanguage(player)).appendArg(args);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param type 翻译类型
-     * @param key  翻译键
-     * @param args 参数
-     */
-    public static Component translatableClient(EnumI18nType type, String key, Object... args) {
-        return new Component(key, type).languageCode(LanguageHelper.getClientLanguage()).appendArg(args);
+    public static Component transAuto(String key) {
+        return new Component(key, EnumI18nType.WORD);
     }
 
-    /**
-     * 获取翻译文本组件
-     */
-    public static Component translatableWithLanguage(String languageCode, EnumI18nType type, String key, Object... args) {
+    public static Component transAuto(String modId, String key) {
+        return new Component(modId, key, EnumI18nType.WORD);
+    }
+
+    public static Component transAuto(String key, Object... args) {
+        return new Component(key, EnumI18nType.FORMAT).appendArg(args);
+    }
+
+    public static Component transAuto(String modId, String key, Object... args) {
+        return new Component(modId, key, EnumI18nType.FORMAT).appendArg(args);
+    }
+
+
+    public static Component transClient(String key) {
+        return new Component(key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage());
+    }
+
+    public static Component transClient(String modId, String key) {
+        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage());
+    }
+
+    public static Component transClient(String key, Object... args) {
+        return new Component(key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage()).appendArg(args);
+    }
+
+    public static Component transClient(String modId, String key, Object... args) {
+        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage()).appendArg(args);
+    }
+
+    public static Component transClient(EnumI18nType type, String key, Object... args) {
+        return new Component(key, type).languageCode(Translator.getClientLanguage()).appendArg(args);
+    }
+
+    public static Component transClientAuto(String key) {
+        return new Component(key, EnumI18nType.WORD).languageCode(Translator.getClientLanguage());
+    }
+
+    public static Component transClientAuto(String modId, String key) {
+        return new Component(modId, key, EnumI18nType.WORD).languageCode(Translator.getClientLanguage());
+    }
+
+    public static Component transClientAuto(String key, Object... args) {
+        return new Component(key, EnumI18nType.FORMAT).languageCode(Translator.getClientLanguage()).appendArg(args);
+    }
+
+    public static Component transClientAuto(String modId, String key, Object... args) {
+        return new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator.getClientLanguage()).appendArg(args);
+    }
+
+    public static Component transLang(String languageCode, String key, Object... args) {
+        return new Component(key, EnumI18nType.NONE).languageCode(languageCode).appendArg(args);
+    }
+
+    public static Component transLang(String languageCode, EnumI18nType type, String key, Object... args) {
         return new Component(key, type).languageCode(languageCode).appendArg(args);
     }
 
-    /**
-     * 获取翻译文本组件
-     *
-     * @param player 玩家
-     * @param type   翻译类型
-     * @param key    翻译键
-     * @param args   参数
-     */
-    public static Component translatable(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
-        return new Component(key, type).languageCode(LanguageHelper.getPlayerLanguage(player)).appendArg(args);
+    public static Component transLang(String modId, String languageCode, EnumI18nType type, String key, Object... args) {
+        return new Component(modId, key, type).languageCode(languageCode).appendArg(args);
     }
+
 
     public static Component deserialize(JsonObject jsonObject) {
         Component result = new Component();
         result.text(JsonUtils.getString(jsonObject, "text"));
         result.i18nType(EnumI18nType.valueOf(JsonUtils.getString(jsonObject, "i18nType")));
-        result.languageCode(JsonUtils.getString(jsonObject, "languageCode"));
-        result.color(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "color")));
-        result.bgColor(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "bgColor")));
-        result.shadow(JsonUtils.getBoolean(jsonObject, "shadow"));
-        result.bold(JsonUtils.getBoolean(jsonObject, "bold"));
-        result.italic(JsonUtils.getBoolean(jsonObject, "italic"));
-        result.underlined(JsonUtils.getBoolean(jsonObject, "underlined"));
-        result.strikethrough(JsonUtils.getBoolean(jsonObject, "strikethrough"));
-        result.obfuscated(JsonUtils.getBoolean(jsonObject, "obfuscated"));
+        result.modId(JsonUtils.getString(jsonObject, "modId", null));
+        result.languageCode(JsonUtils.getString(jsonObject, "languageCode", null));
+        result.color(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "color", 0)));
+        result.bgColor(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "bgColor", 0)));
+        result.shadow(JsonUtils.getBoolean(jsonObject, "shadow", false));
+        result.bold(JsonUtils.getBoolean(jsonObject, "bold", false));
+        result.italic(JsonUtils.getBoolean(jsonObject, "italic", false));
+        result.underlined(JsonUtils.getBoolean(jsonObject, "underlined", false));
+        result.strikethrough(JsonUtils.getBoolean(jsonObject, "strikethrough", false));
+        result.obfuscated(JsonUtils.getBoolean(jsonObject, "obfuscated", false));
         String clickAction = JsonUtils.getString(jsonObject, "clickEvent.action", "");
         String clickValue = JsonUtils.getString(jsonObject, "clickEvent.value", "");
         if (StringUtils.isNotNullOrEmpty(clickAction) && StringUtils.isNotNullOrEmpty(clickValue)) {
@@ -831,15 +867,36 @@ public class Component implements Cloneable, Serializable {
         JsonObject result = new JsonObject();
         JsonUtils.set(result, "text", component.text());
         JsonUtils.set(result, "i18nType", component.i18nType().name());
-        JsonUtils.set(result, "languageCode", component.languageCodeOrDefault());
-        JsonUtils.set(result, "color", component.color().argb());
-        JsonUtils.set(result, "bgColor", component.bgColor().argb());
-        JsonUtils.set(result, "shadow", component.shadow());
-        JsonUtils.set(result, "bold", component.bold());
-        JsonUtils.set(result, "italic", component.italic());
-        JsonUtils.set(result, "underlined", component.underlined());
-        JsonUtils.set(result, "strikethrough", component.strikethrough());
-        JsonUtils.set(result, "obfuscated", component.obfuscated());
+        if (!component.isModIdEmpty()) {
+            JsonUtils.set(result, "modId", component.modId());
+        }
+        if (!component.isLanguageCodeEmpty()) {
+            JsonUtils.set(result, "languageCode", component.languageCode());
+        }
+        if (!component.color().isEmpty()) {
+            JsonUtils.set(result, "color", component.color().argb());
+        }
+        if (!component.bgColor().isEmpty()) {
+            JsonUtils.set(result, "bgColor", component.bgColor().argb());
+        }
+        if (component.shadow()) {
+            JsonUtils.set(result, "shadow", component.shadow());
+        }
+        if (component.bold()) {
+            JsonUtils.set(result, "bold", component.bold());
+        }
+        if (component.italic()) {
+            JsonUtils.set(result, "italic", component.italic());
+        }
+        if (component.underlined()) {
+            JsonUtils.set(result, "underlined", component.underlined());
+        }
+        if (component.strikethrough()) {
+            JsonUtils.set(result, "strikethrough", component.strikethrough());
+        }
+        if (component.obfuscated()) {
+            JsonUtils.set(result, "obfuscated", component.obfuscated());
+        }
         if (component.clickEvent() != null) {
             JsonUtils.set(result, "clickEvent.action", component.clickEvent().getAction().getName());
             JsonUtils.set(result, "clickEvent.value", component.clickEvent().getValue());
@@ -858,6 +915,10 @@ public class Component implements Cloneable, Serializable {
         }
         JsonUtils.set(result, "args", args);
         return result;
+    }
+
+    public JsonObject toJson() {
+        return serialize(this);
     }
 
 }

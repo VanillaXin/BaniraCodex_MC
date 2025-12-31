@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -210,6 +211,13 @@ public final class FieldUtils {
     }
 
     /**
+     * 根据 Class + 字段名 查找字段（向上查找父类），并带有简单缓存
+     */
+    public static Field findField(Class<?> clazz, String fieldName) {
+        return findField(clazz, fieldName, true);
+    }
+
+    /**
      * 根据 Class + 字段名 查找字段，可选是否向上查找父类，并带有简单缓存
      */
     private static Field findField(Class<?> clazz, String fieldName, boolean parent) {
@@ -252,6 +260,217 @@ public final class FieldUtils {
             LOGGER.error("Failed to create instance of class {}", className, e);
         }
         return null;
+    }
+
+    /**
+     * 查找方法（支持父类查找，带参数类型兼容性检查）
+     *
+     * @param clazz      类
+     * @param methodName 方法名
+     * @param args       参数数组（用于参数类型匹配）
+     * @return 找到的方法，如果未找到则返回null
+     */
+    public static Method findMethod(Class<?> clazz, String methodName, Object[] args) {
+        if (clazz == null || methodName == null) {
+            return null;
+        }
+
+        Class<?> cur = clazz;
+        while (cur != null && cur != Object.class) {
+            Method[] methods = cur.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.getName().equals(methodName) && method.getParameterCount() == args.length) {
+                    // 简单的参数类型检查
+                    Class<?>[] paramTypes = method.getParameterTypes();
+                    boolean match = true;
+                    for (int i = 0; i < paramTypes.length; i++) {
+                        if (args[i] != null && !isCompatibleType(args[i].getClass(), paramTypes[i])) {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match) {
+                        method.setAccessible(true);
+                        return method;
+                    }
+                }
+            }
+            cur = cur.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * 智能查找方法
+     *
+     * @param clazz      类
+     * @param methodName 方法名
+     * @param args       参数数组
+     */
+    public static MethodMatchResult findMethodWithTypeConversion(Class<?> clazz, String methodName, Object[] args) {
+        if (clazz == null || methodName == null || args == null) {
+            return new MethodMatchResult(null, null);
+        }
+        Method directMatch = findMethod(clazz, methodName, args);
+        if (directMatch != null) {
+            return new MethodMatchResult(directMatch, args);
+        }
+        Class<?> cur = clazz;
+        while (cur != null && cur != Object.class) {
+            Method[] methods = cur.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.getName().equals(methodName) && method.getParameterCount() == args.length) {
+                    Class<?>[] paramTypes = method.getParameterTypes();
+                    Object[] convertedArgs = convertArgsToMatchTypes(args, paramTypes);
+                    if (convertedArgs != null) {
+                        method.setAccessible(true);
+                        return new MethodMatchResult(method, convertedArgs);
+                    }
+                }
+            }
+            cur = cur.getSuperclass();
+        }
+
+        return new MethodMatchResult(null, null);
+    }
+
+    /**
+     * 方法匹配结果
+     */
+    public static class MethodMatchResult {
+        public final Method method;
+        public final Object[] args;
+
+        public MethodMatchResult(Method method, Object[] args) {
+            this.method = method;
+            this.args = args;
+        }
+    }
+
+    /**
+     * 转换参数数组以匹配目标类型数组
+     */
+    private static Object[] convertArgsToMatchTypes(Object[] args, Class<?>[] targetTypes) {
+        if (args.length != targetTypes.length) {
+            return null;
+        }
+
+        Object[] converted = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            Object convertedArg = convertToType(args[i], targetTypes[i]);
+            if (convertedArg == null && args[i] != null) {
+                // 转换失败且原始参数不为null
+                return null;
+            }
+            converted[i] = convertedArg;
+        }
+        return converted;
+    }
+
+    /**
+     * 将值转换为目标类型
+     */
+    private static Object convertToType(Object value, Class<?> targetType) {
+        if (value == null) {
+            if (!targetType.isPrimitive()) {
+                return null;
+            }
+            if (targetType == boolean.class) return false;
+            if (targetType == byte.class) return (byte) 0;
+            if (targetType == short.class) return (short) 0;
+            if (targetType == int.class) return 0;
+            if (targetType == long.class) return 0L;
+            if (targetType == float.class) return 0.0f;
+            if (targetType == double.class) return 0.0;
+            if (targetType == char.class) return '\u0000';
+            return null;
+        }
+        Class<?> valueClass = value.getClass();
+        if (targetType.isAssignableFrom(valueClass)) {
+            return value;
+        }
+        if (value instanceof Number) {
+            return convertNumber((Number) value, targetType);
+        }
+        if (targetType == boolean.class || targetType == Boolean.class) {
+            if (value instanceof Boolean) return value;
+            if (value instanceof String) return Boolean.parseBoolean((String) value);
+        }
+        if (targetType == char.class || targetType == Character.class) {
+            if (value instanceof Character) return value;
+            if (value instanceof String) {
+                String str = (String) value;
+                return str.isEmpty() ? '\u0000' : str.charAt(0);
+            }
+        }
+        if (targetType == String.class) {
+            return value.toString();
+        }
+
+        return null;
+    }
+
+    /**
+     * 转换数值类型
+     */
+    private static Object convertNumber(Number number, Class<?> targetType) {
+        if (targetType == Byte.class || targetType == byte.class) {
+            return number.byteValue();
+        }
+        if (targetType == Short.class || targetType == short.class) {
+            return number.shortValue();
+        }
+        if (targetType == Integer.class || targetType == int.class) {
+            return number.intValue();
+        }
+        if (targetType == Long.class || targetType == long.class) {
+            return number.longValue();
+        }
+        if (targetType == Float.class || targetType == float.class) {
+            return number.floatValue();
+        }
+        if (targetType == Double.class || targetType == double.class) {
+            return number.doubleValue();
+        }
+        return null;
+    }
+
+    /**
+     * 类型兼容性检查
+     */
+    private static boolean isCompatibleType(Class<?> from, Class<?> to) {
+        if (to.isAssignableFrom(from)) {
+            return true;
+        }
+        if (to == int.class && (from == Integer.class || from == Double.class || from == Float.class)) {
+            return true;
+        }
+        if (to == double.class && (from == Double.class || from == Integer.class || from == Float.class)) {
+            return true;
+        }
+        if (to == float.class && (from == Float.class || from == Double.class || from == Integer.class)) {
+            return true;
+        }
+        if (to == boolean.class && from == Boolean.class) {
+            return true;
+        }
+        if (to == long.class && (from == Long.class || from == Double.class || from == Float.class || from == Integer.class)) {
+            return true;
+        }
+        if (to == char.class && (from == Character.class || from == Integer.class)) {
+            return true;
+        }
+        if (to == byte.class && (from == Byte.class || from == Integer.class)) {
+            return true;
+        }
+        if (to == short.class && (from == Short.class || from == Integer.class)) {
+            return true;
+        }
+        if (to == String.class && from == String.class) {
+            return true;
+        }
+        return false;
     }
 
 }

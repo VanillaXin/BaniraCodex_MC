@@ -4,7 +4,7 @@ package xin.vanilla.banira.client.data;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.client.enums.EnumRotationCenter;
+import xin.vanilla.banira.client.enums.EnumPosition;
 
 /**
  * 变换参数
@@ -40,7 +40,7 @@ public class TransformArgs {
     /**
      * 旋转中心
      */
-    private EnumRotationCenter center = EnumRotationCenter.CENTER;
+    private EnumPosition center = EnumPosition.CENTER;
     /**
      * 混合模式
      */
@@ -50,7 +50,7 @@ public class TransformArgs {
         this.stack = stack;
     }
 
-    public TransformArgs setCoordinate(ScreenCoordinate coordinate) {
+    public TransformArgs coordinate(ScreenCoordinate coordinate) {
         this.x = coordinate.x();
         this.y = coordinate.y();
         this.width = coordinate.width();

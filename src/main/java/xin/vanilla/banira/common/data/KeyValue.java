@@ -8,24 +8,32 @@ import lombok.experimental.Accessors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Accessors(chain = true)
+@Accessors(chain = true, fluent = true)
 public class KeyValue<K, V> {
     private K key;
     private V value;
 
-    public K key() {
-        return this.key;
-    }
-
     public V val() {
         return this.value;
+    }
+
+    public KeyValue<K, V> val(V value) {
+        return this.value(value);
     }
 
     public K left() {
         return this.key;
     }
 
+    public KeyValue<K, V> left(K key) {
+        return this.key(key);
+    }
+
     public V right() {
         return this.value;
+    }
+
+    public KeyValue<K, V> right(V value) {
+        return this.value(value);
     }
 }

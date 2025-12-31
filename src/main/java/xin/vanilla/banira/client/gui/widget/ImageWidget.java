@@ -1,0 +1,87 @@
+package xin.vanilla.banira.client.gui.widget;
+
+import com.mojang.blaze3d.matrix.MatrixStack;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.data.TransformArgs;
+import xin.vanilla.banira.client.enums.EnumPosition;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+
+/**
+ * 图片Widget
+ */
+@Accessors(chain = true, fluent = true)
+public class ImageWidget extends BaseWidget {
+    @Getter
+    @Setter
+    private Texture texture;
+
+    @Getter
+    @Setter
+    private String textureId;
+
+    @Getter
+    @Setter
+    private boolean flipHorizontal = false;
+
+    @Getter
+    @Setter
+    private boolean flipVertical = false;
+
+    public ImageWidget(BaniraScreen screen) {
+        super(screen);
+    }
+
+    public ImageWidget(BaniraScreen screen, ScreenCoordinate bounds) {
+        super(screen, bounds);
+    }
+
+    public ImageWidget(BaniraScreen screen, ScreenCoordinate bounds, Texture texture) {
+        super(screen, bounds);
+        this.texture = texture;
+    }
+
+    @Override
+    public void render(MatrixStack stack, float partialTicks) {
+        if (!visible) {
+            return;
+        }
+
+        TransformArgs args = new TransformArgs(stack)
+                .x(x())
+                .y(y())
+                .width(renderCoordinate().width())
+                .height(renderCoordinate().height())
+                .scale(scale())
+                .angle(rotation())
+                .center(EnumPosition.CENTER)
+                .alpha(alpha())
+                .flipHorizontal(flipHorizontal)
+                .flipVertical(flipVertical)
+                .blend(true);
+        AbstractGuiUtils.renderByTransform(args,
+                drawArgs -> {
+                    AbstractGuiUtils.bindTexture(texture.location());
+                    AbstractGuiUtils.blit(drawArgs.stack(),
+                            (int) drawArgs.x(),
+                            (int) drawArgs.y(),
+                            (int) drawArgs.width(),
+                            (int) drawArgs.height(),
+                            texture.u0(),
+                            texture.v0(),
+                            texture.uWidth(),
+                            texture.vHeight(),
+                            texture.uvWidth(),
+                            texture.uvHeight()
+                    );
+                }
+        );
+
+        renderChildren(stack, partialTicks);
+    }
+
+}

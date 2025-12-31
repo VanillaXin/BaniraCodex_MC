@@ -10,9 +10,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.common.util.Component;
-import xin.vanilla.banira.common.util.LanguageHelper;
+import xin.vanilla.banira.common.util.Translator;
 
 @OnlyIn(Dist.CLIENT)
 @Setter
@@ -60,16 +60,48 @@ public class Text implements Cloneable {
         this.hoverText = text.clone();
     }
 
-    public static Text literal(String text) {
-        return new Text(text);
-    }
-
     public static Text empty() {
         return new Text().text(Component.empty()).hoverText(Component.empty());
     }
 
-    public static Text translatable(String modId, EnumI18nType type, String key, Object... args) {
-        return new Text(Component.translatableClient(type, key, args).modId(modId));
+    public static Text literal(String text) {
+        return new Text(text);
+    }
+
+    public static Text trans(String key) {
+        return new Text(Component.transClient(key));
+    }
+
+    public static Text trans(String key, Object... args) {
+        return new Text(Component.transClient(key, args));
+    }
+
+    public static Text trans(String modId, String key) {
+        return new Text(Component.transClient(modId, key));
+    }
+
+    public static Text trans(String modId, String key, Object... args) {
+        return new Text(Component.transClient(modId, key, args));
+    }
+
+    public static Text trans(String modId, EnumI18nType type, String key, Object... args) {
+        return new Text(Component.transClient(type, key, args).modId(modId));
+    }
+
+    public static Text transAuto(String key) {
+        return new Text(Component.transClientAuto(key));
+    }
+
+    public static Text transAuto(String key, Object... args) {
+        return new Text(Component.transClientAuto(key, args));
+    }
+
+    public static Text transAuto(String modId, String key) {
+        return new Text(Component.transClientAuto(modId, key));
+    }
+
+    public static Text transAuto(String modId, String key, Object... args) {
+        return new Text(Component.transClientAuto(modId, key, args));
     }
 
     public Text clone() {
@@ -139,6 +171,10 @@ public class Text implements Cloneable {
         return this.hovered ? this.hoverText.bgColor().rgba() : this.text.bgColor().rgba();
     }
 
+    public Component original() {
+        return this.hovered ? this.hoverText : this.text;
+    }
+
     public String content() {
         return content(true);
     }
@@ -149,7 +185,7 @@ public class Text implements Cloneable {
      * @param ignoreStyle 是否忽略样式
      */
     public String content(boolean ignoreStyle) {
-        return this.hovered ? this.hoverText.getString(LanguageHelper.getClientLanguage(), ignoreStyle, true) : this.text.getString(LanguageHelper.getClientLanguage(), ignoreStyle, true);
+        return this.hovered ? this.hoverText.getString(Translator.getClientLanguage(), ignoreStyle, true) : this.text.getString(Translator.getClientLanguage(), ignoreStyle, true);
     }
 
     public boolean shadow() {
@@ -285,10 +321,11 @@ public class Text implements Cloneable {
     }
 
     public static Color getTextComponentColor(IFormattableTextComponent textComponent, Color defaultColor) {
-        return textComponent.getStyle().getColor() == null ? defaultColor : Color.rgb(textComponent.getStyle().getColor().getValue());
+        net.minecraft.util.text.Color mcColor = textComponent.getStyle().getColor();
+        return mcColor == null ? defaultColor : Color.rgb(mcColor.getValue());
     }
 
-    public static Text fromTextComponent(IFormattableTextComponent component) {
+    public static Text from(IFormattableTextComponent component) {
         return Text.literal(component.getString())
                 .color(getTextComponentColor(component))
                 .bold(component.getStyle().isBold())
@@ -297,4 +334,9 @@ public class Text implements Cloneable {
                 .strikethrough(component.getStyle().isStrikethrough())
                 .obfuscated(component.getStyle().isObfuscated());
     }
+
+    public static Text from(Component component) {
+        return new Text(component);
+    }
+
 }

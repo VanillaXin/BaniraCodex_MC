@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.enums;
 
 /**
- * 旋转中心
+ * 相对位置
  */
-public enum EnumRotationCenter {
+public enum EnumPosition {
     TOP_LEFT,
     TOP_RIGHT,
     TOP_CENTER,
@@ -13,10 +13,10 @@ public enum EnumRotationCenter {
     CENTER,
     ;
 
-    public static EnumRotationCenter valueOf(Object obj) {
-        if (obj instanceof EnumRotationCenter) return (EnumRotationCenter) obj;
+    public static EnumPosition valueOfEx(Object obj) {
+        if (obj instanceof EnumPosition) return (EnumPosition) obj;
         if (obj instanceof String) {
-            for (EnumRotationCenter value : values()) {
+            for (EnumPosition value : values()) {
                 if (value.name().equalsIgnoreCase((String) obj)) {
                     return value;
                 }
@@ -25,13 +25,13 @@ public enum EnumRotationCenter {
         return null;
     }
 
-    public static EnumRotationCenter valueOfOrDefault(Object obj) {
-        EnumRotationCenter value = valueOf(obj);
+    public static EnumPosition valueOfDefault(Object obj) {
+        EnumPosition value = valueOfEx(obj);
         return value == null ? TOP_LEFT : value;
     }
 
     public static boolean isValid(Object obj) {
-        return valueOf(obj) != null;
+        return valueOfEx(obj) != null;
     }
 
 }

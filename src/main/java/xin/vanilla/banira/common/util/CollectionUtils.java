@@ -18,6 +18,10 @@ public final class CollectionUtils {
         return !isNullOrEmpty(list);
     }
 
+    public static boolean isNotNullOrEmpty(Map<?, ?> map) {
+        return !isNullOrEmpty(map);
+    }
+
     public static boolean isNullOrEmpty(Object[] array) {
         return array == null || array.length == 0;
     }

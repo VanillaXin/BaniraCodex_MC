@@ -24,8 +24,9 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,7 +41,7 @@ public final class ItemUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final ResourceLocation UNKNOWN_ITEM = BaniraCodex.resourceFactory().create("unknown_item");
+    private static final ResourceLocation UNKNOWN_ITEM = Identifier.id().create("unknown_item");
 
     /**
      * 所有物品缓存
@@ -62,6 +63,11 @@ public final class ItemUtils {
      * Mod名称缓存
      */
     private static final Map<String, String> modNameCache = new ConcurrentHashMap<>();
+
+    /**
+     * 反序列化缓存：String -> ItemStack
+     */
+    private static final Map<String, ItemStack> deserializeCache = new ConcurrentHashMap<>();
 
 
     /**
@@ -111,7 +117,9 @@ public final class ItemUtils {
      */
     @Nullable
     public static ResourceLocation getItemRegistry(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return null;
+        if (isItemNull(itemStack)) {
+            return null;
+        }
         return getItemRegistry(itemStack.getItem());
     }
 
@@ -121,7 +129,9 @@ public final class ItemUtils {
      * @param itemStack 物品堆叠
      */
     public static String getItemRegistryString(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return UNKNOWN_ITEM.toString();
+        if (isItemNull(itemStack)) {
+            return UNKNOWN_ITEM.toString();
+        }
         return getItemRegistryString(itemStack.getItem());
     }
 
@@ -141,7 +151,7 @@ public final class ItemUtils {
      * @param itemStack 物品
      */
     public static String getItemNameKey(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return "";
+        if (isItemNull(itemStack)) return "";
         return itemStack.getDescriptionId();
     }
 
@@ -151,7 +161,7 @@ public final class ItemUtils {
      * @param itemStack 物品
      */
     public static String getItemHoverNameString(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return "";
+        if (isItemNull(itemStack)) return "";
         return itemStack.getHoverName().getString();
     }
 
@@ -164,7 +174,7 @@ public final class ItemUtils {
      */
     @OnlyIn(Dist.CLIENT)
     public static String getItemHoverNameStringLocalized(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return "";
+        if (isItemNull(itemStack)) return "";
         try {
             return itemStack.getHoverName().getString();
         } catch (Exception e) {
@@ -221,15 +231,51 @@ public final class ItemUtils {
         return stack1.getCount() == stack2.getCount();
     }
 
+    public static boolean isAir(ItemStack itemStack) {
+        return itemStack != null && itemStack.getItem() == Items.AIR;
+    }
+
+    public static boolean isAir(Item item) {
+        return item != null && item == Items.AIR;
+    }
+
+    public static boolean isItemEmpty(ItemStack itemStack) {
+        return itemStack == null || itemStack.isEmpty();
+    }
+
+    public static boolean isItemNull(ItemStack itemStack) {
+        return itemStack == null || (!isAir(itemStack) && itemStack.isEmpty());
+    }
+
     // endregion
 
     // region 物品序列化与反序列化
 
     /**
+     * 生成 ItemStack 的缓存键
+     */
+    private static String getItemStackCacheKey(ItemStack itemStack) {
+        if (isItemNull(itemStack)) {
+            return "";
+        }
+        try {
+            ResourceLocation itemId = getItemRegistry(itemStack);
+            if (itemId == null) return "";
+            String nbtString = serializeItemStackTag(itemStack);
+            return itemId + nbtString;
+        } catch (Exception e) {
+            LOGGER.debug("Failed to generate cache key for item stack", e);
+            return "";
+        }
+    }
+
+    /**
      * 将物品序列化为字符串
      */
     public static String serializeItemStack(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) return "";
+        if (isItemNull(itemStack)) {
+            return "";
+        }
         try {
             ResourceLocation itemId = getItemRegistry(itemStack);
             if (itemId == null) return "";
@@ -243,19 +289,60 @@ public final class ItemUtils {
     /**
      * 从字符串反序列化物品
      */
+    public static ItemStack deserializeItemStack(String itemString, String nbtString) {
+        if (StringUtils.isNullOrEmptyEx(itemString)) {
+            return ItemStack.EMPTY;
+        }
+        if (StringUtils.isNullOrEmptyEx(nbtString)) {
+            nbtString = "";
+        }
+        return deserializeItemStack(itemString + nbtString);
+    }
+
+    /**
+     * 从字符串反序列化物品
+     */
     public static ItemStack deserializeItemStack(String itemString) {
         if (StringUtils.isNullOrEmptyEx(itemString)) {
             return ItemStack.EMPTY;
         }
         itemString = itemString.trim();
+        ItemStack cached = deserializeCache.computeIfAbsent(itemString, k -> {
+            try {
+                ItemParser parse = new ItemParser(new StringReader(k), false).parse();
+                ItemInput itemInput = new ItemInput(parse.getItem(), parse.getNbt());
+                ItemStack result = itemInput.createItemStack(1, false);
+                return result.copy();
+            } catch (Exception e) {
+                LOGGER.error("Failed to deserialize item stack from string: {}", k, e);
+                return ItemStack.EMPTY;
+            }
+        });
+        return cached.isEmpty() ? ItemStack.EMPTY : cached.copy();
+    }
+
+    @Nullable
+    public static Item getItemFromRegistry(String itemId) {
+        ResourceLocation location = Identifier.id().parse(itemId);
+        return getItemFromRegistry(location);
+    }
+
+    @Nullable
+    public static Item getItemFromRegistry(ResourceLocation location) {
+        if (location == null) return null;
         try {
-            ItemParser parse = new ItemParser(new StringReader(itemString), false).parse();
-            ItemInput itemInput = new ItemInput(parse.getItem(), parse.getNbt());
-            return itemInput.createItemStack(1, false);
+            return ForgeRegistries.ITEMS.getValue(location);
         } catch (Exception e) {
-            LOGGER.error("Failed to deserialize item stack from string: {}", itemString, e);
-            return ItemStack.EMPTY;
+            LOGGER.debug("Failed to find item by registry name: {}", location, e);
+            return null;
         }
+    }
+
+    /**
+     * 将物的的NBT序列化为字符串
+     */
+    public static String getItemStackTag(ItemStack itemStack) {
+        return serializeItemStackTag(itemStack);
     }
 
     /**
@@ -281,6 +368,7 @@ public final class ItemUtils {
         itemStackInfoCache.clear();
         tooltipCache.clear();
         modNameCache.clear();
+        deserializeCache.clear();
     }
 
     /**
@@ -592,14 +680,9 @@ public final class ItemUtils {
             return ItemStack.EMPTY;
         }
 
-        try {
-            ResourceLocation location = new ResourceLocation(registry);
-            Item item = ForgeRegistries.ITEMS.getValue(location);
-            if (item != null) {
-                return new ItemStack(item);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to find item by registry name: {}", registry, e);
+        Item item = getItemFromRegistry(registry);
+        if (item != null) {
+            return new ItemStack(item);
         }
 
         return ItemStack.EMPTY;
@@ -615,13 +698,9 @@ public final class ItemUtils {
             return ItemStack.EMPTY;
         }
 
-        try {
-            Item item = ForgeRegistries.ITEMS.getValue(location);
-            if (item != null) {
-                return new ItemStack(item);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to find item by registry name: {}", location, e);
+        Item item = getItemFromRegistry(location);
+        if (item != null) {
+            return new ItemStack(item);
         }
 
         return ItemStack.EMPTY;
@@ -786,7 +865,7 @@ public final class ItemUtils {
     @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable PlayerEntity player, boolean advanced) {
-        if (itemStack.isEmpty()) {
+        if (isItemNull(itemStack)) {
             List<Component> tooltip = new ArrayList<>();
             ITextComponent hoverName = itemStack.getHoverName();
             if (hoverName instanceof IFormattableTextComponent) {

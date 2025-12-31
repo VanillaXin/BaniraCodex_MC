@@ -5,13 +5,13 @@ import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.util.TextureUtils;
-import xin.vanilla.banira.common.api.ResourceFactory;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
@@ -27,9 +27,6 @@ public class BaniraCodex {
     public static final String MODID = "banira_codex";
     public static final String ARTIFACT_ID = "xin.vanilla";
 
-    @Getter
-    private final static ResourceFactory resourceFactory = () -> MODID;
-
     /**
      * 服务端实例
      */
@@ -37,10 +34,10 @@ public class BaniraCodex {
     private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
 
     /**
-     * 语言管理器
+     * 语言管理器（直接使用 BaniraLang.INSTANCE 亦可）
      */
     @Getter
-    private final static LanguageHelper languager = LanguageHelper.init(MODID);
+    private final static BaniraLang languager = BaniraLang.INSTANCE;
 
     /**
      * 玩家数据管理器
@@ -65,13 +62,14 @@ public class BaniraCodex {
     /**
      * 公共设置阶段事件
      */
+    @SubscribeEvent
     public void onCommonSetup(final FMLCommonSetupEvent event) {
         CustomConfig.loadCustomConfig(false);
     }
 
     private void registerBaniraEvent() {
         BaniraEventBus.registerServerStarting(server ->
-                serverInstance().setKey(server).setValue(true)
+                serverInstance().key(server).value(true)
         );
         BaniraEventBus.registerServerStarting(server ->
                 playerDataManager.clearCache()
@@ -80,7 +78,7 @@ public class BaniraCodex {
                 AdvancementUtils.clearAdvancementData()
         );
         BaniraEventBus.registerServerStopping(server ->
-                serverInstance().setValue(false)
+                serverInstance().value(false)
         );
         BaniraEventBus.registerPlayerSave(player ->
                 playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))

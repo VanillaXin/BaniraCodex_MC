@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.network;
 
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -8,7 +8,7 @@ import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 
 public final class NetworkInit {
-    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", BaniraCodex.resourceFactory());
+    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
 
     /**
      * RequestToBoth 请求进度数据

@@ -1,8 +1,10 @@
 package xin.vanilla.banira.client.enums;
 
 import lombok.Getter;
+import lombok.experimental.Accessors;
 
 @Getter
+@Accessors(fluent = true)
 public enum EnumStringInputRegex {
     NONE(""),
     INTEGER("-?\\d*"),

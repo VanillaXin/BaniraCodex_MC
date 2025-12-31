@@ -656,4 +656,12 @@ public final class JsonUtils {
             throw new IllegalArgumentException("Unsupported type: " + value.getClass());
         }
     }
+
+    public static boolean isNullOrEmpty(JsonElement element) {
+        return element == null || element.isJsonNull() || (element.isJsonArray() && element.getAsJsonArray().size() == 0) || (element.isJsonObject() && element.getAsJsonObject().size() == 0);
+    }
+
+    public static boolean isNotNullOrEmpty(JsonElement element) {
+        return !isNullOrEmpty(element);
+    }
 }

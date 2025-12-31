@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonObject;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -13,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 
@@ -24,16 +25,26 @@ import java.util.List;
 import java.util.Random;
 
 @Data
-@Accessors(chain = true)
 @NoArgsConstructor
+@AllArgsConstructor
+@Accessors(chain = true, fluent = true)
 public class WorldCoordinate implements Serializable, Cloneable {
+
+    // region Fields
+
     private double x = 0;
     private double y = 0;
     private double z = 0;
     private double yaw = 0;
     private double pitch = 0;
+    private double stepSize = 1;
     private RegistryKey<World> dimension = World.OVERWORLD;
     private Direction direction = null;
+
+    // endregion Fields
+
+
+    // region Constructors
 
     public WorldCoordinate(@NonNull Entity entity) {
         this.x = entity.getX();
@@ -74,17 +85,122 @@ public class WorldCoordinate implements Serializable, Cloneable {
         this.dimension = dimension;
     }
 
-    public int getXInt() {
+    // endregion Constructors
+
+
+    // region Getters
+
+    public int xInt() {
         return (int) x;
     }
 
-    public int getYInt() {
+    public int yInt() {
         return (int) y;
     }
 
-    public int getZInt() {
+    public int zInt() {
         return (int) z;
     }
+
+
+    public String xString() {
+        return NumberUtils.toFixedEx(x, 1);
+    }
+
+    public String yString() {
+        return NumberUtils.toFixedEx(y, 1);
+    }
+
+    public String zString() {
+        return NumberUtils.toFixedEx(z, 1);
+    }
+
+    public String xyzString() {
+        return NumberUtils.toFixedEx(x, 1) + ", " + NumberUtils.toFixedEx(y, 1) + ", " + NumberUtils.toFixedEx(z, 1);
+    }
+
+    public String chunkXZString() {
+        return String.format("%d,%d", this.xInt() >> 4, this.zInt() >> 4);
+    }
+
+    public String dimensionId() {
+        return dimension.location().toString();
+    }
+
+    // endregion Getters
+
+
+    // region Modify
+
+    public WorldCoordinate addX(double x) {
+        this.x += x;
+        return this;
+    }
+
+    public WorldCoordinate addY(double y) {
+        this.y += y;
+        return this;
+    }
+
+    public WorldCoordinate addZ(double z) {
+        this.z += z;
+        return this;
+    }
+
+
+    public WorldCoordinate above() {
+        return this.addY(stepSize);
+    }
+
+    public WorldCoordinate below() {
+        return this.addY(-stepSize);
+    }
+
+    public WorldCoordinate left() {
+        return this.addX(-stepSize);
+    }
+
+    public WorldCoordinate right() {
+        return this.addX(stepSize);
+    }
+
+    public WorldCoordinate front() {
+        return this.addZ(stepSize);
+    }
+
+    public WorldCoordinate back() {
+        return this.addZ(-stepSize);
+    }
+
+    // endregion Modify
+
+
+    // region Distance
+
+    public double distanceFrom(WorldCoordinate coordinate) {
+        return Math.sqrt(Math.pow(coordinate.x - x, 2) + Math.pow(coordinate.y - y, 2) + Math.pow(coordinate.z - z, 2));
+    }
+
+    public double distanceFrom(double x, double y, double z) {
+        return Math.sqrt(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) + Math.pow(z - this.z, 2));
+    }
+
+    public double distanceFrom2D(WorldCoordinate coordinate) {
+        return Math.sqrt(Math.pow(coordinate.x - x, 2) + Math.pow(coordinate.z - z, 2));
+    }
+
+    /**
+     * 判断两个坐标是否在指定范围内
+     *
+     * @param range 范围
+     */
+    public boolean equalsInRange(WorldCoordinate coordinate, int range) {
+        return Math.abs((int) coordinate.x - (int) x) <= range
+                && Math.abs((int) coordinate.y - (int) y) <= range
+                && Math.abs((int) coordinate.z - (int) z) <= range
+                && coordinate.dimension.equals(dimension);
+    }
+
 
     /**
      * 根据距离和权重生成随机数
@@ -95,7 +211,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
      * @param k 权重系数
      * @return 随机数
      */
-    public static int getRandomWithWeight(int a, int b, int c, double k) {
+    public static int randomWithWeight(int a, int b, int c, double k) {
         List<Double> weights = new ArrayList<>();
         double totalWeight = 0;
         // 计算每个值的权重
@@ -113,16 +229,16 @@ public class WorldCoordinate implements Serializable, Cloneable {
                 return a + i;
             }
         }
-        // 默认返回最小值（理论上不会执行到这里）
         return a;
     }
 
+    // endregion Distance
+
+
+    // region Serialization
+
     public BlockPos toBlockPos() {
         return new BlockPos(x, y, z);
-    }
-
-    public Vector3d toVector3d() {
-        return new Vector3d(x, y, z);
     }
 
     public WorldCoordinate fromBlockPos(BlockPos pos) {
@@ -132,6 +248,11 @@ public class WorldCoordinate implements Serializable, Cloneable {
         return this;
     }
 
+
+    public Vector3d toVector3d() {
+        return new Vector3d(x, y, z);
+    }
+
     public WorldCoordinate fromVector3d(Vector3d pos) {
         this.x = pos.x();
         this.y = pos.y();
@@ -139,25 +260,11 @@ public class WorldCoordinate implements Serializable, Cloneable {
         return this;
     }
 
-    public WorldCoordinate addX(double x) {
-        this.x += x;
-        return this;
-    }
-
-    public WorldCoordinate addY(double y) {
-        this.y += y;
-        return this;
-    }
-
-    public WorldCoordinate addZ(double z) {
-        this.z += z;
-        return this;
-    }
 
     /**
-     * 序列化到 NBT
+     * 序列化到 CompoundTag
      */
-    public CompoundNBT writeToNBT() {
+    public CompoundNBT toTag() {
         CompoundNBT tag = new CompoundNBT();
         tag.putDouble("x", x);
         tag.putDouble("y", y);
@@ -169,23 +276,31 @@ public class WorldCoordinate implements Serializable, Cloneable {
     }
 
     /**
-     * 反序列化
+     * 从CompoundTag反序列化
      */
-    public static WorldCoordinate readFromNBT(CompoundNBT tag) {
+    public static WorldCoordinate fromTag(CompoundNBT tag) {
         WorldCoordinate coordinate = new WorldCoordinate();
         coordinate.x = tag.getDouble("x");
         coordinate.y = tag.getDouble("y");
         coordinate.z = tag.getDouble("z");
         coordinate.yaw = tag.getDouble("yaw");
         coordinate.pitch = tag.getDouble("pitch");
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, BaniraCodex.resourceFactory().parse(tag.getString("dimension")));
+        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(tag.getString("dimension")));
         return coordinate;
     }
+
 
     /**
      * 序列化到JsonString
      */
     public String toJsonString() {
+        return toJson().toString();
+    }
+
+    /**
+     * 序列化到Json
+     */
+    public JsonObject toJson() {
         JsonObject json = new JsonObject();
         JsonUtils.set(json, "x", x);
         JsonUtils.set(json, "y", y);
@@ -193,14 +308,20 @@ public class WorldCoordinate implements Serializable, Cloneable {
         JsonUtils.set(json, "yaw", yaw);
         JsonUtils.set(json, "pitch", pitch);
         JsonUtils.set(json, "dimension", dimension.location().toString());
-        return json.toString();
+        return json;
     }
 
     /**
      * 从JsonString反序列化
      */
-    public static WorldCoordinate fromJsonString(String jsonString) {
-        JsonObject json = JsonUtils.GSON.fromJson(jsonString, JsonObject.class);
+    public static WorldCoordinate fromJson(String jsonString) {
+        return fromJson(JsonUtils.GSON.fromJson(jsonString, JsonObject.class));
+    }
+
+    /**
+     * 从Json反序列化
+     */
+    public static WorldCoordinate fromJson(JsonObject json) {
         WorldCoordinate coordinate = new WorldCoordinate();
         coordinate.x = JsonUtils.getDouble(json, "x", 0);
         coordinate.y = JsonUtils.getDouble(json, "y", 0);
@@ -208,92 +329,28 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.yaw = JsonUtils.getDouble(json, "yaw", 0);
         coordinate.pitch = JsonUtils.getDouble(json, "pitch", 0);
         String dimensionStr = JsonUtils.getString(json, "dimension", World.OVERWORLD.location().toString());
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, BaniraCodex.resourceFactory().parse(dimensionStr));
+        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimensionStr));
         return coordinate;
     }
 
-    @Override
-    public WorldCoordinate clone() {
-        try {
-            WorldCoordinate cloned = (WorldCoordinate) super.clone();
-            cloned.dimension = this.dimension;
-            cloned.x = this.x;
-            cloned.y = this.y;
-            cloned.z = this.z;
-            cloned.yaw = this.yaw;
-            cloned.pitch = this.pitch;
-            return cloned;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
-    }
-
-    public WorldCoordinate above() {
-        return this.clone().addY(1);
-    }
-
-    public WorldCoordinate below() {
-        return this.clone().addY(-1);
-    }
-
-    public double distanceFrom(WorldCoordinate coordinate) {
-        return Math.sqrt(Math.pow(coordinate.x - x, 2) + Math.pow(coordinate.y - y, 2) + Math.pow(coordinate.z - z, 2));
-    }
-
-    public double distanceFrom(double x, double y, double z) {
-        return Math.sqrt(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) + Math.pow(z - this.z, 2));
-    }
-
-    public double distanceFrom2D(WorldCoordinate coordinate) {
-        return Math.sqrt(Math.pow(coordinate.x - x, 2) + Math.pow(coordinate.z - z, 2));
-    }
-
-    public String toXString() {
-        return NumberUtils.toFixedEx(x, 1);
-    }
-
-    public String toYString() {
-        return NumberUtils.toFixedEx(y, 1);
-    }
-
-    public String toZString() {
-        return NumberUtils.toFixedEx(z, 1);
-    }
-
-    public String toXyzString() {
-        return NumberUtils.toFixedEx(x, 1) + ", " + NumberUtils.toFixedEx(y, 1) + ", " + NumberUtils.toFixedEx(z, 1);
-    }
-
-    public String toChunkXZString() {
-        return String.format("%d,%d", this.getXInt() >> 4, this.getZInt() >> 4);
-    }
-
-    public String getDimensionResourceId() {
-        return dimension.location().toString();
-    }
-
-    public boolean equalsOfRange(WorldCoordinate coordinate, int range) {
-        return Math.abs((int) coordinate.x - (int) x) <= range
-                && Math.abs((int) coordinate.y - (int) y) <= range
-                && Math.abs((int) coordinate.z - (int) z) <= range
-                && coordinate.dimension.equals(dimension);
-    }
-
-    public static WorldCoordinate fromSimpleString(String str) {
+    /**
+     * 从字符串反序列化
+     */
+    public static WorldCoordinate fromString(String str) {
         WorldCoordinate result = null;
         try {
             String[] split = str.split(",");
             if (split.length == 5) {
-                RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, BaniraCodex.resourceFactory().parse(split[0].trim()));
+                RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
                 Direction direction = valuOfDirection(split[4].trim());
-                result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension).setDirection(direction);
+                result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension).direction(direction);
             } else if (split.length == 4) {
                 if (split[0].contains(":")) {
-                    RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, BaniraCodex.resourceFactory().parse(split[0].trim()));
+                    RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
                     result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension);
                 } else if (Arrays.stream(Direction.values()).anyMatch(dir -> dir.getName().equals(split[3].trim()))) {
                     Direction direction = valuOfDirection(split[3].trim());
-                    result = new WorldCoordinate(NumberUtils.toDouble(split[0]), NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2])).setDirection(direction);
+                    result = new WorldCoordinate(NumberUtils.toDouble(split[0]), NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2])).direction(direction);
                 }
             } else if (split.length == 3) {
                 result = new WorldCoordinate(NumberUtils.toDouble(split[0]), NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]));
@@ -312,4 +369,24 @@ public class WorldCoordinate implements Serializable, Cloneable {
             return null;
         }
     }
+
+    // endregion Serialization
+
+
+    @Override
+    public WorldCoordinate clone() {
+        try {
+            WorldCoordinate cloned = (WorldCoordinate) super.clone();
+            cloned.dimension = this.dimension;
+            cloned.x = this.x;
+            cloned.y = this.y;
+            cloned.z = this.z;
+            cloned.yaw = this.yaw;
+            cloned.pitch = this.pitch;
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+
 }

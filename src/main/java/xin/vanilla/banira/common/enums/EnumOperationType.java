@@ -7,13 +7,22 @@ public enum EnumOperationType {
     DEL,
     LIST,
     GET,
-    CLEAR;
+    CLEAR,
+    ;
 
-    public static EnumOperationType fromString(String type) {
-        try {
-            return EnumOperationType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid operation type: " + type);
+    public static EnumOperationType valueOfEx(Object type) {
+        if (type instanceof EnumOperationType) return (EnumOperationType) type;
+        if (type instanceof String) {
+            for (EnumOperationType value : values()) {
+                String str = (String) type;
+                if (value.name().equalsIgnoreCase(str) || value.name().equals(str)) {
+                    return value;
+                }
+            }
+        } else if (type instanceof Number) {
+            int i = ((Number) type).intValue();
+            if (i >= 0 && i < values().length) return values()[i];
         }
+        return null;
     }
 }

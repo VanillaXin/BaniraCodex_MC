@@ -9,41 +9,40 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumStringInputRegex;
-import xin.vanilla.banira.client.gui.component.*;
-import xin.vanilla.banira.client.gui.helper.LayoutConfig;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.common.util.Component;
 import xin.vanilla.banira.common.util.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * 内容输入 Screen
+ * 字符串输入Screen
  */
 public class StringInputScreen extends BaniraScreen {
-
     private final Args args;
     private final List<InputField> inputFields = new ArrayList<>();
-    private final TextList errorText = new TextList();
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
     private Text runningErrorText = Text.empty();
+    private final List<String> inputValues = new ArrayList<>();
 
-    private int contentAreaTop = 0;
-    private int contentAreaBottom = 0;
-    private int scrollableContentHeight = 0;
-    private int visibleContentHeight = 0;
-    private int buttonY = 0;
-
-    private BaniraButton submitButton;
-    private BaniraButton cancelButton;
+    @Nullable
+    private ButtonWidget submitButtonWidget;
+    @Nullable
+    private ButtonWidget cancelButtonWidget;
+    @Nullable
+    private ScrollbarWidget scrollbarWidget;
 
     public StringInputScreen(Args args) {
         super(args.getTitle() != null ? args.getTitle().toComponent() : Component.literal("StringInputScreen"));
@@ -51,13 +50,18 @@ public class StringInputScreen extends BaniraScreen {
         args.validate();
         this.args = args;
         this.previousScreen(args.getParentScreen());
+        BaniraScreen.inheritThemeAndSeason(this, args.getParentScreen(), null, null);
     }
 
     @Data
     @Accessors(chain = true, fluent = true)
     public static class InputField {
-        private BaniraTextField input;
-        private BaniraButton button;
+        @Nullable
+        private LabelWidget titleLabel;
+        @Nullable
+        private InputWidget input;
+        @Nullable
+        private ButtonWidget button;
         private Text title;
         private String value = "";
         private int y;
@@ -70,8 +74,8 @@ public class StringInputScreen extends BaniraScreen {
     public static class Widget {
         private String name = "";
         private Text title;
-        private Text message = Text.translatable(BaniraCodex.MODID, EnumI18nType.TIPS, "enter_something");
-        private String regex = EnumStringInputRegex.NONE.getRegex();
+        private Text hint = Text.transAuto(BaniraCodex.MODID, "enter_something");
+        private String regex = EnumStringInputRegex.NONE.regex();
         private String defaultValue = "";
         private boolean allowEmpty;
         private boolean disabled;
@@ -85,6 +89,11 @@ public class StringInputScreen extends BaniraScreen {
             if (StringUtils.isNullOrEmptyEx(this.name)) {
                 this.name = title.content();
             }
+            return this;
+        }
+
+        public Widget type(WidgetType type) {
+            this.type = type;
             return this;
         }
     }
@@ -239,258 +248,343 @@ public class StringInputScreen extends BaniraScreen {
     }
 
     @Override
-    protected void initEvent() {
+    protected void onInit() {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
-        // 初始化滚动条
-        super.initScrollBar(new ScrollBar());
-
-        // 计算布局
-        calculateLayout();
-
-        // 清空之前的输入框
         this.inputFields.clear();
-        this.children.clear();
+    }
 
-        // 创建输入框
-        Inputs inputs = new Inputs();
-        for (int i = 0; i < args.getWidgets().size(); i++) {
-            Widget widget = args.getWidgets().get(i);
-            InputField inputField = new InputField();
+    private static final int TOP_MARGIN = 12;
+    private static final int BOTTOM_MARGIN = 12;
+    private static final int LIST_BTN_GAP = 12;
+    private static final int TITLE_TOP_MARGIN = 2;
+    private static final int TITLE_HEIGHT = 9;
+    private static final int TITLE_INPUT_GAP = 2;
+    private static final int INPUT_H = 17;
+    /**
+     * 每个输入框组之间的间距
+     */
+    private static final int ITEM_GAP = 8;
+    /**
+     * 每个输入项总高度：标题上边距 + 标题 + 间距 + 输入框 + 组间距
+     */
+    private static final int ITEM_HEIGHT = TITLE_TOP_MARGIN + TITLE_HEIGHT + TITLE_INPUT_GAP + INPUT_H + ITEM_GAP;
+    private static final int BTN_H = 24;
+    private static final int CONTENT_MAX_WIDTH = 260;
+    private static final int SCROLLBAR_WIDTH = 5;
+    private static final int SCROLLBAR_GAP = 3;
+    private static final int PICKER_BTN_W = 28;
+    private static final int PICKER_BTN_GAP = 2;
 
-            int fieldY = contentAreaTop + LayoutConfig.StringInput.TITLE_HEIGHT + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - getScrollOffset();
-            int inputWidth = (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) ? 175 : 200;
+    /**
+     * 布局状态：是否处于滚动模式（内容超出屏幕）
+     */
+    private boolean scrollMode;
+    /**
+     * 内容区域左边界
+     */
+    private int contentLeft;
+    /**
+     * 输入框宽度（不含滚动条）
+     */
+    private int inputW;
+    /**
+     * 内容总宽度（含滚动条）
+     */
+    private int contentTotalWidth;
+    /**
+     * 输入框列表顶部 Y（用于居中时；滚动模式下为 listAreaTop）
+     */
+    private int listTop;
+    /**
+     * 列表可视区域高度（滚动模式下有效）
+     */
+    private int listAreaHeight;
+    /**
+     * 按钮区域 Y
+     */
+    private int btnY;
 
-            BaniraTextField input = new BaniraTextField(
-                    this.font,
-                    this.width / 2 - 100,
-                    fieldY,
-                    inputWidth,
-                    LayoutConfig.StringInput.INPUT_FIELD_HEIGHT,
-                    widget.message().toComponent().toTextComponent()
-            );
+    @Override
+    protected void initWidgets() {
+        inputFields.clear();
+        int w = width;
+        int h = height;
+        int listHeight = args.getWidgets().size() * ITEM_HEIGHT;
+        int contentHeight = TOP_MARGIN + listHeight + LIST_BTN_GAP + BTN_H + BOTTOM_MARGIN;
 
-            input.setEditable(!widget.disabled());
-            input.setMaxLength(Integer.MAX_VALUE);
-            if (StringUtils.isNotNullOrEmpty(widget.regex())) {
-                input.setFilter(s -> s.matches(widget.regex()));
-            }
+        contentTotalWidth = Math.min(w - TOP_MARGIN * 2, CONTENT_MAX_WIDTH + SCROLLBAR_WIDTH + SCROLLBAR_GAP);
+        inputW = contentTotalWidth - SCROLLBAR_WIDTH - SCROLLBAR_GAP;
+        contentLeft = (w - contentTotalWidth) / 2;
 
-            // 恢复之前的值或使用默认值
-            String defaultValue = StringUtils.isNullOrEmptyEx(inputField.value())
-                    ? widget.defaultValue() : inputField.value();
-            input.setValue(defaultValue);
-            inputField.value(defaultValue);
-
-            inputs.value(widget.name(), i, input);
-
-            // 设置变化回调
-            if (widget.changed() != null) {
-                int finalI = i;
-                input.setResponder(s -> {
-                    // 验证输入并更新错误状态
-                    String error = widget.validator().apply(new Results().value(widget.name(), finalI, input.getValue()));
-                    boolean hasError = StringUtils.isNotNullOrEmpty(error);
-                    input.error(hasError);
-                    // 更新错误文本映射
-                    if (hasError) {
-                        errorTextMap.put(finalI, Text.literal(error).color(Color.argb(0xFFFF0000)));
-                    } else {
-                        errorTextMap.remove(finalI);
-                    }
-                    if (StringUtils.isNullOrEmptyEx(error)) {
-                        widget.changed().accept(inputs.curIndex(finalI).curName(widget.name()));
-                    }
-                });
-            }
-
-            super.addButton(input);
-            inputField.input(input);
-            inputField.title(widget.title());
-            inputField.y(fieldY);
-            inputField.type(widget.type());
-            inputField.fileFilter(widget.fileFilter());
-
-            // 为FILE和COLOR类型创建按钮
-            if (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) {
-                BaniraButton fileButton = new BaniraButton(
-                        this.width / 2 + 78,
-                        fieldY,
-                        20,
-                        LayoutConfig.StringInput.INPUT_FIELD_HEIGHT,
-                        Component.literal("...").toTextComponent(),
-                        button -> {
-                            try {
-                                if (widget.type() == WidgetType.FILE) {
-                                    DialogUtils.chooseFileString("", input::setValue);
-                                } else if (widget.type() == WidgetType.COLOR) {
-                                    DialogUtils.chooseRgbHex("", input::setValue);
-                                }
-                            } catch (Exception ignored) {
-                            }
-                        }
-                );
-                super.addButton(fileButton);
-                inputField.button(fileButton);
-            }
-
-            this.inputFields.add(inputField);
+        scrollMode = contentHeight > h;
+        if (scrollMode) {
+            btnY = h - BOTTOM_MARGIN - BTN_H;
+            listTop = TOP_MARGIN;
+            listAreaHeight = Math.max(0, btnY - listTop - LIST_BTN_GAP);
+        } else {
+            int contentTop = (h - contentHeight) / 2 + TOP_MARGIN;
+            listTop = contentTop;
+            btnY = contentTop + listHeight + LIST_BTN_GAP;
+            listAreaHeight = listHeight;
         }
 
-        this.submitButton = new BaniraButton(
-                this.width / 2 + 5,
-                this.buttonY,
-                LayoutConfig.StringInput.BUTTON_WIDTH,
-                LayoutConfig.StringInput.BUTTON_HEIGHT,
-                Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent(),
-                button -> handleSubmit()
-        );
-        super.addButton(this.submitButton);
+        submitButtonWidget = new ButtonWidget(this);
+        submitButtonWidget.id("submit");
+        submitButtonWidget.renderCoordinate(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
+        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.onClick(b -> handleSubmit());
+        addWidget(submitButtonWidget);
 
-        this.cancelButton = new BaniraButton(
-                this.width / 2 - 100,
-                this.buttonY,
-                LayoutConfig.StringInput.BUTTON_WIDTH,
-                LayoutConfig.StringInput.BUTTON_HEIGHT,
-                Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent(),
-                button -> Minecraft.getInstance().setScreen(this.previousScreen())
-        );
-        super.addButton(this.cancelButton);
+        cancelButtonWidget = new ButtonWidget(this);
+        cancelButtonWidget.id("cancel");
+        cancelButtonWidget.renderCoordinate(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
+        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(this.previousScreen()));
+        addWidget(cancelButtonWidget);
 
-        // 注册按钮区域为点击拦截区域
-        super.clearInterceptAreas();
-        super.registerInterceptArea((args) -> {
-            if (this.submitButton != null && this.submitButton.isMouseOver(args.mouseX(), args.mouseY())) {
-                // 使提交按钮处理点击
-                if (args.clicked() && this.submitButton.mouseClicked(args.mouseX(), args.mouseY(), args.button())) {
-                    return true;
-                } else if (this.submitButton.mouseReleased(args.mouseX(), args.mouseY(), args.button())) {
-                    return true;
-                }
+        for (int i = 0; i < args.getWidgets().size(); i++) {
+            Widget widget = args.getWidgets().get(i);
+            String defaultValue = StringUtils.isNullOrEmptyEx(widget.defaultValue()) ? "" : widget.defaultValue();
+            while (inputValues.size() <= i) {
+                inputValues.add(defaultValue);
             }
-            if (this.cancelButton != null && this.cancelButton.isMouseOver(args.mouseX(), args.mouseY())) {
-                // 使取消按钮处理点击
-                if (args.clicked() && this.cancelButton.mouseClicked(args.mouseX(), args.mouseY(), args.button())) {
-                    return true;
-                } else if (this.cancelButton.mouseReleased(args.mouseX(), args.mouseY(), args.button())) {
-                    return true;
-                }
-            }
-            return (this.submitButton != null && this.submitButton.isMouseOver(args.mouseX(), args.mouseY())) ||
-                    (this.cancelButton != null && this.cancelButton.isMouseOver(args.mouseX(), args.mouseY()));
-        });
+            String currentValue = inputValues.get(i);
 
-        initScrollBar();
+            InputField inputField = new InputField();
+            inputField.title(widget.title());
+            inputField.type(widget.type());
+            inputField.fileFilter(widget.fileFilter());
+            inputField.value(currentValue);
+
+            int itemTop = listTop + i * ITEM_HEIGHT;
+            int titleY = itemTop + TITLE_TOP_MARGIN;
+            int inputY = titleY + TITLE_HEIGHT + TITLE_INPUT_GAP;
+
+            // 标题
+            LabelWidget titleLabel = new LabelWidget(this);
+            titleLabel.id("title_" + i);
+            titleLabel.text(widget.title());
+            titleLabel.renderCoordinate(new ScreenCoordinate(contentLeft, titleY, inputW, TITLE_HEIGHT));
+            titleLabel.textWrap(false);
+            inputField.titleLabel(titleLabel);
+            addWidget(titleLabel);
+
+            if (widget.type() == WidgetType.TEXT) {
+                InputWidget inputWidget = new InputWidget(this);
+                inputWidget.id("input_" + i);
+                inputWidget.renderCoordinate(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
+                inputWidget.value(currentValue);
+                inputWidget.text(widget.hint());
+                inputWidget.enabled(!widget.disabled());
+
+                int finalI = i;
+                inputWidget.onTextChanged(text -> {
+                    if (finalI < inputValues.size()) {
+                        inputValues.set(finalI, text);
+                    } else {
+                        while (inputValues.size() <= finalI) inputValues.add("");
+                        inputValues.set(finalI, text);
+                    }
+                    validateAndUpdateError(widget, finalI, text, inputWidget);
+                });
+
+                inputField.input(inputWidget);
+                addWidget(inputWidget);
+            } else if (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) {
+                int pickerInputW = inputW - PICKER_BTN_W - PICKER_BTN_GAP;
+                InputWidget pickerInput = new InputWidget(this);
+                pickerInput.id("input_" + i);
+                pickerInput.renderCoordinate(new ScreenCoordinate(contentLeft, inputY, pickerInputW, INPUT_H));
+                pickerInput.value(currentValue);
+                Text pickerHint = widget.type() == WidgetType.FILE
+                        ? Text.transAuto(BaniraCodex.MODID, "enter_file_path")
+                        : Text.transAuto(BaniraCodex.MODID, "enter_color_hex");
+                pickerInput.text(pickerHint);
+                pickerInput.enabled(!widget.disabled());
+                pickerInput.editable(true);
+
+                int finalI = i;
+                pickerInput.onTextChanged(text -> {
+                    if (finalI < inputValues.size()) {
+                        inputValues.set(finalI, text);
+                    } else {
+                        while (inputValues.size() <= finalI) inputValues.add("");
+                        inputValues.set(finalI, text);
+                    }
+                    validateAndUpdateError(widget, finalI, text, pickerInput);
+                });
+
+                ButtonWidget pickerBtn = new ButtonWidget(this);
+                pickerBtn.id("btn_" + i);
+                pickerBtn.renderCoordinate(new ScreenCoordinate(contentLeft + pickerInputW + PICKER_BTN_GAP, inputY, PICKER_BTN_W, INPUT_H));
+                pickerBtn.text(Text.literal("..."));
+                pickerBtn.onClick(b -> {
+                    if (widget.type() == WidgetType.FILE) {
+                        String[] exts = new String[0];
+                        if (StringUtils.isNotNullOrEmpty(widget.fileFilter())) {
+                            String[] parts = widget.fileFilter().split("[,;\\s]+");
+                            exts = new String[parts.length];
+                            for (int j = 0; j < parts.length; j++) {
+                                String p = parts[j].trim();
+                                exts[j] = p.startsWith("*") ? p : "*." + p;
+                            }
+                        }
+                        DialogUtils.chooseFileString(widget.title().content(), path -> {
+                            if (path != null) {
+                                pickerInput.value(path);
+                            }
+                        }, exts);
+                    } else if (widget.type() == WidgetType.COLOR) {
+                        DialogUtils.chooseRgbHex(widget.title().content(), color -> {
+                            if (color != null && !color.isEmpty()) {
+                                pickerInput.value(color);
+                            }
+                        });
+                    }
+                });
+
+                inputField.input(pickerInput);
+                inputField.button(pickerBtn);
+                addWidget(pickerInput);
+                addWidget(pickerBtn);
+            }
+
+            inputFields.add(inputField);
+        }
+
+        // 滚动条
+        int scrollH = scrollMode ? listAreaHeight : 0;
+        int maxScroll = Math.max(0, listHeight - listAreaHeight);
+        scrollbarWidget = new ScrollbarWidget(this);
+        scrollbarWidget.id("scroll");
+        scrollbarWidget.renderCoordinate(new ScreenCoordinate(contentLeft + inputW + SCROLLBAR_GAP, listTop, SCROLLBAR_WIDTH, scrollH));
+        scrollbarWidget.orientation(ScrollbarWidget.Orientation.VERTICAL);
+        scrollbarWidget.minValue(0);
+        scrollbarWidget.maxValue(maxScroll);
+        scrollbarWidget.visibleSize(listAreaHeight);
+        scrollbarWidget.scrollStep(ITEM_HEIGHT);
+        scrollbarWidget.onValueChanged(v -> updateInputFieldsPosition());
+        scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight));
+        scrollbarWidget.visible(scrollMode && maxScroll > 0);
+        addWidget(scrollbarWidget);
     }
 
     @Override
-    protected void updateLayout() {
-        calculateLayout();
-        initScrollBar();
+    protected void refreshWidget() {
+        super.refreshWidget();
         updateInputFieldsPosition();
     }
 
-    private void calculateLayout() {
-        // 计算按钮区域
-        this.buttonY = this.height - LayoutConfig.StringInput.BUTTON_HEIGHT - LayoutConfig.StringInput.BUTTON_MARGIN;
-
-        // 计算内容区域底部
-        this.contentAreaBottom = this.height - LayoutConfig.StringInput.BUTTON_HEIGHT - LayoutConfig.StringInput.BUTTON_MARGIN - LayoutConfig.StringInput.BUTTON_MARGIN;
-
-        // 计算内容区域顶部
-        this.contentAreaTop = LayoutConfig.StringInput.BUTTON_HEIGHT;
-
-        // 计算可见内容高度
-        this.visibleContentHeight = this.contentAreaBottom - this.contentAreaTop;
-
-        if (args.getWidgets().isEmpty()) {
-            this.scrollableContentHeight = 0;
-        } else {
-            this.scrollableContentHeight = args.getWidgets().size() * LayoutConfig.StringInput.INPUT_FIELD_SPACING;
+    @Override
+    protected boolean shouldWidgetReceiveClick(IWidget widget, double mouseX, double mouseY, int button) {
+        if (!scrollMode) return true;
+        boolean isListWidget = false;
+        for (InputField field : inputFields) {
+            if (widget == field.titleLabel() || widget == field.input() || widget == field.button()) {
+                isListWidget = true;
+                break;
+            }
         }
-
-        // 更新滚动条参数
-        if (super.scrollBar() != null) {
-            super.scrollBar().updateScrollParams(this.scrollableContentHeight, this.visibleContentHeight);
-        }
+        if (!isListWidget) return true;
+        // 点击须在可见列表区域内
+        return mouseX >= contentLeft && mouseX < contentLeft + inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH
+                && mouseY >= listTop && mouseY < listTop + listAreaHeight;
     }
 
-    /**
-     * 初始化滚动条位置和尺寸
-     */
-    private void initScrollBar() {
-        if (super.scrollBar() == null) return;
-
-        int scrollBarX = this.width / 2 + 100 + LayoutConfig.StringInput.SCROLL_BAR_MARGIN;
-        int scrollBarY = this.contentAreaTop;
-        int scrollBarHeight = this.visibleContentHeight;
-
-        super.scrollBar()
-                .x(scrollBarX)
-                .y(scrollBarY)
-                .width(LayoutConfig.StringInput.SCROLL_BAR_WIDTH)
-                .height(scrollBarHeight);
-
-        // 设置滚动变化回调
-        super.scrollBar().onScrollChanged(offset -> {
-            updateInputFieldsPosition();
-        });
-    }
-
-    /**
-     * 获取当前滚动偏移量（像素）
-     */
     private int getScrollOffset() {
-        return super.scrollBar() != null ? super.scrollBar().scrollOffset() : 0;
+        return scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
     }
 
     /**
-     * 更新输入框位置
+     * 构建包含所有输入框当前值的 Results，用于校验（支持跨字段校验）
      */
+    private Results buildResultsFromInputs(int overrideIndex, String overrideValue) {
+        Results r = new Results();
+        for (int i = 0; i < inputFields.size() && i < args.getWidgets().size(); i++) {
+            InputField field = inputFields.get(i);
+            String val = (i == overrideIndex && overrideValue != null) ? overrideValue
+                    : (field.input() != null ? field.input().value() : "");
+            r.value(args.getWidgets().get(i).name(), i, val);
+        }
+        return r;
+    }
+
+    /**
+     * 校验并更新错误状态。
+     * 使用 buildResultsFromInputs 支持跨字段校验。
+     */
+    private void validateAndUpdateError(Widget widget, int index, String text, InputWidget inputWidget) {
+        Results r = buildResultsFromInputs(index, text);
+        r.curIndex(index).curName(widget.name());
+        String error = widget.validator().apply(r);
+        boolean hasError = StringUtils.isNotNullOrEmpty(error);
+        if (inputWidget != null) {
+            inputWidget.error(hasError);
+        }
+        if (hasError) {
+            errorTextMap.put(index, Text.literal(error).color(Color.argb(0xFFFF0000)));
+        } else {
+            errorTextMap.remove(index);
+        }
+        if (!hasError && widget.changed() != null) {
+            widget.changed().accept(new Inputs().curIndex(index).curName(widget.name()));
+        }
+    }
+
     private void updateInputFieldsPosition() {
-        int scrollOffset = getScrollOffset();
+        int scrollOffset = scrollMode ? getScrollOffset() : 0;
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
-            int fieldY = contentAreaTop + LayoutConfig.StringInput.TITLE_HEIGHT + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - scrollOffset;
-            field.input().y = fieldY;
-            field.y(fieldY);
+            int itemTop = listTop + ITEM_HEIGHT * i - scrollOffset;
+            int titleY = itemTop + TITLE_TOP_MARGIN;
+            int inputY = titleY + TITLE_HEIGHT + TITLE_INPUT_GAP;
 
-            // 更新按钮位置
-            if (field.button() != null) {
-                field.button().y = fieldY;
+            if (field.titleLabel() != null) {
+                field.titleLabel().renderCoordinate(new ScreenCoordinate(contentLeft, titleY, inputW, TITLE_HEIGHT));
+            }
+            if (field.input() != null && field.button() != null) {
+                int pickerInputW = inputW - PICKER_BTN_W - PICKER_BTN_GAP;
+                field.input().renderCoordinate(new ScreenCoordinate(contentLeft, inputY, pickerInputW, INPUT_H));
+                field.button().renderCoordinate(new ScreenCoordinate(contentLeft + pickerInputW + PICKER_BTN_GAP, inputY, PICKER_BTN_W, INPUT_H));
+            } else if (field.input() != null) {
+                field.input().renderCoordinate(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
+            } else if (field.button() != null) {
+                field.button().renderCoordinate(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
             }
         }
     }
 
     private void handleSubmit() {
         Results results = new Results();
-        for (int i = 0; i < this.args.getWidgets().size(); i++) {
-            results.value(args.getWidgets().get(i).name(), i, this.inputFields.get(i).input().getValue());
+        for (int i = 0; i < this.args.getWidgets().size() && i < this.inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            if (field.input() != null) {
+                results.value(args.getWidgets().get(i).name(), i, field.input().value());
+            }
         }
 
-        if (results.isEmpty() || this.submitButton.getMessage().getString().equals(BaniraCodex.languager().getTranslationClient(EnumI18nType.OPTION, "cancel"))) {
+        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraCodex.languager().getTranslationClient(EnumI18nType.WORD, "cancel")))) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
         // 验证输入
-        this.errorText.clear();
         this.errorTextMap.clear();
-        for (int i = 0; i < args.getWidgets().size(); i++) {
+        for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
             Widget widget = args.getWidgets().get(i);
+            InputField field = inputFields.get(i);
             results.curIndex(i).curName(widget.name());
             String error = widget.validator().apply(results);
             // 设置输入框的错误状态
-            if (i < inputFields.size()) {
-                BaniraTextField input = inputFields.get(i).input();
+            if (field.input() != null) {
                 boolean hasError = StringUtils.isNotNullOrEmpty(error);
-                input.error(hasError);
+                field.input().error(hasError);
                 if (hasError) {
                     Text errorTextItem = Text.literal(error).color(Color.argb(0xAAFF0000));
-                    this.errorText.add(errorTextItem);
                     this.errorTextMap.put(i, errorTextItem);
                 } else {
                     this.errorTextMap.remove(i);
@@ -498,7 +592,7 @@ public class StringInputScreen extends BaniraScreen {
             }
         }
 
-        if (this.errorText.isEmptyEx()) {
+        if (this.errorTextMap.isEmpty()) {
             try {
                 args.getCallback().accept(results);
             } catch (Exception e) {
@@ -514,53 +608,77 @@ public class StringInputScreen extends BaniraScreen {
     }
 
     @Override
+    protected void renderWidgets(MatrixStack stack, float partialTicks) {
+        if (scrollMode) {
+            // 滚动模式：对输入框列表区域启用裁剪，避免与底部按钮重叠
+            AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight);
+        }
+
+        for (IWidget widget : widgets()) {
+            if (widget == scrollbarWidget || widget == submitButtonWidget || widget == cancelButtonWidget) continue;
+            if (widget.visible() && widget.parent() == null) {
+                if (widget.enabled()) {
+                    widget.update();
+                }
+                widget.render(stack, partialTicks);
+            }
+        }
+
+        if (scrollMode) {
+            AbstractGuiUtils.disableScissor();
+        }
+
+        // 渲染确认、取消按钮
+        if (submitButtonWidget != null && submitButtonWidget.visible()) {
+            if (submitButtonWidget.enabled()) submitButtonWidget.update();
+            submitButtonWidget.render(stack, partialTicks);
+        }
+        if (cancelButtonWidget != null && cancelButtonWidget.visible()) {
+            if (cancelButtonWidget.enabled()) cancelButtonWidget.update();
+            cancelButtonWidget.render(stack, partialTicks);
+        }
+
+        // 滚动条最后渲染，确保在最上层
+        if (scrollbarWidget != null && scrollbarWidget.visible()) {
+            scrollbarWidget.renderCoordinate(new ScreenCoordinate(contentLeft + inputW + SCROLLBAR_GAP, listTop, SCROLLBAR_WIDTH, listAreaHeight));
+            if (scrollbarWidget.enabled()) {
+                scrollbarWidget.update();
+            }
+            scrollbarWidget.render(stack, partialTicks);
+        }
+    }
+
+    @Override
     protected void renderEvent(MatrixStack stack, float partialTicks) {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
-        // 更新输入框位置
-        updateInputFieldsPosition();
+        renderWidgets(stack, partialTicks);
 
-        if (this.submitButton != null) {
-            this.submitButton.y = this.buttonY;
-        }
-        if (this.cancelButton != null) {
-            this.cancelButton.y = this.buttonY;
-        }
-
-        this.renderBackground(stack);
-
-        // 绘制标题
-        int scrollOffset = getScrollOffset();
-        for (int i = 0; i < args.getWidgets().size(); i++) {
-            Widget widget = args.getWidgets().get(i);
-            int titleY = contentAreaTop + LayoutConfig.StringInput.INPUT_FIELD_SPACING * i - scrollOffset + 2;
-            AbstractGuiUtils.drawLimitedText(FontDrawArgs.of(widget.title().stack(stack))
-                    .x(this.width / 2.0f - 100)
-                    .y(titleY));
-        }
-
-        // 渲染按钮
-        super.renderButtons(stack, partialTicks);
-
-        // 更新并渲染滚动条
-        if (super.scrollBar() != null) {
-            super.scrollBar().updateScrollParams(this.scrollableContentHeight, this.visibleContentHeight);
-            super.scrollBar().render(stack);
-        }
-
-        // 绘制错误提示
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
-            BaniraTextField input = field.input();
-            if (input.error() && input.isMouseOver((int) mouseHelper.mouseX(), (int) mouseHelper.mouseY())) {
-                Text errorTextItem = this.errorTextMap.get(i).stack(stack);
+            if (field.input() != null) {
+                while (inputValues.size() <= i) inputValues.add("");
+                inputValues.set(i, field.input().value());
+            }
+        }
+
+        if (widgets().isEmpty()) {
+            this.renderBackground(stack);
+        }
+
+        super.renderButtons(stack, partialTicks);
+
+        for (int i = 0; i < inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            if (field.input() != null && field.input().error() && field.input().hoveringCoordinates() != null && !field.input().hoveringCoordinates().isEmpty()) {
+                Text errorTextItem = this.errorTextMap.get(i);
                 if (errorTextItem != null) {
-                    AbstractGuiUtils.drawPopupMessageWithSeason(FontDrawArgs.ofPopo(errorTextItem)
-                            .x(mouseHelper.mouseX() + 5)
-                            .y(mouseHelper.mouseY() + 5)
+                    TooltipWidget.drawPopupMessageWithSeason(stack, FontDrawArgs.of(errorTextItem.stack(stack))
+                            .x(inputState.mouseX() + 5)
+                            .y(inputState.mouseY() + 5)
                             .padding(0)
                             .maxWidth(200)
                             .position(EnumEllipsisPosition.MIDDLE)
@@ -578,12 +696,20 @@ public class StringInputScreen extends BaniraScreen {
         }
 
         // 更新提交按钮文本
-        boolean allValid = this.args.getWidgets().stream().allMatch(wi ->
-                wi.allowEmpty() || StringUtils.isNotNullOrEmpty(this.inputFields.get(args.getWidgets().indexOf(wi)).input().getValue()));
-        if (allValid) {
-            this.submitButton.setMessage(Component.translatableClient(EnumI18nType.OPTION, "submit").toTextComponent());
-        } else {
-            this.submitButton.setMessage(Component.translatableClient(EnumI18nType.OPTION, "cancel").toTextComponent());
+        if (submitButtonWidget != null) {
+            boolean allValid = this.args.getWidgets().stream().allMatch(wi -> {
+                int index = args.getWidgets().indexOf(wi);
+                if (index >= 0 && index < inputFields.size()) {
+                    InputField field = inputFields.get(index);
+                    return wi.allowEmpty() || (field.input() != null && StringUtils.isNotNullOrEmpty(field.input().value()));
+                }
+                return true;
+            });
+            if (allValid) {
+                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+            } else {
+                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+            }
         }
     }
 
@@ -593,48 +719,32 @@ public class StringInputScreen extends BaniraScreen {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
-    }
-
-    @Override
-    protected void handlePopupOption(MouseReleasedHandleArgs eventArgs) {
-    }
-
-    @Override
-    protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
-    }
-
-    @Override
-    protected void mouseMovedEvent() {
+        // 若当前点击未被消费且未被拦截，则取消所有已聚焦的Widget
+        super.mouseClickedEvent(eventArgs);
     }
 
     @Override
     protected void mouseScrolledEvent(MouseScoredHandleArgs eventArgs) {
-        if (super.scrollBar() != null && this.scrollableContentHeight > this.visibleContentHeight) {
-            int currentOffset = super.scrollBar().scrollOffset();
-            int targetOffset = currentOffset - (int) (eventArgs.delta() * (LayoutConfig.StringInput.SCROLL_SPEED - 1));
-            super.scrollBar().setScrollOffset(targetOffset);
+        if (scrollbarWidget != null && scrollbarWidget.maxValue() > 0) {
+            double currentValue = scrollbarWidget.value();
+            double targetValue = Math.max(0, Math.min(scrollbarWidget.maxValue(), currentValue - eventArgs.delta() * 20));
+            scrollbarWidget.setValue(targetValue);
+            updateInputFieldsPosition();
             eventArgs.consumed(true);
         }
     }
 
     @Override
     protected void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
+        super.keyPressedEvent(eventArgs);
+        if (eventArgs.consumed()) {
+            return;
+        }
         if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE
-                || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input().isFocused()))) {
+                || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused()))) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
     }
 
-    @Override
-    protected void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
-    }
-
-    @Override
-    protected void removedEvent() {
-    }
-
-    @Override
-    protected void closeEvent() {
-    }
 }

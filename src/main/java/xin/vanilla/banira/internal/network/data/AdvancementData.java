@@ -9,8 +9,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.common.util.Component;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;
 
@@ -25,7 +25,7 @@ public class AdvancementData {
 
     @Nonnull
     public ResourceLocation id() {
-        return id == null ? BaniraCodex.resourceFactory().empty() : id;
+        return id == null ? Identifier.id().empty() : id;
     }
 
     @Nonnull
@@ -69,8 +69,8 @@ public class AdvancementData {
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
-                , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
-                , BaniraCodex.resourceFactory().empty(), FrameType.TASK
+                , Component.literal(title).toVanilla(), Component.literal(description).toVanilla()
+                , Identifier.id().empty(), FrameType.TASK
                 , false, false, false);
     }
 

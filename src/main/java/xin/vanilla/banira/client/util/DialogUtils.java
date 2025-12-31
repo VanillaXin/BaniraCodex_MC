@@ -4,6 +4,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -14,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import static org.lwjgl.BufferUtils.createByteBuffer;
+import static org.lwjgl.system.MemoryStack.stackGet;
 
 /**
  * 对话框工具类
@@ -46,9 +48,9 @@ public final class DialogUtils {
      */
     public enum DialogButtonType {
         ok,
-        okcancel,
-        yesno,
-        yesnocancel,
+        ok_cancel,
+        yes_no,
+        yes_no_cancel,
     }
 
     /**
@@ -63,7 +65,6 @@ public final class DialogUtils {
         DIALOG_EXECUTOR.execute(() -> {
             try {
                 String result = chooseFileStringSyncInternal(desc, extensions);
-                // 在主线程中执行回调
                 BaniraScheduler.schedule(0, () -> callback.accept(result));
             } catch (Exception e) {
                 LOGGER.error("Error in chooseFileString", e);
@@ -134,17 +135,17 @@ public final class DialogUtils {
      * @param msg        消息内容
      * @param iconType   图标类型
      * @param buttonType 按钮类型
-     * @param callback   回调函数, 参数为用户的选择结果, true表示确认/是, false表示取消/否
+     * @param callback   回调函数, 参数为用户的选择结果: 0表示cancel/no, 1表示ok/yes, 2表示no(在yes_no_cancel类型中)
      */
-    public static void openMessageBox(String title, String msg, DialogIconType iconType, DialogButtonType buttonType, Consumer<Boolean> callback) {
+    public static void openMessageBox(String title, String msg, DialogIconType iconType, DialogButtonType buttonType, Consumer<Integer> callback) {
         DIALOG_EXECUTOR.execute(() -> {
             try {
-                boolean result = openMessageBoxSyncInternal(title, msg, iconType, buttonType);
+                int result = openMessageBoxSyncInternal(title, msg, iconType, buttonType);
                 // 在主线程中执行回调
                 BaniraScheduler.schedule(0, () -> callback.accept(result));
             } catch (Exception e) {
                 LOGGER.error("Error in openMessageBox", e);
-                BaniraScheduler.schedule(0, () -> callback.accept(false));
+                BaniraScheduler.schedule(0, () -> callback.accept(0));
             }
         });
     }
@@ -221,9 +222,9 @@ public final class DialogUtils {
      * @param msg        消息内容
      * @param iconType   图标类型
      * @param buttonType 按钮类型
-     * @return 用户的选择结果（true表示确认/是，false表示取消/否）
+     * @return 用户的选择结果: 0表示cancel/no, 1表示ok/yes, 2表示no(在yes_no_cancel类型中)
      */
-    public static boolean openMessageBoxSync(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
+    public static int openMessageBoxSync(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
         return openMessageBoxSyncInternal(title, msg, iconType, buttonType);
     }
 
@@ -264,8 +265,27 @@ public final class DialogUtils {
 
     /**
      * 弹出消息框
+     *
+     * @return 0表示cancel/no, 1表示ok/yes, 2表示no(在yes_no_cancel类型中)
      */
-    private static boolean openMessageBoxSyncInternal(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
-        return TinyFileDialogs.tinyfd_messageBox(title, msg, buttonType.name(), iconType.name(), false);
+    private static int openMessageBoxSyncInternal(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
+        String dialogType = buttonType.name().replace("_", "");
+
+        MemoryStack stack = stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            stack.nUTF8Safe(title, true);
+            long titleEncoded = title == null ? 0L : stack.getPointerAddress();
+            stack.nUTF8Safe(msg, true);
+            long msgEncoded = msg == null ? 0L : stack.getPointerAddress();
+            stack.nASCII(dialogType, true);
+            long dialogTypeEncoded = stack.getPointerAddress();
+            stack.nASCII(iconType.name(), true);
+            long iconTypeEncoded = stack.getPointerAddress();
+
+            return TinyFileDialogs.ntinyfd_messageBox(titleEncoded, msgEncoded, dialogTypeEncoded, iconTypeEncoded, 0);
+        } finally {
+            stack.setPointer(stackPointer);
+        }
     }
 }

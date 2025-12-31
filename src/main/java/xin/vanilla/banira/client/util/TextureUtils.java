@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.client.renderer.texture.Texture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.resources.IResource;
@@ -12,7 +11,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.common.api.ResourceFactory;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 
@@ -31,11 +31,11 @@ public final class TextureUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * 默认主题文件名
+     * 默认纹理文件名
      */
     public static final String DEFAULT_THEME = "textures.png";
     /**
-     * 内部主题文件夹路径
+     * 内部纹理文件夹路径
      */
     public static final String INTERNAL_THEME_DIR = "textures/gui/";
     /**
@@ -45,18 +45,18 @@ public final class TextureUtils {
 
     private static final Map<ResourceLocation, NativeImage> CACHE = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Texture, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
 
 
-    public static ResourceLocation loadCustomTexture(ResourceFactory factory, String textureName) {
+    public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        textureName = textureName.replaceAll("\\\\", "/");
-        textureName = textureName.startsWith("./") ? textureName.substring(2) : textureName;
-        ResourceLocation customTextureLocation = factory.create(TextureUtils.getSafeThemePath(textureName));
+        name = name.replaceAll("\\\\", "/");
+        name = name.startsWith("./") ? name.substring(2) : name;
+        ResourceLocation customTextureLocation = factory.create(TextureUtils.getSafeTexturePath(name));
         if (!TextureUtils.isTextureAvailable(customTextureLocation)) {
-            if (!textureName.startsWith(INTERNAL_THEME_DIR)) {
-                customTextureLocation = factory.create(TextureUtils.getSafeThemePath(textureName + System.currentTimeMillis()));
-                File textureFile = new File(textureName);
+            if (!name.startsWith(INTERNAL_THEME_DIR)) {
+                customTextureLocation = factory.create(TextureUtils.getSafeTexturePath(name + System.currentTimeMillis()));
+                File textureFile = new File(name);
                 // 检查文件是否存在
                 if (!textureFile.exists()) {
                     LOGGER.warn("Texture file not found: {}", textureFile.getAbsolutePath());
@@ -79,13 +79,13 @@ public final class TextureUtils {
         return customTextureLocation;
     }
 
-    public static String getSafeThemePath(String path) {
+    public static String getSafeTexturePath(String path) {
         return path.toLowerCase().replaceAll("[^a-z0-9/._-]", "_");
     }
 
     public static boolean isTextureAvailable(ResourceLocation resourceLocation) {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        Texture texture = textureManager.getTexture(resourceLocation);
+        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(resourceLocation);
         if (texture == null) {
             return false;
         }
@@ -96,7 +96,7 @@ public final class TextureUtils {
     /**
      * 获取药水效果图标
      */
-    public static ResourceLocation getEffectTexture(ResourceFactory factory, EffectInstance effectInstance) {
+    public static ResourceLocation getEffectTexture(IIdentifier factory, EffectInstance effectInstance) {
         ResourceLocation effectIcon;
         ResourceLocation registryName = effectInstance.getEffect().getRegistryName();
         if (registryName != null) {
@@ -227,7 +227,7 @@ public final class TextureUtils {
         } else {
             NativeImage textureImage = getTextureImage(texture);
             if (textureImage != null) {
-                size.setKey(textureImage.getWidth()).setValue(textureImage.getHeight());
+                size.key(textureImage.getWidth()).value(textureImage.getHeight());
             }
             TEXTURE_SIZE_CACHE.put(texture, size);
         }
@@ -237,36 +237,49 @@ public final class TextureUtils {
     /**
      * 解析.9.png格式的纹理
      *
-     * @param texture 纹理资源位置
+     * @param texture 纹理对象
      * @return 九宫格信息，如果不是.9.png格式或解析失败则返回null
      */
-    public static NinePatchInfo parseNinePatch(ResourceLocation texture) {
+    public static NinePatchInfo parseNinePatch(Texture texture) {
+        if (texture == null || texture.location() == null) {
+            return null;
+        }
+
         // 优先从缓存中获取
         if (NINE_PATCH_CACHE.containsKey(texture)) {
             return NINE_PATCH_CACHE.get(texture);
         }
 
-        NativeImage image = getTextureImage(texture);
+        NativeImage image = getTextureImage(texture.location());
         if (image == null) {
             return null;
         }
 
-        int width = image.getWidth();
-        int height = image.getHeight();
+        // 使用 Texture 中指定的范围
+        int textureStartX = texture.u0();
+        int textureStartY = texture.v0();
+        int textureWidth = texture.uWidth();
+        int textureHeight = texture.vHeight();
+        int textureEndX = textureStartX + textureWidth - 1;
+        int textureEndY = textureStartY + textureHeight - 1;
 
-        // .9.png格式要求至少3x3像素
-        if (width < 3 || height < 3) {
+        // 确保范围有效
+        int imageWidth = image.getWidth();
+        int imageHeight = image.getHeight();
+        if (textureStartX < 0 || textureStartY < 0 ||
+                textureEndX >= imageWidth || textureEndY >= imageHeight ||
+                textureWidth < 3 || textureHeight < 3) {
             return null;
         }
 
         // 黑色像素的阈值
         final int BLACK_THRESHOLD = 0x80; // 128
 
-        // 内容区域的边界
-        int contentStartX = 1;
-        int contentEndX = width - 2;
-        int contentStartY = 1;
-        int contentEndY = height - 2;
+        // 内容区域的边界（相对于纹理范围的偏移）
+        int contentStartX = textureStartX + 1;
+        int contentEndX = textureEndX - 1;
+        int contentStartY = textureStartY + 1;
+        int contentEndY = textureEndY - 1;
         int contentWidth = contentEndX - contentStartX + 1;
         int contentHeight = contentEndY - contentStartY + 1;
 
@@ -276,7 +289,7 @@ public final class TextureUtils {
         java.util.List<Boolean> horizontalStretch = new java.util.ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
-        int firstPixel = image.getPixelRGBA(contentStartX, 0);
+        int firstPixel = image.getPixelRGBA(contentStartX, textureStartY);
         Color firstColor = Color.abgr(firstPixel);
         boolean firstIsBlack = !firstColor.isEmpty() && firstColor.red() < BLACK_THRESHOLD &&
                 firstColor.green() < BLACK_THRESHOLD && firstColor.blue() < BLACK_THRESHOLD;
@@ -287,7 +300,7 @@ public final class TextureUtils {
 
         boolean lastWasBlack = firstIsBlack;
         for (int x = contentStartX + 1; x <= contentEndX; x++) {
-            int pixel = image.getPixelRGBA(x, 0);
+            int pixel = image.getPixelRGBA(x, textureStartY);
             Color color = Color.abgr(pixel);
 
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
@@ -314,7 +327,7 @@ public final class TextureUtils {
         java.util.List<Boolean> verticalStretch = new java.util.ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
-        int firstVPixel = image.getPixelRGBA(0, contentStartY);
+        int firstVPixel = image.getPixelRGBA(textureStartX, contentStartY);
         Color firstVColor = Color.fromAbgr(firstVPixel);
 
         boolean firstVIsBlack = !firstVColor.isEmpty() && firstVColor.red() < BLACK_THRESHOLD &&
@@ -326,7 +339,7 @@ public final class TextureUtils {
 
         lastWasBlack = firstVIsBlack;
         for (int y = contentStartY + 1; y <= contentEndY; y++) {
-            int pixel = image.getPixelRGBA(0, y);
+            int pixel = image.getPixelRGBA(textureStartX, y);
             Color color = Color.fromAbgr(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
@@ -373,7 +386,7 @@ public final class TextureUtils {
 
         // 扫描整个右参考线，找到所有黑色像素段的最上和最下边界
         for (int y = contentStartY; y <= contentEndY; y++) {
-            int pixel = image.getPixelRGBA(width - 1, y);
+            int pixel = image.getPixelRGBA(textureEndX, y);
             Color color = Color.fromAbgr(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
@@ -406,7 +419,7 @@ public final class TextureUtils {
 
         // 扫描整个下参考线，找到所有黑色像素段的最左和最右边界
         for (int x = contentStartX; x <= contentEndX; x++) {
-            int pixel = image.getPixelRGBA(x, height - 1);
+            int pixel = image.getPixelRGBA(x, textureEndY);
             Color color = Color.fromAbgr(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
@@ -431,7 +444,7 @@ public final class TextureUtils {
 
         // 解析最右下角像素点作为文字颜色
         int textColor = 0x00FFFFFF;
-        int bottomRightPixel = image.getPixelRGBA(width - 1, height - 1);
+        int bottomRightPixel = image.getPixelRGBA(textureEndX, textureEndY);
         Color bottomRightColor = Color.abgr(bottomRightPixel);
         if (!bottomRightColor.isEmpty()) {
             textColor = bottomRightColor.getArgb();
@@ -449,7 +462,8 @@ public final class TextureUtils {
             vStretch[i] = verticalStretch.get(i);
         }
 
-        NinePatchInfo info = new NinePatchInfo(width, height, hDivs, vDivs, hStretch, vStretch,
+        // 使用纹理范围的尺寸
+        NinePatchInfo info = new NinePatchInfo(textureWidth, textureHeight, hDivs, vDivs, hStretch, vStretch,
                 rightGuideHeight, rightGuideTopPadding, rightGuideBottomPadding,
                 bottomGuideLeftPadding, bottomGuideRightPadding, textColor);
         NINE_PATCH_CACHE.put(texture, info);

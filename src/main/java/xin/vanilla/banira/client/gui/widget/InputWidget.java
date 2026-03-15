@@ -283,6 +283,10 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     private static final int CLEAR_BUTTON_SIZE = 10;
     private static final int CLEAR_BUTTON_RADIUS = 4;
+    /**
+     * 滚轮横向滚动时每次移动的字符数（等效于按左右键）
+     */
+    private static final int SCROLL_STEP = 3;
 
     /**
      * 是否显示光标
@@ -706,6 +710,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected boolean onMouseScroll(double mouseX, double mouseY, double scrollDelta) {
+        if (!canConsumeInput() || value.isEmpty()) return false;
+        int step = scrollDelta > 0 ? -SCROLL_STEP : SCROLL_STEP;
+        moveCursor(step);
+        return true;
     }
 
     @Override

@@ -105,9 +105,8 @@ public class NinePatchImageWidget extends BaseWidget {
         }
 
         TextureUtils.NinePatchInfo info = TextureUtils.parseNinePatch(texture);
-        AbstractGuiUtils.bindTexture(texture.location());
         if (info == null) {
-            AbstractGuiUtils.blit(stack, x, y, destWidth, destHeight,
+            AbstractGuiUtils.blit(stack, texture.location(), x, y, destWidth, destHeight,
                     texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(),
                     texture.uvWidth(), texture.uvHeight());
             return;
@@ -188,7 +187,7 @@ public class NinePatchImageWidget extends BaseWidget {
                     destHWidth = srcHWidth;
                 }
 
-                AbstractGuiUtils.blit(stack, (int) currentX, (int) currentY, (int) destHWidth, (int) destVHeight,
+                AbstractGuiUtils.blit(stack, texture.location(), (int) currentX, (int) currentY, (int) destHWidth, (int) destVHeight,
                         srcHStart, srcVStart, srcHWidth, srcVHeight,
                         texture.uvWidth(), texture.uvHeight());
 

@@ -50,5 +50,17 @@
   "format.banira_codex.advancement_display_mode_icon": "列出模式\n有图标的 (%s)",
   "format.banira_codex.advancement_display_mode_all": "列出模式\n所有进度 (%s)",
   "format.banira_codex.item_display_mode_inventory": "列出模式\n物品栏 (%s)",
-  "format.banira_codex.item_display_mode_all": "列出模式\n所有物品 (%s)"
+  "format.banira_codex.item_display_mode_all": "列出模式\n所有物品 (%s)",
+  "word.banira_codex.search_effect": "搜索效果...",
+  "word.banira_codex.enter_effect_id": "输入效果ID",
+  "word.banira_codex.effect_select_effect": "点击编辑效果",
+  "format.banira_codex.effect_display_mode_player": "列出模式\n玩家效果 (%s)",
+  "format.banira_codex.effect_display_mode_all": "列出模式\n所有效果 (%s)",
+  "format.banira_codex.set_duration": "设置持续时间\n当前 %s 刻",
+  "format.banira_codex.set_amplifier": "设置效果等级\n当前 %s",
+  "format.banira_codex.enter_effect_id_error": "效果ID [%s] 输入有误",
+  "format.banira_codex.enter_effect_duration_error": "效果持续时间 [%s] 输入有误",
+  "format.banira_codex.enter_effect_amplifier_error": "效果等级 [%s] 输入有误",
+  "word.banira_codex.enter_effect_duration": "输入效果持续时间（刻）",
+  "word.banira_codex.enter_effect_amplifier": "输入效果等级"
 }

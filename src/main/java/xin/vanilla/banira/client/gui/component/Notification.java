@@ -149,7 +149,7 @@ public class Notification {
      * @param currentTime 当前时间
      */
     @OnlyIn(Dist.CLIENT)
-    public void render(MatrixStack matrixStack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+    public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime) return;
@@ -176,7 +176,7 @@ public class Notification {
         }
 
         // 实际渲染
-        this.doRender(matrixStack, coordinate);
+        this.doRender(stack, coordinate);
 
         // 更新布局上下文
         this.updateLayoutContext(coordinate, preInfo, currentTime);
@@ -407,13 +407,13 @@ public class Notification {
      *
      * @param coordinate 当前通知的布局信息
      */
-    private void doRender(MatrixStack matrixStack, ScreenCoordinate coordinate) {
+    private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF;
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
 
-        AbstractGuiUtils.renderByDepth(matrixStack, EnumRenderDepth.NOTIFICATION, (stack) -> {
-            TransformArgs args = new TransformArgs(stack)
+        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.NOTIFICATION, (s) -> {
+            TransformArgs args = new TransformArgs(s)
                     .x(coordinate.x()).y(coordinate.y())
                     .width(this.cachedWidth()).height(this.cachedHeight())
                     .scale(scale).alpha(alpha).center(center).blend(alpha < 0xFF || scale != 1.0);

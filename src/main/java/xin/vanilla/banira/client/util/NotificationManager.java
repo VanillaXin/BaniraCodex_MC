@@ -36,7 +36,7 @@ public final class NotificationManager {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public void render(MatrixStack matrixStack) {
+    public void render(MatrixStack stack) {
         Minecraft mc = Minecraft.getInstance();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
                 .width(mc.getWindow().getGuiScaledWidth())
@@ -81,7 +81,7 @@ public final class NotificationManager {
                 }
 
                 // 执行渲染
-                n.index(i++).render(matrixStack, preInfo, screenInfo, currentTime);
+                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
 
                 // 更新布局上下文
                 preInfo.y(n.lastY());

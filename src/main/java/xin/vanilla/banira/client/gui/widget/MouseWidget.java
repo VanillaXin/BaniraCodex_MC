@@ -101,16 +101,16 @@ public class MouseWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, float partialTicks) {
+    public void render(MatrixStack stack, float partialTicks) {
         if (!visible) return;
         int mouseX = (int) screen.inputState().mouseX();
         int mouseY = (int) screen.inputState().mouseY();
-        drawCursor(matrixStack, mouseX, mouseY);
+        drawCursor(stack, mouseX, mouseY);
     }
 
     private static final float BRIGHTNESS_THRESHOLD = 0.5f;
 
-    private void drawCursor(MatrixStack matrixStack, int mouseX, int mouseY) {
+    private void drawCursor(MatrixStack stack, int mouseX, int mouseY) {
         if (this.drawCount % 10 == 0) {
             int pixelColor = AbstractGuiUtils.getPixelArgb(mouseX, mouseY);
             float bgBrightness = ColorUtils.getBrightnessFromArgb(pixelColor);
@@ -129,8 +129,8 @@ public class MouseWidget extends BaseWidget {
         if (Math.abs(this.scroll) < 0.5f) this.scroll = 0;
         int scrollOffset = (int) this.scroll;
 
-        AbstractGuiUtils.renderByDepth(matrixStack, renderDepth(), (stack) -> {
-            drawPointerShape(stack, mouseX, mouseY + scrollOffset, color1, color2, color3);
+        AbstractGuiUtils.renderByDepth(stack, renderDepth(), (s) -> {
+            drawPointerShape(s, mouseX, mouseY + scrollOffset, color1, color2, color3);
             if (scrollOffset != 0) {
                 int scrollLineAlpha = (int) (0x90 * Math.min(1, Math.abs(this.scroll) / 4));
                 int scrollLineColor = (scrollLineAlpha << 24) | (curColorMain & 0xFFFFFF);
@@ -141,7 +141,7 @@ public class MouseWidget extends BaseWidget {
                     y1 = y2;
                     y2 = t;
                 }
-                AbstractGui.fill(stack, mouseX + 6, y1, mouseX + 7, y2 + 1, scrollLineColor);
+                AbstractGui.fill(s, mouseX + 6, y1, mouseX + 7, y2 + 1, scrollLineColor);
             }
         });
     }
@@ -229,8 +229,8 @@ public class MouseWidget extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用绘制（在顶层渲染）
      */
-    public void draw(MatrixStack matrixStack, int mouseX, int mouseY) {
+    public void draw(MatrixStack stack, int mouseX, int mouseY) {
         if (!visible) return;
-        drawCursor(matrixStack, mouseX, mouseY);
+        drawCursor(stack, mouseX, mouseY);
     }
 }

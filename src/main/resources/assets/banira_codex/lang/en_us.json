@@ -50,5 +50,17 @@
   "format.banira_codex.advancement_display_mode_icon": "List Mode\nWith Icons (%s)",
   "format.banira_codex.advancement_display_mode_all": "List Mode\nAll Advancements (%s)",
   "format.banira_codex.item_display_mode_inventory": "List Mode\nInventory (%s)",
-  "format.banira_codex.item_display_mode_all": "List Mode\nAll Items (%s)"
+  "format.banira_codex.item_display_mode_all": "List Mode\nAll Items (%s)",
+  "word.banira_codex.search_effect": "Search Effects...",
+  "word.banira_codex.enter_effect_id": "Enter Effect ID",
+  "word.banira_codex.effect_select_effect": "Click to edit effect",
+  "format.banira_codex.effect_display_mode_player": "List Mode\nPlayer Effects (%s)",
+  "format.banira_codex.effect_display_mode_all": "List Mode\nAll Effects (%s)",
+  "format.banira_codex.set_duration": "Set Duration\nCurrent %s ticks",
+  "format.banira_codex.set_amplifier": "Set Amplifier\nCurrent %s",
+  "format.banira_codex.enter_effect_id_error": "Effect ID [%s] Input Error",
+  "format.banira_codex.enter_effect_duration_error": "Effect Duration [%s] Input Error",
+  "format.banira_codex.enter_effect_amplifier_error": "Effect Amplifier [%s] Input Error",
+  "word.banira_codex.enter_effect_duration": "Enter effect duration (ticks)",
+  "word.banira_codex.enter_effect_amplifier": "Enter effect amplifier level"
 }

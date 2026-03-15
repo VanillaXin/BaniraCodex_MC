@@ -3,6 +3,8 @@ package xin.vanilla.banira.internal;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.api.distmarker.Dist;
@@ -21,10 +23,7 @@ import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumMoveType;
 import xin.vanilla.banira.client.enums.EnumPosition;
-import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
-import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.gui.ItemSelectScreen;
-import xin.vanilla.banira.client.gui.StringInputScreen;
+import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
@@ -38,10 +37,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.common.util.ItemUtils;
-import xin.vanilla.banira.common.util.RandomStringUtils;
-import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -137,6 +133,7 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 60, fPlus + " 增加，" + fMinus + " 减少");
         addTooltipLabel(20, 80, ctrlW + " 切换");
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
+        addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
     }
 
     private void addTooltipLabel(int x, int y, String tooltipText) {
@@ -268,10 +265,11 @@ public class DebugScreen extends BaniraScreen {
             this.popupOption.clear()
                     .addOption("选项 A - 示例功能", "这是选项 A 的提示")
                     .addOption("选项 B - 复制信息", "这是选项 B 的提示")
-                    .addOption("选项 C - 打开物品选择")
-                    .addOption("选项 D - 打开成就选择")
-                    .addOption("选项 E - 打开字符串输入")
-                    .addOption("选项 F - 发送通知测试", "N+方向键指定位置")
+                    .addOption("选项 C - 发送通知测试", "方向键+N 直接触发")
+                    .addOption("选项 D - 打开文本输入")
+                    .addOption("选项 E - 打开物品选择")
+                    .addOption("选项 F - 打开成就选择")
+                    .addOption("选项 G - 打开效果选择")
                     .onSelect(e -> handlePopupSelect(e.getIndex(), e.getText()))
                     .showAt(eventArgs.mouseX(), eventArgs.mouseY());
         }
@@ -280,14 +278,21 @@ public class DebugScreen extends BaniraScreen {
     private void handlePopupSelect(int idx, String selected) {
         LOGGER.debug("PopupOption 选中: index={}, text={}", idx, selected);
         switch (idx) {
-            case 5:
+            case 2:
                 addNotificationTest(EnumPosition.TOP_RIGHT);
                 break;
-            case 2:
+            case 3:
+                StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                        .setParentScreen(this)
+                        .addWidget(new StringInputScreen.Widget().name("input").title(Text.literal("enter_something")))
+                        .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
+                Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+                break;
+            case 4:
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
                 Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
-            case 3:
+            case 5:
                 Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
                 AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args()
                         .parentScreen(this)
@@ -295,12 +300,13 @@ public class DebugScreen extends BaniraScreen {
                         .onDataReceived(onAdvSelect);
                 Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
                 break;
-            case 4:
-                StringInputScreen.Args screenArgs = new StringInputScreen.Args()
-                        .setParentScreen(this)
-                        .addWidget(new StringInputScreen.Widget().name("input").title(Text.literal("enter_something")))
-                        .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
-                Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+            case 6:
+                Consumer<EffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
+                EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
+                        .parentScreen(this)
+                        .defaultEffect(new EffectInstance(Effects.LUCK, 600, 0))
+                        .onDataReceived(onEffectSelect);
+                Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
                 break;
             default:
                 break;
@@ -396,12 +402,15 @@ public class DebugScreen extends BaniraScreen {
             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
-            args.parentScreen(this)
-                    .defaultAdvancement(Identifier.id().empty())
-                    .onDataReceived(input -> {
-                        LOGGER.debug("Selected advancement: {}", input);
-                    });
+            args.parentScreen(this).defaultAdvancement(Identifier.id().empty());
+            args.onDataReceived((Consumer<ResourceLocation>) rl -> LOGGER.debug("Selected advancement: {}", rl));
             Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
+        } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
+            EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
+                    .parentScreen(this)
+                    .defaultEffect(new net.minecraft.potion.EffectInstance(net.minecraft.potion.Effects.LUCK, 600, 0));
+            effectArgs.onDataReceived((Consumer<net.minecraft.potion.EffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
+            Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
         }
     }
 

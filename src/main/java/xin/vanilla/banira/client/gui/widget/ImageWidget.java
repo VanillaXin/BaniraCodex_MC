@@ -65,8 +65,8 @@ public class ImageWidget extends BaseWidget {
                 .blend(true);
         AbstractGuiUtils.renderByTransform(args,
                 drawArgs -> {
-                    AbstractGuiUtils.bindTexture(texture.location());
                     AbstractGuiUtils.blit(drawArgs.stack(),
+                            texture.location(),
                             (int) drawArgs.x(),
                             (int) drawArgs.y(),
                             (int) drawArgs.width(),

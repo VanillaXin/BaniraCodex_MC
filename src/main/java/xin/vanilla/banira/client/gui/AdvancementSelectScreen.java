@@ -316,15 +316,15 @@ public class AdvancementSelectScreen extends BaniraScreen {
             if (this.currentAdvancement == null) {
                 Minecraft.getInstance().setScreen(args.parentScreen());
             } else {
-                ResourceLocation resourceLocation = this.currentAdvancement;
+                ResourceLocation location = this.currentAdvancement;
                 if (args.onDataReceived1() != null) {
-                    args.onDataReceived1().accept(resourceLocation);
-                    LOGGER.debug("Advancement selected: {}", resourceLocation);
+                    args.onDataReceived1().accept(location);
+                    LOGGER.debug("Advancement selected: {}", location);
                     Minecraft.getInstance().setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
-                    String result = args.onDataReceived2().apply(resourceLocation);
+                    String result = args.onDataReceived2().apply(location);
                     if (StringUtils.isNullOrEmpty(result)) {
-                        LOGGER.debug("Advancement selected: {}", resourceLocation);
+                        LOGGER.debug("Advancement selected: {}", location);
                         Minecraft.getInstance().setScreen(args.parentScreen());
                     } else {
                         LOGGER.debug("Advancement validation failed: {}", result);
@@ -537,9 +537,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
     private void handleAdvancement(String advancementId) {
         if (StringUtils.isNotNullOrEmpty(advancementId)) {
             try {
-                ResourceLocation resourceLocation = Identifier.id().parse(advancementId);
-                this.currentAdvancement = resourceLocation;
-                LOGGER.debug("Select advancement: {}", resourceLocation);
+                ResourceLocation location = Identifier.id().parse(advancementId);
+                this.currentAdvancement = location;
+                LOGGER.debug("Select advancement: {}", location);
                 refreshAdvancementButtons();
             } catch (IllegalArgumentException e) {
                 LOGGER.debug("Invalid advancement id format: {}", advancementId);

@@ -106,16 +106,6 @@ public class ItemWidget extends BaseWidget {
     }
 
     /**
-     * 绘制物品图标（public static 供外部调用）
-     */
-    public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
-        itemRenderer.renderGuiItem(itemStack, x, y);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
-        }
-    }
-
-    /**
      * 获取当前的物品堆栈
      */
     @Nullable
@@ -169,5 +159,16 @@ public class ItemWidget extends BaseWidget {
         this.itemStack = itemStack;
         this.itemId = null;
         return this;
+    }
+
+
+    /**
+     * 绘制物品图标
+     */
+    public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
+        itemRenderer.renderGuiItem(itemStack, x, y);
+        if (showText) {
+            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+        }
     }
 }

@@ -364,8 +364,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 Texture tex = args.texture();
-                AbstractGuiUtils.bindTexture(tex.location());
-                AbstractGuiUtils.blit(s, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
+                AbstractGuiUtils.blit(s, tex.location(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
                         tex.u0(), tex.v0(), tex.uWidth(), tex.vHeight(),
                         tex.uvWidth(), tex.uvHeight());
                 RenderSystem.disableBlend();

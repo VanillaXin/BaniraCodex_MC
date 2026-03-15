@@ -297,7 +297,7 @@ public class PopupOption extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, float partialTicks) {
+    public void render(MatrixStack stack, float partialTicks) {
         if (beforeRender != null) beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
             if (afterRender != null) afterRender.accept(this);
@@ -314,11 +314,11 @@ public class PopupOption extends BaseWidget {
         int textColorUnselected = theme.popupItemText();
         int textColorSelected = theme.popupItemTextSelected();
 
-        AbstractGuiUtils.renderByDepth(matrixStack, renderDepth(), stack -> {
-            ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(stack, adjustedX, adjustedY, width, height, popupBg);
+        AbstractGuiUtils.renderByDepth(stack, renderDepth(), s -> {
+            ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, adjustedX, adjustedY, width, height, popupBg);
             fillArgs.rect().radius(radius).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(fillArgs);
-            ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(stack, adjustedX, adjustedY, width, height, popupBorder);
+            ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, adjustedX, adjustedY, width, height, popupBorder);
             borderArgs.rect().radius(radius).border(1).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(borderArgs);
             int lineOffset = 0;
@@ -342,7 +342,7 @@ public class PopupOption extends BaseWidget {
         });
 
         if (StringUtils.isNullOrEmptyEx(tipsKeyNames) || inputState.isKeyPressed(tipsKeyNames)) {
-            renderOptionTip(matrixStack, inputState);
+            renderOptionTip(stack, inputState);
         }
         if (afterRender != null) afterRender.accept(this);
     }
@@ -355,8 +355,8 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(MatrixStack matrixStack, InputStateManager inputState) {
-        render(matrixStack, 0);
+    public void render(MatrixStack stack, InputStateManager inputState) {
+        render(stack, 0);
     }
 
     private void ensureNotBuilt() {
@@ -389,17 +389,17 @@ public class PopupOption extends BaseWidget {
         renderCoordinate(new ScreenCoordinate(adjustedX, adjustedY, width, height));
     }
 
-    private void renderOptionTip(MatrixStack matrixStack, InputStateManager inputState) {
+    private void renderOptionTip(MatrixStack stack, InputStateManager inputState) {
         int optIdx = getSelectedIndex();
         if (optIdx < 0) return;
         Text tip = tipsMap.get(optIdx);
         if (tip == null || StringUtils.isNullOrEmptyEx(tip.content())) return;
 
-        FontDrawArgs args = FontDrawArgs.of(tip.stack(matrixStack).font(font))
+        FontDrawArgs args = FontDrawArgs.of(tip.stack(stack).font(font))
                 .padding(4).margin(MARGIN)
                 .x(inputState.mouseX()).y(inputState.mouseY())
                 .inScreen(true);
-        TooltipWidget.drawPopupMessage(matrixStack, args, screen.getEffectiveTheme(), screen.season());
+        TooltipWidget.drawPopupMessage(stack, args, screen.getEffectiveTheme(), screen.season());
     }
 
     private int findHoveredIndex(double mouseX, double mouseY) {

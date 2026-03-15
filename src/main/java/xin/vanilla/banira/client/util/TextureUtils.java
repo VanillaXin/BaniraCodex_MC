@@ -83,9 +83,9 @@ public final class TextureUtils {
         return path.toLowerCase().replaceAll("[^a-z0-9/._-]", "_");
     }
 
-    public static boolean isTextureAvailable(ResourceLocation resourceLocation) {
+    public static boolean isTextureAvailable(ResourceLocation location) {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(resourceLocation);
+        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
         if (texture == null) {
             return false;
         }

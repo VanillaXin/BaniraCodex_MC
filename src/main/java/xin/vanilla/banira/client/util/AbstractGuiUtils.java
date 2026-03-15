@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3f;
@@ -19,7 +18,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
@@ -32,8 +30,6 @@ import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
@@ -95,48 +91,45 @@ public final class AbstractGuiUtils {
 
     // region 绘制纹理
 
-    public static void bindTexture(ResourceLocation resourceLocation) {
-        Minecraft.getInstance().getTextureManager().bind(resourceLocation);
+    @Deprecated
+    public static void bindTexture(ResourceLocation location) {
+        Minecraft.getInstance().getTextureManager().bind(location);
     }
 
-    public static void blit(MatrixStack stack, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
+    public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
+        AbstractGuiUtils.bindTexture(texture);
         AbstractGui.blit(stack, x0, y0, z, destWidth, destHeight, sprite);
     }
 
-    public static void blitBlend(MatrixStack stack, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
-        blitByBlend(() ->
-                AbstractGui.blit(stack, x0, y0, z, destWidth, destHeight, sprite)
-        );
+    public static void blitBlend(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
+        blitByBlend(() -> blit(stack, texture, x0, y0, z, destWidth, destHeight, sprite));
     }
 
-    public static void blit(MatrixStack stack, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
+    public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
+        AbstractGuiUtils.bindTexture(texture);
         AbstractGui.blit(stack, x0, y0, z, (float) u0, (float) v0, width, height, textureHeight, textureWidth);
     }
 
-    public static void blitBlend(MatrixStack stack, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
-        blitByBlend(() ->
-                AbstractGui.blit(stack, x0, y0, z, (float) u0, (float) v0, width, height, textureHeight, textureWidth)
-        );
+    public static void blitBlend(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
+        blitByBlend(() -> blit(stack, texture, x0, y0, z, u0, v0, width, height, textureHeight, textureWidth));
     }
 
-    public static void blit(MatrixStack stack, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
+    public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
+        AbstractGuiUtils.bindTexture(texture);
         AbstractGui.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
 
-    public static void blitBlend(MatrixStack stack, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
-        blitByBlend(() ->
-                AbstractGui.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight)
-        );
+    public static void blitBlend(MatrixStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
+        blitByBlend(() -> blit(stack, texture, x0, y0, destWidth, destHeight, u0, v0, srcWidth, srcHeight, textureWidth, textureHeight));
     }
 
-    public static void blit(MatrixStack stack, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
+    public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
+        AbstractGuiUtils.bindTexture(texture);
         AbstractGui.blit(stack, x0, y0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
     }
 
-    public static void blitBlend(MatrixStack stack, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
-        blitByBlend(() ->
-                AbstractGui.blit(stack, x0, y0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight)
-        );
+    public static void blitBlend(MatrixStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
+        blitByBlend(() -> blit(stack, texture, x0, y0, u0, v0, destWidth, destHeight, textureWidth, textureHeight));
     }
 
     /**
@@ -557,87 +550,6 @@ public final class AbstractGuiUtils {
     // wrapText, splitLongSegment, calculateLimitedTextSize, ellipsisString, drawLimitedText 已迁移至 LabelWidget
 
     // endregion 绘制文字
-
-
-    // region 绘制图标
-
-    /**
-     * 绘制效果图标
-     *
-     * @param effectInstance 待绘制的效果实例
-     * @param x              矩形的左上角x坐标
-     * @param y              矩形的左上角y坐标
-     * @param width          目标矩形的宽度，决定了图像在屏幕上的宽度
-     * @param height         目标矩形的高度，决定了图像在屏幕上的高度
-     * @param showText       是否显示效果等级和持续时间
-     */
-    public static void drawEffectIcon(MatrixStack stack, EffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
-        AbstractGuiUtils.drawEffectIcon(stack, getFont(), effectInstance, x, y, width, height, showText);
-    }
-
-    /**
-     * 绘制效果图标
-     *
-     * @param effectInstance 待绘制的效果实例
-     * @param x              矩形的左上角x坐标
-     * @param y              矩形的左上角y坐标
-     * @param width          目标矩形的宽度，决定了图像在屏幕上的宽度
-     * @param height         目标矩形的高度，决定了图像在屏幕上的高度
-     * @param showText       是否显示效果等级和持续时间
-     */
-    public static void drawEffectIcon(MatrixStack stack, FontRenderer font, EffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
-        ResourceLocation effectIcon = TextureUtils.getEffectTexture(Identifier.id(), effectInstance);
-        if (effectIcon != null) {
-            AbstractGuiUtils.bindTexture(effectIcon);
-            AbstractGuiUtils.blit(stack, x, y, 0, 0, width, height, width, height);
-        }
-        if (showText) {
-            // 效果等级
-            if (effectInstance.getAmplifier() >= 0) {
-                Component amplifierString = Component.literal(NumberUtils.intToRoman(effectInstance.getAmplifier() + 1));
-                int amplifierWidth = font.width(amplifierString.toString());
-                float fontX = x + width - (float) amplifierWidth / 2;
-                float fontY = y - 1;
-                int argb = 0xFFFFFFFF;
-                font.draw(stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
-            }
-            // 效果持续时间
-            if (effectInstance.getDuration() > 0) {
-                Component durationString = Component.literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
-                int durationWidth = font.width(durationString.toString());
-                float fontX = x + width - (float) durationWidth / 2 - 2;
-                float fontY = y + (float) height / 2 + 1;
-                int argb = 0xFFFFFFFF;
-                font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
-            }
-        }
-    }
-
-    /**
-     * 绘制效果图标
-     *
-     * @param effectInstance 待绘制的效果实例
-     * @param x              矩形的左上角x坐标
-     * @param y              矩形的左上角y坐标
-     * @param showText       是否显示效果等级和持续时间
-     */
-    public static void drawEffectIcon(MatrixStack stack, EffectInstance effectInstance, int x, int y, boolean showText) {
-        AbstractGuiUtils.drawEffectIcon(stack, getFont(), effectInstance, x, y, showText);
-    }
-
-    /**
-     * 绘制效果图标
-     *
-     * @param effectInstance 待绘制的效果实例
-     * @param x              矩形的左上角x坐标
-     * @param y              矩形的左上角y坐标
-     * @param showText       是否显示效果等级和持续时间
-     */
-    public static void drawEffectIcon(MatrixStack stack, FontRenderer font, EffectInstance effectInstance, int x, int y, boolean showText) {
-        AbstractGuiUtils.drawEffectIcon(stack, font, effectInstance, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
-    }
-
-    // endregion 绘制图标
 
 
     // region 绘制形状

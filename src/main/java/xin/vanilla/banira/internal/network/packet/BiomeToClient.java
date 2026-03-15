@@ -1,0 +1,85 @@
+package xin.vanilla.banira.internal.network.packet;
+
+import lombok.Getter;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.common.util.BiomeUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+
+@Getter
+public class BiomeToClient extends SplitPacket
+        implements SplitPacket.MergeableSplitPacket<BiomeToClient>,
+        SplitPacket.SplittableSplitPacket<BiomeToClient> {
+
+    private final List<String> biomeIds;
+
+    public BiomeToClient(Collection<String> biomeIds) {
+        super();
+        this.biomeIds = biomeIds != null ? new ArrayList<>(biomeIds) : new ArrayList<>();
+    }
+
+    public BiomeToClient(PacketBuffer buf) {
+        super(buf);
+        int size = buf.readVarInt();
+        this.biomeIds = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            biomeIds.add(buf.readUtf(256));
+        }
+    }
+
+    public static void handle(BiomeToClient packet, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+                BiomeUtils.setClientBiomeIds(packet.getBiomeIds());
+            }
+        });
+        ctx.get().setPacketHandled(true);
+    }
+
+    @Override
+    public int getChunkSize() {
+        return 64;
+    }
+
+    @Override
+    public BiomeToClient mergePackets(List<BiomeToClient> packets) {
+        List<String> allIds = packets.stream()
+                .flatMap(p -> p.getBiomeIds().stream())
+                .collect(Collectors.toList());
+        return new BiomeToClient(allIds);
+    }
+
+    @Override
+    public List<BiomeToClient> splitPacket() {
+        List<BiomeToClient> result = new ArrayList<>();
+        for (int i = 0, index = 0; i < biomeIds.size() / getChunkSize() + 1; i++) {
+            List<String> chunk = new ArrayList<>();
+            for (int j = 0; j < getChunkSize(); j++) {
+                if (index >= biomeIds.size()) break;
+                chunk.add(biomeIds.get(index));
+                index++;
+            }
+            BiomeToClient packet = new BiomeToClient(chunk);
+            packet.setId(this.getId());
+            packet.setSort(i);
+            result.add(packet);
+        }
+        result.forEach(packet -> packet.setTotal(result.size()));
+        return result;
+    }
+
+    public void toBytes(PacketBuffer buf) {
+        super.toBytes(buf);
+        buf.writeVarInt(biomeIds.size());
+        for (String id : biomeIds) {
+            buf.writeUtf(id != null ? id : "", 256);
+        }
+    }
+}

@@ -5,6 +5,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -16,6 +20,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.event.ModEventHandler;
 
 import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;
@@ -25,6 +30,7 @@ import java.util.stream.Collectors;
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
+@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class NotificationLogScreen extends BaniraScreen {
 
     public static final String FILTER_ALL = "all";
@@ -37,7 +43,7 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final int DIVIDER_W = 2;
     private static final int SCROLL_W = 6;
     private static final int SCROLL_GAP = 2;
-    private static final float CLOSE_BTN_SIZE = 8.5f;
+    private static final float CLOSE_BTN_SIZE = 10f;
     private static final double LEFT_RATIO = 0.38;
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
@@ -150,11 +156,10 @@ public class NotificationLogScreen extends BaniraScreen {
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
-        closeBtn.renderCoordinate(new ScreenCoordinate(rightX + rightW - PANEL_MARGIN / 3f - CLOSE_BTN_SIZE, rightY + PANEL_MARGIN / 3f, CLOSE_BTN_SIZE, CLOSE_BTN_SIZE));
-        closeBtn.text(Text.literal("×").color(0xFF0000));
+        closeBtn.renderCoordinate(new ScreenCoordinate(rightX + rightW - PANEL_MARGIN / 3.5f - CLOSE_BTN_SIZE, rightY + PANEL_MARGIN / 3.5f, CLOSE_BTN_SIZE, CLOSE_BTN_SIZE));
+        closeBtn.presetStyleClose();
         closeBtn.radius(CLOSE_BTN_SIZE / 3f);
-        closeBtn.padding(0);
-        closeBtn.borderWidth(0);
+        closeBtn.padding(1);
         closeBtn.onClick(b -> onClose());
         addWidget(closeBtn);
     }
@@ -162,6 +167,13 @@ public class NotificationLogScreen extends BaniraScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null && ModEventHandler.NOTIFICATION_LOG_KEY.isDown()) {
+            Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
+        }
     }
 
     @Override

@@ -26,12 +26,17 @@ public class ModEventHandler {
             CATEGORIES
     );
 
-    /**
-     * 注册键绑定
-     */
+    public static KeyBinding NOTIFICATION_LOG_KEY = new KeyBinding(
+            String.format("key.%s.notification_log", BaniraCodex.MODID),
+            GLFWKey.GLFW_KEY_UNKNOWN,
+            CATEGORIES
+    );
+
+
     @SubscribeEvent
-    public static void registerKeyBindings(FMLClientSetupEvent event) {
+    public static void onClientSetup(FMLClientSetupEvent event) {
         ClientRegistry.registerKeyBinding(DEBUG_KEY);
+        ClientRegistry.registerKeyBinding(NOTIFICATION_LOG_KEY);
         NotificationManager.get().loadLog();
     }
 }

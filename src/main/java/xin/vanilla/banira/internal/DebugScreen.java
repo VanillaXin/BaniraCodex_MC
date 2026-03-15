@@ -22,14 +22,10 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
-import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
-import xin.vanilla.banira.client.gui.widget.LabelWidget;
-import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -47,14 +43,6 @@ import java.util.function.Consumer;
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DebugScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private static final CircularList<String> textures = CircularList.asList(
-            "textures/gui/sakura_cat.png"
-            , "textures/gui/aotake_cat.png"
-            , "textures/gui/narcissus_cat.png"
-            , "textures/gui/snowflake_cat.png"
-            , "textures/gui/sakura_moe.png"
-    );
 
     private String content = "";
     private int contentLines = 2;
@@ -77,7 +65,7 @@ public class DebugScreen extends BaniraScreen {
         super.initWidgets();
         DropdownSelectWidget dropdownSingle = new DropdownSelectWidget(this);
         dropdownSingle.id("dropdown_single");
-        dropdownSingle.renderCoordinate(new ScreenCoordinate(140, 20, 200, 24));
+        dropdownSingle.renderCoordinate(new ScreenCoordinate(110, 20, 150, 24));
         dropdownSingle.options(Arrays.asList("自动", "春", "夏", "秋", "冬"));
         dropdownSingle.text("选择季节");
         dropdownSingle.selectedValues(Collections.singletonList("自动"));
@@ -89,7 +77,7 @@ public class DebugScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdownMulti = new DropdownSelectWidget(this);
         dropdownMulti.id("dropdown_multi_fruit");
-        dropdownMulti.renderCoordinate(new ScreenCoordinate(140, 50, 200, 24));
+        dropdownMulti.renderCoordinate(new ScreenCoordinate(110, 50, 150, 24));
         dropdownMulti.options(Arrays.asList("苹果", "香蕉", "橙子", "葡萄", "草莓", "西瓜"));
         dropdownMulti.text("选择水果（可多选）");
         dropdownMulti.multiSelect(true);
@@ -98,7 +86,7 @@ public class DebugScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdownMultiEx = new DropdownSelectWidget(this);
         dropdownMultiEx.id("dropdown_multi_vegetable");
-        dropdownMultiEx.renderCoordinate(new ScreenCoordinate(140, 80, 200, 24));
+        dropdownMultiEx.renderCoordinate(new ScreenCoordinate(110, 80, 150, 24));
         dropdownMultiEx.options(Arrays.asList("白菜", "菠菜", "油菜", "生菜", "空心菜", "韭菜", "芹菜", "香菜", "茼蒿", "苋菜",
                 "芥蓝", "小白菜", "大白菜", "卷心菜", "紫甘蓝", "羽衣甘蓝", "西兰花", "菜花", "芥菜", "雪里红",
                 "萝卜", "胡萝卜", "白萝卜", "青萝卜", "樱桃萝卜", "土豆", "红薯", "紫薯", "山药", "芋头",
@@ -128,6 +116,41 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 80, ctrlW + " 切换");
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
+
+        addPresetStyleButtons();
+    }
+
+    private void addPresetStyleButtons() {
+        int btnSize = 28;
+        int gap = 4;
+        int startX = 280;
+        int startY = 44;
+        ButtonWidget.PresetStyle[] styles = {
+                ButtonWidget.PresetStyle.CLOSE,
+                ButtonWidget.PresetStyle.MINUS,
+                ButtonWidget.PresetStyle.PLUS,
+                ButtonWidget.PresetStyle.MAXIMIZE,
+                ButtonWidget.PresetStyle.ARROW_UP,
+                ButtonWidget.PresetStyle.ARROW_DOWN,
+                ButtonWidget.PresetStyle.ARROW_LEFT,
+                ButtonWidget.PresetStyle.ARROW_RIGHT,
+        };
+        for (int i = 0; i < styles.length; i++) {
+            int col = i % 4;
+            int row = i / 4;
+            int x = startX + col * (btnSize + gap);
+            int y = startY + row * (btnSize + gap);
+            ButtonWidget btn = new ButtonWidget(this);
+            btn.id("preset_" + styles[i].name());
+            btn.renderCoordinate(new ScreenCoordinate(x, y, btnSize, btnSize));
+            if (styles[i] == ButtonWidget.PresetStyle.CLOSE) {
+                btn.presetStyleClose().padding(4);
+            } else {
+                btn.presetStyle(styles[i]).padding(4).borderWidth(1);
+            }
+            btn.onClick(b -> LOGGER.debug("Preset button clicked: {}", b.id()));
+            addWidget(btn);
+        }
     }
 
     private void addTooltipLabel(int x, int y, String tooltipText) {
@@ -220,6 +243,8 @@ public class DebugScreen extends BaniraScreen {
         ShapeDrawArgs rect11 = ShapeDrawArgs.rect(stack, (super.width - 70) / 2f, (super.height - 70) / 2f, 70, 70, 0x44B8D4F0);
         rect11.rect().border(4).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).topLeft(4).topRight(35).bottomLeft(35).bottomRight(16);
         BaseShapeWidget.drawShape(rect11);
+
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("ButtonWidget 预置样式")).x(280).y(20).padding(4).margin(0).inScreen(false));
 
         renderWidgets(stack, partialTicks);
 

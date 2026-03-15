@@ -21,6 +21,45 @@ import java.util.function.Consumer;
  */
 @Accessors(chain = true, fluent = true)
 public class ButtonWidget extends BaseWidget implements ITextWidget {
+
+    /**
+     * 预置图标样式
+     */
+    public enum PresetStyle {
+        /**
+         * 红叉关闭
+         */
+        CLOSE,
+        /**
+         * 减号/最小化
+         */
+        MINUS,
+        /**
+         * 加号
+         */
+        PLUS,
+        /**
+         * 最大化方框
+         */
+        MAXIMIZE,
+        /**
+         * 上箭头
+         */
+        ARROW_UP,
+        /**
+         * 下箭头
+         */
+        ARROW_DOWN,
+        /**
+         * 左箭头
+         */
+        ARROW_LEFT,
+        /**
+         * 右箭头
+         */
+        ARROW_RIGHT,
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Getter
@@ -144,6 +183,42 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Setter
     private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.NONE;
 
+    /**
+     * 预置图标样式，非 null 时绘制图标而非文本
+     */
+    @Getter
+    private PresetStyle presetStyle = null;
+
+    /**
+     * 图标颜色（presetStyle 非 null 时生效）
+     */
+    @Getter
+    @Setter
+    private int iconColor = 0xFF333333;
+
+    @Getter
+    @Setter
+    private int hoverIconColor = 0xFF555555;
+
+    @Getter
+    @Setter
+    private int focusedIconColor = 0xFF444444;
+
+    @Getter
+    @Setter
+    private int pressedIconColor = 0xFF222222;
+
+    @Getter
+    @Setter
+    private int disabledIconColor = 0xFFAAAAAA;
+
+    /**
+     * 图标线条宽度
+     */
+    @Getter
+    @Setter
+    private float iconStrokeWidth = 1.5f;
+
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
@@ -184,6 +259,29 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         paddingRight(padding);
         paddingTop(padding);
         paddingBottom(padding);
+        return this;
+    }
+
+    /**
+     * 红叉关闭按钮预设
+     */
+    public ButtonWidget presetStyleClose() {
+        presetStyle(PresetStyle.CLOSE);
+        iconColor(0xFFE53935);
+        hoverIconColor(0xFFFF5252);
+        pressedIconColor(0xFFC62828);
+        focusedIconColor(0xFFEF5350);
+        disabledIconColor(0xFFB0BEC5);
+        iconStrokeWidth(2f);
+        borderWidth(0);
+        return this;
+    }
+
+    /**
+     * 预置样式快捷设置
+     */
+    public ButtonWidget presetStyle(PresetStyle style) {
+        this.presetStyle = style;
         return this;
     }
 
@@ -258,36 +356,94 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             currentTextColor = textColor;
         }
 
-        int textX = drawX + paddingLeft;
-        int textY = drawY + paddingTop;
+        int contentX = drawX + paddingLeft;
+        int contentY = drawY + paddingTop;
         int availableWidth = drawWidth - paddingLeft - paddingRight;
         int availableHeight = drawHeight - paddingTop - paddingBottom;
 
-        FontDrawArgs drawArgs = FontDrawArgs.of(text.color(currentTextColor));
-        if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
-            LabelWidget.drawLimitedText(drawArgs.x(textX).y(textY + (availableHeight - 9) / 2)
-                    .maxWidth(Math.min(textMaxWidth, availableWidth))
-                    .position(textEllipsisPosition));
-        } else if (fontSize != 9.0f) {
-            stack.pushPose();
-            stack.translate(textX, textY, 0);
-            float scale = fontSize / 9.0f;
-            stack.scale(scale, scale, 1.0f);
-            int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
-            int textHeight = 9;
-            int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
-            int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
-            LabelWidget.drawLimitedText(drawArgs.x(scaledTextX).y(scaledTextY));
-            stack.popPose();
+        if (presetStyle != null) {
+            int currentIconColor;
+            if (!enabled) {
+                currentIconColor = disabledIconColor;
+            } else if (mousePressed) {
+                currentIconColor = pressedIconColor;
+            } else if (mouseInside) {
+                currentIconColor = hoverIconColor;
+            } else if (focused) {
+                currentIconColor = focusedIconColor;
+            } else {
+                currentIconColor = iconColor;
+            }
+            drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
         } else {
-            int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
-            int textHeight = 9;
-            int centeredTextX = textX + (availableWidth - textWidth) / 2;
-            int centeredTextY = textY + (availableHeight - textHeight) / 2;
-            LabelWidget.drawLimitedText(drawArgs.x(centeredTextX).y(centeredTextY));
+            FontDrawArgs drawArgs = FontDrawArgs.of(text.color(currentTextColor));
+            if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
+                LabelWidget.drawLimitedText(drawArgs.x(contentX).y(contentY + (availableHeight - 9) / 2)
+                        .maxWidth(Math.min(textMaxWidth, availableWidth))
+                        .position(textEllipsisPosition));
+            } else if (fontSize != 9.0f) {
+                stack.pushPose();
+                stack.translate(contentX, contentY, 0);
+                float scale = fontSize / 9.0f;
+                stack.scale(scale, scale, 1.0f);
+                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textHeight = 9;
+                int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
+                int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
+                LabelWidget.drawLimitedText(drawArgs.x(scaledTextX).y(scaledTextY));
+                stack.popPose();
+            } else {
+                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textHeight = 9;
+                int centeredTextX = contentX + (availableWidth - textWidth) / 2;
+                int centeredTextY = contentY + (availableHeight - textHeight) / 2;
+                LabelWidget.drawLimitedText(drawArgs.x(centeredTextX).y(centeredTextY));
+            }
         }
 
         renderChildren(stack, partialTicks);
+    }
+
+    private void drawPresetIcon(MatrixStack stack, int x, int y, int w, int h, int color) {
+        float cx = x + w * 0.5f;
+        float cy = y + h * 0.5f;
+        float size = Math.min(w, h);
+        float r = size * 0.38f;
+        float lw = iconStrokeWidth;
+
+        switch (presetStyle) {
+            case CLOSE:
+                AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, lw, color);
+                AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, lw, color);
+                break;
+            case MINUS:
+                AbstractGuiUtils.drawLine(stack, cx - r, cy, cx + r, cy, lw, color);
+                break;
+            case PLUS:
+                float plusR = r * 0.92f;
+                AbstractGuiUtils.drawLine(stack, cx - plusR, cy, cx + plusR, cy, lw, color);
+                AbstractGuiUtils.drawLine(stack, cx, cy - plusR, cx, cy + plusR, lw, color);
+                break;
+            case MAXIMIZE:
+                ShapeDrawArgs.PolygonParams sq = new ShapeDrawArgs.PolygonParams()
+                        .centerX(cx).centerY(cy).radius(r * 0.95f).sides(4).rotation(45).border(lw);
+                AbstractGuiUtils.drawPolygonBorder(stack, sq, color);
+                break;
+            case ARROW_UP:
+                AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, -90, color);
+                break;
+            case ARROW_DOWN:
+                AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
+                break;
+            case ARROW_LEFT:
+                AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 180, color);
+                break;
+            case ARROW_RIGHT:
+                AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 0, color);
+                break;
+            default:
+                break;
+        }
     }
 
     @Override

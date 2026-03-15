@@ -96,6 +96,10 @@ public class DropdownSelectWidget extends InputWidget {
 
     @Nullable
     private DropdownOverlayWidget overlayWidget;
+    /**
+     * 按下时的区域：0=无，1=清空，2=箭头，3=输入区。抬起时需在同一区域才触发
+     */
+    private int pressedArea = 0;
 
     public DropdownSelectWidget(BaniraScreen screen) {
         super(screen);
@@ -389,26 +393,61 @@ public class DropdownSelectWidget extends InputWidget {
             boolean inArrow = mouseX >= absX + w - DROPDOWN_ARROW_WIDTH;
             boolean inClear = !value().isEmpty() && mouseX >= absX + w - DROPDOWN_ARROW_WIDTH - CLEAR_BUTTON_SIZE - 2 && mouseX < absX + w - DROPDOWN_ARROW_WIDTH;
             if (inClear) {
-                selectedValues.clear();
-                value("");
-                if (onSelectionChanged != null) {
-                    onSelectionChanged.accept(getSelectedValues());
-                }
-                return true;
-            }
-            if (inArrow) {
-                if (dropdownOpen) {
-                    closeDropdown();
-                } else {
-                    openDropdown();
-                }
-                return true;
+                pressedArea = 1;
+            } else if (inArrow) {
+                pressedArea = 2;
             } else {
-                if (!dropdownOpen) {
-                    openDropdown();
-                }
-                return super.onMouseClick(mouseX, mouseY, mouseButton);
+                pressedArea = 3;
             }
+            return true;
+        }
+        pressedArea = 0;
+        return false;
+    }
+
+    @Override
+    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
+        if (!visible || renderCoordinate == null || mouseButton != 0 || pressedArea == 0) {
+            pressedArea = 0;
+            return false;
+        }
+        double absX = absoluteX();
+        double absY = absoluteY();
+        int w = (int) renderCoordinate.width();
+        int h = (int) renderCoordinate.height();
+        boolean inArrow = mouseX >= absX + w - DROPDOWN_ARROW_WIDTH;
+        boolean inClear = !value().isEmpty() && mouseX >= absX + w - DROPDOWN_ARROW_WIDTH - CLEAR_BUTTON_SIZE - 2 && mouseX < absX + w - DROPDOWN_ARROW_WIDTH;
+        boolean inInput = mouseX >= absX && mouseX < absX + w && mouseY >= absY && mouseY < absY + h;
+
+        int releaseArea = inClear ? 1 : (inArrow ? 2 : (inInput ? 3 : 0));
+        boolean sameArea = releaseArea == pressedArea && inside;
+        int area = pressedArea;
+        pressedArea = 0;
+
+        if (!sameArea) return area != 0;
+
+        if (area == 1) {
+            selectedValues.clear();
+            value("");
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(getSelectedValues());
+            }
+            return true;
+        }
+        if (area == 2) {
+            if (dropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+            return true;
+        }
+        if (area == 3) {
+            if (!dropdownOpen) {
+                openDropdown();
+            }
+            pressedArea = 2;
+            return super.onMouseRelease(mouseX, mouseY, mouseButton, inside);
         }
         return false;
     }

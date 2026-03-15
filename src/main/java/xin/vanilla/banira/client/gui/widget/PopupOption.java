@@ -85,6 +85,7 @@ public class PopupOption extends BaseWidget {
     private int maxWidth = -1, maxHeight = -1;
     private int selectedIndex = -1;
     private int scrollOffset, maxLines;
+    private int pressedOptionIndex = -1;
 
     @Setter
     private String tipsKeyNames;
@@ -295,6 +296,7 @@ public class PopupOption extends BaseWidget {
         adjustedX = adjustedY = -1;
         maxWidth = maxHeight = -1;
         selectedIndex = -1;
+        pressedOptionIndex = -1;
         scrollOffset = maxLines = 0;
         built = false;
         renderCoordinate(new ScreenCoordinate(0, 0, 0, 0));
@@ -329,15 +331,43 @@ public class PopupOption extends BaseWidget {
     }
 
     /**
-     * 尝试处理选项点击。优先调用选项单独设置的回调，若无则调用全局 onSelect。
+     * 获取指定坐标下的悬停选项索引
      */
-    public boolean tryHandleOptionClick(double mouseX, double mouseY, int button) {
-        if (button != 0 || !isHovered()) return false;
-        int idx = getSelectedIndex();
-        if (idx < 0) return false;
-        String text = getSelectedString();
-        String id = getSelectedId();
-        SelectEvent event = new SelectEvent(idx, id, text);
+    public int getHoveredIndexAt(double mouseX, double mouseY) {
+        return findHoveredIndex(mouseX, mouseY);
+    }
+
+    /**
+     * 按下时记录选项索引，供抬起时判断是否在同一控件上。
+     *
+     * @return 是否消费了此次按下事件（在选项上按下时返回 true）
+     */
+    public boolean tryHandleOptionPress(double mouseX, double mouseY, int button) {
+        if (button != 0 || !built || optionList.isEmpty()) return false;
+        int idx = findHoveredIndex(mouseX, mouseY);
+        if (idx < 0 || relationMap.getOrDefault(idx, -1) < 0) return false;
+        pressedOptionIndex = relationMap.get(idx);
+        return true;
+    }
+
+    /**
+     * 抬起时处理选项选择。仅当按下与抬起都在同一选项上时才触发回调。
+     * 优先调用选项单独设置的回调，若无则调用全局 onSelect。
+     * 若按下时在选项上，抬起时无论是否在同一选项都会消费事件，避免误触下方控件。
+     */
+    public boolean tryHandleOptionRelease(double mouseX, double mouseY, int button) {
+        if (button != 0 || pressedOptionIndex < 0) return false;
+        int releaseIdx = findHoveredIndex(mouseX, mouseY);
+        int releaseOptionIdx = releaseIdx >= 0 ? relationMap.getOrDefault(releaseIdx, -1) : -1;
+        boolean sameOption = releaseOptionIdx == pressedOptionIndex;
+        int idx = pressedOptionIndex;
+        pressedOptionIndex = -1;
+        if (!sameOption) {
+            return true; // 消费事件，但不触发回调
+        }
+        String text = (idx >= 0 && idx < optionList.size()) ? optionList.get(idx).content() : "";
+        String optId = (idx >= 0 && idx < optionIds.size()) ? optionIds.get(idx) : "";
+        SelectEvent event = new SelectEvent(idx, optId, text);
         Consumer<SelectEvent> cb = (idx >= 0 && idx < optionCallbacks.size()) ? optionCallbacks.get(idx) : null;
         if (cb == null) cb = onSelect;
         clear();
@@ -345,6 +375,19 @@ public class PopupOption extends BaseWidget {
             cb.accept(event);
         }
         return true;
+    }
+
+    /**
+     * 尝试处理选项点击。优先调用选项单独设置的回调，若无则调用全局 onSelect。
+     *
+     * @deprecated 已改为按下记录、抬起触发，请使用 {@link #tryHandleOptionPress} 和 {@link #tryHandleOptionRelease}
+     */
+    @Deprecated
+    public boolean tryHandleOptionClick(double mouseX, double mouseY, int button) {
+        if (tryHandleOptionPress(mouseX, mouseY, button)) {
+            return tryHandleOptionRelease(mouseX, mouseY, button);
+        }
+        return false;
     }
 
     public PopupOption setMaxWidth(int maxWidth) {

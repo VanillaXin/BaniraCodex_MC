@@ -200,7 +200,7 @@ public abstract class BaniraScreen extends Screen {
                 .button(button);
 
         if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionClick(mouseX, mouseY, button)) {
+            if (this.popupOption.tryHandleOptionPress(mouseX, mouseY, button)) {
                 args.consumed(true);
             }
         } else {
@@ -261,6 +261,11 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
+        if (this.popupOption.isHovered()) {
+            if (this.popupOption.tryHandleOptionRelease(mouseX, mouseY, button)) {
+                args.consumed(true);
+            }
+        }
         if (!this.popupOption.isHovered()) {
             this.popupOption.clear();
 

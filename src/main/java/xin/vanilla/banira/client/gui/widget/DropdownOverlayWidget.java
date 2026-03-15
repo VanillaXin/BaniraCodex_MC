@@ -27,6 +27,8 @@ class DropdownOverlayWidget extends BaseWidget {
     private boolean scrollbarDragging;
     private double scrollbarDragStartY;
     private int scrollbarDragStartOffset;
+    private int pressedOptionIndex = -1;
+    private boolean pressedInCloseArea = false;
 
     DropdownOverlayWidget(BaniraScreen screen, DropdownSelectWidget parent) {
         super(screen, createFullScreenBounds());
@@ -187,7 +189,8 @@ class DropdownOverlayWidget extends BaseWidget {
         if (mouseButton != 0) return false;
 
         if (parent.shouldCloseOnClick(mouseX, mouseY)) {
-            parent.closeDropdown();
+            pressedInCloseArea = true;
+            pressedOptionIndex = -1;
             return true;
         }
 
@@ -217,16 +220,18 @@ class DropdownOverlayWidget extends BaseWidget {
 
                 int idx = findHoveredOptionIndex(db, options, mouseX, mouseY, scrollable ? contentWidth : (int) db.width());
                 if (idx >= 0 && idx < options.size()) {
-                    parent.selectOption(options.get(idx));
+                    pressedOptionIndex = idx;
+                    pressedInCloseArea = false;
                     return true;
                 }
             }
         }
 
+        pressedOptionIndex = -1;
+        pressedInCloseArea = false;
         if (parent.getInputBounds() != null && isInBounds(mouseX, mouseY, parent.getInputBounds())) {
             return false;
         }
-
         return true;
     }
 
@@ -236,6 +241,31 @@ class DropdownOverlayWidget extends BaseWidget {
             scrollbarDragging = false;
             return true;
         }
+        if (mouseButton == 0 && pressedInCloseArea) {
+            if (parent.shouldCloseOnClick(mouseX, mouseY)) {
+                parent.closeDropdown();
+            }
+            pressedInCloseArea = false;
+            return true;
+        }
+        if (mouseButton == 0 && pressedOptionIndex >= 0) {
+            ScreenCoordinate db = parent.getDropdownBounds();
+            if (db != null) {
+                List<String> options = parent.getFilteredOptions();
+                int contentHeight = options.size() * ITEM_HEIGHT;
+                int visibleHeight = (int) db.height() - PAD * 2;
+                boolean scrollable = contentHeight > visibleHeight;
+                int contentWidth = scrollable ? (int) db.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN : (int) db.width();
+                int releaseIdx = findHoveredOptionIndex(db, options, mouseX, mouseY, contentWidth);
+                if (releaseIdx == pressedOptionIndex && releaseIdx >= 0 && releaseIdx < options.size()) {
+                    parent.selectOption(options.get(releaseIdx));
+                }
+            }
+            pressedOptionIndex = -1;
+            return true;
+        }
+        pressedOptionIndex = -1;
+        pressedInCloseArea = false;
         return super.handleMouseRelease(mouseX, mouseY, mouseButton);
     }
 

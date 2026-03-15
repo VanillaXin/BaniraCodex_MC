@@ -35,6 +35,8 @@ import java.util.function.Function;
 @Accessors(chain = true, fluent = true)
 public class InputWidget extends BaseWidget implements ITextWidget {
     private static long LAST_CLICK_TIME = 0L;
+    /** 按下时的区域：0=无，1=清空按钮，2=文本区域。抬起时需在同一区域才触发 */
+    protected int pressedArea = 0;
 
     /**
      * 输入框文本
@@ -626,14 +628,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     @Override
     protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
-        if (!visible) {
+        if (!visible || renderCoordinate == null || mouseButton != 0) {
             return false;
         }
-
-        if (renderCoordinate == null) {
-            return false;
-        }
-
         int width = (int) renderCoordinate.width();
         int height = (int) renderCoordinate.height();
         double absX = absoluteX();
@@ -641,31 +638,50 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int clearButtonWidth = (showClearButton && !this.value.isEmpty()) ? CLEAR_BUTTON_SIZE + 2 : 0;
 
         boolean isInBounds = mouseX >= absX && mouseX < absX + width && mouseY >= absY && mouseY < absY + height;
-        if (isInBounds && mouseButton == 0) {
+        if (isInBounds) {
             boolean inClear = clearButtonWidth > 0 && mouseX >= absX + width - clearButtonWidth - marginRight;
-            if (inClear) {
-                value("");
-                return true;
-            }
+            pressedArea = inClear ? 1 : 2;
+            return true;
+        }
+        pressedArea = 0;
+        return false;
+    }
 
-            // 焦点管理现在由 BaniraScreen 统一处理
+    @Override
+    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
+        if (!visible || renderCoordinate == null || mouseButton != 0 || pressedArea == 0) {
+            pressedArea = 0;
+            return false;
+        }
+        int width = (int) renderCoordinate.width();
+        int height = (int) renderCoordinate.height();
+        double absX = absoluteX();
+        double absY = absoluteY();
+        int clearButtonWidth = (showClearButton && !this.value.isEmpty()) ? CLEAR_BUTTON_SIZE + 2 : 0;
+        boolean inClear = clearButtonWidth > 0 && mouseX >= absX + width - clearButtonWidth - marginRight;
+        boolean inTextArea = !inClear && mouseX >= absX && mouseX < absX + width && mouseY >= absY && mouseY < absY + height;
+
+        int releaseArea = inClear ? 1 : (inTextArea ? 2 : 0);
+        boolean sameArea = releaseArea == pressedArea && inside;
+        int area = pressedArea;
+        pressedArea = 0;
+
+        if (!sameArea) return area != 0;
+
+        if (area == 1) {
+            value("");
+            return true;
+        }
+        if (area == 2) {
             LAST_CLICK_TIME = System.currentTimeMillis();
-
-            // 计算点击位置对应的文本位置
             int clickX = MathHelper.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
-            if (clickX < 0) {
-                clickX = 0;
-            }
+            if (clickX < 0) clickX = 0;
             int textAreaWidth = getInnerWidth(width) - clearButtonWidth;
             String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
             this.shiftPressed = Screen.hasShiftDown();
-            // 移动光标到点击位置
             moveCursorTo(textPos);
-            // 重置高亮位置
-            if (!this.shiftPressed) {
-                this.highlightPos = textPos;
-            }
+            if (!this.shiftPressed) this.highlightPos = textPos;
             return true;
         }
         return false;

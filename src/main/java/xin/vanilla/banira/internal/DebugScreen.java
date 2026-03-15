@@ -263,36 +263,36 @@ public class DebugScreen extends BaniraScreen {
     protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
         if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             this.popupOption.clear()
-                    .addOption("选项 A - 示例功能", "这是选项 A 的提示")
-                    .addOption("选项 B - 复制信息", "这是选项 B 的提示")
-                    .addOption("选项 C - 发送通知测试", "方向键+N 直接触发")
-                    .addOption("选项 D - 打开文本输入")
-                    .addOption("选项 E - 打开物品选择")
-                    .addOption("选项 F - 打开成就选择")
-                    .addOption("选项 G - 打开效果选择")
-                    .onSelect(e -> handlePopupSelect(e.getIndex(), e.getText()))
+                    .addOptionWithId("opt_a", "选项 A - 示例功能", "这是选项 A 的提示")
+                    .addOptionWithId("opt_b", "选项 B - 复制信息", "这是选项 B 的提示")
+                    .addOptionWithId("opt_notice", "选项 C - 发送通知测试", "方向键+N 直接触发")
+                    .addOptionWithId("opt_input", "选项 D - 打开文本输入")
+                    .addOptionWithId("opt_item", "选项 E - 打开物品选择")
+                    .addOptionWithId("opt_advancement", "选项 F - 打开成就选择")
+                    .addOptionWithId("opt_effect", "选项 G - 打开效果选择")
+                    .onSelect(e -> handlePopupSelect(e.id(), e.text()))
                     .showAt(eventArgs.mouseX(), eventArgs.mouseY());
         }
     }
 
-    private void handlePopupSelect(int idx, String selected) {
-        LOGGER.debug("PopupOption 选中: index={}, text={}", idx, selected);
-        switch (idx) {
-            case 2:
+    private void handlePopupSelect(String id, String selected) {
+        LOGGER.debug("PopupOption 选中: id={}, text={}", id, selected);
+        switch (id) {
+            case "opt_notice":
                 addNotificationTest(EnumPosition.TOP_RIGHT);
                 break;
-            case 3:
+            case "opt_input":
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.Widget().name("input").title(Text.literal("enter_something")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
                 Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 break;
-            case 4:
+            case "opt_item":
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
                 Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
-            case 5:
+            case "opt_advancement":
                 Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
                 AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args()
                         .parentScreen(this)
@@ -300,7 +300,7 @@ public class DebugScreen extends BaniraScreen {
                         .onDataReceived(onAdvSelect);
                 Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
                 break;
-            case 6:
+            case "opt_effect":
                 Consumer<EffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
                 EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                         .parentScreen(this)

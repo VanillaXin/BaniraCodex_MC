@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -23,6 +22,7 @@ import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
@@ -33,9 +33,9 @@ import java.util.stream.Collectors;
  * 推荐用法：
  * <pre>
  * popupOption.clear()
- *     .addOption("选项 A", "提示文本", e -> handleA(e))
- *     .addOption("选项 B")
- *     .onSelect(e -> handle(e.index(), e.text()))  // 全局回调，选项无单独回调时触发
+ *     .addOptionWithId("opt_a", "选项 A", "提示文本", e -> handleA(e))
+ *     .addOptionWithId("opt_b", "选项 B")
+ *     .onSelect(e -> handle(e.id(), e.text()))  // 全局回调，选项无单独回调时触发
  *     .showAt(mouseX, mouseY);
  * </pre>
  */
@@ -48,15 +48,25 @@ public class PopupOption extends BaseWidget {
      */
     @Getter
     @RequiredArgsConstructor
+    @Accessors(chain = true, fluent = true)
     public static class SelectEvent {
+        /**
+         * 选项序号，保留用于兼容
+         */
         private final int index;
-        @NonNull
+        /**
+         * 选项字符串 ID，未指定时使用序号字符串
+         */
+        @Nonnull
+        private final String id;
+        @Nonnull
         private final String text;
     }
 
     private static final int PAD_TOP = 2, PAD_BOTTOM = 2, PAD_LEFT = 5, PAD_RIGHT = 5, MARGIN = 2;
 
     private final List<Text> optionList = new ArrayList<>();
+    private final List<String> optionIds = new ArrayList<>();
     @Getter
     private final List<Text> renderList = new ArrayList<>();
     private final Map<Integer, Integer> relationMap = new HashMap<>();
@@ -71,8 +81,6 @@ public class PopupOption extends BaseWidget {
     private FontRenderer font;
 
     private int width = -1, height = -1;
-    private int screenWidth, screenHeight;
-    private int x = -1, y = -1;
     private int adjustedX = -1, adjustedY = -1;
     private int maxWidth = -1, maxHeight = -1;
     private int selectedIndex = -1;
@@ -100,25 +108,105 @@ public class PopupOption extends BaseWidget {
         return new PopupOption(screen);
     }
 
+
+    // region Deprecated
+
     /**
      * 添加选项
      */
-    public PopupOption addOption(@NonNull String text) {
-        return addOption(text, null, null);
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text) {
+        return addOptionInternal(null, text, null, null);
     }
 
     /**
      * 添加选项
      */
-    public PopupOption addOption(@NonNull String text, @Nullable String tip) {
-        return addOption(text, tip, null);
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text, @Nullable String tip) {
+        return addOptionInternal(null, text, tip, null);
     }
 
     /**
      * 添加选项，可单独设置点击回调
      */
-    public PopupOption addOption(@NonNull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(null, text, tip, onClick);
+    }
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text) {
+        return addOptionInternal(null, text, null, null);
+    }
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip) {
+        return addOptionInternal(null, text, tip, null);
+    }
+
+    /**
+     * 添加选项，可单独设置点击回调
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(null, text, tip, onClick);
+    }
+
+    // endregion Deprecated
+
+
+    /**
+     * 添加选项并指定字符串 ID
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull String text) {
+        return addOptionInternal(id, text, null, null);
+    }
+
+    /**
+     * 添加选项并指定字符串 ID
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull String text, @Nullable String tip) {
+        return addOptionInternal(id, text, tip, null);
+    }
+
+    /**
+     * 添加选项并指定字符串 ID 和点击回调
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(id, text, tip, onClick);
+    }
+
+    /**
+     * 添加选项并指定字符串 ID
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull Text text) {
+        return addOptionInternal(id, text, null, null);
+    }
+
+    /**
+     * 添加选项并指定字符串 ID
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull Text text, @Nullable Text tip) {
+        return addOptionInternal(id, text, tip, null);
+    }
+
+    /**
+     * 添加选项并指定字符串 ID 和点击回调
+     */
+    public PopupOption addOptionWithId(@Nullable String id, @Nonnull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(id, text, tip, onClick);
+    }
+
+    private PopupOption addOptionInternal(@Nullable String id, @Nonnull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
         ensureNotBuilt();
+        String resolvedId = !StringUtils.isNullOrEmptyEx(id) ? id : String.valueOf(optionList.size());
         Text literal = Text.literal(text);
         List<Text> lines = Arrays.stream(StringUtils.replaceLineBreak(text).split("\n"))
                 .map(Text::literal)
@@ -127,6 +215,7 @@ public class PopupOption extends BaseWidget {
             relationMap.put(renderList.size() + i, optionList.size());
         }
         optionList.add(literal);
+        optionIds.add(resolvedId);
         renderList.addAll(lines);
         optionCallbacks.add(onClick);
         if (tip != null) {
@@ -135,25 +224,9 @@ public class PopupOption extends BaseWidget {
         return this;
     }
 
-    /**
-     * 添加选项
-     */
-    public PopupOption addOption(@NonNull Text text) {
-        return addOption(text, null, null);
-    }
-
-    /**
-     * 添加选项
-     */
-    public PopupOption addOption(@NonNull Text text, @Nullable Text tip) {
-        return addOption(text, tip, null);
-    }
-
-    /**
-     * 添加选项，可单独设置点击回调
-     */
-    public PopupOption addOption(@NonNull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
+    private PopupOption addOptionInternal(@Nullable String id, @Nonnull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
         ensureNotBuilt();
+        String resolvedId = !StringUtils.isNullOrEmptyEx(id) ? id : String.valueOf(optionList.size());
         List<Text> lines = Arrays.stream(StringUtils.replaceLineBreak(text.content()).split("\n"))
                 .map(s -> text.clone().text(s).hoverText(s).withStyle(text))
                 .collect(Collectors.toList());
@@ -161,6 +234,7 @@ public class PopupOption extends BaseWidget {
             relationMap.put(renderList.size() + i, optionList.size());
         }
         optionList.add(text);
+        optionIds.add(resolvedId);
         renderList.addAll(lines);
         optionCallbacks.add(onClick);
         if (tip != null) {
@@ -212,12 +286,12 @@ public class PopupOption extends BaseWidget {
      */
     public PopupOption clear() {
         optionList.clear();
+        optionIds.clear();
         renderList.clear();
         tipsMap.clear();
         relationMap.clear();
         optionCallbacks.clear();
         width = height = -1;
-        x = y = -1;
         adjustedX = adjustedY = -1;
         maxWidth = maxHeight = -1;
         selectedIndex = -1;
@@ -239,10 +313,19 @@ public class PopupOption extends BaseWidget {
         return CollectionUtils.isNullOrEmpty(optionList) ? -1 : relationMap.getOrDefault(selectedIndex, -1);
     }
 
-    @NonNull
+    @Nonnull
     public String getSelectedString() {
         int idx = getSelectedIndex();
         return (idx >= 0 && idx < optionList.size()) ? optionList.get(idx).content() : "";
+    }
+
+    /**
+     * 获取当前选中选项的字符串 ID
+     */
+    @Nonnull
+    public String getSelectedId() {
+        int idx = getSelectedIndex();
+        return (idx >= 0 && idx < optionIds.size()) ? optionIds.get(idx) : "";
     }
 
     /**
@@ -253,7 +336,8 @@ public class PopupOption extends BaseWidget {
         int idx = getSelectedIndex();
         if (idx < 0) return false;
         String text = getSelectedString();
-        SelectEvent event = new SelectEvent(idx, text);
+        String id = getSelectedId();
+        SelectEvent event = new SelectEvent(idx, id, text);
         Consumer<SelectEvent> cb = (idx >= 0 && idx < optionCallbacks.size()) ? optionCallbacks.get(idx) : null;
         if (cb == null) cb = onSelect;
         clear();
@@ -367,8 +451,8 @@ public class PopupOption extends BaseWidget {
 
     private void layout(int px, int py) {
         Objects.requireNonNull(Minecraft.getInstance().screen);
-        screenWidth = Minecraft.getInstance().screen.width;
-        screenHeight = Minecraft.getInstance().screen.height;
+        int screenWidth = Minecraft.getInstance().screen.width;
+        int screenHeight = Minecraft.getInstance().screen.height;
         if (maxWidth <= 0) maxWidth = screenWidth - MARGIN * 2;
         if (maxHeight <= 0) maxHeight = screenHeight - MARGIN * 2;
 
@@ -376,8 +460,6 @@ public class PopupOption extends BaseWidget {
         height = Math.min(AbstractGuiUtils.getTextHeight(font, renderList) + renderList.size() - 1 + PAD_TOP + PAD_BOTTOM, maxHeight);
         maxLines = ((height - PAD_TOP - PAD_BOTTOM) + 1) / (font.lineHeight + 1);
 
-        x = px;
-        y = py;
         adjustedX = px + MARGIN;
         adjustedY = py + MARGIN;
 

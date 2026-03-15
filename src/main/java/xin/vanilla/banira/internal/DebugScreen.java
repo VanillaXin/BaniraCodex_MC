@@ -19,10 +19,13 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.enums.EnumMoveType;
+import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.StringInputScreen;
+import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
@@ -31,6 +34,7 @@ import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -63,7 +67,6 @@ public class DebugScreen extends BaniraScreen {
     private int contentLength = 20;
     private int fontSize = 9;
     private boolean warp = false;
-    private int contentTextureIndex = 0;
 
 
     protected DebugScreen(ITextComponent textComponent) {
@@ -133,6 +136,7 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 40, ePlus + " 增加，" + eMinus + " 减少");
         addTooltipLabel(20, 60, fPlus + " 增加，" + fMinus + " 减少");
         addTooltipLabel(20, 80, ctrlW + " 切换");
+        addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
     }
 
     private void addTooltipLabel(int x, int y, String tooltipText) {
@@ -140,6 +144,39 @@ public class DebugScreen extends BaniraScreen {
         w.text(Component.literal(tooltipText)).vanillaTooltip(true);
         w.visible(true);
         addWidget(w);
+    }
+
+    /**
+     * 根据方向键组合解析位置：↑↓ 控制上下，←→ 控制左右，支持组合；↑↓ 或 ←→ 同时按为 CENTER
+     */
+    private EnumPosition positionFromArrowKeys() {
+        boolean up = inputState.isKeyPressed(GLFWKey.GLFW_KEY_UP);
+        boolean down = inputState.isKeyPressed(GLFWKey.GLFW_KEY_DOWN);
+        boolean left = inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT);
+        boolean right = inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT);
+        if ((up && down) || (left && right)) return EnumPosition.CENTER;
+        if (up && left) return EnumPosition.TOP_LEFT;
+        if (up && right) return EnumPosition.TOP_RIGHT;
+        if (up) return EnumPosition.TOP_CENTER;
+        if (down && left) return EnumPosition.BOTTOM_LEFT;
+        if (down && right) return EnumPosition.BOTTOM_RIGHT;
+        if (down) return EnumPosition.BOTTOM_CENTER;
+        if (left) return EnumPosition.LEFT_CENTER;
+        if (right) return EnumPosition.RIGHT_CENTER;
+        return null;
+    }
+
+    /**
+     * NotificationManager 测试：N+方向键指定位置（animation 默认 AUTO 使用位置对应动画）
+     */
+    private void addNotificationTest(EnumPosition position) {
+        if (position == null) return;
+        Notification n = Notification.ofComponent(
+                Component.literal("NotificationManager 测试 - " + position.name()));
+        n.position(position)
+                .animation(EnumMoveType.SCALE_AND_FADE)
+                .durationTime(3000);
+        NotificationManager.get().addNotification(n);
     }
 
     @Override
@@ -200,6 +237,7 @@ public class DebugScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容长度：" + contentLength)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("字体大小：" + fontSize)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("自动换行：" + warp)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("N 通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
         if (inputState.isPressingLeftEx()) {
@@ -233,6 +271,7 @@ public class DebugScreen extends BaniraScreen {
                     .addOption("选项 C - 打开物品选择")
                     .addOption("选项 D - 打开成就选择")
                     .addOption("选项 E - 打开字符串输入")
+                    .addOption("选项 F - 发送通知测试", "N+方向键指定位置")
                     .onSelect(e -> handlePopupSelect(e.getIndex(), e.getText()))
                     .showAt(eventArgs.mouseX(), eventArgs.mouseY());
         }
@@ -241,6 +280,9 @@ public class DebugScreen extends BaniraScreen {
     private void handlePopupSelect(int idx, String selected) {
         LOGGER.debug("PopupOption 选中: index={}, text={}", idx, selected);
         switch (idx) {
+            case 5:
+                addNotificationTest(EnumPosition.TOP_RIGHT);
+                break;
             case 2:
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
                 Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
@@ -283,12 +325,6 @@ public class DebugScreen extends BaniraScreen {
                 this.contentLines--;
                 genContent();
             }
-        } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_T)) {
-            if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {
-                this.contentTextureIndex++;
-            } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_MINUS)) {
-                this.contentTextureIndex--;
-            }
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_F)) {
             if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {
                 this.fontSize++;
@@ -297,6 +333,8 @@ public class DebugScreen extends BaniraScreen {
             }
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL) && inputState.isKeyPressed(GLFWKey.GLFW_KEY_W)) {
             this.warp = !this.warp;
+        } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_N) {
+            addNotificationTest(positionFromArrowKeys());
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
             Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
                 LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));

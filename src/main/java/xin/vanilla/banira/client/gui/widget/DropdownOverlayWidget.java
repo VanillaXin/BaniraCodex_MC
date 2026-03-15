@@ -31,6 +31,7 @@ class DropdownOverlayWidget extends BaseWidget {
     DropdownOverlayWidget(BaniraScreen screen, DropdownSelectWidget parent) {
         super(screen, createFullScreenBounds());
         this.parent = parent;
+        this.renderDepth(EnumRenderDepth.TOOLTIP);
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
@@ -75,7 +76,7 @@ class DropdownOverlayWidget extends BaseWidget {
         int hoveredIndex = findHoveredOptionIndex(db, options, mouseX, mouseY, contentWidth);
         boolean scrollbarThumbHovered = scrollable && isMouseOverScrollbarThumb(db, mouseX, mouseY);
 
-        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.TOOLTIP, s -> {
+        AbstractGuiUtils.renderByDepth(stack, renderDepth(), s -> {
             ShapeDrawArgs bgArgs = ShapeDrawArgs.rect(s, (int) db.x(), (int) db.y(), (int) db.width(), (int) db.height(), popupBg);
             bgArgs.rect().radius(2).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(bgArgs);

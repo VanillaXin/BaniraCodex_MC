@@ -15,4 +15,8 @@ public class TransformDrawArgs {
     private double y;
     private double width;
     private double height;
+    /**
+     * 透明度系数 0-255，255 表示不透明
+     */
+    private int alpha = 0xFF;
 }

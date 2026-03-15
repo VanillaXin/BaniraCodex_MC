@@ -93,6 +93,7 @@ public class PopupOption extends BaseWidget {
     public PopupOption(BaniraScreen screen) {
         super(screen, new ScreenCoordinate(0, 0, 0, 0));
         this.font = screen.getFont();
+        this.renderDepth(EnumRenderDepth.TOOLTIP);
     }
 
     public static PopupOption init(BaniraScreen screen) {
@@ -313,7 +314,7 @@ public class PopupOption extends BaseWidget {
         int textColorUnselected = theme.popupItemText();
         int textColorSelected = theme.popupItemTextSelected();
 
-        AbstractGuiUtils.renderByDepth(matrixStack, EnumRenderDepth.TOOLTIP, stack -> {
+        AbstractGuiUtils.renderByDepth(matrixStack, renderDepth(), stack -> {
             ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(stack, adjustedX, adjustedY, width, height, popupBg);
             fillArgs.rect().radius(radius).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(fillArgs);

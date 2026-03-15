@@ -93,6 +93,8 @@ public final class AbstractGuiUtils {
     }
 
 
+    // region 绘制纹理
+
     public static void bindTexture(ResourceLocation resourceLocation) {
         Minecraft.getInstance().getTextureManager().bind(resourceLocation);
     }
@@ -158,50 +160,56 @@ public final class AbstractGuiUtils {
         // 保存当前矩阵状态
         args.stack().pushPose();
 
-        // 计算目标点
-        double tranX = 0, tranY = 0;
+        // 计算目标点：pivot 为矩形内固定点（用未缩放宽高），tranW/tranH 为缩放后回移量
+        double pivotX = 0, pivotY = 0;
         double tranW = 0, tranH = 0;
-        // 旋转角度为0不需要进行变换
-        if (args.angle() % 360 == 0) args.center(EnumPosition.TOP_LEFT);
-        switch (args.center()) {
+        EnumPosition center = args.center();
+        switch (center) {
             case CENTER:
-                tranW = args.getWidthScaled() / 2.0;
-                tranH = args.getHeightScaled() / 2.0;
-                tranX = args.x() + tranW;
-                tranY = args.y() + tranH;
+                pivotX = args.width() / 2.0;
+                pivotY = args.height() / 2.0;
+                tranW = pivotX * args.scale();
+                tranH = pivotY * args.scale();
                 break;
             case TOP_LEFT:
-                tranX = args.x();
-                tranY = args.y();
                 break;
             case TOP_RIGHT:
-                tranW = args.getWidthScaled();
-                tranX = args.x() + tranW;
-                tranY = args.y();
+                pivotX = args.width();
+                tranW = pivotX * args.scale();
                 break;
             case TOP_CENTER:
-                tranW = args.getWidthScaled() / 2.0;
-                tranX = args.x() + tranW;
-                tranY = args.y();
+                pivotX = args.width() / 2.0;
+                tranW = pivotX * args.scale();
                 break;
             case BOTTOM_LEFT:
-                tranH = args.getHeightScaled();
-                tranX = args.x();
-                tranY = args.y() + tranH;
+                pivotY = args.height();
+                tranH = pivotY * args.scale();
                 break;
             case BOTTOM_RIGHT:
-                tranW = args.getWidthScaled();
-                tranH = args.getHeightScaled();
-                tranX = args.x() + tranW;
-                tranY = args.y() + tranH;
+                pivotX = args.width();
+                pivotY = args.height();
+                tranW = pivotX * args.scale();
+                tranH = pivotY * args.scale();
                 break;
             case BOTTOM_CENTER:
-                tranW = args.getWidthScaled() / 2.0;
-                tranH = args.getHeightScaled();
-                tranX = args.x() + tranW;
-                tranY = args.y() + tranH;
+                pivotX = args.width() / 2.0;
+                pivotY = args.height();
+                tranW = pivotX * args.scale();
+                tranH = pivotY * args.scale();
+                break;
+            case LEFT_CENTER:
+                pivotY = args.height() / 2.0;
+                tranH = pivotY * args.scale();
+                break;
+            case RIGHT_CENTER:
+                pivotX = args.width();
+                pivotY = args.height() / 2.0;
+                tranW = pivotX * args.scale();
+                tranH = pivotY * args.scale();
                 break;
         }
+        double tranX = args.x() + pivotX;
+        double tranY = args.y() + pivotY;
         // 移至目标点
         args.stack().translate(tranX, tranY, 0);
 
@@ -228,24 +236,18 @@ public final class AbstractGuiUtils {
         RenderSystem.disableCull();
         // 绘制方法
         TransformDrawArgs drawArgs = new TransformDrawArgs(args.stack());
-        drawArgs.x(0).y(0).width(args.width()).height(args.height());
+        drawArgs.x(0).y(0).width(args.width()).height(args.height()).alpha((int) args.alpha());
 
         // 启用混合模式
         if (args.blend() || args.alpha() < 0xFF) {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            // 设置透明度
-            if (args.alpha() < 0xFF)
-                RenderSystem.color4f(1, 1, 1, (float) args.alpha() / 0xFF);
         }
 
         drawFunc.accept(drawArgs);
 
         // 关闭混合模式
         if (args.blend() || args.alpha() < 0xFF) {
-            // 还原透明度
-            if (args.alpha() < 0xFF)
-                RenderSystem.color4f(1, 1, 1, 1);
             RenderSystem.disableBlend();
         }
 
@@ -635,10 +637,10 @@ public final class AbstractGuiUtils {
         AbstractGuiUtils.drawEffectIcon(stack, font, effectInstance, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
     }
 
-    //  endregion 绘制图标（renderItem 已迁移至 ItemWidget）
+    // endregion 绘制图标
 
 
-    // drawShape 及 draw*Shape 已迁移至 BaseShapeWidget
+    // region 绘制形状
 
     /**
      * 绘制有宽度的线段
@@ -1921,9 +1923,6 @@ public final class AbstractGuiUtils {
     }
 
     // endregion 绘制圆
-
-
-    //  endregion 绘制弹出层提示（drawNinePatch 已迁移至 NinePatchImageWidget）
 
 
     // region 杂项

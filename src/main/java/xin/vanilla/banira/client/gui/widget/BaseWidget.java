@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumPosition;
+import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 
 import javax.annotation.Nullable;
@@ -91,6 +92,13 @@ public abstract class BaseWidget implements IWidget {
     @Getter
     @Setter
     private int alpha = 255;
+
+    /**
+     * 渲染深度
+     */
+    @Getter
+    @Setter
+    protected EnumRenderDepth renderDepth = EnumRenderDepth.FOREGROUND;
 
     protected BaseWidget(BaniraScreen screen) {
         this.screen = screen;

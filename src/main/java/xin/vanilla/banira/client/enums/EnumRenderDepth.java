@@ -14,27 +14,31 @@ public enum EnumRenderDepth {
      */
     BACKGROUND(0),
     /**
-     * 默认
+     * 默认组件
      */
     DEFAULT(1),
+    /**
+     * 默认组件（卡片、面板等）
+     */
+    DEFAULT_ELEVATED(100),
     /**
      * 前景
      */
     FOREGROUND(250),
     /**
-     * 悬浮窗
+     * 悬浮窗（下拉、弹窗等）
      */
-    OVERLAY(500),
+    OVERLAY(400),
     /**
-     * 提示
+     * 通知
      */
-    TOOLTIP(750),
+    NOTIFICATION(600),
     /**
-     * 弹出提示
+     * 悬浮提示（Tooltip、Popup 菜单等）
      */
-    POPUP_TIPS(900),
+    TOOLTIP(800),
     /**
-     * 鼠标
+     * 鼠标光标
      */
     MOUSE(1000);
 

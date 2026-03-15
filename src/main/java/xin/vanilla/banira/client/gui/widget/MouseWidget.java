@@ -41,6 +41,7 @@ public class MouseWidget extends BaseWidget {
 
     public MouseWidget(BaniraScreen screen) {
         super(screen, new ScreenCoordinate(0, 0, 1, 1));
+        this.renderDepth(EnumRenderDepth.MOUSE);
         hideSystemCursor();
     }
 
@@ -128,7 +129,7 @@ public class MouseWidget extends BaseWidget {
         if (Math.abs(this.scroll) < 0.5f) this.scroll = 0;
         int scrollOffset = (int) this.scroll;
 
-        AbstractGuiUtils.renderByDepth(matrixStack, EnumRenderDepth.MOUSE, (stack) -> {
+        AbstractGuiUtils.renderByDepth(matrixStack, renderDepth(), (stack) -> {
             drawPointerShape(stack, mouseX, mouseY + scrollOffset, color1, color2, color3);
             if (scrollOffset != 0) {
                 int scrollLineAlpha = (int) (0x90 * Math.min(1, Math.abs(this.scroll) / 4));

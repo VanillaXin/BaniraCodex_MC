@@ -354,7 +354,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         final int finalMsgHeight = msgHeight;
         final int finalMaxWidthForText = finalMaxWidth;
 
-        AbstractGuiUtils.renderByDepth(args.text().stack(), EnumRenderDepth.POPUP_TIPS, (s) -> {
+        AbstractGuiUtils.renderByDepth(args.text().stack(), EnumRenderDepth.TOOLTIP, (s) -> {
             if (args.texture() != null && ninePatchInfo != null) {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();

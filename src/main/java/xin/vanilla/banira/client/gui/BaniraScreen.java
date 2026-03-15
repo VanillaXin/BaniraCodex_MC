@@ -12,6 +12,7 @@ import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.MouseWidget;
@@ -137,6 +138,8 @@ public abstract class BaniraScreen extends Screen {
         this.cursor = MouseWidget.init(this);
         this.popupOption = PopupOption.init(this);
         this.openingTime = System.currentTimeMillis();
+        ClientThemeManager.setDefaultTheme(getEffectiveTheme());
+        ClientThemeManager.setDefaultSeason(season);
 
         onInit();
 
@@ -167,6 +170,8 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public void removed() {
+        ClientThemeManager.setDefaultTheme(getEffectiveTheme());
+        ClientThemeManager.setDefaultSeason(season);
         this.cursor.removed();
         this.removedEvent();
         super.removed();

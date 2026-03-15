@@ -171,6 +171,23 @@ public final class ColorUtils {
         return alpha == 0x00;
     }
 
+    /**
+     * 将外部 alpha（0-255）乘到 ARGB 颜色的透明度通道
+     *
+     * @param argb  原始 ARGB 颜色
+     * @param alpha 外部 alpha 系数，0-255
+     * @return 应用 alpha 后的新 ARGB
+     */
+    public static int applyAlphaToArgb(int argb, int alpha) {
+        if (alpha >= 255) return argb;
+        int a = (argb >> 24) & 0xFF;
+        int r = (argb >> 16) & 0xFF;
+        int g = (argb >> 8) & 0xFF;
+        int b = argb & 0xFF;
+        int newA = (int) ((a * alpha) / 255.0);
+        return (newA << 24) | (r << 16) | (g << 8) | b;
+    }
+
     public static boolean isRgbaEmpty(int rgba) {
         int alpha = rgba & 0xFF;
         return alpha == 0x00;

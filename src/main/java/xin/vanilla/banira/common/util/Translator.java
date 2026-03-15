@@ -122,7 +122,7 @@ public class Translator implements ITranslator {
                 String path = String.format(getLangFilePath(), languageCode);
                 try (InputStreamReader reader = new InputStreamReader(
                         Objects.requireNonNull(Translator.class.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
-                    JsonObject json = JsonUtils.GSON.fromJson(reader, JsonObject.class);
+                    JsonObject json = JsonUtils.parseObject(reader);
                     languages.put(languageCode, json);
                 }
             } catch (Exception e) {

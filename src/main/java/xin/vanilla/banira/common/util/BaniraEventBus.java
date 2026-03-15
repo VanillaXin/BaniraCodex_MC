@@ -4,6 +4,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.IWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -37,6 +40,8 @@ public final class BaniraEventBus {
     // 玩家事件回调列表
     private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedInCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEvent.PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
 
     // 保存事件回调列表
@@ -84,10 +89,24 @@ public final class BaniraEventBus {
     }
 
     /**
+     * 注册玩家进入服务器时回调（ClientPlayerNetworkEvent.LoggedInEvent）
+     */
+    public static void registerClientPlayerLoggedIn(@Nonnull Consumer<PlayerEntity> callback) {
+        clientPlayerLoggedInCallbacks.add(callback);
+    }
+
+    /**
      * 注册玩家退出服务器时回调（PlayerEvent.PlayerLoggedOutEvent）
      */
     public static void registerPlayerLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
         playerLoggedOutCallbacks.add(callback);
+    }
+
+    /**
+     * 注册玩家退出服务器时回调（ClientPlayerNetworkEvent.LoggedOutEvent）
+     */
+    public static void registerClientPlayerLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
+        clientPlayerLoggedOutCallbacks.add(callback);
     }
 
     /**
@@ -190,10 +209,24 @@ public final class BaniraEventBus {
         executeCallbacks(playerLoggedInCallbacks, player, "player logged in");
     }
 
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+        PlayerEntity player = event.getPlayer();
+        executeCallbacks(clientPlayerLoggedInCallbacks, player, "player logged in");
+    }
+
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         PlayerEntity player = event.getPlayer();
         executeCallbacks(playerLoggedOutCallbacks, player, "player logged out");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+        PlayerEntity player = event.getPlayer();
+        executeCallbacks(clientPlayerLoggedOutCallbacks, player, "player logged out");
     }
 
     @SubscribeEvent

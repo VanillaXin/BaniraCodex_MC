@@ -10,6 +10,9 @@ import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
+import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
+
+import java.util.ArrayList;
 
 public final class NetworkInit {
     public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
@@ -23,8 +26,8 @@ public final class NetworkInit {
         HANDLER.registerSplit(DimensionToClient.class, DimensionToClient::toBytes, DimensionToClient::new, DimensionToClient::handle);
         HANDLER.registerSplit(BiomeToClient.class, BiomeToClient::toBytes, BiomeToClient::new, BiomeToClient::handle);
 
-        HANDLER.register(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle
-        );
+        HANDLER.register(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle);
+        HANDLER.register(ModLoadedToBoth.class, ModLoadedToBoth::toBytes, ModLoadedToBoth::new, ModLoadedToBoth::handle);
 
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new AdvancementToClient(AdvancementUtils.advancementData()), player);
@@ -33,7 +36,7 @@ public final class NetworkInit {
             PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new DimensionToClient(DimensionUtils.getClientDimensionIds()), player);
         });
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
-            PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new BiomeToClient(BiomeUtils.getAllIds()), player);
+            PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
     }
 }

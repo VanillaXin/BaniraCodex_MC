@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.*;
 import lombok.NonNull;
 
+import java.io.Reader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,6 +132,49 @@ public final class JsonUtils {
         }
 
         return parts;
+    }
+
+
+    /**
+     * 转为字符串
+     */
+    public static String toString(JsonElement json) {
+        return GSON.toJson(json);
+    }
+
+    /**
+     * 转为格式化字符串
+     */
+    public static String toPrettyString(JsonElement json) {
+        return PRETTY_GSON.toJson(json);
+    }
+
+    /**
+     * 解析Json
+     */
+    public static JsonElement parseElement(String json) {
+        return GSON.fromJson(json, JsonElement.class);
+    }
+
+    /**
+     * 解析Json
+     */
+    public static JsonElement parseElement(Reader reader) {
+        return GSON.fromJson(reader, JsonElement.class);
+    }
+
+    /**
+     * 解析Json对象
+     */
+    public static JsonObject parseObject(String json) {
+        return GSON.fromJson(json, JsonObject.class);
+    }
+
+    /**
+     * 解析Json对象
+     */
+    public static JsonObject parseObject(Reader reader) {
+        return GSON.fromJson(reader, JsonObject.class);
     }
 
     /**

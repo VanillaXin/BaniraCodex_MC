@@ -157,7 +157,7 @@ public class ScreenCoordinate implements Serializable, Cloneable {
      * 从 JsonString 反序列化
      */
     public static ScreenCoordinate fromJson(String jsonString) {
-        return fromJson(JsonUtils.GSON.fromJson(jsonString, JsonObject.class));
+        return fromJson(JsonUtils.parseObject(jsonString));
     }
 
     /**

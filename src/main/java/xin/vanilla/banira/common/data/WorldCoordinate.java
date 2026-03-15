@@ -315,7 +315,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
      * 从JsonString反序列化
      */
     public static WorldCoordinate fromJson(String jsonString) {
-        return fromJson(JsonUtils.GSON.fromJson(jsonString, JsonObject.class));
+        return fromJson(JsonUtils.parseObject(jsonString));
     }
 
     /**

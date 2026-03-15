@@ -10,6 +10,7 @@ import xin.vanilla.banira.common.network.packet.SplitPacket;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 
 @Accessors(fluent = true)
@@ -22,6 +23,56 @@ public final class PacketUtils {
      */
     @Getter
     private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
+
+
+    /**
+     * 发送数据包至服务器
+     */
+    public static <MSG> void sendPacketToServer(Supplier<SimpleChannel> channel, MSG msg) {
+        sendPacketToServer(channel.get(), msg);
+    }
+
+    /**
+     * 发送数据包至玩家
+     */
+    public static <MSG> void sendPacketToPlayer(Supplier<SimpleChannel> channel, MSG msg, ServerPlayerEntity player) {
+        sendPacketToPlayer(channel.get(), msg, player);
+    }
+
+    /**
+     * 发送分包数据包
+     *
+     * @param channel 网络通道
+     * @param packet  要发送的数据包
+     * @param target  发送目标
+     * @param <T>     分包类型
+     */
+    public static <T extends SplitPacket> void sendSplitPacket(Supplier<SimpleChannel> channel, T packet, PacketDistributor.PacketTarget target) {
+        sendSplitPacket(channel.get(), packet, target);
+    }
+
+    /**
+     * 发送分包数据包至玩家
+     *
+     * @param channel 网络通道
+     * @param packet  要发送的数据包
+     * @param player  目标玩家
+     * @param <T>     分包类型
+     */
+    public static <T extends SplitPacket> void sendSplitPacketToPlayer(Supplier<SimpleChannel> channel, T packet, ServerPlayerEntity player) {
+        sendSplitPacketToPlayer(channel.get(), packet, player);
+    }
+
+    /**
+     * 发送分包数据包至服务器
+     *
+     * @param channel 网络通道
+     * @param packet  要发送的数据包
+     * @param <T>     分包类型
+     */
+    public static <T extends SplitPacket> void sendSplitPacketToServer(Supplier<SimpleChannel> channel, T packet) {
+        sendSplitPacketToServer(channel.get(), packet);
+    }
 
 
     /**

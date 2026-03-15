@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
  */
 public class SafeExpressionEvaluator {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final Pattern NUMERIC_PATTERN = Pattern.compile("^-?\\d+(\\.\\d+)?$");
+    private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?\\d+$");
 
     // 允许的数学函数
     private static final Set<String> MATH_FUNCTIONS = new HashSet<>(Arrays.asList(
@@ -30,14 +32,12 @@ public class SafeExpressionEvaluator {
     ));
 
     // 允许的安全方法
-    private static final Set<String> SAFE_METHODS = new HashSet<>(Arrays.asList(
+    private static final Set<String> SAFE_METHODS = new HashSet<>(Collections.singletonList(
             "contains"
     ));
 
     // 编译后的 AST 根节点
     private final Node root;
-
-    private final Map<String, Object> boundVars = new HashMap<>();
 
     public SafeExpressionEvaluator(String expression) {
         Tokenizer tok = new Tokenizer(expression);
@@ -47,70 +47,14 @@ public class SafeExpressionEvaluator {
 
     // region public
 
-    public SafeExpressionEvaluator clearVars() {
-        boundVars.clear();
-        return this;
-    }
-
-    public SafeExpressionEvaluator setVar(String name, Object value) {
-        boundVars.put(name, value);
-        return this;
-    }
-
-    public SafeExpressionEvaluator putVar(String name, Object value) {
-        return setVar(name, value);
-    }
-
-    public boolean hasVar(String name) {
-        return boundVars.containsKey(name);
-    }
-
-    public double evaluate() {
-        return evaluate(true);
-    }
-
-    public double evaluate(boolean throwException) {
-        try {
-            return evaluate(boundVars);
-        } catch (Throwable e) {
-            if (throwException) {
-                throw e;
-            } else {
-                LOGGER.error("Failed to evaluate expression", e);
-            }
-            return 0.0;
-        }
-    }
-
-    public double evaluate(Map<String, Object> vars) {
-        return evaluate(vars, true);
-    }
-
-    public double evaluate(Map<String, Object> vars, boolean throwException) {
-        try {
-            Map<String, Object> merged = new HashMap<>(boundVars);
-            if (vars != null) merged.putAll(vars);
-            Object val = root.evaluate(merged);
-            return toDouble(val);
-        } catch (Throwable e) {
-            if (throwException) {
-                throw e;
-            } else {
-                LOGGER.error("Failed to evaluate expression", e);
-            }
-            return 0.0;
-        }
-    }
-
     public boolean evaluateBoolean(Map<String, Object> vars) {
         return evaluateBoolean(vars, true);
     }
 
     public boolean evaluateBoolean(Map<String, Object> vars, boolean throwException) {
         try {
-            Map<String, Object> merged = new HashMap<>(boundVars);
-            if (vars != null) merged.putAll(vars);
-            Object val = root.evaluate(merged);
+            Map<String, Object> scope = vars == null ? Collections.emptyMap() : vars;
+            Object val = root.evaluate(scope);
             return toBoolean(val);
         } catch (Throwable e) {
             if (throwException) {
@@ -122,12 +66,31 @@ public class SafeExpressionEvaluator {
         }
     }
 
+    public double evaluateDouble(Map<String, Object> vars) {
+        return evaluateDouble(vars, true);
+    }
+
+    public double evaluateDouble(Map<String, Object> vars, boolean throwException) {
+        try {
+            Map<String, Object> scope = vars == null ? Collections.emptyMap() : vars;
+            Object val = root.evaluate(scope);
+            return toDouble(val);
+        } catch (Throwable e) {
+            if (throwException) {
+                throw e;
+            } else {
+                LOGGER.error("Failed to evaluate expression", e);
+            }
+            return 0.0;
+        }
+    }
+
     // endregion public
 
 
     private static boolean isNumericString(String s) {
         if (s == null) return false;
-        return Pattern.matches("^-?\\d+(\\.\\d+)?$", s.trim());
+        return NUMERIC_PATTERN.matcher(s.trim()).matches();
     }
 
     /**
@@ -147,7 +110,7 @@ public class SafeExpressionEvaluator {
         }
         if (o instanceof String) {
             String s = ((String) o).trim();
-            return Pattern.matches("^-?\\d+$", s);
+            return INTEGER_PATTERN.matcher(s).matches();
         }
         return false;
     }
@@ -167,7 +130,7 @@ public class SafeExpressionEvaluator {
         }
         if (o instanceof String) {
             String s = ((String) o).trim();
-            if (Pattern.matches("^-?\\d+$", s)) {
+            if (INTEGER_PATTERN.matcher(s).matches()) {
                 return Long.parseLong(s);
             }
         }
@@ -686,7 +649,7 @@ public class SafeExpressionEvaluator {
         }
 
         public Object evaluate(Map<String, Object> vars) {
-            throw new RuntimeException("Property access '" + prop + "' not supported for safety");
+            throw new RuntimeException("Property access '" + base + "." + prop + "' not supported for safety");
         }
     }
 
@@ -700,7 +663,7 @@ public class SafeExpressionEvaluator {
         }
 
         public Object evaluate(Map<String, Object> vars) {
-            List<Double> evalArgs = new ArrayList<>();
+            List<Double> evalArgs = new ArrayList<>(args.size());
             for (Node n : args) {
                 Object v = n.evaluate(vars);
                 if (v == null) evalArgs.add(0.0);
@@ -822,7 +785,7 @@ public class SafeExpressionEvaluator {
 
         public Object evaluate(Map<String, Object> vars) {
             Object tar = target.evaluate(vars);
-            List<Object> argVals = new ArrayList<>();
+            List<Object> argVals = args.isEmpty() ? Collections.emptyList() : new ArrayList<>(args.size());
             for (Node n : args) argVals.add(n.evaluate(vars));
 
             if (!SAFE_METHODS.contains(method)) {
@@ -899,14 +862,17 @@ public class SafeExpressionEvaluator {
 
             if ("==".equals(op) || "=".equals(op)) {
                 if (lvObj == null && rvObj == null) return true;
-                if (lvObj == null || rvObj == null) {
-                    return false;
-                }
+                if (lvObj == null || rvObj == null) return false;
                 if (lvObj instanceof Number || rvObj instanceof Number
                         || (lvObj instanceof String && isNumericString((String) lvObj))
                         || (rvObj instanceof String && isNumericString((String) rvObj))) {
                     double a = toDouble(lvObj), b = toDouble(rvObj);
                     return Double.compare(a, b) == 0;
+                }
+                if (lvObj instanceof String || rvObj instanceof String) {
+                    String a = lvObj instanceof String ? (String) lvObj : lvObj.toString();
+                    String b = rvObj instanceof String ? (String) rvObj : rvObj.toString();
+                    return a.equals(b);
                 }
                 return Objects.equals(lvObj, rvObj);
             } else if ("!=".equals(op)) {
@@ -917,6 +883,11 @@ public class SafeExpressionEvaluator {
                         || (rvObj instanceof String && isNumericString((String) rvObj))) {
                     double a = toDouble(lvObj), b = toDouble(rvObj);
                     return Double.compare(a, b) != 0;
+                }
+                if (lvObj instanceof String || rvObj instanceof String) {
+                    String a = lvObj instanceof String ? (String) lvObj : lvObj.toString();
+                    String b = rvObj instanceof String ? (String) rvObj : rvObj.toString();
+                    return !a.equals(b);
                 }
                 return !Objects.equals(lvObj, rvObj);
             } else if ("<".equals(op) || ">".equals(op) || "<=".equals(op) || ">=".equals(op)) {

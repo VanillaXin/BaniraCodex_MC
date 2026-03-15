@@ -2,6 +2,7 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
@@ -13,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -83,9 +85,17 @@ public class BaniraCodex {
         BaniraEventBus.registerPlayerSave(player ->
                 playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
         );
+        BaniraEventBus.registerPlayerLoggedOut(player -> {
+            if (player instanceof ServerPlayerEntity) {
+                PlayerUtils.removePlayerDataStatus(player);
+            }
+        });
 
         if (FMLEnvironment.dist.isClient()) {
-            BaniraEventBus.registerPlayerLoggedOut(player ->
+            BaniraEventBus.registerClientPlayerLoggedIn(player ->
+                    PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(MODID))
+            );
+            BaniraEventBus.registerClientPlayerLoggedOut(player ->
                     AdvancementUtils.clearAdvancementData()
             );
             BaniraEventBus.registerClientGuiChanged(LogoModifier::modifyLogo);

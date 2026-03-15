@@ -27,13 +27,18 @@ public final class PlayerUtils {
     }
 
     /**
-     * 已安装mod的玩家列表</br>
-     * 玩家UUID:是否已同步数据</br>
-     * 在该map的玩家都为已安装mod</br>
-     * 布尔值为false时为未同步数据，将会在玩家tick事件中检测并同步数据
+     * 已安装 mod 的玩家列表（按 modid 区分）</br>
+     * Key: modid + ":" + 玩家UUID</br>
+     * Value: 是否已同步数据</br>
+     * 在该 map 的玩家都为已安装对应 mod</br>
+     * 布尔值为 false 时为未同步数据，将会在玩家 tick 事件中检测并同步数据
      */
     @Getter
     private static final Map<String, Boolean> playerDataStatus = new ConcurrentHashMap<>();
+
+    private static String makeKey(String modid, String uuid) {
+        return (modid != null ? modid : "") + ":" + (uuid != null ? uuid : "");
+    }
 
 
     /**
@@ -356,18 +361,50 @@ public final class PlayerUtils {
     // region 玩家状态
 
     /**
-     * 玩家是否安装mod
+     * 设置玩家mod安装及数据同步状态
+     *
+     * @param player 玩家
+     * @param synced 数据是否已同步
      */
-    public static boolean isPlayerModInstalled(@Nonnull PlayerEntity player) {
-        return PlayerUtils.playerDataStatus.containsKey(PlayerUtils.getPlayerUUIDString(player));
+    public static void setPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return;
+        playerDataStatus.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
 
     /**
-     * 玩家数据是否同步</br>
-     * 默认为同步
+     * 移除该玩家的全部mod状态
      */
-    public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player) {
-        return PlayerUtils.playerDataStatus.getOrDefault(PlayerUtils.getPlayerUUIDString(player), true);
+    public static void removePlayerDataStatus(@Nonnull PlayerEntity player) {
+        String uuid = getPlayerUUIDString(player);
+        playerDataStatus.keySet().removeIf(key -> key.endsWith(":" + uuid));
+    }
+
+    /**
+     * 移除玩家指定mod的状态
+     *
+     * @param player 玩家
+     */
+    public static void removePlayerDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return;
+        playerDataStatus.remove(makeKey(modid, getPlayerUUIDString(player)));
+    }
+
+    /**
+     * 玩家是否安装指定mod
+     */
+    public static boolean isPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return false;
+        return playerDataStatus.containsKey(makeKey(modid, getPlayerUUIDString(player)));
+    }
+
+    /**
+     * 玩家数据是否同步
+     *
+     * @return 未安装mod 或 已同步
+     */
+    public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return true;
+        return playerDataStatus.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
     }
 
     // endregion 玩家状态

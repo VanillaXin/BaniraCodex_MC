@@ -6,14 +6,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -32,12 +30,12 @@ import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.event.ModEventHandler;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,12 +63,8 @@ public class DebugScreen extends BaniraScreen {
     private boolean warp = false;
 
 
-    protected DebugScreen(ITextComponent textComponent) {
-        super(textComponent);
-    }
-
-    protected DebugScreen(Component component) {
-        super(component.toVanilla());
+    protected DebugScreen() {
+        super(Component.empty().toVanilla());
     }
 
     @Override
@@ -455,8 +449,8 @@ public class DebugScreen extends BaniraScreen {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            if (Minecraft.getInstance().screen == null && InputStateManager.isKeyPressing(GLFW.GLFW_KEY_DELETE)) {
-                Minecraft.getInstance().setScreen(new DebugScreen(Component.empty()));
+            if (Minecraft.getInstance().screen == null && ModEventHandler.DEBUG_KEY.isDown()) {
+                Minecraft.getInstance().setScreen(new DebugScreen());
             }
         }
     }

@@ -35,7 +35,9 @@ import java.util.function.Function;
 @Accessors(chain = true, fluent = true)
 public class InputWidget extends BaseWidget implements ITextWidget {
     private static long LAST_CLICK_TIME = 0L;
-    /** 按下时的区域：0=无，1=清空按钮，2=文本区域。抬起时需在同一区域才触发 */
+    /**
+     * 按下时的区域：0=无，1=清空按钮，2=文本区域。抬起时需在同一区域才触发
+     */
     protected int pressedArea = 0;
 
     /**
@@ -386,8 +388,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (!this.editable) {
             currentTextColor = this.uneditableTextColor;
         }
-        int clearButtonWidth = (showClearButton && !value.isEmpty()) ? CLEAR_BUTTON_SIZE + 2 : 0;
-        int innerWidth = getInnerWidth(drawWidth) - clearButtonWidth;
+        int innerWidth = getTextAreaWidth(drawWidth);
         // 计算缩放后的可用宽度（用于文本截断）
         int scaledInnerWidth = fontScale != 1.0f ? (int) (innerWidth / fontScale) : innerWidth;
 
@@ -422,7 +423,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
         }
         if (hasRightHidden) {
-            int dotX = drawX + drawWidth - clearButtonWidth - 3;
+            int dotX = drawX + paddingLeft + innerWidth + 1;
             AbstractGuiUtils.drawPixel(stack, dotX, centerY - 1, dotColor);
             AbstractGuiUtils.drawPixel(stack, dotX + 1, centerY, dotColor);
             AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
@@ -504,12 +505,13 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 // 计算高亮的屏幕坐标
                 int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
                 int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
-                renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, drawX, drawWidth - clearButtonWidth);
+                renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
             }
         }
 
         if (showClearButton && !value.isEmpty()) {
-            int clearCenterX = drawX + drawWidth - clearButtonWidth / 2 - 1;
+            int clearBtnW = CLEAR_BUTTON_SIZE + 2;
+            int clearCenterX = drawX + drawWidth - clearBtnW / 2 - 1;
             int clearCenterY = drawY + drawHeight / 2;
             AbstractGuiUtils.drawCircle(stack, clearCenterX, clearCenterY, CLEAR_BUTTON_RADIUS, 0xFFE53935);
             drawClearIcon(stack, clearCenterX, clearCenterY, 0xFFFFFFFF);
@@ -590,6 +592,18 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     private int getInnerWidth(int totalWidth) {
         return totalWidth - paddingLeft - paddingRight;
+    }
+
+    /**
+     * 获取文本区域可用宽度（用于光标、截断、displayPos 等计算）。
+     * 当 paddingRight 已包含清空按钮区域时（如 DropdownSelectWidget 设置的）不再重复扣除。
+     */
+    private int getTextAreaWidth(int totalWidth) {
+        int base = getInnerWidth(totalWidth);
+        if (showClearButton && !value.isEmpty() && paddingRight <= 10) {
+            return base - (CLEAR_BUTTON_SIZE + 2);
+        }
+        return base;
     }
 
     private boolean isMouseOverClearButton() {
@@ -676,7 +690,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             LAST_CLICK_TIME = System.currentTimeMillis();
             int clickX = MathHelper.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
-            int textAreaWidth = getInnerWidth(width) - clearButtonWidth;
+            int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
             String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
             this.shiftPressed = Screen.hasShiftDown();
@@ -790,8 +804,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         // 处理其他按键
         if (Screen.hasShiftDown() && (keyCode == GLFWKey.GLFW_KEY_HOME || keyCode == GLFWKey.GLFW_KEY_END)) {
             String value = this.value;
-            int totalWidth = renderCoordinate != null ? (int) renderCoordinate.width() : 0;
-            int innerWidth = getInnerWidth(totalWidth);
+            int totalWidth = renderCoordinate != null ? (int) renderCoordinate.width() - marginLeft - marginRight : 0;
+            int innerWidth = getTextAreaWidth(totalWidth);
             if (innerWidth > 0 && this.font.width(value) > innerWidth) {
                 if (keyCode == GLFWKey.GLFW_KEY_HOME) {
                     this.displayPos = 0;
@@ -941,7 +955,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         String value = this.value;
         int valueLength = value.length();
         int cursorPos = this.cursorPosition;
-        int innerWidth = getInnerWidth((int) renderCoordinate.width());
+        int drawWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
+        int innerWidth = getTextAreaWidth(drawWidth);
 
         if (this.displayPos > valueLength) {
             this.displayPos = valueLength;

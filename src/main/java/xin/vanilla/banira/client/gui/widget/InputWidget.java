@@ -41,6 +41,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     protected int pressedArea = 0;
 
     /**
+     * 为 true 时跳过文本内容渲染（供子类如 DropdownSelectWidget 的标签模式使用）
+     */
+    protected boolean skipTextContentForRendering = false;
+
+    /**
      * 输入框文本
      */
     @Getter
@@ -383,164 +388,166 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         float actualFontSize = fontSize > 0 ? fontSize : font.lineHeight;
         float fontScale = actualFontSize / font.lineHeight;
 
-        String value = this.value;
-        int currentTextColor = this.textColor;
-        if (!this.editable) {
-            currentTextColor = this.uneditableTextColor;
-        }
-        int innerWidth = getTextAreaWidth(drawWidth);
-        // 计算缩放后的可用宽度（用于文本截断）
-        int scaledInnerWidth = fontScale != 1.0f ? (int) (innerWidth / fontScale) : innerWidth;
+        if (!skipTextContentForRendering) {
+            String value = this.value;
+            int currentTextColor = this.textColor;
+            if (!this.editable) {
+                currentTextColor = this.uneditableTextColor;
+            }
+            int innerWidth = getTextAreaWidth(drawWidth);
+            // 计算缩放后的可用宽度（用于文本截断）
+            int scaledInnerWidth = fontScale != 1.0f ? (int) (innerWidth / fontScale) : innerWidth;
 
-        int cursorPos = this.cursorPosition;
-        int highlightPos = this.highlightPos;
-        int displayPos = this.displayPos;
+            int cursorPos = this.cursorPosition;
+            int highlightPos = this.highlightPos;
+            int displayPos = this.displayPos;
 
-        // 获取可见文本（使用缩放后的宽度）
-        String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
+            // 获取可见文本（使用缩放后的宽度）
+            String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
 
-        // 是否存在左右未显示文本
-        boolean hasLeftHidden = displayPos > 0;
-        boolean hasRightHidden = displayPos + visibleText.length() < value.length();
+            // 是否存在左右未显示文本
+            boolean hasLeftHidden = displayPos > 0;
+            boolean hasRightHidden = displayPos + visibleText.length() < value.length();
 
-        // 计算光标在可见文本中的位置
-        int cursorInVisible = cursorPos - displayPos;
-        boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
-        // 光标缓慢闪烁
-        boolean shouldShowCursor = this.focused() && ((System.currentTimeMillis() - LAST_CLICK_TIME) / 750) % 2 == 0 && cursorVisible;
+            // 计算光标在可见文本中的位置
+            int cursorInVisible = cursorPos - displayPos;
+            boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
+            // 光标缓慢闪烁
+            boolean shouldShowCursor = this.focused() && ((System.currentTimeMillis() - LAST_CLICK_TIME) / 750) % 2 == 0 && cursorVisible;
 
-        // 计算文本绘制位置
-        int textX = drawX + paddingLeft;
-        int textY = drawY + (drawHeight - (int) actualFontSize + 1) / 2;
+            // 计算文本绘制位置
+            int textX = drawX + paddingLeft;
+            int textY = drawY + (drawHeight - (int) actualFontSize + 1) / 2;
 
-        // 绘制溢出内容标记
-        int dotColor = currentTextColor;
-        int centerY = textY + (int) actualFontSize / 2;
-        if (hasLeftHidden) {
-            int dotX = drawX + 2;
-            AbstractGuiUtils.drawPixel(stack, dotX, centerY - 1, dotColor);
-            AbstractGuiUtils.drawPixel(stack, dotX - 1, centerY, dotColor);
-            AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
-        }
-        if (hasRightHidden) {
-            int dotX = drawX + paddingLeft + innerWidth + 1;
-            AbstractGuiUtils.drawPixel(stack, dotX, centerY - 1, dotColor);
-            AbstractGuiUtils.drawPixel(stack, dotX + 1, centerY, dotColor);
-            AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
-        }
+            // 绘制溢出内容标记
+            int dotColor = currentTextColor;
+            int centerY = textY + (int) actualFontSize / 2;
+            if (hasLeftHidden) {
+                int dotX = drawX + 2;
+                AbstractGuiUtils.drawPixel(stack, dotX, centerY - 1, dotColor);
+                AbstractGuiUtils.drawPixel(stack, dotX - 1, centerY, dotColor);
+                AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
+            }
+            if (hasRightHidden) {
+                int dotX = drawX + paddingLeft + innerWidth + 1;
+                AbstractGuiUtils.drawPixel(stack, dotX, centerY - 1, dotColor);
+                AbstractGuiUtils.drawPixel(stack, dotX + 1, centerY, dotColor);
+                AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
+            }
 
-        // 光标之前的文本
-        int textDrawX = textX;
-        if (!visibleText.isEmpty()) {
-            String beforeCursor = cursorVisible ? visibleText.substring(0, Math.min(cursorInVisible, visibleText.length())) : visibleText;
-            if (!beforeCursor.isEmpty()) {
+            // 光标之前的文本
+            int textDrawX = textX;
+            if (!visibleText.isEmpty()) {
+                String beforeCursor = cursorVisible ? visibleText.substring(0, Math.min(cursorInVisible, visibleText.length())) : visibleText;
+                if (!beforeCursor.isEmpty()) {
+                    if (fontScale != 1.0f) {
+                        stack.pushPose();
+                        stack.translate(textX, textY, 0);
+                        stack.scale(fontScale, fontScale, 1.0f);
+                        textDrawX = (int) (textX + this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
+                                0, 0, currentTextColor) * fontScale);
+                        stack.popPose();
+                    } else {
+                        textDrawX = this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
+                                (float) textX, (float) textY, currentTextColor);
+                    }
+                }
+            }
+
+            // 计算光标位置
+            boolean isAtEnd = cursorPos >= value.length();
+            int cursorX = textDrawX;
+            if (!cursorVisible) {
+                cursorX = cursorInVisible > 0 ? textX + innerWidth : textX;
+            } else if (isAtEnd) {
+                cursorX = textDrawX - 1;
+                textDrawX = cursorX;
+            }
+
+            // 光标之后的文本
+            if (!visibleText.isEmpty() && cursorVisible && cursorInVisible < visibleText.length()) {
+                String afterCursor = visibleText.substring(cursorInVisible);
                 if (fontScale != 1.0f) {
+                    stack.pushPose();
+                    stack.translate(textDrawX, textY, 0);
+                    stack.scale(fontScale, fontScale, 1.0f);
+                    this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
+                            0, 0, currentTextColor);
+                    stack.popPose();
+                } else {
+                    this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
+                            (float) textDrawX, (float) textY, currentTextColor);
+                }
+            }
+
+            // 提示文本
+            if (this.hint != null && value.isEmpty() && !this.focused()) {
+                float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
+                float hintFontScale = actualHintFontSize / font.lineHeight;
+                if (hintFontScale != 1.0f) {
                     stack.pushPose();
                     stack.translate(textX, textY, 0);
-                    stack.scale(fontScale, fontScale, 1.0f);
-                    textDrawX = (int) (textX + this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
-                            0, 0, currentTextColor) * fontScale);
+                    stack.scale(hintFontScale, hintFontScale, 1.0f);
+                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale));
+                    LabelWidget.drawLimitedText(args);
                     stack.popPose();
                 } else {
-                    textDrawX = this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
-                            (float) textX, (float) textY, currentTextColor);
+                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth);
+                    LabelWidget.drawLimitedText(args);
                 }
             }
-        }
 
-        // 计算光标位置
-        boolean isAtEnd = cursorPos >= value.length();
-        int cursorX = textDrawX;
-        if (!cursorVisible) {
-            cursorX = cursorInVisible > 0 ? textX + innerWidth : textX;
-        } else if (isAtEnd) {
-            cursorX = textDrawX - 1;
-            textDrawX = cursorX;
-        }
+            // 绘制文本选择高亮
+            if (highlightPos != cursorPos) {
+                // 计算高亮的起始和结束位置
+                int highlightStart = Math.min(cursorPos, highlightPos);
+                int highlightEnd = Math.max(cursorPos, highlightPos);
 
-        // 光标之后的文本
-        if (!visibleText.isEmpty() && cursorVisible && cursorInVisible < visibleText.length()) {
-            String afterCursor = visibleText.substring(cursorInVisible);
-            if (fontScale != 1.0f) {
-                stack.pushPose();
-                stack.translate(textDrawX, textY, 0);
-                stack.scale(fontScale, fontScale, 1.0f);
-                this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
-                        0, 0, currentTextColor);
-                stack.popPose();
-            } else {
-                this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
-                        (float) textDrawX, (float) textY, currentTextColor);
+                // 计算高亮在可见文本中的起始和结束位置
+                int highlightStartInVisible = Math.max(0, highlightStart - displayPos);
+                int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
+
+                if (highlightStartInVisible < highlightEndInVisible) {
+                    // 计算高亮的屏幕坐标
+                    int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
+                    int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
+                    renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
+                }
             }
-        }
 
-        // 提示文本
-        if (this.hint != null && value.isEmpty() && !this.focused()) {
-            float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
-            float hintFontScale = actualHintFontSize / font.lineHeight;
-            if (hintFontScale != 1.0f) {
-                stack.pushPose();
-                stack.translate(textX, textY, 0);
-                stack.scale(hintFontScale, hintFontScale, 1.0f);
-                FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale));
-                LabelWidget.drawLimitedText(args);
-                stack.popPose();
-            } else {
-                FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth);
-                LabelWidget.drawLimitedText(args);
+            if (showClearButton && !value.isEmpty()) {
+                int clearBtnW = CLEAR_BUTTON_SIZE + 2;
+                int clearCenterX = drawX + drawWidth - clearBtnW / 2 - 1;
+                int clearCenterY = drawY + drawHeight / 2;
+                AbstractGuiUtils.drawCircle(stack, clearCenterX, clearCenterY, CLEAR_BUTTON_RADIUS, 0xFFE53935);
+                drawClearIcon(stack, clearCenterX, clearCenterY, 0xFFFFFFFF);
             }
-        }
 
-        // 绘制文本选择高亮
-        if (highlightPos != cursorPos) {
-            // 计算高亮的起始和结束位置
-            int highlightStart = Math.min(cursorPos, highlightPos);
-            int highlightEnd = Math.max(cursorPos, highlightPos);
-
-            // 计算高亮在可见文本中的起始和结束位置
-            int highlightStartInVisible = Math.max(0, highlightStart - displayPos);
-            int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
-
-            if (highlightStartInVisible < highlightEndInVisible) {
-                // 计算高亮的屏幕坐标
-                int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
-                int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
-                renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
+            if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
+                double mx = screen.inputState().mouseX();
+                double my = screen.inputState().mouseY();
+                TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal("清空").stack(stack)).x((int) mx).y((int) my),
+                        screen.getEffectiveTheme(), screen.season());
             }
-        }
 
-        if (showClearButton && !value.isEmpty()) {
-            int clearBtnW = CLEAR_BUTTON_SIZE + 2;
-            int clearCenterX = drawX + drawWidth - clearBtnW / 2 - 1;
-            int clearCenterY = drawY + drawHeight / 2;
-            AbstractGuiUtils.drawCircle(stack, clearCenterX, clearCenterY, CLEAR_BUTTON_RADIUS, 0xFFE53935);
-            drawClearIcon(stack, clearCenterX, clearCenterY, 0xFFFFFFFF);
-        }
-
-        if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
-            double mx = screen.inputState().mouseX();
-            double my = screen.inputState().mouseY();
-            TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal("清空").stack(stack)).x((int) mx).y((int) my),
-                    screen.getEffectiveTheme(), screen.season());
-        }
-
-        // 绘制光标
-        if (shouldShowCursor) {
-            if (isAtEnd) {
-                // 在文本末尾绘制下划线光标
-                if (fontScale != 1.0f) {
-                    stack.pushPose();
-                    stack.translate(cursorX, textY, 0);
-                    stack.scale(fontScale, fontScale, 1.0f);
-                    this.font.draw(stack, "_", 0, 0, currentTextColor);
-                    stack.popPose();
+            // 绘制光标
+            if (shouldShowCursor) {
+                if (isAtEnd) {
+                    // 在文本末尾绘制下划线光标
+                    if (fontScale != 1.0f) {
+                        stack.pushPose();
+                        stack.translate(cursorX, textY, 0);
+                        stack.scale(fontScale, fontScale, 1.0f);
+                        this.font.draw(stack, "_", 0, 0, currentTextColor);
+                        stack.popPose();
+                    } else {
+                        this.font.draw(stack, "_", cursorX, textY, currentTextColor);
+                    }
                 } else {
-                    this.font.draw(stack, "_", cursorX, textY, currentTextColor);
+                    // 在文本中间绘制竖线光标
+                    int cursorHeight = (int) actualFontSize;
+                    AbstractGuiUtils.fill(stack, cursorX, textY - 1, (int) Math.max(1, fontScale), cursorHeight, cursorColor);
                 }
-            } else {
-                // 在文本中间绘制竖线光标
-                int cursorHeight = (int) actualFontSize;
-                AbstractGuiUtils.fill(stack, cursorX, textY - 1, (int) Math.max(1, fontScale), cursorHeight, cursorColor);
             }
         }
     }

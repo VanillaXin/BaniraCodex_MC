@@ -58,11 +58,13 @@ public class RequestToBoth {
      */
     public static void handle(RequestToBoth packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.get().getSender();
-            if (player != null) {
-                BiConsumer<RequestToBoth, ServerPlayerEntity> handler = handlers.get(packet.getRequestType());
-                if (handler != null) {
-                    handler.accept(packet, player);
+            if (ctx.get().getDirection().getReceptionSide().isServer()) {
+                ServerPlayerEntity player = ctx.get().getSender();
+                if (player != null) {
+                    BiConsumer<RequestToBoth, ServerPlayerEntity> handler = handlers.get(packet.getRequestType());
+                    if (handler != null) {
+                        handler.accept(packet, player);
+                    }
                 }
             }
         });

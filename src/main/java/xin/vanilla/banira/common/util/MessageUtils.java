@@ -12,6 +12,10 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.packet.NotificationToClient;
+import xin.vanilla.banira.internal.network.NetworkInit;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -122,6 +126,40 @@ public final class MessageUtils {
      */
     public static void broadcastPacket(IPacket<?> packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player -> player.connection.send(packet));
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     *
+     * @param player    目标玩家
+     * @param component 通知内容
+     */
+    public static void sendNotification(ServerPlayerEntity player, Component component) {
+        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(component), player);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     *
+     * @param player         目标玩家
+     * @param component      通知内容
+     * @param position       位置
+     * @param animation      动画
+     * @param durationTimeMs 持续时间（毫秒）
+     */
+    public static void sendNotification(ServerPlayerEntity player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs) {
+        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(component, position, animation, durationTimeMs), player);
+    }
+
+    /**
+     * 向所有在线玩家广播 Notification
+     *
+     * @param component 通知内容
+     */
+    public static void broadcastNotification(Component component) {
+        for (ServerPlayerEntity player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component);
+        }
     }
 
 }

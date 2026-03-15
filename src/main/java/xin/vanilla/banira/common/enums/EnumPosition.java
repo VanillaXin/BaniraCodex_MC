@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.enums;
+package xin.vanilla.banira.common.enums;
 
 /**
  * 相对位置

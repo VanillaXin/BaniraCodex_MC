@@ -2,6 +2,7 @@ package xin.vanilla.banira.client.gui.component;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -10,8 +11,6 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
-import xin.vanilla.banira.client.enums.EnumMoveType;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
@@ -19,84 +18,20 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.NotificationData;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 
 @OnlyIn(Dist.CLIENT)
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true, fluent = true)
-public class Notification {
+public class Notification extends NotificationData {
 
-    // region 样式配置
-    /**
-     * 内边距
-     */
-    private double padding = 5;
-    /**
-     * 外边距
-     */
-    private double margin = 5;
-    /**
-     * 背景颜色
-     */
-    private Color bgColor = Color.argb(ClientThemeManager.getEffectiveTheme().popupBg());
-    /**
-     * 边框颜色
-     */
-    private Color borderColor = Color.argb(ClientThemeManager.getEffectiveTheme().popupBorder());
-    /**
-     * 边框大小
-     */
-    private int borderSize = 1;
-    /**
-     * 圆角半径
-     */
-    private int radius = 3;
-    /**
-     * 内容
-     */
-    private Component component;
-    // endregion
-
-    // region 时间控制
-    /**
-     * 计划开始渲染时间
-     */
-    private long scheduledTime = System.currentTimeMillis();
-    /**
-     * 实际开始渲染时间
-     */
+    // 实际开始渲染时间
     private long startTime = -1;
-    /**
-     * 持续显示时间，非总显示时间<br/>
-     * 总显示时间需在此基础上加上动画时间*2
-     */
-    private long durationTime = 5000;
-    /**
-     * 动画时间
-     */
-    private long animationTime = 600;
-    // endregion
-
-    // region 动态速度参数
-    /**
-     * 最大速度, 像素/秒
-     */
-    private double maxSpeed = 120.0;
-    /**
-     * 加速度, 像素/秒²
-     */
-    private double acceleration = 400.0;
-    /**
-     * 减速开始距离, 像素
-     */
-    private double decelerationDistance = 15.0;
-    // endregion
-
-    // 位置控制
-    private EnumPosition position = EnumPosition.TOP_RIGHT;
-    private EnumMoveType animation = EnumMoveType.AUTO;
-
     // 动画渲染时的临时状态
     private transient int renderAlpha = -1;
     private transient double renderScale = 1.0;
@@ -115,7 +50,7 @@ public class Notification {
     private transient Text cachedText;
 
     private Notification(Component component) {
-        this.component = component;
+        super(component);
         this.updateCachedText();
     }
 
@@ -128,12 +63,36 @@ public class Notification {
         if (c.color().isEmpty() || c.color().rgb() == 0xFFFFFF) {
             c.color(Color.argb(ClientThemeManager.getEffectiveTheme().popupItemText()));
         }
-        return new Notification(c);
+        Notification n = new Notification(c);
+        n.bgColor(Color.argb(ClientThemeManager.getEffectiveTheme().popupBg()));
+        n.borderColor(Color.argb(ClientThemeManager.getEffectiveTheme().popupBorder()));
+        return n;
+    }
+
+    /**
+     * 从共用数据创建（如网络包接收后）
+     */
+    public static Notification fromData(NotificationData data) {
+        Notification n = new Notification(data.component());
+        n.position(data.position());
+        n.animation(data.animation());
+        n.durationTime(data.durationTime());
+        n.padding(data.padding());
+        n.margin(data.margin());
+        n.bgColor(data.bgColor());
+        n.borderColor(data.borderColor());
+        n.borderSize(data.borderSize());
+        n.radius(data.radius());
+        n.scheduledTime(data.scheduledTime());
+        n.animationTime(data.animationTime());
+        n.maxSpeed(data.maxSpeed());
+        n.acceleration(data.acceleration());
+        n.decelerationDistance(data.decelerationDistance());
+        return n;
     }
 
     /**
      * 更新缓存字段
-     * 当组件内容发生变化时，需要调用此方法更新缓存字段
      */
     private void updateCachedText() {
         this.cachedText = new Text(this.component());
@@ -141,50 +100,30 @@ public class Notification {
         this.cachedHeight = AbstractGuiUtils.getTextHeight(this.cachedText()) + this.padding() * 2;
     }
 
-    /**
-     * 渲染通知
-     *
-     * @param preInfo     上个通知的布局信息(y, width, height)
-     * @param screenInfo  屏幕信息(width, height)
-     * @param currentTime 当前时间
-     */
     @OnlyIn(Dist.CLIENT)
     public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
-        if (currentTime < this.scheduledTime) return;
+        if (currentTime < this.scheduledTime()) return;
 
-        // 计算动画进度
         double progress = this.calculateProgress(currentTime);
         if (progress < 0) {
             this.finished = true;
             return;
         }
 
-        // 位置计算
         ScreenCoordinate coordinate = this.calculatePosition(screenInfo, preInfo);
-
-        // 动画应用
         this.applyAnimationEffect(coordinate, progress);
-
-        // 位置过渡动画处理
         this.handlePositionTransition(coordinate, currentTime);
 
-        // 可见性检查
         if (!this.isVisible(coordinate, screenInfo)) {
             return;
         }
 
-        // 实际渲染
         this.doRender(stack, coordinate);
-
-        // 更新布局上下文
         this.updateLayoutContext(coordinate, preInfo, currentTime);
     }
 
-    /**
-     * 计算动画进度
-     */
     private double calculateProgress(long currentTime) {
         long elapsed = currentTime - this.startTime();
         long totalTime = this.animationTime() * 2 + this.durationTime();
@@ -200,13 +139,6 @@ public class Notification {
         }
     }
 
-    /**
-     * 计算渲染位置
-     *
-     * @param screenInfo 屏幕信息
-     * @param preInfo    上个通知的布局信息
-     * @return 当前通知的布局信息
-     */
     public ScreenCoordinate calculatePosition(ScreenCoordinate screenInfo, ScreenCoordinate preInfo) {
         ScreenCoordinate info = new ScreenCoordinate();
         switch (this.position()) {
@@ -253,9 +185,6 @@ public class Notification {
         return info;
     }
 
-    /**
-     * AUTO 时按位置返回默认动画类型（单一类型，progress 自然处理进入与退出）
-     */
     private EnumMoveType getEffectiveAnimation() {
         if (this.animation() != EnumMoveType.AUTO) return this.animation();
         switch (this.position()) {
@@ -278,12 +207,6 @@ public class Notification {
         }
     }
 
-    /**
-     * 应用动画效果
-     *
-     * @param coordinate 当前通知的布局信息
-     * @param progress   动画进度
-     */
     private void applyAnimationEffect(ScreenCoordinate coordinate, double progress) {
         this.renderAlpha = -1;
         this.renderScale = 1.0;
@@ -315,44 +238,31 @@ public class Notification {
         }
     }
 
-    /**
-     * 处理位置过渡动画（使用缓动函数和速度衰减）
-     *
-     * @param coordinate  当前坐标信息
-     * @param currentTime 当前时间戳(ms)
-     */
     private void handlePositionTransition(ScreenCoordinate coordinate, long currentTime) {
         if (this.lastIndex() > 0 && this.index() == 0 && this.lastY() != coordinate.y()) {
             final double targetY = coordinate.y();
             final double currentY = this.lastY();
             final double deltaY = targetY - currentY;
 
-            // 时间差（second）
             final double deltaTime = (currentTime - this.lastRenderTime()) / 1000.0;
             if (deltaTime <= 0) return;
 
-            // 使用缓动函数计算速度
             final double distance = Math.abs(deltaY);
             final double direction = Math.signum(deltaY);
 
-            // 当前速度
             double currentSpeed = Math.min(this.maxSpeed(), Math.sqrt(2 * this.acceleration() * distance));
 
-            // 接近目标时开始减速
             if (distance < this.decelerationDistance()) {
                 currentSpeed *= easeOutQuad(distance / this.decelerationDistance());
             }
 
-            // 位移
             double movement = currentSpeed * deltaTime * direction;
             double newY = currentY + movement;
 
-            // 防止过冲
             if ((direction > 0 && newY > targetY) || (direction < 0 && newY < targetY)) {
                 newY = targetY;
             }
 
-            // 根据位置类型限制坐标
             switch (this.position()) {
                 case TOP_LEFT:
                 case TOP_CENTER:
@@ -371,30 +281,16 @@ public class Notification {
                     break;
             }
 
-            // 到达目标后更新状态
             if (Math.abs(coordinate.y() - targetY) < 0.1) {
                 coordinate.y(targetY);
             }
         }
     }
 
-    /**
-     * 二次缓出函数（用于减速阶段）
-     *
-     * @param t 标准化进度 [0,1]
-     * @return 缓动系数
-     */
     private double easeOutQuad(double t) {
         return 1 - (1 - t) * (1 - t);
     }
 
-    /**
-     * 判断是否可见
-     *
-     * @param info       当前通知的布局信息
-     * @param screenInfo 屏幕信息
-     * @return 是否可见
-     */
     private boolean isVisible(ScreenCoordinate info, ScreenCoordinate screenInfo) {
         return info.x() + this.cachedWidth() > 0 &&
                 info.x() < screenInfo.width() &&
@@ -402,11 +298,6 @@ public class Notification {
                 info.y() < screenInfo.height();
     }
 
-    /**
-     * 执行渲染
-     *
-     * @param coordinate 当前通知的布局信息
-     */
     private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF;
@@ -443,13 +334,6 @@ public class Notification {
         });
     }
 
-    /**
-     * 更新布局上下文
-     *
-     * @param coordinate  当前通知的布局信息
-     * @param preLayout   上个通知的布局信息
-     * @param currentTime 当前时间
-     */
     private void updateLayoutContext(ScreenCoordinate coordinate, ScreenCoordinate preLayout, long currentTime) {
         this.lastY(coordinate.y());
         this.lastIndex(this.index());

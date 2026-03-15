@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.enums;
+package xin.vanilla.banira.common.enums;
 
 /**
  * 移动方式

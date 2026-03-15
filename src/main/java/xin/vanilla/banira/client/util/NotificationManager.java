@@ -1,5 +1,8 @@
 package xin.vanilla.banira.client.util;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -7,18 +10,31 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.gui.component.Notification;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.config.CustomConfig;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private static final String LOG_FILE_NAME = "notification_log.json";
+    private static final int MAX_LOG_SIZE = 500;
+
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
+    private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
     private static final NotificationManager instance = new NotificationManager();
 
     /**
@@ -32,7 +48,115 @@ public final class NotificationManager {
      * 添加通知
      */
     public void addNotification(Notification notification) {
+        addNotification(notification, false);
+    }
+
+    /**
+     * 添加通知
+     *
+     * @param notification 通知
+     * @param fromNetwork  是否来自服务端推送
+     */
+    public void addNotification(Notification notification, boolean fromNetwork) {
         this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
+        appendLog(notification, fromNetwork);
+    }
+
+    /**
+     * 获取持久化的通知日志
+     */
+    public List<NotificationLogEntry> getLog() {
+        return Collections.unmodifiableList(new ArrayList<>(log));
+    }
+
+    /**
+     * 追加日志并持久化
+     */
+    private void appendLog(Notification notification, boolean fromNetwork) {
+        long id = System.currentTimeMillis();
+        String componentJson = JsonUtils.toString(Component.serialize(notification.component()));
+        NotificationLogEntry entry = new NotificationLogEntry()
+                .id(id)
+                .timestamp(id)
+                .componentJson(componentJson)
+                .positionName(notification.position().name())
+                .animationName(notification.animation().name())
+                .durationTime(notification.durationTime())
+                .source(fromNetwork ? "network" : "local");
+        synchronized (log) {
+            log.add(0, entry);
+            while (log.size() > MAX_LOG_SIZE) {
+                log.remove(log.size() - 1);
+            }
+        }
+        saveLogAsync();
+    }
+
+    /**
+     * 从文件加载日志
+     */
+    public void loadLog() {
+        Path path = CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME);
+        File file = path.toFile();
+        if (!file.exists()) return;
+        try {
+            String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+            JsonObject root = JsonUtils.parseObject(content);
+            JsonElement entriesEl = root.get("entries");
+            if (entriesEl == null || !entriesEl.isJsonArray()) return;
+            JsonArray arr = entriesEl.getAsJsonArray();
+            synchronized (log) {
+                log.clear();
+                for (JsonElement el : arr) {
+                    JsonObject obj = el.getAsJsonObject();
+                    NotificationLogEntry entry = new NotificationLogEntry()
+                            .id(JsonUtils.getLong(obj, "id", 0))
+                            .timestamp(JsonUtils.getLong(obj, "timestamp", 0))
+                            .componentJson(JsonUtils.getString(obj, "componentJson", "{}"))
+                            .positionName(JsonUtils.getString(obj, "positionName", "TOP_RIGHT"))
+                            .animationName(JsonUtils.getString(obj, "animationName", "AUTO"))
+                            .durationTime(JsonUtils.getLong(obj, "durationTime", 5000))
+                            .source(JsonUtils.getString(obj, "source", "local"));
+                    log.add(entry);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load notification log: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 异步保存日志到文件
+     */
+    private void saveLogAsync() {
+        new Thread(() -> {
+            try {
+                Path dir = CustomConfig.getConfigDirectory();
+                Files.createDirectories(dir);
+                Path path = dir.resolve(LOG_FILE_NAME);
+                JsonObject root = new JsonObject();
+                JsonArray arr = new JsonArray();
+                List<NotificationLogEntry> snapshot;
+                synchronized (log) {
+                    snapshot = new ArrayList<>(log);
+                }
+                for (NotificationLogEntry e : snapshot) {
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("id", e.id());
+                    obj.addProperty("timestamp", e.timestamp());
+                    obj.addProperty("componentJson", e.componentJson());
+                    obj.addProperty("positionName", e.positionName());
+                    obj.addProperty("animationName", e.animationName());
+                    obj.addProperty("durationTime", e.durationTime());
+                    obj.addProperty("source", e.source());
+                    arr.add(obj);
+                }
+                root.add("entries", arr);
+                Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
+            }
+        }).start();
     }
 
     @OnlyIn(Dist.CLIENT)

@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.util.NotificationManager;
 
 /**
  * Mod事件处理器
@@ -31,5 +32,6 @@ public class ModEventHandler {
     @SubscribeEvent
     public static void registerKeyBindings(FMLClientSetupEvent event) {
         ClientRegistry.registerKeyBinding(DEBUG_KEY);
+        NotificationManager.get().loadLog();
     }
 }

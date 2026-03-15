@@ -64,5 +64,15 @@
   "format.banira_codex.enter_effect_duration_error": "效果持续时间 [%s] 输入有误",
   "format.banira_codex.enter_effect_amplifier_error": "效果等级 [%s] 输入有误",
   "word.banira_codex.enter_effect_duration": "输入效果持续时间（刻）",
-  "word.banira_codex.enter_effect_amplifier": "输入效果等级"
+  "word.banira_codex.enter_effect_amplifier": "输入效果等级",
+  "word.banira_codex.notification_log_title": "通知日志",
+  "word.banira_codex.notification_log_empty": "暂无通知记录",
+  "word.banira_codex.notification_log_filter": "筛选",
+  "word.banira_codex.notification_log_filter_all": "全部",
+  "word.banira_codex.notification_log_filter_local": "客户端",
+  "word.banira_codex.notification_log_filter_network": "服务端",
+  "word.banira_codex.notification_log_source_local": "客户端",
+  "word.banira_codex.notification_log_source_network": "服务端",
+  "word.banira_codex.notification_log_select_hint": "点击左侧记录查看详情",
+  "word.banira_codex.close": "关闭"
 }

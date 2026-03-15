@@ -4,7 +4,7 @@ package xin.vanilla.banira.client.data;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.client.enums.EnumPosition;
+import xin.vanilla.banira.common.enums.EnumPosition;
 
 /**
  * 变换参数

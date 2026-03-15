@@ -179,6 +179,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         this.text = Text.from(text);
     }
 
+    public ButtonWidget padding(int padding) {
+        paddingLeft(padding);
+        paddingRight(padding);
+        paddingTop(padding);
+        paddingBottom(padding);
+        return this;
+    }
+
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {

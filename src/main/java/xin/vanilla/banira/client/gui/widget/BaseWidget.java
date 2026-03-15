@@ -6,9 +6,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
 import java.util.*;

@@ -19,8 +19,6 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.enums.EnumMoveType;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -33,6 +31,8 @@ import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.CircularList;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.event.ModEventHandler;
@@ -264,6 +264,7 @@ public class DebugScreen extends BaniraScreen {
                     .addOptionWithId("opt_item", "选项 E - 打开物品选择")
                     .addOptionWithId("opt_advancement", "选项 F - 打开成就选择")
                     .addOptionWithId("opt_effect", "选项 G - 打开效果选择")
+                    .addOptionWithId("opt_notification_log", "选项 H - 通知日志", "查看所有通知记录")
                     .onSelect(e -> handlePopupSelect(e.id(), e.text()))
                     .showAt(eventArgs.mouseX(), eventArgs.mouseY());
         }
@@ -301,6 +302,9 @@ public class DebugScreen extends BaniraScreen {
                         .defaultEffect(new EffectInstance(Effects.LUCK, 600, 0))
                         .onDataReceived(onEffectSelect);
                 Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
+                break;
+            case "opt_notification_log":
+                Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
                 break;
             default:
                 break;

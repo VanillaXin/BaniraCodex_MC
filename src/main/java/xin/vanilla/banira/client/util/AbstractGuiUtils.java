@@ -22,7 +22,6 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.data.TransformDrawArgs;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.component.TextList;
@@ -30,6 +29,7 @@ import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 

@@ -7,9 +7,9 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.data.TransformArgs;
-import xin.vanilla.banira.client.enums.EnumPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.enums.EnumPosition;
 
 /**
  * 图片Widget

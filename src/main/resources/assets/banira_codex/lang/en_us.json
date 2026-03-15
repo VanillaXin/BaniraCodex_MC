@@ -64,5 +64,15 @@
   "format.banira_codex.enter_effect_duration_error": "Effect Duration [%s] Input Error",
   "format.banira_codex.enter_effect_amplifier_error": "Effect Amplifier [%s] Input Error",
   "word.banira_codex.enter_effect_duration": "Enter effect duration (ticks)",
-  "word.banira_codex.enter_effect_amplifier": "Enter effect amplifier level"
+  "word.banira_codex.enter_effect_amplifier": "Enter effect amplifier level",
+  "word.banira_codex.notification_log_title": "Notification Log",
+  "word.banira_codex.notification_log_empty": "No notifications yet",
+  "word.banira_codex.notification_log_filter": "Filter",
+  "word.banira_codex.notification_log_filter_all": "All",
+  "word.banira_codex.notification_log_filter_local": "Client",
+  "word.banira_codex.notification_log_filter_network": "Server",
+  "word.banira_codex.notification_log_source_local": "Client",
+  "word.banira_codex.notification_log_source_network": "Server",
+  "word.banira_codex.notification_log_select_hint": "Click a record on the left to view details",
+  "word.banira_codex.close": "Close"
 }

@@ -8,6 +8,9 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
@@ -37,16 +40,16 @@ public abstract class BaseWidget implements IWidget {
     }
 
     @Getter
-    @Setter
     protected ScreenCoordinate renderCoordinate;
+
+    public void renderCoordinate(ScreenCoordinate coord) {
+        this.renderCoordinate = coord != null ? coord : new ScreenCoordinate();
+        invalidateAbsCache();
+    }
 
     @Getter
     @Setter
     protected List<ScreenCoordinate> hoveringCoordinates = new ArrayList<>();
-
-    @Getter
-    @Setter
-    protected List<ScreenCoordinate> clickingCoordinates = new ArrayList<>();
 
     @Getter
     @Setter
@@ -62,11 +65,41 @@ public abstract class BaseWidget implements IWidget {
 
     protected final List<IWidget> children = new ArrayList<>();
 
+    /**
+     * absoluteX/absoluteY 缓存，parent 或 bounds 变更时失效
+     */
+    private double cachedAbsX, cachedAbsY;
+    private boolean absCacheValid = false;
+
     protected boolean mouseInside = false;
 
     protected boolean mousePressed = false;
 
     protected int pressedMouseButton = -1;
+
+    /**
+     * 双击检测：上次点击时间与位置
+     */
+    private long lastClickTime = 0;
+    private double lastClickX = 0;
+    private double lastClickY = 0;
+    private int lastClickButton = -1;
+
+    private static final long DOUBLE_CLICK_MS = 300;
+    private static final double DOUBLE_CLICK_DIST = 5;
+
+    /**
+     * 长按检测：按下开始时间，释放时重置
+     */
+    private long pressStartTime = 0;
+    /**
+     * 长按已触发标志，避免重复回调
+     */
+    private boolean longPressFired = false;
+    /**
+     * 长按默认阈值 ms
+     */
+    protected static final long LONG_PRESS_MS = 500;
 
     @Getter
     protected boolean focused = false;
@@ -116,9 +149,14 @@ public abstract class BaseWidget implements IWidget {
     public void applyTheme(BaniraColorConfig theme) {
         for (IWidget child : children) {
             if (child instanceof BaseWidget) {
-                ((BaseWidget) child).applyTheme(theme);
+                child.applyTheme(theme);
             }
         }
+    }
+
+    @Override
+    public boolean needsUpdate() {
+        return true;
     }
 
     @Override
@@ -128,63 +166,81 @@ public abstract class BaseWidget implements IWidget {
         }
         if (screen != null) {
             updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
+            if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= LONG_PRESS_MS) {
+                longPressFired = true;
+                onLongPress(MouseEvent.of(screen.inputState().mouseX(), screen.inputState().mouseY(), pressedMouseButton));
+            }
         }
         for (IWidget child : children) {
-            if (child != null && child.visible() && child.enabled()) {
+            if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
                 child.update();
             }
         }
     }
 
     @Override
-    public boolean handleMouseClick(double mouseX, double mouseY, int mouseButton) {
-        if (!visible || !enabled) {
+    public boolean handleMouseClick(MouseEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        int mouseButton = event.button();
+        double absX = absoluteX();
+        double absY = absoluteY();
+        double relativeMouseX = mouseX - absX + x();
+        double relativeMouseY = mouseY - absY + y();
 
-        double relativeMouseX = mouseX - absoluteX() + x();
-        double relativeMouseY = mouseY - absoluteY() + y();
-
+        MouseEvent relEvent = MouseEvent.of(relativeMouseX, relativeMouseY, mouseButton);
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseClick(relativeMouseX, relativeMouseY, mouseButton)) {
+                if (child.handleMouseClick(relEvent)) {
                     return true;
                 }
             }
         }
-        if (isMouseInside(mouseX, mouseY)) {
+        if (isMouseInside(mouseX, mouseY, absX, absY)) {
             mousePressed = true;
             pressedMouseButton = mouseButton;
-            return onMouseClick(mouseX, mouseY, mouseButton);
+            pressStartTime = System.currentTimeMillis();
+            longPressFired = false;
+            return onMouseClick(event);
         }
 
         return false;
     }
 
     @Override
-    public boolean handleMouseRelease(double mouseX, double mouseY, int mouseButton) {
-        if (!visible || !enabled) {
+    public boolean handleMouseRelease(MouseEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        int mouseButton = event.button();
+        double absX = absoluteX();
+        double absY = absoluteY();
+        double relativeMouseX = mouseX - absX + x();
+        double relativeMouseY = mouseY - absY + y();
 
-        double relativeMouseX = mouseX - absoluteX() + x();
-        double relativeMouseY = mouseY - absoluteY() + y();
-
+        MouseEvent relEvent = MouseEvent.of(relativeMouseX, relativeMouseY, mouseButton);
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseRelease(relativeMouseX, relativeMouseY, mouseButton)) {
+                if (child.handleMouseRelease(relEvent)) {
                     return true;
                 }
             }
         }
         boolean wasPressed = mousePressed && pressedMouseButton == mouseButton;
         if (wasPressed) {
+            lastReleaseWasLongPress = longPressFired;
             mousePressed = false;
             pressedMouseButton = -1;
-            boolean inside = isMouseInside(mouseX, mouseY);
-            return onMouseRelease(mouseX, mouseY, mouseButton, inside);
+            longPressFired = false;
+            boolean inside = isMouseInside(mouseX, mouseY, absX, absY);
+            return onMouseRelease(event, inside);
         }
 
         return false;
@@ -243,49 +299,57 @@ public abstract class BaseWidget implements IWidget {
     }
 
     @Override
-    public boolean handleMouseDrag(double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        if (!visible || !enabled) {
+    public boolean handleMouseDrag(MouseDragEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        double absX = absoluteX();
+        double absY = absoluteY();
+        double relativeMouseX = mouseX - absX + x();
+        double relativeMouseY = mouseY - absY + y();
 
-        double relativeMouseX = mouseX - absoluteX() + x();
-        double relativeMouseY = mouseY - absoluteY() + y();
-
+        MouseDragEvent relEvent = MouseDragEvent.of(relativeMouseX, relativeMouseY, event.button(), event.dragX(), event.dragY());
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseDrag(relativeMouseX, relativeMouseY, mouseButton, dragX, dragY)) {
+                if (child.handleMouseDrag(relEvent)) {
                     return true;
                 }
             }
         }
 
         if (mousePressed) {
-            return onMouseDrag(mouseX, mouseY, mouseButton, dragX, dragY);
+            return onMouseDrag(event);
         }
         return false;
     }
 
     @Override
-    public boolean handleMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        if (!visible || !enabled) {
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        double absX = absoluteX();
+        double absY = absoluteY();
+        double relativeMouseX = mouseX - absX + x();
+        double relativeMouseY = mouseY - absY + y();
 
-        double relativeMouseX = mouseX - absoluteX() + x();
-        double relativeMouseY = mouseY - absoluteY() + y();
-
+        MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, event.delta());
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(relativeMouseX, relativeMouseY, scrollDelta)) {
+                if (child.handleMouseScroll(relEvent)) {
                     return true;
                 }
             }
         }
 
-        if (focused || isMouseInside(mouseX, mouseY)) {
-            return onMouseScroll(mouseX, mouseY, scrollDelta);
+        if (focused || isMouseInside(mouseX, mouseY, absX, absY)) {
+            return onMouseScroll(event);
         }
         return false;
     }
@@ -319,6 +383,18 @@ public abstract class BaseWidget implements IWidget {
         return renderCoordinate;
     }
 
+    /**
+     * 设置布局边界，与 {@link #bounds()} 对应。链式调用时推荐使用此方法。
+     *
+     * @return this，便于链式调用
+     */
+    @SuppressWarnings("unchecked")
+    public final <S extends BaseWidget> S bounds(ScreenCoordinate coord) {
+        this.renderCoordinate = coord != null ? coord : new ScreenCoordinate();
+        invalidateAbsCache();
+        return (S) this;
+    }
+
     @Override
     public void property(String key, Object value) {
         if (value == null) {
@@ -339,11 +415,97 @@ public abstract class BaseWidget implements IWidget {
         if (renderCoordinate == null) {
             return false;
         }
-        double absX = absoluteX();
-        double absY = absoluteY();
+        return isMouseInside(mouseX, mouseY, absoluteX(), absoluteY());
+    }
+
+    /**
+     * 由调用方传入已计算的绝对坐标，避免重复递归计算。
+     * 在 handleMouseClick/Release/Scroll 等已计算 absX/absY 的场景下使用。
+     */
+    protected boolean isMouseInside(double mouseX, double mouseY, double absX, double absY) {
+        return hitTest(mouseX, mouseY, absX, absY);
+    }
+
+    /**
+     * 命中检测，判断鼠标是否在组件区域内。子类可重写以支持非矩形区域（如圆形、多边形）。
+     *
+     * @param mouseX 屏幕坐标 X
+     * @param mouseY 屏幕坐标 Y
+     * @param absX   组件绝对 X
+     * @param absY   组件绝对 Y
+     * @return 是否命中
+     */
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null) {
+            return false;
+        }
         double width = renderCoordinate.width();
         double height = renderCoordinate.height();
         return mouseX >= absX && mouseX < absX + width && mouseY >= absY && mouseY < absY + height;
+    }
+
+    /**
+     * 判断本次点击是否为双击。时间窗口 {@value #DOUBLE_CLICK_MS}ms，位置容差 {@value #DOUBLE_CLICK_DIST}px。
+     * 子类在 {@link #onMouseClick} 中调用，若返回 true 可执行 {@link #onDoubleClick} 逻辑。
+     *
+     * @param mouseX      当前点击 X
+     * @param mouseY      当前点击 Y
+     * @param mouseButton 当前点击按钮
+     * @return 是否为双击
+     */
+    protected boolean isDoubleClick(double mouseX, double mouseY, int mouseButton) {
+        long now = System.currentTimeMillis();
+        boolean isDouble = (now - lastClickTime < DOUBLE_CLICK_MS)
+                && Math.abs(mouseX - lastClickX) <= DOUBLE_CLICK_DIST
+                && Math.abs(mouseY - lastClickY) <= DOUBLE_CLICK_DIST
+                && lastClickButton == mouseButton;
+        lastClickTime = now;
+        lastClickX = mouseX;
+        lastClickY = mouseY;
+        lastClickButton = mouseButton;
+        return isDouble;
+    }
+
+    /**
+     * 判断本次点击是否为双击（事件对象重载）。
+     */
+    protected boolean isDoubleClick(MouseEvent event) {
+        return event != null && isDoubleClick(event.mouseX(), event.mouseY(), event.button());
+    }
+
+    /**
+     * 双击回调。子类重写以处理双击，默认空实现。
+     *
+     * @param event 鼠标事件
+     * @return 是否消费事件
+     */
+    protected boolean onDoubleClick(MouseEvent event) {
+        return false;
+    }
+
+    /**
+     * 判断当前按下是否已达长按阈值。子类可在按下期间（如 update）调用。
+     *
+     * @param mouseButton 按钮
+     * @param thresholdMs 阈值毫秒数
+     * @return 是否已长按
+     */
+    protected boolean isLongPress(int mouseButton, long thresholdMs) {
+        return mousePressed && pressedMouseButton == mouseButton
+                && (System.currentTimeMillis() - pressStartTime) >= thresholdMs;
+    }
+
+    /**
+     * 上次释放时是否为长按。在 {@link #onMouseRelease} 中可读取以区分单击与长按。
+     */
+    protected boolean lastReleaseWasLongPress = false;
+
+    /**
+     * 长按回调。按下超过 {@value #LONG_PRESS_MS}ms 时在 update 中触发一次。
+     *
+     * @param event 鼠标事件（当前坐标与按钮）
+     */
+    protected void onLongPress(MouseEvent event) {
     }
 
     public double x() {
@@ -365,23 +527,21 @@ public abstract class BaseWidget implements IWidget {
     /**
      * 鼠标点击回调（子类可以重写）
      *
-     * @param mouseX      鼠标X坐标
-     * @param mouseY      鼠标Y坐标
-     * @param mouseButton 鼠标按钮
+     * @param event 鼠标事件（mouseX、mouseY、button）
+     * @return 是否消费事件
      */
-    protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
+    protected boolean onMouseClick(MouseEvent event) {
         return false;
     }
 
     /**
      * 鼠标释放回调（子类可以重写）
      *
-     * @param mouseX      鼠标X坐标
-     * @param mouseY      鼠标Y坐标
-     * @param mouseButton 鼠标按钮
-     * @param inside      是否在Widget内释放
+     * @param event  鼠标事件
+     * @param inside 是否在Widget内释放
+     * @return 是否消费事件
      */
-    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
+    protected boolean onMouseRelease(MouseEvent event, boolean inside) {
         return false;
     }
 
@@ -409,23 +569,46 @@ public abstract class BaseWidget implements IWidget {
     /**
      * 鼠标拖拽回调
      *
+     * @param event 拖拽事件（mouseX、mouseY、button、dragX、dragY）
      * @return 是否处理了该事件
      */
-    protected boolean onMouseDrag(double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
+    protected boolean onMouseDrag(MouseDragEvent event) {
         return false;
     }
 
     /**
      * 鼠标滚动回调
      *
+     * @param event 滚轮事件（mouseX、mouseY、delta）
      * @return 是否处理了该事件
      */
-    protected boolean onMouseScroll(double mouseX, double mouseY, double scrollDelta) {
+    protected boolean onMouseScroll(MouseScrollEvent event) {
         return false;
     }
 
     public void updateMouseHover(double mouseX, double mouseY) {
-        mouseInside = isMouseInside(mouseX, mouseY);
+        boolean nowInside = isMouseInside(mouseX, mouseY);
+        if (nowInside != mouseInside) {
+            mouseInside = nowInside;
+            MouseEvent evt = MouseEvent.of(mouseX, mouseY, -1);
+            if (mouseInside) {
+                onMouseEnter(evt);
+            } else {
+                onMouseExit(evt);
+            }
+        }
+    }
+
+    /**
+     * 鼠标移入回调。子类重写以处理移入，默认空实现。
+     */
+    protected void onMouseEnter(MouseEvent event) {
+    }
+
+    /**
+     * 鼠标移出回调。子类重写以处理移出，默认空实现。
+     */
+    protected void onMouseExit(MouseEvent event) {
     }
 
     // region Children Management
@@ -446,6 +629,7 @@ public abstract class BaseWidget implements IWidget {
             ((BaseWidget) this.parent).children.remove(this);
         }
         this.parent = parent;
+        invalidateAbsCache();
         if (parent instanceof BaseWidget) {
             ((BaseWidget) parent).children.add(this);
         }
@@ -470,9 +654,12 @@ public abstract class BaseWidget implements IWidget {
         return false;
     }
 
+    /**
+     * 获取子组件列表（只读，调用方不得修改）。
+     */
     @Override
     public List<IWidget> children() {
-        return Collections.unmodifiableList(new ArrayList<>(children));
+        return Collections.unmodifiableList(children);
     }
 
     @Override
@@ -528,14 +715,13 @@ public abstract class BaseWidget implements IWidget {
 
     @Override
     @Nullable
-    @SuppressWarnings("unchecked")
     public <W extends IWidget> W findChildByType(Class<W> childType) {
         if (childType == null) {
             return null;
         }
         for (IWidget child : children) {
             if (childType.isInstance(child)) {
-                return (W) child;
+                return childType.cast(child);
             }
             W found = child.findChildByType(childType);
             if (found != null) {
@@ -555,20 +741,35 @@ public abstract class BaseWidget implements IWidget {
         children.clear();
     }
 
+    protected void invalidateAbsCache() {
+        if (absCacheValid) {
+            absCacheValid = false;
+            for (IWidget child : children) {
+                if (child instanceof BaseWidget) {
+                    ((BaseWidget) child).invalidateAbsCache();
+                }
+            }
+        }
+    }
+
     @Override
     public double absoluteX() {
-        if (parent != null && parent instanceof BaseWidget) {
-            return parent.absoluteX() + x();
+        if (!absCacheValid) {
+            cachedAbsX = parent != null && parent instanceof BaseWidget ? parent.absoluteX() + x() : x();
+            cachedAbsY = parent != null && parent instanceof BaseWidget ? parent.absoluteY() + y() : y();
+            absCacheValid = true;
         }
-        return x();
+        return cachedAbsX;
     }
 
     @Override
     public double absoluteY() {
-        if (parent != null && parent instanceof BaseWidget) {
-            return parent.absoluteY() + y();
+        if (!absCacheValid) {
+            cachedAbsX = parent != null && parent instanceof BaseWidget ? parent.absoluteX() + x() : x();
+            cachedAbsY = parent != null && parent instanceof BaseWidget ? parent.absoluteY() + y() : y();
+            absCacheValid = true;
         }
-        return y();
+        return cachedAbsY;
     }
 
     protected void renderChildren(MatrixStack stack, float partialTicks) {

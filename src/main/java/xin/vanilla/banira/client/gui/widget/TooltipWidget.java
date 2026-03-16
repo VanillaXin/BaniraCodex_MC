@@ -91,8 +91,9 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
             stack.pushPose();
-            // vanillaTooltip 使用屏幕坐标，不应用 translate
-            if (!vanillaTooltip) {
+            // 作为子组件时，父级已 apply translate，需反向变换回屏幕坐标；
+            // 作为根级组件时不应用，否则滚动时 absoluteY 为负会错位
+            if (parent != null) {
                 stack.translate(-absoluteX(), -absoluteY(), 0);
             }
             if (itemStack != null && !itemStack.isEmpty()) {

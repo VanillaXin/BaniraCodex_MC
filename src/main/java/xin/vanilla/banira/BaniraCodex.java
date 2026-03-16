@@ -12,17 +12,21 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.command.BaniraCommand;
+import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.TestConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 @Mod(BaniraCodex.MODID)
@@ -50,7 +54,14 @@ public class BaniraCodex {
     );
 
     public BaniraCodex() {
-        // 注册事件总线
+        // 配置必须在 CONFIG 加载阶段之前注册，故放在构造函数
+        ForgeConfigAdapter.register(CommonConfig.class, MODID);
+        ForgeConfigAdapter.register(TestConfig.class, MODID);
+
+        // 注册Mod生命周期事件
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+
+        // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
         MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
@@ -63,8 +74,7 @@ public class BaniraCodex {
     /**
      * 公共设置阶段事件
      */
-    @SubscribeEvent
-    public void onCommonSetup(final FMLCommonSetupEvent event) {
+    private void onCommonSetup(final FMLCommonSetupEvent event) {
         CustomConfig.loadCustomConfig(false);
     }
 

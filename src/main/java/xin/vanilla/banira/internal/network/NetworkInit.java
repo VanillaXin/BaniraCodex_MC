@@ -9,6 +9,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
 import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
@@ -30,6 +31,8 @@ public final class NetworkInit {
         HANDLER.register(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle);
         HANDLER.register(ModLoadedToBoth.class, ModLoadedToBoth::toBytes, ModLoadedToBoth::new, ModLoadedToBoth::handle);
         HANDLER.register(NotificationToClient.class, NotificationToClient::toBytes, NotificationToClient::new, NotificationToClient::handle);
+        HANDLER.register(ConfigSyncToServer.class, ConfigSyncToServer::toBytes, ConfigSyncToServer::new,
+                (p, ctx) -> ConfigSyncToServer.handle(p, ctx));
 
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new AdvancementToClient(AdvancementUtils.advancementData()), player);

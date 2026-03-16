@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 /**
  * 多边形Widget
@@ -28,6 +27,40 @@ public class PolygonWidget extends BaseShapeWidget {
 
     public PolygonWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
+    }
+
+    @Override
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null || sides < 3) {
+            return false;
+        }
+        double width = renderCoordinate.width();
+        double height = renderCoordinate.height();
+        double centerX = absX + width / 2;
+        double centerY = absY + height / 2;
+        double radius = Math.min(width, height) / 2;
+        int n = sides;
+        double radRot = Math.toRadians(rotation);
+        double[] xs = new double[n];
+        double[] ys = new double[n];
+        for (int i = 0; i < n; i++) {
+            double a = radRot + i * 2 * Math.PI / n;
+            xs[i] = centerX + radius * Math.cos(a);
+            ys[i] = centerY - radius * Math.sin(a);
+        }
+        return pointInPolygon(mouseX, mouseY, xs, ys);
+    }
+
+    private static boolean pointInPolygon(double px, double py, double[] xs, double[] ys) {
+        int n = xs.length;
+        boolean inside = false;
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            if (((ys[i] > py) != (ys[j] > py))
+                    && (px < (xs[j] - xs[i]) * (py - ys[i]) / (ys[j] - ys[i]) + xs[i])) {
+                inside = !inside;
+            }
+        }
+        return inside;
     }
 
     @Override

@@ -1,0 +1,163 @@
+package xin.vanilla.banira.client.gui.widget;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import net.minecraft.client.gui.screen.Screen;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.common.util.StringUtils;
+
+import javax.annotation.Nullable;
+
+/**
+ * 数值输入 Widget。继承 InputWidget，专为数值输入优化：
+ * <ul>
+ *   <li>仅允许输入数字、小数点、负号（可选）</li>
+ *   <li>支持整数模式（无小数点）</li>
+ *   <li>支持滚轮滚动增减数值</li>
+ *   <li>支持 min/max 范围限制</li>
+ *   <li>支持步进值（step）</li>
+ * </ul>
+ */
+@Accessors(chain = true, fluent = true)
+public class NumericInputWidget extends InputWidget {
+
+    @Getter
+    @Setter
+    private boolean integerOnly = false;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Double minValue;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Double maxValue;
+
+    @Getter
+    @Setter
+    private double step = 1.0;
+
+    @Getter
+    @Setter
+    private boolean allowNegative = true;
+
+    public NumericInputWidget(BaniraScreen screen) {
+        super(screen);
+    }
+
+    public NumericInputWidget(BaniraScreen screen, ScreenCoordinate bounds) {
+        super(screen, bounds);
+    }
+
+    @Override
+    protected boolean onCharTyped(char codePoint, int modifiers) {
+        if (!focused() || !enabled || !editable()) {
+            return false;
+        }
+
+        String currentValue = value();
+        int cursorPos = cursorPosition();
+        int highlightStart = Math.min(cursorPos, highlightPos());
+        int highlightEnd = Math.max(cursorPos, highlightPos());
+        boolean hasSelection = highlightStart != highlightEnd;
+
+        // 数字
+        if (Character.isDigit(codePoint)) {
+            return super.onCharTyped(codePoint, modifiers);
+        }
+
+        // 负号：仅允许在开头且 allowNegative
+        if (codePoint == '-') {
+            if (!allowNegative) return true;
+            if (currentValue.isEmpty() && cursorPos == 0) {
+                return super.onCharTyped(codePoint, modifiers);
+            }
+            if (hasSelection && highlightStart == 0) {
+                return super.onCharTyped(codePoint, modifiers);
+            }
+            return true;
+        }
+
+        // 小数点：仅允许在非整数模式下，且最多一个
+        if (codePoint == '.' || codePoint == ',') {
+            if (integerOnly) return true;
+            String effective = hasSelection ? currentValue.substring(0, highlightStart) + currentValue.substring(highlightEnd) : currentValue;
+            if (effective.contains(".")) return true;
+            return super.onCharTyped('.', modifiers);
+        }
+
+        // 其他字符拒绝
+        return true;
+    }
+
+    @Override
+    protected boolean onMouseScroll(MouseScrollEvent event) {
+        if (event == null || !canConsumeInput() || renderCoordinate == null) return false;
+        // 数值输入：滚轮直接增减数值
+        double current = parseValue();
+        double step = Screen.hasShiftDown() ? this.step * 10 : this.step;
+        double delta = event.delta() > 0 ? step : -step;
+        double newVal = current + delta;
+        if (minValue != null) newVal = Math.max(newVal, minValue);
+        if (maxValue != null) newVal = Math.min(newVal, maxValue);
+        value(formatValue(newVal));
+        return true;
+    }
+
+    /**
+     * 解析当前文本为数值，无效时返回 0
+     */
+    public double parseValue() {
+        String s = value();
+        if (StringUtils.isNullOrEmptyEx(s)) return 0;
+        s = s.trim();
+        if (s.equals("-") || s.equals(".")) return 0;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 获取整数值
+     */
+    public int intValue() {
+        return (int) Math.round(parseValue());
+    }
+
+    private String formatValue(double v) {
+        if (integerOnly) {
+            return String.valueOf((int) Math.round(v));
+        }
+        return v == (long) v ? String.valueOf((long) v) : String.valueOf(v);
+    }
+
+    /**
+     * 设置当前数值（内部会格式化为字符串）
+     */
+    public void setNumericValue(double v) {
+        if (minValue != null) v = Math.max(v, minValue);
+        if (maxValue != null) v = Math.min(v, maxValue);
+        value(formatValue(v));
+    }
+
+    /**
+     * 增加 step
+     */
+    public void increment() {
+        setNumericValue(parseValue() + step);
+    }
+
+    /**
+     * 减少 step
+     */
+    public void decrement() {
+        setNumericValue(parseValue() - step);
+    }
+}

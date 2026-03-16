@@ -19,6 +19,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -191,7 +192,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // 输入框
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
-        searchInputWidget.renderCoordinate(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
+        searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
         searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_advancement"));
         searchInputWidget.onTextChanged(text -> {
@@ -205,8 +206,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // 滚动条（先添加，确保列表项悬浮提示绘制在滚动条上层）
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
-        scrollbarWidget.renderCoordinate(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
-        scrollbarWidget.orientation(ScrollbarWidget.Orientation.VERTICAL);
+        scrollbarWidget.bounds(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
+        scrollbarWidget.orientation(EnumOrientation.VERTICAL);
         scrollbarWidget.minValue(0);
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
@@ -223,7 +224,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             String btnId = btnIds[i];
             ButtonWidget btn = new ButtonWidget(this);
             btn.id(btnId);
-            btn.renderCoordinate(new ScreenCoordinate(opBtnX, opBtnY + i * (OP_BTN_SIZE + OP_BTN_GAP), OP_BTN_SIZE, OP_BTN_SIZE));
+            btn.bounds(new ScreenCoordinate(opBtnX, opBtnY + i * (OP_BTN_SIZE + OP_BTN_GAP), OP_BTN_SIZE, OP_BTN_SIZE));
             btn.text(Text.empty());
             btn.paddingLeft(0).paddingRight(0).paddingTop(0).paddingBottom(0);
 
@@ -263,7 +264,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         for (int i = 0; i < MAX_LINES; i++) {
             ButtonWidget btn = new ButtonWidget(this);
             btn.id("advancement_btn_" + i);
-            btn.renderCoordinate(new ScreenCoordinate(listX, listY + i * (ROW_HEIGHT + ITEM_SPACING), listItemW, ROW_HEIGHT - 2));
+            btn.bounds(new ScreenCoordinate(listX, listY + i * (ROW_HEIGHT + ITEM_SPACING), listItemW, ROW_HEIGHT - 2));
             btn.text(Text.empty());
             btn.paddingLeft(iconW).paddingRight(4);
             btn.visible(false);
@@ -303,14 +304,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // 确认与取消按钮
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
-        cancelButtonWidget.renderCoordinate(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
+        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
         cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
-        submitButtonWidget.renderCoordinate(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
+        submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
         submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentAdvancement == null) {
@@ -356,7 +357,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void renderEvent(MatrixStack stack, float partialTicks) {
+    public void onRender(MatrixStack stack, float partialTicks) {
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
@@ -379,7 +380,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+    public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
             Minecraft.getInstance().setScreen(args.parentScreen());
@@ -387,7 +388,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         }
         eventArgs.consumed(flag.get());
 
-        super.mouseClickedEvent(eventArgs);
+        super.onMouseClicked(eventArgs);
 
         if (searchInputWidget != null && searchInputWidget.focused()) {
             BaseWidget inputBase = searchInputWidget;
@@ -400,8 +401,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
-        super.keyPressedEvent(eventArgs);
+    public void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        super.onKeyPressed(eventArgs);
         if (eventArgs.consumed()) {
             return;
         }

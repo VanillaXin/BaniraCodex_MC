@@ -17,6 +17,7 @@
   "word.banira_codex.confirm": "Confirm",
   "word.banira_codex.cancel": "Cancel",
   "word.banira_codex.enter_something": "This is a text input box",
+  "word.banira_codex.enter_number": "Enter number (scroll to adjust)",
   "word.banira_codex.enter_file_path": "File path",
   "word.banira_codex.enter_color_hex": "Color (e.g. #FFFFFF)",
   "word.banira_codex.search_advancement": "Search Advancements...",
@@ -88,5 +89,12 @@
   "word.banira_codex.notification_log_source_local": "Client",
   "word.banira_codex.notification_log_source_network": "Server",
   "word.banira_codex.notification_log_select_hint": "Click a record on the left to view details",
-  "word.banira_codex.close": "Close"
+  "word.banira_codex.close": "Close",
+  "word.banira_codex.config_editor_title": "Config Editor",
+  "word.banira_codex.config_editor_save": "Save",
+  "word.banira_codex.config_editor_sync": "Sync to Server",
+  "word.banira_codex.config_editor_close": "Close",
+  "word.banira_codex.config_editor_save_success": "Config saved",
+  "word.banira_codex.config_editor_save_failed": "Config save failed: %s",
+  "word.banira_codex.config_editor_validation_failed": "Validation failed: please fix invalid values"
 }

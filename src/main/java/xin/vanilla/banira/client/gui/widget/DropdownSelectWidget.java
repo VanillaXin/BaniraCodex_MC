@@ -12,6 +12,8 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -35,7 +37,7 @@ import java.util.stream.Collectors;
  * 使用示例：
  * <pre>{@code
  * DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
- * dropdown.renderCoordinate(new ScreenCoordinate(10, 10, 200, 24));
+ * dropdown.bounds(new ScreenCoordinate(10, 10, 200, 24));
  * dropdown.options(Arrays.asList("选项A", "选项B", "选项C"));
  * dropdown.multiSelect(true);  // 可选，默认单选
  * dropdown.selectedValues(Collections.singletonList("选项A"));
@@ -617,9 +619,11 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
-        if (!visible || renderCoordinate == null || mouseButton != 0) return false;
+    protected boolean onMouseClick(MouseEvent event) {
+        if (!visible || renderCoordinate == null || event == null || event.button() != 0) return false;
 
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
         double absX = absoluteX();
         double absY = absoluteY();
         int w = (int) renderCoordinate.width();
@@ -642,11 +646,13 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
-        if (!visible || renderCoordinate == null || mouseButton != 0 || pressedArea == 0) {
+    protected boolean onMouseRelease(MouseEvent event, boolean inside) {
+        if (!visible || renderCoordinate == null || event == null || event.button() != 0 || pressedArea == 0) {
             pressedArea = 0;
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
         double absX = absoluteX();
         double absY = absoluteY();
         int w = (int) renderCoordinate.width();
@@ -697,7 +703,7 @@ public class DropdownSelectWidget extends InputWidget {
                 openDropdown();
             }
             pressedArea = 2;
-            return super.onMouseRelease(mouseX, mouseY, mouseButton, inside);
+            return super.onMouseRelease(event, inside);
         }
         return false;
     }
@@ -761,8 +767,8 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    public boolean handleMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mouseX, mouseY)) {
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && event != null && isMouseInside(event.mouseX(), event.mouseY())) {
             FontRenderer font = Minecraft.getInstance().font;
             int totalWidth = 0;
             for (String item : selectedValues) {
@@ -773,7 +779,7 @@ public class DropdownSelectWidget extends InputWidget {
             int maxScroll = Math.max(0, totalWidth - contentWidth);
             if (maxScroll > 0) {
                 int step = 40;
-                if (scrollDelta > 0) {
+                if (event.delta() > 0) {
                     tagScrollOffset = Math.max(0, tagScrollOffset - step);
                 } else {
                     tagScrollOffset = Math.min(maxScroll, tagScrollOffset + step);
@@ -781,7 +787,7 @@ public class DropdownSelectWidget extends InputWidget {
                 return true;
             }
         }
-        return super.handleMouseScroll(mouseX, mouseY, scrollDelta);
+        return super.handleMouseScroll(event);
     }
 
     @Override

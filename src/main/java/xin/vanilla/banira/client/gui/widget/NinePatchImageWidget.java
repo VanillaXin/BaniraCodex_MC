@@ -54,6 +54,11 @@ public class NinePatchImageWidget extends BaseWidget {
     }
 
     @Override
+    public boolean needsUpdate() {
+        return false;
+    }
+
+    @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {
             return;
@@ -65,8 +70,8 @@ public class NinePatchImageWidget extends BaseWidget {
         TransformArgs args = new TransformArgs(stack)
                 .x(x())
                 .y(y())
-                .width(renderCoordinate().width())
-                .height(renderCoordinate().height())
+                .width(bounds().width())
+                .height(bounds().height())
                 .scale(scale())
                 .angle(rotation())
                 .center(rotationCenter())

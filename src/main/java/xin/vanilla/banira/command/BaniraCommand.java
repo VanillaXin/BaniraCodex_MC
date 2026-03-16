@@ -9,7 +9,7 @@ import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
-import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.CommonConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,19 +51,16 @@ public class BaniraCommand {
      * 获取指定指令类型的完整命令字符串
      */
     public static String getCommand(EnumCommandType type) {
-        String prefix = CustomConfig.getCommandPrefix();
-        if (prefix == null || prefix.isEmpty()) {
-            prefix = "banira";
-        }
+        String prefix = CommonConfig.get().command().commandPrefix();
         switch (type) {
             case HELP:
                 return prefix + " help";
             case LANGUAGE:
             case LANGUAGE_CONCISE:
-                return prefix + " " + CustomConfig.getCommandLanguage();
+                return prefix + " " + CommonConfig.get().command().commandLanguage();
             case VIRTUAL_OP:
             case VIRTUAL_OP_CONCISE:
-                return prefix + " " + CustomConfig.getCommandVirtualOp();
+                return prefix + " " + CommonConfig.get().command().commandVirtualOp();
             default:
                 return prefix;
         }
@@ -73,8 +70,7 @@ public class BaniraCommand {
      * 获取指令前缀
      */
     public static String getCommandPrefix() {
-        String prefix = CustomConfig.getCommandPrefix();
-        return (prefix == null || prefix.isEmpty()) ? "banira" : prefix.trim();
+        return CommonConfig.get().command().commandPrefix();
     }
 
     /**

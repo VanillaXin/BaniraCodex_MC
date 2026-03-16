@@ -300,7 +300,7 @@ public class Notification extends NotificationData {
 
     private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
         double scale = Math.max(0.01, this.renderScale);
-        int alpha = this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF;
+        int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
 
         AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.NOTIFICATION, (s) -> {

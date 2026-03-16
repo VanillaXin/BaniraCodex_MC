@@ -12,11 +12,14 @@ import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.MouseWidget;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
+import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -28,8 +31,23 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Predicate;
 
 
+/**
+ * Banira GUI 基类。
+ * <p>
+ * 事件分发顺序：
+ * <ul>
+ *   <li><b>mouseClicked</b>: cursor → popupOption(悬停则处理) → 否则 popupOption.clear + unfocusAllExcept
+ *       → 逆序 widgets(visible+enabled, shouldWidgetReceiveClick) handleMouseClick → 首个 consumed 的获得 focus
+ *       → 未 consumed 则 onMouseClicked</li>
+ *   <li><b>mouseScrolled</b>: cursor → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
+ *       → 逆序 widgets handleMouseScroll → onMouseScrolled</li>
+ *   <li><b>keyPressed</b>: focusedWidget 优先 → 逆序 widgets(跳过 focused) handleKeyPress → onKeyPressed</li>
+ * </ul>
+ * </p>
+ */
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -84,9 +102,11 @@ public abstract class BaniraScreen extends Screen {
 
     /**
      * 获取有效主题：theme 非空时返回 theme，否则按 season 返回季节预设。
+     * render 期间使用每帧缓存，避免重复计算。
      */
     @Nonnull
     public BaniraColorConfig getEffectiveTheme() {
+        if (cachedTheme != null) return cachedTheme;
         if (theme != null) return theme;
         return BaniraColorConfig.forSeason(season == EnumSeason.AUTO || season == null ? DateUtils.getSeason() : season);
     }
@@ -154,33 +174,46 @@ public abstract class BaniraScreen extends Screen {
     protected void onInit() {
     }
 
+    /**
+     * 每帧 render 时缓存的 theme，避免 getEffectiveTheme 重复计算
+     */
+    private BaniraColorConfig cachedTheme;
+
     @Override
     @ParametersAreNonnullByDefault
     public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
-        totalRenderCount++;
-        this.renderCount++;
+        if (LOGGER.isDebugEnabled()) {
+            totalRenderCount++;
+            this.renderCount++;
+        }
+        cachedTheme = getEffectiveTheme();
 
-        this.renderEvent(stack, partialTicks);
+        this.onRender(stack, partialTicks);
 
         this.popupOption.render(stack, inputState);
         this.cursor.draw(stack, mouseX, mouseY);
+        cachedTheme = null;
     }
 
-    protected abstract void renderEvent(MatrixStack stack, float partialTicks);
+    protected abstract void onRender(MatrixStack stack, float partialTicks);
 
     @Override
     public void removed() {
         ClientThemeManager.setDefaultTheme(getEffectiveTheme());
         ClientThemeManager.setDefaultSeason(season);
         this.cursor.removed();
-        this.removedEvent();
+        this.onRemoved();
         super.removed();
     }
 
-    protected void removedEvent() {
+    protected void onRemoved() {
         clearWidgets();
     }
 
+    /**
+     * 鼠标点击事件参数。子类在 {@link #onMouseClicked} 中可设置 consumed(true) 以阻止后续处理。
+     * consumed 为 true 时表示事件已被处理、不再向下传递。
+     */
     @Data
     @Accessors(chain = true, fluent = true)
     public static class MouseClickedHandleArgs {
@@ -192,7 +225,8 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        this.cursor.mouseClicked(mouseX, mouseY, button);
+        MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button);
+        this.cursor.mouseClicked(clickEvent);
 
         MouseClickedHandleArgs args = new MouseClickedHandleArgs()
                 .mouseX(mouseX)
@@ -200,31 +234,21 @@ public abstract class BaniraScreen extends Screen {
                 .button(button);
 
         if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionPress(mouseX, mouseY, button)) {
+            if (this.popupOption.tryHandleOptionPress(clickEvent)) {
                 args.consumed(true);
             }
         } else {
             this.popupOption.clear();
             unfocusAllExcept(null);
 
-            IWidget clickedWidget = null;
-            for (int i = widgets.size() - 1; i >= 0; i--) {
-                IWidget widget = widgets.get(i);
-                if (widget.visible() && widget.enabled()) {
-                    if (!shouldWidgetReceiveClick(widget, mouseX, mouseY, button)) continue;
-                    if (widget.handleMouseClick(mouseX, mouseY, button)) {
-                        args.consumed(true);
-                        clickedWidget = widget;
-                        break;
-                    }
-                }
+            IWidget clicked = findFirstHandlingWidget(w ->
+                    shouldWidgetReceiveClick(w, clickEvent) && w.handleMouseClick(clickEvent));
+            if (clicked != null) {
+                args.consumed(true);
+                requestFocus(clicked.getFocusTarget());
             }
 
-            if (clickedWidget != null) {
-                requestFocus(clickedWidget);
-            }
-
-            if (!args.consumed()) mouseClickedEvent(args);
+            if (!args.consumed()) onMouseClicked(args);
         }
 
         return args.consumed() || super.mouseClicked(mouseX, mouseY, button);
@@ -233,16 +257,19 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 该 widget 是否应接收此次点击
      */
-    protected boolean shouldWidgetReceiveClick(IWidget widget, double mouseX, double mouseY, int button) {
+    protected boolean shouldWidgetReceiveClick(IWidget widget, MouseEvent event) {
         return true;
     }
 
-    protected void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+    protected void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         if (!eventArgs.consumed()) {
             unfocusAllExcept(null);
         }
     }
 
+    /**
+     * 鼠标释放事件参数。consumed 为 true 时表示事件已被处理。
+     */
     @Data
     @Accessors(chain = true, fluent = true)
     public static class MouseReleasedHandleArgs {
@@ -254,7 +281,8 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        this.cursor.mouseReleased(mouseX, mouseY, button);
+        MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
+        this.cursor.mouseReleased(releaseEvent);
 
         MouseReleasedHandleArgs args = new MouseReleasedHandleArgs()
                 .mouseX(mouseX)
@@ -262,64 +290,71 @@ public abstract class BaniraScreen extends Screen {
                 .button(button);
 
         if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionRelease(mouseX, mouseY, button)) {
+            if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
                 args.consumed(true);
             }
         }
         if (!this.popupOption.isHovered()) {
             this.popupOption.clear();
 
-            for (int i = widgets.size() - 1; i >= 0; i--) {
-                IWidget widget = widgets.get(i);
-                if (widget.visible() && widget.enabled()) {
-                    if (widget.handleMouseRelease(mouseX, mouseY, button)) {
-                        args.consumed(true);
-                        break;
-                    }
-                }
+            if (findFirstHandlingWidget(w -> w.handleMouseRelease(MouseEvent.of(mouseX, mouseY, button))) != null) {
+                args.consumed(true);
             }
 
-            if (!args.consumed()) mouseReleasedEvent(args);
+            if (!args.consumed()) onMouseReleased(args);
         }
 
         return args.consumed() || super.mouseReleased(mouseX, mouseY, button);
     }
 
-    protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
+    protected void onMouseReleased(MouseReleasedHandleArgs eventArgs) {
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        this.cursor.mouseScrolled(mouseX, mouseY, delta);
+        MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
+        this.cursor.mouseScrolled(scrollEvent);
 
-        for (int i = widgets.size() - 1; i >= 0; i--) {
-            IWidget widget = widgets.get(i);
-            if (widget.visible() && widget.enabled()) {
-                if (widget.handleMouseScroll(mouseX, mouseY, delta)) {
+        // 优先让鼠标下方的输入框/数字框等组件处理滚轮（横向滚动、数值增减），避免被滚动条抢先消费
+        if (delta != 0) {
+            for (IWidget widget : widgets) {
+                if (widget.visible() && widget.enabled() && widget.isMouseInside(scrollEvent.mouseX(), scrollEvent.mouseY())
+                        && widget.wantsScrollBeforeSiblings() && widget.handleMouseScroll(scrollEvent)) {
                     return true;
                 }
             }
         }
-        MouseScoredHandleArgs args = new MouseScoredHandleArgs()
+
+        if (findFirstHandlingWidget(w -> w.handleMouseScroll(scrollEvent)) != null) {
+            return true;
+        }
+        MouseScrolledHandleArgs args = new MouseScrolledHandleArgs()
                 .mouseX(mouseX)
                 .mouseY(mouseY)
                 .delta(delta);
-        mouseScrolledEvent(args);
+        onMouseScrolled(args);
         return args.consumed() || super.mouseScrolled(mouseX, mouseY, delta);
     }
 
+    /**
+     * 鼠标滚轮事件参数。子类在 {@link #onMouseScrolled} 中可设置 consumed(true)。
+     * delta 为正数表示向上/远离用户滚动。
+     */
     @Data
     @Accessors(chain = true, fluent = true)
-    public static class MouseScoredHandleArgs {
+    public static class MouseScrolledHandleArgs {
         private boolean consumed;
         private double mouseX;
         private double mouseY;
         private double delta;
     }
 
-    protected void mouseScrolledEvent(MouseScoredHandleArgs eventArgs) {
+    protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
     }
 
+    /**
+     * 按键按下事件参数。consumed 为 true 时表示事件已被处理。keyCode 为 GLFW 键码。
+     */
     @Data
     @Accessors(chain = true, fluent = true)
     public static class KeyPressedHandleArgs {
@@ -328,6 +363,9 @@ public abstract class BaniraScreen extends Screen {
         private int scanCode;
         private int modifiers;
 
+        /**
+         * 等同于 keyCode，便于语义化调用
+         */
         public int key() {
             return keyCode;
         }
@@ -335,20 +373,12 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()) {
-            if (focusedWidget.handleKeyPress(keyCode, scanCode, modifiers)) {
-                return true;
-            }
+        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
+                && focusedWidget.handleKeyPress(keyCode, scanCode, modifiers)) {
+            return true;
         }
-
-        for (int i = widgets.size() - 1; i >= 0; i--) {
-            IWidget widget = widgets.get(i);
-            if (widget == focusedWidget) continue;
-            if (widget.visible() && widget.enabled()) {
-                if (widget.handleKeyPress(keyCode, scanCode, modifiers)) {
-                    return true;
-                }
-            }
+        if (anyWidgetExcludingFocused(w -> w.handleKeyPress(keyCode, scanCode, modifiers))) {
+            return true;
         }
 
         KeyPressedHandleArgs args = new KeyPressedHandleArgs()
@@ -356,14 +386,17 @@ public abstract class BaniraScreen extends Screen {
                 .scanCode(scanCode)
                 .modifiers(modifiers);
 
-        keyPressedEvent(args);
+        onKeyPressed(args);
 
         return args.consumed() || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    protected void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
     }
 
+    /**
+     * 按键释放事件参数。
+     */
     @Data
     @Accessors(chain = true, fluent = true)
     public static class KeyReleasedHandleArgs {
@@ -375,20 +408,12 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()) {
-            if (focusedWidget.handleKeyRelease(keyCode, scanCode, modifiers)) {
-                return true;
-            }
+        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
+                && focusedWidget.handleKeyRelease(keyCode, scanCode, modifiers)) {
+            return true;
         }
-
-        for (int i = widgets.size() - 1; i >= 0; i--) {
-            IWidget widget = widgets.get(i);
-            if (widget == focusedWidget) continue;
-            if (widget.visible() && widget.enabled()) {
-                if (widget.handleKeyRelease(keyCode, scanCode, modifiers)) {
-                    return true;
-                }
-            }
+        if (anyWidgetExcludingFocused(w -> w.handleKeyRelease(keyCode, scanCode, modifiers))) {
+            return true;
         }
 
         KeyReleasedHandleArgs args = new KeyReleasedHandleArgs()
@@ -396,12 +421,12 @@ public abstract class BaniraScreen extends Screen {
                 .scanCode(scanCode)
                 .modifiers(modifiers);
 
-        keyReleasedEvent(args);
+        onKeyReleased(args);
 
         return args.consumed() || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
-    protected void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
+    protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
     }
 
     @Override
@@ -417,21 +442,52 @@ public abstract class BaniraScreen extends Screen {
     @Override
     public void onClose() {
         super.onClose();
-        this.closeEvent();
+        this.onClosed();
         if (this.previousScreen != null) {
             Minecraft.getInstance().setScreen(this.previousScreen);
         }
     }
 
-    protected void closeEvent() {
+    /**
+     * 界面关闭时的回调，子类可重写。注意与 {@link Screen#onClose()} 区分，后者为 Minecraft 生命周期。
+     */
+    protected void onClosed() {
     }
 
     // region Widget support
 
+    /**
+     * 逆序遍历 widgets，返回首个 visible+enabled 且 handler 返回 true 的 widget。
+     */
+    @Nullable
+    private IWidget findFirstHandlingWidget(Predicate<IWidget> handler) {
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            IWidget w = widgets.get(i);
+            if (w.visible() && w.enabled() && handler.test(w)) {
+                return w;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 逆序遍历 widgets（排除 focusedWidget），返回是否有 widget 使 handler 返回 true。
+     */
+    private boolean anyWidgetExcludingFocused(Predicate<IWidget> handler) {
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            IWidget w = widgets.get(i);
+            if (w == focusedWidget) continue;
+            if (w.visible() && w.enabled() && handler.test(w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
         for (IWidget widget : widgets) {
             if (widget.visible() && widget.parent() == null) {
-                if (widget.enabled()) {
+                if (widget.enabled() && widget.needsUpdate()) {
                     widget.update();
                 }
                 widget.render(stack, partialTicks);
@@ -444,11 +500,13 @@ public abstract class BaniraScreen extends Screen {
         return widgetMap.get(id);
     }
 
+    /**
+     * 添加根级 Widget 到 Screen。
+     * addWidget 用于 Screen 根级，addChild 用于 Widget 树结构（父组件添加子组件）。
+     */
     protected void addWidget(IWidget widget) {
         if (widget != null) {
-            if (widget instanceof BaseWidget) {
-                ((BaseWidget) widget).applyTheme(getEffectiveTheme());
-            }
+            widget.applyTheme(getEffectiveTheme());
             widgets.add(widget);
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);
@@ -507,12 +565,14 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 初始化 Widget。子类重写此方法，通过代码创建组件并调用 {@link #addWidget(IWidget)} 添加。
      * <p>
-     * 示例：
+     * 示例（在 initWidgets 中创建后立即 addWidget，以便参与布局和事件分发）：
      * <pre>{@code
-     * InputWidget input = new InputWidget(this);
-     * input.renderCoordinate(new ScreenCoordinate(10, 10, 200, 20));
-     * input.value("默认值");
-     * addWidget(input);
+     * ButtonWidget closeBtn = new ButtonWidget(this)
+     *         .id("close")
+     *         .bounds(new ScreenCoordinate(10, 10, 80, 20))
+     *         .text("关闭")
+     *         .onClick(b -> onClose());
+     * addWidget(closeBtn);
      * }</pre>
      * </p>
      */
@@ -575,32 +635,20 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()) {
-            if (focusedWidget.handleCharTyped(codePoint, modifiers)) {
-                return true;
-            }
+        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
+                && focusedWidget.handleCharTyped(codePoint, modifiers)) {
+            return true;
         }
-        for (int i = widgets.size() - 1; i >= 0; i--) {
-            IWidget widget = widgets.get(i);
-            if (widget == focusedWidget) continue;
-            if (widget.visible() && widget.enabled()) {
-                if (widget.handleCharTyped(codePoint, modifiers)) {
-                    return true;
-                }
-            }
+        if (anyWidgetExcludingFocused(w -> w.handleCharTyped(codePoint, modifiers))) {
+            return true;
         }
         return super.charTyped(codePoint, modifiers);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        for (int i = widgets.size() - 1; i >= 0; i--) {
-            IWidget widget = widgets.get(i);
-            if (widget.visible() && widget.enabled()) {
-                if (widget.handleMouseDrag(mouseX, mouseY, button, dragX, dragY)) {
-                    return true;
-                }
-            }
+        if (findFirstHandlingWidget(w -> w.handleMouseDrag(MouseDragEvent.of(mouseX, mouseY, button, dragX, dragY))) != null) {
+            return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }

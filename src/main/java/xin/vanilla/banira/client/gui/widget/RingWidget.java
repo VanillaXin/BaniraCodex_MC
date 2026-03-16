@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 /**
  * 圆环Widget
@@ -36,6 +35,37 @@ public class RingWidget extends BaseShapeWidget {
 
     public RingWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
+    }
+
+    @Override
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null) {
+            return false;
+        }
+        double width = renderCoordinate.width();
+        double height = renderCoordinate.height();
+        double centerX = absX + width / 2;
+        double centerY = absY + height / 2;
+        double outerRadius = Math.min(width, height) / 2;
+        double dx = mouseX - centerX;
+        double dy = mouseY - centerY;
+        double distSq = dx * dx + dy * dy;
+        double outerSq = outerRadius * outerRadius;
+        if (distSq > outerSq) {
+            return false;
+        }
+        double innerSq = innerRadius * innerRadius;
+        if (distSq < innerSq) {
+            return false;
+        }
+        double angle = Math.toDegrees(Math.atan2(dy, dx));
+        if (angle < 0) angle += 360;
+        double s = startAngle % 360;
+        double e = endAngle % 360;
+        if (s <= e) {
+            return angle >= s && angle <= e;
+        }
+        return angle >= s || angle <= e;
     }
 
     @Override

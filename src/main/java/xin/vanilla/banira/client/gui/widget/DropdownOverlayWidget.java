@@ -9,6 +9,9 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import java.util.List;
@@ -185,8 +188,10 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public boolean handleMouseClick(double mouseX, double mouseY, int mouseButton) {
-        if (mouseButton != 0) return false;
+    public boolean handleMouseClick(MouseEvent event) {
+        if (event == null || event.button() != 0) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
 
         if (parent.shouldCloseOnClick(mouseX, mouseY)) {
             pressedInCloseArea = true;
@@ -236,19 +241,22 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public boolean handleMouseRelease(double mouseX, double mouseY, int mouseButton) {
-        if (mouseButton == 0 && scrollbarDragging) {
+    public boolean handleMouseRelease(MouseEvent event) {
+        if (event == null) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        if (event.button() == 0 && scrollbarDragging) {
             scrollbarDragging = false;
             return true;
         }
-        if (mouseButton == 0 && pressedInCloseArea) {
+        if (event.button() == 0 && pressedInCloseArea) {
             if (parent.shouldCloseOnClick(mouseX, mouseY)) {
                 parent.closeDropdown();
             }
             pressedInCloseArea = false;
             return true;
         }
-        if (mouseButton == 0 && pressedOptionIndex >= 0) {
+        if (event.button() == 0 && pressedOptionIndex >= 0) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
                 List<String> options = parent.getFilteredOptions();
@@ -266,12 +274,15 @@ class DropdownOverlayWidget extends BaseWidget {
         }
         pressedOptionIndex = -1;
         pressedInCloseArea = false;
-        return super.handleMouseRelease(mouseX, mouseY, mouseButton);
+        return super.handleMouseRelease(event);
     }
 
     @Override
-    public boolean handleMouseDrag(double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        if (scrollbarDragging && mouseButton == 0) {
+    public boolean handleMouseDrag(MouseDragEvent event) {
+        if (event == null) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        if (scrollbarDragging && event.button() == 0) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
                 List<String> options = parent.getFilteredOptions();
@@ -292,12 +303,12 @@ class DropdownOverlayWidget extends BaseWidget {
             }
             return true;
         }
-        return super.handleMouseDrag(mouseX, mouseY, mouseButton, dragX, dragY);
+        return super.handleMouseDrag(event);
     }
 
     @Override
-    public boolean handleMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        if (parent.handleDropdownScroll(mouseX, mouseY, scrollDelta)) {
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (event != null && parent.handleDropdownScroll(event.mouseX(), event.mouseY(), event.delta())) {
             return true;
         }
         return false;

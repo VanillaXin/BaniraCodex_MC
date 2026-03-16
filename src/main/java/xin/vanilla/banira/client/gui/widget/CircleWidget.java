@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 /**
  * 圆形Widget
@@ -24,6 +23,21 @@ public class CircleWidget extends BaseShapeWidget {
 
     public CircleWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
+    }
+
+    @Override
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null) {
+            return false;
+        }
+        double width = renderCoordinate.width();
+        double height = renderCoordinate.height();
+        double centerX = absX + width / 2;
+        double centerY = absY + height / 2;
+        double radius = Math.min(width, height) / 2;
+        double dx = mouseX - centerX;
+        double dy = mouseY - centerY;
+        return dx * dx + dy * dy <= radius * radius;
     }
 
     @Override

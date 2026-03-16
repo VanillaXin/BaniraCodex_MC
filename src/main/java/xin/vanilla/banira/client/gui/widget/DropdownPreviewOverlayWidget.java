@@ -9,13 +9,14 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import java.util.List;
 
-/**
- * 下拉多选预览浮层，双击输入框时显示完整选中内容，支持逐项删除。
- */
+
 class DropdownPreviewOverlayWidget extends BaseWidget {
 
     private static final int ITEM_HEIGHT = 24;
@@ -176,8 +177,10 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public boolean handleMouseClick(double mouseX, double mouseY, int mouseButton) {
-        if (mouseButton != 0) return false;
+    public boolean handleMouseClick(MouseEvent event) {
+        if (event == null || event.button() != 0) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
 
         ScreenCoordinate pb = parent.getPreviewBounds();
         if (pb == null) return false;
@@ -224,17 +227,20 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public boolean handleMouseRelease(double mouseX, double mouseY, int mouseButton) {
-        if (mouseButton == 0 && scrollbarDragging) {
+    public boolean handleMouseRelease(MouseEvent event) {
+        if (event != null && event.button() == 0 && scrollbarDragging) {
             scrollbarDragging = false;
             return true;
         }
-        return super.handleMouseRelease(mouseX, mouseY, mouseButton);
+        return super.handleMouseRelease(event);
     }
 
     @Override
-    public boolean handleMouseDrag(double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        if (scrollbarDragging && mouseButton == 0) {
+    public boolean handleMouseDrag(MouseDragEvent event) {
+        if (event == null) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        if (scrollbarDragging && event.button() == 0) {
             ScreenCoordinate pb = parent.getPreviewBounds();
             if (pb != null) {
                 List<String> items = parent.getSelectedValues();
@@ -255,11 +261,15 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
             }
             return true;
         }
-        return super.handleMouseDrag(mouseX, mouseY, mouseButton, dragX, dragY);
+        return super.handleMouseDrag(event);
     }
 
     @Override
-    public boolean handleMouseScroll(double mouseX, double mouseY, double scrollDelta) {
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (event == null) return false;
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        double scrollDelta = event.delta();
         ScreenCoordinate pb = parent.getPreviewBounds();
         if (pb == null) return false;
         if (mouseX < pb.x() || mouseX >= pb.x() + pb.width() || mouseY < pb.y() || mouseY >= pb.y() + pb.height()) {

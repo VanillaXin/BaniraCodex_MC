@@ -16,6 +16,7 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -193,7 +194,7 @@ public class ItemSelectScreen extends BaniraScreen {
         // 输入框
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
-        searchInputWidget.renderCoordinate(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
+        searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
         searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_item"));
         searchInputWidget.onTextChanged(text -> {
@@ -212,7 +213,7 @@ public class ItemSelectScreen extends BaniraScreen {
             String btnId = btnIds[i];
             ButtonWidget btn = new ButtonWidget(this);
             btn.id(btnId);
-            btn.renderCoordinate(new ScreenCoordinate(opBtnX, opBtnY + i * (OP_BTN_SIZE + OP_BTN_GAP), OP_BTN_SIZE, OP_BTN_SIZE));
+            btn.bounds(new ScreenCoordinate(opBtnX, opBtnY + i * (OP_BTN_SIZE + OP_BTN_GAP), OP_BTN_SIZE, OP_BTN_SIZE));
             btn.text(Text.empty());
             btn.paddingLeft(0).paddingRight(0).paddingTop(0).paddingBottom(0);
 
@@ -264,7 +265,7 @@ public class ItemSelectScreen extends BaniraScreen {
 
             ButtonWidget btn = new ButtonWidget(this);
             btn.id("item_btn_" + i);
-            btn.renderCoordinate(new ScreenCoordinate(btnX, btnYPos, ITEM_BTN_SIZE, ITEM_BTN_SIZE));
+            btn.bounds(new ScreenCoordinate(btnX, btnYPos, ITEM_BTN_SIZE, ITEM_BTN_SIZE));
             btn.text(Text.empty());
 
             ItemWidget itemWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
@@ -289,8 +290,8 @@ public class ItemSelectScreen extends BaniraScreen {
         // 滚动条
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
-        scrollbarWidget.renderCoordinate(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
-        scrollbarWidget.orientation(ScrollbarWidget.Orientation.VERTICAL);
+        scrollbarWidget.bounds(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
+        scrollbarWidget.orientation(EnumOrientation.VERTICAL);
         scrollbarWidget.minValue(0);
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(ITEM_ROWS);
@@ -302,14 +303,14 @@ public class ItemSelectScreen extends BaniraScreen {
         // 确认与取消按钮：面板底部，左右平分，保持边距
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
-        cancelButtonWidget.renderCoordinate(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
+        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
         cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
-        submitButtonWidget.renderCoordinate(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
+        submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
         submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.selectedItem == null || this.selectedItem.isEmpty()) {
@@ -335,7 +336,7 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void renderEvent(MatrixStack stack, float partialTicks) {
+    public void onRender(MatrixStack stack, float partialTicks) {
         // 绘制面板背景
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -350,7 +351,7 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+    public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
             Minecraft.getInstance().setScreen(args.parentScreen());
@@ -358,7 +359,7 @@ public class ItemSelectScreen extends BaniraScreen {
         }
         eventArgs.consumed(flag.get());
 
-        super.mouseClickedEvent(eventArgs);
+        super.onMouseClicked(eventArgs);
 
         if (searchInputWidget != null && searchInputWidget.focused()) {
             BaseWidget inputBase = searchInputWidget;
@@ -371,8 +372,8 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void keyPressedEvent(KeyPressedHandleArgs eventArgs) {
-        super.keyPressedEvent(eventArgs);
+    public void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        super.onKeyPressed(eventArgs);
         if (eventArgs.consumed()) {
             return;
         }

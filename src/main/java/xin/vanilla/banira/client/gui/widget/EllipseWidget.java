@@ -31,6 +31,25 @@ public class EllipseWidget extends BaseShapeWidget {
     }
 
     @Override
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null) {
+            return false;
+        }
+        double width = renderCoordinate.width();
+        double height = renderCoordinate.height();
+        double centerX = absX + width / 2;
+        double centerY = absY + height / 2;
+        double rx = width / 2;
+        double ry = height / 2;
+        if (rx <= 0 || ry <= 0) {
+            return false;
+        }
+        double dx = (mouseX - centerX) / rx;
+        double dy = (mouseY - centerY) / ry;
+        return dx * dx + dy * dy <= 1;
+    }
+
+    @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {
             return;

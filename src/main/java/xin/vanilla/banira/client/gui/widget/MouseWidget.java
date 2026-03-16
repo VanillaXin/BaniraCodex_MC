@@ -11,6 +11,8 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.ColorUtils;
 
@@ -165,20 +167,20 @@ public class MouseWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
-        updateMouseStatus(mouseButton, true);
+    protected boolean onMouseClick(MouseEvent event) {
+        if (event != null) updateMouseStatus(event.button(), true);
         return false;
     }
 
     @Override
-    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
-        updateMouseStatus(mouseButton, false);
+    protected boolean onMouseRelease(MouseEvent event, boolean inside) {
+        if (event != null) updateMouseStatus(event.button(), false);
         return false;
     }
 
     @Override
-    protected boolean onMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        accumulateScroll(scrollDelta);
+    protected boolean onMouseScroll(MouseScrollEvent event) {
+        if (event != null) accumulateScroll(event.delta());
         return false;
     }
 
@@ -202,22 +204,22 @@ public class MouseWidget extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用，转发到 handleMouseClick
      */
-    public void mouseClicked(double mouseX, double mouseY, int button) {
-        updateMouseStatus(button, true);
+    public void mouseClicked(MouseEvent event) {
+        if (event != null) updateMouseStatus(event.button(), true);
     }
 
     /**
      * 供 BaniraScreen 直接调用，转发到 handleMouseRelease
      */
-    public void mouseReleased(double mouseX, double mouseY, int button) {
-        updateMouseStatus(button, false);
+    public void mouseReleased(MouseEvent event) {
+        if (event != null) updateMouseStatus(event.button(), false);
     }
 
     /**
      * 供 BaniraScreen 直接调用，转发到 handleMouseScroll
      */
-    public void mouseScrolled(double mouseX, double mouseY, double delta) {
-        accumulateScroll(delta);
+    public void mouseScrolled(MouseScrollEvent event) {
+        if (event != null) accumulateScroll(event.delta());
     }
 
     private void accumulateScroll(double delta) {

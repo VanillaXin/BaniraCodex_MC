@@ -67,6 +67,11 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
+    public boolean needsUpdate() {
+        return false;
+    }
+
+    @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {
             return;

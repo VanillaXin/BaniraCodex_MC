@@ -17,6 +17,7 @@
   "word.banira_codex.confirm": "确认",
   "word.banira_codex.cancel": "取消",
   "word.banira_codex.enter_something": "这是一个文本输入框",
+  "word.banira_codex.enter_number": "输入数值（支持滚轮调节）",
   "word.banira_codex.enter_file_path": "文件路径",
   "word.banira_codex.enter_color_hex": "颜色值 (如 #FFFFFF)",
   "word.banira_codex.search_advancement": "搜索进度...",
@@ -88,5 +89,12 @@
   "word.banira_codex.notification_log_source_local": "客户端",
   "word.banira_codex.notification_log_source_network": "服务端",
   "word.banira_codex.notification_log_select_hint": "点击左侧记录查看详情",
-  "word.banira_codex.close": "关闭"
+  "word.banira_codex.close": "关闭",
+  "word.banira_codex.config_editor_title": "配置编辑",
+  "word.banira_codex.config_editor_save": "保存",
+  "word.banira_codex.config_editor_sync": "同步至服务端",
+  "word.banira_codex.config_editor_close": "关闭",
+  "word.banira_codex.config_editor_save_success": "配置已保存",
+  "word.banira_codex.config_editor_save_failed": "配置保存失败：%s",
+  "word.banira_codex.config_editor_validation_failed": "校验失败：请修正无效的数值"
 }

@@ -31,6 +31,8 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.config.TestConfig;
 import xin.vanilla.banira.internal.event.ModEventHandler;
 
 import java.util.Arrays;
@@ -65,7 +67,7 @@ public class DebugScreen extends BaniraScreen {
         super.initWidgets();
         DropdownSelectWidget dropdownSingle = new DropdownSelectWidget(this);
         dropdownSingle.id("dropdown_single");
-        dropdownSingle.renderCoordinate(new ScreenCoordinate(110, 20, 150, 24));
+        dropdownSingle.bounds(new ScreenCoordinate(110, 20, 150, 24));
         dropdownSingle.options(Arrays.asList("自动", "春", "夏", "秋", "冬"));
         dropdownSingle.text("选择季节");
         dropdownSingle.selectedValues(Collections.singletonList("自动"));
@@ -77,7 +79,7 @@ public class DebugScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdownMulti = new DropdownSelectWidget(this);
         dropdownMulti.id("dropdown_multi_fruit");
-        dropdownMulti.renderCoordinate(new ScreenCoordinate(110, 50, 150, 24));
+        dropdownMulti.bounds(new ScreenCoordinate(110, 50, 150, 24));
         dropdownMulti.options(Arrays.asList("苹果", "香蕉", "橙子", "葡萄", "草莓", "西瓜"));
         dropdownMulti.text("选择水果（可多选）");
         dropdownMulti.multiSelect(true);
@@ -86,7 +88,7 @@ public class DebugScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdownMultiEx = new DropdownSelectWidget(this);
         dropdownMultiEx.id("dropdown_multi_vegetable");
-        dropdownMultiEx.renderCoordinate(new ScreenCoordinate(110, 80, 150, 24));
+        dropdownMultiEx.bounds(new ScreenCoordinate(110, 80, 150, 24));
         dropdownMultiEx.options(Arrays.asList("白菜", "菠菜", "油菜", "生菜", "空心菜", "韭菜", "芹菜", "香菜", "茼蒿", "苋菜",
                 "芥蓝", "小白菜", "大白菜", "卷心菜", "紫甘蓝", "羽衣甘蓝", "西兰花", "菜花", "芥菜", "雪里红",
                 "萝卜", "胡萝卜", "白萝卜", "青萝卜", "樱桃萝卜", "土豆", "红薯", "紫薯", "山药", "芋头",
@@ -117,6 +119,20 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
 
+        ButtonWidget testConfigBtn = new ButtonWidget(this);
+        testConfigBtn.id("test_config_editor");
+        testConfigBtn.bounds(new ScreenCoordinate(170, 140, 100, 24));
+        testConfigBtn.text("测试配置");
+        testConfigBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
+        addWidget(testConfigBtn);
+
+        ButtonWidget configBtn = new ButtonWidget(this);
+        configBtn.id("config_editor");
+        configBtn.bounds(new ScreenCoordinate(280, 140, 100, 24));
+        configBtn.text("配置编辑");
+        configBtn.onClick(b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
+        addWidget(configBtn);
+
         addPresetStyleButtons();
     }
 
@@ -142,7 +158,7 @@ public class DebugScreen extends BaniraScreen {
             int y = startY + row * (btnSize + gap);
             ButtonWidget btn = new ButtonWidget(this);
             btn.id("preset_" + styles[i].name());
-            btn.renderCoordinate(new ScreenCoordinate(x, y, btnSize, btnSize));
+            btn.bounds(new ScreenCoordinate(x, y, btnSize, btnSize));
             if (styles[i] == ButtonWidget.PresetStyle.CLOSE) {
                 btn.presetStyleClose().padding(4);
             } else {
@@ -194,7 +210,7 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @Override
-    public void renderEvent(MatrixStack stack, float partialTicks) {
+    public void onRender(MatrixStack stack, float partialTicks) {
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width / 3f, this.height - 20, 0x88E8F4FF);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -279,7 +295,7 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @Override
-    protected void mouseReleasedEvent(MouseReleasedHandleArgs eventArgs) {
+    protected void onMouseReleased(MouseReleasedHandleArgs eventArgs) {
         if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             this.popupOption.clear()
                     .addOptionWithId("opt_a", "选项 A - 示例功能", "这是选项 A 的提示")
@@ -305,6 +321,10 @@ public class DebugScreen extends BaniraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.Widget().name("input").title(Text.literal("enter_something")))
+                        .addWidget(new StringInputScreen.Widget()
+                                .name("input")
+                                .title(Text.literal("enter_something"))
+                                .type(StringInputScreen.WidgetType.NUMERIC))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
                 Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 break;
@@ -337,7 +357,7 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @Override
-    public void keyReleasedEvent(KeyReleasedHandleArgs eventArgs) {
+    public void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
         if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_E)) {
             if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_EQUAL)) {
                 this.contentLength++;

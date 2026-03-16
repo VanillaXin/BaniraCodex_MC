@@ -19,7 +19,7 @@ import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.CommonConfig;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,9 +44,9 @@ public final class HelpCommand {
         String lang = Translator.getPlayerLanguage(player);
         Component helpInfo;
         if (page > 0) {
-            int helpNumPerPage = CustomConfig.getHelpNumPerPage();
+            int helpNumPerPage = CommonConfig.get().help().helpInfoNumPerPage();
             int pages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / helpNumPerPage);
-            helpInfo = Component.literal(StringUtils.format("%1$s help [page] - %2$s/%3$s\n", CustomConfig.getCommandPrefix(), page, pages));
+            helpInfo = Component.literal(StringUtils.format("%1$s help [page] - %2$s/%3$s\n", BaniraCommand.getCommandPrefix(), page, pages));
             for (int i = 0; (page - 1) * helpNumPerPage + i < BaniraCommand.HELP_MESSAGE.size() && i < helpNumPerPage; i++) {
                 KeyValue<String, EnumCommandType> keyValue = BaniraCommand.HELP_MESSAGE.get((page - 1) * helpNumPerPage + i);
                 Component commandTips;
@@ -74,7 +74,7 @@ public final class HelpCommand {
                 if (page > 1) {
                     prevButton.color(EnumMCColor.AQUA.getColor())
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                    String.format("/%s help %d", CustomConfig.getCommandPrefix(), page - 1)))
+                                    String.format("/%s help %d", BaniraCommand.getCommandPrefix(), page - 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                     Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "previous_page").toVanilla(lang)));
                 } else {
@@ -89,7 +89,7 @@ public final class HelpCommand {
                 if (page < pages) {
                     nextButton.color(EnumMCColor.AQUA.getColor())
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                    String.format("/%s help %d", CustomConfig.getCommandPrefix(), page + 1)))
+                                    String.format("/%s help %d", BaniraCommand.getCommandPrefix(), page + 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                     Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "next_page").toVanilla(lang)));
                 } else {
@@ -120,7 +120,7 @@ public final class HelpCommand {
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
         String input = CommandUtils.getStringEmpty(context, "command");
         boolean isInputEmpty = input == null || input.isEmpty();
-        int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / CustomConfig.getHelpNumPerPage());
+        int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / CommonConfig.get().help().helpInfoNumPerPage());
         for (int i = 0; i < totalPages && isInputEmpty; i++) {
             builder.suggest(i + 1);
         }

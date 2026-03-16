@@ -35,6 +35,32 @@ public class SectorWidget extends BaseShapeWidget {
     }
 
     @Override
+    protected boolean hitTest(double mouseX, double mouseY, double absX, double absY) {
+        if (renderCoordinate == null) {
+            return false;
+        }
+        double width = renderCoordinate.width();
+        double height = renderCoordinate.height();
+        double centerX = absX + width / 2;
+        double centerY = absY + height / 2;
+        double radius = Math.min(width, height) / 2;
+        double dx = mouseX - centerX;
+        double dy = mouseY - centerY;
+        double distSq = dx * dx + dy * dy;
+        if (distSq > radius * radius) {
+            return false;
+        }
+        double angle = Math.toDegrees(Math.atan2(dy, dx));
+        if (angle < 0) angle += 360;
+        double s = startAngle % 360;
+        double e = endAngle % 360;
+        if (s <= e) {
+            return angle >= s && angle <= e;
+        }
+        return angle >= s || angle <= e;
+    }
+
+    @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {
             return;

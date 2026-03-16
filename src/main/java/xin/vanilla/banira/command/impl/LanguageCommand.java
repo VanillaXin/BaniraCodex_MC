@@ -16,6 +16,7 @@ import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.util.concurrent.CompletableFuture;
@@ -55,7 +56,7 @@ public final class LanguageCommand {
     }
 
     public static LiteralArgumentBuilder<CommandSource> create() {
-        return Commands.literal(CustomConfig.getCommandLanguage())
+        return Commands.literal(CommonConfig.get().command().commandLanguage())
                 .then(Commands.argument("language", StringArgumentType.word())
                         .suggests(LanguageCommand::suggestion)
                         .executes(LanguageCommand::execute)

@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.*;
+import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 
 import java.util.ArrayList;
@@ -18,14 +22,9 @@ import java.util.function.Consumer;
 @Accessors(chain = true, fluent = true)
 public class ScrollbarWidget extends BaseWidget {
 
-    public enum Orientation {
-        VERTICAL,
-        HORIZONTAL
-    }
-
     @Getter
     @Setter
-    private Orientation orientation = Orientation.VERTICAL;
+    private EnumOrientation orientation = EnumOrientation.VERTICAL;
 
     @Getter
     @Setter
@@ -129,7 +128,7 @@ public class ScrollbarWidget extends BaseWidget {
         BaseShapeWidget.drawShape(bgRect);
 
         int currentThumbColor = (mouseInside || dragging) ? hoverThumbColor : thumbColor;
-        if (orientation == Orientation.VERTICAL) {
+        if (orientation == EnumOrientation.VERTICAL) {
             int thumbY = (int) Math.ceil(y + this.thumbPosition);
             int thumbHeight = (int) Math.max(1, this.thumbSize);
             ShapeDrawArgs thumbRect = ShapeDrawArgs.rect(stack, x, thumbY, width, thumbHeight, currentThumbColor);
@@ -154,15 +153,18 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
-        boolean result = super.onMouseClick(mouseX, mouseY, mouseButton);
-        if (mouseButton == 0 && enabled) {
+    protected boolean onMouseClick(MouseEvent event) {
+        if (event == null) return false;
+        boolean result = super.onMouseClick(event);
+        if (event.button() == 0 && enabled) {
             updateThumb();
 
+            double mouseX = event.mouseX();
+            double mouseY = event.mouseY();
             double absX = absoluteX();
             double absY = absoluteY();
 
-            double relativeClickPos = orientation == Orientation.VERTICAL ? mouseY - absY : mouseX - absX;
+            double relativeClickPos = orientation == EnumOrientation.VERTICAL ? mouseY - absY : mouseX - absX;
 
             double relativeThumbStart = thumbPosition;
             double relativeThumbEnd = relativeThumbStart + thumbSize;
@@ -172,7 +174,7 @@ public class ScrollbarWidget extends BaseWidget {
                 dragOffset = relativeClickPos - relativeThumbCenter;
                 dragging = true;
             } else {
-                double trackSize = orientation == Orientation.VERTICAL ? height() : width();
+                double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
                 double availableTrack = trackSize - thumbSize;
                 if (availableTrack > 0) {
                     double thumbCenterPos = Math.max(thumbSize / 2.0, Math.min(trackSize - thumbSize / 2.0, relativeClickPos));
@@ -189,9 +191,9 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
+    protected boolean onMouseRelease(MouseEvent event, boolean inside) {
         boolean result = false;
-        if (mouseButton == 0 && dragging) {
+        if (event != null && event.button() == 0 && dragging) {
             dragging = false;
             dragOffset = 0.0;
             result = true;
@@ -200,19 +202,21 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onMouseDrag(double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
-        if (!dragging || mouseButton != 0) {
+    protected boolean onMouseDrag(MouseDragEvent event) {
+        if (!dragging || event == null || event.button() != 0) {
             return false;
         }
 
         updateThumb();
 
         // 使用绝对坐标计算
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
         double absX = absoluteX();
         double absY = absoluteY();
-        double trackSize = orientation == Orientation.VERTICAL ? height() : width();
-        double clickPos = orientation == Orientation.VERTICAL ? mouseY : mouseX;
-        double relativePos = orientation == Orientation.VERTICAL ? clickPos - absY : clickPos - absX;
+        double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
+        double clickPos = orientation == EnumOrientation.VERTICAL ? mouseY : mouseX;
+        double relativePos = orientation == EnumOrientation.VERTICAL ? clickPos - absY : clickPos - absX;
 
         // 计算可用轨道长度
         double availableTrack = trackSize - thumbSize;
@@ -231,10 +235,13 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    public boolean handleMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        if (!visible || !enabled) {
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
+        double mouseX = event.mouseX();
+        double mouseY = event.mouseY();
+        double scrollDelta = event.delta();
 
         boolean inScrollArea = false;
 
@@ -266,16 +273,17 @@ public class ScrollbarWidget extends BaseWidget {
         double relativeMouseX = mouseX - absoluteX() + x();
         double relativeMouseY = mouseY - absoluteY() + y();
 
+        MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, scrollDelta);
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(relativeMouseX, relativeMouseY, scrollDelta)) {
+                if (child.handleMouseScroll(relEvent)) {
                     return true;
                 }
             }
         }
 
-        return onMouseScroll(mouseX, mouseY, scrollDelta);
+        return onMouseScroll(event);
     }
 
     private boolean isMouseInCoordinate(double mouseX, double mouseY, ScreenCoordinate coord) {
@@ -291,8 +299,8 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onMouseScroll(double mouseX, double mouseY, double scrollDelta) {
-        if (!enabled) {
+    protected boolean onMouseScroll(MouseScrollEvent event) {
+        if (!enabled || event == null) {
             return false;
         }
 
@@ -308,6 +316,7 @@ public class ScrollbarWidget extends BaseWidget {
             step = Math.max(1.0, visibleSize * 0.33);
         }
 
+        double scrollDelta = event.delta();
         double newValue = value + (scrollDelta < 0 ? step : -step);
         setValue(newValue);
         return true;
@@ -325,7 +334,7 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     private void updateThumb() {
-        double trackSize = orientation == Orientation.VERTICAL ? height() : width();
+        double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
         double valueRange = maxValue - minValue;
         double totalContentSize = visibleSize + valueRange;
 
@@ -362,7 +371,7 @@ public class ScrollbarWidget extends BaseWidget {
         }
 
         boolean handled = false;
-        if (orientation == Orientation.VERTICAL) {
+        if (orientation == EnumOrientation.VERTICAL) {
             if (keyCode == GLFWKey.GLFW_KEY_UP) {
                 setValue(value - step);
                 handled = true;

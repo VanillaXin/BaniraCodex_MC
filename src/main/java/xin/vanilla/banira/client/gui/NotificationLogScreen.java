@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -128,7 +129,7 @@ public class NotificationLogScreen extends BaniraScreen {
         String optNetwork = Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter_network").toString();
         filterDropdown = new DropdownSelectWidget(this);
         filterDropdown.id("filter");
-        filterDropdown.renderCoordinate(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, FILTER_H));
+        filterDropdown.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, FILTER_H));
         filterDropdown.options(Arrays.asList(optAll, optLocal, optNetwork));
         filterDropdown.text(Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter").toString());
         filterDropdown.selectedValues(Collections.singletonList(
@@ -144,8 +145,8 @@ public class NotificationLogScreen extends BaniraScreen {
 
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
-        scrollbarWidget.renderCoordinate(new ScreenCoordinate(listX + listW + SCROLL_GAP, listY, SCROLL_W, listH));
-        scrollbarWidget.orientation(ScrollbarWidget.Orientation.VERTICAL);
+        scrollbarWidget.bounds(new ScreenCoordinate(listX + listW + SCROLL_GAP, listY, SCROLL_W, listH));
+        scrollbarWidget.orientation(EnumOrientation.VERTICAL);
         scrollbarWidget.minValue(0);
         scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
         scrollbarWidget.visibleSize(visibleRows);
@@ -156,7 +157,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
-        closeBtn.renderCoordinate(new ScreenCoordinate(rightX + rightW - PANEL_MARGIN / 3.5f - CLOSE_BTN_SIZE, rightY + PANEL_MARGIN / 3.5f, CLOSE_BTN_SIZE, CLOSE_BTN_SIZE));
+        closeBtn.bounds(new ScreenCoordinate(rightX + rightW - PANEL_MARGIN / 3.5f - CLOSE_BTN_SIZE, rightY + PANEL_MARGIN / 3.5f, CLOSE_BTN_SIZE, CLOSE_BTN_SIZE));
         closeBtn.presetStyleClose();
         closeBtn.radius(CLOSE_BTN_SIZE / 3f);
         closeBtn.padding(1);
@@ -185,7 +186,7 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @Override
-    public void mouseClickedEvent(MouseClickedHandleArgs eventArgs) {
+    public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         if (eventArgs.button() == 0 && !eventArgs.consumed()) {
             double mx = eventArgs.mouseX();
             double my = eventArgs.mouseY();
@@ -199,11 +200,11 @@ public class NotificationLogScreen extends BaniraScreen {
                 }
             }
         }
-        super.mouseClickedEvent(eventArgs);
+        super.onMouseClicked(eventArgs);
     }
 
     @Override
-    public void renderEvent(MatrixStack stack, float partialTicks) {
+    public void onRender(MatrixStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
 
         // 左侧面板：类型选择 + 简洁列表

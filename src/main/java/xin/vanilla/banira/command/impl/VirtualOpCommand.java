@@ -20,7 +20,7 @@ import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.common.util.VirtualPermissionManager;
-import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.CommonConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public final class VirtualOpCommand {
             return 0;
         }
         if (!CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP)
-                && (source.getEntity() == null || !source.hasPermission(CustomConfig.getVirtualOpPermission()))) {
+                && (source.getEntity() == null || !source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))) {
             String lang = CommandUtils.getLanguage(source);
             source.sendFailure(Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "command_disabled").languageCode(lang).toChat(lang));
             return 0;
@@ -65,7 +65,7 @@ public final class VirtualOpCommand {
             targetList.addAll(EntityArgument.getPlayers(context, "player"));
         } catch (IllegalArgumentException ignored) {
         }
-        String language = CustomConfig.getDefaultLanguage();
+        String language = CommonConfig.get().language().defaultLanguage();
         if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
             language = Translator.getPlayerLanguage(source.getPlayerOrException());
         }
@@ -134,9 +134,9 @@ public final class VirtualOpCommand {
     }
 
     public static LiteralArgumentBuilder<CommandSource> create() {
-        return Commands.literal(CustomConfig.getCommandVirtualOp())
+        return Commands.literal(CommonConfig.get().command().commandVirtualOp())
                 .requires(source -> (source.getEntity() != null && CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP))
-                        || source.hasPermission(CustomConfig.getVirtualOpPermission()))
+                        || source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))
                 .then(Commands.argument("operation", StringArgumentType.word())
                         .suggests(VirtualOpCommand::operationSuggestion)
                         .then(Commands.argument("player", EntityArgument.players())

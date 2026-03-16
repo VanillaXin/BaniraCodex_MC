@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -455,18 +456,18 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onMouseClick(double mouseX, double mouseY, int mouseButton) {
-        boolean result = super.onMouseClick(mouseX, mouseY, mouseButton);
-        if (mouseButton == 0 && enabled) {
+    protected boolean onMouseClick(MouseEvent event) {
+        boolean result = super.onMouseClick(event);
+        if (event != null && event.button() == 0 && enabled) {
             result = true;
         }
         return result;
     }
 
     @Override
-    protected boolean onMouseRelease(double mouseX, double mouseY, int mouseButton, boolean inside) {
-        boolean result = super.onMouseRelease(mouseX, mouseY, mouseButton, inside);
-        if (mouseButton == 0 && enabled && inside) {
+    protected boolean onMouseRelease(MouseEvent event, boolean inside) {
+        boolean result = super.onMouseRelease(event, inside);
+        if (event != null && event.button() == 0 && enabled && inside) {
             if (onClick != null) {
                 onClick.accept(this);
                 LOGGER.debug("Button clicked: id={}", id);

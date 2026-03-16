@@ -25,4 +25,11 @@ public enum EnumOperationType {
         }
         return null;
     }
+
+    /**
+     * 从字符串解析操作类型，无效时返回 null
+     */
+    public static EnumOperationType fromString(String str) {
+        return valueOfEx(str);
+    }
 }

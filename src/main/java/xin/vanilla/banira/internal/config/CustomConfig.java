@@ -48,6 +48,9 @@ public class CustomConfig {
         JsonUtils.setInt(server, "help_num_per_page", 10);
         JsonUtils.setInt(server, "virtual_op_permission", 4);
         JsonUtils.setString(server, "default_language", "en_us");
+        JsonUtils.setString(server, "command_prefix", "banira");
+        JsonUtils.setString(server, "command_language", "language");
+        JsonUtils.setString(server, "command_virtual_op", "virtual_op");
         JsonUtils.setJsonObject(config, "server", server);
 
         return config;
@@ -192,5 +195,17 @@ public class CustomConfig {
     public static void setVirtualPermission(JsonObject virtualPermission) {
         JsonUtils.setJsonObject(customConfig, "server.virtual_permission", virtualPermission);
         setDirty(true);
+    }
+
+    public static String getCommandPrefix() {
+        return JsonUtils.getString(customConfig, "server.command_prefix", "banira");
+    }
+
+    public static String getCommandLanguage() {
+        return JsonUtils.getString(customConfig, "server.command_language", "language");
+    }
+
+    public static String getCommandVirtualOp() {
+        return JsonUtils.getString(customConfig, "server.command_virtual_op", "virtual_op");
     }
 }

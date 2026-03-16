@@ -239,6 +239,19 @@ public final class VirtualPermissionManager {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    /**
+     * 构建权限列表的显示字符串
+     */
+    public static String buildPermissionsString(Set<? extends IVirtualPermissionType> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return "(empty)";
+        }
+        return String.join(", ", permissions.stream()
+                .map(t -> t.modId() + ":" + t.id())
+                .sorted()
+                .collect(Collectors.toList()));
+    }
+
     // endregion 辅助方法
 
 }

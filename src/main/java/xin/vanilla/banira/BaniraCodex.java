@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -16,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.player.PlayerDataManager;
@@ -64,6 +66,14 @@ public class BaniraCodex {
     @SubscribeEvent
     public void onCommonSetup(final FMLCommonSetupEvent event) {
         CustomConfig.loadCustomConfig(false);
+    }
+
+    /**
+     * 注册指令
+     */
+    @SubscribeEvent
+    public void onRegisterCommands(final RegisterCommandsEvent event) {
+        BaniraCommand.register(event.getDispatcher());
     }
 
     private void registerBaniraEvent() {

@@ -1,17 +1,25 @@
 package xin.vanilla.banira.common.enums;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.command.CommandSource;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.command.impl.HelpCommand;
+import xin.vanilla.banira.command.impl.LanguageCommand;
+import xin.vanilla.banira.command.impl.VirtualOpCommand;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
+
+import javax.annotation.Nullable;
+import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
 public enum EnumCommandType implements IVirtualPermissionType {
-    HELP(false, false),
-    LANGUAGE(false, false),
+    HELP(HelpCommand::create, false, false),
+    LANGUAGE(LanguageCommand::create, false, false),
     LANGUAGE_CONCISE(),
-    VIRTUAL_OP(),
+    VIRTUAL_OP(VirtualOpCommand::create),
     VIRTUAL_OP_CONCISE(),
     ;
 
@@ -28,17 +36,35 @@ public enum EnumCommandType implements IVirtualPermissionType {
      */
     private final boolean op;
 
+    @Nullable
+    private final Supplier<LiteralArgumentBuilder<CommandSource>> instance;
+
     EnumCommandType() {
+        this.instance = null;
         this.ignore = false;
         this.op = !this.concise;
     }
 
     EnumCommandType(boolean ig) {
+        this.instance = null;
         this.ignore = ig;
         this.op = !this.concise;
     }
 
     EnumCommandType(boolean ig, boolean op) {
+        this.instance = null;
+        this.ignore = ig;
+        this.op = !this.concise && op;
+    }
+
+    EnumCommandType(@Nullable Supplier<LiteralArgumentBuilder<CommandSource>> instance) {
+        this.instance = instance;
+        this.ignore = false;
+        this.op = !this.concise;
+    }
+
+    EnumCommandType(@Nullable Supplier<LiteralArgumentBuilder<CommandSource>> instance, boolean ig, boolean op) {
+        this.instance = instance;
         this.ignore = ig;
         this.op = !this.concise && op;
     }

@@ -2,9 +2,11 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -12,6 +14,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
@@ -34,12 +37,6 @@ public class BaniraCodex {
      */
     @Getter
     private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
-
-    /**
-     * 语言管理器（直接使用 BaniraLang.INSTANCE 亦可）
-     */
-    @Getter
-    private final static BaniraLang languager = BaniraLang.INSTANCE;
 
     /**
      * 玩家数据管理器
@@ -70,36 +67,51 @@ public class BaniraCodex {
     }
 
     private void registerBaniraEvent() {
-        BaniraEventBus.registerServerStarting(server ->
-                serverInstance().key(server).value(true)
-        );
-        BaniraEventBus.registerServerStarting(server ->
-                playerDataManager.clearCache()
-        );
-        BaniraEventBus.registerServerStarting(server ->
-                AdvancementUtils.clearAdvancementData()
-        );
-        BaniraEventBus.registerServerStopping(server ->
-                serverInstance().value(false)
-        );
-        BaniraEventBus.registerPlayerSave(player ->
+        // 服务器事件
+        BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
+        BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());
+        BaniraEventBus.Server.onStarting(server -> AdvancementUtils.clearAdvancementData());
+        BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
+
+        final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
+        BaniraEventBus.Server.onTick(event -> {
+            MinecraftServer server = serverInstance().key();
+            if (server == null) return;
+            if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
+                if (!CustomConfig.loadCustomConfig(true)) {
+                    CustomConfig.saveCustomConfig();
+                }
+            }
+        });
+        BaniraEventBus.Save.onWorldSave(CustomConfig::saveCustomConfig);
+
+        // 玩家事件
+        BaniraEventBus.Save.onPlayerSave(player ->
                 playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
         );
-        BaniraEventBus.registerPlayerLoggedOut(player -> {
+        BaniraEventBus.Player.onLoggedOut(player -> {
             if (player instanceof ServerPlayerEntity) {
                 PlayerUtils.removePlayerDataStatus(player);
             }
         });
 
         if (FMLEnvironment.dist.isClient()) {
-            BaniraEventBus.registerClientPlayerLoggedIn(player ->
+            BaniraEventBus.Player.onClientLoggedIn(player ->
                     PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(MODID))
             );
-            BaniraEventBus.registerClientPlayerLoggedOut(player ->
-                    AdvancementUtils.clearAdvancementData()
-            );
-            BaniraEventBus.registerClientGuiChanged(LogoModifier::modifyLogo);
-            BaniraEventBus.registerClientTextureReload(TextureUtils::resourceReloadEvent);
+            BaniraEventBus.Player.onClientLoggedOut(player -> AdvancementUtils.clearAdvancementData());
+            BaniraEventBus.Client.onGuiChanged(event -> LogoModifier.modifyLogo());
+            BaniraEventBus.Client.onTextureReload(event -> {
+                if (BaniraCodex.MODID.equals(event.getMap().location().getNamespace())) {
+                    TextureUtils.resourceReloadEvent();
+                }
+            });
+            BaniraEventBus.Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getMatrixStack()));
+            BaniraEventBus.Client.onRenderOverlayPost(event -> {
+                if (event.getType() == RenderGameOverlayEvent.ElementType.ALL && Minecraft.getInstance().screen == null) {
+                    NotificationManager.get().render(event.getMatrixStack());
+                }
+            });
         }
     }
 

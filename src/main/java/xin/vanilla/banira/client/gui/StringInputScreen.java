@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -567,7 +568,7 @@ public class StringInputScreen extends BaniraScreen {
             }
         }
 
-        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraCodex.languager().getTranslationClient(EnumI18nType.WORD, "cancel")))) {
+        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.getTranslationClient(EnumI18nType.WORD, "cancel")))) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }

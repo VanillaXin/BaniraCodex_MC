@@ -8,46 +8,37 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 
 /**
- * Game事件处理器
+ * 客户端 Forge 事件转发器
  */
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class GameEventHandler {
-    private static final Logger LOGGER = LogManager.getLogger();
+public final class GameEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiOpen(GuiOpenEvent event) {
-        BaniraEventBus.fireClientGuiChanged();
+        BaniraEventBus.Client.fireGuiChanged(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onTextureStitchPost(TextureStitchEvent.Post event) {
-        if (BaniraCodex.MODID.equals(event.getMap().location().getNamespace())) {
-            BaniraEventBus.fireClientTextureReload();
-        }
+        BaniraEventBus.Client.fireTextureReload(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
-        NotificationManager.get().render(event.getMatrixStack());
+        BaniraEventBus.Client.fireDrawScreenPost(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.getType() == RenderGameOverlayEvent.ElementType.ALL
-                && net.minecraft.client.Minecraft.getInstance().screen == null) {
-            NotificationManager.get().render(event.getMatrixStack());
-        }
+    public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
+        BaniraEventBus.Client.fireRenderOverlayPost(event);
     }
 
 }

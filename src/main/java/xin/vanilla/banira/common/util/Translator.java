@@ -6,10 +6,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.resources.IResourceManager;
+import net.minecraft.resources.ResourcePackType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -49,12 +51,21 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * 子类构造函数，传入 modId 即可完成初始化并自动注册
+     * 子类构造函数，传入 modId 即可完成初始化。
+     * 注意：由 {@link #of(String)} 创建的实例由 computeIfAbsent 自动注册；
+     * 子类直接 new 时需在构造末尾调用 {@link #registerInCache()}。
      */
     protected Translator(@NonNull String modId) {
         this.modId = modId;
         loadLanguage(DEFAULT_LANGUAGE);
         getI18nFiles().forEach(this::loadLanguage);
+    }
+
+    /**
+     * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
+     * 不得在 {@link #of(String)} 的 computeIfAbsent 映射函数执行期间调用，否则会死锁。
+     */
+    protected final void registerInCache() {
         CACHE.put(modId, this);
     }
 
@@ -139,12 +150,9 @@ public class Translator implements ITranslator {
     }
 
     private List<String> loadFromResourceManager() {
-        if (!FMLEnvironment.dist.isClient()) {
-            return Collections.emptyList();
-        }
         try {
-            IResourceManager manager = Minecraft.getInstance().getResourceManager();
-            Collection<ResourceLocation> resources = manager.listResources("lang", path -> path.endsWith(".json"));
+            IResourceManager manager = BaniraCodex.serverInstance().key().getDataPackRegistries().getResourceManager();
+            Collection<ResourceLocation> resources = loadFromResourcePacks(manager);
             return resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
                     .map(loc -> {
@@ -153,11 +161,32 @@ public class Translator implements ITranslator {
                         String name = slash >= 0 ? path.substring(slash + 1) : path;
                         return name.replace(".json", "");
                     })
+                    .distinct()
                     .collect(Collectors.toList());
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
             return Collections.emptyList();
         }
+    }
+
+    private Collection<ResourceLocation> loadFromResourcePacks(IResourceManager manager) {
+        Set<ResourceLocation> result = new HashSet<>();
+        try {
+            manager.listPacks().forEach(pack -> {
+                try {
+                    if (pack.getNamespaces(ResourcePackType.CLIENT_RESOURCES).contains(modId)) {
+                        Collection<ResourceLocation> locs = pack.getResources(
+                                ResourcePackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
+                        result.addAll(locs);
+                    }
+                } catch (Exception e) {
+                    LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.debug("Failed to list lang from resource packs:", e);
+        }
+        return result;
     }
 
     private String getLangPath() {

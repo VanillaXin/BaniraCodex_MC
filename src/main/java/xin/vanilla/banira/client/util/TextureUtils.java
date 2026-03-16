@@ -12,9 +12,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.Texture;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,31 +52,31 @@ public final class TextureUtils {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
         name = name.replaceAll("\\\\", "/");
         name = name.startsWith("./") ? name.substring(2) : name;
-        ResourceLocation customTextureLocation = factory.create(TextureUtils.getSafeTexturePath(name));
-        if (!TextureUtils.isTextureAvailable(customTextureLocation)) {
+        ResourceLocation customTexture = factory.create(TextureUtils.getSafeTexturePath(name));
+        if (!TextureUtils.isTextureAvailable(customTexture)) {
             if (!name.startsWith(INTERNAL_THEME_DIR)) {
-                customTextureLocation = factory.create(TextureUtils.getSafeTexturePath(name + System.currentTimeMillis()));
+                customTexture = factory.create(TextureUtils.getSafeTexturePath(name + System.currentTimeMillis()));
                 File textureFile = new File(name);
                 // 检查文件是否存在
                 if (!textureFile.exists()) {
                     LOGGER.warn("Texture file not found: {}", textureFile.getAbsolutePath());
-                    customTextureLocation = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
+                    customTexture = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
                 } else {
                     try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
                         // 直接从InputStream创建NativeImage
                         NativeImage nativeImage = NativeImage.read(inputStream);
                         // 创建DynamicTexture并注册到TextureManager
                         DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
-                        textureManager.register(customTextureLocation, dynamicTexture);
+                        textureManager.register(customTexture, dynamicTexture);
                     } catch (IOException e) {
                         LOGGER.warn("Failed to load texture: {}", textureFile.getAbsolutePath());
                         LOGGER.error(e);
-                        customTextureLocation = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
+                        customTexture = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
                     }
                 }
             }
         }
-        return customTextureLocation;
+        return customTexture;
     }
 
     public static String getSafeTexturePath(String path) {
@@ -471,7 +471,7 @@ public final class TextureUtils {
     }
 
     /**
-     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 BaniraEventBus 触发。
+     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 BaniraEventBus.Client 触发。
      */
     public static void resourceReloadEvent() {
         clearAll();

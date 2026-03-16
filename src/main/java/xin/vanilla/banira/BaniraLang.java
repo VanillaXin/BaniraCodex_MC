@@ -9,5 +9,6 @@ public final class BaniraLang extends Translator {
 
     private BaniraLang() {
         super(BaniraCodex.MODID);
+        registerInCache();
     }
 }

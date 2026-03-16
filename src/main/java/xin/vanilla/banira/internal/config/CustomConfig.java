@@ -64,8 +64,9 @@ public class CustomConfig {
      * 加载 JSON 数据
      *
      * @param notDirty 是否仅在数据不为脏时读取
+     * @return 是否成功加载
      */
-    public static void loadCustomConfig(boolean notDirty) {
+    public static boolean loadCustomConfig(boolean notDirty) {
         File dir = getConfigDirectory().toFile();
         if (!dir.exists()) {
             dir.mkdirs();
@@ -76,6 +77,7 @@ public class CustomConfig {
                 try {
                     customConfig = JsonUtils.parseObject(new String(Files.readAllBytes(Paths.get(file.getPath()))));
                     LOGGER.debug("Loaded custom common config.");
+                    return true;
                 } catch (Exception e) {
                     LOGGER.error("Error loading custom common config: ", e);
                 }
@@ -84,7 +86,9 @@ public class CustomConfig {
             // 如果文件不存在，初始化默认值
             customConfig = defaultConfig();
             setDirty(true);
+            return true;
         }
+        return false;
     }
 
     /**

@@ -31,14 +31,6 @@ public final class TextureUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * 默认纹理文件名
-     */
-    public static final String DEFAULT_THEME = "textures.png";
-    /**
-     * 内部纹理文件夹路径
-     */
-    public static final String INTERNAL_THEME_DIR = "textures/gui/";
-    /**
      * 药水图标文件夹路径
      */
     public static final String DEFAULT_EFFECT_DIR = "textures/mob_effect/";
@@ -52,31 +44,29 @@ public final class TextureUtils {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
         name = name.replaceAll("\\\\", "/");
         name = name.startsWith("./") ? name.substring(2) : name;
-        ResourceLocation customTexture = factory.create(TextureUtils.getSafeTexturePath(name));
-        if (!TextureUtils.isTextureAvailable(customTexture)) {
-            if (!name.startsWith(INTERNAL_THEME_DIR)) {
-                customTexture = factory.create(TextureUtils.getSafeTexturePath(name + System.currentTimeMillis()));
-                File textureFile = new File(name);
-                // 检查文件是否存在
-                if (!textureFile.exists()) {
-                    LOGGER.warn("Texture file not found: {}", textureFile.getAbsolutePath());
-                    customTexture = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
-                } else {
-                    try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
-                        // 直接从InputStream创建NativeImage
-                        NativeImage nativeImage = NativeImage.read(inputStream);
-                        // 创建DynamicTexture并注册到TextureManager
-                        DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
-                        textureManager.register(customTexture, dynamicTexture);
-                    } catch (IOException e) {
-                        LOGGER.warn("Failed to load texture: {}", textureFile.getAbsolutePath());
-                        LOGGER.error(e);
-                        customTexture = factory.create(INTERNAL_THEME_DIR + DEFAULT_THEME);
-                    }
-                }
+        String safePath = TextureUtils.getSafeTexturePath(name);
+        ResourceLocation customTexture = factory.create(safePath);
+
+        if (Minecraft.getInstance().getResourceManager().hasResource(customTexture)) {
+            return customTexture;
+        }
+
+        File textureFile = new File(name);
+        if (textureFile.exists()) {
+            ResourceLocation externalTexture = factory.create(safePath + "_" + System.currentTimeMillis());
+            try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
+                NativeImage nativeImage = NativeImage.read(inputStream);
+                DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
+                textureManager.register(externalTexture, dynamicTexture);
+                return externalTexture;
+            } catch (IOException e) {
+                LOGGER.warn("Failed to load texture from file: {}", textureFile.getAbsolutePath());
+                LOGGER.error(e);
+                return factory.empty();
             }
         }
-        return customTexture;
+        LOGGER.warn("Texture not found in resources or external: {}", name);
+        return factory.empty();
     }
 
     public static String getSafeTexturePath(String path) {

@@ -294,4 +294,9 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     public boolean isMouseInside(double mouseX, double mouseY) {
         return true;
     }
+
+    @Override
+    public IWidget getFocusTarget() {
+        return parent != null ? parent.getFocusTarget() : this;
+    }
 }

@@ -608,13 +608,15 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        // 添加模式下，当输入框与确认按钮都失去焦点时退出
+        // 添加模式下，当输入框与确认按钮都失去焦点且无预览/下拉展开时退出
         if (addingMode && addInputWidget != null && addConfirmButton != null) {
             boolean inputFocused = addInputWidget instanceof BaseWidget && ((BaseWidget) addInputWidget).focused();
             boolean confirmFocused = addConfirmButton.focused();
             boolean dropdownOpen = addInputWidget instanceof DropdownSelectWidget
                     && ((DropdownSelectWidget) addInputWidget).dropdownOpen();
-            if (!inputFocused && !confirmFocused && !dropdownOpen) {
+            boolean previewExpanded = addInputWidget instanceof DropdownSelectWidget
+                    && ((DropdownSelectWidget) addInputWidget).previewExpanded();
+            if (!inputFocused && !confirmFocused && !dropdownOpen && !previewExpanded) {
                 exitAddingMode();
             }
         }

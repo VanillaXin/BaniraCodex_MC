@@ -590,7 +590,9 @@ public class DropdownSelectWidget extends InputWidget {
         boolean canScrollRight = maxScroll > 0 && tagScrollOffset < maxScroll;
         boolean canScrollLeft = tagScrollOffset > 0;
 
-        AbstractGuiUtils.enableScissor(contentLeft, drawY + 1, contentWidth, drawHeight - 2);
+        int scissorX = (int) (absoluteX() + contentLeft - x());
+        int scissorY = (int) (absoluteY() + drawY - y() + 1);
+        AbstractGuiUtils.enableScissor(scissorX, scissorY, contentWidth, drawHeight - 2);
 
         double mx = screen.inputState().mouseX();
         double my = screen.inputState().mouseY();

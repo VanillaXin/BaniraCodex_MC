@@ -25,6 +25,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -1057,23 +1058,26 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 双击选词：选中光标所在单词
+     * 双击选词
      */
     private void selectWordAtCursor() {
         if (value.isEmpty()) {
             return;
         }
-        int wordStart = cursorPosition;
-        int wordEnd = cursorPosition;
-        while (wordStart > 0 && Character.isWhitespace(value.charAt(wordStart - 1))) {
-            wordStart--;
+        int pos = MathHelper.clamp(cursorPosition, 0, value.length());
+        // 若光标在空白处，向左找到最近的非空白字符作为参考
+        int refPos = pos;
+        if (pos < value.length() && StringUtils.isWordBoundaryWhitespace(value.charAt(pos))) {
+            int idx = pos - 1;
+            while (idx >= 0 && StringUtils.isWordBoundaryWhitespace(value.charAt(idx))) {
+                idx--;
+            }
+            refPos = Math.max(idx, 0);
+        } else if (pos > 0) {
+            refPos = pos - 1;  // 光标在字符之间，取左侧字符
         }
-        while (wordStart > 0 && !Character.isWhitespace(value.charAt(wordStart - 1))) {
-            wordStart--;
-        }
-        while (wordEnd < value.length() && !Character.isWhitespace(value.charAt(wordEnd))) {
-            wordEnd++;
-        }
+        int wordStart = StringUtils.findTokenStart(value, refPos);
+        int wordEnd = StringUtils.findTokenEnd(value, refPos);
         this.cursorPosition = wordStart;
         this.highlightPos = wordEnd;
         updateDisplayPos();

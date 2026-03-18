@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 
 import lombok.NonNull;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.EnumWordTokenType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -425,6 +426,109 @@ public final class StringUtils {
     public static String reverseBySeparator(String str) {
         return reverseBySeparatorElegant(str, "");
     }
+
+
+    /**
+     * 判断是否为选词边界上的空白
+     */
+    public static boolean isWordBoundaryWhitespace(char c) {
+        return Character.isWhitespace(c);
+    }
+
+    /**
+     * 查找选词 token 的起始位置（向左扩展）
+     *
+     * @param value   文本
+     * @param charPos 字符在 token 中的位置（索引）
+     * @return token 起始索引
+     */
+    public static int findTokenStart(String value, int charPos) {
+        if (value == null || charPos < 0 || charPos >= value.length()) {
+            return 0;
+        }
+        char atCursor = value.charAt(charPos);
+        int start = charPos;
+        while (start > 0) {
+            char prev = value.charAt(start - 1);
+            if (!isSameTokenType(prev, atCursor)) {
+                break;
+            }
+            start--;
+            atCursor = prev;
+        }
+        return start;
+    }
+
+    /**
+     * 查找选词 token 的结束位置（向右扩展）
+     *
+     * @param value   文本
+     * @param charPos 字符在 token 中的位置（索引）
+     * @return token 结束索引（不包含）
+     */
+    public static int findTokenEnd(String value, int charPos) {
+        if (value == null) {
+            return 0;
+        }
+        if (charPos >= value.length()) {
+            return value.length();
+        }
+        char atCursor = value.charAt(charPos);
+        int end = charPos + 1;
+        while (end < value.length()) {
+            char next = value.charAt(end);
+            if (!isSameTokenType(atCursor, next)) {
+                break;
+            }
+            end++;
+            atCursor = next;
+        }
+        return end;
+    }
+
+    /**
+     * 判断字符是否属于同一选词单元
+     */
+    public static boolean isSameTokenType(char a, char b) {
+        EnumWordTokenType typeA = getTokenType(a);
+        EnumWordTokenType typeB = getTokenType(b);
+        if (typeA != typeB) {
+            return false;
+        }
+        if (typeA == EnumWordTokenType.PUNCTUATION) {
+            return a == b;
+        }
+        return true;
+    }
+
+    public static EnumWordTokenType getTokenType(char c) {
+        if (isAsciiLetter(c)) {
+            return EnumWordTokenType.LETTER;
+        }
+        if (Character.isDigit(c) || c == '.') {
+            return EnumWordTokenType.NUMBER;
+        }
+        if (isPunctuation(c)) {
+            return EnumWordTokenType.PUNCTUATION;
+        }
+        if (Character.isLetter(c)) {
+            return EnumWordTokenType.CJK;
+        }
+        return EnumWordTokenType.OTHER;
+    }
+
+    public static boolean isAsciiLetter(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    }
+
+    public static boolean isPunctuation(char c) {
+        return c == '!' || c == '"' || c == '#' || c == '$' || c == '%' || c == '&' || c == '\''
+                || c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == '-' || c == '/'
+                || c == ':' || c == ';' || c == '<' || c == '=' || c == '>' || c == '?' || c == '@'
+                || c == '[' || c == '\\' || c == ']' || c == '^' || c == '`' || c == '{' || c == '|'
+                || c == '}' || c == '~';
+    }
+
 
     /**
      * 按正则表达式分割字符串

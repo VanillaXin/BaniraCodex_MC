@@ -15,10 +15,7 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
-import xin.vanilla.banira.client.gui.widget.BaseWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
-import xin.vanilla.banira.client.gui.widget.MouseWidget;
-import xin.vanilla.banira.client.gui.widget.PopupOption;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
@@ -507,6 +504,9 @@ public abstract class BaniraScreen extends Screen {
     protected void addWidget(IWidget widget) {
         if (widget != null) {
             widget.applyTheme(getEffectiveTheme());
+            if (widget instanceof CollapsiblePanelWidget) {
+                ((CollapsiblePanelWidget) widget).refreshLayout();
+            }
             widgets.add(widget);
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);

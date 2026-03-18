@@ -96,5 +96,6 @@
   "word.banira_codex.config_editor_close": "Close",
   "word.banira_codex.config_editor_save_success": "Config saved",
   "word.banira_codex.config_editor_save_failed": "Config save failed: %s",
-  "word.banira_codex.config_editor_validation_failed": "Validation failed: please fix invalid values"
+  "word.banira_codex.config_editor_validation_failed": "Validation failed: please fix invalid values",
+  "word.banira_codex.collapsible_panel_demo_title": "Collapsible Panel Demo"
 }

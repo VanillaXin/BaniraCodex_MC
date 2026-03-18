@@ -1,8 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -10,13 +8,9 @@ import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.Style;
-import org.lwjgl.opengl.GL11C;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -601,7 +595,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 绘制文本选择高亮
+     * 文本选择高亮颜色（半透明蓝）
+     */
+    private static final int SELECTION_HIGHLIGHT_COLOR = 0x40000080;
+
+    /**
+     * 绘制文本选择高亮。使用 MatrixStack 确保在嵌套父级时坐标正确。
      */
     private void renderHighlight(MatrixStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
         // 确保坐标顺序正确
@@ -625,21 +624,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             x1 = maxX;
         }
 
-        // 使用逻辑运算绘制高亮
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuilder();
-        RenderSystem.color4f(0.0F, 0.0F, 1.0F, 1.0F);
-        RenderSystem.disableTexture();
-        RenderSystem.enableColorLogicOp();
-        RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-        bufferbuilder.begin(GL11C.GL_QUADS, DefaultVertexFormats.POSITION);
-        bufferbuilder.vertex(x1, y2, 0.0D).endVertex();
-        bufferbuilder.vertex(x2, y2, 0.0D).endVertex();
-        bufferbuilder.vertex(x2, y1, 0.0D).endVertex();
-        bufferbuilder.vertex(x1, y1, 0.0D).endVertex();
-        tessellator.end();
-        RenderSystem.disableColorLogicOp();
-        RenderSystem.enableTexture();
+        int w = Math.max(0, x2 - x1);
+        int h = Math.max(0, y2 - y1);
+        if (w > 0 && h > 0) {
+            AbstractGuiUtils.fill(stack, x1, y1, w, h, SELECTION_HIGHLIGHT_COLOR);
+        }
     }
 
     /**
@@ -695,10 +684,18 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 在屏幕坐标绘制悬浮提示。作为子组件时需反向变换以修正父级 translate 导致的异位。
      */
-    private void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, boolean useTexture) {
+    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text) {
+        drawTooltipAtScreenCoords(stack, mx, my, text, true);
+    }
+
+    /**
+     * 在屏幕坐标绘制悬浮提示。作为子组件时需反向变换以修正父级 translate 导致的异位。
+     */
+    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, boolean useTexture) {
         stack.pushPose();
         if (parent != null) {
-            stack.translate(-absoluteX(), -absoluteY(), 0);
+            // 反向父级 translate，使 (mx, my) 对应屏幕坐标
+            stack.translate(-(absoluteX() - x()), -(absoluteY() - y()), 0);
         }
         FontDrawArgs args = FontDrawArgs.ofPopo(text.stack(stack)).x((int) mx).y((int) my).popupUseTexture(useTexture);
         TooltipWidget.drawPopupMessage(stack, args, screen.getEffectiveTheme(), screen.season());

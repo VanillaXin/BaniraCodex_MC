@@ -188,14 +188,11 @@ public abstract class BaseWidget implements IWidget {
         int mouseButton = event.button();
         double absX = absoluteX();
         double absY = absoluteY();
-        double relativeMouseX = mouseX - absX + x();
-        double relativeMouseY = mouseY - absY + y();
 
-        MouseEvent relEvent = MouseEvent.of(relativeMouseX, relativeMouseY, mouseButton);
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseClick(relEvent)) {
+                if (child.handleMouseClick(event)) {
                     return true;
                 }
             }
@@ -221,14 +218,11 @@ public abstract class BaseWidget implements IWidget {
         int mouseButton = event.button();
         double absX = absoluteX();
         double absY = absoluteY();
-        double relativeMouseX = mouseX - absX + x();
-        double relativeMouseY = mouseY - absY + y();
 
-        MouseEvent relEvent = MouseEvent.of(relativeMouseX, relativeMouseY, mouseButton);
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseRelease(relEvent)) {
+                if (child.handleMouseRelease(event)) {
                     return true;
                 }
             }
@@ -303,18 +297,10 @@ public abstract class BaseWidget implements IWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
-        double mouseX = event.mouseX();
-        double mouseY = event.mouseY();
-        double absX = absoluteX();
-        double absY = absoluteY();
-        double relativeMouseX = mouseX - absX + x();
-        double relativeMouseY = mouseY - absY + y();
-
-        MouseDragEvent relEvent = MouseDragEvent.of(relativeMouseX, relativeMouseY, event.button(), event.dragX(), event.dragY());
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseDrag(relEvent)) {
+                if (child.handleMouseDrag(event)) {
                     return true;
                 }
             }
@@ -335,14 +321,11 @@ public abstract class BaseWidget implements IWidget {
         double mouseY = event.mouseY();
         double absX = absoluteX();
         double absY = absoluteY();
-        double relativeMouseX = mouseX - absX + x();
-        double relativeMouseY = mouseY - absY + y();
 
-        MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, event.delta());
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(relEvent)) {
+                if (child.handleMouseScroll(event)) {
                     return true;
                 }
             }

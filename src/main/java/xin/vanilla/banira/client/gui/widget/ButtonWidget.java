@@ -9,9 +9,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 
@@ -377,7 +377,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             }
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
         } else {
-            FontDrawArgs drawArgs = FontDrawArgs.of(text.color(currentTextColor));
+            FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
             if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
                 LabelWidget.drawLimitedText(drawArgs.x(contentX).y(contentY + (availableHeight - 9) / 2)
                         .maxWidth(Math.min(textMaxWidth, availableWidth))

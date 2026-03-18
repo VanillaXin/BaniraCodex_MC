@@ -133,6 +133,13 @@ public class DebugScreen extends BaniraScreen {
         configBtn.onClick(b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
         addWidget(configBtn);
 
+        ButtonWidget collapsibleDemoBtn = new ButtonWidget(this);
+        collapsibleDemoBtn.id("collapsible_panel_demo");
+        collapsibleDemoBtn.bounds(new ScreenCoordinate(390, 140, 100, 24));
+        collapsibleDemoBtn.text("折叠面板演示");
+        collapsibleDemoBtn.onClick(b -> CollapsiblePanelDemoScreen.open(this));
+        addWidget(collapsibleDemoBtn);
+
         addPresetStyleButtons();
     }
 

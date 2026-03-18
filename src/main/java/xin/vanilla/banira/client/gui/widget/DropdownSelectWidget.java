@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -474,26 +473,16 @@ public class DropdownSelectWidget extends InputWidget {
         }
 
         if (!value().isEmpty() && isMouseOverClearButton() && screen != null) {
-            double mx = screen.inputState().mouseX();
-            double my = screen.inputState().mouseY();
-            TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal("清空").stack(stack)).x((int) mx).y((int) my),
-                    screen.getEffectiveTheme(), screen.season());
+            drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal("清空"));
         }
 
         if (screen != null && !isMouseOverClearButton() && !isMouseOverArrow()) {
             if (tagMode && isMouseOverInputArea()) {
-                String fullContent = String.join(", ", selectedValues);
-                double mx = screen.inputState().mouseX();
-                double my = screen.inputState().mouseY();
-                TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(fullContent).stack(stack)).x((int) mx).y((int) my),
-                        screen.getEffectiveTheme(), screen.season());
+                drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", selectedValues)));
             } else if (!value().isEmpty() && !dropdownOpen && isMouseOverInputArea()) {
                 String fullContent = value();
                 if (!fullContent.isEmpty()) {
-                    double mx = screen.inputState().mouseX();
-                    double my = screen.inputState().mouseY();
-                    TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(fullContent).stack(stack)).x((int) mx).y((int) my),
-                            screen.getEffectiveTheme(), screen.season());
+                    drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(fullContent));
                 }
             }
         }

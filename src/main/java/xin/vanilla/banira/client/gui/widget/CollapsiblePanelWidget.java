@@ -98,6 +98,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     @Setter
     private int borderBottomWidth = 1;
 
+    public CollapsiblePanelWidget borderWidth(int width) {
+        return this.borderLeftWidth(width).borderBottomWidth(width).borderRightWidth(width);
+    }
+
     /**
      * 内容区高度（展开时）。若 <= 0 则根据子组件自动计算
      */
@@ -150,6 +154,15 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
      */
     public static CollapsiblePanelWidget createAutoHeight(BaniraScreen screen, double x, double y, double width) {
         return new CollapsiblePanelWidget(screen, new ScreenCoordinate(x, y, width, 0));
+    }
+
+    /**
+     * 创建子面板，宽度自适应为当前面板内容区最大宽度。用于嵌套时子面板及其子元素能正确填满可用宽度。
+     *
+     * @return 新建的子面板（未加入当前面板，需后续调用 {@link #addCollapsibleChild(CollapsiblePanelWidget)}）
+     */
+    public CollapsiblePanelWidget createChildPanel() {
+        return new CollapsiblePanelWidget(screen, new ScreenCoordinate(0, 0, getContentWidth(), 0));
     }
 
     @Override

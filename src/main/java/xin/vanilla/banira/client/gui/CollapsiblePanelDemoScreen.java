@@ -44,6 +44,7 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
 
         // region 根级折叠面板
         CollapsiblePanelWidget panel = CollapsiblePanelWidget.createAutoHeight(this, startX, startY, PANEL_WIDTH);
+        panel.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         panel.id("panel");
         panel.text("折叠面板演示 - 多控件与深层嵌套");
         panel.expanded(true);
@@ -54,8 +55,9 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
         panel.addChildAuto(topInput, ROW_HEIGHT);
         panel.addChildAuto(new LabelWidget(this).text("下方为嵌套子面板："));
 
-        // region 子面板 A - 含输入框与下拉
-        CollapsiblePanelWidget inner1 = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, PANEL_WIDTH - 32);
+        // region 子面板 A - 含输入框与下拉（宽度自适应父级内容区）
+        CollapsiblePanelWidget inner1 = panel.createChildPanel();
+        inner1.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         inner1.id("inner_1");
         inner1.text("子面板 A - 输入与下拉");
         inner1.expanded(true);
@@ -70,22 +72,25 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
         // endregion
 
         // region 子面板 B - 含更深嵌套
-        CollapsiblePanelWidget inner2 = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, PANEL_WIDTH - 32);
+        CollapsiblePanelWidget inner2 = panel.createChildPanel();
+        inner2.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         inner2.id("inner_2");
         inner2.text("子面板 B - 深层嵌套");
         inner2.expanded(true);
         inner2.addChildAuto(new LabelWidget(this).text("子面板 B 内容"));
 
-        // 子面板 B1 - 含滑块
-        CollapsiblePanelWidget inner2_1 = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, PANEL_WIDTH - 48);
+        // 子面板 B1 - 含滑块（宽度自适应 inner2 内容区）
+        CollapsiblePanelWidget inner2_1 = inner2.createChildPanel();
+        inner2_1.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         inner2_1.id("inner_2_1");
         inner2_1.text("子面板 B1 - 滑块");
         inner2_1.expanded(true);
         inner2_1.addChildAuto(new LabelWidget(this).text("音量调节"));
         inner2_1.addChildAuto(new SliderWidget(this).minValue(0).maxValue(100).value(50).showValue(true), ROW_HEIGHT);
 
-        // 子面板 B1a - 第四层嵌套，含输入与按钮
-        CollapsiblePanelWidget inner2_1_1 = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, PANEL_WIDTH - 64);
+        // 子面板 B1a - 第四层嵌套（宽度自适应 inner2_1 内容区）
+        CollapsiblePanelWidget inner2_1_1 = inner2_1.createChildPanel();
+        inner2_1_1.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         inner2_1_1.id("inner_2_1_1");
         inner2_1_1.text("子面板 B1a - 第四层");
         inner2_1_1.expanded(true);
@@ -101,7 +106,8 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
         // endregion
 
         // region 子面板 C - 含下拉与按钮
-        CollapsiblePanelWidget inner3 = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, PANEL_WIDTH - 32);
+        CollapsiblePanelWidget inner3 = panel.createChildPanel();
+        inner3.borderBottomWidth(0).borderRightWidth(0).paddingLeft(2).paddingRight(0);
         inner3.id("inner_3");
         inner3.text("子面板 C - 下拉与按钮");
         inner3.expanded(true);

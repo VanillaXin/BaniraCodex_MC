@@ -120,7 +120,6 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
         // endregion
 
         addWidget(panel);
-        startY += (int) panel.height() + 8;
         // endregion
 
         // // region 关闭按钮

@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -85,6 +86,12 @@ public class DropdownSelectWidget extends InputWidget {
     private DropdownPreviewOverlayWidget previewOverlayWidget;
     private boolean previewExpanded = false;
     private int tagScrollOffset = 0;
+
+    /**
+     * 关闭下拉时排除的点击区域（如相邻的添加按钮），点击这些区域时不关闭且不消费事件
+     */
+    @Nullable
+    private Supplier<List<ScreenCoordinate>> excludedCloseAreasSupplier;
 
     boolean previewExpanded() {
         return previewExpanded;
@@ -321,11 +328,14 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public void closeDropdown() {
         if (!dropdownOpen) return;
+        updateDisplayValue();
         dropdownOpen = false;
-        value(selectedValues.isEmpty() ? "" : String.join(MULTI_SEPARATOR, selectedValues));
         if (overlayWidget != null && screen != null) {
             screen.removeOverlayWidget(overlayWidget);
             overlayWidget = null;
+        }
+        if (screen != null) {
+            screen.requestFocus(this);
         }
     }
 
@@ -390,9 +400,34 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     /**
+     * 设置关闭下拉时排除的点击区域，点击这些区域时不关闭且不消费事件
+     */
+    public DropdownSelectWidget excludedCloseAreasSupplier(@Nullable Supplier<List<ScreenCoordinate>> supplier) {
+        this.excludedCloseAreasSupplier = supplier;
+        return this;
+    }
+
+    /**
+     * 检查点击是否在排除区域内
+     */
+    boolean isInExcludedCloseArea(double mouseX, double mouseY) {
+        if (excludedCloseAreasSupplier == null) return false;
+        List<ScreenCoordinate> areas = excludedCloseAreasSupplier.get();
+        if (areas == null) return false;
+        for (ScreenCoordinate area : areas) {
+            if (mouseX >= area.x() && mouseX < area.x() + area.width()
+                    && mouseY >= area.y() && mouseY < area.y() + area.height()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 检查点击是否应关闭下拉（多选时点击箭头或外部）
      */
     public boolean shouldCloseOnClick(double mouseX, double mouseY) {
+        if (isInExcludedCloseArea(mouseX, mouseY)) return false;
         ScreenCoordinate inputBounds = getInputBounds();
         ScreenCoordinate arrowBounds = getDropdownArrowBounds();
         ScreenCoordinate dropdownBounds = getDropdownBounds();

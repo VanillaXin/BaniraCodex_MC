@@ -121,24 +121,31 @@ public class DebugScreen extends BaniraScreen {
 
         ButtonWidget testConfigBtn = new ButtonWidget(this);
         testConfigBtn.id("test_config_editor");
-        testConfigBtn.bounds(new ScreenCoordinate(170, 140, 100, 24));
-        testConfigBtn.text("测试配置");
+        testConfigBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
+        testConfigBtn.text("配置编辑测试");
         testConfigBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
         addWidget(testConfigBtn);
 
         ButtonWidget configBtn = new ButtonWidget(this);
         configBtn.id("config_editor");
-        configBtn.bounds(new ScreenCoordinate(280, 140, 100, 24));
+        configBtn.bounds(new ScreenCoordinate(190, 140, 75, 24));
         configBtn.text("配置编辑");
         configBtn.onClick(b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
         addWidget(configBtn);
 
         ButtonWidget collapsibleDemoBtn = new ButtonWidget(this);
         collapsibleDemoBtn.id("collapsible_panel_demo");
-        collapsibleDemoBtn.bounds(new ScreenCoordinate(390, 140, 100, 24));
-        collapsibleDemoBtn.text("折叠面板演示");
+        collapsibleDemoBtn.bounds(new ScreenCoordinate(270, 140, 75, 24));
+        collapsibleDemoBtn.text("折叠面板测试");
         collapsibleDemoBtn.onClick(b -> CollapsiblePanelDemoScreen.open(this));
         addWidget(collapsibleDemoBtn);
+
+        ButtonWidget tagListDemoBtn = new ButtonWidget(this);
+        tagListDemoBtn.id("tag_list_editor_demo");
+        tagListDemoBtn.bounds(new ScreenCoordinate(350, 140, 75, 24));
+        tagListDemoBtn.text("标签列表测试");
+        tagListDemoBtn.onClick(b -> TagListEditorDemoScreen.open(this));
+        addWidget(tagListDemoBtn);
 
         addPresetStyleButtons();
     }

@@ -193,6 +193,9 @@ class DropdownOverlayWidget extends BaseWidget {
         double mouseX = event.mouseX();
         double mouseY = event.mouseY();
 
+        if (parent.isInExcludedCloseArea(mouseX, mouseY)) {
+            return false;
+        }
         if (parent.shouldCloseOnClick(mouseX, mouseY)) {
             pressedInCloseArea = true;
             pressedOptionIndex = -1;

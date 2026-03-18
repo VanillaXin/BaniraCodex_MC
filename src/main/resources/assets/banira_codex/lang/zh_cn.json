@@ -97,5 +97,10 @@
   "word.banira_codex.config_editor_save_success": "配置已保存",
   "word.banira_codex.config_editor_save_failed": "配置保存失败：%s",
   "word.banira_codex.config_editor_validation_failed": "校验失败：请修正无效的数值",
-  "word.banira_codex.collapsible_panel_demo_title": "折叠面板演示"
+  "word.banira_codex.collapsible_panel_demo_title": "折叠面板演示",
+  "word.banira_codex.tag_list_editor_demo_title": "标签列表编辑演示",
+  "word.banira_codex.tag_list_clear_tooltip": "清空列表",
+  "word.banira_codex.tag_list_add_tooltip": "添加项",
+  "word.banira_codex.tag_list_undo_tooltip": "撤销清空",
+  "word.banira_codex.tag_list_confirm_add": "添加"
 }

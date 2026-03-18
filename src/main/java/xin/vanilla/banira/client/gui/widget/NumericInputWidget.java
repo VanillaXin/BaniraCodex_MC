@@ -10,6 +10,7 @@ import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 
 /**
  * 数值输入 Widget。继承 InputWidget，专为数值输入优化：
@@ -113,14 +114,23 @@ public class NumericInputWidget extends InputWidget {
      * 解析当前文本为数值，无效时返回 0
      */
     public double parseValue() {
+        Object v = getParsedValue();
+        return v instanceof BigDecimal ? ((BigDecimal) v).doubleValue() : ((Number) v).doubleValue();
+    }
+
+    /**
+     * 解析当前文本为规范化数值对象。整数返回 Long，小数返回 BigDecimal，无效时返回 BigDecimal.ZERO。
+     */
+    public Object getParsedValue() {
         String s = value();
-        if (StringUtils.isNullOrEmptyEx(s)) return 0;
+        if (StringUtils.isNullOrEmptyEx(s)) return BigDecimal.ZERO;
         s = s.trim();
-        if (s.equals("-") || s.equals(".")) return 0;
+        if (s.equals("-") || s.equals(".")) return BigDecimal.ZERO;
         try {
-            return Double.parseDouble(s);
+            BigDecimal bd = new BigDecimal(s);
+            return bd.stripTrailingZeros().scale() <= 0 ? bd.longValue() : bd;
         } catch (NumberFormatException e) {
-            return 0;
+            return BigDecimal.ZERO;
         }
     }
 
@@ -135,7 +145,7 @@ public class NumericInputWidget extends InputWidget {
         if (integerOnly) {
             return String.valueOf((int) Math.round(v));
         }
-        return v == (long) v ? String.valueOf((long) v) : String.valueOf(v);
+        return v == (long) v ? String.valueOf((long) v) : BigDecimal.valueOf(v).toPlainString();
     }
 
     /**

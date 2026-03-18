@@ -97,5 +97,10 @@
   "word.banira_codex.config_editor_save_success": "Config saved",
   "word.banira_codex.config_editor_save_failed": "Config save failed: %s",
   "word.banira_codex.config_editor_validation_failed": "Validation failed: please fix invalid values",
-  "word.banira_codex.collapsible_panel_demo_title": "Collapsible Panel Demo"
+  "word.banira_codex.collapsible_panel_demo_title": "Collapsible Panel Demo",
+  "word.banira_codex.tag_list_editor_demo_title": "Tag List Editor Demo",
+  "word.banira_codex.tag_list_clear_tooltip": "Clear list",
+  "word.banira_codex.tag_list_add_tooltip": "Add item",
+  "word.banira_codex.tag_list_undo_tooltip": "Undo clear",
+  "word.banira_codex.tag_list_confirm_add": "Add"
 }

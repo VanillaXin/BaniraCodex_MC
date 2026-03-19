@@ -64,6 +64,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     @Setter
     private boolean useTextureDrawing = true;
 
+    /**
+     * 为 true 时弹层使用屏幕坐标绘制（不随父级 translate），避免嵌套时错位。默认 false。
+     */
+    @Getter
+    @Setter
+    private boolean popupAtScreenCoords = false;
+
     private transient final List<ITextComponent> tooltip = new ArrayList<>();
 
     public TooltipWidget(BaniraScreen screen) {
@@ -90,23 +97,45 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         if (mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
-            stack.pushPose();
-            if (parent != null) {
-                stack.translate(-absoluteX(), -absoluteY(), 0);
-            }
-            if (itemStack != null && !itemStack.isEmpty()) {
-                drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
-            } else if (vanillaTooltip) {
-                if (tooltip.isEmpty()) {
-                    tooltip.add(text.toComponent().toChat());
-                }
-                screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
-            } else {
+            if (popupAtScreenCoords) {
+                // 延迟到帧末绘制，避免父级 translate 导致错位、scissor 裁剪、层级被覆盖
                 BaniraColorConfig theme = screen.getEffectiveTheme();
                 EnumSeason season = screen.season();
-                drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(useTextureDrawing), theme, season);
+                Text textToDraw = text;
+                boolean useTexture = useTextureDrawing;
+                screen.addDeferredTooltipRender(s -> {
+                    s.pushPose();
+                    s.last().pose().setIdentity();
+                    if (itemStack != null && !itemStack.isEmpty()) {
+                        drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
+                    } else if (vanillaTooltip) {
+                        List<ITextComponent> tip = new ArrayList<>();
+                        tip.add(textToDraw.toComponent().toChat());
+                        screen.renderComponentTooltip(s, tip, mouseX, mouseY);
+                    } else {
+                        drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
+                    }
+                    s.popPose();
+                });
+            } else {
+                stack.pushPose();
+                if (parent != null) {
+                    stack.translate(-absoluteX(), -absoluteY(), 0);
+                }
+                if (itemStack != null && !itemStack.isEmpty()) {
+                    drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
+                } else if (vanillaTooltip) {
+                    if (tooltip.isEmpty()) {
+                        tooltip.add(text.toComponent().toChat());
+                    }
+                    screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
+                } else {
+                    BaniraColorConfig theme = screen.getEffectiveTheme();
+                    EnumSeason season = screen.season();
+                    drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(useTextureDrawing), theme, season);
+                }
+                stack.popPose();
             }
-            stack.popPose();
         }
         renderChildren(stack, partialTicks);
     }

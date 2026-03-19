@@ -38,6 +38,8 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
     private static final int LABEL_WIDTH = 140;
+    private static final int RESET_BTN_WIDTH = 18;
+    private static final int RESET_BTN_GAP = 2;
     private static final int SCROLL_WIDTH = 6;
     private static final int SCROLL_GAP = 2;
     private static final int BUTTON_HEIGHT = 18;
@@ -309,6 +311,37 @@ public class ConfigEditorScreen extends BaniraScreen {
         return String.join("\n", tooltip);
     }
 
+    private double valueWidgetWidth(double w) {
+        return w - LABEL_WIDTH - 4 - RESET_BTN_WIDTH - RESET_BTN_GAP;
+    }
+
+    private double resetBtnX(double w) {
+        return w - RESET_BTN_WIDTH;
+    }
+
+    private void addResetButton(EntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH,
+                                java.util.function.Consumer<Object> setValue) {
+        ButtonWidget btn = new ButtonWidget(this);
+        btn.id("reset_" + desc.getPath().replace(".", "_"));
+        btn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset").toString());
+        btn.bounds(new ScreenCoordinate(resetBtnX(rowW), 0, RESET_BTN_WIDTH, rowH));
+        btn.onClick(b -> {
+            Object def = desc.getDefaultValue();
+            if (def != null) {
+                holder.set(desc.getPath(), def);
+                modifiedValues.put(desc.getPath(), def);
+                setValue.accept(def);
+            }
+        });
+        TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), 0, RESET_BTN_WIDTH, rowH));
+        resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
+        resetTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset_tooltip"));
+        resetTip.useTextureDrawing(false);
+        resetTip.popupAtScreenCoords(true);
+        row.addChild(btn);
+        row.addChild(resetTip);
+    }
+
     private IConfigEntryWidget createStringRow(ConfigEntryDescriptor desc, double w, int rowH) {
         EntryRowWidget row = new EntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
@@ -322,16 +355,17 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         InputWidget input = new InputWidget(this);
         input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
+        input.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
         Object raw = holder.get(desc.getPath());
         String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
         input.value(str);
         input.maxLength(256);
         input.onTextChanged(v -> modifiedValues.put(desc.getPath(), v));
 
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         row.addChild(label);
         row.addChild(input);
+        addResetButton(row, desc, w, rowH, v -> input.value(String.valueOf(v)));
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
 
         return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
@@ -361,7 +395,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         boolean val = Boolean.TRUE.equals(holder.get(desc.getPath()));
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("cfg_" + desc.getPath().replace(".", "_"));
-        btn.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
+        btn.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
         btn.text(val ? "§aON" : "§cOFF");
         btn.onClick(b -> {
             boolean newVal = !Boolean.TRUE.equals(holder.get(desc.getPath()));
@@ -370,9 +404,10 @@ public class ConfigEditorScreen extends BaniraScreen {
             btn.text(newVal ? "§aON" : "§cOFF");
         });
 
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         row.addChild(label);
         row.addChild(btn);
+        addResetButton(row, desc, w, rowH, v -> btn.text(Boolean.TRUE.equals(v) ? "§aON" : "§cOFF"));
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())), v -> {
         });
@@ -411,7 +446,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         SliderWidget slider = new SliderWidget(this);
         slider.id("cfg_" + desc.getPath().replace(".", "_"));
-        slider.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
+        slider.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
         slider.minValue(min).maxValue(max).step(step).value(initVal);
         slider.decimalPlaces(desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE
                 ? desc.getDecimalPlaces() : 0);
@@ -422,9 +457,13 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         });
 
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         row.addChild(label);
         row.addChild(slider);
+        addResetButton(row, desc, w, rowH, v -> {
+            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
+            slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
+        });
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
             double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
@@ -466,7 +505,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
         dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
-        dropdown.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
+        dropdown.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
         dropdown.options(options);
         dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
         dropdown.onSelectionChanged(v -> {
@@ -480,9 +519,10 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         });
 
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         row.addChild(label);
         row.addChild(dropdown);
+        addResetButton(row, desc, w, rowH, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, dropdown, tooltip, () -> {
             List<String> sel = dropdown.getSelectedValues();
@@ -514,7 +554,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         TagListEditorWidget tagList = new TagListEditorWidget(this);
         tagList.id("cfg_" + desc.getPath().replace(".", "_"));
-        tagList.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
+        tagList.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
         tagList.itemType(TagListEditorWidget.ItemType.TEXT);
         tagList.items(items);
         tagList.expanded(false);
@@ -537,9 +577,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         tagList.onListChanged(v -> modifiedValues.put(desc.getPath(), v.stream().map(String::valueOf).collect(Collectors.toList())));
 
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        int tagRowH = (int) tagList.effectiveHeight();
         row.addChild(label);
         row.addChild(tagList);
+        addResetButton(row, desc, w, tagRowH, v -> {
+            if (v instanceof List) {
+                tagList.items(((List<?>) v).stream().map(String::valueOf).collect(Collectors.toList()));
+            }
+        });
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, tagList, tooltip,
                 () -> tagList.items().stream().map(String::valueOf).collect(Collectors.toList()),

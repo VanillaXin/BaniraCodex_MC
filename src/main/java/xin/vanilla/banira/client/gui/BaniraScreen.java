@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 
@@ -181,6 +182,23 @@ public abstract class BaniraScreen extends Screen {
      */
     private BaniraColorConfig cachedTheme;
 
+    /**
+     * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
+     */
+    private final List<Consumer<MatrixStack>> deferredTooltipRenders = new ArrayList<>();
+
+    /**
+     * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
+     */
+    public void addDeferredTooltipRender(Consumer<MatrixStack> render) {
+        if (render != null) deferredTooltipRenders.add(render);
+    }
+
+    private void flushDeferredTooltipRenders(MatrixStack stack) {
+        for (Consumer<MatrixStack> r : deferredTooltipRenders) r.accept(stack);
+        deferredTooltipRenders.clear();
+    }
+
     @Override
     @ParametersAreNonnullByDefault
     public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
@@ -191,6 +209,7 @@ public abstract class BaniraScreen extends Screen {
         cachedTheme = getEffectiveTheme();
 
         this.onRender(stack, partialTicks);
+        this.flushDeferredTooltipRenders(stack);
 
         this.popupOption.render(stack, inputState);
         this.cursor.draw(stack, mouseX, mouseY);

@@ -652,7 +652,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private static final int CARD_RADIUS = 8;
-    private static final int CARD_ALPHA = 0xC0;
+    private static final int CARD_ALPHA = 0xFF;
 
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {

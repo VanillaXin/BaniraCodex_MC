@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -64,6 +65,14 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     public LabelWidget(BaniraScreen screen, ScreenCoordinate bounds, Text text) {
         super(screen, bounds);
         this.text = text;
+    }
+
+    @Override
+    public void applyTheme(BaniraColorConfig theme) {
+        super.applyTheme(theme);
+        if (text != null && !text.colorEmpty() && (text.color() & 0xFFFFFF) == 0xFFFFFF) {
+            text.color(theme.textPrimary());
+        }
     }
 
     @Override

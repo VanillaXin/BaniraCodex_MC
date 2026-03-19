@@ -47,6 +47,9 @@ import java.util.function.Predicate;
  */
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
+
+    // region 基础属性
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Getter
@@ -107,6 +110,8 @@ public abstract class BaniraScreen extends Screen {
         if (theme != null) return theme;
         return BaniraColorConfig.forSeason(season == EnumSeason.AUTO || season == null ? DateUtils.getSeason() : season);
     }
+
+    // endregion 基础属性
 
     /**
      * 从父界面继承 theme 和 season
@@ -451,7 +456,7 @@ public abstract class BaniraScreen extends Screen {
     protected void onClosed() {
     }
 
-    // region Widget support
+    // region Widget 管理
 
     /**
      * 逆序遍历 widgets，返回首个 visible+enabled 且 handler 返回 true 的 widget。
@@ -631,7 +636,7 @@ public abstract class BaniraScreen extends Screen {
         }
     }
 
-    // endregion Widget support
+    // endregion Widget 管理
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {

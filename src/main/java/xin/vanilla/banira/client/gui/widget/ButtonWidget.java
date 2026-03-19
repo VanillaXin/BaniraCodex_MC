@@ -362,6 +362,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int availableWidth = drawWidth - paddingLeft - paddingRight;
         int availableHeight = drawHeight - paddingTop - paddingBottom;
 
+        // 预置图标或文本
         if (presetStyle != null) {
             int currentIconColor;
             if (!enabled) {
@@ -405,6 +406,9 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         renderChildren(stack, partialTicks);
     }
 
+    /**
+     * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
+     */
     private void drawPresetIcon(MatrixStack stack, int x, int y, int w, int h, int color) {
         float cx = x + w * 0.5f;
         float cy = y + h * 0.5f;
@@ -414,23 +418,28 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
         switch (presetStyle) {
             case CLOSE:
+                // 叉号
                 AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, lw, color);
                 AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, lw, color);
                 break;
             case MINUS:
+                // 减号
                 AbstractGuiUtils.drawLine(stack, cx - r, cy, cx + r, cy, lw, color);
                 break;
             case PLUS:
+                // 加号
                 float plusR = r * 0.92f;
                 AbstractGuiUtils.drawLine(stack, cx - plusR, cy, cx + plusR, cy, lw, color);
                 AbstractGuiUtils.drawLine(stack, cx, cy - plusR, cx, cy + plusR, lw, color);
                 break;
             case MAXIMIZE:
+                // 最大化
                 ShapeDrawArgs.PolygonParams sq = new ShapeDrawArgs.PolygonParams()
                         .centerX(cx).centerY(cy).radius(r * 0.95f).sides(4).rotation(45).border(lw);
                 AbstractGuiUtils.drawPolygonBorder(stack, sq, color);
                 break;
             case ARROW_UP:
+                // 上箭头
                 AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, -90, color);
                 break;
             case ARROW_DOWN:

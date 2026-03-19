@@ -207,22 +207,14 @@ public class NotificationLogScreen extends BaniraScreen {
     public void onRender(MatrixStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
 
-        // 左侧面板：类型选择 + 简洁列表
         ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
         leftBg.rect().radius(8, 0, 8, 0).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(leftBg);
 
-        // // 分隔线
-        // int divColor = ColorUtils.applyAlphaToArgb(theme.border(), 0x60);
-        // ShapeDrawArgs div = ShapeDrawArgs.rect(stack, rightX - DIVIDER_W, rightY, DIVIDER_W, rightH, divColor);
-        // BaseShapeWidget.drawShape(div);
-
-        // 右侧面板：记录详情
         ShapeDrawArgs rightBg = ShapeDrawArgs.rect(stack, rightX, rightY, rightW, rightH, theme.panelBg());
         rightBg.rect().radius(0, 8, 0, 8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(rightBg);
 
-        // 左侧简洁列表
         int startIndex = (int) Math.max(0, Math.min(scrollValue, filteredEntries.size() - visibleRows));
         int endIndex = Math.min(startIndex + visibleRows, filteredEntries.size());
         for (int i = startIndex; i < endIndex; i++) {
@@ -239,7 +231,6 @@ public class NotificationLogScreen extends BaniraScreen {
             LabelWidget.drawLimitedText(emptyArgs);
         }
 
-        // 右侧详情
         renderDetailPane(stack, theme);
 
         super.renderWidgets(stack, partialTicks);

@@ -229,8 +229,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     // region 光标
 
-    // region 光标
-
     /**
      * 光标位置
      */
@@ -353,7 +351,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         this.font = Minecraft.getInstance().font;
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
-        // 注册为可聚焦的Widget
         screen.registerFocusableWidget(this);
     }
 
@@ -362,7 +359,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         this.font = Minecraft.getInstance().font;
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
-        // 注册为可聚焦的Widget
         screen.registerFocusableWidget(this);
     }
 
@@ -387,26 +383,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         render(stack, x, y, width, height);
 
-        // 渲染子Widget
         renderChildren(stack, partialTicks);
     }
 
     private void render(MatrixStack stack, int x, int y, int width, int height) {
-        // 计算实际绘制区域（考虑外边距）
         int drawX = x + marginLeft;
         int drawY = y + marginTop;
         int drawWidth = width - marginLeft - marginRight;
         int drawHeight = height - marginTop - marginBottom;
 
-        // 确定背景颜色
         int currentBgColor = this.error ? this.errorBgColor : this.bgColor;
 
-        // 绘制背景（使用ShapeDrawArgs，参考ButtonWidget）
         ShapeDrawArgs rect = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBgColor);
         rect.rect().radius((float) radius).cornerMode(cornerMode);
         BaseShapeWidget.drawShape(rect);
 
-        // 绘制边框
         if (borderWidth > 0) {
             int currentBorderColor;
             if (!enabled) {
@@ -421,7 +412,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             BaseShapeWidget.drawShape(border);
         }
 
-        // 计算实际字体大小（如果为0则使用font.lineHeight）
         float actualFontSize = fontSize > 0 ? fontSize : font.lineHeight;
         float fontScale = actualFontSize / font.lineHeight;
 
@@ -432,31 +422,24 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 currentTextColor = this.uneditableTextColor;
             }
             int innerWidth = getTextAreaWidth(drawWidth);
-            // 计算缩放后的可用宽度（用于文本截断）
             int scaledInnerWidth = fontScale != 1.0f ? (int) (innerWidth / fontScale) : innerWidth;
 
             int cursorPos = this.cursorPosition;
             int highlightPos = this.highlightPos;
             int displayPos = this.displayPos;
 
-            // 获取可见文本（使用缩放后的宽度）
             String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
 
-            // 是否存在左右未显示文本
             boolean hasLeftHidden = displayPos > 0;
             boolean hasRightHidden = displayPos + visibleText.length() < value.length();
 
-            // 计算光标在可见文本中的位置
             int cursorInVisible = cursorPos - displayPos;
             boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
-            // 光标缓慢闪烁
             boolean shouldShowCursor = this.focused() && ((System.currentTimeMillis() - LAST_CLICK_TIME) / 750) % 2 == 0 && cursorVisible;
 
-            // 计算文本绘制位置
             int textX = drawX + paddingLeft;
             int textY = drawY + (drawHeight - (int) actualFontSize + 1) / 2;
 
-            // 绘制溢出内容标记
             int dotColor = currentTextColor;
             int centerY = textY + (int) actualFontSize / 2;
             if (hasLeftHidden) {
@@ -472,7 +455,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 AbstractGuiUtils.drawPixel(stack, dotX, centerY + 1, dotColor);
             }
 
-            // 光标之前的文本
             int textDrawX = textX;
             if (!visibleText.isEmpty()) {
                 String beforeCursor = cursorVisible ? visibleText.substring(0, Math.min(cursorInVisible, visibleText.length())) : visibleText;
@@ -491,7 +473,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            // 计算光标位置
             boolean isAtEnd = cursorPos >= value.length();
             int cursorX = textDrawX;
             if (!cursorVisible) {
@@ -501,7 +482,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 textDrawX = cursorX;
             }
 
-            // 光标之后的文本
             if (!visibleText.isEmpty() && cursorVisible && cursorInVisible < visibleText.length()) {
                 String afterCursor = visibleText.substring(cursorInVisible);
                 if (fontScale != 1.0f) {
@@ -517,7 +497,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            // 提示文本
             if (this.hint != null && value.isEmpty() && !this.focused()) {
                 float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
                 float hintFontScale = actualHintFontSize / font.lineHeight;
@@ -536,18 +515,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            // 绘制文本选择高亮
             if (highlightPos != cursorPos) {
-                // 计算高亮的起始和结束位置
                 int highlightStart = Math.min(cursorPos, highlightPos);
                 int highlightEnd = Math.max(cursorPos, highlightPos);
 
-                // 计算高亮在可见文本中的起始和结束位置
                 int highlightStartInVisible = Math.max(0, highlightStart - displayPos);
                 int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
 
                 if (highlightStartInVisible < highlightEndInVisible) {
-                    // 计算高亮的屏幕坐标
                     int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
                     int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
                     renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
@@ -572,10 +547,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), false);
             }
 
-            // 绘制光标
             if (shouldShowCursor) {
                 if (isAtEnd) {
-                    // 在文本末尾绘制下划线光标
                     if (fontScale != 1.0f) {
                         stack.pushPose();
                         stack.translate(cursorX, textY, 0);
@@ -586,7 +559,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         this.font.draw(stack, "_", cursorX, textY, currentTextColor);
                     }
                 } else {
-                    // 在文本中间绘制竖线光标
                     int cursorHeight = (int) actualFontSize;
                     AbstractGuiUtils.fill(stack, cursorX, textY - 1, (int) Math.max(1, fontScale), cursorHeight, cursorColor);
                 }
@@ -603,7 +575,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 绘制文本选择高亮。使用 MatrixStack 确保在嵌套父级时坐标正确。
      */
     private void renderHighlight(MatrixStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
-        // 确保坐标顺序正确
         if (x1 > x2) {
             int temp = x1;
             x1 = x2;
@@ -615,7 +586,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             y2 = temp;
         }
 
-        // 限制在输入框范围内
         int maxX = fieldX + fieldWidth;
         if (x2 > maxX) {
             x2 = maxX;
@@ -694,7 +664,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, boolean useTexture) {
         stack.pushPose();
         if (parent != null) {
-            // 反向父级 translate，使 (mx, my) 对应屏幕坐标
             stack.translate(-(absoluteX() - x()), -(absoluteY() - y()), 0);
         }
         FontDrawArgs args = FontDrawArgs.ofPopo(text.stack(stack)).x((int) mx).y((int) my).popupUseTexture(useTexture);
@@ -719,7 +688,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         long currentTime = System.currentTimeMillis();
 
-        // 方向键长按重复
         if (focused() && heldArrowKey != -1 && screen != null && screen.inputState().isKeyPressed(heldArrowKey)) {
             long elapsed = currentTime - lastArrowKeyRepeatTime;
             long threshold = arrowKeyRepeatTriggered ? ARROW_REPEAT_INTERVAL_MS : ARROW_REPEAT_INITIAL_MS;
@@ -739,7 +707,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = -1;
         }
 
-        // 更新光标闪烁
         if (focused() && currentTime - lastClickTime > 0) {
             cursorVisible = ((currentTime - lastClickTime) / 750) % 2 == 0;
         }
@@ -822,7 +789,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (renderCoordinate == null) return false;
         int totalWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
         int innerWidth = getTextAreaWidth(totalWidth);
-        // 仅当文本溢出时消费滚轮以移动光标，否则让列表滚动
         if (this.font.width(value) <= innerWidth) return false;
         int step = event.delta() > 0 ? -SCROLL_STEP : SCROLL_STEP;
         moveCursor(step);
@@ -837,7 +803,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         this.shiftPressed = Screen.hasShiftDown();
 
-        // 处理 全选
         if (Screen.isSelectAll(keyCode)) {
             moveCursorTo(value.length());
             this.highlightPos = 0;
@@ -845,26 +810,22 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        // 处理 Ctrl+Z 撤销
         if (Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Z && !Screen.hasShiftDown()) {
             undo();
             return true;
         }
 
-        // 处理 Ctrl+Y Ctrl+Shift+Z 重做
         if ((Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Y) ||
                 (Screen.hasControlDown() && Screen.hasShiftDown() && keyCode == GLFWKey.GLFW_KEY_Z)) {
             redo();
             return true;
         }
 
-        // 处理 复制
         if (Screen.isCopy(keyCode)) {
             Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
             return true;
         }
 
-        // 处理 粘贴
         if (Screen.isPaste(keyCode)) {
             if (this.editable) {
                 this.saveToHistory();
@@ -873,7 +834,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        // 处理 剪切
         if (Screen.isCut(keyCode)) {
             Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
             if (this.editable) {
@@ -883,7 +843,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        // 处理方向
         if (keyCode == GLFWKey.GLFW_KEY_LEFT) {
             heldArrowKey = GLFWKey.GLFW_KEY_LEFT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
@@ -915,7 +874,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        // 处理删除
         if (keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {
             if (Screen.hasControlDown()) {
                 deleteWords(-1);
@@ -989,7 +947,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     public void setCursorPosition(int pos) {
         int newPos = MathHelper.clamp(pos, 0, value.length());
         if (this.cursorPosition != newPos) {
-            // 移动光标时重置闪烁计时，使光标立即显示
             long now = System.currentTimeMillis();
             LAST_CLICK_TIME = now;
             this.lastClickTime = now;
@@ -1024,11 +981,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
         int pos = cursorPosition - 1;
-        // 跳过空格
         while (pos > 0 && Character.isWhitespace(value.charAt(pos - 1))) {
             pos--;
         }
-        // 跳过单词字符
         while (pos > 0 && !Character.isWhitespace(value.charAt(pos - 1))) {
             pos--;
         }
@@ -1043,11 +998,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
         int pos = cursorPosition;
-        // 跳过单词字符
         while (pos < value.length() && !Character.isWhitespace(value.charAt(pos))) {
             pos++;
         }
-        // 跳过空格
         while (pos < value.length() && Character.isWhitespace(value.charAt(pos))) {
             pos++;
         }
@@ -1062,7 +1015,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
         int pos = MathHelper.clamp(cursorPosition, 0, value.length());
-        // 若光标在空白处，向左找到最近的非空白字符作为参考
         int refPos = pos;
         if (pos < value.length() && StringUtils.isWordBoundaryWhitespace(value.charAt(pos))) {
             int idx = pos - 1;
@@ -1071,7 +1023,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             }
             refPos = Math.max(idx, 0);
         } else if (pos > 0) {
-            refPos = pos - 1;  // 光标在字符之间，取左侧字符
+            refPos = pos - 1;
         }
         int wordStart = StringUtils.findTokenStart(value, refPos);
         int wordEnd = StringUtils.findTokenEnd(value, refPos);
@@ -1116,66 +1068,51 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
 
-        // 光标移动方向
         boolean movingRight = cursorPos > this.lastCursorPos;
         boolean movingLeft = cursorPos < this.lastCursorPos;
         if (cursorPos != this.lastCursorPos) {
             this.lastCursorPos = cursorPos;
         }
 
-        // 从显示位置开始的所有剩余文本
         String remainingText = value.substring(this.displayPos);
-        // 可见文本
         String visibleText = this.font.plainSubstrByWidth(remainingText, innerWidth);
         int visibleEnd = this.displayPos + visibleText.length();
 
-        // 是否存在左右未显示的文本
         boolean hasLeftHidden = this.displayPos > 0;
         boolean hasRightHidden = visibleEnd < valueLength;
 
-        // 计算光标在可见文本中的字符索引
         int cursorInVisible = cursorPos - this.displayPos;
 
-        // 保证光标可见
         if (cursorPos < this.displayPos) {
-            // 光标在显示位置之前，向左滚动
             String beforeCursor = value.substring(0, cursorPos);
             String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
             this.displayPos = Math.max(0, cursorPos - reverseText.length());
         } else if (cursorPos > visibleEnd) {
-            // 光标超出可见范围，向右滚动
             String beforeCursor = value.substring(0, cursorPos);
             String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
             this.displayPos = Math.max(0, cursorPos - reverseText.length());
         } else {
-            // 根据光标位置与lastCursorPos判断方向
             int lenVisible = visibleText.length();
             if (movingRight && hasRightHidden && lenVisible > 0) {
                 int secondLastIndex = Math.max(0, lenVisible - 2);
                 if (cursorInVisible >= secondLastIndex) {
-                    // 使右侧文本缓慢滚动
                     this.displayPos = Math.min(this.displayPos + 1, valueLength);
                 }
             } else if (movingLeft && hasLeftHidden && lenVisible > 0) {
                 int secondIndex = 1;
                 if (cursorInVisible <= secondIndex) {
-                    // 使左侧文本缓慢滚动
                     this.displayPos = Math.max(this.displayPos - 1, 0);
                 }
             }
         }
 
-        // 检查高亮位置
         if (this.highlightPos != cursorPos) {
-            // 重新计算可见文本
             visibleText = this.font.plainSubstrByWidth(value.substring(this.displayPos), innerWidth);
             visibleEnd = visibleText.length() + this.displayPos;
 
-            // 确保调整后光标仍然可见
             boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
 
             if (cursorVisible) {
-                // 尝试让高亮位置可见
                 if (this.highlightPos < this.displayPos) {
                     String beforeHighlight = value.substring(0, this.highlightPos);
                     String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
@@ -1188,7 +1125,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         }
                     }
                 } else if (this.highlightPos > visibleEnd) {
-                    // 高亮位置超出可见范围
                     String beforeHighlight = value.substring(0, this.highlightPos);
                     String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
                     int newDisplayPos = Math.max(0, this.highlightPos - reverseText.length());
@@ -1203,7 +1139,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        // 确保在有效范围内
         this.displayPos = MathHelper.clamp(this.displayPos, 0, valueLength);
     }
 
@@ -1236,12 +1171,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int end = Math.max(cursorPos, highlightPos);
         boolean hasSelection = start != end;
 
-        // 删除选中的文本
         if (hasSelection) {
-            // 保存历史
             this.saveToHistory();
 
-            // 删除选中的文本并插入新文本
             String newValue = value.substring(0, start) + text + value.substring(end);
             if (newValue.length() > this.maxLength) {
                 newValue = newValue.substring(0, this.maxLength);
@@ -1253,9 +1185,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             setCursorPosition(newCursorPos);
             this.highlightPos = newCursorPos;
             this.lastCursorPos = newCursorPos;
-            // 确保光标可见（智能滚动）
         } else {
-            // 没有选中文本，正常插入
             if (!text.isEmpty()) {
                 this.saveToHistory();
                 this.error = false;
@@ -1269,7 +1199,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             setCursorPosition(newCursorPos);
             this.highlightPos = newCursorPos;
             this.lastCursorPos = newCursorPos;
-            // 确保光标可见
         }
         this.updateDisplayPos();
     }
@@ -1293,7 +1222,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         String oldValue = this.value;
         this.saveToHistory();
         if (num < 0) {
-            // 向后删除
             int start = Math.max(0, cursorPosition - 1);
             while (start > 0 && Character.isWhitespace(value.charAt(start - 1))) {
                 start--;
@@ -1304,7 +1232,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             value(value.substring(0, start) + value.substring(cursorPosition));
             setCursorPosition(start);
         } else {
-            // 向前删除
             int end = Math.min(value.length(), cursorPosition);
             while (end < value.length() && Character.isWhitespace(value.charAt(end))) {
                 end++;
@@ -1320,7 +1247,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         // 重置高亮位置并更新显示位置
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
-        // 确保光标可见
         this.updateDisplayPos();
     }
 
@@ -1338,26 +1264,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
 
-        // 删除字符
         String oldValue = this.value;
         this.saveToHistory();
         if (num < 0) {
-            // 向后删除
             int start = Math.max(0, cursorPosition + num);
             value(value.substring(0, start) + value.substring(cursorPosition));
             setCursorPosition(start);
         } else {
-            // 向前删除
             int end = Math.min(value.length(), cursorPosition + num);
             value(value.substring(0, cursorPosition) + value.substring(end));
         }
         if (!this.value.equals(oldValue)) {
             this.error = false;
         }
-        // 重置高亮位置并更新显示位置
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
-        // 确保光标可见
         this.updateDisplayPos();
     }
 
@@ -1383,9 +1304,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
 
-    /**
-     * 保存当前状态到历史记录
-     */
     // endregion 光标与选区操作
 
     // region 历史
@@ -1395,13 +1313,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return;
         }
 
-        // 添加到撤销历史
         this.undoHistory.offerLast(currentValue);
         if (this.undoHistory.size() > MAX_HISTORY_SIZE) {
             this.undoHistory.pollFirst();
         }
 
-        // 清空重做历史
         this.redoHistory.clear();
     }
 
@@ -1420,12 +1336,10 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.redoHistory.pollFirst();
         }
 
-        // 从撤销历史中恢复上一个值
         String previousValue = this.undoHistory.pollLast();
         if (previousValue != null) {
             value(previousValue);
             this.error = false;
-            // 重置光标和高亮位置
             int cursorPos = Math.min(this.cursorPosition, previousValue.length());
             setCursorPosition(cursorPos);
             this.highlightPos = cursorPos;
@@ -1442,18 +1356,15 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         String currentValue = this.value;
-        // 将当前值添加到撤销历史
         this.undoHistory.offerLast(currentValue);
         if (this.undoHistory.size() > MAX_HISTORY_SIZE) {
             this.undoHistory.pollFirst();
         }
 
-        // 从重做历史中恢复下一个值
         String nextValue = this.redoHistory.pollLast();
         if (nextValue != null) {
             value(nextValue);
             this.error = false;
-            // 重置光标和高亮位置
             int cursorPos = Math.min(this.cursorPosition, nextValue.length());
             setCursorPosition(cursorPos);
             this.highlightPos = cursorPos;

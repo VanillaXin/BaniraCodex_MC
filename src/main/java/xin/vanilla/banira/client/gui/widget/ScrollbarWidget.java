@@ -89,15 +89,15 @@ public class ScrollbarWidget extends BaseWidget {
         super(screen, bounds);
     }
 
-    /**
-     * 添加额外悬浮区域，鼠标位于其中时响应滚轮滚动
-     */
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
         bgColor(theme.scrollbarBg()).thumbColor(theme.scrollbarThumb()).hoverThumbColor(theme.scrollbarThumbHover());
     }
 
+    /**
+     * 添加额外悬浮区域，鼠标位于其中时响应滚轮滚动
+     */
     public ScrollbarWidget addScrollHoverArea(ScreenCoordinate area) {
         if (scrollingCoordinates == null) {
             scrollingCoordinates = new ArrayList<>();
@@ -116,9 +116,9 @@ public class ScrollbarWidget extends BaseWidget {
             return;
         }
 
-        // 确保渲染使用与交互一致的滑块数据（与 updateThumb 计算一致）
         updateThumb();
 
+        // 轨道背景
         int x = (int) x();
         int y = (int) y();
         int width = (int) renderCoordinate.width();
@@ -127,6 +127,7 @@ public class ScrollbarWidget extends BaseWidget {
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, x, y, width, height, bgColor);
         BaseShapeWidget.drawShape(bgRect);
 
+        // 滑块（根据方向绘制垂直或水平）
         int currentThumbColor = (mouseInside || dragging) ? hoverThumbColor : thumbColor;
         if (orientation == EnumOrientation.VERTICAL) {
             int thumbY = (int) Math.ceil(y + this.thumbPosition);
@@ -169,11 +170,13 @@ public class ScrollbarWidget extends BaseWidget {
             double relativeThumbStart = thumbPosition;
             double relativeThumbEnd = relativeThumbStart + thumbSize;
 
+            // 点击滑块：记录拖动偏移，进入拖动模式
             if (relativeClickPos >= relativeThumbStart && relativeClickPos <= relativeThumbEnd) {
                 double relativeThumbCenter = relativeThumbStart + thumbSize / 2.0;
                 dragOffset = relativeClickPos - relativeThumbCenter;
                 dragging = true;
             } else {
+                // 点击轨道：跳转到对应位置并进入拖动模式
                 double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
                 double availableTrack = trackSize - thumbSize;
                 if (availableTrack > 0) {
@@ -209,7 +212,6 @@ public class ScrollbarWidget extends BaseWidget {
 
         updateThumb();
 
-        // 使用绝对坐标计算
         double mouseX = event.mouseX();
         double mouseY = event.mouseY();
         double absX = absoluteX();
@@ -218,7 +220,6 @@ public class ScrollbarWidget extends BaseWidget {
         double clickPos = orientation == EnumOrientation.VERTICAL ? mouseY : mouseX;
         double relativePos = orientation == EnumOrientation.VERTICAL ? clickPos - absY : clickPos - absX;
 
-        // 计算可用轨道长度
         double availableTrack = trackSize - thumbSize;
         if (availableTrack <= 0) {
             return false;
@@ -256,7 +257,7 @@ public class ScrollbarWidget extends BaseWidget {
             }
         }
 
-        // 额外悬浮区域（如物品列表区域），鼠标位于其中时同样响应滚动
+        // 额外悬浮区域（如列表区域），鼠标在其中时同样响应滚动
         if (!inScrollArea && scrollingCoordinates != null && !scrollingCoordinates.isEmpty()) {
             for (ScreenCoordinate coord : scrollingCoordinates) {
                 if (isMouseInCoordinate(mouseX, mouseY, coord)) {
@@ -342,7 +343,7 @@ public class ScrollbarWidget extends BaseWidget {
             thumbSize = trackSize;
             thumbPosition = 0.0;
         } else {
-            // 滑块大小 = (可见区域 / 总内容) * 轨道长度，确保与内容比例一致
+            // 滑块大小与可见内容占比成正比
             thumbSize = (visibleSize / totalContentSize) * trackSize;
             double minSize = minThumbSize > 0 ? minThumbSize : 10.0;
             thumbSize = Math.max(minSize, Math.min(thumbSize, trackSize));

@@ -81,7 +81,6 @@ public class ItemWidget extends BaseWidget {
             return;
         }
 
-        // 获取物品堆栈
         ItemStack currentItemStack = getCurrentItemStack();
         if (currentItemStack == null || currentItemStack.isEmpty()) {
             renderChildren(stack, partialTicks);
@@ -95,7 +94,6 @@ public class ItemWidget extends BaseWidget {
 
         renderChildren(stack, partialTicks);
 
-        // 渲染 Tooltip
         if (enableTooltip && !ItemUtils.isItemNull(currentItemStack)) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();

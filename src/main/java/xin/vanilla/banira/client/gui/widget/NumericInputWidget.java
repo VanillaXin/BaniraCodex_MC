@@ -67,12 +67,10 @@ public class NumericInputWidget extends InputWidget {
         int highlightEnd = Math.max(cursorPos, highlightPos());
         boolean hasSelection = highlightStart != highlightEnd;
 
-        // 数字
         if (Character.isDigit(codePoint)) {
             return super.onCharTyped(codePoint, modifiers);
         }
 
-        // 负号：仅允许在开头且 allowNegative
         if (codePoint == '-') {
             if (!allowNegative) return true;
             if (currentValue.isEmpty() && cursorPos == 0) {
@@ -84,7 +82,6 @@ public class NumericInputWidget extends InputWidget {
             return true;
         }
 
-        // 小数点：仅允许在非整数模式下，且最多一个
         if (codePoint == '.' || codePoint == ',') {
             if (integerOnly) return true;
             String effective = hasSelection ? currentValue.substring(0, highlightStart) + currentValue.substring(highlightEnd) : currentValue;
@@ -92,14 +89,12 @@ public class NumericInputWidget extends InputWidget {
             return super.onCharTyped('.', modifiers);
         }
 
-        // 其他字符拒绝
         return true;
     }
 
     @Override
     protected boolean onMouseScroll(MouseScrollEvent event) {
         if (event == null || !canConsumeInput() || renderCoordinate == null) return false;
-        // 数值输入：滚轮直接增减数值
         double current = parseValue();
         double step = Screen.hasShiftDown() ? this.step * 10 : this.step;
         double delta = event.delta() > 0 ? step : -step;

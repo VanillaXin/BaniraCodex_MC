@@ -210,7 +210,6 @@ public class SliderWidget extends BaseWidget {
             return true;
         }
         boolean handled = super.handleMouseClick(event);
-        // 若子组件（内联输入框）处理了点击，需将焦点交给输入框，否则键盘输入无法进入
         if (handled && event != null && event.button() == 0 && inlineInputWidget != null && inlineInputWidget.visible()
                 && inlineInputWidget.isMouseInside(event)) {
             lastClickFocusTarget = inlineInputWidget;
@@ -287,11 +286,14 @@ public class SliderWidget extends BaseWidget {
             return;
         }
 
+        // region 渲染逻辑
+
         int x = (int) x();
         int y = (int) y();
         int width = (int) renderCoordinate.width();
         int height = (int) renderCoordinate.height();
 
+        // 仅输入框模式：宽度不足时右键切换
         if (inlineInputMode == InlineInputMode.INPUT_ONLY) {
             ensureInlineInput();
             syncInlineInputFromSlider();
@@ -303,6 +305,7 @@ public class SliderWidget extends BaseWidget {
             return;
         }
 
+        // 输入框+滑块并排模式
         if (inlineInputMode == InlineInputMode.SLIDER_WITH_INPUT) {
             ensureInlineInput();
             syncInlineInputFromSlider();
@@ -320,8 +323,8 @@ public class SliderWidget extends BaseWidget {
             } else {
                 renderSquareStyle(stack, x + sliderX, y, sliderW, height);
             }
-            // 召唤输入框后不再在滑块上显示数值
         } else {
+            // 仅滑块模式
             if (inlineInputWidget != null) {
                 inlineInputWidget.visible(false);
             }
@@ -337,12 +340,14 @@ public class SliderWidget extends BaseWidget {
         }
 
         renderChildren(stack, partialTicks);
+        // endregion 渲染逻辑
     }
 
     private void renderRoundStyle(MatrixStack stack, int x, int y, int width, int height) {
         int trackT = Math.max(1, Math.min(trackThickness, orientation == EnumOrientation.VERTICAL ? width : height));
         int inset = thumbRadius;
 
+        // 轨道
         float trackRadius = Math.max(1, trackT / 2f);
         if (orientation == EnumOrientation.VERTICAL) {
             int trackX = x + (width - trackT) / 2;
@@ -364,6 +369,7 @@ public class SliderWidget extends BaseWidget {
             }
         }
 
+        // 圆形滑块
         int currentThumbColor = (mouseInside || dragging) ? thumbHoverColor : thumbColor;
         float centerX, centerY;
         if (orientation == EnumOrientation.VERTICAL) {
@@ -378,9 +384,11 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void renderSquareStyle(MatrixStack stack, int x, int y, int width, int height) {
+        // 方形轨道
         ShapeDrawArgs trackRect = ShapeDrawArgs.rect(stack, x, y, width, height, trackColor);
         BaseShapeWidget.drawShape(trackRect);
 
+        // 方形滑块（嵌入轨道内）
         int currentThumbColor = (mouseInside || dragging) ? thumbHoverColor : thumbColor;
         if (orientation == EnumOrientation.VERTICAL) {
             int thumbY = (int) Math.ceil(y + thumbPosition);

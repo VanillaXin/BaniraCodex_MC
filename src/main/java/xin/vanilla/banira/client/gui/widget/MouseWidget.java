@@ -123,6 +123,7 @@ public class MouseWidget extends BaseWidget {
         this.drawCount++;
 
         int pressedColor = curColorPressed;
+        // status 位掩码：1=左键 2=右键 4=中键，组合按下时对应区域用 pressedColor
         int color1 = (status == 1 || status == 3 || status == 5 || status == 7) ? pressedColor : curColorMain;
         int color2 = (status == 2 || status == 3 || status == 6 || status == 7) ? pressedColor : curColorMain;
         int color3 = (status == 4 || status == 5 || status == 6 || status == 7) ? pressedColor : curColorMain;
@@ -133,6 +134,7 @@ public class MouseWidget extends BaseWidget {
 
         AbstractGuiUtils.renderByDepth(stack, renderDepth(), (s) -> {
             drawPointerShape(s, mouseX, mouseY + scrollOffset, color1, color2, color3);
+            // 滚轮指示线：滚动时在指针旁显示短线
             if (scrollOffset != 0) {
                 int scrollLineAlpha = (int) (0x90 * Math.min(1, Math.abs(this.scroll) / 4));
                 int scrollLineColor = (scrollLineAlpha << 24) | (curColorMain & 0xFFFFFF);
@@ -149,7 +151,7 @@ public class MouseWidget extends BaseWidget {
     }
 
     /**
-     * 绘制指针形状：标准箭头 + 左/右键指示
+     * 绘制指针形状
      */
     private void drawPointerShape(MatrixStack stack, int x, int y, int colorLeft, int colorRight, int colorCenter) {
         // 中心/中键

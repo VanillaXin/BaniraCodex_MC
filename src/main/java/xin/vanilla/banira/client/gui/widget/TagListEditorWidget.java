@@ -333,7 +333,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             syncScrollbar();
             fireListChanged();
         }
-        // 不立即退出添加模式，由失去焦点时退出
     }
 
     private void fireListChanged() {
@@ -466,11 +465,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
         double listW = w - SCROLLBAR_WIDTH - SCROLL_GAP;
 
-        // 更新按钮位置（相对本 widget）
         clearButton.bounds(new ScreenCoordinate(w - BTN_SIZE * 2 - 4, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         addButton.bounds(new ScreenCoordinate(w - BTN_SIZE - 2, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
 
-        // 更新添加确认按钮与输入框位置
         if (addInputWidget != null) {
             addInputWidget.visible(true);
         }
@@ -479,18 +476,16 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             addConfirmButton.visible(true);
         }
 
-        // 更新滚动条
         scrollbar.bounds(new ScreenCoordinate(listW + SCROLL_GAP, listContentTop, SCROLLBAR_WIDTH, listAreaHeight));
         syncScrollbar();
         scrollbar.visible(true);
 
-        // 更新滚动悬浮区域（屏幕坐标）
         double listAbsX = absX;
         double listAbsY = absY + listContentTop;
         scrollbar.scrollingCoordinates(new ArrayList<>());
         scrollbar.addScrollHoverArea(new ScreenCoordinate(listAbsX, listAbsY, listW, listAreaHeight));
 
-        // region 绘制标签列表（与下拉控件样式一致，带裁剪）
+        // region 绘制标签列表
         BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.winter();
         int tagBg = theme.popupItemSelected();
         int tagBorder = theme.popupItemSelectedBorder();
@@ -608,7 +603,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        // 添加模式下，当输入框与确认按钮都失去焦点且无预览/下拉展开时退出
         if (addingMode && addInputWidget != null && addConfirmButton != null) {
             boolean inputFocused = addInputWidget instanceof BaseWidget && ((BaseWidget) addInputWidget).focused();
             boolean confirmFocused = addConfirmButton.focused();
@@ -640,7 +634,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double absY = absoluteY();
         double relY = mouseY - absY;
 
-        // 先让子控件（清空、添加、滚动条、输入框等）处理，避免标题栏折叠抢走点击
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
@@ -655,7 +648,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        // 点击标题栏（非按钮区域）时折叠/展开
         if (relY < HEADER_HEIGHT && event.button() == 0) {
             expanded = !expanded;
             updateBoundsHeight();

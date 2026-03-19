@@ -38,8 +38,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-
+/**
+ * 成就选择界面。支持搜索、显示模式切换（可显示/全部）、列表滚动选择。
+ */
 public class AdvancementSelectScreen extends BaniraScreen {
+
+    // region 常量与字段
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final int INPUT_H = 16;
@@ -99,6 +103,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
             return Arrays.stream(values()).filter(v -> v.code() == code).findFirst().orElse(null);
         }
     }
+
+    // endregion 常量与字段
 
     public AdvancementSelectScreen(Args args) {
         super(TITLE.toVanilla());
@@ -189,7 +195,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
         int cancelX = this.panelLeft + PANEL_MARGIN;
         int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
 
-        // 输入框
+
+        // region 输入框
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
@@ -202,8 +209,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
             }
         });
         addWidget(searchInputWidget);
+        // endregion 输入框
 
-        // 滚动条（先添加，确保列表项悬浮提示绘制在滚动条上层）
+        // region 滚动条
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
         scrollbarWidget.bounds(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
@@ -215,8 +223,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
         scrollbarWidget.onValueChanged(v -> refreshAdvancementButtons());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
+        // endregion 滚动条
 
-        // 操作按钮
+        // region 操作按钮
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
         String[] btnIds = {"type", "advancement"};
@@ -256,8 +265,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
             btn.onClick(b -> handleOperationInternal(opCode));
             addWidget(btn);
         }
+        // endregion 操作按钮
 
-        // 进度列表按钮
+        // region 进度列表按钮
         advancementButtonWidgets.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
@@ -300,8 +310,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
             advancementButtonWidgets.add(btn);
             addWidget(btn);
         }
+        // endregion 进度列表按钮
 
-        // 确认与取消按钮
+        // region 确认与取消按钮
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
@@ -334,6 +345,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             }
         });
         addWidget(submitButtonWidget);
+        // endregion 确认与取消按钮
 
         updateSearchResults();
     }

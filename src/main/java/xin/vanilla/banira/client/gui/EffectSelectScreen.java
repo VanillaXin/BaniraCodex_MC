@@ -41,7 +41,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-
+/**
+ * 药水效果选择界面。支持搜索、玩家/全部模式切换、时长与等级编辑、列表滚动选择。
+ */
 public class EffectSelectScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -183,7 +185,6 @@ public class EffectSelectScreen extends BaniraScreen {
         int cancelX = this.panelLeft + PANEL_MARGIN;
         int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
 
-        // 输入框
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
@@ -197,7 +198,6 @@ public class EffectSelectScreen extends BaniraScreen {
         });
         addWidget(searchInputWidget);
 
-        // 滚动条
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
         scrollbarWidget.bounds(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
@@ -210,7 +210,6 @@ public class EffectSelectScreen extends BaniraScreen {
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
-        // 效果列表按钮（先添加，操作按钮后添加以确保其悬浮提示绘制在列表上层）
         effectButtonWidgets.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
@@ -254,7 +253,6 @@ public class EffectSelectScreen extends BaniraScreen {
             addWidget(btn);
         }
 
-        // 确认与取消按钮
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
@@ -286,7 +284,6 @@ public class EffectSelectScreen extends BaniraScreen {
         });
         addWidget(submitButtonWidget);
 
-        // 操作按钮（最后添加，确保悬浮提示绘制在列表项上层）
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
         String[] btnIds = {"type", "effect", "duration", "amplifier"};

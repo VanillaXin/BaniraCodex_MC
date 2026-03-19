@@ -22,6 +22,8 @@ import java.util.*;
 @Accessors(chain = true, fluent = true)
 public abstract class BaseWidget implements IWidget {
 
+    // region 基础属性
+
     @Getter
     @Setter
     protected BaniraScreen screen;
@@ -143,6 +145,8 @@ public abstract class BaseWidget implements IWidget {
         this.renderCoordinate = bounds != null ? bounds : new ScreenCoordinate();
     }
 
+    // endregion 基础属性
+
     /**
      * 应用主题到本组件及子组件。子类可重写以设置自身颜色，并调用 super.applyTheme(theme)。
      */
@@ -177,6 +181,8 @@ public abstract class BaseWidget implements IWidget {
             }
         }
     }
+
+    // region 事件处理
 
     @Override
     public boolean handleMouseClick(MouseEvent event) {
@@ -594,6 +600,8 @@ public abstract class BaseWidget implements IWidget {
     protected void onMouseExit(MouseEvent event) {
     }
 
+    // endregion 事件处理
+
     // region Children Management
 
     @Override
@@ -772,5 +780,5 @@ public abstract class BaseWidget implements IWidget {
         stack.popPose();
     }
 
-    // endregion
+    // endregion Children Management
 }

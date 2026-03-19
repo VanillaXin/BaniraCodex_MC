@@ -37,7 +37,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-
+/**
+ * 物品选择界面。支持搜索、背包/全部模式切换、数量与 NBT 编辑、网格滚动选择。
+ */
 public class ItemSelectScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -167,7 +169,6 @@ public class ItemSelectScreen extends BaniraScreen {
         int listW = ITEM_COLS * (ITEM_BTN_SIZE + ITEM_SPACING) - ITEM_SPACING;
         int scrollGap = 2;
 
-        // 面板尺寸：输入框 + 物品网格 + 确认取消按钮
         int panelW = PANEL_MARGIN + listW + scrollGap + SCROLL_W + PANEL_MARGIN;
         int panelH = PANEL_MARGIN + INPUT_H + 4 + listH + 4 + BTN_H + PANEL_MARGIN;
 
@@ -178,7 +179,6 @@ public class ItemSelectScreen extends BaniraScreen {
         this.panelW = panelW;
         this.panelH = panelH;
 
-        // 面板内坐标
         int inputY = this.panelTop + PANEL_MARGIN;
         int inputX = this.panelLeft + PANEL_MARGIN;
         int inputW = this.panelW - PANEL_MARGIN * 2 - SCROLL_W - scrollGap;
@@ -191,7 +191,6 @@ public class ItemSelectScreen extends BaniraScreen {
         int cancelX = this.panelLeft + PANEL_MARGIN;
         int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
 
-        // 输入框
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
@@ -205,7 +204,6 @@ public class ItemSelectScreen extends BaniraScreen {
         });
         addWidget(searchInputWidget);
 
-        // 操作按钮
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
         String[] btnIds = {"type", "item", "count", "nbt"};
@@ -254,7 +252,6 @@ public class ItemSelectScreen extends BaniraScreen {
             addWidget(btn);
         }
 
-        // 物品按钮网格
         itemWidgets.clear();
         int expectedCount = ITEM_ROWS * ITEM_COLS;
         for (int i = 0; i < expectedCount; i++) {
@@ -287,7 +284,6 @@ public class ItemSelectScreen extends BaniraScreen {
             addWidget(btn);
         }
 
-        // 滚动条
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
         scrollbarWidget.bounds(new ScreenCoordinate(scrollX, listY, SCROLL_W, listH));
@@ -300,7 +296,6 @@ public class ItemSelectScreen extends BaniraScreen {
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
-        // 确认与取消按钮：面板底部，左右平分，保持边距
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
@@ -337,7 +332,6 @@ public class ItemSelectScreen extends BaniraScreen {
 
     @Override
     public void onRender(MatrixStack stack, float partialTicks) {
-        // 绘制面板背景
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
@@ -466,7 +460,6 @@ public class ItemSelectScreen extends BaniraScreen {
                     this.selectedItem != null ? this.selectedItem.getCount() : 0));
         }
 
-        // 更新操作按钮图标
         if (this.typeButtonItemWidget != null) {
             this.typeButtonItemWidget.itemStack(new ItemStack(this.inventoryMode ? Items.CHEST : Items.COMPASS));
         }

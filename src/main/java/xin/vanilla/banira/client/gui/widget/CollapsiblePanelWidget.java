@@ -188,12 +188,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         int headerBg = mouseInside ? headerHoverBgColor : headerBgColor;
         AbstractGuiUtils.fill(stack, 0, 0, (int) w, headerHeight, headerBg);
 
-        // 绘制标题栏底部分隔线
         if (borderBottomWidth > 0) {
             AbstractGuiUtils.fill(stack, 0, headerHeight - borderBottomWidth, (int) w, borderBottomWidth, headerBorderColor);
         }
 
-        // 绘制展开/折叠箭头
         int arrowSize = 8;
         int arrowX = contentIndent / 2 - arrowSize / 2;
         int arrowY = (headerHeight - arrowSize) / 2;
@@ -204,7 +202,6 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             drawArrowRight(stack, arrowX, arrowY, arrowSize, arrowColor);
         }
 
-        // 绘制标题文本
         int textX = contentIndent;
         int textY = (headerHeight - 9) / 2;
         if (text != null && !text.content().isEmpty()) {

@@ -370,7 +370,6 @@ public class StringInputScreen extends BaniraScreen {
             int titleY = itemTop + TITLE_TOP_MARGIN;
             int inputY = titleY + TITLE_HEIGHT + TITLE_INPUT_GAP;
 
-            // 标题
             LabelWidget titleLabel = new LabelWidget(this);
             titleLabel.id("title_" + i);
             titleLabel.text(widget.title());
@@ -497,7 +496,6 @@ public class StringInputScreen extends BaniraScreen {
             inputFields.add(inputField);
         }
 
-        // 滚动条
         int scrollH = scrollMode ? listAreaHeight : 0;
         int maxScroll = Math.max(0, listHeight - listAreaHeight);
         scrollbarWidget = new ScrollbarWidget(this);
@@ -531,7 +529,6 @@ public class StringInputScreen extends BaniraScreen {
             }
         }
         if (!isListWidget) return true;
-        // 点击须在可见列表区域内
         double mouseX = event.mouseX();
         double mouseY = event.mouseY();
         return mouseX >= contentLeft && mouseX < contentLeft + inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH
@@ -627,14 +624,12 @@ public class StringInputScreen extends BaniraScreen {
             return;
         }
 
-        // 验证输入
         this.errorTextMap.clear();
         for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
             Widget widget = args.getWidgets().get(i);
             InputField field = inputFields.get(i);
             results.curIndex(i).curName(widget.name());
             String error = widget.validator().apply(results);
-            // 设置输入框的错误状态
             boolean hasError = StringUtils.isNotNullOrEmpty(error);
             InputWidget errorTarget = field.input() != null ? field.input()
                     : (field.slider() != null ? field.slider().inlineInputWidget() : null);
@@ -736,7 +731,6 @@ public class StringInputScreen extends BaniraScreen {
             }
         }
 
-        // 显示执行错误
         String runningErrorTextContent = this.runningErrorText.content();
         if (StringUtils.isNotNullOrEmpty(runningErrorTextContent)) {
             this.runningErrorText = Text.empty();
@@ -744,7 +738,6 @@ public class StringInputScreen extends BaniraScreen {
             });
         }
 
-        // 更新提交按钮文本
         if (submitButtonWidget != null) {
             boolean allValid = this.args.getWidgets().stream().allMatch(wi -> {
                 int index = args.getWidgets().indexOf(wi);
@@ -768,7 +761,6 @@ public class StringInputScreen extends BaniraScreen {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
-        // 若当前点击未被消费且未被拦截，则取消所有已聚焦的Widget
         super.onMouseClicked(eventArgs);
     }
 

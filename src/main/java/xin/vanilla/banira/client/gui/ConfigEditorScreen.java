@@ -154,7 +154,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         int indent = CATEGORY_INDENT + depth * INDENT_PER_LEVEL;
         int availableW = contentW - indent;
 
-        // categoryPath 为空表示根级配置项，直接渲染条目，不显示分类标题
         boolean isRootEntries = catPath.isEmpty();
 
         if (!isRootEntries) {
@@ -176,7 +175,6 @@ public class ConfigEditorScreen extends BaniraScreen {
             if (parentExpanded) yRef[0] += ROW_HEIGHT + ROW_GAP;
         }
 
-        // 虚拟根的条目与同级分类按钮左对齐（均使用 indent + INDENT_PER_LEVEL）
         int entryIndent = indent + INDENT_PER_LEVEL;
         int entryW = contentW - entryIndent;
         boolean entriesVisible = parentExpanded && (isRootEntries || expanded);
@@ -203,7 +201,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         if (contentHeight <= maxListHeight) {
             listAreaHeight = Math.max(1, contentHeight);
-            btnY = h - PADDING - BUTTON_HEIGHT; // 列表未撑满时按钮也固定在底部
+            btnY = h - PADDING - BUTTON_HEIGHT;
             scrollOffset = 0;
             scrollbar.value(0);
             scrollbar.visible(false);
@@ -301,7 +299,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         boolean expanded = isVirtualRoot || expandedCategories.contains(catPath);
         int indent = CATEGORY_INDENT + depth * INDENT_PER_LEVEL;
         int availableW = contentW - indent;
-        // 虚拟根的条目与同级分类按钮左对齐
         int entryIndent = indent + INDENT_PER_LEVEL;
         int entryW = contentW - entryIndent;
 
@@ -470,7 +467,6 @@ public class ConfigEditorScreen extends BaniraScreen {
                 modifiedValues.remove(desc.getPath());
             }
         });
-        // 初始化时校验
         boolean initValid = input.validator() != null && input.validator().apply(input.value());
         input.error(!initValid);
         if (!initValid) input.errorMessage(buildNumberRangeError(desc));
@@ -865,7 +861,6 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         @Override
         public void setCategory(String categoryPath) {
-            // no-op, category stored in ConfigEditorScreen
         }
 
         @Override

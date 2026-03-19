@@ -136,16 +136,16 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private CollapsiblePanelWidget buildContentPanel() {
         List<ConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
-        if (roots.isEmpty()) {
-            CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-            empty.text("General").expanded(true);
-            return empty;
-        }
-        ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
-        String rootTitle = rootNode.getDisplayName();
+        String rootTitle = holder.getConfigName();
         if (rootTitle == null || rootTitle.isEmpty()) {
             rootTitle = "General";
         }
+        if (roots.isEmpty()) {
+            CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
+            empty.text(rootTitle).expanded(true);
+            return empty;
+        }
+        ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
         CollapsiblePanelWidget rootPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
         rootPanel.text(rootTitle).expanded(true);
         rootPanel.contentGap(ROW_GAP);
@@ -606,8 +606,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
-        int contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
+        AbstractGuiUtils.enableScissor(0, listTop, width, Math.max(1, listAreaHeight));
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();

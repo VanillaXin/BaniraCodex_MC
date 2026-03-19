@@ -19,6 +19,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayDeque;
@@ -652,23 +653,28 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 在屏幕坐标绘制悬浮提示。作为子组件时需反向变换以修正父级 translate 导致的异位。
+     * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。
      */
     protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text) {
         drawTooltipAtScreenCoords(stack, mx, my, text, true);
     }
 
     /**
-     * 在屏幕坐标绘制悬浮提示。作为子组件时需反向变换以修正父级 translate 导致的异位。
+     * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。
      */
     protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, boolean useTexture) {
-        stack.pushPose();
-        if (parent != null) {
-            stack.translate(-(absoluteX() - x()), -(absoluteY() - y()), 0);
-        }
-        FontDrawArgs args = FontDrawArgs.ofPopo(text.stack(stack)).x((int) mx).y((int) my).popupUseTexture(useTexture);
-        TooltipWidget.drawPopupMessage(stack, args, screen.getEffectiveTheme(), screen.season());
-        stack.popPose();
+        if (screen == null) return;
+        BaniraColorConfig theme = screen.getEffectiveTheme();
+        EnumSeason season = screen.season();
+        Text textToDraw = text;
+        int mouseX = (int) mx;
+        int mouseY = (int) my;
+        screen.addDeferredTooltipRender(s -> {
+            s.pushPose();
+            s.last().pose().setIdentity();
+            TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
+            s.popPose();
+        });
     }
 
     // endregion 渲染

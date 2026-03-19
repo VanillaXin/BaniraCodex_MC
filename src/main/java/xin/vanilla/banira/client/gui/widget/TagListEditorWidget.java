@@ -170,6 +170,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         clearButton.onClick(b -> onClearOrUndoClicked());
         clearButtonTooltip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
         clearButtonTooltip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_clear_tooltip"));
+        clearButtonTooltip.popupAtScreenCoords(true);
         clearButton.addChild(clearButtonTooltip);
         addChild(clearButton);
 
@@ -179,6 +180,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         addButton.onClick(b -> enterAddingMode());
         TooltipWidget addTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
         addTip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_add_tooltip"));
+        addTip.popupAtScreenCoords(true);
         addButton.addChild(addTip);
         addChild(addButton);
 
@@ -295,6 +297,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         addConfirmButton.onClick(b -> confirmAddFromInput());
         TooltipWidget confirmTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, ADD_INPUT_HEIGHT));
         confirmTip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_confirm_add"));
+        confirmTip.popupAtScreenCoords(true);
         addConfirmButton.addChild(confirmTip);
         if (screen != null) {
             addConfirmButton.applyTheme(screen.getEffectiveTheme());

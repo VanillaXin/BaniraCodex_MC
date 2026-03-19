@@ -378,6 +378,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         tooltip.id("tip_" + desc.getPath().replace(".", "_"));
         tooltip.text(Component.literal(descText));
         tooltip.useTextureDrawing(false);
+        tooltip.popupAtScreenCoords(true);
         return tooltip;
     }
 

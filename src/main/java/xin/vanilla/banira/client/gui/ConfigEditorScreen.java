@@ -143,6 +143,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (roots.isEmpty()) {
             CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
             empty.text(rootTitle).expanded(true);
+            empty.onExpandChanged(p -> syncContentHeight());
             return empty;
         }
         ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
@@ -150,6 +151,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         rootPanel.text(rootTitle).expanded(true);
         rootPanel.contentGap(ROW_GAP);
         rootPanel.headerHeight(ROW_HEIGHT);
+        rootPanel.onExpandChanged(p -> syncContentHeight());
 
         buildPanelContent(rootPanel, rootNode);
         rootPanel.refreshLayout();
@@ -195,8 +197,10 @@ public class ConfigEditorScreen extends BaniraScreen {
             listAreaHeight = Math.max(1, contentHeight);
             btnY = h - PADDING - BUTTON_HEIGHT;
             scrollOffset = 0;
+            scrollbar.maxValue(0);
             scrollbar.value(0);
             scrollbar.visible(false);
+            scrollbar.scrollingCoordinates(new ArrayList<>());
         } else {
             listAreaHeight = maxListHeight;
             btnY = h - PADDING - BUTTON_HEIGHT;

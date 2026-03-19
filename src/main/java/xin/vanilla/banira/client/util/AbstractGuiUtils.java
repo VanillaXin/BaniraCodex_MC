@@ -1280,7 +1280,7 @@ public final class AbstractGuiUtils {
         bottomRight = clampRadius(bottomRight, halfW, halfH);
 
         if (topLeft <= 0f && topRight <= 0f && bottomLeft <= 0f && bottomRight <= 0f) {
-            fill(stack, (int) x, (int) y, (int) (x + w), (int) (y + h), color);
+            fill(stack, (int) x, (int) y, (int) w, (int) h, color);
             return;
         }
         if (part < 1) part = 1;

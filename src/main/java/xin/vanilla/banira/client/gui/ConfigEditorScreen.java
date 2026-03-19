@@ -21,6 +21,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
+import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
@@ -32,7 +33,8 @@ import java.util.stream.Collectors;
  */
 public class ConfigEditorScreen extends BaniraScreen {
 
-    private static final int PADDING = 12;
+    private static final int CARD_MARGIN = 10;
+    private static final int CARD_INNER = 10;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
     private static final int LABEL_WIDTH = 140;
@@ -40,7 +42,8 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int SCROLL_GAP = 2;
     private static final int BUTTON_HEIGHT = 18;
     private static final int BUTTON_PADDING = 12;
-    private static final int BUTTON_GAP = 6;
+    private static final int BUTTON_GAP = 8;
+    private static final int CARD_GAP = 1;
 
     private final ConfigHolder holder;
     private final Args args;
@@ -49,8 +52,13 @@ public class ConfigEditorScreen extends BaniraScreen {
     private ScrollbarWidget scrollbar;
     private double scrollOffset = 0;
     private int contentHeight = 0;
+    private int cardX;
+    private int cardY;
+    private int cardW;
+    private int cardH;
     private int listTop;
     private int listAreaHeight;
+    private int maxListHeight;
     private int contentLeft;
     private int contentW;
     private int btnY;
@@ -82,10 +90,15 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void initWidgets() {
         int w = width;
-        contentLeft = PADDING;
-        contentW = w - PADDING * 2 - SCROLL_WIDTH - SCROLL_GAP;
+        int h = height;
+        cardX = CARD_MARGIN;
+        cardY = CARD_MARGIN;
+        cardW = w - CARD_MARGIN * 2;
+        cardH = h - CARD_MARGIN * 2;
+        contentLeft = cardX + CARD_INNER;
+        contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        listTop = PADDING;
+        listTop = cardY + CARD_INNER;
         entryWidgets.clear();
         bottomButtons.clear();
 
@@ -190,12 +203,15 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        int h = height;
-        int maxListHeight = Math.max(0, h - PADDING * 2 - BUTTON_HEIGHT - BUTTON_GAP);
+        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
+
+        int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
+        int btnAreaTop = cardY + cardH - btnAreaH;
+        int centeredBtnY = btnAreaTop + (btnAreaH - BUTTON_HEIGHT) / 2;
 
         if (contentHeight <= maxListHeight) {
             listAreaHeight = Math.max(1, contentHeight);
-            btnY = h - PADDING - BUTTON_HEIGHT;
+            btnY = centeredBtnY;
             scrollOffset = 0;
             scrollbar.maxValue(0);
             scrollbar.value(0);
@@ -203,7 +219,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.scrollingCoordinates(new ArrayList<>());
         } else {
             listAreaHeight = maxListHeight;
-            btnY = h - PADDING - BUTTON_HEIGHT;
+            btnY = centeredBtnY;
             scrollbar.visible(true);
             scrollbar.bounds(new ScreenCoordinate(contentLeft + contentW + SCROLL_GAP, listTop, SCROLL_WIDTH, listAreaHeight));
             scrollbar.maxValue(Math.max(0, contentHeight - listAreaHeight));
@@ -214,21 +230,48 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
-        int btnTotalW = 0;
-        int[] btnWidths = new int[bottomButtons.size()];
-        for (int i = 0; i < bottomButtons.size(); i++) {
-            ButtonWidget btn = bottomButtons.get(i);
-            int w = (int) font.width(btn.text().toString()) + BUTTON_PADDING * 2;
-            btnWidths[i] = w;
-            btnTotalW += w + (i < bottomButtons.size() - 1 ? BUTTON_GAP : 0);
+        int n = bottomButtons.size();
+        int[] btnWidths = new int[n];
+        for (int i = 0; i < n; i++) {
+            btnWidths[i] = font.width(bottomButtons.get(i).text().toString()) + BUTTON_PADDING * 2;
         }
-        double scale = btnTotalW > contentTotalW ? (double) contentTotalW / btnTotalW : 1.0;
-        int curX = contentLeft + Math.max(0, (contentTotalW - (int) (btnTotalW * scale)) / 2);
-        for (int i = 0; i < bottomButtons.size(); i++) {
-            ButtonWidget btn = bottomButtons.get(i);
-            int bw = Math.max(20, (int) (btnWidths[i] * scale));
-            btn.bounds(new ScreenCoordinate(curX, btnY, bw, BUTTON_HEIGHT));
-            curX += bw + BUTTON_GAP;
+
+        if (n == 3) {
+            int segW = (cardW - 2 * CARD_GAP) / 3;
+            int contentW = segW - CARD_INNER * 2;
+            for (int i = 0; i < n; i++) {
+                ButtonWidget btn = bottomButtons.get(i);
+                int bw = Math.min(btnWidths[i], Math.max(20, contentW));
+                int segX = cardX + i * (segW + CARD_GAP);
+                int cx = segX + CARD_INNER + Math.max(0, (contentW - bw) / 2);
+                btn.bounds(new ScreenCoordinate(cx, btnY, bw, BUTTON_HEIGHT));
+            }
+        } else {
+            int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
+            int zoneW = contentTotal / 2;
+            int leftRectW = CARD_INNER + zoneW;
+            int rightRectW = cardW - leftRectW - CARD_GAP;
+            int rightRectX = cardX + leftRectW + CARD_GAP;
+            int lastIdx = n - 1;
+            int leftTotalW = 0;
+            for (int i = 0; i < lastIdx; i++) {
+                leftTotalW += btnWidths[i] + (i > 0 ? BUTTON_GAP : 0);
+            }
+            int rightTotalW = btnWidths[lastIdx];
+            double leftScale = leftTotalW > zoneW ? (double) zoneW / leftTotalW : 1.0;
+            double rightScale = rightTotalW > zoneW ? (double) zoneW / rightTotalW : 1.0;
+            int leftTotalScaled = (int) (leftTotalW * leftScale);
+            int curX = cardX + (leftRectW - leftTotalScaled) / 2;
+            for (int i = 0; i < n; i++) {
+                ButtonWidget btn = bottomButtons.get(i);
+                double scale = i < lastIdx ? leftScale : rightScale;
+                int bw = Math.max(20, (int) (btnWidths[i] * scale));
+                if (i == lastIdx) {
+                    curX = rightRectX + (rightRectW - bw) / 2;
+                }
+                btn.bounds(new ScreenCoordinate(curX, btnY, bw, BUTTON_HEIGHT));
+                curX += bw + BUTTON_GAP;
+            }
         }
     }
 
@@ -608,9 +651,41 @@ public class ConfigEditorScreen extends BaniraScreen {
         return entryWidgets.values().stream().anyMatch(w -> !w.isValid());
     }
 
+    private static final int CARD_RADIUS = 8;
+    private static final int CARD_ALPHA = 0xC0;
+
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
-        AbstractGuiUtils.enableScissor(0, listTop, width, Math.max(1, listAreaHeight));
+        BaniraColorConfig theme = getEffectiveTheme();
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
+        int btnAreaTop = cardY + cardH - btnAreaH;
+        int contentH = btnAreaTop - cardY - CARD_GAP;
+        int n = bottomButtons.size();
+
+        AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, contentH,
+                CARD_RADIUS, CARD_RADIUS, 0, 0, cardBg);
+
+        if (n == 3) {
+            int segW = (cardW - 2 * CARD_GAP) / 3;
+            AbstractGuiUtils.drawRoundedRect(stack, cardX, btnAreaTop, segW, btnAreaH,
+                    0, 0, CARD_RADIUS, 0, cardBg);
+            AbstractGuiUtils.drawRoundedRect(stack, cardX + segW + CARD_GAP, btnAreaTop, segW, btnAreaH,
+                    0, 0, 0, 0, cardBg);
+            AbstractGuiUtils.drawRoundedRect(stack, cardX + 2 * (segW + CARD_GAP), btnAreaTop, segW, btnAreaH,
+                    0, 0, 0, CARD_RADIUS, cardBg);
+        } else {
+            int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
+            int zoneW = contentTotal / 2;
+            int leftRectW = CARD_INNER + zoneW;
+            int rightRectW = cardW - leftRectW - CARD_GAP;
+            AbstractGuiUtils.drawRoundedRect(stack, cardX, btnAreaTop, leftRectW, btnAreaH,
+                    0, 0, CARD_RADIUS, 0, cardBg);
+            AbstractGuiUtils.drawRoundedRect(stack, cardX + leftRectW + CARD_GAP, btnAreaTop, rightRectW, btnAreaH,
+                    0, 0, 0, CARD_RADIUS, cardBg);
+        }
+
+        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();

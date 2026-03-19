@@ -576,6 +576,24 @@ public class SliderWidget extends BaseWidget {
     }
 
     @Override
+    public boolean handleMouseScroll(MouseScrollEvent event) {
+        if (!visible || !enabled || event == null) {
+            return false;
+        }
+        for (int i = children().size() - 1; i >= 0; i--) {
+            IWidget child = children().get(i);
+            if (child != null && child.visible() && child.enabled() && child.handleMouseScroll(event)) {
+                return true;
+            }
+        }
+        // 仅当获得焦点时响应滚轮，避免滚动列表时误修改
+        if (focused()) {
+            return onMouseScroll(event);
+        }
+        return false;
+    }
+
+    @Override
     protected boolean onMouseScroll(MouseScrollEvent event) {
         if (!enabled || event == null) {
             return false;

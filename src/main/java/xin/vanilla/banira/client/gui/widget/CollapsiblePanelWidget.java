@@ -71,6 +71,20 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     private int paddingRight = 0;
 
     /**
+     * 内容区内部上边距
+     */
+    @Getter
+    @Setter
+    private int paddingTop = 2;
+
+    /**
+     * 内容区内部下边距
+     */
+    @Getter
+    @Setter
+    private int paddingBottom = 2;
+
+    /**
      * 子元素间垂直间距（默认 0 表示紧贴堆叠）
      */
     @Getter
@@ -525,7 +539,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
         if (expanded) {
             double contentH = contentHeight > 0 ? contentHeight : computeContentHeight();
-            expandedHeightCache = (contentHeight > 0 ? headerHeight + contentH : contentH) + borderBottomWidth;
+            expandedHeightCache = (contentHeight > 0 ? headerHeight + contentH : contentH) + paddingBottom + borderBottomWidth;
             coord.height(expandedHeightCache);
         } else {
             coord.height(headerHeight);
@@ -684,7 +698,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
      * 获取当前层级建议的内容区起始 Y
      */
     public double getContentStartY() {
-        return headerHeight;
+        return headerHeight + paddingTop;
     }
 
     /**

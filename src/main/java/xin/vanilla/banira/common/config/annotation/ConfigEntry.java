@@ -58,6 +58,11 @@ public @interface ConfigEntry {
         double min() default 0.0;
 
         double max() default Double.MAX_VALUE;
+
+        /**
+         * 小数位数，用于显示与精度控制，默认 2
+         */
+        int decimalPlaces() default 2;
     }
 
     /**

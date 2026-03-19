@@ -47,6 +47,13 @@ public class NumericInputWidget extends InputWidget {
     @Setter
     private boolean allowNegative = true;
 
+    /**
+     * 小数模式下保留的小数位数。0=整数，-1=自动（整数显示为整数，小数保留原样），>=1=固定位数。默认 2。
+     */
+    @Getter
+    @Setter
+    private int decimalPlaces = 2;
+
     public NumericInputWidget(BaniraScreen screen) {
         super(screen);
     }
@@ -139,6 +146,9 @@ public class NumericInputWidget extends InputWidget {
     private String formatValue(double v) {
         if (integerOnly) {
             return String.valueOf((int) Math.round(v));
+        }
+        if (decimalPlaces >= 0) {
+            return String.format("%." + decimalPlaces + "f", v);
         }
         return v == (long) v ? String.valueOf((long) v) : BigDecimal.valueOf(v).toPlainString();
     }

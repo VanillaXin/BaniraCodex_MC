@@ -17,6 +17,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -98,6 +99,13 @@ public class SliderWidget extends BaseWidget {
     @Getter
     @Setter
     private double value = 0.0;
+
+    /**
+     * 数值显示保留的小数位数。0=整数，-1=自动（整数显示为整数，小数保留原样），>=1=固定位数。默认 2。
+     */
+    @Getter
+    @Setter
+    private int decimalPlaces = 2;
 
     @Override
     public boolean wantsScrollBeforeSiblings() {
@@ -253,6 +261,7 @@ public class SliderWidget extends BaseWidget {
         inlineInputWidget.id(id() != null ? id() + "_inline" : "slider_inline");
         inlineInputWidget.text(Text.transAuto(BaniraCodex.MODID, "enter_number"));
         inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
+        inlineInputWidget.decimalPlaces(decimalPlaces);
         inlineInputWidget.enabled(enabled());
         addChild(inlineInputWidget);
         bindInlineInput();
@@ -271,6 +280,7 @@ public class SliderWidget extends BaseWidget {
         if (inlineInputWidget != null) {
             inlineInputWidget.setNumericValue(value);
             inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
+            inlineInputWidget.decimalPlaces(decimalPlaces);
         }
     }
 
@@ -441,6 +451,9 @@ public class SliderWidget extends BaseWidget {
     }
 
     private String formatDisplayValue(double v) {
+        if (decimalPlaces >= 0) {
+            return NumberUtils.toFixedEx(v, decimalPlaces);
+        }
         return v == (long) v ? String.valueOf((long) v) : String.valueOf(v);
     }
 
@@ -486,29 +499,29 @@ public class SliderWidget extends BaseWidget {
         double absY = absoluteY() + sliderOffsetY;
         double relativeClickPos = orientation == EnumOrientation.VERTICAL ? mouseY - absY : mouseX - absX;
 
-            if (relativeClickPos < 0 || relativeClickPos > trackSize) {
-                return false;
-            }
+        if (relativeClickPos < 0 || relativeClickPos > trackSize) {
+            return false;
+        }
 
-            double relativeThumbStart = thumbPosition;
-            double relativeThumbEnd = relativeThumbStart + thumbSize;
+        double relativeThumbStart = thumbPosition;
+        double relativeThumbEnd = relativeThumbStart + thumbSize;
 
-            if (relativeClickPos >= relativeThumbStart && relativeClickPos <= relativeThumbEnd) {
-                double relativeThumbCenter = relativeThumbStart + thumbSize / 2.0;
-                dragOffset = relativeClickPos - relativeThumbCenter;
-                dragging = true;
-            } else {
-                double availableTrack = trackSize - thumbSize;
-                if (availableTrack > 0) {
-                    double thumbCenterPos = Math.max(thumbSize / 2.0, Math.min(trackSize - thumbSize / 2.0, relativeClickPos));
-                    double ratio = (thumbCenterPos - thumbSize / 2.0) / availableTrack;
-                    double newValue = minValue + ratio * (maxValue - minValue);
-                    setValue(applyStep(newValue));
-                }
-                dragOffset = 0.0;
-                dragging = true;
+        if (relativeClickPos >= relativeThumbStart && relativeClickPos <= relativeThumbEnd) {
+            double relativeThumbCenter = relativeThumbStart + thumbSize / 2.0;
+            dragOffset = relativeClickPos - relativeThumbCenter;
+            dragging = true;
+        } else {
+            double availableTrack = trackSize - thumbSize;
+            if (availableTrack > 0) {
+                double thumbCenterPos = Math.max(thumbSize / 2.0, Math.min(trackSize - thumbSize / 2.0, relativeClickPos));
+                double ratio = (thumbCenterPos - thumbSize / 2.0) / availableTrack;
+                double newValue = minValue + ratio * (maxValue - minValue);
+                setValue(applyStep(newValue));
             }
-            return true;
+            dragOffset = 0.0;
+            dragging = true;
+        }
+        return true;
     }
 
     @Override
@@ -685,6 +698,7 @@ public class SliderWidget extends BaseWidget {
         if (input.minValue() != null) slider.minValue(input.minValue());
         if (input.maxValue() != null) slider.maxValue(input.maxValue());
         slider.step(input.step());
+        slider.decimalPlaces(input.decimalPlaces());
 
         slider.onValueChanged(v -> {
             if (!input.enabled()) return;

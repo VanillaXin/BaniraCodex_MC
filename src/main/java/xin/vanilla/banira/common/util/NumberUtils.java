@@ -131,11 +131,25 @@ public final class NumberUtils {
     }
 
     public static String toFixedEx(double d, int scale) {
-        return toFixed(d, scale).replaceAll("0+$", "").replaceAll("[.]$", "");
+        String s = toFixed(d, scale);
+        if (s.contains(".")) {
+            s = s.replaceAll("0+$", "").replaceAll("[.]$", "");
+            if (s.isEmpty()) {
+                s = "0";
+            }
+        }
+        return s;
     }
 
     public static String toFixedEx(BigDecimal d, int scale) {
-        return d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replaceAll("0+$", "").replaceAll("[.]$", "");
+        String s = d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+        if (s.contains(".")) {
+            s = s.replaceAll("0+$", "").replaceAll("[.]$", "");
+            if (s.isEmpty()) {
+                s = "0";
+            }
+        }
+        return s;
     }
 
     /**

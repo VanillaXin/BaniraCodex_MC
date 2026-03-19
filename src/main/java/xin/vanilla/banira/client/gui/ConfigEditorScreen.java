@@ -287,7 +287,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.addChild(input);
         if (tooltip != null) row.addChild(tooltip);
 
-        return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, () -> input.value(), v -> input.value(String.valueOf(v)));
+        return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
     }
 
     private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
@@ -346,7 +346,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         double max = desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : 100;
         double step = 1.0;
         if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE) {
-            step = Math.max(0.01, (max - min) / 100);
+            double minStep = 1.0 / Math.pow(10, desc.getDecimalPlaces());
+            step = Math.max(minStep, (max - min) / 100);
         }
 
         Object raw = holder.get(desc.getPath());
@@ -365,6 +366,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         slider.id("cfg_" + desc.getPath().replace(".", "_"));
         slider.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
         slider.minValue(min).maxValue(max).step(step).value(initVal);
+        slider.decimalPlaces(desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE
+                ? desc.getDecimalPlaces() : 0);
         slider.onValueChanged(v -> {
             Object parsed = convertSliderValue(desc, v);
             if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
@@ -388,8 +391,11 @@ public class ConfigEditorScreen extends BaniraScreen {
                 return (int) Math.round(v);
             case LONG:
                 return (long) Math.round(v);
-            case DOUBLE:
-                return v;
+            case DOUBLE: {
+                int dp = desc.getDecimalPlaces();
+                double factor = Math.pow(10, dp);
+                return Math.round(v * factor) / factor;
+            }
             default:
                 return v;
         }
@@ -557,8 +563,12 @@ public class ConfigEditorScreen extends BaniraScreen {
                     return Integer.parseInt(value);
                 case LONG:
                     return Long.parseLong(value);
-                case DOUBLE:
-                    return Double.parseDouble(value);
+                case DOUBLE: {
+                    double d = Double.parseDouble(value);
+                    int dp = desc.getDecimalPlaces();
+                    double factor = Math.pow(10, dp);
+                    return Math.round(d * factor) / factor;
+                }
                 case ENUM:
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);

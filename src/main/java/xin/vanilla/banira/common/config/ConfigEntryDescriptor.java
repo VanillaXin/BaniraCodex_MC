@@ -49,6 +49,12 @@ public class ConfigEntryDescriptor {
     private final Number maxValue;
 
     /**
+     * 小数位数（DOUBLE 类型时有效，默认 2）
+     */
+    @Builder.Default
+    private final int decimalPlaces = 2;
+
+    /**
      * 枚举类（枚举类型时）
      */
     private final Class<? extends Enum<?>> enumClass;

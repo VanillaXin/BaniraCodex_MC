@@ -81,10 +81,17 @@ public class ConfigHolder {
     }
 
     /**
-     * 是否为服务端配置（可同步到服务器）
+     * 是否为服务端配置
      */
     public boolean isServerConfig() {
         return configType == ModConfig.Type.SERVER;
+    }
+
+    /**
+     * 是否可同步至服务器（Common 与 Server 配置均可）
+     */
+    public boolean canSyncToServer() {
+        return configType == ModConfig.Type.SERVER || configType == ModConfig.Type.COMMON;
     }
 
     /**

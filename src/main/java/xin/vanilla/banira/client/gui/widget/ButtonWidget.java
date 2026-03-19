@@ -59,6 +59,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
          * 右箭头
          */
         ARROW_RIGHT,
+        /**
+         * 重置/恢复（圆形箭头）
+         */
+        RESET,
     }
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -451,9 +455,26 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             case ARROW_RIGHT:
                 AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 0, color);
                 break;
+            case RESET:
+                drawResetIcon(stack, cx, cy, r, lw, color);
+                break;
             default:
                 break;
         }
+    }
+
+    /**
+     * 绘制重置图标
+     */
+    private void drawResetIcon(MatrixStack stack, float cx, float cy, float r, float lw, int color) {
+        float d = r * 1.375f;
+        float triR = r * 0.65f;
+        float xL = cx - d;
+        float xR = cx + d;
+        float y = cy;
+        AbstractGuiUtils.drawLine(stack, xL + triR, y, xR - triR, y, lw, color);
+        AbstractGuiUtils.drawPolygon(stack, xL + triR, y, triR, 3, 180, color);
+        AbstractGuiUtils.drawPolygon(stack, xR - triR, y, triR, 3, 0, color);
     }
 
     @Override

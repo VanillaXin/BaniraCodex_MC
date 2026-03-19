@@ -9,7 +9,6 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -27,6 +26,7 @@ import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +39,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
     private static final int LABEL_WIDTH = 140;
-    private static final int RESET_BTN_WIDTH = 18;
+    private static final int RESET_BTN_SIZE = 18;
     private static final int RESET_BTN_GAP = 2;
     private static final int SCROLL_WIDTH = 6;
     private static final int SCROLL_GAP = 2;
@@ -81,6 +81,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         super(Component.transClientAuto(BaniraCodex.MODID, "config_editor_title").toVanilla());
         this.holder = holder;
         this.args = args != null ? args : new Args();
+        previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
 
@@ -125,7 +126,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         saveBtn.onClick(b -> saveConfig());
         bottomButtons.add(saveBtn);
 
-        if (holder.isServerConfig()) {
+        if (holder.canSyncToServer()) {
             ButtonWidget syncBtn = new ButtonWidget(this);
             syncBtn.id("sync");
             syncBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync").toString());
@@ -313,19 +314,19 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private double valueWidgetWidth(double w) {
-        return w - LABEL_WIDTH - 4 - RESET_BTN_WIDTH - RESET_BTN_GAP;
+        return w - LABEL_WIDTH - 4 - RESET_BTN_SIZE - RESET_BTN_GAP;
     }
 
     private double resetBtnX(double w) {
-        return w - RESET_BTN_WIDTH;
+        return w - RESET_BTN_SIZE;
     }
 
-    private void addResetButton(EntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH,
-                                java.util.function.Consumer<Object> setValue) {
+    private void addResetButton(EntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH, Consumer<Object> setValue) {
+        int btnY = (rowH - RESET_BTN_SIZE) / 2;
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("reset_" + desc.getPath().replace(".", "_"));
-        btn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset").toString());
-        btn.bounds(new ScreenCoordinate(resetBtnX(rowW), 0, RESET_BTN_WIDTH, rowH));
+        btn.presetStyle(ButtonWidget.PresetStyle.RESET);
+        btn.bounds(new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
         btn.onClick(b -> {
             Object def = desc.getDefaultValue();
             if (def != null) {
@@ -334,7 +335,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                 setValue.accept(def);
             }
         });
-        TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), 0, RESET_BTN_WIDTH, rowH));
+        TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
         resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
         resetTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset_tooltip"));
         resetTip.popupAtScreenCoords(true);

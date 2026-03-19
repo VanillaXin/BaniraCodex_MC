@@ -97,7 +97,6 @@
   "word.banira_codex.config_editor_save_success": "配置已保存",
   "word.banira_codex.config_editor_save_failed": "配置保存失败：%s",
   "word.banira_codex.config_editor_validation_failed": "校验失败：请修正无效的数值",
-  "word.banira_codex.config_editor_reset": "↺",
   "word.banira_codex.config_editor_reset_tooltip": "重置为默认值",
   "word.banira_codex.collapsible_panel_demo_title": "折叠面板演示",
   "word.banira_codex.tag_list_editor_demo_title": "标签列表编辑演示",

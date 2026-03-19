@@ -55,7 +55,7 @@ public class ConfigSyncToServer {
                 // 权限检查：需要 OP 2 级以上才能同步服务端配置
                 if (player.hasPermissions(2)) {
                     ConfigHolder holder = ConfigRegistry.get(packet.configName);
-                    if (holder != null && holder.isServerConfig()) {
+                    if (holder != null && holder.canSyncToServer()) {
                         for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                             Object parsed = parseValue(holder, e.getKey(), e.getValue());
                             if (parsed != null) {

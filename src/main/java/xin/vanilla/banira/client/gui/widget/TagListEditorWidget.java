@@ -81,7 +81,12 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private boolean expanded = true;
+    private boolean expanded = false;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Consumer<TagListEditorWidget> onExpandChanged;
 
     @Getter
     @Setter
@@ -144,6 +149,13 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     @Override
     public boolean needsUpdate() {
         return true;
+    }
+
+    @Override
+    public double effectiveHeight() {
+        ScreenCoordinate b = bounds();
+        if (b == null) return 0;
+        return b.height();
     }
 
     private void ensureChildren() {
@@ -217,6 +229,13 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             b.height(h);
             invalidateAbsCache();
         }
+    }
+
+    /**
+     * 根据当前展开状态刷新 bounds 高度，供外部在布局前调用以确保 effectiveHeight 正确。
+     */
+    public void refreshBounds() {
+        updateBoundsHeight();
     }
 
     private void createAddInputWidget() {
@@ -439,12 +458,12 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         int textX = 4 + ARROW_SIZE + 4;
         int textY = (HEADER_HEIGHT - 9) / 2;
-        if (text != null && !text.content().isEmpty()) {
-            FontDrawArgs args = FontDrawArgs.of(
-                    text.stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(0xFF333333));
-            args.x(textX).y(textY).maxWidth((int) Math.max(0, w - textX - BTN_SIZE * 2 - 16)).wrap(false).inScreen(false);
-            LabelWidget.drawLimitedText(args);
-        }
+        String baseTitle = text != null ? text.content() : "";
+        String displayTitle = baseTitle.isEmpty() ? "(" + items.size() + ")" : baseTitle + " (" + items.size() + ")";
+        FontDrawArgs args = FontDrawArgs.of(
+                Text.literal(displayTitle).stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(0xFF333333));
+        args.x(textX).y(textY).maxWidth((int) Math.max(0, w - textX - BTN_SIZE * 2 - 16)).wrap(false).inScreen(false);
+        LabelWidget.drawLimitedText(args);
 
         stack.popPose();
         // endregion 标题栏
@@ -495,7 +514,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         int listAreaAbsY = (int) listAbsY;
         int listAreaW = (int) listW;
         int listAreaH = (int) listAreaHeight;
-        AbstractGuiUtils.enableScissor(listAreaAbsX, listAreaAbsY, listAreaW, listAreaH);
+        AbstractGuiUtils.pushScissor(listAreaAbsX, listAreaAbsY, listAreaW, listAreaH);
 
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
@@ -528,7 +547,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         stack.popPose();
-        AbstractGuiUtils.disableScissor();
+        AbstractGuiUtils.popScissor();
         // endregion 标签列表
 
         renderChildren(stack, partialTicks);
@@ -651,6 +670,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (relY < HEADER_HEIGHT && event.button() == 0) {
             expanded = !expanded;
             updateBoundsHeight();
+            if (onExpandChanged != null) onExpandChanged.accept(this);
             return true;
         }
 

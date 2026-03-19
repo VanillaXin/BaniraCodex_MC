@@ -99,6 +99,11 @@ public class SliderWidget extends BaseWidget {
     @Setter
     private double value = 0.0;
 
+    @Override
+    public boolean wantsScrollBeforeSiblings() {
+        return true;
+    }
+
     /**
      * 是否启用右键召唤内联输入框，默认 true。与外部 bind 时自动设为 false。
      */

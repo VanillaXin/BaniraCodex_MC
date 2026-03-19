@@ -259,6 +259,22 @@ public interface IWidget {
     double absoluteY();
 
     /**
+     * 获取控件当前实际占用的高度。默认返回 bounds 高度；可动态变化尺寸的控件可重写。
+     */
+    default double effectiveHeight() {
+        ScreenCoordinate b = bounds();
+        return b != null ? b.height() : 0;
+    }
+
+    /**
+     * 获取控件当前实际占用的宽度。默认返回 bounds 宽度。
+     */
+    default double effectiveWidth() {
+        ScreenCoordinate b = bounds();
+        return b != null ? b.width() : 0;
+    }
+
+    /**
      * 当此 widget 被点击并处理了点击时，应获得焦点的目标 widget。
      * 默认返回自身；若子组件（如内联输入框）实际处理了点击，可返回该子组件。
      */

@@ -195,10 +195,12 @@ public abstract class BaseWidget implements IWidget {
         double absX = absoluteX();
         double absY = absoluteY();
 
+        lastClickFocusTarget = null;
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
                 if (child.handleMouseClick(event)) {
+                    lastClickFocusTarget = child;
                     return true;
                 }
             }
@@ -495,6 +497,19 @@ public abstract class BaseWidget implements IWidget {
      * @param event 鼠标事件（当前坐标与按钮）
      */
     protected void onLongPress(MouseEvent event) {
+    }
+
+    /**
+     * 子组件处理点击时，应获得焦点的目标
+     */
+    @Nullable
+    protected IWidget lastClickFocusTarget;
+
+    @Override
+    public IWidget getFocusTarget() {
+        IWidget target = lastClickFocusTarget != null ? lastClickFocusTarget.getFocusTarget() : this;
+        lastClickFocusTarget = null;
+        return target;
     }
 
     public double x() {

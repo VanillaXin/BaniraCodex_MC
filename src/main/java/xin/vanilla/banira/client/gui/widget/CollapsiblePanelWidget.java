@@ -61,14 +61,14 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int paddingLeft = DEFAULT_CONTENT_INDENT;
+    private int paddingLeft = 2;
 
     /**
      * 内容区内部右边距
      */
     @Getter
     @Setter
-    private int paddingRight = DEFAULT_CONTENT_INDENT;
+    private int paddingRight = 0;
 
     /**
      * 子元素间垂直间距（默认 0 表示紧贴堆叠）
@@ -89,14 +89,14 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int borderRightWidth = 1;
+    private int borderRightWidth = 0;
 
     /**
      * 底部边框线宽度
      */
     @Getter
     @Setter
-    private int borderBottomWidth = 1;
+    private int borderBottomWidth = 0;
 
     public CollapsiblePanelWidget borderWidth(int width) {
         return this.borderLeftWidth(width).borderBottomWidth(width).borderRightWidth(width);
@@ -468,19 +468,48 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 子面板展开/折叠时：更新本面板高度，并重排 toggledChild 下方的兄弟元素位置。
+     * 当任意子控件高度变化时，重排该子控件下方的兄弟元素并更新本面板高度。
+     * 会向上传播，刷新所有祖先面板的高度。
      */
-    void refreshHeightAndReorderSiblings(CollapsiblePanelWidget toggledChild) {
-        int idx = children.indexOf(toggledChild);
+    public void refreshLayoutFromChild(IWidget child) {
+        int idx = children.indexOf(child);
         if (idx < 0) return;
-        double runningY = toggledChild.y() + toggledChild.height() + contentGap;
+        ScreenCoordinate cb = child.bounds();
+        double childY = cb != null ? cb.y() : 0;
+        double runningY = childY + child.effectiveHeight() + contentGap;
         for (int i = idx + 1; i < children.size(); i++) {
             IWidget sibling = children.get(i);
             if (sibling == null || !sibling.visible()) continue;
             ScreenCoordinate b = sibling.bounds();
             if (b != null && sibling instanceof BaseWidget) {
-                ((BaseWidget) sibling).bounds(new ScreenCoordinate(b.x(), runningY, b.width(), b.height()));
-                runningY += b.height() + contentGap;
+                double sh = sibling.effectiveHeight();
+                ((BaseWidget) sibling).bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
+                runningY += sh + contentGap;
+            }
+        }
+        contentHeight = 0;
+        refreshHeightFromContent();
+        IWidget p = parent();
+        if (p instanceof CollapsiblePanelWidget) {
+            ((CollapsiblePanelWidget) p).refreshLayoutFromChild(this);
+        }
+    }
+
+    /**
+     * 子面板展开/折叠时：更新本面板高度，并重排 toggledChild 下方的兄弟元素位置。
+     */
+    void refreshHeightAndReorderSiblings(CollapsiblePanelWidget toggledChild) {
+        int idx = children.indexOf(toggledChild);
+        if (idx < 0) return;
+        double runningY = toggledChild.y() + toggledChild.effectiveHeight() + contentGap;
+        for (int i = idx + 1; i < children.size(); i++) {
+            IWidget sibling = children.get(i);
+            if (sibling == null || !sibling.visible()) continue;
+            ScreenCoordinate b = sibling.bounds();
+            if (b != null && sibling instanceof BaseWidget) {
+                double sh = sibling.effectiveHeight();
+                ((BaseWidget) sibling).bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
+                runningY += sh + contentGap;
             }
         }
         refreshHeightFromContent();
@@ -505,7 +534,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 根据子组件计算内容区高度
+     * 根据子组件计算内容区高度（使用 effectiveHeight 支持动态尺寸控件）
      */
     private double computeContentHeight() {
         double maxBottom = 0;
@@ -515,7 +544,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             }
             ScreenCoordinate b = child.bounds();
             if (b != null) {
-                double bottom = b.y() + b.height();
+                double bottom = b.y() + child.effectiveHeight();
                 if (bottom > maxBottom) {
                     maxBottom = bottom;
                 }
@@ -587,9 +616,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         double cx = getContentStartX();
         double cy = getNextContentY();
         double cw = getContentWidth();
-        double ch = preferredHeight > 0 ? preferredHeight : DEFAULT_ROW_HEIGHT;
+        double ch = child.effectiveHeight() > 0 ? child.effectiveHeight()
+                : (preferredHeight > 0 ? preferredHeight : DEFAULT_ROW_HEIGHT);
         ScreenCoordinate existing = child.bounds();
-        if (existing != null && existing.height() > 0) {
+        if (ch <= 0 && existing != null && existing.height() > 0) {
             ch = existing.height();
         }
         if (child instanceof BaseWidget) {
@@ -669,7 +699,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             hasChildren = true;
             ScreenCoordinate b = child.bounds();
             if (b != null) {
-                double bottom = b.y() + b.height();
+                double bottom = b.y() + child.effectiveHeight();
                 if (bottom > maxBottom) maxBottom = bottom;
             }
         }

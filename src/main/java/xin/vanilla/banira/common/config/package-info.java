@@ -4,7 +4,7 @@
  * 推荐使用 {@link xin.vanilla.banira.common.config.ForgeConfigAdapter} 从注解配置类构建，
  * 配置类结构与 Fabric 兼容，迁移时仅需修改 get() 与注册逻辑。
  * <p>
- * 备选：使用 {@link ConfigSpecBuilder} 流式 API：
+ * 备选：使用 {@link xin.vanilla.banira.common.config.ConfigSpecBuilder} 流式 API：
  * <pre>{@code
  * // 1. 使用 ConfigSpecBuilder 定义配置
  * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", ModConfig.Type.SERVER)

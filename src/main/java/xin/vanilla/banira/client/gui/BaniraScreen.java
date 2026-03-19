@@ -317,6 +317,12 @@ public abstract class BaniraScreen extends Screen {
         MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
         this.cursor.mouseScrolled(scrollEvent);
 
+        // 优先让已获得焦点的输入框/滑块处理滚轮，无论鼠标位置
+        if (delta != 0 && focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
+                && focusedWidget.wantsScrollBeforeSiblings() && focusedWidget.handleMouseScroll(scrollEvent)) {
+            return true;
+        }
+
         // 优先让鼠标下方的输入框/数字框等组件处理滚轮（横向滚动、数值增减），避免被滚动条抢先消费
         if (delta != 0) {
             for (IWidget widget : widgets) {

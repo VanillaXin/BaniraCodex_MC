@@ -10,7 +10,8 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -35,9 +36,6 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
     private static final int LABEL_WIDTH = 140;
-    private static final int CATEGORY_INDENT = 4;
-    private static final int ENTRY_INDENT = 20;
-    private static final int INDENT_PER_LEVEL = 16;
     private static final int SCROLL_WIDTH = 6;
     private static final int SCROLL_GAP = 2;
     private static final int BUTTON_HEIGHT = 18;
@@ -47,6 +45,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private final ConfigHolder holder;
     private final Args args;
 
+    private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
     private double scrollOffset = 0;
     private int contentHeight = 0;
@@ -57,15 +56,6 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int btnY;
     private int contentTotalW;
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
-
-    /**
-     * 已展开的分类路径（默认全部折叠）
-     */
-    private final Set<String> expandedCategories = new LinkedHashSet<>();
-    /**
-     * 分类路径 -> 分类标题按钮
-     */
-    private final Map<String, ButtonWidget> categoryHeaderWidgets = new LinkedHashMap<>();
 
     /**
      * 路径 -> 当前编辑值（用于追踪修改）
@@ -92,22 +82,16 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void initWidgets() {
         int w = width;
-        int h = height;
         contentLeft = PADDING;
         contentW = w - PADDING * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         listTop = PADDING;
-        int maxListHeight = Math.max(0, h - PADDING * 2 - BUTTON_HEIGHT - BUTTON_GAP);
-
-        categoryHeaderWidgets.clear();
         entryWidgets.clear();
         bottomButtons.clear();
 
-        int[] yRef = {PADDING};
-        for (ConfigHolder.CategoryTreeNode node : holder.getCategoryTree()) {
-            buildCategoryTree(node, 0, true, yRef);
-        }
-        contentHeight = (int) yRef[0] - PADDING;
+        contentRootPanel = buildContentPanel();
+        contentHeight = (int) contentRootPanel.height();
+        addWidget(contentRootPanel);
 
         scrollbar = new ScrollbarWidget(this);
         scrollbar.id("scroll");
@@ -147,51 +131,59 @@ public class ConfigEditorScreen extends BaniraScreen {
         updateWidgetPositions();
     }
 
-    private void buildCategoryTree(ConfigHolder.CategoryTreeNode node, int depth, boolean parentExpanded, int[] yRef) {
-        String catPath = node.getCategoryPath();
-        String displayName = node.getDisplayName();
-        boolean expanded = expandedCategories.contains(catPath);
-        int indent = CATEGORY_INDENT + depth * INDENT_PER_LEVEL;
-        int availableW = contentW - indent;
-
-        boolean isRootEntries = catPath.isEmpty();
-
-        if (!isRootEntries) {
-            ButtonWidget catBtn = new ButtonWidget(this);
-            catBtn.id("cat_" + catPath.replace(".", "_"));
-            catBtn.bounds(new ScreenCoordinate(contentLeft + indent, yRef[0], availableW, ROW_HEIGHT));
-            catBtn.text((expanded ? "▼ " : "▶ ") + displayName);
-            catBtn.visible(parentExpanded);
-            catBtn.onClick(b -> {
-                if (expandedCategories.contains(catPath)) {
-                    expandedCategories.remove(catPath);
-                } else {
-                    expandedCategories.add(catPath);
-                }
-                refreshCategoryExpandState();
-            });
-            addWidget(catBtn);
-            categoryHeaderWidgets.put(catPath, catBtn);
-            if (parentExpanded) yRef[0] += ROW_HEIGHT + ROW_GAP;
+    /**
+     * 使用 CollapsiblePanelWidget 构建配置树
+     */
+    private CollapsiblePanelWidget buildContentPanel() {
+        List<ConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
+        if (roots.isEmpty()) {
+            CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
+            empty.text("General").expanded(true);
+            return empty;
         }
+        ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
+        String rootTitle = rootNode.getDisplayName();
+        if (rootTitle == null || rootTitle.isEmpty()) {
+            rootTitle = "General";
+        }
+        CollapsiblePanelWidget rootPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
+        rootPanel.text(rootTitle).expanded(true);
+        rootPanel.contentGap(ROW_GAP);
+        rootPanel.headerHeight(ROW_HEIGHT);
 
-        int entryIndent = indent + INDENT_PER_LEVEL;
-        int entryW = contentW - entryIndent;
-        boolean entriesVisible = parentExpanded && (isRootEntries || expanded);
+        buildPanelContent(rootPanel, rootNode);
+        rootPanel.refreshLayout();
+        return rootPanel;
+    }
 
+    private void buildPanelContent(CollapsiblePanelWidget panel, ConfigHolder.CategoryTreeNode node) {
+        double cw = panel.getContentWidth();
         for (ConfigEntryDescriptor desc : node.getEntries()) {
-            int entryX = contentLeft + entryIndent;
-            IConfigEntryWidget widget = createWidgetFor(desc, entryX, (int) yRef[0], entryW, ROW_HEIGHT);
-            if (widget != null) {
-                entryWidgets.put(desc.getPath(), widget);
-                widget.setCategory(catPath);
-                widget.setVisible(entriesVisible);
+            IConfigEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
+            if (adapter != null) {
+                entryWidgets.put(desc.getPath(), adapter);
+                double rowHeight = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : ROW_HEIGHT;
+                panel.addChildAuto(adapter.getWidget(), rowHeight);
             }
-            if (entriesVisible) yRef[0] += ROW_HEIGHT + ROW_GAP;
         }
-
         for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
-            buildCategoryTree(child, depth + 1, parentExpanded && (isRootEntries || expanded), yRef);
+            CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
+            childPanel.text(child.getDisplayName()).expanded(false);
+            childPanel.contentGap(ROW_GAP);
+            childPanel.headerHeight(ROW_HEIGHT);
+            childPanel.onExpandChanged(p -> syncContentHeight());
+            buildPanelContent(childPanel, child);
+            childPanel.refreshLayout();
+            panel.addCollapsibleChild(childPanel);
+        }
+    }
+
+    private void syncContentHeight() {
+        if (contentRootPanel != null) {
+            contentRootPanel.refreshLayout();
+            contentHeight = (int) contentRootPanel.height();
+            updateLayout();
+            updateWidgetPositions();
         }
     }
 
@@ -236,107 +228,29 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
     }
 
-    /**
-     * 仅刷新展开/折叠状态与布局，不重建 widget 树，避免未保存的修改丢失。
-     */
-    private void refreshCategoryExpandState() {
-        refreshCategoryHeaders();
-        contentHeight = computeContentHeight();
-        updateLayout();
-        updateWidgetPositions();
-    }
-
-    private void refreshCategoryHeaders() {
-        for (ConfigHolder.CategoryTreeNode node : holder.getCategoryTree()) {
-            refreshCategoryHeadersRec(node);
-        }
-    }
-
-    private void refreshCategoryHeadersRec(ConfigHolder.CategoryTreeNode node) {
-        if (!node.getCategoryPath().isEmpty()) {
-            ButtonWidget btn = categoryHeaderWidgets.get(node.getCategoryPath());
-            if (btn != null) {
-                boolean expanded = expandedCategories.contains(node.getCategoryPath());
-                btn.text((expanded ? "▼ " : "▶ ") + node.getDisplayName());
-            }
-        }
-        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
-            refreshCategoryHeadersRec(child);
-        }
-    }
-
-    private int computeContentHeight() {
-        int[] yRef = {PADDING};
-        for (ConfigHolder.CategoryTreeNode node : holder.getCategoryTree()) {
-            computeContentHeightRec(node, true, yRef);
-        }
-        return yRef[0] - PADDING;
-    }
-
-    private void computeContentHeightRec(ConfigHolder.CategoryTreeNode node, boolean parentExpanded, int[] yRef) {
-        if (!parentExpanded) return;
-        boolean isVirtualRoot = node.getCategoryPath().isEmpty();
-        if (!isVirtualRoot) yRef[0] += ROW_HEIGHT + ROW_GAP;
-        boolean expanded = isVirtualRoot || expandedCategories.contains(node.getCategoryPath());
-        if (expanded) {
-            yRef[0] += node.getEntries().size() * (ROW_HEIGHT + ROW_GAP);
-            for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
-                computeContentHeightRec(child, expanded, yRef);
-            }
-        }
-    }
-
     private void updateWidgetPositions() {
-        int[] yRef = {PADDING - (int) scrollOffset};
-        for (ConfigHolder.CategoryTreeNode node : holder.getCategoryTree()) {
-            updateWidgetPositionsRec(node, 0, true, yRef);
+        if (contentRootPanel != null) {
+            contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
         }
     }
 
-    private void updateWidgetPositionsRec(ConfigHolder.CategoryTreeNode node, int depth, boolean parentExpanded, int[] yRef) {
-        String catPath = node.getCategoryPath();
-        boolean isVirtualRoot = catPath.isEmpty();
-        boolean expanded = isVirtualRoot || expandedCategories.contains(catPath);
-        int indent = CATEGORY_INDENT + depth * INDENT_PER_LEVEL;
-        int availableW = contentW - indent;
-        int entryIndent = indent + INDENT_PER_LEVEL;
-        int entryW = contentW - entryIndent;
-
-        ButtonWidget catBtn = categoryHeaderWidgets.get(catPath);
-        if (catBtn != null) {
-            catBtn.visible(parentExpanded);
-            catBtn.bounds(new ScreenCoordinate(contentLeft + indent, yRef[0], availableW, ROW_HEIGHT));
-        }
-        if (!isVirtualRoot && parentExpanded) yRef[0] += ROW_HEIGHT + ROW_GAP;
-
-        for (ConfigEntryDescriptor desc : node.getEntries()) {
-            IConfigEntryWidget ew = entryWidgets.get(desc.getPath());
-            if (ew != null) {
-                ew.setVisible(parentExpanded && expanded);
-                ew.updatePosition(contentLeft + entryIndent, yRef[0], entryW, ROW_HEIGHT);
-            }
-            if (parentExpanded && expanded) yRef[0] += ROW_HEIGHT + ROW_GAP;
-        }
-
-        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
-            updateWidgetPositionsRec(child, depth + 1, parentExpanded && expanded, yRef);
-        }
-    }
-
-    private IConfigEntryWidget createWidgetFor(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
+    /**
+     * 创建配置项行（Label + 值控件），返回适配器。行作为子组件加入 CollapsiblePanelWidget。
+     */
+    private IConfigEntryWidget createEntryRow(ConfigEntryDescriptor desc, double w, int rowH) {
         switch (desc.getValueType()) {
             case STRING:
-                return createStringWidget(desc, x, y, w, rowH);
+                return createStringRow(desc, w, rowH);
             case BOOLEAN:
-                return createBooleanWidget(desc, x, y, w, rowH);
+                return createBooleanRow(desc, w, rowH);
             case INTEGER:
             case LONG:
             case DOUBLE:
-                return createNumberWidget(desc, x, y, w, rowH);
+                return createNumberRow(desc, w, rowH);
             case ENUM:
-                return createEnumWidget(desc, x, y, w, rowH);
+                return createEnumRow(desc, w, rowH);
             case STRING_LIST:
-                return createStringListWidget(desc, x, y, w, rowH);
+                return createStringListRow(desc, w, rowH);
             default:
                 return null;
         }
@@ -348,31 +262,35 @@ public class ConfigEditorScreen extends BaniraScreen {
         return String.join("\n", tooltip);
     }
 
-    private IConfigEntryWidget createStringWidget(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
+    private IConfigEntryWidget createStringRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        EntryRowWidget row = new EntryRowWidget(this);
+        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
+
+        LabelWidget label = new LabelWidget(this);
+        label.id("lbl_" + desc.getPath().replace(".", "_"));
+        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.text(desc.getDisplayName());
+        label.textWrap(false);
+        label.textVerticalAlign(EnumAlignment.CENTER);
+
         InputWidget input = new InputWidget(this);
         input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, rowH));
+        input.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
         Object raw = holder.get(desc.getPath());
         String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
         input.value(str);
         input.maxLength(256);
         input.onTextChanged(v -> modifiedValues.put(desc.getPath(), v));
 
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        row.addChild(label);
+        row.addChild(input);
+        if (tooltip != null) row.addChild(tooltip);
 
-        TooltipWidget tooltip = createEntryTooltip(desc, x, y, w, rowH);
-        addWidget(label);
-        addWidget(input);
-        if (tooltip != null) addWidget(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, label, input, tooltip, () -> input.value(), v -> input.value(String.valueOf(v)));
+        return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, () -> input.value(), v -> input.value(String.valueOf(v)));
     }
 
-    private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
+    private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
         String descText = getDescriptionText(desc);
         if (descText.isEmpty()) return null;
         TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
@@ -382,11 +300,21 @@ public class ConfigEditorScreen extends BaniraScreen {
         return tooltip;
     }
 
-    private IConfigEntryWidget createBooleanWidget(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
+    private IConfigEntryWidget createBooleanRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        EntryRowWidget row = new EntryRowWidget(this);
+        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
+
+        LabelWidget label = new LabelWidget(this);
+        label.id("lbl_" + desc.getPath().replace(".", "_"));
+        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.text(desc.getDisplayName());
+        label.textWrap(false);
+        label.textVerticalAlign(EnumAlignment.CENTER);
+
         boolean val = Boolean.TRUE.equals(holder.get(desc.getPath()));
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("cfg_" + desc.getPath().replace(".", "_"));
-        btn.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, rowH));
+        btn.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
         btn.text(val ? "§aON" : "§cOFF");
         btn.onClick(b -> {
             boolean newVal = !Boolean.TRUE.equals(holder.get(desc.getPath()));
@@ -395,120 +323,89 @@ public class ConfigEditorScreen extends BaniraScreen {
             btn.text(newVal ? "§aON" : "§cOFF");
         });
 
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        row.addChild(label);
+        row.addChild(btn);
+        if (tooltip != null) row.addChild(tooltip);
+        return new ConfigEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())), v -> {
+        });
+    }
+
+    private IConfigEntryWidget createNumberRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        EntryRowWidget row = new EntryRowWidget(this);
+        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
+
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
-        TooltipWidget tooltip = createEntryTooltip(desc, x, y, w, rowH);
-        addWidget(label);
-        addWidget(btn);
-        if (tooltip != null) addWidget(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())), v -> {
-        });
-    }
-
-    private IConfigEntryWidget createNumberWidget(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
-        InputWidget input = new InputWidget(this);
-        input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, rowH));
-        Object raw = holder.get(desc.getPath());
-        input.value(raw != null ? String.valueOf(raw) : "0");
-        input.maxLength(32);
-        input.validator(s -> {
-            try {
-                switch (desc.getValueType()) {
-                    case INTEGER:
-                        int i = Integer.parseInt(s);
-                        return (desc.getMinValue() == null || i >= desc.getMinValue().intValue())
-                                && (desc.getMaxValue() == null || i <= desc.getMaxValue().intValue());
-                    case LONG:
-                        long l = Long.parseLong(s);
-                        return (desc.getMinValue() == null || l >= desc.getMinValue().longValue())
-                                && (desc.getMaxValue() == null || l <= desc.getMaxValue().longValue());
-                    case DOUBLE:
-                        double d = Double.parseDouble(s);
-                        return (desc.getMinValue() == null || d >= desc.getMinValue().doubleValue())
-                                && (desc.getMaxValue() == null || d <= desc.getMaxValue().doubleValue());
-                    default:
-                        return true;
-                }
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        });
-        input.onTextChanged(v -> {
-            boolean valid = input.validator() != null && input.validator().apply(v);
-            input.error(!valid);
-            if (valid) {
-                input.errorMessage(null);
-                try {
-                    Object parsed = null;
-                    switch (desc.getValueType()) {
-                        case INTEGER:
-                            parsed = Integer.parseInt(v);
-                            break;
-                        case LONG:
-                            parsed = Long.parseLong(v);
-                            break;
-                        case DOUBLE:
-                            parsed = Double.parseDouble(v);
-                            break;
-                    }
-                    if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
-                        modifiedValues.put(desc.getPath(), parsed);
-                    }
-                } catch (NumberFormatException ignored) {
-                }
-            } else {
-                input.errorMessage(buildNumberRangeError(desc));
-                modifiedValues.remove(desc.getPath());
-            }
-        });
-        boolean initValid = input.validator() != null && input.validator().apply(input.value());
-        input.error(!initValid);
-        if (!initValid) input.errorMessage(buildNumberRangeError(desc));
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        TooltipWidget tooltip = createEntryTooltip(desc, x, y, w, rowH);
-        addWidget(label);
-        addWidget(input);
-        if (tooltip != null) addWidget(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, label, input, tooltip, () -> {
-            try {
-                switch (desc.getValueType()) {
-                    case INTEGER:
-                        return Integer.parseInt(input.value());
-                    case LONG:
-                        return Long.parseLong(input.value());
-                    case DOUBLE:
-                        return Double.parseDouble(input.value());
-                }
-            } catch (NumberFormatException e) {
-                return holder.get(desc.getPath());
-            }
-            return holder.get(desc.getPath());
-        }, v -> input.value(String.valueOf(v)), () -> !input.error());
-    }
-
-    private static String buildNumberRangeError(ConfigEntryDescriptor desc) {
-        if (desc.getMinValue() != null && desc.getMaxValue() != null) {
-            return "值需在 " + desc.getMinValue() + " 到 " + desc.getMaxValue() + " 之间";
+        double min = desc.getMinValue() != null ? desc.getMinValue().doubleValue() : 0;
+        double max = desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : 100;
+        double step = 1.0;
+        if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE) {
+            step = Math.max(0.01, (max - min) / 100);
         }
-        if (desc.getMinValue() != null) return "值需不小于 " + desc.getMinValue();
-        if (desc.getMaxValue() != null) return "值需不大于 " + desc.getMaxValue();
-        return "无效数值";
+
+        Object raw = holder.get(desc.getPath());
+        double initVal = 0;
+        if (raw instanceof Number) {
+            initVal = ((Number) raw).doubleValue();
+        } else if (raw != null) {
+            try {
+                initVal = Double.parseDouble(raw.toString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        initVal = Math.max(min, Math.min(max, initVal));
+
+        SliderWidget slider = new SliderWidget(this);
+        slider.id("cfg_" + desc.getPath().replace(".", "_"));
+        slider.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
+        slider.minValue(min).maxValue(max).step(step).value(initVal);
+        slider.onValueChanged(v -> {
+            Object parsed = convertSliderValue(desc, v);
+            if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
+                modifiedValues.put(desc.getPath(), parsed);
+            }
+        });
+
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        row.addChild(label);
+        row.addChild(slider);
+        if (tooltip != null) row.addChild(tooltip);
+        return new ConfigEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
+            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
+            slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
+        }, () -> true);
     }
 
-    private IConfigEntryWidget createEnumWidget(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
+    private Object convertSliderValue(ConfigEntryDescriptor desc, double v) {
+        switch (desc.getValueType()) {
+            case INTEGER:
+                return (int) Math.round(v);
+            case LONG:
+                return (long) Math.round(v);
+            case DOUBLE:
+                return v;
+            default:
+                return v;
+        }
+    }
+
+    private IConfigEntryWidget createEnumRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        EntryRowWidget row = new EntryRowWidget(this);
+        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
+
+        LabelWidget label = new LabelWidget(this);
+        label.id("lbl_" + desc.getPath().replace(".", "_"));
+        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.text(desc.getDisplayName());
+        label.textWrap(false);
+        label.textVerticalAlign(EnumAlignment.CENTER);
+
         Object current = holder.get(desc.getPath());
         List<String> options = Arrays.stream(desc.getEnumClass().getEnumConstants())
                 .map(e -> ((Enum<?>) e).name())
@@ -516,7 +413,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
         dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
-        dropdown.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, rowH));
+        dropdown.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, rowH));
         dropdown.options(options);
         dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
         dropdown.onSelectionChanged(v -> {
@@ -530,18 +427,11 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         });
 
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        TooltipWidget tooltip = createEntryTooltip(desc, x, y, w, rowH);
-        addWidget(label);
-        addWidget(dropdown);
-        if (tooltip != null) addWidget(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, label, dropdown, tooltip, () -> {
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        row.addChild(label);
+        row.addChild(dropdown);
+        if (tooltip != null) row.addChild(tooltip);
+        return new ConfigEntryWidgetAdapter(desc, row, label, dropdown, tooltip, () -> {
             List<String> sel = dropdown.getSelectedValues();
             if (sel.isEmpty()) return holder.get(desc.getPath());
             try {
@@ -554,42 +444,57 @@ public class ConfigEditorScreen extends BaniraScreen {
         }, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
     }
 
-    private IConfigEntryWidget createStringListWidget(ConfigEntryDescriptor desc, int x, int y, int w, int rowH) {
-        Object raw = holder.get(desc.getPath());
-        @SuppressWarnings("unchecked")
-        List<String> list = (raw instanceof List) ? (List<String>) raw : null;
-        String display = list != null ? String.join(", ", list) : "";
-
-        InputWidget input = new InputWidget(this);
-        input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, rowH));
-        input.value(display);
-        input.maxLength(1024);
-        input.text(Text.literal("Comma separated"));
-        input.onTextChanged(v -> {
-            List<String> parsed = Arrays.stream(v.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
-            modifiedValues.put(desc.getPath(), parsed);
-        });
+    private IConfigEntryWidget createStringListRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        EntryRowWidget row = new EntryRowWidget(this);
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
-        TooltipWidget tooltip = createEntryTooltip(desc, x, y, w, rowH);
-        addWidget(label);
-        addWidget(input);
-        if (tooltip != null) addWidget(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, label, input, tooltip, () -> {
-            String s = input.value();
-            return Arrays.stream(s.split(",")).map(String::trim).filter(xx -> !xx.isEmpty()).collect(Collectors.toList());
-        }, v -> {
-            if (v instanceof List) {
-                input.value(String.join(", ", (List<String>) v));
+        Object raw = holder.get(desc.getPath());
+        @SuppressWarnings("unchecked")
+        List<String> list = (raw instanceof List) ? (List<String>) raw : null;
+        List<Object> items = list != null ? new ArrayList<>(list) : new ArrayList<>();
+
+        TagListEditorWidget tagList = new TagListEditorWidget(this);
+        tagList.id("cfg_" + desc.getPath().replace(".", "_"));
+        tagList.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, w - LABEL_WIDTH - 4, TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
+        tagList.itemType(TagListEditorWidget.ItemType.TEXT);
+        tagList.items(items);
+        tagList.expanded(false);
+        tagList.refreshBounds();
+        row.bounds(new ScreenCoordinate(0, 0, w, tagList.effectiveHeight()));
+        tagList.onExpandChanged(t -> {
+            IWidget rowWidget = t.parent();
+            if (rowWidget != null && rowWidget instanceof BaseWidget) {
+                double newH = t.effectiveHeight();
+                ScreenCoordinate b = rowWidget.bounds();
+                if (b != null) {
+                    ((BaseWidget) rowWidget).bounds(new ScreenCoordinate(b.x(), b.y(), b.width(), newH));
+                }
+                IWidget panel = rowWidget.parent();
+                if (panel instanceof CollapsiblePanelWidget) {
+                    ((CollapsiblePanelWidget) panel).refreshLayoutFromChild(rowWidget);
+                }
             }
+            syncContentHeight();
         });
+        tagList.onListChanged(v -> modifiedValues.put(desc.getPath(), v.stream().map(String::valueOf).collect(Collectors.toList())));
+
+        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
+        row.addChild(label);
+        row.addChild(tagList);
+        if (tooltip != null) row.addChild(tooltip);
+        return new ConfigEntryWidgetAdapter(desc, row, label, tagList, tooltip,
+                () -> tagList.items().stream().map(String::valueOf).collect(Collectors.toList()),
+                v -> {
+                    if (v instanceof List) {
+                        tagList.items(((List<?>) v).stream().map(String::valueOf).collect(Collectors.toList()));
+                    }
+                });
     }
 
     private void saveConfig() {
@@ -694,34 +599,30 @@ public class ConfigEditorScreen extends BaniraScreen {
         int contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
 
+        if (contentRootPanel != null && contentRootPanel.visible()) {
+            if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
+            contentRootPanel.render(stack, partialTicks);
+        }
         if (scrollbar != null && scrollbar.visible()) {
-            scrollbar.bounds(new ScreenCoordinate(contentLeft + contentW + SCROLL_GAP, listTop, SCROLL_WIDTH, listAreaHeight));
             if (scrollbar.enabled() && scrollbar.needsUpdate()) scrollbar.update();
             scrollbar.render(stack, partialTicks);
         }
 
-        List<IWidget> deferred = null;
-        for (IWidget widget : widgets()) {
-            if (widget == scrollbar) continue;
-            if (widget.parent() != null || !widget.visible()) continue;
-            boolean isTooltip = widget instanceof TooltipWidget;
-            boolean isBottomBtn = widget.id() != null && (widget.id().equals("save") || widget.id().equals("sync") || widget.id().equals("close"));
-            if (isTooltip || isBottomBtn) {
-                if (deferred == null) deferred = new ArrayList<>();
-                deferred.add(widget);
-            } else {
-                if (widget.enabled() && widget.needsUpdate()) widget.update();
-                widget.render(stack, partialTicks);
+        AbstractGuiUtils.disableScissor();
+
+        for (ButtonWidget btn : bottomButtons) {
+            if (btn.visible()) {
+                if (btn.enabled() && btn.needsUpdate()) btn.update();
+                btn.render(stack, partialTicks);
             }
         }
 
-        AbstractGuiUtils.disableScissor();
-
-        if (deferred != null) {
-            for (IWidget widget : deferred) {
-                if (widget.enabled() && widget.needsUpdate()) widget.update();
-                widget.render(stack, partialTicks);
-            }
+        // 渲染 overlay 控件，需在 scissor 关闭后渲染以免被裁剪
+        for (IWidget widget : widgets()) {
+            if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) continue;
+            if (widget.parent() != null || !widget.visible()) continue;
+            if (widget.enabled() && widget.needsUpdate()) widget.update();
+            widget.render(stack, partialTicks);
         }
     }
 
@@ -732,6 +633,11 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
+                && contentRootPanel.isMouseInside(mouseX, mouseY)
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+            return true;
+        }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {
             return true;
         }
@@ -782,45 +688,35 @@ public class ConfigEditorScreen extends BaniraScreen {
     private interface IConfigEntryWidget {
         BaseWidget getWidget();
 
-        void updatePosition(int x, int y, int w, int h);
-
         Object getValue();
 
         void setValue(Object value);
 
-        /**
-         * 是否通过校验（如数字范围），未通过时不应保存
-         */
         default boolean isValid() {
             return true;
         }
-
-        void setCategory(String categoryPath);
-
-        void setVisible(boolean visible);
     }
 
     private static class ConfigEntryWidgetAdapter implements IConfigEntryWidget {
-        private final LabelWidget label;
-        private final BaseWidget valueWidget;
-        private final TooltipWidget tooltipWidget;
+        private final BaseWidget rowWidget;
         private final java.util.function.Supplier<Object> getter;
         private final java.util.function.Consumer<Object> setter;
         private final java.util.function.Supplier<Boolean> isValidSupplier;
 
-        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, LabelWidget label, BaseWidget valueWidget,
-                                 TooltipWidget tooltipWidget,
+        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, BaseWidget rowWidget, LabelWidget label,
+                                 BaseWidget valueWidget, TooltipWidget tooltipWidget,
                                  java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter) {
-            this(desc, label, valueWidget, tooltipWidget, getter, setter, null);
+            this.rowWidget = rowWidget;
+            this.getter = getter;
+            this.setter = setter;
+            this.isValidSupplier = null;
         }
 
-        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, LabelWidget label, BaseWidget valueWidget,
-                                 TooltipWidget tooltipWidget,
+        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, BaseWidget rowWidget, LabelWidget label,
+                                 BaseWidget valueWidget, TooltipWidget tooltipWidget,
                                  java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter,
                                  java.util.function.Supplier<Boolean> isValidSupplier) {
-            this.label = label;
-            this.valueWidget = valueWidget;
-            this.tooltipWidget = tooltipWidget;
+            this.rowWidget = rowWidget;
             this.getter = getter;
             this.setter = setter;
             this.isValidSupplier = isValidSupplier;
@@ -833,20 +729,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         @Override
         public BaseWidget getWidget() {
-            return valueWidget;
-        }
-
-        @Override
-        public void updatePosition(int x, int y, int w, int h) {
-            if (label.bounds() != null) {
-                label.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, h));
-            }
-            if (valueWidget.bounds() != null) {
-                valueWidget.bounds(new ScreenCoordinate(x + LABEL_WIDTH, y, w - LABEL_WIDTH - 4, h));
-            }
-            if (tooltipWidget != null && tooltipWidget.bounds() != null) {
-                tooltipWidget.bounds(new ScreenCoordinate(x, y, LABEL_WIDTH - 4, h));
-            }
+            return rowWidget;
         }
 
         @Override
@@ -858,18 +741,40 @@ public class ConfigEditorScreen extends BaniraScreen {
         public void setValue(Object value) {
             setter.accept(value);
         }
+    }
 
-        @Override
-        public void setCategory(String categoryPath) {
+    /**
+     * 配置项行容器，仅用于容纳 Label + 值控件 + Tooltip。
+     * 重写 effectiveHeight 以支持子控件动态变化高度。
+     */
+    private static class EntryRowWidget extends BaseWidget {
+        EntryRowWidget(BaniraScreen screen) {
+            super(screen);
         }
 
         @Override
-        public void setVisible(boolean visible) {
-            label.visible(visible);
-            valueWidget.visible(visible);
-            if (tooltipWidget != null) {
-                tooltipWidget.visible(visible);
+        public double effectiveHeight() {
+            double maxBottom = 0;
+            for (IWidget child : children()) {
+                if (child == null || !child.visible()) continue;
+                ScreenCoordinate b = child.bounds();
+                if (b != null) {
+                    double bottom = b.y() + child.effectiveHeight();
+                    if (bottom > maxBottom) maxBottom = bottom;
+                }
             }
+            return maxBottom > 0 ? maxBottom : (bounds() != null ? bounds().height() : 0);
+        }
+
+        @Override
+        protected boolean onMouseClick(MouseEvent event) {
+            return true;
+        }
+
+        @Override
+        public void render(MatrixStack stack, float partialTicks) {
+            if (!visible) return;
+            renderChildren(stack, partialTicks);
         }
     }
 }

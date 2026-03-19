@@ -241,12 +241,16 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
 
         if (n == 3) {
-            int segW = (cardW - 2 * CARD_GAP) / 3;
-            int contentW = segW - CARD_INNER * 2;
+            int btnTotal = cardW - 2 * CARD_GAP;
+            int segW = btnTotal / 3;
+            int seg3W = segW + btnTotal % 3;
+            int contentW0 = segW - CARD_INNER * 2;
+            int contentW2 = seg3W - CARD_INNER * 2;
             for (int i = 0; i < n; i++) {
                 ButtonWidget btn = bottomButtons.get(i);
+                int contentW = i == 2 ? contentW2 : contentW0;
                 int bw = Math.min(btnWidths[i], Math.max(20, contentW));
-                int segX = cardX + i * (segW + CARD_GAP);
+                int segX = cardX + (i == 0 ? 0 : i == 1 ? segW + CARD_GAP : 2 * (segW + CARD_GAP));
                 int cx = segX + CARD_INNER + Math.max(0, (contentW - bw) / 2);
                 btn.bounds(new ScreenCoordinate(cx, btnY, bw, BUTTON_HEIGHT));
             }
@@ -714,12 +718,14 @@ public class ConfigEditorScreen extends BaniraScreen {
                 CARD_RADIUS, CARD_RADIUS, 0, 0, cardBg);
 
         if (n == 3) {
-            int segW = (cardW - 2 * CARD_GAP) / 3;
+            int btnTotal = cardW - 2 * CARD_GAP;
+            int segW = btnTotal / 3;
+            int seg3W = segW + btnTotal % 3;
             AbstractGuiUtils.drawRoundedRect(stack, cardX, btnAreaTop, segW, btnAreaH,
                     0, 0, CARD_RADIUS, 0, cardBg);
             AbstractGuiUtils.drawRoundedRect(stack, cardX + segW + CARD_GAP, btnAreaTop, segW, btnAreaH,
                     0, 0, 0, 0, cardBg);
-            AbstractGuiUtils.drawRoundedRect(stack, cardX + 2 * (segW + CARD_GAP), btnAreaTop, segW, btnAreaH,
+            AbstractGuiUtils.drawRoundedRect(stack, cardX + 2 * (segW + CARD_GAP), btnAreaTop, seg3W, btnAreaH,
                     0, 0, 0, CARD_RADIUS, cardBg);
         } else {
             int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;

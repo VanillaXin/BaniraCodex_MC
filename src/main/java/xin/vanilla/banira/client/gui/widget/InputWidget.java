@@ -13,6 +13,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.Style;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -541,11 +542,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal("清空"), true);
+                drawTooltipAtScreenCoords(stack, mx, my, Text.literal("清空"), EnumTooltipTextureMode.AUTO);
             } else if (error && errorMessage != null && !errorMessage.isEmpty() && isMouseOverTextArea() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), false);
+                drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
             }
 
             if (shouldShowCursor) {
@@ -653,22 +654,27 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
-     * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。
+     * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。默认跟随主题配置。
      */
     protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text) {
-        drawTooltipAtScreenCoords(stack, mx, my, text, true);
+        drawTooltipAtScreenCoords(stack, mx, my, text, EnumTooltipTextureMode.AUTO);
     }
 
     /**
      * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。
+     *
+     * @param textureMode AUTO 时使用主题配置，TEXTURE/COLOR 时使用指定模式
      */
-    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, boolean useTexture) {
+    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
         if (screen == null) return;
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason season = screen.season();
         Text textToDraw = text;
         int mouseX = (int) mx;
         int mouseY = (int) my;
+        boolean useTexture = textureMode == EnumTooltipTextureMode.AUTO
+                ? theme.tooltipUseTexture()
+                : (textureMode == EnumTooltipTextureMode.TEXTURE);
         screen.addDeferredTooltipRender(s -> {
             s.pushPose();
             s.last().pose().setIdentity();

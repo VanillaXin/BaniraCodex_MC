@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -336,7 +337,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), 0, RESET_BTN_WIDTH, rowH));
         resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
         resetTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset_tooltip"));
-        resetTip.useTextureDrawing(false);
         resetTip.popupAtScreenCoords(true);
         row.addChild(btn);
         row.addChild(resetTip);
@@ -377,7 +377,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
         tooltip.id("tip_" + desc.getPath().replace(".", "_"));
         tooltip.text(Component.literal(descText));
-        tooltip.useTextureDrawing(false);
         tooltip.popupAtScreenCoords(true);
         return tooltip;
     }

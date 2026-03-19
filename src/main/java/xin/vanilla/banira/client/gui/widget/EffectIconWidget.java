@@ -8,6 +8,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -106,10 +107,12 @@ public class EffectIconWidget extends BaseWidget {
             stack.translate(-absoluteX(), -absoluteY(), 0);
             if (screen != null) {
                 if (seasonTooltip) {
+                    BaniraColorConfig theme = screen.getEffectiveTheme();
                     TooltipWidget.drawPopupMessage(stack,
                             FontDrawArgs.ofPopo(Text.literal(tip.toString()).stack(stack).font(screen.getFont()))
-                                    .x(mouseX).y(mouseY),
-                            screen.getEffectiveTheme(), screen.season());
+                                    .x(mouseX).y(mouseY)
+                                    .popupUseTexture(theme.tooltipUseTexture()),
+                            theme, screen.season());
                 } else {
                     screen.renderTooltip(stack, Component.literal(tip.toString()).toVanilla(), mouseX, mouseY);
                 }

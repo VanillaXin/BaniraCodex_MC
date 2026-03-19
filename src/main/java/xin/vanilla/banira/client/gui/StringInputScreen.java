@@ -720,13 +720,14 @@ public class StringInputScreen extends BaniraScreen {
             if (field.input() != null && field.input().error() && field.input().hoveringCoordinates() != null && !field.input().hoveringCoordinates().isEmpty()) {
                 Text errorTextItem = this.errorTextMap.get(i);
                 if (errorTextItem != null) {
-                    TooltipWidget.drawPopupMessageWithSeason(stack, FontDrawArgs.of(errorTextItem.stack(stack))
+                    TooltipWidget.drawPopupMessage(stack, FontDrawArgs.of(errorTextItem.stack(stack))
                             .x(inputState.mouseX() + 5)
                             .y(inputState.mouseY() + 5)
                             .padding(0)
                             .maxWidth(200)
                             .position(EnumEllipsisPosition.MIDDLE)
-                    );
+                            .popupUseTexture(false),
+                            getEffectiveTheme(), season());
                 }
             }
         }

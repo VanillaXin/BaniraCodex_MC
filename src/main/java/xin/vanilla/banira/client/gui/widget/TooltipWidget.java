@@ -13,6 +13,7 @@ import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -58,11 +59,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     private boolean vanillaTooltip = false;
 
     /**
-     * 是否使用纹理绘制，默认 true
+     * 悬浮提示纹理绘制模式。AUTO 时使用主题配置，非 AUTO 时使用本控件定义。
      */
     @Getter
     @Setter
-    private boolean useTextureDrawing = true;
+    private EnumTooltipTextureMode popupTextureMode = EnumTooltipTextureMode.AUTO;
 
     /**
      * 为 true 时弹层使用屏幕坐标绘制（不随父级 translate），避免嵌套时错位。默认 false。
@@ -102,7 +103,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 BaniraColorConfig theme = screen.getEffectiveTheme();
                 EnumSeason season = screen.season();
                 Text textToDraw = text;
-                boolean useTexture = useTextureDrawing;
+                boolean useTexture = resolvePopupUseTexture(theme);
                 screen.addDeferredTooltipRender(s -> {
                     s.pushPose();
                     s.last().pose().setIdentity();
@@ -132,7 +133,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 } else {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     EnumSeason season = screen.season();
-                    drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(useTextureDrawing), theme, season);
+                    drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(resolvePopupUseTexture(theme)), theme, season);
                 }
                 stack.popPose();
             }
@@ -140,6 +141,16 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         renderChildren(stack, partialTicks);
     }
 
+    private boolean resolvePopupUseTexture(BaniraColorConfig theme) {
+        switch (popupTextureMode) {
+            case TEXTURE:
+                return true;
+            case COLOR:
+                return false;
+            default:
+                return theme != null && theme.tooltipUseTexture();
+        }
+    }
 
     /**
      * 获取指定季节的提示纹理路径

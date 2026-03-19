@@ -96,7 +96,21 @@ public final class BaniraColorConfig {
      * 列表项文字色覆盖
      */
     private int listItemTextOverride;
+
+    /**
+     * 悬浮提示是否使用纹理绘制，默认 true。AUTO 模式时生效。
+     */
+    private boolean tooltipUseTexture = true;
     // endregion
+
+    public boolean tooltipUseTexture() {
+        return tooltipUseTexture;
+    }
+
+    public BaniraColorConfig tooltipUseTexture(boolean v) {
+        this.tooltipUseTexture = v;
+        return this;
+    }
 
     // region 组件颜色（由语义色推导，可自定义覆盖）
     public int panelBg() {

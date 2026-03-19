@@ -522,11 +522,13 @@ public class PopupOption extends BaseWidget {
         Text tip = tipsMap.get(optIdx);
         if (tip == null || StringUtils.isNullOrEmptyEx(tip.content())) return;
 
+        BaniraColorConfig theme = screen.getEffectiveTheme();
         FontDrawArgs args = FontDrawArgs.of(tip.stack(stack).font(font))
-                .padding(4).margin(MARGIN)
+                .margin(MARGIN)
                 .x(inputState.mouseX()).y(inputState.mouseY())
-                .inScreen(true);
-        TooltipWidget.drawPopupMessage(stack, args, screen.getEffectiveTheme(), screen.season());
+                .inScreen(true)
+                .popupUseTexture(theme.tooltipUseTexture());
+        TooltipWidget.drawPopupMessage(stack, args, theme, screen.season());
     }
 
     private int findHoveredIndex(double mouseX, double mouseY) {

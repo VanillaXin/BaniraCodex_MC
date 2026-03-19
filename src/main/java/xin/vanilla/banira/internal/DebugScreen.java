@@ -302,7 +302,7 @@ public class DebugScreen extends BaniraScreen {
                                     .stack(stack)
                                     .font(super.font)
                                     .align(EnumAlignment.CENTER))
-                            .x(inputState.mouseX()).y(inputState.mouseY()).padding(0).fontSize(fontSize).align(EnumAlignment.CENTER)
+                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
                             .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
                     season());
         }

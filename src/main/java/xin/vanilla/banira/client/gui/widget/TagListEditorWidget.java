@@ -162,6 +162,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private int hoveredTagBodyIndex = -1;
 
     /**
+     * 标题栏「+」按钮的 X（相对本控件），添加行右侧确认按钮与之对齐
+     */
+    private double headerAddButtonX;
+
+    /**
      * 子组件处理点击时，应获得焦点的目标（供 getFocusTarget 使用）
      */
     @Nullable
@@ -209,6 +214,37 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     // endregion 列表高度与滚动条布局
 
+    // region 标题栏工具按钮布局
+
+    /**
+     * 将清空/添加按钮置于控件右内缘
+     *
+     * @return 靠左一侧按钮的 X
+     */
+    private double layoutHeaderToolbar(double w) {
+        if (clearButton == null || addButton == null) {
+            return w;
+        }
+        final double pad = 2;
+        final double gap = 6;
+        double y = (HEADER_HEIGHT - BTN_SIZE) / 2.0;
+        double addX = Math.max(pad, w - pad - BTN_SIZE);
+        double clearX = addX - gap - BTN_SIZE;
+        if (clearX < pad) {
+            clearX = pad;
+            addX = clearX + BTN_SIZE + gap;
+            if (addX + BTN_SIZE > w - pad) {
+                addX = Math.max(pad, w - pad - BTN_SIZE);
+            }
+        }
+        headerAddButtonX = addX;
+        clearButton.bounds(new ScreenCoordinate(clearX, y, BTN_SIZE, BTN_SIZE));
+        addButton.bounds(new ScreenCoordinate(addX, y, BTN_SIZE, BTN_SIZE));
+        return Math.min(clearX, addX);
+    }
+
+    // endregion 标题栏工具按钮布局
+
     @Override
     public boolean needsUpdate() {
         return true;
@@ -229,6 +265,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         clearButton = new ButtonWidget(screen);
         clearButton.presetStyle(ButtonWidget.PresetStyle.MINUS)
+                .padding(2)
                 .bounds(new ScreenCoordinate(w - BTN_SIZE * 2 - 4, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         clearButton.onClick(b -> onClearOrUndoClicked());
         clearButtonTooltip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
@@ -239,6 +276,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         addButton = new ButtonWidget(screen);
         addButton.presetStyle(ButtonWidget.PresetStyle.PLUS)
+                .padding(2)
                 .bounds(new ScreenCoordinate(w - BTN_SIZE - 2, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         addButton.onClick(b -> enterAddingMode());
         TooltipWidget addTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
@@ -255,6 +293,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 .visibleSize(contentH)
                 .onValueChanged(v -> listScrollOffset = v);
         addChild(scrollbar);
+
+        layoutHeaderToolbar(w);
     }
 
     private static final int ADD_INPUT_HEIGHT = 22;
@@ -322,8 +362,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             addConfirmButton = null;
         }
         double w = width();
+        layoutHeaderToolbar(w);
         double inputY = HEADER_HEIGHT + 2;
-        double confirmBtnX = w - BTN_SIZE - 2;
+        double confirmBtnX = headerAddButtonX;
 
         switch (itemType) {
             case TEXT:
@@ -362,6 +403,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         addConfirmButton = new ButtonWidget(screen);
         addConfirmButton.presetStyle(ButtonWidget.PresetStyle.PLUS)
+                .padding(2)
                 .bounds(new ScreenCoordinate(confirmBtnX, inputY, BTN_SIZE, ADD_INPUT_HEIGHT));
         addConfirmButton.onClick(b -> confirmAddFromInput());
         TooltipWidget confirmTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, ADD_INPUT_HEIGHT));
@@ -667,25 +709,30 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible) return;
         ensureChildren();
 
+        BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.winter();
+
         double ox = x();
         double oy = y();
         double w = width();
         double absX = absoluteX();
         double absY = absoluteY();
 
+        double titleBtnLeft = layoutHeaderToolbar(w);
+
         stack.pushPose();
         stack.translate(ox, oy, 0);
 
         // region 绘制标题栏
-        int headerBg = mouseInside ? BaniraColorConfig.winter().bgTertiary() : BaniraColorConfig.winter().bgSecondary();
+        int headerBg = mouseInside ? theme.bgTertiary() : theme.bgSecondary();
         AbstractGuiUtils.fill(stack, 0, 0, (int) w, HEADER_HEIGHT, headerBg);
 
+        int headerTextColor = theme.textPrimary();
         int arrowX = 4;
         int arrowY = (HEADER_HEIGHT - ARROW_SIZE) / 2;
         if (expanded) {
-            drawArrowDown(stack, arrowX, arrowY, ARROW_SIZE, 0xFF333333);
+            drawArrowDown(stack, arrowX, arrowY, ARROW_SIZE, headerTextColor);
         } else {
-            drawArrowRight(stack, arrowX, arrowY, ARROW_SIZE, 0xFF333333);
+            drawArrowRight(stack, arrowX, arrowY, ARROW_SIZE, headerTextColor);
         }
 
         int textX = 4 + ARROW_SIZE + 4;
@@ -693,8 +740,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         String baseTitle = text != null ? text.content() : "";
         String displayTitle = baseTitle.isEmpty() ? "(" + items.size() + ")" : baseTitle + " (" + items.size() + ")";
         FontDrawArgs args = FontDrawArgs.of(
-                Text.literal(displayTitle).stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(0xFF333333));
-        args.x(textX).y(textY).maxWidth((int) Math.max(0, w - textX - BTN_SIZE * 2 - 16)).wrap(false).inScreen(false);
+                Text.literal(displayTitle).stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(headerTextColor));
+        args.x(textX).y(textY).maxWidth((int) Math.max(0, titleBtnLeft - textX - 4)).wrap(false).inScreen(false);
         LabelWidget.drawLimitedText(args);
 
         stack.popPose();
@@ -718,14 +765,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         boolean showScrollbar = listShowsScrollbar();
         double listW = listInnerWidth(w);
 
-        clearButton.bounds(new ScreenCoordinate(w - BTN_SIZE * 2 - 4, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
-        addButton.bounds(new ScreenCoordinate(w - BTN_SIZE - 2, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
-
         if (addInputWidget != null) {
             addInputWidget.visible(true);
         }
         if (addConfirmButton != null) {
-            addConfirmButton.bounds(new ScreenCoordinate(w - BTN_SIZE - 2, HEADER_HEIGHT + 2, BTN_SIZE, ADD_INPUT_HEIGHT));
+            addConfirmButton.bounds(new ScreenCoordinate(headerAddButtonX, HEADER_HEIGHT + 2, BTN_SIZE, ADD_INPUT_HEIGHT));
             addConfirmButton.visible(true);
         }
 
@@ -745,7 +789,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         // region 绘制标签列表
-        BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.winter();
         int tagBg = theme.popupItemSelected();
         int tagBorder = theme.popupItemSelectedBorder();
         int textColor = theme.listItemText();

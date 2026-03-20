@@ -414,10 +414,18 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
      */
     private void drawPresetIcon(MatrixStack stack, int x, int y, int w, int h, int color) {
-        float cx = x + w * 0.5f;
-        float cy = y + h * 0.5f;
-        float size = Math.min(w, h);
-        float r = size * 0.38f;
+        float iw = Math.max(0f, (float) w);
+        float ih = Math.max(0f, (float) h);
+        float size = Math.min(iw, ih);
+        if (size < 2f) {
+            return;
+        }
+        float cx = x + iw * 0.5f;
+        float cy = y + ih * 0.5f;
+        float r = Math.max(1f, size * 0.38f);
+        if (r > size * 0.42f) {
+            r = size * 0.42f;
+        }
         float lw = iconStrokeWidth;
 
         switch (presetStyle) {
@@ -432,7 +440,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 break;
             case PLUS:
                 // 加号
-                float plusR = r * 0.92f;
+                float plusR = Math.max(0.8f, r * 0.88f);
+                if (plusR + lw * 0.5f > size * 0.48f) {
+                    plusR = Math.max(0.6f, size * 0.48f - lw * 0.5f);
+                }
                 AbstractGuiUtils.drawLine(stack, cx - plusR, cy, cx + plusR, cy, lw, color);
                 AbstractGuiUtils.drawLine(stack, cx, cy - plusR, cx, cy + plusR, lw, color);
                 break;

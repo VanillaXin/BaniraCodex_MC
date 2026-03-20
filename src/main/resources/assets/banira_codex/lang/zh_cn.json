@@ -104,5 +104,6 @@
   "word.banira_codex.tag_list_add_tooltip": "添加项",
   "word.banira_codex.tag_list_undo_tooltip": "撤销清空",
   "word.banira_codex.tag_list_confirm_add": "添加",
-  "word.banira_codex.tag_list_row_hint": "双击编辑 · 右键复制"
+  "word.banira_codex.tag_list_row_hint": "双击编辑 · 右键复制",
+  "word.banira_codex.tag_list_copied": "已复制到剪贴板"
 }

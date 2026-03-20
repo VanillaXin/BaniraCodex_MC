@@ -13,10 +13,12 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -139,6 +141,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     @Nullable
     private IWidget editWidget;
     private int editingIndex = -1;
+
+    /**
+     * 行内编辑框是否曾获得过焦点；用于避免首帧尚未完成 requestFocus 时误判失焦而关闭编辑。
+     */
+    private boolean inlineEditHadFocus;
 
     private int hoveredTagBodyIndex = -1;
 
@@ -396,6 +403,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             editWidget = null;
         }
         editingIndex = -1;
+        inlineEditHadFocus = false;
     }
 
     private void scrollRowIntoView(int index) {
@@ -508,6 +516,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
         Minecraft.getInstance().keyboardHandler.setClipboard(s);
+        Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "tag_list_copied"));
+        NotificationManager.get().addNotification(n);
     }
 
     /**
@@ -819,6 +829,17 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
 
+        // region 行内编辑失焦则取消（恢复原列表显示，等同 Esc，不提交）
+        if (expanded && editingIndex >= 0 && editWidget instanceof BaseWidget) {
+            BaseWidget eb = (BaseWidget) editWidget;
+            if (eb.focused()) {
+                inlineEditHadFocus = true;
+            } else if (inlineEditHadFocus) {
+                cancelInlineEdit();
+            }
+        }
+        // endregion 行内编辑失焦则取消
+
         if (addingMode && addInputWidget != null && addConfirmButton != null) {
             boolean inputFocused = addInputWidget instanceof BaseWidget && ((BaseWidget) addInputWidget).focused();
             boolean confirmFocused = addConfirmButton.focused();
@@ -888,6 +909,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             if (event.button() == 0 && bodyIdx >= 0) {
                 if (isDoubleClick(event)) {
                     startInlineEdit(bodyIdx);
+                    // BaniraScreen 在 handleMouseClick 返回后会对「被点击的根 widget」再 requestFocus(getFocusTarget())；
+                    // 若不设置 lastClickFocusTarget，getFocusTarget() 会落到本控件自身，抢走行内输入框焦点。
+                    if (editWidget != null) {
+                        lastClickFocusTarget = editWidget.getFocusTarget();
+                    }
                 }
                 return true;
             }

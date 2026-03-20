@@ -1,12 +1,14 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
@@ -16,6 +18,7 @@ import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
@@ -161,10 +164,30 @@ public class ItemWidget extends BaseWidget {
 
 
     /**
+     * 在 GUI 中按像素边长绘制物品堆栈
+     */
+    public static void renderGuiItemScaled(@Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
+        if (size <= 0 || stack.isEmpty()) {
+            return;
+        }
+        RenderSystem.enableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        float s = size / 16f;
+        RenderSystem.pushMatrix();
+        RenderSystem.translatef(x, y, 200f);
+        RenderSystem.scalef(s, s, s);
+        RenderHelper.setupFor3DItems();
+        mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+        RenderHelper.turnOff();
+        RenderSystem.popMatrix();
+    }
+
+    /**
      * 绘制物品图标
      */
     public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
-        itemRenderer.renderGuiItem(itemStack, x, y);
+        renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
         if (showText) {
             itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
         }

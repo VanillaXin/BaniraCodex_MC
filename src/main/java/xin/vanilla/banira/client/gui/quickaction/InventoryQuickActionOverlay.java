@@ -1123,7 +1123,7 @@ public final class InventoryQuickActionOverlay {
             if (row.menuIcon != null) {
                 int iconX = x + MENU_TEXT_PAD_X;
                 int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.render(stack, mc, iconX, iconY, MENU_ICON_SIZE);
+                row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
             }
             float textX = row.menuIcon != null
                     ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP

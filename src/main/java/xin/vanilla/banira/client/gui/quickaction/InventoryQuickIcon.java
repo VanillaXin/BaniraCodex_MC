@@ -93,6 +93,20 @@ public class InventoryQuickIcon {
     }
 
     /**
+     * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 MatrixStack 一致，避免 3D GUI 物品不显示。
+     */
+    public void renderForMenu(@Nonnull MatrixStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+        if (size <= 0) {
+            return;
+        }
+        if (kind == Kind.ITEM) {
+            ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
+            return;
+        }
+        render(stack, mc, x, y, size);
+    }
+
+    /**
      * 在 GUI 坐标系下绘制图标，尺寸为 {@code size}×{@code size}。
      */
     public void render(@Nonnull MatrixStack stack, @Nonnull Minecraft mc, int x, int y, int size) {

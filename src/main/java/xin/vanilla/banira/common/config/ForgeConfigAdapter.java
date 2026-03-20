@@ -19,11 +19,9 @@ import java.util.*;
  * &#64;Getter &#64;Setter &#64;Accessors(fluent = true)
  * &#64;Config(name = "mymod-server")
  * public class CommonConfig implements ConfigData {
- *     &#64;ConfigEntry.Gui.Tooltip("帮助头部")
- *     private String helpHeader = "-----==== Help ====-----";
- *     &#64;ConfigEntry.Gui.Tooltip("每页数量")
- *     &#64;ConfigEntry.BoundedDiscrete(min = 1, max = 9999)
- *     private int helpInfoNumPerPage = 5;
+ *     &#64;ConfigEntry.Gui.CollapsibleObject
+ *     private HelpCategory help = new HelpCategory();
+ *     // ... 嵌套分类与 TestConfig 相同风格；运行时取值见 CommonConfig.get().help().helpHeader() 等
  * }
  *
  * // 2. 注册（Forge）
@@ -31,8 +29,9 @@ import java.util.*;
  *
  * // 3. 使用
  * CommonConfig config = CommonConfig.get();
- * String h = config.helpHeader();
- * config.helpHeader("new").helpInfoNumPerPage(10);
+ * String h = config.help().helpHeader();
+ * config.help().helpHeader("new");
+ * // 或直接 holder：config.holder().set(CommonConfig.Key.HELP_HEADER, "new");
  * }</pre>
  */
 public final class ForgeConfigAdapter {

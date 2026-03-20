@@ -3,26 +3,33 @@ package xin.vanilla.banira.common.network.packet;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.util.PacketUtils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
  */
 public class ConfigSyncToServer {
 
+    private static final long NOTIFY_OK_MS = 3000L;
+    private static final long NOTIFY_ERR_MS = 4500L;
+
     private final String configName;
     private final Map<String, String> changes;
 
     public ConfigSyncToServer(String configName, Map<String, String> changes) {
-        this.configName = configName = configName != null ? configName : "";
+        this.configName = configName != null ? configName : "";
         this.changes = changes != null ? new HashMap<>(changes) : new HashMap<>();
     }
 
@@ -46,29 +53,56 @@ public class ConfigSyncToServer {
         }
     }
 
-    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx, SimpleChannel replyChannel) {
         ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                ServerPlayerEntity player = ctx.get().getSender();
-                if (player == null || packet.changes.isEmpty()) return;
-
-                // 权限检查：需要 OP 2 级以上才能同步服务端配置
-                if (player.hasPermissions(2)) {
-                    ConfigHolder holder = ConfigRegistry.get(packet.configName);
-                    if (holder != null && holder.canSyncToServer()) {
-                        for (Map.Entry<String, String> e : packet.changes.entrySet()) {
-                            Object parsed = parseValue(holder, e.getKey(), e.getValue());
-                            if (parsed != null) {
-                                holder.set(e.getKey(), parsed);
-                            }
-                        }
-                        // 触发配置保存（若 Mod 注册了保存逻辑）
-                        saveConfig(holder);
+            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+                return;
+            }
+            ServerPlayerEntity player = ctx.get().getSender();
+            if (player == null) {
+                return;
+            }
+            if (packet.changes.isEmpty()) {
+                sendNotify(player, replyChannel, "config_editor_sync_server_empty", NOTIFY_ERR_MS);
+                return;
+            }
+            if (!player.hasPermissions(2)) {
+                sendNotify(player, replyChannel, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
+                return;
+            }
+            ConfigHolder holder = ConfigRegistry.get(packet.configName);
+            if (holder == null) {
+                sendNotify(player, replyChannel, "config_editor_sync_server_unknown_config", NOTIFY_ERR_MS, packet.configName);
+                return;
+            }
+            if (!holder.canSyncToServer()) {
+                sendNotify(player, replyChannel, "config_editor_sync_server_not_applicable", NOTIFY_ERR_MS);
+                return;
+            }
+            try {
+                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
+                    Object parsed = parseValue(holder, e.getKey(), e.getValue());
+                    if (parsed != null) {
+                        holder.set(e.getKey(), parsed);
                     }
                 }
+                saveConfig(holder);
+                sendNotify(player, replyChannel, "config_editor_sync_server_ok", NOTIFY_OK_MS,
+                        String.valueOf(packet.changes.size()));
+            } catch (Exception ex) {
+                String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                sendNotify(player, replyChannel, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    private static void sendNotify(ServerPlayerEntity player, SimpleChannel channel, String langKey, long durationMs, Object... args) {
+        Component text = args.length > 0
+                ? Component.transClientAuto(BaniraCodex.MODID, langKey, args)
+                : Component.transClientAuto(BaniraCodex.MODID, langKey);
+        NotificationToClient notify = new NotificationToClient(text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
+        PacketUtils.sendPacketToPlayer(channel, notify, player);
     }
 
     private static Object parseValue(ConfigHolder holder, String path, String value) {
@@ -90,7 +124,8 @@ public class ConfigSyncToServer {
                     return e;
                 case STRING_LIST:
                     if (value == null || value.isEmpty()) return java.util.Collections.emptyList();
-                    return java.util.Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toList());
+                    return java.util.Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                            .collect(java.util.stream.Collectors.toList());
                 default:
                     return value;
             }

@@ -132,7 +132,7 @@ public class DebugScreen extends BaniraScreen {
         testConfigBtn.id("test_config_editor");
         testConfigBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         testConfigBtn.text("配置编辑测试");
-        testConfigBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
+        // testConfigBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
         addWidget(testConfigBtn);
 
         ButtonWidget configBtn = new ButtonWidget(this);

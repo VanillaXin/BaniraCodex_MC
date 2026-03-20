@@ -55,9 +55,9 @@ public class BaniraCodex {
     );
 
     public BaniraCodex() {
-        // 配置必须在 CONFIG 加载阶段之前注册，故放在构造函数
+        // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
-        ForgeConfigAdapter.register(TestConfig.class, MODID);
+        // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
         // 注册Mod生命周期事件
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);

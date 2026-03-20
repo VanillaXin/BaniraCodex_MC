@@ -22,6 +22,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
@@ -618,9 +619,9 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
             NotificationManager.get().addNotification(n);
-            if (previousScreen() != null) {
-                onClose();
-            }
+            // if (previousScreen() != null) {
+            //     onClose();
+            // }
         } catch (Exception ex) {
             Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_failed", ex.getMessage()));
             n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
@@ -629,24 +630,34 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
-        collectModifiedFromWidgets();
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
         }
-        if (modifiedValues.isEmpty()) {
+        Map<String, Object> syncPayload = collectAllValuesFromWidgetsForSync();
+        if (syncPayload.isEmpty()) {
+            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_nothing"));
+            n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
+            NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, String> toSync = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
+        for (Map.Entry<String, Object> e : syncPayload.entrySet()) {
             toSync.put(e.getKey(), serializeValue(e.getValue()));
         }
-        NetworkInit.HANDLER.getChannel().sendToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
-        modifiedValues.clear();
-        for (Map.Entry<String, String> e : toSync.entrySet()) {
-            holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
+        try {
+            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            modifiedValues.clear();
+            for (Map.Entry<String, String> e : toSync.entrySet()) {
+                holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
+            }
+        } catch (Exception ex) {
+            Notification err = Notification.ofComponent(
+                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
+            NotificationManager.get().addNotification(err);
         }
     }
 
@@ -696,6 +707,24 @@ public class ConfigEditorScreen extends BaniraScreen {
                 modifiedValues.put(e.getKey(), v);
             }
         }
+    }
+
+    /**
+     * 从所有配置项控件读取当前展示值，用于「同步至服务端」。
+     * 与 {@link #collectModifiedFromWidgets} 不同：不比较 holder，保存后界面与本地一致仍可正常发包。
+     */
+    private Map<String, Object> collectAllValuesFromWidgetsForSync() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
+            if (!e.getValue().isValid()) {
+                continue;
+            }
+            Object v = e.getValue().getValue();
+            if (v != null) {
+                map.put(e.getKey(), v);
+            }
+        }
+        return map;
     }
 
     private boolean hasInvalidEntryWidgets() {

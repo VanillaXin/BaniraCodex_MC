@@ -25,8 +25,10 @@ import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
@@ -95,8 +97,11 @@ public final class InventoryQuickActionOverlay {
     private int contextY;
     private int contextPage;
     private ContextMenuKind contextMenuKind = ContextMenuKind.NONE;
+    /**
+     * 右键菜单从用户格打开时非空，根页提供「隐藏此格」；系统格为 null
+     */
     @Nullable
-    private String contextHideEntryId;
+    private String contextUserEntryIdForHide;
     private int contextScrollPx;
     private boolean contextScrollbarDragging;
     /**
@@ -145,8 +150,7 @@ public final class InventoryQuickActionOverlay {
 
     private enum ContextMenuKind {
         NONE,
-        SYSTEM,
-        USER_HIDE
+        TRAY
     }
 
     /**
@@ -161,7 +165,7 @@ public final class InventoryQuickActionOverlay {
         pressStartedSlot = -1;
         contextOpen = false;
         contextMenuKind = ContextMenuKind.NONE;
-        contextHideEntryId = null;
+        contextUserEntryIdForHide = null;
         contextScrollPx = 0;
         contextScrollbarDragging = false;
     }
@@ -729,15 +733,11 @@ public final class InventoryQuickActionOverlay {
         }
 
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            if (slot == 0) {
-                openSystemContextMenu((int) mouseX, (int) mouseY);
+            if (slot < 0) {
                 return true;
             }
-            if (slot >= 1) {
-                InventoryQuickActionEntry ue = users.get(slot - 1);
-                openUserHideContextMenu((int) mouseX, (int) mouseY, ue.id());
-                return true;
-            }
+            String hideTargetId = slot >= 1 ? users.get(slot - 1).id() : null;
+            openTrayContextMenu((int) mouseX, (int) mouseY, hideTargetId);
             return true;
         }
 
@@ -872,9 +872,9 @@ public final class InventoryQuickActionOverlay {
         }
     }
 
-    private void openSystemContextMenu(int mx, int my) {
-        contextMenuKind = ContextMenuKind.SYSTEM;
-        contextHideEntryId = null;
+    private void openTrayContextMenu(int mx, int my, @Nullable String userEntryIdForHide) {
+        contextMenuKind = ContextMenuKind.TRAY;
+        contextUserEntryIdForHide = userEntryIdForHide;
         contextOpen = true;
         contextPage = CTX_PAGE_ROOT;
         contextScrollPx = 0;
@@ -882,14 +882,12 @@ public final class InventoryQuickActionOverlay {
         contextY = my;
     }
 
-    private void openUserHideContextMenu(int mx, int my, String entryId) {
-        contextMenuKind = ContextMenuKind.USER_HIDE;
-        contextHideEntryId = entryId;
-        contextOpen = true;
-        contextPage = CTX_PAGE_ROOT;
-        contextScrollPx = 0;
-        contextX = mx;
-        contextY = my;
+    private static String trWord(String key) {
+        return Translator.of(BaniraCodex.MODID).translate(EnumI18nType.WORD, key);
+    }
+
+    private static String trFormat(String key, Object... args) {
+        return String.format(Translator.of(BaniraCodex.MODID).translate(EnumI18nType.FORMAT, key), args);
     }
 
     private static final class CtxRow {
@@ -913,26 +911,19 @@ public final class InventoryQuickActionOverlay {
 
     private List<CtxRow> buildContextRows() {
         List<CtxRow> L = new ArrayList<>();
-        if (contextMenuKind == ContextMenuKind.USER_HIDE) {
-            L.add(new CtxRow("隐藏", false, () -> {
-                if (contextHideEntryId != null) {
-                    layout.hiddenIconIds().add(contextHideEntryId);
-                    markSave();
-                }
-                contextOpen = false;
-            }));
+        if (contextMenuKind != ContextMenuKind.TRAY) {
             return L;
         }
 
         if (contextPage == CTX_PAGE_HIDDEN) {
-            L.add(new CtxRow("« 返回", true, () -> contextPage = CTX_PAGE_ROOT));
+            L.add(new CtxRow(trWord("quick_action.back"), true, () -> contextPage = CTX_PAGE_ROOT));
             if (layout.hiddenIconIds().isEmpty()) {
-                L.add(new CtxRow("(当前无隐藏项)", true, () -> {
+                L.add(new CtxRow(trWord("quick_action.hidden_empty"), true, () -> {
                 }));
             } else {
                 for (String id : layout.hiddenIconIds()) {
                     InventoryQuickActionEntry ent = InventoryQuickActionRegistry.get().getEntry(id);
-                    L.add(new CtxRow("恢复显示: " + id, true, () -> {
+                    L.add(new CtxRow(trFormat("quick_action.unhide", id), true, () -> {
                         layout.hiddenIconIds().remove(id);
                         markSave();
                     }, ent != null ? ent.quickIcon() : null));
@@ -941,60 +932,74 @@ public final class InventoryQuickActionOverlay {
             return L;
         }
         if (contextPage == CTX_PAGE_LAYOUT) {
-            L.add(new CtxRow("« 返回", true, () -> contextPage = CTX_PAGE_ROOT));
-            L.add(new CtxRow(String.format("格子边长: %d  (−)", layout.cellSize()), true,
+            L.add(new CtxRow(trWord("quick_action.back"), true, () -> contextPage = CTX_PAGE_ROOT));
+            L.add(new CtxRow(trFormat("quick_action.cell_minus", layout.cellSize()), true,
                     () -> layout.cellSize(Math.max(8, layout.cellSize() - 1))));
-            L.add(new CtxRow(String.format("格子边长: %d  (+)", layout.cellSize()), true,
+            L.add(new CtxRow(trFormat("quick_action.cell_plus", layout.cellSize()), true,
                     () -> layout.cellSize(Math.min(48, layout.cellSize() + 1))));
-            L.add(new CtxRow(String.format("每行格数: %d  (−)", layout.gridColumns()), true,
+            L.add(new CtxRow(trFormat("quick_action.cols_minus", layout.gridColumns()), true,
                     () -> layout.gridColumns(Math.max(1, layout.gridColumns() - 1))));
-            L.add(new CtxRow(String.format("每行格数: %d  (+)", layout.gridColumns()), true,
+            L.add(new CtxRow(trFormat("quick_action.cols_plus", layout.gridColumns()), true,
                     () -> layout.gridColumns(Math.min(16, layout.gridColumns() + 1))));
             return L;
         }
         if (contextPage == CTX_PAGE_POSITION) {
-            L.add(new CtxRow("« 返回", true, () -> contextPage = CTX_PAGE_ROOT));
-            L.add(new CtxRow("恢复默认位置（顶中·相对 0.5,0.02）", true, this::resetAnchorPreset));
-            String xLabel = "X: " + (layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE ? "相对" : "绝对")
-                    + "  " + String.format("%.3f", layout.anchorX()) + "  · 点击切换相对/绝对";
-            L.add(new CtxRow(xLabel, true, () ->
+            L.add(new CtxRow(trWord("quick_action.back"), true, () -> contextPage = CTX_PAGE_ROOT));
+            L.add(new CtxRow(trWord("quick_action.reset_anchor"), true, this::resetAnchorPreset));
+            String xMode = layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE
+                    ? trWord("quick_action.coord_rel") : trWord("quick_action.coord_abs");
+            L.add(new CtxRow(trFormat("quick_action.pos_axis", "X", layout.anchorX(), xMode), true, () ->
                     layout.coordinateModeX(layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE
                             ? EnumInventoryQuickCoordinateMode.ABSOLUTE
                             : EnumInventoryQuickCoordinateMode.RELATIVE)));
-            String yLabel = "Y: " + (layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE ? "相对" : "绝对")
-                    + "  " + String.format("%.3f", layout.anchorY()) + "  · 点击切换相对/绝对";
-            L.add(new CtxRow(yLabel, true, () ->
+            String yMode = layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE
+                    ? trWord("quick_action.coord_rel") : trWord("quick_action.coord_abs");
+            L.add(new CtxRow(trFormat("quick_action.pos_axis", "Y", layout.anchorY(), yMode), true, () ->
                     layout.coordinateModeY(layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE
                             ? EnumInventoryQuickCoordinateMode.ABSOLUTE
                             : EnumInventoryQuickCoordinateMode.RELATIVE)));
-            L.add(new CtxRow("锚点: " + layout.groupAnchor().name() + "  (点击下一预设)", true, () -> {
+            L.add(new CtxRow(trFormat("quick_action.anchor_cycle", layout.groupAnchor().name()), true, () -> {
                 EnumPosition[] vals = EnumPosition.values();
                 int ni = (layout.groupAnchor().ordinal() + 1) % vals.length;
                 layout.groupAnchor(vals[ni]);
             }));
-            L.add(new CtxRow("向左微调", true, () -> nudgeAnchor(-1, 0)));
-            L.add(new CtxRow("向右微调", true, () -> nudgeAnchor(1, 0)));
-            L.add(new CtxRow("向上微调", true, () -> nudgeAnchor(0, -1)));
-            L.add(new CtxRow("向下微调", true, () -> nudgeAnchor(0, 1)));
+            L.add(new CtxRow(trWord("quick_action.nudge_w"), true, () -> nudgeAnchor(-1, 0)));
+            L.add(new CtxRow(trWord("quick_action.nudge_e"), true, () -> nudgeAnchor(1, 0)));
+            L.add(new CtxRow(trWord("quick_action.nudge_n"), true, () -> nudgeAnchor(0, -1)));
+            L.add(new CtxRow(trWord("quick_action.nudge_s"), true, () -> nudgeAnchor(0, 1)));
             return L;
         }
 
+        // region 根页：任意格统一首项为进入/退出编辑；编辑态下与系统格相同的子菜单
         if (layout.layoutEditMode()) {
-            L.add(new CtxRow("退出编辑模式", true, () -> layout.layoutEditMode(false)));
-            L.add(new CtxRow("布局与网格 »", true, () -> contextPage = CTX_PAGE_LAYOUT));
-            L.add(new CtxRow("位置与锚点 »", true, () -> contextPage = CTX_PAGE_POSITION));
-            L.add(new CtxRow("隐藏图标 »", true, () -> contextPage = CTX_PAGE_HIDDEN));
+            L.add(new CtxRow(trWord("quick_action.exit_edit"), true, () -> layout.layoutEditMode(false)));
+            L.add(new CtxRow(trWord("quick_action.menu_layout"), true, () -> contextPage = CTX_PAGE_LAYOUT));
+            L.add(new CtxRow(trWord("quick_action.menu_position"), true, () -> contextPage = CTX_PAGE_POSITION));
+            L.add(new CtxRow(trWord("quick_action.menu_hidden"), true, () -> contextPage = CTX_PAGE_HIDDEN));
         } else {
-            L.add(new CtxRow("进入编辑模式", true, () -> layout.layoutEditMode(true)));
-            for (InventoryQuickActionEntry e : InventoryQuickActionRegistry.get().allEntriesInOrder()) {
-                if (e.display() != EnumInventoryQuickActionDisplay.ICON) {
-                    continue;
+            L.add(new CtxRow(trWord("quick_action.enter_edit"), true, () -> layout.layoutEditMode(true)));
+            if (contextUserEntryIdForHide != null) {
+                L.add(new CtxRow(trWord("quick_action.hide_slot"), false, () -> {
+                    layout.hiddenIconIds().add(contextUserEntryIdForHide);
+                    markSave();
+                    contextOpen = false;
+                    contextMenuKind = ContextMenuKind.NONE;
+                    contextUserEntryIdForHide = null;
+                }));
+            }
+            // 仅系统格展示注册动作列表
+            if (contextUserEntryIdForHide == null) {
+                for (InventoryQuickActionEntry e : InventoryQuickActionRegistry.get().allEntriesInOrder()) {
+                    if (e.display() != EnumInventoryQuickActionDisplay.ICON) {
+                        continue;
+                    }
+                    L.add(new CtxRow(e.label().toVanilla().getString(), false, () ->
+                            fireAction(e, contextClickMouseX, contextClickMouseY), e.quickIcon()));
                 }
-                L.add(new CtxRow(e.label().toVanilla().getString(), false, () ->
-                        fireAction(e, contextClickMouseX, contextClickMouseY), e.quickIcon()));
             }
         }
-        L.add(new CtxRow("关闭", false, () -> contextOpen = false));
+        // endregion 根页
+
         return L;
     }
 

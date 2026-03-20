@@ -12,7 +12,7 @@ import javax.annotation.Nullable;
  * 点击或从下拉选择某项时回传给注册回调的上下文
  */
 @Accessors(chain = true, fluent = true)
-public class InventoryQuickActionContext {
+public class QuickActionContext {
 
     @Getter
     @Setter

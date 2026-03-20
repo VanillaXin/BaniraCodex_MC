@@ -106,6 +106,7 @@
   "word.banira_codex.tag_list_confirm_add": "Add",
   "word.banira_codex.tag_list_row_hint": "Double-click to edit · Right-click to copy",
   "word.banira_codex.tag_list_copied": "Copied to clipboard",
+  "word.banira_codex.quick_action.no_registered_entries": "(No quick actions registered)",
   "word.banira_codex.quick_action.enter_edit": "Edit layout…",
   "word.banira_codex.quick_action.exit_edit": "Exit edit mode",
   "word.banira_codex.quick_action.back": "‹ Back",

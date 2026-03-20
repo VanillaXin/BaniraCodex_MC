@@ -10,7 +10,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.gui.quickaction.InventoryQuickActionOverlay;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 
 /**
@@ -22,7 +22,7 @@ public final class GameEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiOpen(GuiOpenEvent event) {
-        InventoryQuickActionOverlay.get().resetInteractionState();
+        QuickActionOverlay.get().resetInteractionState();
         BaniraEventBus.Client.fireGuiChanged(event);
     }
 
@@ -35,8 +35,8 @@ public final class GameEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
-        if (InventoryQuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            InventoryQuickActionOverlay.get().tickInteraction(event.getGui(), event.getMouseX(), event.getMouseY());
+        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
+            QuickActionOverlay.get().tickInteraction(event.getGui(), event.getMouseX(), event.getMouseY());
         }
     }
 
@@ -49,16 +49,16 @@ public final class GameEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPostInventoryQuickAction(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (InventoryQuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            InventoryQuickActionOverlay.get().render(event.getMatrixStack(), event.getGui(), event.getMouseX(), event.getMouseY(), event.getRenderPartialTicks());
-            InventoryQuickActionOverlay.get().flushSaveIfNeeded();
+        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
+            QuickActionOverlay.get().render(event.getMatrixStack(), event.getGui(), event.getMouseX(), event.getMouseY(), event.getRenderPartialTicks());
+            QuickActionOverlay.get().flushSaveIfNeeded();
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseClickedPre(GuiScreenEvent.MouseClickedEvent.Pre event) {
-        if (InventoryQuickActionOverlay.get().handleMouseClicked(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+        if (QuickActionOverlay.get().handleMouseClicked(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
     }
@@ -66,7 +66,7 @@ public final class GameEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseReleasedPre(GuiScreenEvent.MouseReleasedEvent.Pre event) {
-        if (InventoryQuickActionOverlay.get().handleMouseReleased(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+        if (QuickActionOverlay.get().handleMouseReleased(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
     }
@@ -74,7 +74,7 @@ public final class GameEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseScrollPre(GuiScreenEvent.MouseScrollEvent.Pre event) {
-        if (InventoryQuickActionOverlay.get().handleMouseScroll(event.getGui(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
+        if (QuickActionOverlay.get().handleMouseScroll(event.getGui(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
             event.setCanceled(true);
         }
     }

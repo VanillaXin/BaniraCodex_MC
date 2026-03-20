@@ -12,10 +12,10 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /**
- * 单条快捷操作定义（由 {@link InventoryQuickActionRegistry} 持有）
+ * 单条快捷操作定义（由 {@link QuickActionRegistry} 持有）
  */
 @Accessors(chain = true, fluent = true)
-public class InventoryQuickActionEntry {
+public class QuickActionEntry {
 
     @Getter
     @Setter
@@ -30,15 +30,15 @@ public class InventoryQuickActionEntry {
     @Getter
     @Setter
     @Nonnull
-    private InventoryQuickIcon quickIcon = InventoryQuickIcon.item(new ItemStack(Items.PAPER));
+    private QuickIcon quickIcon = QuickIcon.item(new ItemStack(Items.PAPER));
 
     @Getter
     @Setter
     @Nonnull
-    private EnumInventoryQuickActionDisplay display = EnumInventoryQuickActionDisplay.ICON;
+    private EnumQuickActionDisplay display = EnumQuickActionDisplay.ICON;
 
     @Getter
     @Setter
     @Nullable
-    private Consumer<InventoryQuickActionContext> onActivate;
+    private Consumer<QuickActionContext> onActivate;
 }

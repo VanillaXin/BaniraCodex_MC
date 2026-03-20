@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.CreativeScreen;
@@ -20,9 +19,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -43,7 +44,7 @@ import java.util.List;
  */
 @OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
-public final class InventoryQuickActionOverlay {
+public final class QuickActionOverlay {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String LAYOUT_FILE = "quick_action.json";
@@ -74,16 +75,25 @@ public final class InventoryQuickActionOverlay {
     private static final int CTX_PAGE_HIDDEN = 1;
     private static final int CTX_PAGE_LAYOUT = 2;
     private static final int CTX_PAGE_POSITION = 3;
-    private static final ResourceLocation BRAND_TEXTURE = new ResourceLocation(BaniraCodex.MODID, "textures/gui/quick_action_brand.png");
+    private static final String BANIRA_TEXTURE_NAME = "logo.png";
+    private static ResourceLocation BANIRA_TEXTURE = null;
 
-    private static final InventoryQuickActionOverlay INSTANCE = new InventoryQuickActionOverlay();
+    private static final QuickActionOverlay INSTANCE = new QuickActionOverlay();
 
-    public static InventoryQuickActionOverlay get() {
+    public static QuickActionOverlay get() {
         return INSTANCE;
     }
 
+    /**
+     * 资源或纹理重载后调用：清除系统格 logo 与 {@link QuickIcon} 缓存，下次绘制时重新走 {@link TextureUtils#loadCustomTexture}。
+     */
+    public static void resetSystemIconTextureCache() {
+        BANIRA_TEXTURE = null;
+        INSTANCE.cachedSystemIcon = null;
+    }
+
     @Getter
-    private final InventoryQuickActionLayout layout = new InventoryQuickActionLayout();
+    private final QuickActionLayout layout = new QuickActionLayout();
 
     private boolean layoutLoaded;
 
@@ -102,6 +112,10 @@ public final class InventoryQuickActionOverlay {
      */
     @Nullable
     private String contextUserEntryIdForHide;
+    /**
+     * 系统格左键菜单：与右键类似但不显示「进入/退出编辑模式」行
+     */
+    private boolean contextOmitEditToggleRow;
     private int contextScrollPx;
     private boolean contextScrollbarDragging;
     /**
@@ -140,12 +154,12 @@ public final class InventoryQuickActionOverlay {
     private volatile boolean savePending;
 
     @Nullable
-    private InventoryQuickIcon cachedSystemIcon;
+    private QuickIcon cachedSystemIcon;
 
     @Nullable
     private String contextTooltipLine;
 
-    private InventoryQuickActionOverlay() {
+    private QuickActionOverlay() {
     }
 
     private enum ContextMenuKind {
@@ -166,6 +180,7 @@ public final class InventoryQuickActionOverlay {
         contextOpen = false;
         contextMenuKind = ContextMenuKind.NONE;
         contextUserEntryIdForHide = null;
+        contextOmitEditToggleRow = false;
         contextScrollPx = 0;
         contextScrollbarDragging = false;
     }
@@ -176,8 +191,8 @@ public final class InventoryQuickActionOverlay {
     }
 
     private void syncLayoutWithRegistry() {
-        layout.syncIconBarWithRegistry(InventoryQuickActionRegistry.get().registeredIconEntryIds());
-        layout.hiddenIconIds().removeIf(id -> !InventoryQuickActionRegistry.get().registeredIconEntryIds().contains(id));
+        layout.syncIconBarWithRegistry(QuickActionRegistry.get().registeredIconEntryIds());
+        layout.hiddenIconIds().removeIf(id -> !QuickActionRegistry.get().registeredIconEntryIds().contains(id));
     }
 
     private void ensureLoaded() {
@@ -243,54 +258,129 @@ public final class InventoryQuickActionOverlay {
         return false;
     }
 
-    private InventoryQuickIcon systemIcon() {
+    private QuickIcon systemIcon() {
         if (cachedSystemIcon == null) {
-            if (TextureUtils.isTextureAvailable(BRAND_TEXTURE)) {
-                cachedSystemIcon = InventoryQuickIcon.resource(BRAND_TEXTURE);
+            if (BANIRA_TEXTURE == null) {
+                BANIRA_TEXTURE = TextureUtils.loadCustomTexture(Identifier.id(), BANIRA_TEXTURE_NAME);
+            }
+            if (TextureUtils.isTextureAvailable(BANIRA_TEXTURE)) {
+                cachedSystemIcon = QuickIcon.resource(BANIRA_TEXTURE);
             } else {
-                cachedSystemIcon = InventoryQuickIcon.item(Items.BOOK);
+                cachedSystemIcon = QuickIcon.item(Items.BOOK);
             }
         }
         return cachedSystemIcon;
     }
 
-    private List<InventoryQuickActionEntry> visibleUserEntries() {
-        List<InventoryQuickActionEntry> out = new ArrayList<>();
-        InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
-        for (String id : layout.iconBarOrder()) {
-            if (layout.hiddenIconIds().contains(id)) {
+    @Nullable
+    private QuickActionEntry userEntryAtLinearSlot(int linearSlot) {
+        if (linearSlot < 1) {
+            return null;
+        }
+        List<String> g = layout.userSlotGrid();
+        int idx = linearSlot - 1;
+        if (idx < 0 || idx >= g.size()) {
+            return null;
+        }
+        String id = g.get(idx);
+        if (id == null || id.isEmpty() || layout.hiddenIconIds().contains(id)) {
+            return null;
+        }
+        QuickActionEntry e = QuickActionRegistry.get().getEntry(id);
+        if (e == null || e.display() != EnumQuickActionDisplay.ICON) {
+            return null;
+        }
+        return e;
+    }
+
+    private boolean slotShowsVisibleUserIcon(int linearSlot, List<String> userGrid) {
+        if (linearSlot < 1) {
+            return false;
+        }
+        int idx = linearSlot - 1;
+        if (idx < 0 || idx >= userGrid.size()) {
+            return false;
+        }
+        String id = userGrid.get(idx);
+        if (id == null || id.isEmpty() || layout.hiddenIconIds().contains(id)) {
+            return false;
+        }
+        QuickActionEntry e = QuickActionRegistry.get().getEntry(id);
+        return e != null && e.display() == EnumQuickActionDisplay.ICON;
+    }
+
+    /**
+     * 含系统格 (0,0) 与所有可见用户图标的轴对齐包围盒，用于锚点百分比按实际占位尺寸计算。
+     */
+    private int[] occupiedColRowBounds(int cols, List<String> userGrid) {
+        int minC = 0;
+        int maxC = 0;
+        int minR = 0;
+        int maxR = 0;
+        int slots = cols * cols;
+        for (int s = 1; s < slots; s++) {
+            if (!slotShowsVisibleUserIcon(s, userGrid)) {
                 continue;
             }
-            InventoryQuickActionEntry e = reg.getEntry(id);
-            if (e != null && e.display() == EnumInventoryQuickActionDisplay.ICON) {
-                out.add(e);
-            }
+            int col = s % cols;
+            int row = s / cols;
+            minC = Math.min(minC, col);
+            maxC = Math.max(maxC, col);
+            minR = Math.min(minR, row);
+            maxR = Math.max(maxR, row);
         }
-        return out;
+        return new int[]{minC, maxC, minR, maxR};
     }
 
-    private List<String> visibleUserIds() {
-        List<String> ids = new ArrayList<>();
-        for (InventoryQuickActionEntry e : visibleUserEntries()) {
-            ids.add(e.id());
-        }
-        return ids;
+    private int contentWidthPx(int minCol, int maxCol, int cell, int gap) {
+        int n = maxCol - minCol + 1;
+        return n * cell + Math.max(0, n - 1) * gap;
     }
 
-    private List<String> previewUserIdsForDrag(int fromLinearSlot, int toLinearSlot) {
-        List<String> vis = new ArrayList<>(visibleUserIds());
-        int from = fromLinearSlot - 1;
-        int to = toLinearSlot - 1;
-        if (from < 0 || from >= vis.size() || to < 0 || to >= vis.size()) {
-            return vis;
-        }
-        String moved = vis.remove(from);
-        vis.add(to, moved);
-        return vis;
+    private int contentHeightPx(int minRow, int maxRow, int cell, int gap) {
+        int n = maxRow - minRow + 1;
+        return n * cell + Math.max(0, n - 1) * gap;
     }
 
-    private int gridRows(int cols, int slots) {
-        return Math.max(1, (slots + cols - 1) / cols);
+    private List<String> copyUserSlotGrid() {
+        List<String> g = new ArrayList<>();
+        for (String s : layout.userSlotGrid()) {
+            g.add(s == null ? "" : s);
+        }
+        int target = layout.userSlotCount();
+        while (g.size() < target) {
+            g.add("");
+        }
+        return g;
+    }
+
+    private void applyUserGridMoveOnCopy(List<String> g, int fromLinear, int toLinear) {
+        if (fromLinear < 1 || toLinear < 1) {
+            return;
+        }
+        int i = fromLinear - 1;
+        int j = toLinear - 1;
+        if (i < 0 || i >= g.size() || j < 0 || j >= g.size()) {
+            return;
+        }
+        String a = g.get(i) == null ? "" : g.get(i);
+        String b = g.get(j) == null ? "" : g.get(j);
+        if (a.isEmpty()) {
+            return;
+        }
+        if (b.isEmpty()) {
+            g.set(j, a);
+            g.set(i, "");
+        } else {
+            g.set(i, b);
+            g.set(j, a);
+        }
+    }
+
+    private List<String> previewUserSlotGridForDrag(int fromLinearSlot, int toLinearSlot) {
+        List<String> g = copyUserSlotGrid();
+        applyUserGridMoveOnCopy(g, fromLinearSlot, toLinearSlot);
+        return g;
     }
 
     private int panelWidthPx(int cols, int cell, int gap) {
@@ -307,10 +397,10 @@ public final class InventoryQuickActionOverlay {
 
     private void drawSlotBorder(MatrixStack stack, int gx, int gy, int cell, int argbBorder) {
         int t = 1;
-        AbstractGui.fill(stack, gx, gy, gx + cell, gy + t, argbBorder);
-        AbstractGui.fill(stack, gx, gy + cell - t, gx + cell, gy + cell, argbBorder);
-        AbstractGui.fill(stack, gx, gy, gx + t, gy + cell, argbBorder);
-        AbstractGui.fill(stack, gx + cell - t, gy, gx + cell, gy + cell, argbBorder);
+        AbstractGuiUtils.fill(stack, gx, gy, cell, t, argbBorder);
+        AbstractGuiUtils.fill(stack, gx, gy + cell - t, cell, t, argbBorder);
+        AbstractGuiUtils.fill(stack, gx, gy, t, cell, argbBorder);
+        AbstractGuiUtils.fill(stack, gx + cell - t, gy, t, cell, argbBorder);
     }
 
     /**
@@ -324,10 +414,10 @@ public final class InventoryQuickActionOverlay {
         int x1 = gx + cell - inset;
         int y1 = gy + cell - inset;
         int thick = 1;
-        AbstractGui.fill(stack, x0, y0, x1, y0 + thick, c);
-        AbstractGui.fill(stack, x0, y1 - thick, x1, y1, c);
-        AbstractGui.fill(stack, x0, y0, x0 + thick, y1, c);
-        AbstractGui.fill(stack, x1 - thick, y0, x1, y1, c);
+        AbstractGuiUtils.fill(stack, x0, y0, x1 - x0, thick, c);
+        AbstractGuiUtils.fill(stack, x0, y1 - thick, x1 - x0, thick, c);
+        AbstractGuiUtils.fill(stack, x0, y0, thick, y1 - y0, c);
+        AbstractGuiUtils.fill(stack, x1 - thick, y0, thick, y1 - y0, c);
     }
 
     private void slotToCr(int slot, int cols, int[] out) {
@@ -354,6 +444,44 @@ public final class InventoryQuickActionOverlay {
     }
 
     /**
+     * 命中格：系统格始终可命中；用户格仅当有可见图标时可命中，除非处于编辑拖拽且允许空位落点。
+     */
+    private int hitSlotInteractive(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slotsTotal,
+                                   List<String> userGrid, boolean allowEmptyUserSlotsForDrop) {
+        int h = hitSlot(mx, my, trayX, trayY, cols, rows, cell, gap, slotsTotal);
+        if (h < 0) {
+            return -1;
+        }
+        if (h == 0) {
+            return 0;
+        }
+        if (slotShowsVisibleUserIcon(h, userGrid)) {
+            return h;
+        }
+        return allowEmptyUserSlotsForDrop ? h : -1;
+    }
+
+    /**
+     * 鼠标是否落在任意「有内容的格」上（不含空用户格与间隙），用于是否由快捷栏消费点击。
+     */
+    private boolean hitAnyActiveSlot(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slotsTotal,
+                                     List<String> userGrid) {
+        for (int s = 0; s < slotsTotal; s++) {
+            if (s >= 1 && !slotShowsVisibleUserIcon(s, userGrid)) {
+                continue;
+            }
+            int[] cr = new int[2];
+            slotToCr(s, cols, cr);
+            int[] xy = new int[2];
+            cellOrigin(trayX, trayY, cr[0], cr[1], cell, gap, xy);
+            if (mx >= xy[0] && my >= xy[1] && mx < xy[0] + cell && my < xy[1] + cell) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 整块托盘矩形（含格子间隙），用于吸收点击、拖动落点辅助。
      */
     private boolean hitPanel(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap) {
@@ -363,12 +491,12 @@ public final class InventoryQuickActionOverlay {
     }
 
     /**
-     * 在间隙等非单元格像素上时，取距鼠标最近的「用户格」线性下标（1..slots-1）。
+     * 在间隙等非单元格像素上时，取距鼠标最近的「用户格」线性下标（1 .. cols²-1）。
      */
-    private int nearestUserLinearSlot(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slots) {
+    private int nearestUserLinearSlot(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slotsTotal) {
         int best = 1;
         double bestD = Double.MAX_VALUE;
-        for (int s = 1; s < slots; s++) {
+        for (int s = 1; s < slotsTotal; s++) {
             int[] cr = new int[2];
             slotToCr(s, cols, cr);
             int[] xy = new int[2];
@@ -387,13 +515,13 @@ public final class InventoryQuickActionOverlay {
     /**
      * 解析用户图标拖放目标格：优先精确落在格内，否则在托盘内则取最近用户格。
      */
-    private int resolveUserDropLinearSlot(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slots) {
-        int h = hitSlot(mx, my, trayX, trayY, cols, rows, cell, gap, slots);
+    private int resolveUserDropLinearSlot(double mx, double my, int trayX, int trayY, int cols, int rows, int cell, int gap, int slotsTotal) {
+        int h = hitSlot(mx, my, trayX, trayY, cols, rows, cell, gap, slotsTotal);
         if (h >= 1) {
             return h;
         }
-        if (slots > 1 && hitPanel(mx, my, trayX, trayY, cols, rows, cell, gap)) {
-            return nearestUserLinearSlot(mx, my, trayX, trayY, cols, rows, cell, gap, slots);
+        if (slotsTotal > 1 && hitPanel(mx, my, trayX, trayY, cols, rows, cell, gap)) {
+            return nearestUserLinearSlot(mx, my, trayX, trayY, cols, rows, cell, gap, slotsTotal);
         }
         return -1;
     }
@@ -454,23 +582,26 @@ public final class InventoryQuickActionOverlay {
         editDragFromSlot = -1;
         editDragHoverSlot = -1;
 
-        List<InventoryQuickActionEntry> users = visibleUserEntries();
         int cols = Math.max(1, layout.gridColumns());
-        int slots = 1 + users.size();
-        int rows = gridRows(cols, slots);
+        int rows = cols;
+        int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        int pw = panelWidthPx(cols, cell, gap);
-        int ph = panelHeightPx(rows, cell, gap);
+        List<String> userGrid = layout.userSlotGrid();
+        int[] cr = occupiedColRowBounds(cols, userGrid);
+        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
+        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
+        int insetX = cr[0] * (cell + gap);
+        int insetY = cr[2] * (cell + gap);
         double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), pw, ph, off);
-        double tlX = trayTopLeftX(pw, ph, off[0], off[1]);
-        double tlY = trayTopLeftY(pw, ph, off[0], off[1]);
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
+        double tlX = trayTopLeftX(off[0], insetX);
+        double tlY = trayTopLeftY(off[1], insetY);
         int trayXi = (int) Math.round(tlX);
         int trayYi = (int) Math.round(tlY);
-        int releaseSlot = resolveUserDropLinearSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
+        int releaseSlot = resolveUserDropLinearSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal);
         if (releaseSlot >= 1 && from >= 1 && from != releaseSlot) {
-            moveVisibleUserByLinearSlot(from, releaseSlot);
+            layout.moveUserBetweenLinearSlots(from, releaseSlot);
             markSave();
             flushSaveIfNeeded();
         }
@@ -482,7 +613,7 @@ public final class InventoryQuickActionOverlay {
             return;
         }
         ensureLoaded();
-        InventoryQuickActionRegistry.get().validateMenuAnchor();
+        QuickActionRegistry.get().validateMenuAnchor();
         pollDragCancel();
         pollEditIconDragEnd();
 
@@ -493,31 +624,35 @@ public final class InventoryQuickActionOverlay {
         lastScreenW = mc.getWindow().getGuiScaledWidth();
         lastScreenH = mc.getWindow().getGuiScaledHeight();
 
-        List<InventoryQuickActionEntry> users = visibleUserEntries();
         int cols = Math.max(1, layout.gridColumns());
-        int slots = 1 + users.size();
-        int rows = gridRows(cols, slots);
+        int rows = cols;
+        int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        int pw = panelWidthPx(cols, cell, gap);
-        int ph = panelHeightPx(rows, cell, gap);
+        List<String> userGrid = layout.userSlotGrid();
+        int[] occCr = occupiedColRowBounds(cols, userGrid);
+        int cw = contentWidthPx(occCr[0], occCr[1], cell, gap);
+        int ch = contentHeightPx(occCr[2], occCr[3], cell, gap);
+        int insetX = occCr[0] * (cell + gap);
+        int insetY = occCr[2] * (cell + gap);
 
         double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), pw, ph, off);
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
 
-        double tlX = trayTopLeftX(pw, ph, off[0], off[1]);
-        double tlY = trayTopLeftY(pw, ph, off[0], off[1]);
+        double tlX = trayTopLeftX(off[0], insetX);
+        double tlY = trayTopLeftY(off[1], insetY);
 
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
-            applyAnchorFromTopLeft(tlX, tlY, pw, ph, off[0], off[1]);
+            applyAnchorFromTopLeft(tlX, tlY, off[0], off[1], insetX, insetY);
         }
 
         int trayXi = (int) Math.round(tlX);
         int trayYi = (int) Math.round(tlY);
 
-        hoveredSlot = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
+        boolean allowEmptyHover = layout.layoutEditMode() && editIconDragging;
+        hoveredSlot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, allowEmptyHover);
 
         stack.pushPose();
         stack.translate(0, 0, 800);
@@ -529,18 +664,21 @@ public final class InventoryQuickActionOverlay {
         int iconSize = Math.max(8, cell - 2 * ICON_CELL_INSET);
         int iconOff = (cell - iconSize) / 2;
 
-        List<String> previewIds = null;
+        List<String> previewGrid = null;
         if (layout.layoutEditMode() && editIconDragging && editDragFromSlot >= 1 && editDragHoverSlot >= 1) {
-            previewIds = previewUserIdsForDrag(editDragFromSlot, editDragHoverSlot);
+            previewGrid = previewUserSlotGridForDrag(editDragFromSlot, editDragHoverSlot);
         }
 
-        InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
-        for (int s = 0; s < slots; s++) {
+        QuickActionRegistry reg = QuickActionRegistry.get();
+        for (int s = 0; s < slotsTotal; s++) {
             int[] cr = new int[2];
             slotToCr(s, cols, cr);
             int[] xy = new int[2];
             cellOrigin(trayXi, trayYi, cr[0], cr[1], cell, gap, xy);
-            if (layout.layoutEditMode()) {
+            List<String> gChrome = previewGrid != null ? previewGrid : userGrid;
+            boolean userFilledChrome = s >= 1 && slotShowsVisibleUserIcon(s, gChrome);
+            boolean dropEmptyHint = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot && s >= 1 && !userFilledChrome;
+            if (layout.layoutEditMode() && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawSlotBorder(stack, xy[0], xy[1], cell, borderRgb);
             }
             int ix = xy[0] + iconOff;
@@ -550,29 +688,30 @@ public final class InventoryQuickActionOverlay {
             } else {
                 boolean skipIcon = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot;
                 if (!skipIcon) {
-                    InventoryQuickActionEntry drawEntry;
-                    if (previewIds != null) {
-                        String id = previewIds.get(s - 1);
+                    List<String> g = previewGrid != null ? previewGrid : userGrid;
+                    int gi = s - 1;
+                    String id = gi >= 0 && gi < g.size() && g.get(gi) != null ? g.get(gi) : "";
+                    QuickActionEntry drawEntry = null;
+                    if (!id.isEmpty() && !layout.hiddenIconIds().contains(id)) {
                         drawEntry = reg.getEntry(id);
-                    } else {
-                        drawEntry = users.get(s - 1);
                     }
-                    if (drawEntry != null) {
+                    if (drawEntry != null && drawEntry.display() == EnumQuickActionDisplay.ICON) {
                         drawEntry.quickIcon().render(stack, mc, ix, iy, iconSize);
                     }
                 }
             }
-            if (layout.layoutEditMode() && s == hoveredSlot) {
+            if (layout.layoutEditMode() && s == hoveredSlot && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
-            } else if (s == hoveredSlot && !layout.layoutEditMode()) {
+            } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
                 int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
-                AbstractGui.fill(stack, xy[0] - 1, xy[1] - 1, xy[0] + cell + 1, xy[1] + cell + 1, hi);
+                AbstractGuiUtils.fill(stack, xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi);
             }
         }
 
         if (layout.layoutEditMode() && editIconDragging && editDragFromSlot >= 1) {
-            String dragId = visibleUserIds().get(editDragFromSlot - 1);
-            InventoryQuickActionEntry dragged = reg.getEntry(dragId);
+            int di = editDragFromSlot - 1;
+            String dragId = di >= 0 && di < userGrid.size() && userGrid.get(di) != null ? userGrid.get(di) : "";
+            QuickActionEntry dragged = dragId.isEmpty() ? null : reg.getEntry(dragId);
             if (dragged != null) {
                 int gx = mouseX - cell / 2;
                 int gy = mouseY - cell / 2;
@@ -603,18 +742,21 @@ public final class InventoryQuickActionOverlay {
         pollEditIconDragEnd();
         updateContextScrollbarDrag(mouseX, mouseY);
 
-        List<InventoryQuickActionEntry> users = visibleUserEntries();
         int cols = Math.max(1, layout.gridColumns());
-        int slots = 1 + users.size();
-        int rows = gridRows(cols, slots);
+        int rows = cols;
+        int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        int pw = panelWidthPx(cols, cell, gap);
-        int ph = panelHeightPx(rows, cell, gap);
+        List<String> userGrid = layout.userSlotGrid();
+        int[] cr = occupiedColRowBounds(cols, userGrid);
+        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
+        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
+        int insetX = cr[0] * (cell + gap);
+        int insetY = cr[2] * (cell + gap);
         double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), pw, ph, off);
-        double tlX = trayTopLeftX(pw, ph, off[0], off[1]);
-        double tlY = trayTopLeftY(pw, ph, off[0], off[1]);
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
+        double tlX = trayTopLeftX(off[0], insetX);
+        double tlY = trayTopLeftY(off[1], insetY);
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
@@ -622,17 +764,20 @@ public final class InventoryQuickActionOverlay {
         int trayXi = (int) Math.round(tlX);
         int trayYi = (int) Math.round(tlY);
 
-        int hit = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
-        boolean inPanel = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
+        boolean inPanelGrid = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
         long win = mc().getWindow().getWindow();
         boolean leftDown = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 
-        if (layout.layoutEditMode() && editIconDragging && slots > 1 && inPanel) {
-            int h = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
-            editDragHoverSlot = h >= 1 ? h : nearestUserLinearSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
+        if (layout.layoutEditMode() && editIconDragging && slotsTotal > 1) {
+            if (inPanelGrid) {
+                int h = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal);
+                editDragHoverSlot = h >= 1 ? h : nearestUserLinearSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal);
+            } else {
+                editDragHoverSlot = -1;
+            }
         }
 
-        if (leftDown && leftDownOnPanel && !draggingTray && !editIconDragging && pressStartedSlot == 0 && inPanel) {
+        if (leftDown && leftDownOnPanel && !draggingTray && !editIconDragging && pressStartedSlot == 0 && inPanelGrid) {
             if (System.currentTimeMillis() - leftPressStartMs >= LONG_PRESS_MS) {
                 draggingTray = true;
                 dragGrabDx = mouseX - tlX;
@@ -642,7 +787,7 @@ public final class InventoryQuickActionOverlay {
         }
 
         if (leftDown && leftDownOnPanel && layout.layoutEditMode() && !draggingTray && !editIconDragging
-                && pressStartedSlot >= 1 && inPanel) {
+                && pressStartedSlot >= 1 && inPanelGrid && userEntryAtLinearSlot(pressStartedSlot) != null) {
             if (System.currentTimeMillis() - leftPressStartMs >= LONG_PRESS_MS) {
                 editIconDragging = true;
                 editDragFromSlot = pressStartedSlot;
@@ -681,26 +826,30 @@ public final class InventoryQuickActionOverlay {
             return false;
         }
         ensureLoaded();
-        List<InventoryQuickActionEntry> users = visibleUserEntries();
         int cols = Math.max(1, layout.gridColumns());
-        int slots = 1 + users.size();
-        int rows = gridRows(cols, slots);
+        int rows = cols;
+        int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        int pw = panelWidthPx(cols, cell, gap);
-        int ph = panelHeightPx(rows, cell, gap);
+        List<String> userGrid = layout.userSlotGrid();
+        int[] cr = occupiedColRowBounds(cols, userGrid);
+        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
+        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
+        int insetX = cr[0] * (cell + gap);
+        int insetY = cr[2] * (cell + gap);
         double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), pw, ph, off);
-        double tlX = trayTopLeftX(pw, ph, off[0], off[1]);
-        double tlY = trayTopLeftY(pw, ph, off[0], off[1]);
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
+        double tlX = trayTopLeftX(off[0], insetX);
+        double tlY = trayTopLeftY(off[1], insetY);
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
         }
         int trayXi = (int) Math.round(tlX);
         int trayYi = (int) Math.round(tlY);
-        int slot = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
-        boolean inPanel = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
+        boolean inQuickActionTarget = hitAnyActiveSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid)
+                || (layout.layoutEditMode() && editIconDragging && hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap));
+        int slot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, false);
 
         if (contextOpen && button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             layoutContextMenu(buildContextRows(), mc());
@@ -717,7 +866,7 @@ public final class InventoryQuickActionOverlay {
             return true;
         }
 
-        if (!inPanel) {
+        if (!inQuickActionTarget) {
             closeUi();
             return false;
         }
@@ -736,8 +885,9 @@ public final class InventoryQuickActionOverlay {
             if (slot < 0) {
                 return true;
             }
-            String hideTargetId = slot >= 1 ? users.get(slot - 1).id() : null;
-            openTrayContextMenu((int) mouseX, (int) mouseY, hideTargetId);
+            QuickActionEntry userEnt = slot >= 1 ? userEntryAtLinearSlot(slot) : null;
+            String hideTargetId = userEnt != null ? userEnt.id() : null;
+            openTrayContextMenu((int) mouseX, (int) mouseY, hideTargetId, false);
             return true;
         }
 
@@ -756,21 +906,24 @@ public final class InventoryQuickActionOverlay {
             return false;
         }
         leftDownOnPanel = false;
-        List<InventoryQuickActionEntry> users = visibleUserEntries();
         int cols = Math.max(1, layout.gridColumns());
-        int slots = 1 + users.size();
-        int rows = gridRows(cols, slots);
+        int rows = cols;
+        int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        int pw = panelWidthPx(cols, cell, gap);
-        int ph = panelHeightPx(rows, cell, gap);
+        List<String> userGrid = layout.userSlotGrid();
+        int[] cr = occupiedColRowBounds(cols, userGrid);
+        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
+        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
+        int insetX = cr[0] * (cell + gap);
+        int insetY = cr[2] * (cell + gap);
         double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), pw, ph, off);
-        double tlX = trayTopLeftX(pw, ph, off[0], off[1]);
-        double tlY = trayTopLeftY(pw, ph, off[0], off[1]);
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
+        double tlX = trayTopLeftX(off[0], insetX);
+        double tlY = trayTopLeftY(off[1], insetY);
         int trayXi = (int) Math.round(tlX);
         int trayYi = (int) Math.round(tlY);
-        int releaseSlot = hitSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slots);
+        int releaseSlot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, false);
 
         if (draggingTray) {
             draggingTray = false;
@@ -788,47 +941,26 @@ public final class InventoryQuickActionOverlay {
 
         long dt = System.currentTimeMillis() - leftPressStartMs;
         if (dt < LONG_PRESS_MS && Math.abs(mouseX - leftPressMouseX) < 5 && Math.abs(mouseY - leftPressMouseY) < 5) {
-            if (pressStartedSlot >= 1 && releaseSlot == pressStartedSlot && !layout.layoutEditMode()) {
-                fireAction(users.get(releaseSlot - 1), mouseX, mouseY);
+            if (pressStartedSlot == 0 && releaseSlot == 0) {
+                contextClickMouseX = mouseX;
+                contextClickMouseY = mouseY;
+                openTrayContextMenu((int) mouseX, (int) mouseY, null, true);
+            } else if (pressStartedSlot >= 1 && releaseSlot == pressStartedSlot && !layout.layoutEditMode()) {
+                QuickActionEntry e = userEntryAtLinearSlot(releaseSlot);
+                if (e != null) {
+                    fireAction(e, mouseX, mouseY);
+                }
             }
         }
         pressStartedSlot = -1;
         return true;
     }
 
-    private void moveVisibleUserByLinearSlot(int fromLinearSlot, int toLinearSlot) {
-        int fromUser = fromLinearSlot - 1;
-        int toUser = toLinearSlot - 1;
-        List<String> bar = layout.iconBarOrder();
-        List<Integer> visIdx = new ArrayList<>();
-        List<String> visIds = new ArrayList<>();
-        InventoryQuickActionRegistry r = InventoryQuickActionRegistry.get();
-        for (int i = 0; i < bar.size(); i++) {
-            String id = bar.get(i);
-            if (layout.hiddenIconIds().contains(id)) {
-                continue;
-            }
-            InventoryQuickActionEntry e = r.getEntry(id);
-            if (e != null && e.display() == EnumInventoryQuickActionDisplay.ICON) {
-                visIdx.add(i);
-                visIds.add(id);
-            }
-        }
-        if (fromUser < 0 || toUser < 0 || fromUser >= visIds.size() || toUser >= visIds.size()) {
-            return;
-        }
-        String moved = visIds.remove(fromUser);
-        visIds.add(toUser, moved);
-        for (int k = 0; k < visIds.size(); k++) {
-            bar.set(visIdx.get(k), visIds.get(k));
-        }
-    }
-
-    private void fireAction(InventoryQuickActionEntry entry, double mx, double my) {
+    private void fireAction(QuickActionEntry entry, double mx, double my) {
         if (entry.onActivate() == null) {
             return;
         }
-        InventoryQuickActionContext ctx = new InventoryQuickActionContext()
+        QuickActionContext ctx = new QuickActionContext()
                 .minecraft(mc())
                 .currentScreen(mc().screen)
                 .entryId(entry.id())
@@ -841,40 +973,41 @@ public final class InventoryQuickActionOverlay {
         }
     }
 
-    private double trayTopLeftX(double pw, double ph, double offX, double offY) {
+    private double trayTopLeftX(double contentOffX, int contentInsetX) {
         double ax = layout.anchorX();
-        if (layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE) {
-            return ax * lastScreenW - offX;
+        if (layout.coordinateModeX() == EnumQuickCoordinateMode.RELATIVE) {
+            return ax * lastScreenW - contentOffX - contentInsetX;
         }
-        return ax - offX;
+        return ax - contentOffX - contentInsetX;
     }
 
-    private double trayTopLeftY(double pw, double ph, double offX, double offY) {
+    private double trayTopLeftY(double contentOffY, int contentInsetY) {
         double ay = layout.anchorY();
-        if (layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE) {
-            return ay * lastScreenH - offY;
+        if (layout.coordinateModeY() == EnumQuickCoordinateMode.RELATIVE) {
+            return ay * lastScreenH - contentOffY - contentInsetY;
         }
-        return ay - offY;
+        return ay - contentOffY - contentInsetY;
     }
 
-    private void applyAnchorFromTopLeft(double tlX, double tlY, double pw, double ph, double offX, double offY) {
-        double anchorScreenX = tlX + offX;
-        double anchorScreenY = tlY + offY;
-        if (layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE) {
+    private void applyAnchorFromTopLeft(double tlX, double tlY, double contentOffX, double contentOffY, int insetX, int insetY) {
+        double anchorScreenX = tlX + insetX + contentOffX;
+        double anchorScreenY = tlY + insetY + contentOffY;
+        if (layout.coordinateModeX() == EnumQuickCoordinateMode.RELATIVE) {
             layout.anchorX(anchorScreenX / Math.max(1, lastScreenW));
         } else {
             layout.anchorX(anchorScreenX);
         }
-        if (layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE) {
+        if (layout.coordinateModeY() == EnumQuickCoordinateMode.RELATIVE) {
             layout.anchorY(anchorScreenY / Math.max(1, lastScreenH));
         } else {
             layout.anchorY(anchorScreenY);
         }
     }
 
-    private void openTrayContextMenu(int mx, int my, @Nullable String userEntryIdForHide) {
+    private void openTrayContextMenu(int mx, int my, @Nullable String userEntryIdForHide, boolean omitEditToggleRow) {
         contextMenuKind = ContextMenuKind.TRAY;
         contextUserEntryIdForHide = userEntryIdForHide;
+        contextOmitEditToggleRow = omitEditToggleRow;
         contextOpen = true;
         contextPage = CTX_PAGE_ROOT;
         contextScrollPx = 0;
@@ -895,13 +1028,13 @@ public final class InventoryQuickActionOverlay {
         final boolean keepOpen;
         final Runnable action;
         @Nullable
-        final InventoryQuickIcon menuIcon;
+        final QuickIcon menuIcon;
 
         CtxRow(String text, boolean keepOpen, Runnable action) {
             this(text, keepOpen, action, null);
         }
 
-        CtxRow(String text, boolean keepOpen, Runnable action, @Nullable InventoryQuickIcon menuIcon) {
+        CtxRow(String text, boolean keepOpen, Runnable action, @Nullable QuickIcon menuIcon) {
             this.text = text;
             this.keepOpen = keepOpen;
             this.action = action;
@@ -922,7 +1055,7 @@ public final class InventoryQuickActionOverlay {
                 }));
             } else {
                 for (String id : layout.hiddenIconIds()) {
-                    InventoryQuickActionEntry ent = InventoryQuickActionRegistry.get().getEntry(id);
+                    QuickActionEntry ent = QuickActionRegistry.get().getEntry(id);
                     L.add(new CtxRow(trFormat("quick_action.unhide", id), true, () -> {
                         layout.hiddenIconIds().remove(id);
                         markSave();
@@ -946,18 +1079,18 @@ public final class InventoryQuickActionOverlay {
         if (contextPage == CTX_PAGE_POSITION) {
             L.add(new CtxRow(trWord("quick_action.back"), true, () -> contextPage = CTX_PAGE_ROOT));
             L.add(new CtxRow(trWord("quick_action.reset_anchor"), true, this::resetAnchorPreset));
-            String xMode = layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE
+            String xMode = layout.coordinateModeX() == EnumQuickCoordinateMode.RELATIVE
                     ? trWord("quick_action.coord_rel") : trWord("quick_action.coord_abs");
             L.add(new CtxRow(trFormat("quick_action.pos_axis", "X", layout.anchorX(), xMode), true, () ->
-                    layout.coordinateModeX(layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE
-                            ? EnumInventoryQuickCoordinateMode.ABSOLUTE
-                            : EnumInventoryQuickCoordinateMode.RELATIVE)));
-            String yMode = layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE
+                    layout.coordinateModeX(layout.coordinateModeX() == EnumQuickCoordinateMode.RELATIVE
+                            ? EnumQuickCoordinateMode.ABSOLUTE
+                            : EnumQuickCoordinateMode.RELATIVE)));
+            String yMode = layout.coordinateModeY() == EnumQuickCoordinateMode.RELATIVE
                     ? trWord("quick_action.coord_rel") : trWord("quick_action.coord_abs");
             L.add(new CtxRow(trFormat("quick_action.pos_axis", "Y", layout.anchorY(), yMode), true, () ->
-                    layout.coordinateModeY(layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE
-                            ? EnumInventoryQuickCoordinateMode.ABSOLUTE
-                            : EnumInventoryQuickCoordinateMode.RELATIVE)));
+                    layout.coordinateModeY(layout.coordinateModeY() == EnumQuickCoordinateMode.RELATIVE
+                            ? EnumQuickCoordinateMode.ABSOLUTE
+                            : EnumQuickCoordinateMode.RELATIVE)));
             L.add(new CtxRow(trFormat("quick_action.anchor_cycle", layout.groupAnchor().name()), true, () -> {
                 EnumPosition[] vals = EnumPosition.values();
                 int ni = (layout.groupAnchor().ordinal() + 1) % vals.length;
@@ -972,12 +1105,16 @@ public final class InventoryQuickActionOverlay {
 
         // region 根页：任意格统一首项为进入/退出编辑；编辑态下与系统格相同的子菜单
         if (layout.layoutEditMode()) {
-            L.add(new CtxRow(trWord("quick_action.exit_edit"), true, () -> layout.layoutEditMode(false)));
+            if (!contextOmitEditToggleRow) {
+                L.add(new CtxRow(trWord("quick_action.exit_edit"), true, () -> layout.layoutEditMode(false)));
+            }
             L.add(new CtxRow(trWord("quick_action.menu_layout"), true, () -> contextPage = CTX_PAGE_LAYOUT));
             L.add(new CtxRow(trWord("quick_action.menu_position"), true, () -> contextPage = CTX_PAGE_POSITION));
             L.add(new CtxRow(trWord("quick_action.menu_hidden"), true, () -> contextPage = CTX_PAGE_HIDDEN));
         } else {
-            L.add(new CtxRow(trWord("quick_action.enter_edit"), true, () -> layout.layoutEditMode(true)));
+            if (!contextOmitEditToggleRow) {
+                L.add(new CtxRow(trWord("quick_action.enter_edit"), true, () -> layout.layoutEditMode(true)));
+            }
             if (contextUserEntryIdForHide != null) {
                 L.add(new CtxRow(trWord("quick_action.hide_slot"), false, () -> {
                     layout.hiddenIconIds().add(contextUserEntryIdForHide);
@@ -989,12 +1126,17 @@ public final class InventoryQuickActionOverlay {
             }
             // 仅系统格展示注册动作列表
             if (contextUserEntryIdForHide == null) {
-                for (InventoryQuickActionEntry e : InventoryQuickActionRegistry.get().allEntriesInOrder()) {
-                    if (e.display() != EnumInventoryQuickActionDisplay.ICON) {
+                int beforeActions = L.size();
+                for (QuickActionEntry e : QuickActionRegistry.get().allEntriesInOrder()) {
+                    if (e.display() != EnumQuickActionDisplay.ICON) {
                         continue;
                     }
                     L.add(new CtxRow(e.label().toVanilla().getString(), false, () ->
                             fireAction(e, contextClickMouseX, contextClickMouseY), e.quickIcon()));
+                }
+                if (contextOmitEditToggleRow && L.size() == beforeActions) {
+                    L.add(new CtxRow(trWord("quick_action.no_registered_entries"), true, () -> {
+                    }));
                 }
             }
         }
@@ -1004,11 +1146,12 @@ public final class InventoryQuickActionOverlay {
     }
 
     private void resetAnchorPreset() {
-        layout.coordinateModeX(EnumInventoryQuickCoordinateMode.RELATIVE);
-        layout.coordinateModeY(EnumInventoryQuickCoordinateMode.RELATIVE);
-        layout.anchorX(0.5);
-        layout.anchorY(0.02);
-        layout.groupAnchor(EnumPosition.TOP_CENTER);
+        final QuickActionLayout DEFAULT = new QuickActionLayout();
+        layout.coordinateModeX(DEFAULT.coordinateModeX());
+        layout.coordinateModeY(DEFAULT.coordinateModeY());
+        layout.anchorX(DEFAULT.anchorX());
+        layout.anchorY(DEFAULT.anchorY());
+        layout.groupAnchor(DEFAULT.groupAnchor());
     }
 
     private String ellipsizeText(FontRenderer font, String s, int maxW) {
@@ -1038,7 +1181,7 @@ public final class InventoryQuickActionOverlay {
 
     private void layoutContextMenu(List<CtxRow> rows, Minecraft mc) {
         int n = rows.size();
-        int contentH = n * MENU_ROW_H;
+        int contentH = Math.max(MENU_ROW_H, n * MENU_ROW_H);
         ctxNeedsScrollbar = contentH > MENU_MAX_BODY_H;
         ctxInnerH = Math.min(contentH, MENU_MAX_BODY_H);
         int innerPad = 3;
@@ -1094,12 +1237,12 @@ public final class InventoryQuickActionOverlay {
 
         if (ctxNeedsScrollbar) {
             int sbX = ctxScrollbarLeft;
-            AbstractGui.fill(stack, sbX, innerTop, sbX + MENU_SCROLLBAR_W, innerBottom, (theme.border() & 0xFFFFFF) | 0x99000000);
+            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000);
             int contentH = rows.size() * MENU_ROW_H;
             int thumbH = Math.max(10, ctxInnerH * ctxInnerH / Math.max(1, contentH));
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
             int accent = theme.accentHover() | 0xFF000000;
-            AbstractGui.fill(stack, sbX + 1, thumbY, sbX + MENU_SCROLLBAR_W - 1, thumbY + thumbH, accent);
+            AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
         FontRenderer font = mc.font;
@@ -1114,7 +1257,8 @@ public final class InventoryQuickActionOverlay {
             if (hi) {
                 int rowTop = Math.max(ry, innerTop);
                 int rowBot = Math.min(ry + rh, innerBottom);
-                AbstractGui.fill(stack, x + 2, rowTop, x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2), rowBot,
+                int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
+                AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
                         (theme.accentHover() & 0xFFFFFF) | 0x66000000);
             }
             CtxRow row = rows.get(i);
@@ -1192,14 +1336,14 @@ public final class InventoryQuickActionOverlay {
 
     private void nudgeAnchor(int dx, int dy) {
         if (dx != 0) {
-            if (layout.coordinateModeX() == EnumInventoryQuickCoordinateMode.RELATIVE) {
+            if (layout.coordinateModeX() == EnumQuickCoordinateMode.RELATIVE) {
                 layout.anchorX(layout.anchorX() + dx * 0.015);
             } else {
                 layout.anchorX(layout.anchorX() + dx * 4);
             }
         }
         if (dy != 0) {
-            if (layout.coordinateModeY() == EnumInventoryQuickCoordinateMode.RELATIVE) {
+            if (layout.coordinateModeY() == EnumQuickCoordinateMode.RELATIVE) {
                 layout.anchorY(layout.anchorY() + dy * 0.015);
             } else {
                 layout.anchorY(layout.anchorY() + dy * 4);
@@ -1210,5 +1354,6 @@ public final class InventoryQuickActionOverlay {
     private void closeUi() {
         contextOpen = false;
         contextMenuKind = ContextMenuKind.NONE;
+        contextOmitEditToggleRow = false;
     }
 }

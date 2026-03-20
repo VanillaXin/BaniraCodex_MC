@@ -2,10 +2,12 @@ package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.texture.MissingTextureSprite;
 import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.resources.IResource;
+import net.minecraft.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @OnlyIn(Dist.CLIENT)
@@ -39,32 +42,73 @@ public final class TextureUtils {
     private static final Map<ResourceLocation, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new ConcurrentHashMap<>();
     private static final Map<Texture, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * 由 {@link #loadCustomTexture} 注册到 {@link TextureManager} 的外部文件动态纹理；{@link #clearAll()} 时 {@link TextureManager#release}，{@link #getTextureImage} 据此读取像素。
+     */
+    private static final Set<ResourceLocation> REGISTERED_DYNAMIC_TEXTURE_LOCATIONS = ConcurrentHashMap.newKeySet();
+
+    private static String normalizeTexturePath(String name) {
+        String n = name.replace('\\', '/');
+        if (n.startsWith("./")) {
+            n = n.substring(2);
+        }
+        return n;
+    }
+
+    private static boolean looksLikeWindowsDrivePath(String normalized) {
+        return normalized.length() >= 2 && normalized.charAt(1) == ':' && Character.isLetter(normalized.charAt(0));
+    }
 
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
-        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        name = name.replaceAll("\\\\", "/");
-        name = name.startsWith("./") ? name.substring(2) : name;
-        String safePath = TextureUtils.getSafeTexturePath(name);
-        ResourceLocation customTexture = factory.create(safePath);
-
-        if (Minecraft.getInstance().getResourceManager().hasResource(customTexture)) {
-            return customTexture;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) {
+            return factory.empty();
         }
+        String normalized = normalizeTexturePath(name);
+        String safePath = getSafeTexturePath(normalized);
+        ResourceLocation rl = factory.create(safePath);
+        IResourceManager resourceManager = mc.getResourceManager();
+        TextureManager textureManager = mc.getTextureManager();
 
-        File textureFile = new File(name);
-        if (textureFile.exists()) {
-            ResourceLocation externalTexture = factory.create(safePath + "_" + System.currentTimeMillis());
-            try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
-                NativeImage nativeImage = NativeImage.read(inputStream);
-                DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
-                textureManager.register(externalTexture, dynamicTexture);
-                return externalTexture;
-            } catch (IOException e) {
-                LOGGER.warn("Failed to load texture from file: {}", textureFile.getAbsolutePath());
-                LOGGER.error(e);
-                return factory.empty();
+        // region 资源包纹理
+        if (resourceManager.hasResource(rl)) {
+            return rl;
+        }
+        if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
+            ResourceLocation parsed = ResourceLocation.tryParse(normalized);
+            if (parsed != null && resourceManager.hasResource(parsed)) {
+                return parsed;
             }
         }
+        // endregion 资源包纹理
+
+        // region 外部文件动态纹理
+        File textureFile = new File(normalized);
+        if (textureFile.isFile()) {
+            try {
+                textureFile = textureFile.getCanonicalFile();
+            } catch (IOException ignored) {
+            }
+            ResourceLocation externalRl = factory.create("dynamic/ext_" + Integer.toHexString(textureFile.getAbsolutePath().hashCode()));
+            synchronized (TextureUtils.class) {
+                if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(externalRl)) {
+                    return externalRl;
+                }
+                try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
+                    NativeImage nativeImage = NativeImage.read(inputStream);
+                    DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
+                    textureManager.register(externalRl, dynamicTexture);
+                    REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.add(externalRl);
+                    return externalRl;
+                } catch (IOException e) {
+                    LOGGER.warn("Failed to load texture from file: {}", textureFile.getAbsolutePath());
+                    LOGGER.error(e);
+                    return factory.empty();
+                }
+            }
+        }
+        // endregion 外部文件动态纹理
+
         LOGGER.warn("Texture not found in resources or external: {}", name);
         return factory.empty();
     }
@@ -74,12 +118,21 @@ public final class TextureUtils {
     }
 
     public static boolean isTextureAvailable(ResourceLocation location) {
-        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
-        if (texture == null) {
+        if (location == null) {
             return false;
         }
-        // 确保纹理已经加载
+        if (MissingTextureSprite.getLocation().equals(location)) {
+            return false;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) {
+            return false;
+        }
+        TextureManager textureManager = mc.getTextureManager();
+        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
+        if (texture == null) {
+            return mc.getResourceManager().hasResource(location);
+        }
         return texture.getId() != -1;
     }
 
@@ -171,6 +224,14 @@ public final class TextureUtils {
     }
 
     public static void clearAll() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) {
+            TextureManager tm = mc.getTextureManager();
+            for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
+                tm.release(loc);
+            }
+        }
+        REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.clear();
         for (NativeImage img : CACHE.values()) {
             try {
                 img.close();
@@ -191,6 +252,17 @@ public final class TextureUtils {
         // 优先从缓存中获取
         if (CACHE.containsKey(texture)) {
             return CACHE.get(texture);
+        }
+        if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(texture)) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc == null) {
+                return null;
+            }
+            net.minecraft.client.renderer.texture.Texture gpuTexture = mc.getTextureManager().getTexture(texture);
+            if (gpuTexture instanceof DynamicTexture) {
+                return ((DynamicTexture) gpuTexture).getPixels();
+            }
+            return null;
         }
         try {
             // 获取资源管理器

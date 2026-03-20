@@ -16,6 +16,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.command.BaniraCommand;
@@ -124,6 +125,7 @@ public class BaniraCodex {
             BaniraEventBus.Client.onTextureReload(event -> {
                 if (BaniraCodex.MODID.equals(event.getMap().location().getNamespace())) {
                     TextureUtils.resourceReloadEvent();
+                    QuickActionOverlay.resetSystemIconTextureCache();
                 }
             });
             BaniraEventBus.Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getMatrixStack()));

@@ -22,7 +22,7 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.quickaction.InventoryQuickActionRegistry;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
@@ -159,14 +159,14 @@ public class DebugScreen extends BaniraScreen {
         ButtonWidget quickActionPlusBtn = new ButtonWidget(this);
         quickActionPlusBtn.id("debug_quick_action_plus");
         quickActionPlusBtn.bounds(new ScreenCoordinate(110, 170, 75, 24));
-        quickActionPlusBtn.text("快捷+");
+        quickActionPlusBtn.text("快捷入口项+1");
         quickActionPlusBtn.onClick(b -> debugQuickActionAdd());
         addWidget(quickActionPlusBtn);
 
         ButtonWidget quickActionMinusBtn = new ButtonWidget(this);
         quickActionMinusBtn.id("debug_quick_action_minus");
         quickActionMinusBtn.bounds(new ScreenCoordinate(190, 170, 75, 24));
-        quickActionMinusBtn.text("快捷-");
+        quickActionMinusBtn.text("快捷入口项-1");
         quickActionMinusBtn.onClick(b -> debugQuickActionRemove());
         addWidget(quickActionMinusBtn);
 
@@ -178,13 +178,21 @@ public class DebugScreen extends BaniraScreen {
     private void debugQuickActionAdd() {
         int n = ++debugQuickActionSerial;
         String id = DEBUG_QUICK_ACTION_PREFIX + n;
-        InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
+        QuickActionRegistry reg = QuickActionRegistry.get();
         Component label = new Component("QA " + n);
-        int t = n % 2;
+        int t = n % 4;
         if (t == 0) {
-            reg.registerIcon(id, CollectionUtils.getRandomElement(ItemUtils.getAllItems()), label, ctx -> LOGGER.debug("inventory quick-action {}", id));
+            reg.registerIcon(id, Identifier.id().create("minecraft", "textures/item/emerald.png"), label, ctx -> {
+                Notification notification = Notification.ofComponent(Component.literal(String.format("Clicked Quick Emerald Action %s", ctx.entryId())));
+                notification.durationTime(3000);
+                NotificationManager.get().addNotification(notification);
+            });
         } else {
-            reg.registerIcon(id, new ResourceLocation("minecraft", "textures/item/emerald.png"), label, ctx -> LOGGER.debug("inventory quick-action {}", id));
+            reg.registerIcon(id, CollectionUtils.getRandomElement(ItemUtils.getAllItems()), label, ctx -> {
+                Notification notification = Notification.ofComponent(Component.literal(String.format("Clicked Item Quick Action %s", ctx.entryId())));
+                notification.durationTime(3000);
+                NotificationManager.get().addNotification(notification);
+            });
         }
         if (reg.menuAnchorEntryId() == null) {
             reg.menuAnchorEntryId(id);
@@ -196,7 +204,7 @@ public class DebugScreen extends BaniraScreen {
             return;
         }
         String id = DEBUG_QUICK_ACTION_PREFIX + debugQuickActionSerial;
-        InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
+        QuickActionRegistry reg = QuickActionRegistry.get();
         String anchor = reg.menuAnchorEntryId();
         reg.unregister(id);
         debugQuickActionSerial--;

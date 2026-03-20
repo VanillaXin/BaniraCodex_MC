@@ -106,6 +106,7 @@
   "word.banira_codex.tag_list_confirm_add": "添加",
   "word.banira_codex.tag_list_row_hint": "双击编辑 · 右键复制",
   "word.banira_codex.tag_list_copied": "已复制到剪贴板",
+  "word.banira_codex.quick_action.no_registered_entries": "（无已注册的快捷动作）",
   "word.banira_codex.quick_action.enter_edit": "进入编辑模式",
   "word.banira_codex.quick_action.exit_edit": "退出编辑模式",
   "word.banira_codex.quick_action.back": "‹ 返回",

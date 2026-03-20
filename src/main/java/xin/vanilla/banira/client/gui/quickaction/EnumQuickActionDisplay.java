@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui.quickaction;
 /**
  * 快捷项展示方式
  */
-public enum EnumInventoryQuickActionDisplay {
+public enum EnumQuickActionDisplay {
     /**
      * 在背包界面顶部图标组中显示
      */

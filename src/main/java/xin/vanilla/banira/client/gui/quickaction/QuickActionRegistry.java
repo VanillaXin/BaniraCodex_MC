@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 /**
  * 背包界面快捷操作注册器。仅客户端使用。
  * <p>
- * 注册为 {@link EnumInventoryQuickActionDisplay#ICON} 的项显示在图标组；
- * {@link EnumInventoryQuickActionDisplay#LIST_ONLY} 仅出现在「菜单锚点」图标的右键下拉列表中。
+ * 注册为 {@link EnumQuickActionDisplay#ICON} 的项显示在图标组；
+ * {@link EnumQuickActionDisplay#LIST_ONLY} 仅出现在「菜单锚点」图标的右键下拉列表中。
  * </p>
  * <p>图标可使用 {@link ItemStack}、{@link Item}、{@link Effect} 或 {@link ResourceLocation}（纹理），见各类 {@code register*} 重载。</p>
  * <p><b>接入示例</b>（仅在客户端线程调用）：</p>
@@ -29,32 +29,32 @@ import java.util.stream.Collectors;
  * InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
  * reg.registerIcon("home", new ItemStack(Items.COMPASS), new Component("回家"), ctx -> { });
  * reg.registerIcon("buff", Effects.MOVEMENT_SPEED, new Component("速度"), ctx -> { });
- * reg.registerIcon("gem", new ResourceLocation("minecraft", "textures/item/emerald.png"),
+ * reg.registerIcon("gem", Identifier.id().create("minecraft", "textures/item/emerald.png"),
  *         new Component("资源图"), ctx -> { });
  * reg.menuAnchorEntryId("home");
  * }</pre>
  */
 @OnlyIn(Dist.CLIENT)
-public final class InventoryQuickActionRegistry {
+public final class QuickActionRegistry {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final InventoryQuickActionRegistry INSTANCE = new InventoryQuickActionRegistry();
+    private static final QuickActionRegistry INSTANCE = new QuickActionRegistry();
 
-    private final Map<String, InventoryQuickActionEntry> entries = new ConcurrentHashMap<>();
+    private final Map<String, QuickActionEntry> entries = new ConcurrentHashMap<>();
     private final List<String> registrationOrder = new ArrayList<>();
 
     @Nullable
     private volatile String menuAnchorEntryId;
 
-    private InventoryQuickActionRegistry() {
+    private QuickActionRegistry() {
     }
 
-    public static InventoryQuickActionRegistry get() {
+    public static QuickActionRegistry get() {
         return INSTANCE;
     }
 
     /**
-     * 设置右键弹出下拉的锚点条目 id（须为已注册且展示方式为 {@link EnumInventoryQuickActionDisplay#ICON} 的条目，否则无法作为可见锚点）。
+     * 设置右键弹出下拉的锚点条目 id（须为已注册且展示方式为 {@link EnumQuickActionDisplay#ICON} 的条目，否则无法作为可见锚点）。
      */
     public void menuAnchorEntryId(@Nullable String id) {
         this.menuAnchorEntryId = id;
@@ -69,47 +69,47 @@ public final class InventoryQuickActionRegistry {
 
     public void registerIcon(
             @Nonnull String id,
-            @Nonnull InventoryQuickIcon icon,
+            @Nonnull QuickIcon icon,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        register(id, icon, label, EnumInventoryQuickActionDisplay.ICON, action);
+        register(id, icon, label, EnumQuickActionDisplay.ICON, action);
     }
 
     public void registerIcon(
             @Nonnull String id,
             @Nonnull ItemStack stack,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerIcon(id, InventoryQuickIcon.item(stack), label, action);
+        registerIcon(id, QuickIcon.item(stack), label, action);
     }
 
     public void registerIcon(
             @Nonnull String id,
             @Nonnull Item item,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerIcon(id, InventoryQuickIcon.item(item), label, action);
+        registerIcon(id, QuickIcon.item(item), label, action);
     }
 
     public void registerIcon(
             @Nonnull String id,
             @Nonnull Effect effect,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerIcon(id, InventoryQuickIcon.effect(effect), label, action);
+        registerIcon(id, QuickIcon.effect(effect), label, action);
     }
 
     public void registerIcon(
             @Nonnull String id,
             @Nonnull ResourceLocation texture,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerIcon(id, InventoryQuickIcon.resource(texture), label, action);
+        registerIcon(id, QuickIcon.resource(texture), label, action);
     }
 
     // endregion
@@ -118,82 +118,82 @@ public final class InventoryQuickActionRegistry {
 
     public void registerListOnly(
             @Nonnull String id,
-            @Nonnull InventoryQuickIcon icon,
+            @Nonnull QuickIcon icon,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        register(id, icon, label, EnumInventoryQuickActionDisplay.LIST_ONLY, action);
+        register(id, icon, label, EnumQuickActionDisplay.LIST_ONLY, action);
     }
 
     public void registerListOnly(
             @Nonnull String id,
             @Nonnull ItemStack stack,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerListOnly(id, InventoryQuickIcon.item(stack), label, action);
+        registerListOnly(id, QuickIcon.item(stack), label, action);
     }
 
     public void registerListOnly(
             @Nonnull String id,
             @Nonnull Item item,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerListOnly(id, InventoryQuickIcon.item(item), label, action);
+        registerListOnly(id, QuickIcon.item(item), label, action);
     }
 
     public void registerListOnly(
             @Nonnull String id,
             @Nonnull Effect effect,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerListOnly(id, InventoryQuickIcon.effect(effect), label, action);
+        registerListOnly(id, QuickIcon.effect(effect), label, action);
     }
 
     public void registerListOnly(
             @Nonnull String id,
             @Nonnull ResourceLocation texture,
             @Nonnull Component label,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action
     ) {
-        registerListOnly(id, InventoryQuickIcon.resource(texture), label, action);
+        registerListOnly(id, QuickIcon.resource(texture), label, action);
     }
 
     // endregion
 
     public void register(
             @Nonnull String id,
-            @Nonnull InventoryQuickIcon icon,
+            @Nonnull QuickIcon icon,
             @Nonnull Component label,
-            @Nonnull EnumInventoryQuickActionDisplay display,
-            @Nullable Consumer<InventoryQuickActionContext> action
+            @Nonnull EnumQuickActionDisplay display,
+            @Nullable Consumer<QuickActionContext> action
     ) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(label, "label");
         Objects.requireNonNull(icon, "icon");
-        InventoryQuickActionEntry e = new InventoryQuickActionEntry()
+        QuickActionEntry e = new QuickActionEntry()
                 .id(id)
                 .quickIcon(icon)
                 .label(label)
-                .display(display != null ? display : EnumInventoryQuickActionDisplay.ICON)
+                .display(display != null ? display : EnumQuickActionDisplay.ICON)
                 .onActivate(action);
         entries.put(id, e);
         if (!registrationOrder.contains(id)) {
             registrationOrder.add(id);
         }
-        InventoryQuickActionOverlay.get().onRegistryChanged();
+        QuickActionOverlay.get().onRegistryChanged();
     }
 
     /**
-     * 当前所有展示类型为 {@link EnumInventoryQuickActionDisplay#ICON} 的已注册 id（顺序与注册顺序一致）。
+     * 当前所有展示类型为 {@link EnumQuickActionDisplay#ICON} 的已注册 id（顺序与注册顺序一致）。
      */
     @Nonnull
     public LinkedHashSet<String> registeredIconEntryIds() {
         LinkedHashSet<String> set = new LinkedHashSet<>();
-        for (InventoryQuickActionEntry e : allEntriesInOrder()) {
-            if (e.display() == EnumInventoryQuickActionDisplay.ICON) {
+        for (QuickActionEntry e : allEntriesInOrder()) {
+            if (e.display() == EnumQuickActionDisplay.ICON) {
                 set.add(e.id());
             }
         }
@@ -206,26 +206,26 @@ public final class InventoryQuickActionRegistry {
         if (id.equals(menuAnchorEntryId)) {
             menuAnchorEntryId = null;
         }
-        InventoryQuickActionOverlay.get().onRegistryChanged();
+        QuickActionOverlay.get().onRegistryChanged();
     }
 
     public void clear() {
         entries.clear();
         registrationOrder.clear();
         menuAnchorEntryId = null;
-        InventoryQuickActionOverlay.get().onRegistryChanged();
+        QuickActionOverlay.get().onRegistryChanged();
     }
 
     @Nullable
-    public InventoryQuickActionEntry getEntry(@Nonnull String id) {
+    public QuickActionEntry getEntry(@Nonnull String id) {
         return entries.get(id);
     }
 
     @Nonnull
-    public List<InventoryQuickActionEntry> allEntriesInOrder() {
-        List<InventoryQuickActionEntry> list = new ArrayList<>();
+    public List<QuickActionEntry> allEntriesInOrder() {
+        List<QuickActionEntry> list = new ArrayList<>();
         for (String id : registrationOrder) {
-            InventoryQuickActionEntry e = entries.get(id);
+            QuickActionEntry e = entries.get(id);
             if (e != null) {
                 list.add(e);
             }
@@ -242,7 +242,7 @@ public final class InventoryQuickActionRegistry {
      * 下拉列表展示全部已注册项（含仅列表）。
      */
     @Nonnull
-    public List<InventoryQuickActionEntry> dropdownEntries() {
+    public List<QuickActionEntry> dropdownEntries() {
         return allEntriesInOrder();
     }
 
@@ -251,8 +251,8 @@ public final class InventoryQuickActionRegistry {
         if (anchor == null) {
             return;
         }
-        InventoryQuickActionEntry e = entries.get(anchor);
-        if (e == null || e.display() != EnumInventoryQuickActionDisplay.ICON) {
+        QuickActionEntry e = entries.get(anchor);
+        if (e == null || e.display() != EnumQuickActionDisplay.ICON) {
             LOGGER.warn("Inventory quick-action menu anchor '{}' is invalid or not an ICON entry; dropdown disabled until set.", anchor);
         }
     }

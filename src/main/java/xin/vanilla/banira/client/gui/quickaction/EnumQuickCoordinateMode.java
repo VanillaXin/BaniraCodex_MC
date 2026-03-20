@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui.quickaction;
 /**
  * 图标组锚点在XY轴上的坐标系
  */
-public enum EnumInventoryQuickCoordinateMode {
+public enum EnumQuickCoordinateMode {
     /**
      * 屏幕比例
      */

@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  */
 @OnlyIn(Dist.CLIENT)
 @Accessors(chain = true, fluent = true)
-public class InventoryQuickIcon {
+public class QuickIcon {
 
     public enum Kind {
         ITEM,
@@ -57,8 +57,8 @@ public class InventoryQuickIcon {
     private ResourceLocation texture;
 
     @Nonnull
-    public static InventoryQuickIcon item(@Nonnull ItemStack stack) {
-        InventoryQuickIcon q = new InventoryQuickIcon();
+    public static QuickIcon item(@Nonnull ItemStack stack) {
+        QuickIcon q = new QuickIcon();
         q.kind(Kind.ITEM);
         if (stack.isEmpty()) {
             q.itemStack(new ItemStack(Items.PAPER));
@@ -69,7 +69,7 @@ public class InventoryQuickIcon {
     }
 
     @Nonnull
-    public static InventoryQuickIcon item(@Nullable Item item) {
+    public static QuickIcon item(@Nullable Item item) {
         if (item == null) {
             return item(new ItemStack(Items.PAPER));
         }
@@ -77,16 +77,16 @@ public class InventoryQuickIcon {
     }
 
     @Nonnull
-    public static InventoryQuickIcon effect(@Nonnull Effect effectType) {
-        InventoryQuickIcon q = new InventoryQuickIcon();
+    public static QuickIcon effect(@Nonnull Effect effectType) {
+        QuickIcon q = new QuickIcon();
         q.kind(Kind.EFFECT);
         q.mobEffect(effectType != null ? effectType : Effects.LUCK);
         return q;
     }
 
     @Nonnull
-    public static InventoryQuickIcon resource(@Nonnull ResourceLocation textureLocation) {
-        InventoryQuickIcon q = new InventoryQuickIcon();
+    public static QuickIcon resource(@Nonnull ResourceLocation textureLocation) {
+        QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
         q.texture(textureLocation);
         return q;

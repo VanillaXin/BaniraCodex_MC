@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
@@ -145,7 +144,7 @@ public class MouseWidget extends BaseWidget {
                     y1 = y2;
                     y2 = t;
                 }
-                AbstractGui.fill(s, mouseX + 6, y1, mouseX + 7, y2 + 1, scrollLineColor);
+                AbstractGuiUtils.fill(s, mouseX + 6, y1, 1, y2 + 1 - y1, scrollLineColor);
             }
         });
     }
@@ -155,17 +154,17 @@ public class MouseWidget extends BaseWidget {
      */
     private void drawPointerShape(MatrixStack stack, int x, int y, int colorLeft, int colorRight, int colorCenter) {
         // 中心/中键
-        AbstractGui.fill(stack, x, y, x + 1, y + 1, colorCenter);
+        AbstractGuiUtils.drawPixel(stack, x, y, colorCenter);
         // 左键区域
-        AbstractGui.fill(stack, x - 1, y + 2, x - 4, y + 3, colorLeft);
-        AbstractGui.fill(stack, x - 1, y + 2, x - 2, y + 5, colorLeft);
-        AbstractGui.fill(stack, x - 1, y - 1, x - 4, y - 2, colorLeft);
-        AbstractGui.fill(stack, x - 1, y - 1, x - 2, y - 4, colorLeft);
+        AbstractGuiUtils.fill(stack, x - 4, y + 2, 3, 1, colorLeft);
+        AbstractGuiUtils.fill(stack, x - 2, y + 2, 1, 3, colorLeft);
+        AbstractGuiUtils.fill(stack, x - 4, y - 2, 3, 1, colorLeft);
+        AbstractGuiUtils.fill(stack, x - 2, y - 4, 1, 3, colorLeft);
         // 右键区域
-        AbstractGui.fill(stack, x + 2, y + 2, x + 5, y + 3, colorRight);
-        AbstractGui.fill(stack, x + 2, y + 2, x + 3, y + 5, colorRight);
-        AbstractGui.fill(stack, x + 2, y - 1, x + 5, y - 2, colorRight);
-        AbstractGui.fill(stack, x + 2, y - 1, x + 3, y - 4, colorRight);
+        AbstractGuiUtils.fill(stack, x + 2, y + 2, 3, 1, colorRight);
+        AbstractGuiUtils.fill(stack, x + 2, y + 2, 1, 3, colorRight);
+        AbstractGuiUtils.fill(stack, x + 2, y - 2, 3, 1, colorRight);
+        AbstractGuiUtils.fill(stack, x + 2, y - 4, 1, 3, colorRight);
     }
 
     @Override

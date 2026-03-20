@@ -565,9 +565,9 @@ public class ConfigEditorScreen extends BaniraScreen {
         tagList.expanded(false);
         tagList.refreshBounds();
         row.bounds(new ScreenCoordinate(0, 0, w, tagList.effectiveHeight()));
-        tagList.onExpandChanged(t -> {
+        tagList.onBoundsHeightChanged(t -> {
             IWidget rowWidget = t.parent();
-            if (rowWidget != null && rowWidget instanceof BaseWidget) {
+            if (rowWidget instanceof BaseWidget) {
                 double newH = t.effectiveHeight();
                 ScreenCoordinate b = rowWidget.bounds();
                 if (b != null) {

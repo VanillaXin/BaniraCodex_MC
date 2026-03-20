@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * 折叠时仅显示标题栏；展开后以标签形式列出所有内容，每项可点击删除按钮移除。
  * 标题栏右侧提供清空与添加按钮。点击添加后根据 {@link #itemType} 显示对应输入控件：
  * 文本用 {@link InputWidget}，数值用 {@link NumericInputWidget}，枚举与布尔用 {@link DropdownSelectWidget}。
- * 展开后的列表高度固定，带滚动条。
+ * 展开后列表区域高度随标签项数量增加，不超过 {@link #CONTENT_HEIGHT}；超出部分滚动显示，无溢出时可隐藏滚动条以加宽列表。
  * </p>
  */
 @Accessors(chain = true, fluent = true)
@@ -65,13 +65,17 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     public static final int HEADER_HEIGHT = 20;
+
+    /**
+     * 列表区域最大高度
+     */
     public static final int CONTENT_HEIGHT = 100;
 
     /**
-     * 展开时的默认高度，用于布局计算
+     * 展开且列表占满 {@link #CONTENT_HEIGHT} 时的总高度，供外部初始布局参考（实际高度可能更小）。
      */
     public static final int DEFAULT_EXPANDED_HEIGHT = HEADER_HEIGHT + CONTENT_HEIGHT;
-    private static final int SCROLLBAR_WIDTH = 8;
+    private static final int SCROLLBAR_WIDTH = 6;
     private static final int SCROLL_GAP = 2;
     private static final int TAG_HEIGHT = 18;
     private static final int TAG_PAD = 4;
@@ -90,6 +94,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     @Setter
     @Nullable
     private Consumer<TagListEditorWidget> onExpandChanged;
+
+    /**
+     * 当根据列表项数量、展开状态、添加行等重新计算后的 bounds 高度与之前不同时调用，供父级面板同步布局。
+     */
+    @Getter
+    @Setter
+    @Nullable
+    private Consumer<TagListEditorWidget> onBoundsHeightChanged;
 
     @Getter
     @Setter
@@ -162,6 +174,40 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     public TagListEditorWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
     }
+
+    // region 列表高度与滚动条布局
+
+    private static int tagRowStride() {
+        return TAG_HEIGHT + 2;
+    }
+
+    private double tagsContentHeight() {
+        return items.size() * (double) tagRowStride();
+    }
+
+    /**
+     * 列表视口允许的最大高度（添加行开启时从 {@link #CONTENT_HEIGHT} 中扣除添加区）。
+     */
+    private double maxListViewportHeight() {
+        return CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+    }
+
+    /**
+     * 当前列表视口实际高度：标签总高与上限的较小值。
+     */
+    private double visibleListViewportHeight() {
+        return Math.min(tagsContentHeight(), maxListViewportHeight());
+    }
+
+    private boolean listShowsScrollbar() {
+        return tagsContentHeight() > maxListViewportHeight() + 1e-6 && maxListViewportHeight() > 1e-6;
+    }
+
+    private double listInnerWidth(double widgetWidth) {
+        return listShowsScrollbar() ? widgetWidth - SCROLLBAR_WIDTH - SCROLL_GAP : widgetWidth;
+    }
+
+    // endregion 列表高度与滚动条布局
 
     @Override
     public boolean needsUpdate() {
@@ -241,12 +287,18 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private void updateBoundsHeight() {
         ScreenCoordinate b = bounds();
-        if (b != null) {
-            double h = expanded
-                    ? (addingMode ? HEADER_HEIGHT + CONTENT_HEIGHT + 2 + ADD_INPUT_HEIGHT : HEADER_HEIGHT + CONTENT_HEIGHT)
-                    : HEADER_HEIGHT;
-            b.height(h);
-            invalidateAbsCache();
+        if (b == null) {
+            return;
+        }
+        double listH = expanded ? visibleListViewportHeight() : 0;
+        double h = expanded
+                ? HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0) + listH
+                : HEADER_HEIGHT;
+        double oldH = b.height();
+        b.height(h);
+        invalidateAbsCache();
+        if (onBoundsHeightChanged != null && Math.abs(oldH - h) > 1e-6) {
+            onBoundsHeightChanged.accept(this);
         }
     }
 
@@ -370,6 +422,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (added) {
             exitUndoModeIfNeeded();
             syncScrollbar();
+            updateBoundsHeight();
             fireListChanged();
         }
     }
@@ -408,9 +461,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private void scrollRowIntoView(int index) {
         if (index < 0 || index >= items.size()) return;
-        double rowTop = index * (TAG_HEIGHT + 2);
+        double rowTop = index * tagRowStride();
         double rowBottom = rowTop + TAG_HEIGHT;
-        double listAreaH = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        double listAreaH = visibleListViewportHeight();
         if (rowTop < listScrollOffset) {
             listScrollOffset = rowTop;
         }
@@ -425,9 +478,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         cancelInlineEdit();
         scrollRowIntoView(index);
         editingIndex = index;
-        double listW = width() - SCROLLBAR_WIDTH - SCROLL_GAP;
+        double listW = listInnerWidth(width());
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double rowY = listContentTop + index * (TAG_HEIGHT + 2) - listScrollOffset;
+        double rowY = listContentTop + index * tagRowStride() - listScrollOffset;
         String label = formatItemLabel(items.get(index));
         switch (itemType) {
             case TEXT:
@@ -527,7 +580,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double absX = absoluteX();
         double absY = absoluteY();
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        double listAreaHeight = visibleListViewportHeight();
         if (mouseY < absY + listContentTop || mouseY >= absY + listContentTop + listAreaHeight) {
             return -1;
         }
@@ -537,11 +590,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             return -1;
         }
         double relY = mouseY - (absY + listContentTop - listScrollOffset);
-        int i = (int) (relY / (TAG_HEIGHT + 2));
+        int i = (int) (relY / tagRowStride());
         if (i < 0 || i >= items.size()) {
             return -1;
         }
-        double tagTop = absY + listContentTop + i * (TAG_HEIGHT + 2) - listScrollOffset;
+        double tagTop = absY + listContentTop + i * tagRowStride() - listScrollOffset;
         if (mouseY < tagTop || mouseY >= tagTop + TAG_HEIGHT) {
             return -1;
         }
@@ -571,6 +624,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         listScrollOffset = 0;
         syncScrollbar();
+        updateBoundsHeight();
         fireListChanged();
     }
 
@@ -582,6 +636,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         listScrollOffset = 0;
         syncScrollbar();
+        updateBoundsHeight();
         return this;
     }
 
@@ -659,8 +714,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         addButton.visible(true);
 
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double listW = w - SCROLLBAR_WIDTH - SCROLL_GAP;
+        double listAreaHeight = visibleListViewportHeight();
+        boolean showScrollbar = listShowsScrollbar();
+        double listW = listInnerWidth(w);
 
         clearButton.bounds(new ScreenCoordinate(w - BTN_SIZE * 2 - 4, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         addButton.bounds(new ScreenCoordinate(w - BTN_SIZE - 2, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
@@ -673,14 +729,20 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             addConfirmButton.visible(true);
         }
 
-        scrollbar.bounds(new ScreenCoordinate(listW + SCROLL_GAP, listContentTop, SCROLLBAR_WIDTH, listAreaHeight));
         syncScrollbar();
-        scrollbar.visible(true);
+        scrollbar.visible(showScrollbar);
+        if (showScrollbar) {
+            scrollbar.bounds(new ScreenCoordinate(listW + SCROLL_GAP, listContentTop, SCROLLBAR_WIDTH, listAreaHeight));
+        } else {
+            scrollbar.bounds(new ScreenCoordinate(0, listContentTop, 0, 0));
+        }
 
         double listAbsX = absX;
         double listAbsY = absY + listContentTop;
         scrollbar.scrollingCoordinates(new ArrayList<>());
-        scrollbar.addScrollHoverArea(new ScreenCoordinate(listAbsX, listAbsY, listW, listAreaHeight));
+        if (showScrollbar) {
+            scrollbar.addScrollHoverArea(new ScreenCoordinate(listAbsX, listAbsY, listW, listAreaHeight));
+        }
 
         // region 绘制标签列表
         BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.winter();
@@ -705,7 +767,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             Object item = items.get(i);
             String label = formatItemLabel(item);
             String display = font.plainSubstrByWidth(label, textMaxW);
-            double tagY = i * (TAG_HEIGHT + 2);
+            double tagY = i * tagRowStride();
 
             int closeY = (int) (tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2);
             boolean closeHovered = hoveredDeleteIndex == i;
@@ -729,7 +791,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         // endregion 标签列表
 
         if (editWidget != null && expanded) {
-            double rowY = listContentTop + editingIndex * (TAG_HEIGHT + 2) - listScrollOffset;
+            double rowY = listContentTop + editingIndex * tagRowStride() - listScrollOffset;
             ((BaseWidget) editWidget).bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
             editWidget.visible(true);
         }
@@ -779,11 +841,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private void syncScrollbar() {
         if (scrollbar == null) return;
-        double listAreaH = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double totalH = items.size() * (TAG_HEIGHT + 2);
+        double listAreaH = visibleListViewportHeight();
+        double totalH = tagsContentHeight();
+        if (!listShowsScrollbar()) {
+            listScrollOffset = 0;
+        }
         double maxScroll = Math.max(0, totalH - listAreaH);
         scrollbar.maxValue(maxScroll);
-        scrollbar.visibleSize(listAreaH);
+        scrollbar.visibleSize(Math.max(1, listAreaH));
         scrollbar.setValue(Math.min(listScrollOffset, maxScroll));
         listScrollOffset = scrollbar.value();
     }
@@ -792,6 +857,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     public void update() {
         if (!visible || !enabled) return;
         ensureChildren();
+        updateBoundsHeight();
         if (screen != null) {
             updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
         }
@@ -810,7 +876,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         for (int i = 0; i < items.size(); i++) {
-            double tagY = listContentTop - listScrollOffset + i * (TAG_HEIGHT + 2);
+            double tagY = listContentTop - listScrollOffset + i * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
             double mx = screen != null ? screen.inputState().mouseX() : 0;
@@ -855,7 +921,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     private int getDeleteButtonX() {
-        double listW = width() - SCROLLBAR_WIDTH - SCROLL_GAP;
+        double listW = listInnerWidth(width());
         return (int) listW - TAG_PAD - TAG_CLOSE_SIZE;
     }
 
@@ -899,7 +965,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!expanded) return false;
 
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
-        double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        double listAreaHeight = visibleListViewportHeight();
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight) {
             int bodyIdx = hitTagBodyIndex(mouseX, mouseY);
             if (event.button() == 1 && bodyIdx >= 0) {
@@ -921,7 +987,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
             for (int i = 0; i < items.size(); i++) {
                 int closeX = getDeleteButtonX();
-                double tagY = listContentTop - listScrollOffset + i * (TAG_HEIGHT + 2);
+                double tagY = listContentTop - listScrollOffset + i * tagRowStride();
                 double delX = absX + closeX;
                 double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
                 if (mouseX >= delX && mouseX < delX + TAG_CLOSE_SIZE && mouseY >= delY && mouseY < delY + TAG_CLOSE_SIZE) {
@@ -953,7 +1019,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             double absY = absoluteY();
             int idx = pressedDeleteIndex;
             int closeX = getDeleteButtonX();
-            double tagY = listContentTop - listScrollOffset + idx * (TAG_HEIGHT + 2);
+            double tagY = listContentTop - listScrollOffset + idx * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
             double mouseX = event.mouseX();
@@ -963,6 +1029,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                     items.remove(idx);
                     exitUndoModeIfNeeded();
                     syncScrollbar();
+                    updateBoundsHeight();
                     fireListChanged();
                 }
             }

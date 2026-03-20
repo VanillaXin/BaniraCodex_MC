@@ -60,11 +60,13 @@ public final class ForgeConfigAdapter {
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
         Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
         Map<String, String> categoryTooltips = new LinkedHashMap<>();
+        Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs = new LinkedHashMap<>();
 
-        buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips);
+        buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips);
+        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
+                categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
@@ -103,7 +105,8 @@ public final class ForgeConfigAdapter {
     private static void buildFromClass(ForgeConfigSpec.Builder builder, Class<?> clazz, String prefix,
                                        List<ConfigEntryDescriptor> descriptors,
                                        Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
-                                       Map<String, String> categoryTooltips) {
+                                       Map<String, String> categoryTooltips,
+                                       Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         for (Field field : getAllFields(clazz)) {
             if (Modifier.isStatic(field.getModifiers())) continue;
 
@@ -118,11 +121,12 @@ public final class ForgeConfigAdapter {
                 TooltipResolution tr = resolveTooltip(field);
                 String[] fileC = tr.fileComments;
                 categoryTooltips.put(path, fileC.length > 0 ? fileC[0] : key);
+                categoryTitleSpecs.put(path, tr.toCategoryTitleSpec(key));
                 if (fileC.length > 0) {
                     builder.comment(fileC);
                 }
                 builder.push(key);
-                buildFromClass(builder, field.getType(), path, descriptors, valueMap, categoryTooltips);
+                buildFromClass(builder, field.getType(), path, descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
                 builder.pop();
                 continue;
             }
@@ -315,6 +319,22 @@ public final class ForgeConfigAdapter {
         static TooltipResolution multiline(List<String> lines) {
             return new TooltipResolution(lines.toArray(new String[0]),
                     ConfigEntryDescriptor.ConfigTooltipGuiKind.MULTILINE_LITERAL, "", Collections.emptyMap());
+        }
+
+        ConfigCategoryTitleSpec toCategoryTitleSpec(String fallbackKey) {
+            switch (guiKind) {
+                case TRANSLATION_KEY:
+                    return ConfigCategoryTitleSpec.translationKey(translationKey);
+                case LOCALIZED_STATIC:
+                    if (localizedByLang.isEmpty()) {
+                        return ConfigCategoryTitleSpec.literal(fallbackKey);
+                    }
+                    return ConfigCategoryTitleSpec.localized(localizedByLang);
+                case MULTILINE_LITERAL:
+                default:
+                    return ConfigCategoryTitleSpec.literal(
+                            fileComments.length > 0 ? fileComments[0] : fallbackKey);
+            }
         }
     }
 

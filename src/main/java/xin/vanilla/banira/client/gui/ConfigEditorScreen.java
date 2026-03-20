@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -213,7 +214,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
         for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
             CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
-            childPanel.text(child.getDisplayName()).expanded(false);
+            childPanel.text(ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
+                    configModId(), child.getDisplayName())).expanded(false);
             childPanel.contentGap(ROW_GAP);
             childPanel.headerHeight(ROW_HEIGHT);
             childPanel.onExpandChanged(p -> syncContentHeight());

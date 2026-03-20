@@ -24,16 +24,22 @@ public class ConfigHolder {
     private final List<ConfigEntryDescriptor> descriptors;
     private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap;
     /**
-     * 分类路径 -> 显示名（用于 GUI 层级展示）
+     * 分类路径 -> 显示名（用于 GUI 层级展示，兼容旧逻辑；配置编辑器折叠标题优先 {@link #categoryTitleSpecs}）
      */
     private final Map<String, String> categoryTooltips;
+
+    /**
+     * 分类路径 -> 折叠面板标题元数据（翻译键 / 多语言硬编码 / 字面量）
+     */
+    private final Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs;
 
     @Nullable
     private ModConfig modConfig;
 
     ConfigHolder(String modId, String configName, ModConfig.Type configType, ForgeConfigSpec spec,
                  List<ConfigEntryDescriptor> descriptors, Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
-                 Map<String, String> categoryTooltips) {
+                 Map<String, String> categoryTooltips,
+                 Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
         this.configName = configName;
         this.configType = configType;
@@ -41,6 +47,17 @@ public class ConfigHolder {
         this.descriptors = Collections.unmodifiableList(descriptors);
         this.valueMap = Collections.unmodifiableMap(valueMap);
         this.categoryTooltips = categoryTooltips != null ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTooltips)) : Collections.emptyMap();
+        this.categoryTitleSpecs = categoryTitleSpecs != null
+                ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTitleSpecs))
+                : Collections.emptyMap();
+    }
+
+    /**
+     * 获取某分类路径的折叠标题元数据；无记录时配置编辑器可回退 {@link CategoryTreeNode#getDisplayName()}。
+     */
+    @Nullable
+    public ConfigCategoryTitleSpec getCategoryTitleSpec(String categoryPath) {
+        return categoryTitleSpecs.get(categoryPath);
     }
 
     void setModConfig(@Nullable ModConfig modConfig) {

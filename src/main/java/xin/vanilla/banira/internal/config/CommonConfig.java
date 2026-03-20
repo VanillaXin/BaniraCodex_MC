@@ -97,6 +97,7 @@ public class CommonConfig implements ConfigData {
         public static final String HELP_INFO_NUM_PER_PAGE = "help.helpInfoNumPerPage";
         public static final String LANGUAGE_DEFAULT = "language.defaultLanguage";
         public static final String COMMAND_PREFIX = "command.commandPrefix";
+        public static final String COMMAND_HELP = "command.commandHelp";
         public static final String COMMAND_LANGUAGE = "command.commandLanguage";
         public static final String COMMAND_VIRTUAL_OP = "command.commandVirtualOp";
         public static final String PERMISSION_VIRTUAL_OP = "permission.virtualOpPermission";
@@ -130,6 +131,9 @@ public class CommonConfig implements ConfigData {
     public static class CommandCategory {
         @ConfigEntry.Gui.Tooltip(value = "指令前缀")
         private String commandPrefix = "banira";
+
+        @ConfigEntry.Gui.Tooltip(value = "帮助子指令名")
+        private String commandHelp = "help";
 
         @ConfigEntry.Gui.Tooltip(value = "设置语言子指令名")
         private String commandLanguage = "language";
@@ -232,6 +236,21 @@ public class CommonConfig implements ConfigData {
         public Command commandPrefix(String value) {
             if (holder != null) {
                 holder.set(Key.COMMAND_PREFIX, value);
+            }
+            return this;
+        }
+
+        public String commandHelp() {
+            if (holder == null) {
+                return "help";
+            }
+            String v = holder.get(Key.COMMAND_HELP);
+            return v != null && !v.isEmpty() ? v : "help";
+        }
+
+        public Command commandHelp(String value) {
+            if (holder != null) {
+                holder.set(Key.COMMAND_HELP, value);
             }
             return this;
         }

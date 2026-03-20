@@ -32,6 +32,19 @@ public class BaniraCommand {
      */
     public static final LiteralArgumentBuilder<CommandSource> VIRTUAL_OP = VirtualOpCommand.create();
 
+    /**
+     * 与非精简版完全相同的精简版条目不进入帮助列表，避免同一指令出现两行
+     */
+    private static boolean helpEntryDistinctFromBaseCommand(KeyValue<String, EnumCommandType> kv) {
+        EnumCommandType type = kv.value();
+        if (!type.name().endsWith("_CONCISE")) {
+            return true;
+        }
+        String shown = kv.key();
+        String base = getCommand(type.replaceConcise());
+        return shown == null || !shown.equals(base);
+    }
+
     private static void refreshHelpMessage() {
         HELP_MESSAGE = Arrays.stream(EnumCommandType.values())
                 .map(type -> {
@@ -43,6 +56,7 @@ public class BaniraCommand {
                 })
                 .filter(Objects::nonNull)
                 .filter(kv -> !kv.value().ignore())
+                .filter(BaniraCommand::helpEntryDistinctFromBaseCommand)
                 .sorted(Comparator.comparingInt(kv -> kv.value().sort()))
                 .collect(Collectors.toList());
     }
@@ -54,7 +68,7 @@ public class BaniraCommand {
         String prefix = CommonConfig.get().command().commandPrefix();
         switch (type) {
             case HELP:
-                return prefix + " help";
+                return prefix + " " + CommonConfig.get().command().commandHelp();
             case LANGUAGE:
             case LANGUAGE_CONCISE:
                 return prefix + " " + CommonConfig.get().command().commandLanguage();

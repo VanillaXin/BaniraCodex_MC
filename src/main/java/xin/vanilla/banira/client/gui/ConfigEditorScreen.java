@@ -46,7 +46,16 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_INNER = 10;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
-    private static final int LABEL_WIDTH = 140;
+    /**
+     * 配置项「键名/标签」列占行宽比例（值区与重置按钮另占剩余空间）
+     */
+    private static final double LABEL_COLUMN_WIDTH_RATIO = 0.32;
+    private static final double LABEL_COLUMN_MIN_WIDTH = 64;
+    private static final int GAP_LABEL_TO_VALUE = 4;
+    /**
+     * 值控件区最小宽度（过窄时压缩标签列）
+     */
+    private static final double VALUE_AREA_MIN_WIDTH = 56;
     private static final int RESET_BTN_SIZE = 18;
     private static final int RESET_BTN_GAP = 2;
     private static final int SCROLL_WIDTH = 6;
@@ -352,13 +361,47 @@ public class ConfigEditorScreen extends BaniraScreen {
         return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
     }
 
-    private double valueWidgetWidth(double w) {
-        return w - LABEL_WIDTH - 4 - RESET_BTN_SIZE - RESET_BTN_GAP;
+    // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
+
+    /**
+     * 标签列右边界 X（值控件从此处开始，左侧留出 {@link #GAP_LABEL_TO_VALUE} 给标签文字）
+     */
+    private double labelColumnEndX(double rowWidth) {
+        if (rowWidth <= 1) {
+            return 1;
+        }
+        double reservedRight = RESET_BTN_GAP + RESET_BTN_SIZE;
+        double maxEnd = rowWidth - reservedRight - VALUE_AREA_MIN_WIDTH;
+        if (maxEnd < 1) {
+            return Math.max(1, rowWidth * 0.2);
+        }
+        double fromRatio = rowWidth * LABEL_COLUMN_WIDTH_RATIO;
+        double inner = Math.min(fromRatio, maxEnd);
+        double end = Math.max(LABEL_COLUMN_MIN_WIDTH, inner);
+        if (end > maxEnd) {
+            end = Math.max(1, maxEnd);
+        }
+        return end;
     }
 
-    private double resetBtnX(double w) {
-        return w - RESET_BTN_SIZE;
+    private double labelTextWidth(double rowWidth) {
+        return Math.max(1, labelColumnEndX(rowWidth) - GAP_LABEL_TO_VALUE);
     }
+
+    private double valueStartX(double rowWidth) {
+        return labelColumnEndX(rowWidth);
+    }
+
+    private double valueWidgetWidth(double rowWidth) {
+        double vw = rowWidth - labelColumnEndX(rowWidth) - RESET_BTN_GAP - RESET_BTN_SIZE;
+        return Math.max(1, vw);
+    }
+
+    private double resetBtnX(double rowWidth) {
+        return rowWidth - RESET_BTN_SIZE;
+    }
+
+    // endregion 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
 
     private void addResetButton(EntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH, Consumer<Object> setValue) {
         int btnY = (rowH - RESET_BTN_SIZE) / 2;
@@ -389,14 +432,14 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
         InputWidget input = new InputWidget(this);
         input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
+        input.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         Object raw = holder.get(desc.getPath());
         String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
         input.value(str);
@@ -419,7 +462,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
             return null;
         }
-        TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
+        TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, labelTextWidth(w), rowH));
         tooltip.id("tip_" + desc.getPath().replace(".", "_"));
         tooltip.text(ConfigEntryTooltipTexts.guiTooltipComponent(desc, configModId()));
         tooltip.popupAtScreenCoords(true);
@@ -432,7 +475,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
@@ -440,7 +483,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         boolean val = Boolean.TRUE.equals(holder.get(desc.getPath()));
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("cfg_" + desc.getPath().replace(".", "_"));
-        btn.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
+        btn.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         btn.text(val ? "§aON" : "§cOFF");
         btn.onClick(b -> {
             boolean newVal = !Boolean.TRUE.equals(holder.get(desc.getPath()));
@@ -465,7 +508,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
@@ -492,7 +535,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         SliderWidget slider = new SliderWidget(this);
         slider.id("cfg_" + desc.getPath().replace(".", "_"));
-        slider.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
+        slider.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         slider.minValue(min).maxValue(max).step(step).value(initVal);
         slider.decimalPlaces(desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE
                 ? desc.getDecimalPlaces() : 0);
@@ -540,7 +583,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
@@ -552,7 +595,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
         dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
-        dropdown.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), rowH));
+        dropdown.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         dropdown.options(options);
         dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
         dropdown.onSelectionChanged(v -> {
@@ -590,7 +633,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, LABEL_WIDTH - 4, rowH));
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
         label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
@@ -602,7 +645,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         TagListEditorWidget tagList = new TagListEditorWidget(this);
         tagList.id("cfg_" + desc.getPath().replace(".", "_"));
-        tagList.bounds(new ScreenCoordinate(LABEL_WIDTH, 0, valueWidgetWidth(w), TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
+        tagList.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
         tagList.itemType(TagListEditorWidget.ItemType.TEXT);
         tagList.items(items);
         tagList.expanded(false);

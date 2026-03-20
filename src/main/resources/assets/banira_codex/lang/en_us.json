@@ -103,5 +103,6 @@
   "word.banira_codex.tag_list_clear_tooltip": "Clear list",
   "word.banira_codex.tag_list_add_tooltip": "Add item",
   "word.banira_codex.tag_list_undo_tooltip": "Undo clear",
-  "word.banira_codex.tag_list_confirm_add": "Add"
+  "word.banira_codex.tag_list_confirm_add": "Add",
+  "word.banira_codex.tag_list_row_hint": "Double-click to edit · Right-click to copy"
 }

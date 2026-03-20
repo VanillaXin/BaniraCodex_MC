@@ -18,6 +18,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -131,6 +132,15 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private IWidget addInputWidget;
     @Nullable
     private ButtonWidget addConfirmButton;
+
+    /**
+     * 行内编辑中的输入控件（双击列表项进入）
+     */
+    @Nullable
+    private IWidget editWidget;
+    private int editingIndex = -1;
+
+    private int hoveredTagBodyIndex = -1;
 
     /**
      * 子组件处理点击时，应获得焦点的目标（供 getFocusTarget 使用）
@@ -377,7 +387,159 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
     }
 
+    private void cancelInlineEdit() {
+        if (editWidget != null) {
+            if (screen != null && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused()) {
+                screen.unfocusWidget(editWidget);
+            }
+            removeChild(editWidget);
+            editWidget = null;
+        }
+        editingIndex = -1;
+    }
+
+    private void scrollRowIntoView(int index) {
+        if (index < 0 || index >= items.size()) return;
+        double rowTop = index * (TAG_HEIGHT + 2);
+        double rowBottom = rowTop + TAG_HEIGHT;
+        double listAreaH = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        if (rowTop < listScrollOffset) {
+            listScrollOffset = rowTop;
+        }
+        if (rowBottom > listScrollOffset + listAreaH) {
+            listScrollOffset = rowBottom - listAreaH;
+        }
+        syncScrollbar();
+    }
+
+    private void startInlineEdit(int index) {
+        if (index < 0 || index >= items.size()) return;
+        cancelInlineEdit();
+        scrollRowIntoView(index);
+        editingIndex = index;
+        double listW = width() - SCROLLBAR_WIDTH - SCROLL_GAP;
+        double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        double rowY = listContentTop + index * (TAG_HEIGHT + 2) - listScrollOffset;
+        String label = formatItemLabel(items.get(index));
+        switch (itemType) {
+            case TEXT:
+            case ENUM:
+            case BOOLEAN: {
+                InputWidget input = new InputWidget(screen);
+                input.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
+                input.maxLength(itemType == ItemType.TEXT ? 64 : 128);
+                input.value(label);
+                editWidget = input;
+                break;
+            }
+            case NUMBER: {
+                NumericInputWidget num = new NumericInputWidget(screen);
+                num.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
+                num.value(label.isEmpty() ? "0" : label);
+                editWidget = num;
+                break;
+            }
+            default:
+                editingIndex = -1;
+                return;
+        }
+        if (screen != null && editWidget != null) {
+            editWidget.applyTheme(screen.getEffectiveTheme());
+        }
+        addChild(editWidget);
+        if (screen != null) {
+            screen.requestFocus(editWidget.getFocusTarget());
+        }
+    }
+
+    private void commitInlineEdit() {
+        if (editingIndex < 0 || editWidget == null || editingIndex >= items.size()) {
+            cancelInlineEdit();
+            return;
+        }
+        Object parsed = null;
+        switch (itemType) {
+            case TEXT: {
+                String v = ((InputWidget) editWidget).value();
+                if (v == null) v = "";
+                parsed = v.trim();
+                break;
+            }
+            case ENUM: {
+                String v = ((InputWidget) editWidget).value();
+                if (v == null || v.trim().isEmpty()) {
+                    cancelInlineEdit();
+                    return;
+                }
+                parsed = v.trim();
+                break;
+            }
+            case BOOLEAN: {
+                String v = ((InputWidget) editWidget).value();
+                if (v == null || v.trim().isEmpty()) {
+                    cancelInlineEdit();
+                    return;
+                }
+                parsed = Boolean.parseBoolean(v.trim());
+                break;
+            }
+            case NUMBER: {
+                NumericInputWidget num = (NumericInputWidget) editWidget;
+                String v = num.value();
+                if (v == null || v.trim().isEmpty()) {
+                    cancelInlineEdit();
+                    return;
+                }
+                parsed = num.getParsedValue();
+                break;
+            }
+            default:
+                cancelInlineEdit();
+                return;
+        }
+        items.set(editingIndex, parsed);
+        exitUndoModeIfNeeded();
+        syncScrollbar();
+        fireListChanged();
+        cancelInlineEdit();
+    }
+
+    private void copyRowToClipboard(int index) {
+        if (index < 0 || index >= items.size()) return;
+        String s = formatItemLabel(items.get(index));
+        Minecraft.getInstance().keyboardHandler.setClipboard(s);
+    }
+
+    /**
+     * @return 命中列表项正文区域（不含删除按钮）的索引，否则 -1
+     */
+    private int hitTagBodyIndex(double mouseX, double mouseY) {
+        double absX = absoluteX();
+        double absY = absoluteY();
+        double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        if (mouseY < absY + listContentTop || mouseY >= absY + listContentTop + listAreaHeight) {
+            return -1;
+        }
+        int closeX = getDeleteButtonX();
+        int bodyRight = (int) (absX + closeX - TAG_PAD);
+        if (mouseX < absX + TAG_PAD || mouseX >= bodyRight) {
+            return -1;
+        }
+        double relY = mouseY - (absY + listContentTop - listScrollOffset);
+        int i = (int) (relY / (TAG_HEIGHT + 2));
+        if (i < 0 || i >= items.size()) {
+            return -1;
+        }
+        double tagTop = absY + listContentTop + i * (TAG_HEIGHT + 2) - listScrollOffset;
+        if (mouseY < tagTop || mouseY >= tagTop + TAG_HEIGHT) {
+            return -1;
+        }
+        return i;
+    }
+
     private void onClearOrUndoClicked() {
+        cancelInlineEdit();
         if (undoMode) {
             items.clear();
             items.addAll(lastClearedItems);
@@ -403,6 +565,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     public TagListEditorWidget items(List<Object> items) {
+        cancelInlineEdit();
         this.items.clear();
         if (items != null) {
             this.items.addAll(items);
@@ -431,6 +594,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (addButton != null) addButton.applyTheme(theme);
         if (scrollbar != null) scrollbar.applyTheme(theme);
         if (addConfirmButton != null) addConfirmButton.applyTheme(theme);
+        if (editWidget != null) editWidget.applyTheme(theme);
     }
 
     @Override
@@ -477,6 +641,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             scrollbar.visible(false);
             if (addInputWidget != null) addInputWidget.visible(false);
             if (addConfirmButton != null) addConfirmButton.visible(false);
+            if (editWidget != null) editWidget.visible(false);
             return;
         }
 
@@ -553,7 +718,27 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         AbstractGuiUtils.popScissor();
         // endregion 标签列表
 
+        if (editWidget != null && expanded) {
+            double rowY = listContentTop + editingIndex * (TAG_HEIGHT + 2) - listScrollOffset;
+            ((BaseWidget) editWidget).bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
+            editWidget.visible(true);
+        }
+
         renderChildren(stack, partialTicks);
+
+        if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null) {
+            int mx = (int) screen.inputState().mouseX();
+            int my = (int) screen.inputState().mouseY();
+            final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;
+            Text rowHint = Text.from(Component.transClientAuto(BaniraCodex.MODID, "tag_list_row_hint"));
+            final BaniraColorConfig tooltipTheme = theme;
+            screen.addDeferredTooltipRender(s -> {
+                s.pushPose();
+                s.last().pose().setIdentity();
+                TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(rowHint.stack(s)).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
+                s.popPose();
+            });
+        }
     }
 
     private String formatItemLabel(Object item) {
@@ -605,6 +790,15 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
         int closeX = getDeleteButtonX();
         hoveredDeleteIndex = -1;
+        hoveredTagBodyIndex = -1;
+        if (expanded && editingIndex < 0 && screen != null) {
+            double mx = screen.inputState().mouseX();
+            double my = screen.inputState().mouseY();
+            int bodyIdx = hitTagBodyIndex(mx, my);
+            if (bodyIdx >= 0) {
+                hoveredTagBodyIndex = bodyIdx;
+            }
+        }
         for (int i = 0; i < items.size(); i++) {
             double tagY = listContentTop - listScrollOffset + i * (TAG_HEIGHT + 2);
             double delX = absX + closeX;
@@ -632,7 +826,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                     && ((DropdownSelectWidget) addInputWidget).dropdownOpen();
             boolean previewExpanded = addInputWidget instanceof DropdownSelectWidget
                     && ((DropdownSelectWidget) addInputWidget).previewExpanded();
-            if (!inputFocused && !confirmFocused && !dropdownOpen && !previewExpanded) {
+            boolean inlineEditing = editingIndex >= 0 && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused();
+            if (!inputFocused && !confirmFocused && !dropdownOpen && !previewExpanded && !inlineEditing) {
                 exitAddingMode();
             }
         }
@@ -663,6 +858,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                     if (child.handleMouseClick(event)) {
                         if (child == addInputWidget || child == addConfirmButton) {
                             lastClickFocusTarget = child == addConfirmButton ? addConfirmButton : addInputWidget.getFocusTarget();
+                        } else if (child == editWidget) {
+                            lastClickFocusTarget = editWidget.getFocusTarget();
                         }
                         return true;
                     }
@@ -671,6 +868,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         if (relY < HEADER_HEIGHT && event.button() == 0) {
+            cancelInlineEdit();
             expanded = !expanded;
             updateBoundsHeight();
             if (onExpandChanged != null) onExpandChanged.accept(this);
@@ -681,6 +879,19 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
         double listAreaHeight = CONTENT_HEIGHT - (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
+        if (relY >= listContentTop && relY < listContentTop + listAreaHeight) {
+            int bodyIdx = hitTagBodyIndex(mouseX, mouseY);
+            if (event.button() == 1 && bodyIdx >= 0) {
+                copyRowToClipboard(bodyIdx);
+                return true;
+            }
+            if (event.button() == 0 && bodyIdx >= 0) {
+                if (isDoubleClick(event)) {
+                    startInlineEdit(bodyIdx);
+                }
+                return true;
+            }
+        }
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
             for (int i = 0; i < items.size(); i++) {
                 int closeX = getDeleteButtonX();
@@ -753,6 +964,16 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     @Override
     public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
         if (!visible || !enabled) return false;
+        if (editingIndex >= 0 && editWidget != null && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused()) {
+            if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
+                cancelInlineEdit();
+                return true;
+            }
+            if (keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) {
+                commitInlineEdit();
+                return true;
+            }
+        }
         if (addInputWidget != null && addingMode) {
             if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
                 exitAddingMode();

@@ -82,6 +82,7 @@ public final class NotificationManager {
                 .positionName(notification.position().name())
                 .animationName(notification.animation().name())
                 .durationTime(notification.durationTime())
+                .styleName(notification.style() != null ? notification.style().name() : "NORMAL")
                 .source(fromNetwork ? "network" : "local");
         synchronized (log) {
             log.add(0, entry);
@@ -116,6 +117,7 @@ public final class NotificationManager {
                             .positionName(JsonUtils.getString(obj, "positionName", "TOP_RIGHT"))
                             .animationName(JsonUtils.getString(obj, "animationName", "AUTO"))
                             .durationTime(JsonUtils.getLong(obj, "durationTime", 5000))
+                            .styleName(JsonUtils.getString(obj, "styleName", "NORMAL"))
                             .source(JsonUtils.getString(obj, "source", "local"));
                     log.add(entry);
                 }
@@ -148,6 +150,7 @@ public final class NotificationManager {
                     obj.addProperty("positionName", e.positionName());
                     obj.addProperty("animationName", e.animationName());
                     obj.addProperty("durationTime", e.durationTime());
+                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
                     obj.addProperty("source", e.source());
                     arr.add(obj);
                 }

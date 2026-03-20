@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.network.packet;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -11,11 +10,15 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
-import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.common.util.MessageUtils;
+import xin.vanilla.banira.common.util.Translator;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
@@ -53,7 +56,7 @@ public class ConfigSyncToServer {
         }
     }
 
-    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx, SimpleChannel replyChannel) {
+    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if (!ctx.get().getDirection().getReceptionSide().isServer()) {
                 return;
@@ -63,20 +66,20 @@ public class ConfigSyncToServer {
                 return;
             }
             if (packet.changes.isEmpty()) {
-                sendNotify(player, replyChannel, "config_editor_sync_server_empty", NOTIFY_ERR_MS);
+                sendNotify(player, "config_editor_sync_server_empty", NOTIFY_ERR_MS);
                 return;
             }
             if (!player.hasPermissions(2)) {
-                sendNotify(player, replyChannel, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
+                sendNotify(player, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
                 return;
             }
             ConfigHolder holder = ConfigRegistry.get(packet.configName);
             if (holder == null) {
-                sendNotify(player, replyChannel, "config_editor_sync_server_unknown_config", NOTIFY_ERR_MS, packet.configName);
+                sendNotify(player, "config_editor_sync_server_unknown_config", NOTIFY_ERR_MS, packet.configName);
                 return;
             }
             if (!holder.canSyncToServer()) {
-                sendNotify(player, replyChannel, "config_editor_sync_server_not_applicable", NOTIFY_ERR_MS);
+                sendNotify(player, "config_editor_sync_server_not_applicable", NOTIFY_ERR_MS);
                 return;
             }
             try {
@@ -87,22 +90,22 @@ public class ConfigSyncToServer {
                     }
                 }
                 saveConfig(holder);
-                sendNotify(player, replyChannel, "config_editor_sync_server_ok", NOTIFY_OK_MS,
+                sendNotify(player, "config_editor_sync_server_ok", NOTIFY_OK_MS,
                         String.valueOf(packet.changes.size()));
             } catch (Exception ex) {
                 String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
-                sendNotify(player, replyChannel, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
+                sendNotify(player, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
         ctx.get().setPacketHandled(true);
     }
 
-    private static void sendNotify(ServerPlayerEntity player, SimpleChannel channel, String langKey, long durationMs, Object... args) {
+    private static void sendNotify(ServerPlayerEntity player, String langKey, long durationMs, Object... args) {
+        String lang = Translator.getPlayerLanguage(player);
         Component text = args.length > 0
-                ? Component.transClientAuto(BaniraCodex.MODID, langKey, args)
-                : Component.transClientAuto(BaniraCodex.MODID, langKey);
-        NotificationToClient notify = new NotificationToClient(text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
-        PacketUtils.sendPacketToPlayer(channel, notify, player);
+                ? Component.transAuto(BaniraCodex.MODID, langKey, args).languageCode(lang)
+                : Component.transAuto(BaniraCodex.MODID, langKey).languageCode(lang);
+        MessageUtils.sendNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
     }
 
     private static Object parseValue(ConfigHolder holder, String path, String value) {
@@ -123,9 +126,9 @@ public class ConfigSyncToServer {
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);
                     return e;
                 case STRING_LIST:
-                    if (value == null || value.isEmpty()) return java.util.Collections.emptyList();
-                    return java.util.Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                            .collect(java.util.stream.Collectors.toList());
+                    if (value == null || value.isEmpty()) return Collections.emptyList();
+                    return Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
                 default:
                     return value;
             }

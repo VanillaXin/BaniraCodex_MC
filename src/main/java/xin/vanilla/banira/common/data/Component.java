@@ -837,8 +837,12 @@ public class Component implements Cloneable, Serializable {
         result.i18nType(EnumI18nType.valueOf(JsonUtils.getString(jsonObject, "i18nType")));
         result.modId(JsonUtils.getString(jsonObject, "modId", null));
         result.languageCode(JsonUtils.getString(jsonObject, "languageCode", null));
-        result.color(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "color", 0)));
-        result.bgColor(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "bgColor", 0)));
+        if (jsonObject.has("color")) {
+            result.color(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "color")));
+        }
+        if (jsonObject.has("bgColor")) {
+            result.bgColor(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "bgColor")));
+        }
         result.shadow(JsonUtils.getBoolean(jsonObject, "shadow", false));
         result.bold(JsonUtils.getBoolean(jsonObject, "bold", false));
         result.italic(JsonUtils.getBoolean(jsonObject, "italic", false));

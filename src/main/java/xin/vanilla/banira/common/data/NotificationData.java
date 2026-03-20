@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.data;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 
@@ -35,6 +36,10 @@ public class NotificationData {
     // region 位置与动画
     private EnumPosition position = EnumPosition.TOP_RIGHT;
     private EnumMoveType animation = EnumMoveType.AUTO;
+    /**
+     * 语义样式
+     */
+    private EnumNotificationStyle style = EnumNotificationStyle.NORMAL;
     // endregion
 
     protected NotificationData() {
@@ -45,10 +50,15 @@ public class NotificationData {
     }
 
     public static NotificationData of(Component component, EnumPosition position, EnumMoveType animation, long durationTime) {
+        return of(component, position, animation, durationTime, EnumNotificationStyle.NORMAL);
+    }
+
+    public static NotificationData of(Component component, EnumPosition position, EnumMoveType animation, long durationTime, EnumNotificationStyle style) {
         NotificationData d = new NotificationData(component);
         d.position(position != null ? position : EnumPosition.TOP_RIGHT);
         d.animation(animation != null ? animation : EnumMoveType.AUTO);
         d.durationTime(durationTime > 0 ? durationTime : 5000L);
+        d.style(style != null ? style : EnumNotificationStyle.NORMAL);
         return d;
     }
 }

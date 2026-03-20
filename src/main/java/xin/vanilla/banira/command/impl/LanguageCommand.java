@@ -47,8 +47,8 @@ public final class LanguageCommand {
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
         String lang = CommandUtils.getLanguage(context.getSource());
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
-        Component clientTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "suggest_language_client");
-        Component serverTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "suggest_language_server");
+        Component clientTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "suggest_language_client");
+        Component serverTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "suggest_language_server");
         builder.suggest("client", clientTooltip.toVanilla(lang));
         builder.suggest("server", serverTooltip.toVanilla(lang));
         translator.getI18nFiles().forEach(builder::suggest);

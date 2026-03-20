@@ -257,6 +257,57 @@ public final class BaniraColorConfig {
         return borderHover;
     }
 
+    // region 通知条（按语义类型，由客户端根据当前主题计算）
+
+    public int notificationNormalBg() {
+        return popupBg();
+    }
+
+    public int notificationNormalBorder() {
+        return popupBorder();
+    }
+
+    public int notificationNormalText() {
+        return textPrimary();
+    }
+
+    public int notificationWarningBg() {
+        return bgTertiary();
+    }
+
+    public int notificationWarningBorder() {
+        return accent();
+    }
+
+    public int notificationWarningText() {
+        return textPrimary();
+    }
+
+    public int notificationErrorBg() {
+        return inputBgError();
+    }
+
+    public int notificationErrorBorder() {
+        return error();
+    }
+
+    public int notificationErrorText() {
+        return error();
+    }
+
+    public int notificationSuccessBg() {
+        return bgSecondary();
+    }
+
+    public int notificationSuccessBorder() {
+        return accent();
+    }
+
+    public int notificationSuccessText() {
+        return accent();
+    }
+    // endregion
+
     /**
      * 弹出项悬停背景色
      */

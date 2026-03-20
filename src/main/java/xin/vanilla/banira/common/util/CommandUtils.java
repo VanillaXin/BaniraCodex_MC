@@ -45,7 +45,7 @@ public final class CommandUtils {
             CommandSource source = context.getSource();
             Entity entity = source.getEntity();
             if (entity instanceof ServerPlayerEntity) {
-                MessageUtils.sendMessage((ServerPlayerEntity) entity, Component.trans(EnumI18nType.FORMAT, "mod_disabled"));
+                MessageUtils.sendMessage((ServerPlayerEntity) entity, Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "mod_disabled"));
             }
         }
         return modDisabled.get();

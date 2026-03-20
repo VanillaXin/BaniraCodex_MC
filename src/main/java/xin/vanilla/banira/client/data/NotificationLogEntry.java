@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 
@@ -24,6 +25,7 @@ public class NotificationLogEntry {
     private String positionName;
     private String animationName;
     private long durationTime;
+    private String styleName = "NORMAL";
     private String source; // "network" | "local"
 
     public Component component() {
@@ -45,5 +47,9 @@ public class NotificationLogEntry {
         } catch (Exception e) {
             return EnumMoveType.AUTO;
         }
+    }
+
+    public EnumNotificationStyle style() {
+        return EnumNotificationStyle.valueOfEx(styleName);
     }
 }

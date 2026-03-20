@@ -12,7 +12,9 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -135,7 +137,16 @@ public final class MessageUtils {
      * @param component 通知内容
      */
     public static void sendNotification(ServerPlayerEntity player, Component component) {
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(component), player);
+        sendNotification(player, component, EnumNotificationStyle.NORMAL);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     */
+    public static void sendNotification(ServerPlayerEntity player, Component component, EnumNotificationStyle style) {
+        Component payload = literalComponent(player, component);
+        NotificationData data = NotificationData.of(payload, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style);
+        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
     }
 
     /**
@@ -148,17 +159,43 @@ public final class MessageUtils {
      * @param durationTimeMs 持续时间（毫秒）
      */
     public static void sendNotification(ServerPlayerEntity player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs) {
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(component, position, animation, durationTimeMs), player);
+        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     */
+    public static void sendNotification(ServerPlayerEntity player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
+        Component payload = literalComponent(player, component);
+        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style);
+        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
+    }
+
+    /**
+     * 将通知内容按目标玩家语言解析为纯文本 {@link Component#literal}
+     */
+    public static Component literalComponent(ServerPlayerEntity player, Component component) {
+        if (component == null || component.isEmpty()) {
+            return Component.literal("");
+        }
+        String lang = Translator.getPlayerLanguage(player);
+        String resolved = component.getString(lang, true, true);
+        return Component.literal(resolved != null ? resolved : "");
     }
 
     /**
      * 向所有在线玩家广播 Notification
-     *
-     * @param component 通知内容
      */
     public static void broadcastNotification(Component component) {
+        broadcastNotification(component, EnumNotificationStyle.NORMAL);
+    }
+
+    /**
+     * 向所有在线玩家广播 Notification
+     */
+    public static void broadcastNotification(Component component, EnumNotificationStyle style) {
         for (ServerPlayerEntity player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
-            sendNotification(player, component);
+            sendNotification(player, component, style);
         }
     }
 

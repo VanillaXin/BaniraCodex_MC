@@ -53,14 +53,14 @@ public final class HelpCommand {
                 if (keyValue.value().name().toLowerCase().contains("concise")) {
                     commandTips = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "concise", keyValue.key());
                 } else {
-                    commandTips = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, keyValue.value().name().toLowerCase());
+                    commandTips = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, keyValue.value().name().toLowerCase());
                 }
                 commandTips.color(EnumMCColor.GRAY.getColor());
                 String com = "/" + keyValue.key();
                 helpInfo.append(Component.literal(com)
                                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
                                 .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "click_to_suggest").toVanilla(lang)))
+                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
                         .append(new Component(" -> ").color(EnumMCColor.YELLOW.getColor()))
                         .append(commandTips);
@@ -76,7 +76,7 @@ public final class HelpCommand {
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                     String.format("/%s help %d", BaniraCommand.getCommandPrefix(), page - 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "previous_page").toVanilla(lang)));
+                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "previous_page").toVanilla(lang)));
                 } else {
                     prevButton.color(EnumMCColor.DARK_AQUA.getColor());
                 }
@@ -91,7 +91,7 @@ public final class HelpCommand {
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                     String.format("/%s help %d", BaniraCommand.getCommandPrefix(), page + 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "next_page").toVanilla(lang)));
+                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "next_page").toVanilla(lang)));
                 } else {
                     nextButton.color(EnumMCColor.DARK_AQUA.getColor());
                 }
@@ -105,12 +105,12 @@ public final class HelpCommand {
                 helpInfo.append(Component.literal(com)
                                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
                                 .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "click_to_suggest").toVanilla(lang)))
+                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
                         .append("\n")
-                        .append(Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, command.toLowerCase() + "_detail").color(EnumMCColor.GRAY.getColor()));
+                        .append(Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, command.toLowerCase() + "_detail").color(EnumMCColor.GRAY.getColor()));
             } catch (IllegalArgumentException e) {
-                helpInfo = Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "command_not_found").color(0xFFFF0000);
+                helpInfo = Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "command_not_found").color(0xFFFF0000);
             }
         }
         MessageUtils.sendMessage(player, helpInfo);

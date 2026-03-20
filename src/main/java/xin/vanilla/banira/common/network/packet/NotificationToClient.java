@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 
@@ -26,21 +27,28 @@ public class NotificationToClient {
     private static final int MAX_COMPONENT_JSON_LENGTH = 16384;
     private static final String DEFAULT_POSITION = "TOP_RIGHT";
     private static final String DEFAULT_ANIMATION = "AUTO";
+    private static final String DEFAULT_STYLE = "NORMAL";
 
     private final String componentJson;
     private final String positionName;
     private final String animationName;
     private final long durationTime;
+    private final String styleName;
 
     public NotificationToClient(Component component, EnumPosition position, EnumMoveType animation, long durationTime) {
+        this(component, position, animation, durationTime, EnumNotificationStyle.NORMAL);
+    }
+
+    public NotificationToClient(Component component, EnumPosition position, EnumMoveType animation, long durationTime, EnumNotificationStyle style) {
         this.componentJson = JsonUtils.toString(Component.serialize(component));
         this.positionName = position != null ? position.name() : DEFAULT_POSITION;
         this.animationName = animation != null ? animation.name() : DEFAULT_ANIMATION;
         this.durationTime = durationTime > 0 ? durationTime : 5000L;
+        this.styleName = style != null ? style.name() : DEFAULT_STYLE;
     }
 
     public NotificationToClient(NotificationData data) {
-        this(data.component(), data.position(), data.animation(), data.durationTime());
+        this(data.component(), data.position(), data.animation(), data.durationTime(), data.style());
     }
 
     public NotificationToClient(Component component) {
@@ -52,6 +60,7 @@ public class NotificationToClient {
         this.positionName = buf.readUtf(64);
         this.animationName = buf.readUtf(64);
         this.durationTime = buf.readLong();
+        this.styleName = buf.readUtf(32);
     }
 
     public void toBytes(PacketBuffer buf) {
@@ -59,6 +68,7 @@ public class NotificationToClient {
         buf.writeUtf(this.positionName != null ? this.positionName : DEFAULT_POSITION, 64);
         buf.writeUtf(this.animationName != null ? this.animationName : DEFAULT_ANIMATION, 64);
         buf.writeLong(this.durationTime);
+        buf.writeUtf(this.styleName != null ? this.styleName : DEFAULT_STYLE, 32);
     }
 
     public static void handle(NotificationToClient packet, Supplier<NetworkEvent.Context> ctx) {
@@ -86,8 +96,9 @@ public class NotificationToClient {
                 } catch (Exception ignored) {
                     animation = EnumMoveType.AUTO;
                 }
-                NotificationData data = NotificationData.of(component, position, animation, packet.durationTime());
-                Notification n = Notification.fromData(data);
+                EnumNotificationStyle style = EnumNotificationStyle.valueOfEx(packet.styleName());
+                NotificationData data = NotificationData.of(component, position, animation, packet.durationTime(), style);
+                Notification n = Notification.fromData(data, true);
                 NotificationManager.get().addNotification(n, true);
             } catch (Exception e) {
                 LOGGER.error("Failed to handle notification packet", e);

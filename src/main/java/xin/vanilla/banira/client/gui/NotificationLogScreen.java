@@ -295,8 +295,8 @@ public class NotificationLogScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(timeArgs);
         curY += lineH;
 
-        String metaStr = String.format("[%s] %s | %s | %dms",
-                sourceDisplay, entry.positionName(), entry.animationName(), entry.durationTime());
+        String metaStr = String.format("[%s] %s | %s | %s | %dms",
+                sourceDisplay, entry.style().name(), entry.positionName(), entry.animationName(), entry.durationTime());
         FontDrawArgs metaArgs = FontDrawArgs.ofPopo(Text.literal(metaStr).color(theme.textSecondary()).stack(stack).font(font))
                 .x(x).y(curY).fontSize(10).maxWidth(w).wrap(true)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);

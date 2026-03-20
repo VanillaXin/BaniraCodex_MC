@@ -6,10 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
-import xin.vanilla.banira.client.data.TransformArgs;
+import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
@@ -20,6 +17,7 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.ColorUtils;
 
@@ -70,17 +68,24 @@ public class Notification extends NotificationData {
     }
 
     /**
-     * 从共用数据创建（如网络包接收后）
+     * 从共用数据创建
      */
     public static Notification fromData(NotificationData data) {
-        Notification n = new Notification(data.component());
+        return fromData(data, false);
+    }
+
+    /**
+     * @param fromNetwork true 时按 {@link EnumNotificationStyle} 应用当前客户端主题
+     */
+    public static Notification fromData(NotificationData data, boolean fromNetwork) {
+        Component comp = data.component() != null ? data.component().clone() : Component.empty().clone();
+        Notification n = new Notification(comp);
         n.position(data.position());
         n.animation(data.animation());
         n.durationTime(data.durationTime());
         n.padding(data.padding());
         n.margin(data.margin());
-        n.bgColor(data.bgColor());
-        n.borderColor(data.borderColor());
+        n.style(data.style() != null ? data.style() : EnumNotificationStyle.NORMAL);
         n.borderSize(data.borderSize());
         n.radius(data.radius());
         n.scheduledTime(data.scheduledTime());
@@ -88,7 +93,49 @@ public class Notification extends NotificationData {
         n.maxSpeed(data.maxSpeed());
         n.acceleration(data.acceleration());
         n.decelerationDistance(data.decelerationDistance());
+        if (fromNetwork) {
+            n.applyClientNotificationStyle(n.style());
+        } else {
+            n.bgColor(data.bgColor());
+            n.borderColor(data.borderColor());
+        }
         return n;
+    }
+
+    private void applyClientNotificationStyle(EnumNotificationStyle style) {
+        BaniraColorConfig t = ClientThemeManager.getEffectiveTheme();
+        int bg;
+        int border;
+        int textArgb;
+        switch (style != null ? style : EnumNotificationStyle.NORMAL) {
+            case WARNING:
+                bg = t.notificationWarningBg();
+                border = t.notificationWarningBorder();
+                textArgb = t.notificationWarningText();
+                break;
+            case ERROR:
+                bg = t.notificationErrorBg();
+                border = t.notificationErrorBorder();
+                textArgb = t.notificationErrorText();
+                break;
+            case SUCCESS:
+                bg = t.notificationSuccessBg();
+                border = t.notificationSuccessBorder();
+                textArgb = t.notificationSuccessText();
+                break;
+            case NORMAL:
+            default:
+                bg = t.notificationNormalBg();
+                border = t.notificationNormalBorder();
+                textArgb = t.notificationNormalText();
+                break;
+        }
+        this.bgColor(Color.argb(bg));
+        this.borderColor(Color.argb(border));
+        Component c = this.component().clone();
+        c.color(Color.argb(textArgb));
+        this.component(c);
+        this.updateCachedText();
     }
 
     /**

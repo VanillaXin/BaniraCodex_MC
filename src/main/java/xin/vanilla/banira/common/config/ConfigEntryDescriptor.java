@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.config;
 import lombok.Builder;
 import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
+import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
 import java.util.List;
 
@@ -63,6 +64,22 @@ public class ConfigEntryDescriptor {
      * 关联的 ConfigValue
      */
     private final ForgeConfigSpec.ConfigValue<?> configValue;
+
+    /**
+     * 修改该条目（服务端同步）时的权限策略
+     */
+    @Builder.Default
+    private final ConfigEntry.EditPermissionPolicy editPermissionPolicy = ConfigEntry.EditPermissionPolicy.INHERIT;
+
+    /**
+     * {@link ConfigEntry.EditPermissionPolicy#FIELD_OVERRIDE} 时的权限等级
+     */
+    private final Integer fieldEditPermissionLevel;
+
+    /**
+     * {@link ConfigEntry.EditPermissionPolicy#FIELD_OVERRIDE} 时的虚拟权限完整键，可为 null 表示沿用全局虚拟键
+     */
+    private final String fieldEditVirtualPermissionKey;
 
     public enum ConfigValueType {
         STRING,

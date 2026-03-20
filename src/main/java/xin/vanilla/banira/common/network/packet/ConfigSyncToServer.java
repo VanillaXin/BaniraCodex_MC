@@ -10,14 +10,11 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -70,10 +67,6 @@ public class ConfigSyncToServer {
                 sendNotify(player, "config_editor_sync_server_empty", NOTIFY_ERR_MS);
                 return;
             }
-            if (!player.hasPermissions(2)) {
-                sendNotify(player, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
-                return;
-            }
             ConfigHolder holder = ConfigRegistry.get(packet.configName);
             if (holder == null) {
                 sendNotify(player, "config_editor_sync_server_unknown_config", NOTIFY_ERR_MS, packet.configName);
@@ -84,6 +77,13 @@ public class ConfigSyncToServer {
                 return;
             }
             try {
+                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
+                    ConfigEntryDescriptor pathDesc = holder.getDescriptor(e.getKey());
+                    if (!ConfigEditPermission.canModifyEntry(player, pathDesc)) {
+                        sendNotify(player, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
+                        return;
+                    }
+                }
                 for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                     Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
                     if (parsed != null) {

@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -53,7 +54,7 @@ public class ConfigFetchRequestToServer {
             if (player == null) {
                 return;
             }
-            if (!player.hasPermissions(2)) {
+            if (!ConfigEditPermission.canAccessServerConfigEditor(player)) {
                 sendErr(player, "config_editor_sync_server_no_permission");
                 return;
             }

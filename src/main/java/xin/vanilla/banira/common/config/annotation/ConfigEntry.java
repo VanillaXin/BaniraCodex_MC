@@ -28,6 +28,43 @@ public @interface ConfigEntry {
     String category() default "";
 
     /**
+     * 通过 GUI/网络修改<strong>服务端</strong>上该配置项时，如何判定权限。
+     */
+    enum EditPermissionPolicy {
+        /**
+         * 使用 {@link xin.vanilla.banira.internal.config.CommonConfig} 中「修改服务端配置」的全局设置
+         */
+        INHERIT,
+        /**
+         * 使用本注解中的 {@link RequiresEditPermission#permissionLevel()} 与 {@link RequiresEditPermission#virtualPermissionKey()}
+         */
+        FIELD_OVERRIDE
+    }
+
+    /**
+     * 声明修改该字段（同步至服务端时）所需的权限等级与虚拟权限键。
+     * <p>
+     * {@link EditPermissionPolicy#FIELD_OVERRIDE} 时：{@code permissionLevel == -1} 则仍沿用全局配置的权限等级；
+     * 虚拟权限键为空则仍沿用全局配置中的虚拟权限键。
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface RequiresEditPermission {
+        EditPermissionPolicy policy() default EditPermissionPolicy.INHERIT;
+
+        /**
+         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.command.CommandSource#hasPermission(int)} 一致；
+         * {@code -1} 表示 FIELD_OVERRIDE 时仍沿用全局「修改服务端配置」的权限等级
+         */
+        int permissionLevel() default -1;
+
+        /**
+         * 虚拟权限完整键（{@code modId:id}）；为空则 FIELD_OVERRIDE 时虚拟键仍继承全局配置
+         */
+        String virtualPermissionKey() default "";
+    }
+
+    /**
      * 整数/长整数范围
      */
     @Retention(RetentionPolicy.RUNTIME)

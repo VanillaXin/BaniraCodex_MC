@@ -128,39 +128,39 @@ public final class ForgeConfigAdapter {
                 List<String> tooltipList = comments != null && comments.length > 0 ? Arrays.asList(comments) : Collections.emptyList();
                 if (type == String.class) {
                     ForgeConfigSpec.ConfigValue<String> cv = builder.comment(comments).define(key, (String) defaultValue);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING, defaultValue, null, null, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING, defaultValue, null, null, null, tooltipList, 2);
                 } else if (type == boolean.class || type == Boolean.class) {
                     ForgeConfigSpec.ConfigValue<Boolean> cv = builder.comment(comments).define(key, (Boolean) defaultValue);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.BOOLEAN, defaultValue, null, null, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.BOOLEAN, defaultValue, null, null, null, tooltipList, 2);
                 } else if (type == int.class || type == Integer.class) {
                     ConfigEntry.BoundedDiscrete bd = field.getAnnotation(ConfigEntry.BoundedDiscrete.class);
                     int min = bd != null ? bd.min() : Integer.MIN_VALUE;
                     int max = bd != null ? bd.max() : Integer.MAX_VALUE;
                     ForgeConfigSpec.IntValue cv = builder.comment(comments).defineInRange(key, (Integer) defaultValue, min, max);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.INTEGER, defaultValue, min, max, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.INTEGER, defaultValue, min, max, null, tooltipList, 2);
                 } else if (type == long.class || type == Long.class) {
                     ConfigEntry.BoundedLong bl = field.getAnnotation(ConfigEntry.BoundedLong.class);
                     long min = bl != null ? bl.min() : Long.MIN_VALUE;
                     long max = bl != null ? bl.max() : Long.MAX_VALUE;
                     ForgeConfigSpec.LongValue cv = builder.comment(comments).defineInRange(key, (Long) defaultValue, min, max);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.LONG, defaultValue, min, max, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.LONG, defaultValue, min, max, null, tooltipList, 2);
                 } else if (type == double.class || type == Double.class) {
                     ConfigEntry.BoundedDouble bd = field.getAnnotation(ConfigEntry.BoundedDouble.class);
                     double min = bd != null ? bd.min() : Double.MIN_VALUE;
                     double max = bd != null ? bd.max() : Double.MAX_VALUE;
                     int decimalPlaces = bd != null ? bd.decimalPlaces() : 2;
                     ForgeConfigSpec.DoubleValue cv = builder.comment(comments).defineInRange(key, (Double) defaultValue, min, max);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tooltipList, decimalPlaces);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tooltipList, decimalPlaces);
                 } else if (List.class.isAssignableFrom(type)) {
                     @SuppressWarnings("unchecked")
                     List<String> defList = (List<String>) defaultValue;
                     ForgeConfigSpec.ConfigValue<List<? extends String>> cv = builder.comment(comments)
                             .defineList(key, defList != null ? defList : new ArrayList<>(), o -> o instanceof String);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tooltipList, 2);
                 } else if (type.isEnum()) {
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     ForgeConfigSpec.EnumValue cv = builder.comment(comments).defineEnum(key, (Enum) defaultValue);
-                    addDescriptor(path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.ENUM, defaultValue, null, null, (Class<? extends Enum<?>>) type, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.ENUM, defaultValue, null, null, (Class<? extends Enum<?>>) type, tooltipList, 2);
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to build config for field: " + path, e);
@@ -209,14 +209,14 @@ public final class ForgeConfigAdapter {
         return null;
     }
 
-    private static void addDescriptor(String path, ForgeConfigSpec.ConfigValue<?> cv,
+    private static void addDescriptor(Field field, String path, ForgeConfigSpec.ConfigValue<?> cv,
                                       List<ConfigEntryDescriptor> descriptors,
                                       Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
                                       ConfigEntryDescriptor.ConfigValueType valueType,
                                       Object defaultValue, Number min, Number max, Class<? extends Enum<?>> enumClass,
                                       List<String> tooltip, int decimalPlaces) {
         valueMap.put(path, cv);
-        descriptors.add(ConfigEntryDescriptor.builder()
+        ConfigEntryDescriptor.ConfigEntryDescriptorBuilder b = ConfigEntryDescriptor.builder()
                 .path(path)
                 .displayName(path.substring(path.lastIndexOf('.') + 1))
                 .tooltip(tooltip != null ? tooltip : Collections.emptyList())
@@ -226,8 +226,28 @@ public final class ForgeConfigAdapter {
                 .maxValue(max)
                 .decimalPlaces(decimalPlaces)
                 .enumClass(enumClass)
-                .configValue(cv)
-                .build());
+                .configValue(cv);
+        applyRequiresEditPermission(field, b);
+        descriptors.add(b.build());
+    }
+
+    private static void applyRequiresEditPermission(Field field, ConfigEntryDescriptor.ConfigEntryDescriptorBuilder b) {
+        ConfigEntry.RequiresEditPermission re = field.getAnnotation(ConfigEntry.RequiresEditPermission.class);
+        if (re == null || re.policy() != ConfigEntry.EditPermissionPolicy.FIELD_OVERRIDE) {
+            return;
+        }
+        boolean hasLevel = re.permissionLevel() >= 0;
+        boolean hasKey = re.virtualPermissionKey() != null && !re.virtualPermissionKey().isEmpty();
+        if (!hasLevel && !hasKey) {
+            return;
+        }
+        b.editPermissionPolicy(ConfigEntry.EditPermissionPolicy.FIELD_OVERRIDE);
+        if (hasLevel) {
+            b.fieldEditPermissionLevel(re.permissionLevel());
+        }
+        if (hasKey) {
+            b.fieldEditVirtualPermissionKey(re.virtualPermissionKey());
+        }
     }
 
     private static List<Field> getAllFields(Class<?> clazz) {
@@ -243,7 +263,6 @@ public final class ForgeConfigAdapter {
         return fields;
     }
 
-    @SuppressWarnings("unchecked")
     private static Object createProxy(Class<?>[] ifaces, Class<?> configClass, ConfigHolder holder, String prefix) {
         return Proxy.newProxyInstance(configClass.getClassLoader(), ifaces,
                 (proxy, method, args) -> {

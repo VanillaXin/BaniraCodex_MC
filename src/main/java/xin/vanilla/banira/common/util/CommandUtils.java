@@ -77,6 +77,16 @@ public final class CommandUtils {
     }
 
     /**
+     * 是否拥有指定完整虚拟权限键（{@code modId:id}）
+     */
+    public static boolean hasVirtualPermission(PlayerEntity player, String fullPermissionKey) {
+        if (player == null || fullPermissionKey == null || fullPermissionKey.isEmpty()) {
+            return false;
+        }
+        return VirtualPermissionManager.getRawVirtualPermission(player).contains(fullPermissionKey);
+    }
+
+    /**
      * 执行指令
      */
     public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command, int permission, boolean suppressedOutput) {

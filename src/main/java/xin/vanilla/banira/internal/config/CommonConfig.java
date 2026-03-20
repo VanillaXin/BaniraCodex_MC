@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
@@ -99,6 +100,8 @@ public class CommonConfig implements ConfigData {
         public static final String COMMAND_LANGUAGE = "command.commandLanguage";
         public static final String COMMAND_VIRTUAL_OP = "command.commandVirtualOp";
         public static final String PERMISSION_VIRTUAL_OP = "permission.virtualOpPermission";
+        public static final String PERMISSION_EDIT_SERVER_CONFIG = "permission.editServerConfigPermission";
+        public static final String PERMISSION_EDIT_SERVER_CONFIG_VKEY = "permission.editServerConfigVirtualPermissionKey";
     }
 
     @Getter
@@ -142,6 +145,13 @@ public class CommonConfig implements ConfigData {
         @ConfigEntry.Gui.Tooltip(value = "虚拟OP所需权限等级")
         @ConfigEntry.BoundedDiscrete(max = 4)
         private int virtualOpPermission = 4;
+
+        @ConfigEntry.Gui.Tooltip(value = "修改服务端配置所需权限等级（配置编辑器同步/拉取）")
+        @ConfigEntry.BoundedDiscrete(max = 4)
+        private int editServerConfigPermission = 2;
+
+        @ConfigEntry.Gui.Tooltip(value = "修改服务端配置所需虚拟权限完整键（modId:id，与虚拟OP中授予的键一致）")
+        private String editServerConfigVirtualPermissionKey = BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
     }
 
     public static final class Help {
@@ -273,6 +283,36 @@ public class CommonConfig implements ConfigData {
         public Permission virtualOpPermission(int value) {
             if (holder != null) {
                 holder.set(Key.PERMISSION_VIRTUAL_OP, value);
+            }
+            return this;
+        }
+
+        public int editServerConfigPermission() {
+            if (holder == null) {
+                return 2;
+            }
+            Integer v = holder.get(Key.PERMISSION_EDIT_SERVER_CONFIG);
+            return v != null ? v : 2;
+        }
+
+        public Permission editServerConfigPermission(int value) {
+            if (holder != null) {
+                holder.set(Key.PERMISSION_EDIT_SERVER_CONFIG, value);
+            }
+            return this;
+        }
+
+        public String editServerConfigVirtualPermissionKey() {
+            if (holder == null) {
+                return BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
+            }
+            String v = holder.get(Key.PERMISSION_EDIT_SERVER_CONFIG_VKEY);
+            return v != null && !v.isEmpty() ? v : BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
+        }
+
+        public Permission editServerConfigVirtualPermissionKey(String value) {
+            if (holder != null) {
+                holder.set(Key.PERMISSION_EDIT_SERVER_CONFIG_VKEY, value);
             }
             return this;
         }

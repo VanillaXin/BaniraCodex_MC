@@ -19,6 +19,7 @@ public enum EnumCommandType implements IVirtualPermissionType {
     HELP(HelpCommand::create, false, false),
     LANGUAGE(LanguageCommand::create, false, false),
     LANGUAGE_CONCISE(),
+    EDIT_SERVER_CONFIG(true, true),
     VIRTUAL_OP(VirtualOpCommand::create),
     VIRTUAL_OP_CONCISE(),
     ;

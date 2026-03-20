@@ -61,6 +61,8 @@ public class BaniraCommand {
             case VIRTUAL_OP:
             case VIRTUAL_OP_CONCISE:
                 return prefix + " " + CommonConfig.get().command().commandVirtualOp();
+            case EDIT_SERVER_CONFIG:
+                return null;
             default:
                 return prefix;
         }

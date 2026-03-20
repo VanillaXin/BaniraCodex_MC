@@ -16,6 +16,7 @@ import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -344,10 +345,9 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
     }
 
-    private static String getDescriptionText(ConfigEntryDescriptor desc) {
-        List<String> tooltip = desc.getTooltip();
-        if (tooltip == null || tooltip.isEmpty()) return "";
-        return String.join("\n", tooltip);
+    private String configModId() {
+        String id = holder.getModId();
+        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
     }
 
     private double valueWidgetWidth(double w) {
@@ -414,11 +414,12 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
-        String descText = getDescriptionText(desc);
-        if (descText.isEmpty()) return null;
+        if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
+            return null;
+        }
         TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, LABEL_WIDTH - 4, rowH));
         tooltip.id("tip_" + desc.getPath().replace(".", "_"));
-        tooltip.text(Component.literal(descText));
+        tooltip.text(ConfigEntryTooltipTexts.guiTooltipComponent(desc, configModId()));
         tooltip.popupAtScreenCoords(true);
         return tooltip;
     }

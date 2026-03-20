@@ -5,8 +5,12 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.common.util.StringUtils;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.*;
 
 /**
@@ -60,7 +64,7 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(configName, configType, spec, descriptors, valueMap, categoryTooltips);
+        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
@@ -111,56 +115,60 @@ public final class ForgeConfigAdapter {
             ConfigEntry.CollapsibleObject collapsibleAlt = field.getAnnotation(ConfigEntry.CollapsibleObject.class);
             boolean isNested = collapsible != null || collapsibleAlt != null;
             if (isNested) {
-                String[] tooltip = getTooltip(field);
-                categoryTooltips.put(path, tooltip != null && tooltip.length > 0 ? tooltip[0] : key);
-                builder.comment(tooltip).push(key);
+                TooltipResolution tr = resolveTooltip(field);
+                String[] fileC = tr.fileComments;
+                categoryTooltips.put(path, fileC.length > 0 ? fileC[0] : key);
+                if (fileC.length > 0) {
+                    builder.comment(fileC);
+                }
+                builder.push(key);
                 buildFromClass(builder, field.getType(), path, descriptors, valueMap, categoryTooltips);
                 builder.pop();
                 continue;
             }
 
-            String[] comments = getTooltip(field);
+            TooltipResolution tr = resolveTooltip(field);
+            String[] comments = tr.fileComments;
             Class<?> type = field.getType();
 
             try {
                 Object defaultValue = getDefaultValue(field);
 
-                List<String> tooltipList = comments != null && comments.length > 0 ? Arrays.asList(comments) : Collections.emptyList();
                 if (type == String.class) {
-                    ForgeConfigSpec.ConfigValue<String> cv = builder.comment(comments).define(key, (String) defaultValue);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING, defaultValue, null, null, null, tooltipList, 2);
+                    ForgeConfigSpec.ConfigValue<String> cv = applyFileComments(builder, comments).define(key, (String) defaultValue);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING, defaultValue, null, null, null, tr, 2);
                 } else if (type == boolean.class || type == Boolean.class) {
-                    ForgeConfigSpec.ConfigValue<Boolean> cv = builder.comment(comments).define(key, (Boolean) defaultValue);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.BOOLEAN, defaultValue, null, null, null, tooltipList, 2);
+                    ForgeConfigSpec.ConfigValue<Boolean> cv = applyFileComments(builder, comments).define(key, (Boolean) defaultValue);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.BOOLEAN, defaultValue, null, null, null, tr, 2);
                 } else if (type == int.class || type == Integer.class) {
                     ConfigEntry.BoundedDiscrete bd = field.getAnnotation(ConfigEntry.BoundedDiscrete.class);
                     int min = bd != null ? bd.min() : Integer.MIN_VALUE;
                     int max = bd != null ? bd.max() : Integer.MAX_VALUE;
-                    ForgeConfigSpec.IntValue cv = builder.comment(comments).defineInRange(key, (Integer) defaultValue, min, max);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.INTEGER, defaultValue, min, max, null, tooltipList, 2);
+                    ForgeConfigSpec.IntValue cv = applyFileComments(builder, comments).defineInRange(key, (Integer) defaultValue, min, max);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.INTEGER, defaultValue, min, max, null, tr, 2);
                 } else if (type == long.class || type == Long.class) {
                     ConfigEntry.BoundedLong bl = field.getAnnotation(ConfigEntry.BoundedLong.class);
                     long min = bl != null ? bl.min() : Long.MIN_VALUE;
                     long max = bl != null ? bl.max() : Long.MAX_VALUE;
-                    ForgeConfigSpec.LongValue cv = builder.comment(comments).defineInRange(key, (Long) defaultValue, min, max);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.LONG, defaultValue, min, max, null, tooltipList, 2);
+                    ForgeConfigSpec.LongValue cv = applyFileComments(builder, comments).defineInRange(key, (Long) defaultValue, min, max);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.LONG, defaultValue, min, max, null, tr, 2);
                 } else if (type == double.class || type == Double.class) {
                     ConfigEntry.BoundedDouble bd = field.getAnnotation(ConfigEntry.BoundedDouble.class);
                     double min = bd != null ? bd.min() : Double.MIN_VALUE;
                     double max = bd != null ? bd.max() : Double.MAX_VALUE;
                     int decimalPlaces = bd != null ? bd.decimalPlaces() : 2;
-                    ForgeConfigSpec.DoubleValue cv = builder.comment(comments).defineInRange(key, (Double) defaultValue, min, max);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tooltipList, decimalPlaces);
+                    ForgeConfigSpec.DoubleValue cv = applyFileComments(builder, comments).defineInRange(key, (Double) defaultValue, min, max);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tr, decimalPlaces);
                 } else if (List.class.isAssignableFrom(type)) {
                     @SuppressWarnings("unchecked")
                     List<String> defList = (List<String>) defaultValue;
-                    ForgeConfigSpec.ConfigValue<List<? extends String>> cv = builder.comment(comments)
+                    ForgeConfigSpec.ConfigValue<List<? extends String>> cv = applyFileComments(builder, comments)
                             .defineList(key, defList != null ? defList : new ArrayList<>(), o -> o instanceof String);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tooltipList, 2);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tr, 2);
                 } else if (type.isEnum()) {
                     @SuppressWarnings({"unchecked", "rawtypes"})
-                    ForgeConfigSpec.EnumValue cv = builder.comment(comments).defineEnum(key, (Enum) defaultValue);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.ENUM, defaultValue, null, null, (Class<? extends Enum<?>>) type, tooltipList, 2);
+                    ForgeConfigSpec.EnumValue cv = applyFileComments(builder, comments).defineEnum(key, (Enum) defaultValue);
+                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.ENUM, defaultValue, null, null, (Class<? extends Enum<?>>) type, tr, 2);
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to build config for field: " + path, e);
@@ -168,21 +176,146 @@ public final class ForgeConfigAdapter {
         }
     }
 
-    private static String[] getTooltip(Field field) {
-        try {
-            java.lang.annotation.Annotation a = field.getAnnotation(ConfigEntry.Gui.Tooltip.class);
-            if (a != null) {
-                Method m = a.getClass().getMethod("value");
-                String[] v = (String[]) m.invoke(a);
-                if (v != null && v.length > 0) return v;
+    private static ForgeConfigSpec.Builder applyFileComments(ForgeConfigSpec.Builder builder, String[] comments) {
+        if (comments != null && comments.length > 0) {
+            return builder.comment(comments);
+        }
+        return builder;
+    }
+
+    private static TooltipResolution resolveTooltip(Field field) {
+        ConfigEntry.Gui.Tooltip gt = field.getAnnotation(ConfigEntry.Gui.Tooltip.class);
+        if (gt != null) {
+            if (!StringUtils.isNullOrEmptyEx(gt.translationKey())) {
+                return TooltipResolution.translationKey(gt.translationKey().trim());
             }
-        } catch (Exception ignored) {
+            Map<String, String> langMap = tooltipLangMapFromAnnotation(gt);
+            if (!langMap.isEmpty()) {
+                List<String> fileLines = buildLocalizedTooltipFileLines(langMap);
+                return TooltipResolution.localized(Collections.unmodifiableMap(new LinkedHashMap<>(langMap)), fileLines);
+            }
+            String[] val = gt.value();
+            if (val != null && val.length > 0) {
+                List<String> lines = new ArrayList<>();
+                for (String s : val) {
+                    if (s != null) {
+                        lines.add(s);
+                    }
+                }
+                if (!lines.isEmpty()) {
+                    return TooltipResolution.multiline(lines);
+                }
+            }
         }
         ConfigEntry ce = field.getAnnotation(ConfigEntry.class);
         if (ce != null && ce.tooltip().length > 0) {
-            return ce.tooltip();
+            return TooltipResolution.multiline(Arrays.asList(ce.tooltip()));
         }
-        return new String[]{field.getName()};
+        return TooltipResolution.multiline(Collections.singletonList(field.getName()));
+    }
+
+    private static List<String> splitNonEmptyLines(String text) {
+        if (StringUtils.isNullOrEmptyEx(text)) {
+            return Collections.emptyList();
+        }
+        List<String> out = new ArrayList<>();
+        for (String line : text.split("\n", -1)) {
+            String t = line.trim();
+            if (!t.isEmpty()) {
+                out.add(t);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 写入 TOML 时各语言块的顺序（未列出的键按字典序排在末尾）
+     */
+    private static final String[] TOOLTIP_FILE_COMMENT_LANG_ORDER = {
+            "zh_cn", "zh_tw", "zh_hk",
+            "ja_jp", "ko_kr",
+            "en_us", "en_gb",
+            "de_de", "es_es", "es_mx", "fr_fr", "fr_ca", "it_it", "pl_pl", "pt_br", "pt_pt", "ru_ru"
+    };
+
+    private static Map<String, String> tooltipLangMapFromAnnotation(ConfigEntry.Gui.Tooltip gt) {
+        Map<String, String> m = new LinkedHashMap<>();
+        putTooltipLang(m, "en_us", gt.en_us());
+        putTooltipLang(m, "en_gb", gt.en_gb());
+        putTooltipLang(m, "zh_cn", gt.zh_cn());
+        putTooltipLang(m, "zh_tw", gt.zh_tw());
+        putTooltipLang(m, "zh_hk", gt.zh_hk());
+        putTooltipLang(m, "ja_jp", gt.ja_jp());
+        putTooltipLang(m, "ko_kr", gt.ko_kr());
+        putTooltipLang(m, "ru_ru", gt.ru_ru());
+        putTooltipLang(m, "de_de", gt.de_de());
+        putTooltipLang(m, "fr_fr", gt.fr_fr());
+        putTooltipLang(m, "fr_ca", gt.fr_ca());
+        putTooltipLang(m, "es_es", gt.es_es());
+        putTooltipLang(m, "es_mx", gt.es_mx());
+        putTooltipLang(m, "pt_br", gt.pt_br());
+        putTooltipLang(m, "pt_pt", gt.pt_pt());
+        putTooltipLang(m, "it_it", gt.it_it());
+        putTooltipLang(m, "pl_pl", gt.pl_pl());
+        return m;
+    }
+
+    private static void putTooltipLang(Map<String, String> m, String code, String text) {
+        if (!StringUtils.isNullOrEmptyEx(text)) {
+            m.put(code, text);
+        }
+    }
+
+    private static List<String> buildLocalizedTooltipFileLines(Map<String, String> langMap) {
+        List<String> fileLines = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (String code : TOOLTIP_FILE_COMMENT_LANG_ORDER) {
+            String raw = langMap.get(code);
+            if (raw == null) {
+                continue;
+            }
+            seen.add(code);
+            fileLines.addAll(splitNonEmptyLines(raw));
+        }
+        TreeSet<String> rest = new TreeSet<>(langMap.keySet());
+        rest.removeAll(seen);
+        for (String code : rest) {
+            String raw = langMap.get(code);
+            if (raw != null) {
+                fileLines.addAll(splitNonEmptyLines(raw));
+            }
+        }
+        return fileLines;
+    }
+
+    private static final class TooltipResolution {
+        final String[] fileComments;
+        final ConfigEntryDescriptor.ConfigTooltipGuiKind guiKind;
+        final String translationKey;
+        final Map<String, String> localizedByLang;
+
+        private TooltipResolution(String[] fileComments, ConfigEntryDescriptor.ConfigTooltipGuiKind guiKind,
+                                  String translationKey, Map<String, String> localizedByLang) {
+            this.fileComments = fileComments != null ? fileComments : new String[0];
+            this.guiKind = guiKind;
+            this.translationKey = translationKey != null ? translationKey : "";
+            this.localizedByLang = localizedByLang != null ? localizedByLang : Collections.emptyMap();
+        }
+
+        static TooltipResolution translationKey(String key) {
+            return new TooltipResolution(new String[0], ConfigEntryDescriptor.ConfigTooltipGuiKind.TRANSLATION_KEY,
+                    key, Collections.emptyMap());
+        }
+
+        static TooltipResolution localized(Map<String, String> localizedByLang, List<String> fileLines) {
+            return new TooltipResolution(fileLines.toArray(new String[0]),
+                    ConfigEntryDescriptor.ConfigTooltipGuiKind.LOCALIZED_STATIC, "", localizedByLang);
+        }
+
+        static TooltipResolution multiline(List<String> lines) {
+            return new TooltipResolution(lines.toArray(new String[0]),
+                    ConfigEntryDescriptor.ConfigTooltipGuiKind.MULTILINE_LITERAL, "", Collections.emptyMap());
+        }
     }
 
     private static Object getDefaultValue(Field field) throws Exception {
@@ -214,12 +347,16 @@ public final class ForgeConfigAdapter {
                                       Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
                                       ConfigEntryDescriptor.ConfigValueType valueType,
                                       Object defaultValue, Number min, Number max, Class<? extends Enum<?>> enumClass,
-                                      List<String> tooltip, int decimalPlaces) {
+                                      TooltipResolution tr, int decimalPlaces) {
         valueMap.put(path, cv);
+        List<String> fileLines = Arrays.asList(tr.fileComments);
         ConfigEntryDescriptor.ConfigEntryDescriptorBuilder b = ConfigEntryDescriptor.builder()
                 .path(path)
                 .displayName(path.substring(path.lastIndexOf('.') + 1))
-                .tooltip(tooltip != null ? tooltip : Collections.emptyList())
+                .tooltip(fileLines)
+                .tooltipGuiKind(tr.guiKind)
+                .tooltipTranslationKey(tr.translationKey)
+                .tooltipLocalizedByLang(tr.localizedByLang)
                 .valueType(valueType)
                 .defaultValue(defaultValue)
                 .minValue(min)

@@ -117,12 +117,67 @@ public @interface ConfigEntry {
     @Target(ElementType.FIELD)
     @interface Gui {
         /**
-         * 工具提示
+         * 工具提示（三种用法互斥，优先级从高到低）：
+         * <ol>
+         *   <li>{@code translationKey}：不写 TOML 注释，GUI 用模组翻译键</li>
+         *   <li>各 {@code xx_xx} 语言字段：TOML 多行注释（按固定语言顺序输出，字段内换行拆成多行），GUI 由 {@link xin.vanilla.banira.common.util.Translator#pickLocalizedMapValue(String, java.util.Map)} 按当前语言匹配（含族内回退，例如 {@code zh_tw} 可回落到 {@code zh_cn}）</li>
+         *   <li>{@code value}：{@code @Tooltip({"中文", "English"})} 与 {@code @Tooltip(value = {"中文", "English"})} 等价；TOML 与 GUI 均为这些行（GUI 合并为多行）</li>
+         * </ol>
          */
         @Retention(RetentionPolicy.RUNTIME)
         @Target(ElementType.FIELD)
         @interface Tooltip {
+            /**
+             * 模组内翻译键；指定后配置文件不写该项注释，编辑界面悬浮提示用该键走 i18n。
+             * <p>
+             * 优先级高于各语言字段与 {@link #value()}。
+             */
+            String translationKey() default "";
+
+            /**
+             * 多行硬编码说明（每元素一行）；写入配置文件为多行注释，悬浮提示合并为多行显示。
+             * <p>
+             * 可与 {@code @ConfigEntry#tooltip()} 二选一；未写 {@link #translationKey()} 且未写语言字段时使用。
+             */
             String[] value() default {};
+
+            // region 常见语言硬编码
+
+            String en_us() default "";
+
+            String en_gb() default "";
+
+            String zh_cn() default "";
+
+            String zh_tw() default "";
+
+            String zh_hk() default "";
+
+            String ja_jp() default "";
+
+            String ko_kr() default "";
+
+            String ru_ru() default "";
+
+            String de_de() default "";
+
+            String fr_fr() default "";
+
+            String fr_ca() default "";
+
+            String es_es() default "";
+
+            String es_mx() default "";
+
+            String pt_br() default "";
+
+            String pt_pt() default "";
+
+            String it_it() default "";
+
+            String pl_pl() default "";
+
+            // endregion 常见语言硬编码
         }
 
         /**

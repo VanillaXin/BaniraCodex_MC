@@ -204,23 +204,23 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (FMLEnvironment.dist.isClient()) {
-            return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+            return normalizeLanguageCode(Minecraft.getInstance().getLanguageManager().getSelected().getCode());
         }
-        return CustomConfig.getDefaultLanguage();
+        return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }
 
     /**
      * 获取服务端默认语言
      */
     public static String getServerLanguage() {
-        return CustomConfig.getDefaultLanguage();
+        return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }
 
     /**
      * 获取服务端玩家语言
      */
     public static String getServerPlayerLanguage(ServerPlayerEntity player) {
-        return player.getLanguage();
+        return normalizeLanguageCode(player.getLanguage());
     }
 
     /**
@@ -233,9 +233,9 @@ public class Translator implements ITranslator {
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {
-            return CustomConfig.getDefaultLanguage();
+            return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
         }
-        return language;
+        return normalizeLanguageCode(language);
     }
 
     /**
@@ -248,9 +248,132 @@ public class Translator implements ITranslator {
                     : CustomConfig.getPlayerLanguage(PlayerUtils.getPlayerUUIDString(player));
             return getValidLanguage(player, lang);
         } catch (IllegalArgumentException e) {
-            return CustomConfig.getDefaultLanguage();
+            return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
         }
     }
 
-    // endregion
+    // region 硬编码多语言映射（语言代码 → 文案）
+
+    /**
+     * 规范化 Minecraft 风格语言代码
+     */
+    public static String normalizeLanguageCode(@Nullable String languageCode) {
+        if (StringUtils.isNullOrEmptyEx(languageCode)) {
+            return "";
+        }
+        return languageCode.trim().toLowerCase(Locale.ROOT).replace('-', '_');
+    }
+
+    /**
+     * 从「语言代码 → 文案」映射中按当前语境选一条：精确匹配 → 同语族常用回退（如 {@code zh_tw} 可落到 {@code zh_cn}）→ {@code en_us}/{@code en_gb} → 任意一条。
+     * <p>
+     * 避免仅用 {@code en_us} 覆盖同语族变体。
+     *
+     * @param languageCode 期望语言，空则使用 {@link #getClientLanguage()}
+     * @param texts        键为规范语言代码（建议小写+下划线），值为非空文案
+     */
+    @NonNull
+    public static String pickLocalizedMapValue(@Nullable String languageCode, @Nullable Map<String, String> texts) {
+        if (texts == null || texts.isEmpty()) {
+            return "";
+        }
+        Map<String, String> norm = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : texts.entrySet()) {
+            if (e.getKey() == null || StringUtils.isNullOrEmptyEx(e.getValue())) {
+                continue;
+            }
+            norm.put(normalizeLanguageCode(e.getKey()), e.getValue());
+        }
+        if (norm.isEmpty()) {
+            return "";
+        }
+        String desired = normalizeLanguageCode(languageCode);
+        if (StringUtils.isNullOrEmptyEx(desired)) {
+            desired = normalizeLanguageCode(getClientLanguage());
+        }
+        String hit = norm.get(desired);
+        if (!StringUtils.isNullOrEmptyEx(hit)) {
+            return hit;
+        }
+        String primary = primaryLanguagePart(desired);
+        for (String code : orderedFallbackCodesForPrimary(primary, desired, norm)) {
+            hit = norm.get(code);
+            if (!StringUtils.isNullOrEmptyEx(hit)) {
+                return hit;
+            }
+        }
+        for (String code : Arrays.asList("en_us", "en_gb")) {
+            hit = norm.get(code);
+            if (!StringUtils.isNullOrEmptyEx(hit)) {
+                return hit;
+            }
+        }
+        for (String k : new TreeSet<>(norm.keySet())) {
+            hit = norm.get(k);
+            if (!StringUtils.isNullOrEmptyEx(hit)) {
+                return hit;
+            }
+        }
+        return "";
+    }
+
+    private static String primaryLanguagePart(String normalizedCode) {
+        int u = normalizedCode.indexOf('_');
+        return u < 0 ? normalizedCode : normalizedCode.substring(0, u);
+    }
+
+    private static List<String> orderedFallbackCodesForPrimary(String primary, String desired,
+                                                               Map<String, String> norm) {
+        List<String> ordered = new ArrayList<>();
+        switch (primary) {
+            case "zh":
+                ordered.addAll(Arrays.asList("zh_cn", "zh_tw", "zh_hk", "zh_sg"));
+                break;
+            case "en":
+                ordered.addAll(Arrays.asList("en_us", "en_gb"));
+                break;
+            case "pt":
+                ordered.addAll(Arrays.asList("pt_br", "pt_pt"));
+                break;
+            case "es":
+                ordered.addAll(Arrays.asList("es_es", "es_mx"));
+                break;
+            case "fr":
+                ordered.addAll(Arrays.asList("fr_fr", "fr_ca"));
+                break;
+            case "ja":
+                ordered.add("ja_jp");
+                break;
+            case "ko":
+                ordered.add("ko_kr");
+                break;
+            case "ru":
+                ordered.add("ru_ru");
+                break;
+            case "de":
+                ordered.add("de_de");
+                break;
+            case "it":
+                ordered.add("it_it");
+                break;
+            case "pl":
+                ordered.add("pl_pl");
+                break;
+            default:
+                break;
+        }
+        ordered.remove(desired);
+        TreeSet<String> extras = new TreeSet<>();
+        for (String k : norm.keySet()) {
+            if (primaryLanguagePart(k).equals(primary) && !k.equals(desired) && !ordered.contains(k)) {
+                extras.add(k);
+            }
+        }
+        ordered.addAll(extras);
+        return ordered;
+    }
+
+    // endregion 硬编码多语言映射（语言代码 → 文案）
+
+    // endregion 语言上下文（静态方法）
 }

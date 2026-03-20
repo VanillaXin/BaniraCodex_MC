@@ -13,6 +13,11 @@ import java.util.*;
 @Getter
 public class ConfigHolder {
 
+    /**
+     * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
+     */
+    private final String modId;
+
     private final String configName;
     private final ModConfig.Type configType;
     private final ForgeConfigSpec spec;
@@ -26,9 +31,10 @@ public class ConfigHolder {
     @Nullable
     private ModConfig modConfig;
 
-    ConfigHolder(String configName, ModConfig.Type configType, ForgeConfigSpec spec,
+    ConfigHolder(String modId, String configName, ModConfig.Type configType, ForgeConfigSpec spec,
                  List<ConfigEntryDescriptor> descriptors, Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
                  Map<String, String> categoryTooltips) {
+        this.modId = modId != null ? modId : "";
         this.configName = configName;
         this.configType = configType;
         this.spec = spec;
@@ -119,7 +125,9 @@ public class ConfigHolder {
         return result;
     }
 
-    /** 虚拟根节点路径，不渲染该节点本身，仅作为树的根 */
+    /**
+     * 虚拟根节点路径，不渲染该节点本身，仅作为树的根
+     */
     private static final String VIRTUAL_ROOT_PATH = "";
 
     /**

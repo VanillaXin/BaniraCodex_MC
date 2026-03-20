@@ -22,7 +22,7 @@ import java.util.function.Predicate;
  *     .defineInRange("sweepInterval", 600000L, 0L, 604800000L, "清理间隔(ms)")
  *     .define("entityList", Arrays.asList("minecraft:arrow"), "实体名单")
  *   .endCategory()
- *   .build();
+ *   .build(modId);
  * }</pre>
  */
 public final class ConfigSpecBuilder {
@@ -234,12 +234,19 @@ public final class ConfigSpecBuilder {
      * 构建 ForgeConfigSpec 并创建 ConfigHolder
      */
     public ConfigHolder build() {
+        return build("");
+    }
+
+    /**
+     * 构建 ForgeConfigSpec 并创建 ConfigHolder
+     */
+    public ConfigHolder build(String modId) {
         // 确保所有 push 都有对应的 pop
         while (!pathStack.isEmpty()) {
             builder.pop();
             pathStack.pop();
         }
         ForgeConfigSpec spec = builder.build();
-        return new ConfigHolder(configName, configType, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap), Collections.emptyMap());
+        return new ConfigHolder(modId, configName, configType, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap), Collections.emptyMap());
     }
 }

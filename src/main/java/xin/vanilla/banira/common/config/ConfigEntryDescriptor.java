@@ -5,7 +5,9 @@ import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 配置项描述符，用于 GUI 渲染与验证
@@ -25,9 +27,27 @@ public class ConfigEntryDescriptor {
     private final String displayName;
 
     /**
-     * 工具提示
+     * 写入配置文件的注释行（TOML）；{@link ConfigTooltipGuiKind#TRANSLATION_KEY} 时为空列表
      */
     private final List<String> tooltip;
+
+    /**
+     * 配置编辑器悬浮提示的展示方式
+     */
+    @Builder.Default
+    private final ConfigTooltipGuiKind tooltipGuiKind = ConfigTooltipGuiKind.MULTILINE_LITERAL;
+
+    /**
+     * {@link ConfigTooltipGuiKind#TRANSLATION_KEY} 时的模组翻译键
+     */
+    @Builder.Default
+    private final String tooltipTranslationKey = "";
+
+    /**
+     * {@link ConfigTooltipGuiKind#LOCALIZED_STATIC} 时的硬编码文案（小写语言代码，如 {@code zh_cn} → 全文，可含换行）
+     */
+    @Builder.Default
+    private final Map<String, String> tooltipLocalizedByLang = Collections.emptyMap();
 
     /**
      * 值类型
@@ -89,5 +109,24 @@ public class ConfigEntryDescriptor {
         DOUBLE,
         ENUM,
         STRING_LIST
+    }
+
+    /**
+     * 与 {@link xin.vanilla.banira.common.config.annotation.ConfigEntry.Gui.Tooltip} 三种写法对应
+     */
+    public enum ConfigTooltipGuiKind {
+        /**
+         * {@code translationKey}：不写文件注释，GUI 用翻译键
+         */
+        TRANSLATION_KEY,
+        /**
+         * 各语言字段：文件多行注释，GUI 用 {@link xin.vanilla.banira.common.util.Translator#pickLocalizedMapValue(String, java.util.Map)}
+         */
+        LOCALIZED_STATIC,
+        /**
+         * {@code value[]}：文件与 GUI 均为同一组文本行（GUI 多行合并）
+         */
+        MULTILINE_LITERAL,
+        ;
     }
 }

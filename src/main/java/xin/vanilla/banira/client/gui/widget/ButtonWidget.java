@@ -74,6 +74,20 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Setter
     private Consumer<ButtonWidget> onClick;
 
+    /**
+     * 左键长按达到 {@link #longPressDurationMs} 时触发；与 {@link #onClick} 互斥（长按触发后释放不再触发单击）。
+     */
+    @Getter
+    private Consumer<ButtonWidget> longPressHandler;
+
+    /**
+     * 长按判定时间（毫秒），默认 2000。
+     */
+    @Getter
+    private long longPressDurationMs = 2000L;
+
+    private boolean longPressHandlerFired;
+
     @Getter
     @Setter
     private int bgColor = BaniraColorConfig.winter().buttonBg();
@@ -290,6 +304,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return this;
     }
 
+    public ButtonWidget onLongPress(Consumer<ButtonWidget> handler) {
+        return onLongPress(2000L, handler);
+    }
+
+    public ButtonWidget onLongPress(long durationMs, Consumer<ButtonWidget> handler) {
+        this.longPressDurationMs = Math.max(1L, durationMs);
+        this.longPressHandler = handler;
+        return this;
+    }
+
+    @Override
+    protected long genericLongPressThresholdMs() {
+        return longPressHandler != null ? Long.MAX_VALUE : super.genericLongPressThresholdMs();
+    }
+
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) {
@@ -310,65 +339,89 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int drawWidth = width - marginLeft - marginRight;
         int drawHeight = height - marginTop - marginBottom;
 
+        boolean longPressProgress = enabled && longPressHandler != null && mousePressed && pressedMouseButton == 0;
+
         int currentBgColor;
-        if (!enabled) {
-            currentBgColor = disabledBgColor;
-        } else if (mousePressed) {
-            currentBgColor = pressedBgColor;
-        } else if (mouseInside) {
-            currentBgColor = hoverBgColor;
-        } else if (focused) {
-            currentBgColor = focusedBgColor;
-        } else {
-            currentBgColor = bgColor;
-        }
+        int currentBorderColor;
+        int currentTextColor;
+        int currentIconColor;
 
-        ShapeDrawArgs rect = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBgColor);
-        rect.rect().radius(radius).cornerMode(cornerMode);
-        BaseShapeWidget.drawShape(rect);
+        if (longPressProgress) {
+            float progress = longPressHandlerFired
+                    ? 1f
+                    : Math.min(1f, (System.currentTimeMillis() - mousePressStartMillis()) / (float) longPressDurationMs);
+            int fillW = Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress)));
 
-        if (borderWidth > 0) {
-            int currentBorderColor;
-            if (!enabled) {
-                currentBorderColor = disabledBorderColor;
-            } else if (mousePressed) {
-                currentBorderColor = pressedBorderColor;
-            } else if (mouseInside) {
-                currentBorderColor = hoverBorderColor;
-            } else if (focused) {
-                currentBorderColor = focusedBorderColor;
-            } else {
-                currentBorderColor = borderColor;
+            ShapeDrawArgs track = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, hoverBgColor);
+            track.rect().radius(radius).cornerMode(cornerMode);
+            BaseShapeWidget.drawShape(track);
+
+            if (fillW > 0) {
+                int ax = (int) Math.round(absoluteX()) + marginLeft;
+                int ay = (int) Math.round(absoluteY()) + marginTop;
+                AbstractGuiUtils.pushScissor(ax, ay, fillW, drawHeight);
+                ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+                fill.rect().radius(radius).cornerMode(cornerMode);
+                BaseShapeWidget.drawShape(fill);
+                AbstractGuiUtils.popScissor();
             }
 
-            ShapeDrawArgs border = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBorderColor);
-            border.rect().radius(radius).cornerMode(cornerMode).border(borderWidth);
-            BaseShapeWidget.drawShape(border);
-        }
+            if (borderWidth > 0) {
+                currentBorderColor = hoverBorderColor;
+                ShapeDrawArgs border = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBorderColor);
+                border.rect().radius(radius).cornerMode(cornerMode).border(borderWidth);
+                BaseShapeWidget.drawShape(border);
+            }
 
-        FontRenderer font = AbstractGuiUtils.getFont();
-
-        int currentTextColor;
-        if (!enabled) {
-            currentTextColor = disabledTextColor;
-        } else if (mousePressed) {
-            currentTextColor = pressedTextColor;
-        } else if (mouseInside) {
             currentTextColor = hoverTextColor;
-        } else if (focused) {
-            currentTextColor = focusedTextColor;
+            currentIconColor = hoverIconColor;
         } else {
-            currentTextColor = textColor;
-        }
+            if (!enabled) {
+                currentBgColor = disabledBgColor;
+            } else if (mousePressed) {
+                currentBgColor = pressedBgColor;
+            } else if (mouseInside) {
+                currentBgColor = hoverBgColor;
+            } else if (focused) {
+                currentBgColor = focusedBgColor;
+            } else {
+                currentBgColor = bgColor;
+            }
 
-        int contentX = drawX + paddingLeft;
-        int contentY = drawY + paddingTop;
-        int availableWidth = drawWidth - paddingLeft - paddingRight;
-        int availableHeight = drawHeight - paddingTop - paddingBottom;
+            ShapeDrawArgs rect = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBgColor);
+            rect.rect().radius(radius).cornerMode(cornerMode);
+            BaseShapeWidget.drawShape(rect);
 
-        // 预置图标或文本
-        if (presetStyle != null) {
-            int currentIconColor;
+            if (borderWidth > 0) {
+                if (!enabled) {
+                    currentBorderColor = disabledBorderColor;
+                } else if (mousePressed) {
+                    currentBorderColor = pressedBorderColor;
+                } else if (mouseInside) {
+                    currentBorderColor = hoverBorderColor;
+                } else if (focused) {
+                    currentBorderColor = focusedBorderColor;
+                } else {
+                    currentBorderColor = borderColor;
+                }
+
+                ShapeDrawArgs border = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBorderColor);
+                border.rect().radius(radius).cornerMode(cornerMode).border(borderWidth);
+                BaseShapeWidget.drawShape(border);
+            }
+
+            if (!enabled) {
+                currentTextColor = disabledTextColor;
+            } else if (mousePressed) {
+                currentTextColor = pressedTextColor;
+            } else if (mouseInside) {
+                currentTextColor = hoverTextColor;
+            } else if (focused) {
+                currentTextColor = focusedTextColor;
+            } else {
+                currentTextColor = textColor;
+            }
+
             if (!enabled) {
                 currentIconColor = disabledIconColor;
             } else if (mousePressed) {
@@ -380,6 +433,17 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             } else {
                 currentIconColor = iconColor;
             }
+        }
+
+        FontRenderer font = AbstractGuiUtils.getFont();
+
+        int contentX = drawX + paddingLeft;
+        int contentY = drawY + paddingTop;
+        int availableWidth = drawWidth - paddingLeft - paddingRight;
+        int availableHeight = drawHeight - paddingTop - paddingBottom;
+
+        // 预置图标或文本
+        if (presetStyle != null) {
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
         } else {
             FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
@@ -491,8 +555,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void update() {
         super.update();
-        if (!visible || !enabled) {
+        if (!visible || !enabled || longPressHandler == null) {
             return;
+        }
+        if (mousePressed && pressedMouseButton == 0 && !longPressHandlerFired) {
+            if (System.currentTimeMillis() - mousePressStartMillis() >= longPressDurationMs) {
+                longPressHandlerFired = true;
+                longPressHandler.accept(this);
+                LOGGER.debug("Button long-pressed: id={}", id);
+            }
         }
     }
 
@@ -500,6 +571,9 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     protected boolean onMouseClick(MouseEvent event) {
         boolean result = super.onMouseClick(event);
         if (event != null && event.button() == 0 && enabled) {
+            if (longPressHandler != null) {
+                longPressHandlerFired = false;
+            }
             result = true;
         }
         return result;
@@ -508,12 +582,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     protected boolean onMouseRelease(MouseEvent event, boolean inside) {
         boolean result = super.onMouseRelease(event, inside);
-        if (event != null && event.button() == 0 && enabled && inside) {
-            if (onClick != null) {
-                onClick.accept(this);
-                LOGGER.debug("Button clicked: id={}", id);
-                result = true;
-            }
+        if (event != null && event.button() == 0 && enabled && inside && !longPressHandlerFired && onClick != null) {
+            onClick.accept(this);
+            LOGGER.debug("Button clicked: id={}", id);
+            result = true;
         }
         return result;
     }

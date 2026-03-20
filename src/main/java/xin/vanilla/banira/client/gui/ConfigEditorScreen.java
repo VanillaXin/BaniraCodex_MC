@@ -20,6 +20,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
@@ -31,7 +32,11 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置，并可同步修改项至服务端
+ * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
+ * <ul>
+ *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
+ *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
+ * </ul>
  */
 public class ConfigEditorScreen extends BaniraScreen {
 
@@ -77,6 +82,10 @@ public class ConfigEditorScreen extends BaniraScreen {
      * 路径 -> Widget（用于从 Widget 读回值）
      */
     private final Map<String, IConfigEntryWidget> entryWidgets = new LinkedHashMap<>();
+    /**
+     * 本会话内用户曾改动过的配置路径（含重置、保存后仍保留），同步至服务端时仅发送这些项。
+     */
+    private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(Component.transClientAuto(BaniraCodex.MODID, "config_editor_title").toVanilla());
@@ -105,6 +114,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         listTop = cardY + CARD_INNER;
         entryWidgets.clear();
+        syncTouchedPaths.clear();
         bottomButtons.clear();
 
         contentRootPanel = buildContentPanel();
@@ -125,6 +135,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         saveBtn.id("save");
         saveBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save").toString());
         saveBtn.onClick(b -> saveConfig());
+        if (holder.canSyncToServer()) {
+            saveBtn.onLongPress(b -> fetchConfigFromServer());
+        }
+        TooltipWidget saveTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
+        saveTip.text(holder.canSyncToServer()
+                ? Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_tooltip_network")
+                : Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_tooltip"));
+        saveTip.popupAtScreenCoords(true);
+        saveBtn.addChild(saveTip);
         bottomButtons.add(saveBtn);
 
         if (holder.canSyncToServer()) {
@@ -132,6 +151,11 @@ public class ConfigEditorScreen extends BaniraScreen {
             syncBtn.id("sync");
             syncBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync").toString());
             syncBtn.onClick(b -> syncToServer());
+            syncBtn.onLongPress(b -> syncToServerFull());
+            TooltipWidget syncTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
+            syncTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_tooltip"));
+            syncTip.popupAtScreenCoords(true);
+            syncBtn.addChild(syncTip);
             bottomButtons.add(syncBtn);
         }
 
@@ -282,6 +306,14 @@ public class ConfigEditorScreen extends BaniraScreen {
                 curX += bw + BUTTON_GAP;
             }
         }
+
+        for (ButtonWidget btn : bottomButtons) {
+            TooltipWidget tip = btn.findChildByType(TooltipWidget.class);
+            if (tip != null && btn.bounds() != null) {
+                ScreenCoordinate bc = btn.bounds();
+                tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
+            }
+        }
     }
 
     private void updateWidgetPositions() {
@@ -337,6 +369,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             if (def != null) {
                 holder.set(desc.getPath(), def);
                 modifiedValues.put(desc.getPath(), def);
+                markConfigTouched(desc.getPath());
                 setValue.accept(def);
             }
         });
@@ -366,7 +399,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
         input.value(str);
         input.maxLength(256);
-        input.onTextChanged(v -> modifiedValues.put(desc.getPath(), v));
+        input.onTextChanged(v -> {
+            modifiedValues.put(desc.getPath(), v);
+            markConfigTouched(desc.getPath());
+        });
 
         row.addChild(label);
         row.addChild(input);
@@ -407,6 +443,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             boolean newVal = !Boolean.TRUE.equals(holder.get(desc.getPath()));
             holder.set(desc.getPath(), newVal);
             modifiedValues.put(desc.getPath(), newVal);
+            markConfigTouched(desc.getPath());
             btn.text(newVal ? "§aON" : "§cOFF");
         });
 
@@ -415,8 +452,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         addResetButton(row, desc, w, rowH, v -> btn.text(Boolean.TRUE.equals(v) ? "§aON" : "§cOFF"));
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())), v -> {
-        });
+        return new ConfigEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())),
+                v -> btn.text(Boolean.TRUE.equals(v) ? "§aON" : "§cOFF"));
     }
 
     private IConfigEntryWidget createNumberRow(ConfigEntryDescriptor desc, double w, int rowH) {
@@ -460,6 +497,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Object parsed = convertSliderValue(desc, v);
             if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
                 modifiedValues.put(desc.getPath(), parsed);
+                markConfigTouched(desc.getPath());
             }
         });
 
@@ -520,6 +558,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), v.get(0));
                     modifiedValues.put(desc.getPath(), e);
+                    markConfigTouched(desc.getPath());
                 } catch (IllegalArgumentException ignored) {
                 }
             }
@@ -581,7 +620,10 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
             syncContentHeight();
         });
-        tagList.onListChanged(v -> modifiedValues.put(desc.getPath(), v.stream().map(String::valueOf).collect(Collectors.toList())));
+        tagList.onListChanged(v -> {
+            modifiedValues.put(desc.getPath(), v.stream().map(String::valueOf).collect(Collectors.toList()));
+            markConfigTouched(desc.getPath());
+        });
 
         int tagRowH = (int) tagList.effectiveHeight();
         row.addChild(label);
@@ -636,7 +678,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             NotificationManager.get().addNotification(n);
             return;
         }
-        Map<String, Object> syncPayload = collectAllValuesFromWidgetsForSync();
+        Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
             Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
@@ -650,6 +692,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         try {
             PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
             modifiedValues.clear();
+            syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
                 holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
             }
@@ -661,42 +704,108 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
     }
 
-    private Object parseValue(String path, String value) {
-        ConfigEntryDescriptor desc = holder.getDescriptor(path);
-        if (desc == null) return value;
+    /**
+     * 长按「同步至服务端」：上传当前界面中全部配置项（全量）。
+     */
+    private void syncToServerFull() {
+        if (hasInvalidEntryWidgets()) {
+            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_validation_failed"));
+            n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
+            NotificationManager.get().addNotification(n);
+            return;
+        }
+        if (Minecraft.getInstance().getConnection() == null) {
+            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_not_connected"));
+            n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
+            NotificationManager.get().addNotification(n);
+            return;
+        }
+        Map<String, Object> syncPayload = collectAllEntryValuesForSync();
+        if (syncPayload.isEmpty()) {
+            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_nothing"));
+            n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
+            NotificationManager.get().addNotification(n);
+            return;
+        }
+        Map<String, String> toSync = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> e : syncPayload.entrySet()) {
+            toSync.put(e.getKey(), serializeValue(e.getValue()));
+        }
         try {
-            switch (desc.getValueType()) {
-                case BOOLEAN:
-                    return Boolean.parseBoolean(value);
-                case INTEGER:
-                    return Integer.parseInt(value);
-                case LONG:
-                    return Long.parseLong(value);
-                case DOUBLE: {
-                    double d = Double.parseDouble(value);
-                    int dp = desc.getDecimalPlaces();
-                    double factor = Math.pow(10, dp);
-                    return Math.round(d * factor) / factor;
-                }
-                case ENUM:
-                    @SuppressWarnings({"unchecked", "rawtypes"})
-                    Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);
-                    return e;
-                case STRING_LIST:
-                    return Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
-                default:
-                    return value;
+            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            modifiedValues.clear();
+            syncTouchedPaths.clear();
+            for (Map.Entry<String, String> e : toSync.entrySet()) {
+                holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
             }
-        } catch (Exception e) {
-            return value;
+        } catch (Exception ex) {
+            Notification err = Notification.ofComponent(
+                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
+            NotificationManager.get().addNotification(err);
         }
     }
 
-    private String serializeValue(Object value) {
-        if (value instanceof List) {
-            return String.join(",", (List<String>) value);
+    /**
+     * 长按「保存」：向服务端请求当前配置的全量快照并刷新本界面
+     */
+    private void fetchConfigFromServer() {
+        if (!holder.canSyncToServer()) {
+            return;
         }
-        return String.valueOf(value);
+        if (Minecraft.getInstance().getConnection() == null) {
+            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_not_connected"));
+            n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
+            NotificationManager.get().addNotification(n);
+            return;
+        }
+        try {
+            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigFetchRequestToServer(holder.getConfigName()));
+        } catch (Exception ex) {
+            Notification err = Notification.ofComponent(
+                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
+            NotificationManager.get().addNotification(err);
+        }
+    }
+
+    /**
+     * 在收到 {@link xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient} 后，若本界面正在编辑对应配置，则用 {@link ConfigHolder} 刷新控件显示。
+     */
+    public void refreshUIFromHolderAfterRemoteFetch(String configName) {
+        if (!holder.getConfigName().equals(configName)) {
+            return;
+        }
+        modifiedValues.clear();
+        syncTouchedPaths.clear();
+        for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
+            Object v = holder.get(e.getKey());
+            if (v == null) {
+                ConfigEntryDescriptor d = holder.getDescriptor(e.getKey());
+                if (d != null) {
+                    v = d.getDefaultValue();
+                }
+            }
+            if (v != null) {
+                e.getValue().setValue(v);
+            }
+        }
+    }
+
+    private Object parseValue(String path, String value) {
+        Object decoded = ConfigSyncToServer.decodeNetworkValue(holder, path, value);
+        ConfigEntryDescriptor desc = holder.getDescriptor(path);
+        if (desc != null && desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE && decoded instanceof Double) {
+            double d = (Double) decoded;
+            int dp = desc.getDecimalPlaces();
+            double factor = Math.pow(10, dp);
+            return Math.round(d * factor) / factor;
+        }
+        return decoded;
+    }
+
+    private String serializeValue(Object value) {
+        return ConfigSyncToServer.encodeConfigValue(value);
     }
 
     private void collectModifiedFromWidgets() {
@@ -709,19 +818,51 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
     }
 
+    private void markConfigTouched(String path) {
+        if (path != null) {
+            syncTouchedPaths.add(path);
+        }
+    }
+
     /**
-     * 从所有配置项控件读取当前展示值，用于「同步至服务端」。
-     * 与 {@link #collectModifiedFromWidgets} 不同：不比较 holder，保存后界面与本地一致仍可正常发包。
+     * 仅收集 {@link #syncTouchedPaths} 中路径的当前控件值，用于同步至服务端（增量）。
      */
-    private Map<String, Object> collectAllValuesFromWidgetsForSync() {
+    private Map<String, Object> collectTouchedPathsForSync() {
         Map<String, Object> map = new LinkedHashMap<>();
-        for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
-            if (!e.getValue().isValid()) {
+        for (String path : syncTouchedPaths) {
+            IConfigEntryWidget w = entryWidgets.get(path);
+            if (w == null || !w.isValid()) {
                 continue;
             }
-            Object v = e.getValue().getValue();
+            Object v = w.getValue();
             if (v != null) {
-                map.put(e.getKey(), v);
+                map.put(path, v);
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 收集所有已注册配置项的当前值（用于全量同步至服务端）。
+     */
+    private Map<String, Object> collectAllEntryValuesForSync() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (ConfigEntryDescriptor d : holder.getDescriptors()) {
+            String path = d.getPath();
+            IConfigEntryWidget w = entryWidgets.get(path);
+            if (w != null) {
+                if (!w.isValid()) {
+                    continue;
+                }
+                Object v = w.getValue();
+                if (v != null) {
+                    map.put(path, v);
+                }
+            } else {
+                Object v = holder.get(path);
+                if (v != null) {
+                    map.put(path, v);
+                }
             }
         }
         return map;

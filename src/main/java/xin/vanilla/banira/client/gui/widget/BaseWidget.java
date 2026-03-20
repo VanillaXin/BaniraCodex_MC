@@ -170,7 +170,7 @@ public abstract class BaseWidget implements IWidget {
         }
         if (screen != null) {
             updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
-            if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= LONG_PRESS_MS) {
+            if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
                 longPressFired = true;
                 onLongPress(MouseEvent.of(screen.inputState().mouseX(), screen.inputState().mouseY(), pressedMouseButton));
             }
@@ -492,11 +492,25 @@ public abstract class BaseWidget implements IWidget {
     protected boolean lastReleaseWasLongPress = false;
 
     /**
-     * 长按回调。按下超过 {@value #LONG_PRESS_MS}ms 时在 update 中触发一次。
+     * 长按回调。按下超过 {@link #genericLongPressThresholdMs()} 时在 update 中触发一次。
      *
      * @param event 鼠标事件（当前坐标与按钮）
      */
     protected void onLongPress(MouseEvent event) {
+    }
+
+    /**
+     * 基类长按检测阈值（毫秒）。子类可增大以禁用默认长按（例如由子类自行计时）。
+     */
+    protected long genericLongPressThresholdMs() {
+        return LONG_PRESS_MS;
+    }
+
+    /**
+     * 当前按下起始时间（与 {@link #isLongPress} 一致），用于子类自定义长按进度等。
+     */
+    protected long mousePressStartMillis() {
+        return pressStartTime;
     }
 
     /**

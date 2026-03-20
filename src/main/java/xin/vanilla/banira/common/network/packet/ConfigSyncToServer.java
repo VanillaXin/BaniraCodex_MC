@@ -16,6 +16,7 @@ import xin.vanilla.banira.common.util.Translator;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -84,7 +85,7 @@ public class ConfigSyncToServer {
             }
             try {
                 for (Map.Entry<String, String> e : packet.changes.entrySet()) {
-                    Object parsed = parseValue(holder, e.getKey(), e.getValue());
+                    Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
                     if (parsed != null) {
                         holder.set(e.getKey(), parsed);
                     }
@@ -108,9 +109,25 @@ public class ConfigSyncToServer {
         MessageUtils.sendNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
     }
 
-    private static Object parseValue(ConfigHolder holder, String path, String value) {
+    /**
+     * 将配置值编码为网络传输用的字符串（与 {@link #decodeNetworkValue} 成对使用）。
+     */
+    public static String encodeConfigValue(Object value) {
+        if (value instanceof List) {
+            List<?> list = (List<?>) value;
+            return list.stream().map(String::valueOf).collect(Collectors.joining(","));
+        }
+        return String.valueOf(value);
+    }
+
+    /**
+     * 将网络字符串解析为可写入 {@link ConfigHolder} 的对象；无法解析时回退为原始字符串。
+     */
+    public static Object decodeNetworkValue(ConfigHolder holder, String path, String value) {
         ConfigEntryDescriptor desc = holder.getDescriptor(path);
-        if (desc == null) return value;
+        if (desc == null) {
+            return value;
+        }
         try {
             switch (desc.getValueType()) {
                 case BOOLEAN:
@@ -126,7 +143,9 @@ public class ConfigSyncToServer {
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);
                     return e;
                 case STRING_LIST:
-                    if (value == null || value.isEmpty()) return Collections.emptyList();
+                    if (value == null || value.isEmpty()) {
+                        return Collections.emptyList();
+                    }
                     return Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty())
                             .collect(Collectors.toList());
                 default:

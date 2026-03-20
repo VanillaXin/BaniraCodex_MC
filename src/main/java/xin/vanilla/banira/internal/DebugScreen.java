@@ -33,7 +33,6 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.internal.config.TestConfig;
 import xin.vanilla.banira.internal.event.ModEventHandler;
 
 import java.util.Arrays;
@@ -128,12 +127,17 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
 
-        ButtonWidget testConfigBtn = new ButtonWidget(this);
-        testConfigBtn.id("test_config_editor");
-        testConfigBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
-        testConfigBtn.text("配置编辑测试");
-        // testConfigBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
-        addWidget(testConfigBtn);
+        ButtonWidget longPressBtn = new ButtonWidget(this);
+        longPressBtn.id("test_config_editor");
+        longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
+        longPressBtn.text("按钮长按测试");
+        // longPressBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
+        longPressBtn.onLongPress(1000L, b -> {
+            Notification n = Notification.ofComponent(Component.literal(KaomojiUtils.random()));
+            n.durationTime(3000);
+            NotificationManager.get().addNotification(n);
+        });
+        addWidget(longPressBtn);
 
         ButtonWidget configBtn = new ButtonWidget(this);
         configBtn.id("config_editor");

@@ -11,6 +11,7 @@ buildscript {
 plugins {
     id 'eclipse'
     id 'idea'
+    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
 }
 
@@ -120,7 +121,7 @@ tasks.named('processResources', ProcessResources).configure {
 tasks.named('jar', Jar).configure {
     // 自定义打包路径与输出格式
     archiveBaseName.set(mod_id)
-    archiveVersion.set("${minecraft_version}-${mod_version}-${loader_type}")
+    archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
     destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
 
     manifest {
@@ -139,3 +140,27 @@ tasks.named('jar', Jar).configure {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+// region 发布到 Maven 仓库（含本地 ~/.m2/repository）
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            groupId = project.group
+            artifactId = base.archivesName.get()
+            version = "${loader_type}-${minecraft_version}-${mod_version}"
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+afterEvaluate {
+    publishing.publications.named('mavenJava', MavenPublication) {
+        artifact tasks.jar
+    }
+    tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
+        dependsOn 'reobfJar'
+    }
+}
+// endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）

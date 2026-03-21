@@ -94,11 +94,22 @@ API。
 - **实体**：加入世界、传送（`EntityTeleportEvent`）等
 - **交互**：右键物品 / 方块 / 指定实体
 - **指令**：`RegisterCommandsEvent`
-- **Mod 生命周期**：`FMLCommonSetupEvent`、`FMLClientSetupEvent`（由 `BaniraCodex` 对 Mod 总线 `addListener` 绑定）
-- **客户端**：GUI 切换、纹理重载、DrawScreen 后、Overlay 前/后、客户端 tick、聊天、任意 `GuiScreenEvent` 等
+- **Mod 公共阶段**：`FMLCommonSetupEvent`（`BaniraCodex` → Mod 总线 `addListener`）
 - **`Registration`**：部分 API 可取消注册
 
-类注释中含完整使用示例。
+类注释中含完整使用示例。仅客户端事件类型**不得**出现在本类中，否则专用服
+`MinecraftForge.EVENT_BUS.register(BaniraEventBus.class)` 会解析 `GuiScreenEvent` 等并崩溃。
+
+### 4.1.1 客户端事件入口（`xin.vanilla.banira.client.event`）
+
+- **`BaniraClientModSetup`**（Mod 总线、`Dist.CLIENT`）：`BaniraKeyBindings.flushPendingRegistrations()`、`NotificationManager.loadLog()`、在
+  `FMLClientSetupEvent` 中调用 `BaniraClientEventHub.registerCodexDefaults()` 与 `dispatchModClientSetup`。快捷键字段：
+  `DEBUG_KEY`、`NOTIFICATION_LOG_KEY`（原 `internal.event.ModEventHandler` 已并入）。
+- **`BaniraClientEventHub`**：客户端 Forge 回调注册表；游戏总线由 `BaniraClientForgeEventHandler` 转发至 `dispatch*` /
+  `Client.fire*`。
+
+Forge 的 `@Mod.EventBusSubscriber` 每个类只能绑一条总线，故 **Mod 总线**与 **Forge 游戏总线**保持 `BaniraClientModSetup` 与
+`BaniraClientForgeEventHandler` 两个类，不宜硬合并。
 
 ### 4.2 `BaniraScheduler`
 
@@ -181,6 +192,12 @@ API。
 ---
 
 ## 9. 客户端 GUI
+
+### 9.0 键位注册（仅客户端）
+
+**`BaniraKeyBindings`**（`xin.vanilla.banira.client.util`）：`register(modId, "suffix", GLFW 扫描码)` 生成翻译键 `key.<modId>.suffix`，默认分类
+`key.<modId>.categories`（**`modId` 由调用方传入**，与子 Mod 的 `mods.toml` 一致）；静态字段初始化时入队，由 **`BaniraClientModSetup`** 在
+`FMLClientSetupEvent` 开头调用 `flushPendingRegistrations()` 统一注册。链式：`BaniraKeyBindings.spec(modId, "id").defaultKey(...).category(...).register()`。
 
 ### 9.1 屏幕基类
 

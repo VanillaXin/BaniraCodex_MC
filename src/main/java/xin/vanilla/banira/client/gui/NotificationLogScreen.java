@@ -21,7 +21,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.event.ModEventHandler;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 
 import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;
@@ -172,7 +172,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null && ModEventHandler.NOTIFICATION_LOG_KEY.isDown()) {
+        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null && BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
             Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
         }
     }

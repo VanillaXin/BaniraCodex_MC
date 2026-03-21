@@ -6,9 +6,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -18,7 +15,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
@@ -36,12 +32,13 @@ import java.util.function.Consumer;
  * 事件总线工具类
  * <p>
  * 用于统一管理游戏事件的监听和回调，提供清晰的模块化 API。
+ * 客户端专用类型（{@code GuiScreenEvent} 等）见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}，不得写入本类，否则专用服无法 {@code register}。
  * </p>
  * <h3>使用示例</h3>
  * <pre>{@code
  * BaniraEventBus.Server.onStarting(server -> ...);
  * BaniraEventBus.Player.onLoggedOut(player -> ...);
- * BaniraEventBus.Client.onGuiChanged(e -> ...);
+ * BaniraClientEventHub.Client.onGuiChanged(e -> ...); // 客户端见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}
  * BaniraEventBus.WorldEvents.onUnload(e -> ...);
  * BaniraEventBus.EntityEvents.onJoinWorld(e -> ...);
  * BaniraEventBus.Commands.onRegister(e -> ...);
@@ -66,21 +63,13 @@ public final class BaniraEventBus {
 
     private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEvent.PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
     private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<GuiOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
-    private static final List<Consumer<TextureStitchEvent.Post>> clientTextureReloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<GuiScreenEvent.DrawScreenEvent.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
-
     private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<TickEvent.ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
     private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
 
     private static final List<Consumer<WorldEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
@@ -97,11 +86,6 @@ public final class BaniraEventBus {
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
     private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
-    private static final List<Consumer<FMLClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<ClientChatEvent>> clientChatCallbacks = new ArrayList<>();
-    private static final List<Consumer<GuiScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
 
     // endregion
 
@@ -178,14 +162,6 @@ public final class BaniraEventBus {
             playerLoggedOutCallbacks.add(callback);
         }
 
-        public static void onClientLoggedIn(@Nonnull Consumer<PlayerEntity> callback) {
-            clientPlayerLoggedInCallbacks.add(callback);
-        }
-
-        public static void onClientLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
-            clientPlayerLoggedOutCallbacks.add(callback);
-        }
-
         public static void onChangedDimension(@Nonnull Consumer<PlayerEvent.PlayerChangedDimensionEvent> callback) {
             playerChangedDimensionCallbacks.add(callback);
         }
@@ -249,79 +225,6 @@ public final class BaniraEventBus {
 
         public static void onPlayerSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
             playerSaveCallbacks.add(callback);
-        }
-    }
-
-    // endregion
-
-    // region 分类 API：Client
-
-    /**
-     * 客户端相关事件（仅客户端可用）
-     */
-    public static final class Client {
-        private Client() {
-        }
-
-        public static void onGuiChanged(@Nonnull Consumer<GuiOpenEvent> callback) {
-            clientGuiChangedCallbacks.add(callback);
-        }
-
-        /**
-         * 手动触发客户端界面变化事件（由 GameEventHandler 调用）
-         */
-        public static void fireGuiChanged(GuiOpenEvent event) {
-            fire(clientGuiChangedCallbacks, event, "client gui changed");
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onTextureReload(@Nonnull Consumer<TextureStitchEvent.Post> callback) {
-            clientTextureReloadCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onDrawScreenPost(@Nonnull Consumer<GuiScreenEvent.DrawScreenEvent.Post> callback) {
-            clientDrawScreenPostCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onRenderOverlayPost(@Nonnull Consumer<RenderGameOverlayEvent.Post> callback) {
-            clientRenderOverlayPostCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onClientTick(@Nonnull Consumer<TickEvent.ClientTickEvent> callback) {
-            clientTickCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onChat(@Nonnull Consumer<ClientChatEvent> callback) {
-            clientChatCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onGuiScreen(@Nonnull Consumer<GuiScreenEvent> callback) {
-            clientGuiScreenCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onRenderOverlayPre(@Nonnull Consumer<RenderGameOverlayEvent.Pre> callback) {
-            clientRenderOverlayPreCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void fireTextureReload(TextureStitchEvent.Post event) {
-            fire(clientTextureReloadCallbacks, event, "client texture reload");
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void fireDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
-            fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void fireRenderOverlayPost(RenderGameOverlayEvent.Post event) {
-            fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
     }
 
@@ -410,7 +313,7 @@ public final class BaniraEventBus {
     // region 分类 API：ModLifecycle
 
     /**
-     * Mod 加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}
+     * Mod 公共加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}）；客户端 {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent} 见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.ModLifecycle}
      */
     public static final class ModLifecycle {
         private ModLifecycle() {
@@ -418,11 +321,6 @@ public final class BaniraEventBus {
 
         public static void onCommonSetup(@Nonnull Consumer<FMLCommonSetupEvent> callback) {
             modCommonSetupCallbacks.add(callback);
-        }
-
-        @OnlyIn(Dist.CLIENT)
-        public static void onClientSetup(@Nonnull Consumer<FMLClientSetupEvent> callback) {
-            modClientSetupCallbacks.add(callback);
         }
     }
 
@@ -546,40 +444,6 @@ public final class BaniraEventBus {
     public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
         fire(modCommonSetupCallbacks, event, "mod common setup");
     }
-
-    @OnlyIn(Dist.CLIENT)
-    public static void dispatchModClientSetup(FMLClientSetupEvent event) {
-        fire(modClientSetupCallbacks, event, "mod client setup");
-    }
-
-    // region 客户端 Forge 转发（由 {@link xin.vanilla.banira.internal.event.GameEventHandler} 订阅）
-
-    public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
-        fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
-    }
-
-    public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
-        fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
-    }
-
-    public static void dispatchClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        fire(clientTickCallbacks, event, "client tick");
-    }
-
-    public static void dispatchClientChat(ClientChatEvent event) {
-        fire(clientChatCallbacks, event, "client chat");
-    }
-
-    public static void dispatchGuiScreen(GuiScreenEvent event) {
-        fire(clientGuiScreenCallbacks, event, "client gui screen");
-    }
-
-    public static void dispatchRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
-        fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
-    }
-
-    // endregion 客户端 Forge 转发
 
     // endregion Forge 事件订阅
 

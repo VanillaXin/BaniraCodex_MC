@@ -533,7 +533,7 @@ public final class TextureUtils {
     }
 
     /**
-     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 BaniraEventBus.Client 触发。
+     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.Client} 触发。
      */
     public static void resourceReloadEvent() {
         clearAll();

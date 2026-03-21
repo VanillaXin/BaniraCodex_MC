@@ -33,7 +33,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.internal.event.ModEventHandler;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -582,7 +582,7 @@ public class DebugScreen extends BaniraScreen {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            if (Minecraft.getInstance().screen == null && ModEventHandler.DEBUG_KEY.isDown()) {
+            if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
                 Minecraft.getInstance().setScreen(new DebugScreen());
             }
         }

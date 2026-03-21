@@ -19,6 +19,7 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -68,11 +69,9 @@ public class Component implements Cloneable, Serializable {
     // region 样式属性
 
     /**
-     * 语言代码
+     * 语言代码（惰性解析）
      */
-    @Getter
-    @Setter
-    private String languageCode;
+    private Supplier<String> languageCode;
     /**
      * 文本颜色
      */
@@ -165,6 +164,20 @@ public class Component implements Cloneable, Serializable {
         return this;
     }
 
+    public Supplier<String> languageCode() {
+        return this.languageCode;
+    }
+
+    public Component languageCode(Supplier<String> languageCode) {
+        this.languageCode = languageCode;
+        return this;
+    }
+
+    public Component languageCode(String languageCode) {
+        this.languageCode = languageCode == null ? null : () -> languageCode;
+        return this;
+    }
+
     public Component languageCodeIfEmpty(String languageCode) {
         if (this.isLanguageCodeEmpty()) {
             this.languageCode(languageCode);
@@ -188,14 +201,22 @@ public class Component implements Cloneable, Serializable {
      * 获取语言代码
      */
     public @NonNull String languageCodeOrDefault(String defaultLanguage) {
-        return this.languageCode == null ? defaultLanguage : this.languageCode;
+        if (this.languageCode == null) {
+            return defaultLanguage;
+        }
+        String resolved = this.languageCode.get();
+        return resolved == null ? defaultLanguage : resolved;
     }
 
     /**
      * 获取语言代码
      */
     public @NonNull String languageCodeOrDefault() {
-        return this.languageCode == null ? CustomConfig.getDefaultLanguage() : this.languageCode;
+        if (this.languageCode == null) {
+            return CustomConfig.getDefaultLanguage();
+        }
+        String resolved = this.languageCode.get();
+        return resolved == null ? CustomConfig.getDefaultLanguage() : resolved;
     }
 
     /**
@@ -762,7 +783,7 @@ public class Component implements Cloneable, Serializable {
     }
 
     public static Component trans(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
-        return new Component(key, type).languageCode(Translator.getPlayerLanguage(player)).appendArg(args);
+        return new Component(key, type).languageCode(() -> Translator.getPlayerLanguage(player)).appendArg(args);
     }
 
     public static Component transAuto(String key) {
@@ -783,39 +804,39 @@ public class Component implements Cloneable, Serializable {
 
 
     public static Component transClient(String key) {
-        return new Component(key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage());
+        return new Component(key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage);
     }
 
     public static Component transClient(String modId, String key) {
-        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage());
+        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage);
     }
 
     public static Component transClient(String key, Object... args) {
-        return new Component(key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage()).appendArg(args);
+        return new Component(key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
     public static Component transClient(String modId, String key, Object... args) {
-        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator.getClientLanguage()).appendArg(args);
+        return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
     public static Component transClient(EnumI18nType type, String key, Object... args) {
-        return new Component(key, type).languageCode(Translator.getClientLanguage()).appendArg(args);
+        return new Component(key, type).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
     public static Component transClientAuto(String key) {
-        return new Component(key, EnumI18nType.WORD).languageCode(Translator.getClientLanguage());
+        return new Component(key, EnumI18nType.WORD).languageCode(Translator::getClientLanguage);
     }
 
     public static Component transClientAuto(String modId, String key) {
-        return new Component(modId, key, EnumI18nType.WORD).languageCode(Translator.getClientLanguage());
+        return new Component(modId, key, EnumI18nType.WORD).languageCode(Translator::getClientLanguage);
     }
 
     public static Component transClientAuto(String key, Object... args) {
-        return new Component(key, EnumI18nType.FORMAT).languageCode(Translator.getClientLanguage()).appendArg(args);
+        return new Component(key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
     public static Component transClientAuto(String modId, String key, Object... args) {
-        return new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator.getClientLanguage()).appendArg(args);
+        return new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
     public static Component transLang(String languageCode, String key, Object... args) {
@@ -875,7 +896,7 @@ public class Component implements Cloneable, Serializable {
             JsonUtils.set(result, "modId", component.modId());
         }
         if (!component.isLanguageCodeEmpty()) {
-            JsonUtils.set(result, "languageCode", component.languageCode());
+            JsonUtils.set(result, "languageCode", component.languageCode().get());
         }
         if (!component.color().isEmpty()) {
             JsonUtils.set(result, "color", component.color().argb());

@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.util;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
@@ -114,6 +115,25 @@ public class Translator implements ITranslator {
             return key;
         }
         return String.format("%s.%s.%s", type.name().toLowerCase(), modId, key);
+    }
+
+    /**
+     * 指定语言的 JSON 中是否存在该翻译键路径
+     */
+    public boolean hasTranslation(@NonNull EnumI18nType type, @NonNull String key, @NonNull String languageCode) {
+        String fullKey = getKey(type, key);
+        languageCode = languageCode.toLowerCase(Locale.ROOT);
+        JsonObject lang = languages.getOrDefault(languageCode, languages.get(DEFAULT_LANGUAGE));
+        if (lang == null) {
+            return false;
+        }
+        String path = fullKey.replaceAll("\\.", "\\\\.");
+        try {
+            JsonElement el = JsonUtils.getJsonElement(lang, path);
+            return el != null && !el.isJsonNull();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

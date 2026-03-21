@@ -564,6 +564,34 @@ public final class StringUtils {
         return segments;
     }
 
+    /**
+     * 包含匹配字符串
+     */
+    public static boolean matches(String string, String input) {
+        if (StringUtils.isNullOrEmpty(input)) {
+            return true;
+        }
+        return string != null && (string.equals(input) || string.contains(input));
+    }
+
+    /**
+     * 匹配字符串
+     *
+     * @return 匹配度：0=精确 1=前缀 2=包含，数值越小匹配度越高
+     */
+    public static int matchDegree(String string, String input) {
+        if (string == null || input == null) {
+            return 2;
+        }
+        if (string.equals(input)) {
+            return 0;
+        }
+        if (string.startsWith(input)) {
+            return 1;
+        }
+        return 2;
+    }
+
 
     public static void main(String[] args) {
         System.out.println(format("%2$s-%1$s-%1$s", "a", "b"));

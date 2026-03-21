@@ -456,21 +456,9 @@ public final class BaniraEventBus {
         fire(playerLoggedInCallbacks, event.getPlayer(), "player logged in");
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
-        fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
-    }
-
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         fire(playerLoggedOutCallbacks, event.getPlayer(), "player logged out");
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
-        fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
     }
 
     @SubscribeEvent
@@ -510,13 +498,6 @@ public final class BaniraEventBus {
     @SubscribeEvent
     public static void onWorldTick(TickEvent.WorldTickEvent event) {
         fire(worldTickCallbacks, event, "world tick");
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        fire(clientTickCallbacks, event, "client tick");
     }
 
     @SubscribeEvent
@@ -571,25 +552,36 @@ public final class BaniraEventBus {
         fire(modClientSetupCallbacks, event, "mod client setup");
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientChat(ClientChatEvent event) {
+    // region 客户端 Forge 转发（由 {@link xin.vanilla.banira.internal.event.GameEventHandler} 订阅）
+
+    public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+        fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
+    }
+
+    public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+        fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
+    }
+
+    public static void dispatchClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        fire(clientTickCallbacks, event, "client tick");
+    }
+
+    public static void dispatchClientChat(ClientChatEvent event) {
         fire(clientChatCallbacks, event, "client chat");
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onGuiScreen(GuiScreenEvent event) {
+    public static void dispatchGuiScreen(GuiScreenEvent event) {
         fire(clientGuiScreenCallbacks, event, "client gui screen");
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+    public static void dispatchRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
-    // endregion
+    // endregion 客户端 Forge 转发
+
+    // endregion Forge 事件订阅
 
     // region 内部回调执行
 

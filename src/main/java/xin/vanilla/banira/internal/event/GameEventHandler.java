@@ -2,10 +2,8 @@ package xin.vanilla.banira.internal.event;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.client.event.TextureStitchEvent;
+import net.minecraftforge.client.event.*;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -14,10 +12,56 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 
 /**
- * 客户端 Forge 事件转发器
+ * 客户端 Forge 游戏总线
  */
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class GameEventHandler {
+
+    private GameEventHandler() {
+    }
+
+    // region BaniraEventBus 客户端事件转发
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+        BaniraEventBus.dispatchClientPlayerLoggedIn(event);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+        BaniraEventBus.dispatchClientPlayerLoggedOut(event);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        BaniraEventBus.dispatchClientTick(event);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientChat(ClientChatEvent event) {
+        BaniraEventBus.dispatchClientChat(event);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGuiScreen(GuiScreenEvent event) {
+        BaniraEventBus.dispatchGuiScreen(event);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+        BaniraEventBus.dispatchRenderOverlayPre(event);
+    }
+
+    // endregion BaniraEventBus 客户端事件转发
+
+
+    // region 本 Mod GUI（快捷栏 overlay 等）
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
@@ -84,5 +128,7 @@ public final class GameEventHandler {
     public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
         BaniraEventBus.Client.fireRenderOverlayPost(event);
     }
+
+    // endregion 本 Mod GUI（快捷栏 overlay 等）
 
 }

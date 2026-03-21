@@ -9,11 +9,17 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.living.EntityTeleportEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
@@ -35,7 +41,11 @@ import java.util.function.Consumer;
  * <pre>{@code
  * BaniraEventBus.Server.onStarting(server -> ...);
  * BaniraEventBus.Player.onLoggedOut(player -> ...);
- * BaniraEventBus.Client.onGuiChanged(() -> ...);
+ * BaniraEventBus.Client.onGuiChanged(e -> ...);
+ * BaniraEventBus.WorldEvents.onUnload(e -> ...);
+ * BaniraEventBus.EntityEvents.onJoinWorld(e -> ...);
+ * BaniraEventBus.Commands.onRegister(e -> ...);
+ * BaniraEventBus.ModLifecycle.onCommonSetup(e -> ...);
  *
  * // 支持取消注册
  * Registration reg = BaniraEventBus.registerServerStarting(server -> ...);
@@ -70,6 +80,28 @@ public final class BaniraEventBus {
     private static final List<Consumer<RenderGameOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
 
     private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<TickEvent.ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<WorldEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<PlayerEvent.Clone>> playerCloneCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerEvent>> playerEventCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<PlayerInteractEvent.RightClickItem>> playerRightClickItemCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerInteractEvent.RightClickBlock>> playerRightClickBlockCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerInteractEvent.EntityInteractSpecific>> playerEntityInteractCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<EntityJoinWorldEvent>> entityJoinWorldCallbacks = new ArrayList<>();
+    private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
+    private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
+    private static final List<Consumer<FMLClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
+
+    private static final List<Consumer<ClientChatEvent>> clientChatCallbacks = new ArrayList<>();
+    private static final List<Consumer<GuiScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
+    private static final List<Consumer<RenderGameOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
 
     // endregion
 
@@ -183,6 +215,17 @@ public final class BaniraEventBus {
         public static void onSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
             playerSaveCallbacks.add(callback);
         }
+
+        public static void onClone(@Nonnull Consumer<PlayerEvent.Clone> callback) {
+            playerCloneCallbacks.add(callback);
+        }
+
+        /**
+         * 任意 {@link PlayerEvent}（含登录、克隆等所有子类；若只需克隆请用 {@link #onClone}）
+         */
+        public static void onPlayerEvent(@Nonnull Consumer<PlayerEvent> callback) {
+            playerEventCallbacks.add(callback);
+        }
     }
 
     // endregion
@@ -247,6 +290,26 @@ public final class BaniraEventBus {
         }
 
         @OnlyIn(Dist.CLIENT)
+        public static void onClientTick(@Nonnull Consumer<TickEvent.ClientTickEvent> callback) {
+            clientTickCallbacks.add(callback);
+        }
+
+        @OnlyIn(Dist.CLIENT)
+        public static void onChat(@Nonnull Consumer<ClientChatEvent> callback) {
+            clientChatCallbacks.add(callback);
+        }
+
+        @OnlyIn(Dist.CLIENT)
+        public static void onGuiScreen(@Nonnull Consumer<GuiScreenEvent> callback) {
+            clientGuiScreenCallbacks.add(callback);
+        }
+
+        @OnlyIn(Dist.CLIENT)
+        public static void onRenderOverlayPre(@Nonnull Consumer<RenderGameOverlayEvent.Pre> callback) {
+            clientRenderOverlayPreCallbacks.add(callback);
+        }
+
+        @OnlyIn(Dist.CLIENT)
         public static void fireTextureReload(TextureStitchEvent.Post event) {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
@@ -259,6 +322,107 @@ public final class BaniraEventBus {
         @OnlyIn(Dist.CLIENT)
         public static void fireRenderOverlayPost(RenderGameOverlayEvent.Post event) {
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
+        }
+    }
+
+    // endregion
+
+    // region 分类 API：WorldEvents
+
+    /**
+     * 世界加载/卸载与世界级 Tick（与 {@link net.minecraft.world.World} 区分命名）
+     */
+    public static final class WorldEvents {
+        private WorldEvents() {
+        }
+
+        public static void onUnload(@Nonnull Consumer<WorldEvent.Unload> callback) {
+            worldUnloadCallbacks.add(callback);
+        }
+
+        public static void onTick(@Nonnull Consumer<TickEvent.WorldTickEvent> callback) {
+            worldTickCallbacks.add(callback);
+        }
+    }
+
+    // endregion
+
+    // region 分类 API：EntityEvents
+
+    /**
+     * 实体进入世界、传送等
+     */
+    public static final class EntityEvents {
+        private EntityEvents() {
+        }
+
+        public static void onJoinWorld(@Nonnull Consumer<EntityJoinWorldEvent> callback) {
+            entityJoinWorldCallbacks.add(callback);
+        }
+
+        public static void onTeleport(@Nonnull Consumer<EntityTeleportEvent> callback) {
+            entityTeleportCallbacks.add(callback);
+        }
+    }
+
+    // endregion
+
+    // region 分类 API：Interaction
+
+    /**
+     * 玩家交互（右键物品/方块/实体）
+     */
+    public static final class Interaction {
+        private Interaction() {
+        }
+
+        public static void onRightClickItem(@Nonnull Consumer<PlayerInteractEvent.RightClickItem> callback) {
+            playerRightClickItemCallbacks.add(callback);
+        }
+
+        public static void onRightClickBlock(@Nonnull Consumer<PlayerInteractEvent.RightClickBlock> callback) {
+            playerRightClickBlockCallbacks.add(callback);
+        }
+
+        public static void onEntityInteractSpecific(@Nonnull Consumer<PlayerInteractEvent.EntityInteractSpecific> callback) {
+            playerEntityInteractCallbacks.add(callback);
+        }
+    }
+
+    // endregion
+
+    // region 分类 API：Commands
+
+    /**
+     * 指令注册（Forge 游戏总线 {@link RegisterCommandsEvent}）
+     */
+    public static final class Commands {
+        private Commands() {
+        }
+
+        public static void onRegister(@Nonnull Consumer<RegisterCommandsEvent> callback) {
+            registerCommandsCallbacks.add(callback);
+        }
+    }
+
+    // endregion
+
+    // region 分类 API：ModLifecycle
+
+    /**
+     * Mod 加载阶段（需注册在 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()}）
+     */
+    public static final class ModLifecycle {
+        private ModLifecycle() {
+        }
+
+        public static void onCommonSetup(@Nonnull Consumer<FMLCommonSetupEvent> callback) {
+            modCommonSetupCallbacks.add(callback);
+        }
+
+        @OnlyIn(Dist.CLIENT)
+        public static void onClientSetup(@Nonnull Consumer<FMLClientSetupEvent> callback) {
+            modClientSetupCallbacks.add(callback);
         }
     }
 
@@ -336,6 +500,92 @@ public final class BaniraEventBus {
         if (player instanceof ServerPlayerEntity) {
             fire(playerSaveCallbacks, (ServerPlayerEntity) player, "player save");
         }
+    }
+
+    @SubscribeEvent
+    public static void onWorldUnload(WorldEvent.Unload event) {
+        fire(worldUnloadCallbacks, event, "world unload");
+    }
+
+    @SubscribeEvent
+    public static void onWorldTick(TickEvent.WorldTickEvent event) {
+        fire(worldTickCallbacks, event, "world tick");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        fire(clientTickCallbacks, event, "client tick");
+    }
+
+    @SubscribeEvent
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        fire(playerCloneCallbacks, event, "player clone");
+    }
+
+    @SubscribeEvent
+    public static void onAnyPlayerEvent(PlayerEvent event) {
+        fire(playerEventCallbacks, event, "player event");
+    }
+
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        fire(playerRightClickItemCallbacks, event, "player right click item");
+    }
+
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        fire(playerRightClickBlockCallbacks, event, "player right click block");
+    }
+
+    @SubscribeEvent
+    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        fire(playerEntityInteractCallbacks, event, "player entity interact");
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
+        fire(entityJoinWorldCallbacks, event, "entity join world");
+    }
+
+    @SubscribeEvent
+    public static void onEntityTeleport(EntityTeleportEvent event) {
+        fire(entityTeleportCallbacks, event, "entity teleport");
+    }
+
+    @SubscribeEvent
+    public static void onRegisterCommands(RegisterCommandsEvent event) {
+        fire(registerCommandsCallbacks, event, "register commands");
+    }
+
+    @SubscribeEvent
+    public static void onModCommonSetup(FMLCommonSetupEvent event) {
+        fire(modCommonSetupCallbacks, event, "mod common setup");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onModClientSetup(FMLClientSetupEvent event) {
+        fire(modClientSetupCallbacks, event, "mod client setup");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onClientChat(ClientChatEvent event) {
+        fire(clientChatCallbacks, event, "client chat");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGuiScreen(GuiScreenEvent event) {
+        fire(clientGuiScreenCallbacks, event, "client gui screen");
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+        fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
     // endregion

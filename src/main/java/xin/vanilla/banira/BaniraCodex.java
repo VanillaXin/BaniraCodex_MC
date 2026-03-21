@@ -11,7 +11,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +26,6 @@ import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.config.TestConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 @Mod(BaniraCodex.MODID)
@@ -60,7 +58,7 @@ public class BaniraCodex {
         // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
         // 注册Mod生命周期事件
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+        FMLJavaModLoadingContext.get().getModEventBus().register(BaniraEventBus.class);
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
@@ -73,13 +71,6 @@ public class BaniraCodex {
     }
 
     /**
-     * 公共设置阶段事件
-     */
-    private void onCommonSetup(final FMLCommonSetupEvent event) {
-        CustomConfig.loadCustomConfig(false);
-    }
-
-    /**
      * 注册指令
      */
     @SubscribeEvent
@@ -88,6 +79,9 @@ public class BaniraCodex {
     }
 
     private void registerBaniraEvent() {
+        // 通用事件
+        BaniraEventBus.ModLifecycle.onCommonSetup(event -> CustomConfig.loadCustomConfig(false));
+
         // 服务器事件
         BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
         BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());

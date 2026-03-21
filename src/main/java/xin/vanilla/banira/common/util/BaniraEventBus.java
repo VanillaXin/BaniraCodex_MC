@@ -410,7 +410,7 @@ public final class BaniraEventBus {
     // region 分类 API：ModLifecycle
 
     /**
-     * Mod 加载阶段（需注册在 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()}）
+     * Mod 加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}
      */
     public static final class ModLifecycle {
         private ModLifecycle() {
@@ -559,14 +559,15 @@ public final class BaniraEventBus {
         fire(registerCommandsCallbacks, event, "register commands");
     }
 
-    @SubscribeEvent
-    public static void onModCommonSetup(FMLCommonSetupEvent event) {
+    /**
+     * 由 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()} {@code addListener} 注册
+     */
+    public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
         fire(modCommonSetupCallbacks, event, "mod common setup");
     }
 
     @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onModClientSetup(FMLClientSetupEvent event) {
+    public static void dispatchModClientSetup(FMLClientSetupEvent event) {
         fire(modClientSetupCallbacks, event, "mod client setup");
     }
 

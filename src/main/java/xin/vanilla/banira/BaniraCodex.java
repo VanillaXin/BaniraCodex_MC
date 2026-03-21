@@ -6,9 +6,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -57,8 +59,11 @@ public class BaniraCodex {
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
         // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
-        // 注册Mod生命周期事件
-        FMLJavaModLoadingContext.get().getModEventBus().register(BaniraEventBus.class);
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        modBus.addListener(BaniraEventBus::dispatchModCommonSetup);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            modBus.addListener(BaniraEventBus::dispatchModClientSetup);
+        }
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);

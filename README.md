@@ -94,7 +94,7 @@ API。
 - **实体**：加入世界、传送（`EntityTeleportEvent`）等
 - **交互**：右键物品 / 方块 / 指定实体
 - **指令**：`RegisterCommandsEvent`
-- **Mod 生命周期**：`FMLCommonSetupEvent`、`FMLClientSetupEvent`（类同时注册在 Mod 总线）
+- **Mod 生命周期**：`FMLCommonSetupEvent`、`FMLClientSetupEvent`（由 `BaniraCodex` 对 Mod 总线 `addListener` 绑定）
 - **客户端**：GUI 切换、纹理重载、DrawScreen 后、Overlay 前/后、客户端 tick、聊天、任意 `GuiScreenEvent` 等
 - **`Registration`**：部分 API 可取消注册
 

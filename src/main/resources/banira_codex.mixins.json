@@ -6,7 +6,8 @@
   "refmap": "banira_codex.refmap.json",
   "mixins": [
     "accessors.ResourceManagerAccessor",
-    "accessors.ServerPlayerAccessor"
+    "accessors.ServerPlayerAccessor",
+    "injections.ServerPlayerMixin"
   ],
   "client": [
     "injections.MinecraftClientMixin"

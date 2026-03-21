@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(value = ServerPlayerEntity.class, remap = false)
 public interface ServerPlayerAccessor {
     @Accessor(value = "language")
-    String language();
+    String banira$language();
 
     @Accessor(value = "language")
-    void language(String language);
+    void banira$language(String language);
 }

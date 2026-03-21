@@ -51,7 +51,7 @@ public final class PlayerUtils {
         ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
         ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
 
-        target.language(original.language());
+        target.banira$language(original.banira$language());
     }
 
     // region 玩家信息

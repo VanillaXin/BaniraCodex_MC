@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "banira_codex.refmap.json",
   "mixins": [
+    "accessors.ResourceManagerAccessor",
     "accessors.ServerPlayerAccessor"
   ],
   "client": [

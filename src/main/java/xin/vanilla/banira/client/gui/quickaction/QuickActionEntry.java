@@ -9,6 +9,8 @@ import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -41,4 +43,9 @@ public class QuickActionEntry {
     @Setter
     @Nullable
     private Consumer<QuickActionContext> onActivate;
+
+    /**
+     * 在托盘上右键该图标时，与「隐藏此格」一并展示的自定义菜单（顺序即显示顺序），由 {@link QuickActionRegistry} 写入。
+     */
+    final List<QuickActionContextMenuItem> contextMenuItems = new ArrayList<>();
 }

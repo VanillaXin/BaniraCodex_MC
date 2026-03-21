@@ -885,6 +885,8 @@ public final class QuickActionOverlay {
             if (slot < 0) {
                 return true;
             }
+            contextClickMouseX = mouseX;
+            contextClickMouseY = mouseY;
             QuickActionEntry userEnt = slot >= 1 ? userEntryAtLinearSlot(slot) : null;
             String hideTargetId = userEnt != null ? userEnt.id() : null;
             openTrayContextMenu((int) mouseX, (int) mouseY, hideTargetId, false);
@@ -1042,6 +1044,41 @@ public final class QuickActionOverlay {
         }
     }
 
+    private void addHideSlotRow(List<CtxRow> L) {
+        if (contextUserEntryIdForHide == null) {
+            return;
+        }
+        L.add(new CtxRow(trWord("quick_action.hide_slot"), false, () -> {
+            layout.hiddenIconIds().add(contextUserEntryIdForHide);
+            markSave();
+            contextOpen = false;
+            contextMenuKind = ContextMenuKind.NONE;
+            contextUserEntryIdForHide = null;
+        }));
+    }
+
+    private void addEntryContextMenuRows(List<CtxRow> L, @Nullable QuickActionEntry ent) {
+        if (ent == null) {
+            return;
+        }
+        for (QuickActionContextMenuItem it : ent.contextMenuItems) {
+            if (it == null) {
+                continue;
+            }
+            L.add(new CtxRow(it.getLabel().toVanilla().getString(), false, () -> {
+                if (it.getOnActivate() != null) {
+                    QuickActionContext ctx = new QuickActionContext()
+                            .minecraft(mc())
+                            .currentScreen(mc().screen)
+                            .entryId(ent.id())
+                            .mouseX(contextClickMouseX)
+                            .mouseY(contextClickMouseY);
+                    it.getOnActivate().accept(ctx);
+                }
+            }, it.getMenuIcon()));
+        }
+    }
+
     private List<CtxRow> buildContextRows() {
         List<CtxRow> L = new ArrayList<>();
         if (contextMenuKind != ContextMenuKind.TRAY) {
@@ -1103,41 +1140,35 @@ public final class QuickActionOverlay {
             return L;
         }
 
-        // region 根页：任意格统一首项为进入/退出编辑；编辑态下与系统格相同的子菜单
+        // region 根页：进入/退出编辑仅系统格；用户格为「隐藏此格」+ 该项注册的右键菜单
+        QuickActionEntry hideTargetEntry = contextUserEntryIdForHide != null
+                ? QuickActionRegistry.get().getEntry(contextUserEntryIdForHide)
+                : null;
+
         if (layout.layoutEditMode()) {
-            if (!contextOmitEditToggleRow) {
-                L.add(new CtxRow(trWord("quick_action.exit_edit"), true, () -> layout.layoutEditMode(false)));
-            }
-            L.add(new CtxRow(trWord("quick_action.menu_layout"), true, () -> contextPage = CTX_PAGE_LAYOUT));
-            L.add(new CtxRow(trWord("quick_action.menu_position"), true, () -> contextPage = CTX_PAGE_POSITION));
-            L.add(new CtxRow(trWord("quick_action.menu_hidden"), true, () -> contextPage = CTX_PAGE_HIDDEN));
-        } else {
-            if (!contextOmitEditToggleRow) {
-                L.add(new CtxRow(trWord("quick_action.enter_edit"), true, () -> layout.layoutEditMode(true)));
-            }
-            if (contextUserEntryIdForHide != null) {
-                L.add(new CtxRow(trWord("quick_action.hide_slot"), false, () -> {
-                    layout.hiddenIconIds().add(contextUserEntryIdForHide);
-                    markSave();
-                    contextOpen = false;
-                    contextMenuKind = ContextMenuKind.NONE;
-                    contextUserEntryIdForHide = null;
-                }));
-            }
-            // 仅系统格展示注册动作列表
             if (contextUserEntryIdForHide == null) {
-                int beforeActions = L.size();
-                for (QuickActionEntry e : QuickActionRegistry.get().allEntriesInOrder()) {
-                    if (e.display() != EnumQuickActionDisplay.ICON) {
-                        continue;
-                    }
-                    L.add(new CtxRow(e.label().toVanilla().getString(), false, () ->
-                            fireAction(e, contextClickMouseX, contextClickMouseY), e.quickIcon()));
+                if (!contextOmitEditToggleRow) {
+                    L.add(new CtxRow(trWord("quick_action.exit_edit"), true, () -> layout.layoutEditMode(false)));
                 }
-                if (contextOmitEditToggleRow && L.size() == beforeActions) {
+                L.add(new CtxRow(trWord("quick_action.menu_layout"), true, () -> contextPage = CTX_PAGE_LAYOUT));
+                L.add(new CtxRow(trWord("quick_action.menu_position"), true, () -> contextPage = CTX_PAGE_POSITION));
+                L.add(new CtxRow(trWord("quick_action.menu_hidden"), true, () -> contextPage = CTX_PAGE_HIDDEN));
+            } else {
+                addHideSlotRow(L);
+                addEntryContextMenuRows(L, hideTargetEntry);
+            }
+        } else {
+            if (contextUserEntryIdForHide == null) {
+                if (!contextOmitEditToggleRow) {
+                    L.add(new CtxRow(trWord("quick_action.enter_edit"), true, () -> layout.layoutEditMode(true)));
+                }
+                if (contextOmitEditToggleRow && L.isEmpty()) {
                     L.add(new CtxRow(trWord("quick_action.no_registered_entries"), true, () -> {
                     }));
                 }
+            } else {
+                addHideSlotRow(L);
+                addEntryContextMenuRows(L, hideTargetEntry);
             }
         }
         // endregion 根页

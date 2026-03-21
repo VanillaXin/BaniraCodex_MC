@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
+
 /**
  * 背包界面快捷操作注册器。仅客户端使用。
  * <p>
@@ -24,13 +26,12 @@ import java.util.stream.Collectors;
  * {@link EnumQuickActionDisplay#LIST_ONLY} 仅出现在「菜单锚点」图标的右键下拉列表中。
  * </p>
  * <p>图标可使用 {@link ItemStack}、{@link Item}、{@link Effect} 或 {@link ResourceLocation}（纹理），见各类 {@code register*} 重载。</p>
+ * <p>可选在注册时附加 {@link QuickActionContextMenuItem}，在<strong>右键该托盘图标</strong>时与「隐藏此格」一并显示；左键点击图标仍触发 {@code onActivate}。</p>
  * <p><b>接入示例</b>（仅在客户端线程调用）：</p>
  * <pre>{@code
- * InventoryQuickActionRegistry reg = InventoryQuickActionRegistry.get();
- * reg.registerIcon("home", new ItemStack(Items.COMPASS), new Component("回家"), ctx -> { });
- * reg.registerIcon("buff", Effects.MOVEMENT_SPEED, new Component("速度"), ctx -> { });
- * reg.registerIcon("gem", Identifier.id().create("minecraft", "textures/item/emerald.png"),
- *         new Component("资源图"), ctx -> { });
+ * QuickActionRegistry reg = QuickActionRegistry.get();
+ * reg.registerIcon("home", new ItemStack(Items.COMPASS), new Component("回家"), ctx -> { },
+ *     new QuickActionContextMenuItem(new Component("子命令"), subCtx -> { }));
  * reg.menuAnchorEntryId("home");
  * }</pre>
  */
@@ -73,7 +74,20 @@ public final class QuickActionRegistry {
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action
     ) {
-        register(id, icon, label, EnumQuickActionDisplay.ICON, action);
+        register(id, icon, label, EnumQuickActionDisplay.ICON, action, emptyList());
+    }
+
+    /**
+     * 注册托盘图标，并可选注册该项在右键菜单中的额外行（与「隐藏此格」并列）。
+     */
+    public void registerIcon(
+            @Nonnull String id,
+            @Nonnull QuickIcon icon,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        register(id, icon, label, EnumQuickActionDisplay.ICON, action, Arrays.asList(contextMenuItems));
     }
 
     public void registerIcon(
@@ -112,6 +126,46 @@ public final class QuickActionRegistry {
         registerIcon(id, QuickIcon.resource(texture), label, action);
     }
 
+    public void registerIcon(
+            @Nonnull String id,
+            @Nonnull ItemStack stack,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerIcon(id, QuickIcon.item(stack), label, action, contextMenuItems);
+    }
+
+    public void registerIcon(
+            @Nonnull String id,
+            @Nonnull Item item,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerIcon(id, QuickIcon.item(item), label, action, contextMenuItems);
+    }
+
+    public void registerIcon(
+            @Nonnull String id,
+            @Nonnull Effect effect,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerIcon(id, QuickIcon.effect(effect), label, action, contextMenuItems);
+    }
+
+    public void registerIcon(
+            @Nonnull String id,
+            @Nonnull ResourceLocation texture,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerIcon(id, QuickIcon.resource(texture), label, action, contextMenuItems);
+    }
+
     // endregion
 
     // region registerListOnly 重载
@@ -122,7 +176,17 @@ public final class QuickActionRegistry {
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action
     ) {
-        register(id, icon, label, EnumQuickActionDisplay.LIST_ONLY, action);
+        register(id, icon, label, EnumQuickActionDisplay.LIST_ONLY, action, emptyList());
+    }
+
+    public void registerListOnly(
+            @Nonnull String id,
+            @Nonnull QuickIcon icon,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        register(id, icon, label, EnumQuickActionDisplay.LIST_ONLY, action, Arrays.asList(contextMenuItems));
     }
 
     public void registerListOnly(
@@ -161,6 +225,46 @@ public final class QuickActionRegistry {
         registerListOnly(id, QuickIcon.resource(texture), label, action);
     }
 
+    public void registerListOnly(
+            @Nonnull String id,
+            @Nonnull ItemStack stack,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerListOnly(id, QuickIcon.item(stack), label, action, contextMenuItems);
+    }
+
+    public void registerListOnly(
+            @Nonnull String id,
+            @Nonnull Item item,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerListOnly(id, QuickIcon.item(item), label, action, contextMenuItems);
+    }
+
+    public void registerListOnly(
+            @Nonnull String id,
+            @Nonnull Effect effect,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerListOnly(id, QuickIcon.effect(effect), label, action, contextMenuItems);
+    }
+
+    public void registerListOnly(
+            @Nonnull String id,
+            @Nonnull ResourceLocation texture,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        registerListOnly(id, QuickIcon.resource(texture), label, action, contextMenuItems);
+    }
+
     // endregion
 
     public void register(
@@ -168,17 +272,21 @@ public final class QuickActionRegistry {
             @Nonnull QuickIcon icon,
             @Nonnull Component label,
             @Nonnull EnumQuickActionDisplay display,
-            @Nullable Consumer<QuickActionContext> action
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull List<QuickActionContextMenuItem> contextMenuItems
     ) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(label, "label");
         Objects.requireNonNull(icon, "icon");
+        Objects.requireNonNull(contextMenuItems, "contextMenuItems");
         QuickActionEntry e = new QuickActionEntry()
                 .id(id)
                 .quickIcon(icon)
                 .label(label)
                 .display(display != null ? display : EnumQuickActionDisplay.ICON)
                 .onActivate(action);
+        e.contextMenuItems.clear();
+        e.contextMenuItems.addAll(contextMenuItems);
         entries.put(id, e);
         if (!registrationOrder.contains(id)) {
             registrationOrder.add(id);

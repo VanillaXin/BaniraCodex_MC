@@ -42,9 +42,26 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG> void broadcastPacket(Supplier<SimpleChannel> channel, MSG msg) {
+        broadcastPacket(channel.get(), msg);
+    }
+
+    /**
+     * 广播数据包至所有玩家
+     */
+    public static <MSG> void broadcastPacket(SimpleChannel channel, MSG msg) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendPacketToPlayer(channel, msg, player)
         );
+    }
+
+    /**
+     * 广播分包数据包至所有玩家
+     *
+     * @param channel 网络通道
+     * @param packet  要发送的数据包
+     */
+    public static <T extends SplitPacket> void broadcastSplitPacket(Supplier<SimpleChannel> channel, T packet) {
+        broadcastSplitPacket(channel.get(), packet);
     }
 
     /**

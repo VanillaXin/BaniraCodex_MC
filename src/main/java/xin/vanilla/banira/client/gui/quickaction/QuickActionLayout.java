@@ -52,7 +52,7 @@ public class QuickActionLayout {
 
     @Getter
     @Setter
-    private int cellSize = 18;
+    private int cellSize = 16;
 
     @Getter
     @Setter
@@ -94,6 +94,7 @@ public class QuickActionLayout {
         int prev = this.gridColumns;
         this.gridColumns = c;
         migrateUserSlotGridForColumnChange(prev, c);
+        recoverOrphanHiddenIcons();
         rebuildIconBarOrderFromGrid();
         return this;
     }
@@ -124,6 +125,7 @@ public class QuickActionLayout {
             int empty = firstEmptyUserSlotIndex();
             if (empty >= 0) {
                 userSlotGrid.set(empty, id);
+                hiddenIconIds.remove(id);
             }
         }
         rebuildIconBarOrderFromGrid();
@@ -282,10 +284,13 @@ public class QuickActionLayout {
                     int e = firstEmptyUserSlotIndex();
                     if (e >= 0) {
                         userSlotGrid.set(e, id);
+                    } else {
+                        hiddenIconIds.add(id);
                     }
                 }
             }
         }
+        recoverOrphanHiddenIcons();
         rebuildIconBarOrderFromGrid();
     }
 
@@ -326,10 +331,36 @@ public class QuickActionLayout {
             int empty = firstEmptyIndexIn(newGrid);
             if (empty >= 0) {
                 newGrid.set(empty, id);
+            } else if (!id.isEmpty()) {
+                hiddenIconIds.add(id);
             }
         }
         userSlotGrid.clear();
         userSlotGrid.addAll(newGrid);
+    }
+
+    /**
+     * 将「仅因格网缩小被移入 {@link #hiddenIconIds}、当前不在 {@link #userSlotGrid} 内」的 id 在有空位时填回；
+     * 与「格内图标 + 仅隐藏显示」的手动隐藏区分（后者 id 仍在格内，此处跳过）。
+     */
+    private void recoverOrphanHiddenIcons() {
+        List<String> orphans = new ArrayList<>();
+        for (String id : hiddenIconIds) {
+            if (id == null || id.isEmpty()) {
+                continue;
+            }
+            if (indexOfIdInUserGrid(id) < 0) {
+                orphans.add(id);
+            }
+        }
+        for (String id : orphans) {
+            int empty = firstEmptyUserSlotIndex();
+            if (empty < 0) {
+                break;
+            }
+            userSlotGrid.set(empty, id);
+            hiddenIconIds.remove(id);
+        }
     }
 
     private static int firstEmptyIndexIn(List<String> grid) {

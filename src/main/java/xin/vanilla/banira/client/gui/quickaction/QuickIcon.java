@@ -35,6 +35,8 @@ public class QuickIcon {
         ITEM,
         EFFECT,
         RESOURCE,
+        NONE,
+        ;
     }
 
     @Getter
@@ -56,6 +58,13 @@ public class QuickIcon {
     @Setter
     @Nullable
     private ResourceLocation texture;
+
+    @Nonnull
+    public static QuickIcon none() {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.NONE);
+        return q;
+    }
 
     @Nonnull
     public static QuickIcon item(@Nonnull ItemStack stack) {

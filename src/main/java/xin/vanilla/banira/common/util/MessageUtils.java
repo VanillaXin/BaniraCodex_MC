@@ -122,15 +122,6 @@ public final class MessageUtils {
     }
 
     /**
-     * 广播数据包至所有玩家
-     *
-     * @param packet 数据包
-     */
-    public static void broadcastPacket(IPacket<?> packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player -> player.connection.send(packet));
-    }
-
-    /**
      * 向指定玩家发送 Notification
      *
      * @param player    目标玩家

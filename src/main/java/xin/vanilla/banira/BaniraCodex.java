@@ -2,9 +2,12 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.FolderName;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -13,8 +16,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
@@ -22,6 +30,8 @@ import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
+
+import java.util.function.Consumer;
 
 @Mod(BaniraCodex.MODID)
 @Accessors(fluent = true)
@@ -105,6 +115,24 @@ public class BaniraCodex {
                 PlayerUtils.removePlayerDataStatus(player);
             }
         });
+
+        if (EnvironmentUtils.isClient()) {
+            ClientProxy.init();
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static class ClientProxy {
+        public static void init() {
+            BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
+                Component label = Component.transClient(MODID, "key.banira_codex.notification_log");
+                Consumer<QuickActionContext> action = ctx ->
+                        Minecraft.getInstance().setScreen(
+                                new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(ctx.currentScreen()))
+                        );
+                QuickActionRegistry.get().registerListOnly(MODID + ":quick_notification_log_screen", label, action);
+            });
+        }
     }
 
 }

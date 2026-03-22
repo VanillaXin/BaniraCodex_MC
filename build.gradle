@@ -28,6 +28,7 @@ base {
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
+    withSourcesJar()
 }
 
 minecraft {
@@ -137,6 +138,11 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+tasks.named('sourcesJar', Jar).configure {
+    archiveBaseName.set(mod_id)
+    archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
@@ -158,9 +164,10 @@ publishing {
 afterEvaluate {
     publishing.publications.named('mavenJava', MavenPublication) {
         artifact tasks.jar
+        artifact tasks.named('sourcesJar')
     }
     tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
-        dependsOn 'reobfJar'
+        dependsOn 'reobfJar', 'sourcesJar'
     }
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）

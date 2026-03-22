@@ -3,8 +3,10 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.IPacket;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 
 import java.util.List;
@@ -23,6 +25,39 @@ public final class PacketUtils {
      */
     @Getter
     private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
+
+
+    /**
+     * 广播数据包至所有玩家
+     *
+     * @param packet 数据包
+     */
+    public static void broadcastPacket(IPacket<?> packet) {
+        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                player.connection.send(packet)
+        );
+    }
+
+    /**
+     * 广播数据包至所有玩家
+     */
+    public static <MSG> void broadcastPacket(Supplier<SimpleChannel> channel, MSG msg) {
+        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                sendPacketToPlayer(channel, msg, player)
+        );
+    }
+
+    /**
+     * 广播分包数据包至所有玩家
+     *
+     * @param channel 网络通道
+     * @param packet  要发送的数据包
+     */
+    public static <T extends SplitPacket> void broadcastSplitPacket(SimpleChannel channel, T packet) {
+        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player))
+        );
+    }
 
 
     /**

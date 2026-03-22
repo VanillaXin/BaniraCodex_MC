@@ -172,6 +172,14 @@ public final class QuickActionRegistry {
 
     public void registerListOnly(
             @Nonnull String id,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action
+    ) {
+        register(id, QuickIcon.none(), label, EnumQuickActionDisplay.LIST_ONLY, action, emptyList());
+    }
+
+    public void registerListOnly(
+            @Nonnull String id,
             @Nonnull QuickIcon icon,
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action

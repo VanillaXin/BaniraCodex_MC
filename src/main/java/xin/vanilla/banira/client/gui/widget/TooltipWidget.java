@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -245,7 +246,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     public static void drawItemTooltip(MatrixStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
         boolean advanced = Screen.hasShiftDown();
         List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
-        Component tooltipComponent = Component.empty();
+        Component tooltipComponent = BaniraComponent.get().empty();
         for (int idx = 0; idx < tooltipList.size(); idx++) {
             Component component = tooltipList.get(idx);
             if (idx > 0) tooltipComponent = tooltipComponent.append("\n");

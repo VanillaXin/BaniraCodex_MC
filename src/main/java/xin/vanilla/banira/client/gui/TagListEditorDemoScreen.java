@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -20,7 +21,7 @@ public class TagListEditorDemoScreen extends BaniraScreen {
     private static final int PANEL_WIDTH = 300;
 
     public TagListEditorDemoScreen(@Nullable Screen parent) {
-        super(Component.transClientAuto(BaniraCodex.MODID, "tag_list_editor_demo_title").toVanilla());
+        super(BaniraComponent.get().transClientAuto("tag_list_editor_demo_title").toVanilla());
         if (parent != null) {
             previousScreen(parent);
         }

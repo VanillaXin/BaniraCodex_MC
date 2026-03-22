@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -74,7 +74,7 @@ public final class NotificationManager {
      */
     private void appendLog(Notification notification, boolean fromNetwork) {
         long id = System.currentTimeMillis();
-        String componentJson = JsonUtils.toString(Component.serialize(notification.component()));
+        String componentJson = JsonUtils.toString(AbstractComponent.serialize(notification.component()));
         NotificationLogEntry entry = new NotificationLogEntry()
                 .id(id)
                 .timestamp(id)

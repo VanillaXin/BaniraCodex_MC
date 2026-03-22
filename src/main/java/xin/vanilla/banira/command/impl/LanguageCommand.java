@@ -1,5 +1,6 @@
 package xin.vanilla.banira.command.impl;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -34,12 +35,12 @@ public final class LanguageCommand {
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
         if (translator.getI18nFiles().contains(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
-            MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "player_default_language", language));
+            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language));
         } else if ("server".equalsIgnoreCase(language) || "client".equalsIgnoreCase(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
-            MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "player_default_language", language));
+            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language));
         } else {
-            MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "language_not_exist").color(0xFFFF0000));
+            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "language_not_exist").color(0xFFFF0000));
         }
         return 1;
     }
@@ -47,8 +48,8 @@ public final class LanguageCommand {
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
         String lang = CommandUtils.getLanguage(context.getSource());
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
-        Component clientTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "suggest_language_client");
-        Component serverTooltip = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "suggest_language_server");
+        Component clientTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_client");
+        Component serverTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_server");
         builder.suggest("client", clientTooltip.toVanilla(lang));
         builder.suggest("server", serverTooltip.toVanilla(lang));
         translator.getI18nFiles().forEach(builder::suggest);

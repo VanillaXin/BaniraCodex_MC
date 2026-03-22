@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -24,9 +25,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@NoArgsConstructor
+/**
+ * 富文本数据模型。构造方法与静态工厂仅同包可见；外部 Mod 须通过 {@link AbstractComponent}
+ *（本 Mod 使用 {@link xin.vanilla.banira.BaniraComponent}，或 {@link ScopedComponent}）创建实例。
+ */
+@NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Accessors(chain = true, fluent = true)
-public class Component implements Cloneable, Serializable {
+public final class Component implements Cloneable, Serializable {
 
     // region 属性定义
     /**
@@ -129,16 +134,16 @@ public class Component implements Cloneable, Serializable {
 
     // endregion 属性定义
 
-    public Component(String text) {
+    Component(String text) {
         this.text = text;
     }
 
-    public Component(String text, EnumI18nType i18nType) {
+    Component(String text, EnumI18nType i18nType) {
         this.text = text;
         this.i18nType = i18nType;
     }
 
-    public Component(String modId, String text, EnumI18nType i18nType) {
+    Component(String modId, String text, EnumI18nType i18nType) {
         this.modId = modId;
         this.text = text;
         this.i18nType = i18nType;
@@ -740,119 +745,119 @@ public class Component implements Cloneable, Serializable {
     /**
      * 获取空文本组件
      */
-    public static Component empty() {
+    static Component empty() {
         return new Component().shadow(false);
     }
 
     /**
      * 获取原始组件
      */
-    public static Component object(Object original) {
+    static Component object(Object original) {
         return empty().original(original).i18nType(EnumI18nType.ORIGINAL);
     }
 
     /**
      * 获取文本组件
      */
-    public static Component literal(String text) {
+    static Component literal(String text) {
         return new Component().text(text).shadow(false);
     }
 
-    public static Component trans(String key) {
+    static Component trans(String key) {
         return new Component(key, EnumI18nType.NONE);
     }
 
-    public static Component trans(String modId, String key) {
+    static Component trans(String modId, String key) {
         return new Component(modId, key, EnumI18nType.NONE);
     }
 
-    public static Component trans(String key, Object... args) {
+    static Component trans(String key, Object... args) {
         return new Component(key, EnumI18nType.NONE).appendArg(args);
     }
 
-    public static Component trans(String modId, String key, Object... args) {
+    static Component trans(String modId, String key, Object... args) {
         return new Component(modId, key, EnumI18nType.NONE).appendArg(args);
     }
 
-    public static Component trans(EnumI18nType type, String key, Object... args) {
+    static Component trans(EnumI18nType type, String key, Object... args) {
         return new Component(key, type).appendArg(args);
     }
 
-    public static Component trans(String modId, EnumI18nType type, String key, Object... args) {
+    static Component trans(String modId, EnumI18nType type, String key, Object... args) {
         return new Component(modId, key, type).appendArg(args);
     }
 
-    public static Component trans(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
+    static Component trans(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
         return new Component(key, type).languageCode(() -> Translator.getPlayerLanguage(player)).appendArg(args);
     }
 
-    public static Component transAuto(String key) {
+    static Component transAuto(String key) {
         return new Component(key, EnumI18nType.WORD);
     }
 
-    public static Component transAuto(String modId, String key) {
+    static Component transAuto(String modId, String key) {
         return new Component(modId, key, EnumI18nType.WORD);
     }
 
-    public static Component transAuto(String key, Object... args) {
+    static Component transAuto(String key, Object... args) {
         return new Component(key, EnumI18nType.FORMAT).appendArg(args);
     }
 
-    public static Component transAuto(String modId, String key, Object... args) {
+    static Component transAuto(String modId, String key, Object... args) {
         return new Component(modId, key, EnumI18nType.FORMAT).appendArg(args);
     }
 
 
-    public static Component transClient(String key) {
+    static Component transClient(String key) {
         return new Component(key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage);
     }
 
-    public static Component transClient(String modId, String key) {
+    static Component transClient(String modId, String key) {
         return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage);
     }
 
-    public static Component transClient(String key, Object... args) {
+    static Component transClient(String key, Object... args) {
         return new Component(key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
-    public static Component transClient(String modId, String key, Object... args) {
+    static Component transClient(String modId, String key, Object... args) {
         return new Component(modId, key, EnumI18nType.NONE).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
-    public static Component transClient(EnumI18nType type, String key, Object... args) {
+    static Component transClient(EnumI18nType type, String key, Object... args) {
         return new Component(key, type).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
-    public static Component transClientAuto(String key) {
+    static Component transClientAuto(String key) {
         return new Component(key, EnumI18nType.WORD).languageCode(Translator::getClientLanguage);
     }
 
-    public static Component transClientAuto(String modId, String key) {
+    static Component transClientAuto(String modId, String key) {
         return new Component(modId, key, EnumI18nType.WORD).languageCode(Translator::getClientLanguage);
     }
 
-    public static Component transClientAuto(String key, Object... args) {
+    static Component transClientAuto(String key, Object... args) {
         return new Component(key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
-    public static Component transClientAuto(String modId, String key, Object... args) {
+    static Component transClientAuto(String modId, String key, Object... args) {
         return new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
     }
 
-    public static Component transLang(String languageCode, String key, Object... args) {
+    static Component transLang(String languageCode, String key, Object... args) {
         return new Component(key, EnumI18nType.NONE).languageCode(languageCode).appendArg(args);
     }
 
-    public static Component transLang(String languageCode, EnumI18nType type, String key, Object... args) {
+    static Component transLang(String languageCode, EnumI18nType type, String key, Object... args) {
         return new Component(key, type).languageCode(languageCode).appendArg(args);
     }
 
-    public static Component transLang(String modId, String languageCode, EnumI18nType type, String key, Object... args) {
+    static Component transLang(String modId, String languageCode, EnumI18nType type, String key, Object... args) {
         return new Component(modId, key, type).languageCode(languageCode).appendArg(args);
     }
 
 
-    public static Component deserialize(JsonObject jsonObject) {
+    static Component deserialize(JsonObject jsonObject) {
         Component result = new Component();
         result.text(JsonUtils.getString(jsonObject, "text"));
         result.i18nType(EnumI18nType.valueOf(JsonUtils.getString(jsonObject, "i18nType")));
@@ -888,7 +893,7 @@ public class Component implements Cloneable, Serializable {
         return result;
     }
 
-    public static JsonObject serialize(Component component) {
+    static JsonObject serialize(Component component) {
         JsonObject result = new JsonObject();
         JsonUtils.set(result, "text", component.text());
         JsonUtils.set(result, "i18nType", component.i18nType().name());

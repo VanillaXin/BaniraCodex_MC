@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.Getter;
@@ -59,7 +60,7 @@ public class ItemSelectScreen extends BaniraScreen {
 
     private final Args args;
 
-    private static final Component TITLE = Component.literal("ItemSelectScreen");
+    private static final Component TITLE = BaniraComponent.get().literal("ItemSelectScreen");
 
     private String inputFieldText = "";
     private final ArraySet<ItemStack> itemList = new ArraySet<>();
@@ -517,7 +518,7 @@ public class ItemSelectScreen extends BaniraScreen {
                             .validator((input) -> {
                                 Item item = ItemUtils.getItemFromRegistry(input.value());
                                 if (item == null) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_item_id_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_item_id_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -539,7 +540,7 @@ public class ItemSelectScreen extends BaniraScreen {
                             .validator((input) -> {
                                 int count = NumberUtils.toInt(input.value());
                                 if (count <= 0 || count > 64 * 9 * 5) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_item_quantity_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_item_quantity_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -564,7 +565,7 @@ public class ItemSelectScreen extends BaniraScreen {
                                         throw new RuntimeException();
                                     }
                                 } catch (Exception e) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_item_nbt_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_item_nbt_error", input.value()).toString();
                                 }
                                 return null;
                             })

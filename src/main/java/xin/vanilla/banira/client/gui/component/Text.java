@@ -7,10 +7,12 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Translator;
 
@@ -33,7 +35,7 @@ public class Text implements Cloneable {
     /**
      * 文本
      */
-    private Component text = Component.empty().clone();
+    private Component text = BaniraComponent.get().empty().clone();
     /**
      * 文本对齐方式(仅多行绘制时)
      */
@@ -41,7 +43,7 @@ public class Text implements Cloneable {
     /**
      * 鼠标悬浮时文本
      */
-    private Component hoverText = Component.empty().clone();
+    private Component hoverText = BaniraComponent.get().empty().clone();
     /**
      * 鼠标悬浮时对齐方式(仅多行绘制时)
      */
@@ -51,8 +53,8 @@ public class Text implements Cloneable {
     }
 
     private Text(String text) {
-        this.text = Component.literal(text);
-        this.hoverText = Component.literal(text);
+        this.text = BaniraComponent.get().literal(text);
+        this.hoverText = BaniraComponent.get().literal(text);
     }
 
     public Text(Component text) {
@@ -61,7 +63,7 @@ public class Text implements Cloneable {
     }
 
     public static Text empty() {
-        return new Text().text(Component.empty()).hoverText(Component.empty());
+        return new Text().text(BaniraComponent.get().empty()).hoverText(BaniraComponent.get().empty());
     }
 
     public static Text literal(String text) {
@@ -69,39 +71,39 @@ public class Text implements Cloneable {
     }
 
     public static Text trans(String key) {
-        return new Text(Component.transClient(key));
+        return new Text(BaniraComponent.get().transClient(key));
     }
 
     public static Text trans(String key, Object... args) {
-        return new Text(Component.transClient(key, args));
+        return new Text(BaniraComponent.get().transClient(key, args));
     }
 
     public static Text trans(String modId, String key) {
-        return new Text(Component.transClient(modId, key));
+        return new Text(new ScopedComponent(modId).transClient(key));
     }
 
     public static Text trans(String modId, String key, Object... args) {
-        return new Text(Component.transClient(modId, key, args));
+        return new Text(new ScopedComponent(modId).transClient(key, args));
     }
 
     public static Text trans(String modId, EnumI18nType type, String key, Object... args) {
-        return new Text(Component.transClient(type, key, args).modId(modId));
+        return new Text(new ScopedComponent(modId).transClient(type, key, args));
     }
 
     public static Text transAuto(String key) {
-        return new Text(Component.transClientAuto(key));
+        return new Text(BaniraComponent.get().transClientAuto(key));
     }
 
     public static Text transAuto(String key, Object... args) {
-        return new Text(Component.transClientAuto(key, args));
+        return new Text(BaniraComponent.get().transClientAuto(key, args));
     }
 
     public static Text transAuto(String modId, String key) {
-        return new Text(Component.transClientAuto(modId, key));
+        return new Text(new ScopedComponent(modId).transClientAuto(key));
     }
 
     public static Text transAuto(String modId, String key, Object... args) {
-        return new Text(Component.transClientAuto(modId, key, args));
+        return new Text(new ScopedComponent(modId).transClientAuto(key, args));
     }
 
     public Text clone() {

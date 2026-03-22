@@ -12,6 +12,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -50,24 +51,24 @@ public final class HelpCommand {
             if (headerTemplate == null || headerTemplate.isEmpty()) {
                 headerTemplate = "-----==== Banira Codex Help (%d/%d) ====-----";
             }
-            helpInfo = Component.literal(String.format(headerTemplate, page, pages) + "\n");
+            helpInfo = BaniraComponent.get().literal(String.format(headerTemplate, page, pages) + "\n");
             for (int i = 0; (page - 1) * helpNumPerPage + i < BaniraCommand.HELP_MESSAGE.size() && i < helpNumPerPage; i++) {
                 KeyValue<String, EnumCommandType> keyValue = BaniraCommand.HELP_MESSAGE.get((page - 1) * helpNumPerPage + i);
                 Component commandTips;
                 if (keyValue.value().name().toLowerCase().contains("concise")) {
-                    commandTips = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "concise",
+                    commandTips = BaniraComponent.get().transLang(lang, EnumI18nType.FORMAT, "concise",
                             BaniraCommand.getCommand(keyValue.value().replaceConcise()));
                 } else {
-                    commandTips = Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, keyValue.value().name().toLowerCase());
+                    commandTips = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, keyValue.value().name().toLowerCase());
                 }
                 commandTips.color(EnumMCColor.GRAY.getColor());
                 String com = "/" + keyValue.key();
-                helpInfo.append(Component.literal(com)
+                helpInfo.append(BaniraComponent.get().literal(com)
                                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
                                 .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
+                                        BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
-                        .append(new Component(" -> ").color(EnumMCColor.YELLOW.getColor()))
+                        .append(BaniraComponent.get().literal(" -> ").color(EnumMCColor.YELLOW.getColor()))
                         .append(commandTips);
                 if (i != Math.min((page - 1) * helpNumPerPage + helpNumPerPage, BaniraCommand.HELP_MESSAGE.size()) - 1) {
                     helpInfo.append("\n");
@@ -75,30 +76,30 @@ public final class HelpCommand {
             }
             if (pages > 1) {
                 helpInfo.append("\n");
-                Component prevButton = Component.literal("<<< ");
+                Component prevButton = BaniraComponent.get().literal("<<< ");
                 if (page > 1) {
                     prevButton.color(EnumMCColor.AQUA.getColor())
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                     String.format("/%s %s %d", BaniraCommand.getCommandPrefix(),
                                             CommonConfig.get().command().commandHelp(), page - 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "previous_page").toVanilla(lang)));
+                                    BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "previous_page").toVanilla(lang)));
                 } else {
                     prevButton.color(EnumMCColor.DARK_AQUA.getColor());
                 }
                 helpInfo.append(prevButton);
-                helpInfo.append(Component.literal(String.format(" %s/%s ",
+                helpInfo.append(BaniraComponent.get().literal(String.format(" %s/%s ",
                                 StringUtils.padOptimizedLeft(page, String.valueOf(pages).length(), " "),
                                 pages))
                         .color(EnumMCColor.WHITE.getColor()));
-                Component nextButton = Component.literal(" >>>");
+                Component nextButton = BaniraComponent.get().literal(" >>>");
                 if (page < pages) {
                     nextButton.color(EnumMCColor.AQUA.getColor())
                             .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                     String.format("/%s %s %d", BaniraCommand.getCommandPrefix(),
                                             CommonConfig.get().command().commandHelp(), page + 1)))
                             .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "next_page").toVanilla(lang)));
+                                    BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "next_page").toVanilla(lang)));
                 } else {
                     nextButton.color(EnumMCColor.DARK_AQUA.getColor());
                 }
@@ -107,17 +108,17 @@ public final class HelpCommand {
         } else {
             try {
                 EnumCommandType type = EnumCommandType.valueOf(command.toUpperCase());
-                helpInfo = Component.empty();
+                helpInfo = BaniraComponent.get().empty();
                 String com = "/" + BaniraCommand.getCommand(type);
-                helpInfo.append(Component.literal(com)
+                helpInfo.append(BaniraComponent.get().literal(com)
                                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
                                 .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
+                                        BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
                         .append("\n")
                         .append(commandDetailLine(type.replaceConcise(), lang).color(EnumMCColor.GRAY.getColor()));
             } catch (IllegalArgumentException e) {
-                helpInfo = Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "command_not_found").color(0xFFFF0000);
+                helpInfo = BaniraComponent.get().trans(EnumI18nType.WORD, "command_not_found").color(0xFFFF0000);
             }
         }
         MessageUtils.sendMessage(player, helpInfo);
@@ -128,14 +129,14 @@ public final class HelpCommand {
         String prefix = BaniraCommand.getCommandPrefix();
         switch (baseType) {
             case HELP:
-                return Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "command_detail_help",
+                return BaniraComponent.get().transLang(lang, EnumI18nType.FORMAT, "command_detail_help",
                         prefix, CommonConfig.get().command().commandHelp());
             case LANGUAGE: {
                 String sub = CommonConfig.get().command().commandLanguage();
                 if (sub == null || sub.isEmpty()) {
                     sub = "language";
                 }
-                return Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "command_detail_language",
+                return BaniraComponent.get().transLang(lang, EnumI18nType.FORMAT, "command_detail_language",
                         prefix, sub);
             }
             case VIRTUAL_OP: {
@@ -143,11 +144,11 @@ public final class HelpCommand {
                 if (sub == null || sub.isEmpty()) {
                     sub = "virtual_op";
                 }
-                return Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.FORMAT, "command_detail_virtual_op",
+                return BaniraComponent.get().transLang(lang, EnumI18nType.FORMAT, "command_detail_virtual_op",
                         prefix, sub);
             }
             default:
-                return Component.transLang(BaniraCodex.MODID, lang, EnumI18nType.WORD, baseType.name().toLowerCase() + "_detail");
+                return BaniraComponent.get().transLang(lang, EnumI18nType.WORD, baseType.name().toLowerCase() + "_detail");
         }
     }
 

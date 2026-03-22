@@ -13,6 +13,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -62,7 +63,7 @@ public class DebugScreen extends BaniraScreen {
 
 
     protected DebugScreen() {
-        super(Component.empty().toVanilla());
+        super(BaniraComponent.get().empty().toVanilla());
     }
 
     @Override
@@ -133,7 +134,7 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.text("按钮长按测试");
         // longPressBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
         longPressBtn.onLongPress(1000L, b -> {
-            Notification n = Notification.ofComponent(Component.literal(KaomojiUtils.random()));
+            Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);
             NotificationManager.get().addNotification(n);
         });
@@ -183,17 +184,17 @@ public class DebugScreen extends BaniraScreen {
         int n = ++debugQuickActionSerial;
         String id = DEBUG_QUICK_ACTION_PREFIX + n;
         QuickActionRegistry reg = QuickActionRegistry.get();
-        Component label = new Component("QA " + n);
+        Component label = BaniraComponent.get().literal("QA " + n);
         int t = n % 4;
         if (t == 0) {
             reg.registerIcon(id, Identifier.id().create("minecraft", "textures/item/emerald.png"), label, ctx -> {
-                Notification notification = Notification.ofComponent(Component.literal(String.format("Clicked Quick Emerald Action %s", ctx.entryId())));
+                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Quick Emerald Action %s", ctx.entryId())));
                 notification.durationTime(3000);
                 NotificationManager.get().addNotification(notification);
             });
         } else {
             reg.registerIcon(id, CollectionUtils.getRandomElement(ItemUtils.getAllItems()), label, ctx -> {
-                Notification notification = Notification.ofComponent(Component.literal(String.format("Clicked Item Quick Action %s", ctx.entryId())));
+                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Item Quick Action %s", ctx.entryId())));
                 notification.durationTime(3000);
                 NotificationManager.get().addNotification(notification);
             });
@@ -255,7 +256,7 @@ public class DebugScreen extends BaniraScreen {
 
     private void addTooltipLabel(int x, int y, String tooltipText) {
         TooltipWidget w = new TooltipWidget(this, new ScreenCoordinate(x, y, 40, 18));
-        w.text(Component.literal(tooltipText)).vanillaTooltip(true);
+        w.text(BaniraComponent.get().literal(tooltipText)).vanillaTooltip(true);
         w.visible(true);
         addWidget(w);
     }
@@ -286,7 +287,7 @@ public class DebugScreen extends BaniraScreen {
     private void addNotificationTest(EnumPosition position) {
         if (position == null) return;
         Notification n = Notification.ofComponent(
-                Component.literal("NotificationManager 测试 - " + position.name()));
+                BaniraComponent.get().literal("NotificationManager 测试 - " + position.name()));
         n.position(position)
                 .animation(EnumMoveType.SCALE_AND_FADE)
                 .durationTime(3000);
@@ -480,7 +481,7 @@ public class DebugScreen extends BaniraScreen {
                             .title(Text.literal("enter_name"))
                             .validator((input) -> {
                                 if (StringUtils.isNullOrEmptyEx(input.value())) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_something_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_something_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -542,12 +543,12 @@ public class DebugScreen extends BaniraScreen {
     }
 
     private void genContent() {
-        StringBuilder content = new StringBuilder(Component.transClientAuto(BaniraCodex.MODID, "banira_codex").modId(BaniraCodex.MODID).toString()).append("\n");
+        StringBuilder content = new StringBuilder(BaniraComponent.get().transClientAuto("banira_codex").toString()).append("\n");
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < contentLines - 1; i++) {
             if (i == 0) {
-                Component component = Component.literal("Copyright (c) %s ").appendArg(DateUtils.getYearPart(new Date()))
-                        .append(Component.transClientAuto(BaniraCodex.MODID, "vanilla_xin").modId(BaniraCodex.MODID));
+                Component component = BaniraComponent.get().literal("Copyright (c) %s ").appendArg(DateUtils.getYearPart(new Date()))
+                        .append(BaniraComponent.get().transClientAuto("vanilla_xin"));
                 content.append(component.toString()).append("\n");
             } else {
                 RandomStringUtils.CharSource source;

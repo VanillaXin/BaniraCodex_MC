@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.Getter;
@@ -59,7 +60,7 @@ public class EffectSelectScreen extends BaniraScreen {
 
     private final Args args;
 
-    private static final Component TITLE = Component.literal("EffectSelectScreen");
+    private static final Component TITLE = BaniraComponent.get().literal("EffectSelectScreen");
 
     private String inputFieldText = "";
     private final List<Effect> effectList = new ArrayList<>();
@@ -560,7 +561,7 @@ public class EffectSelectScreen extends BaniraScreen {
                             .validator((input) -> {
                                 Effect e = EffectUtils.getEffectFromRegistry(input.value());
                                 if (e == null) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_effect_id_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_effect_id_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -583,7 +584,7 @@ public class EffectSelectScreen extends BaniraScreen {
                             .validator((input) -> {
                                 int duration = NumberUtils.toInt(input.value());
                                 if (duration <= 0 || duration > 60 * 60 * 24 * 30) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_effect_duration_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_effect_duration_error", input.value()).toString();
                                 }
                                 return null;
                             })
@@ -603,7 +604,7 @@ public class EffectSelectScreen extends BaniraScreen {
                             .validator((input) -> {
                                 int amplifier = NumberUtils.toInt(input.value());
                                 if (amplifier <= 0 || amplifier > 100) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_effect_amplifier_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_effect_amplifier_error", input.value()).toString();
                                 }
                                 return null;
                             })

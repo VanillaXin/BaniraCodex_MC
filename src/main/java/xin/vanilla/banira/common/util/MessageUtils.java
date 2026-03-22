@@ -11,6 +11,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
@@ -70,7 +71,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, String message) {
-        player.sendMessage(Component.literal(message).toChat(), player.getUUID());
+        player.sendMessage(BaniraComponent.get().literal(message).toChat(), player.getUUID());
     }
 
     /**
@@ -100,7 +101,7 @@ public final class MessageUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(PlayerEntity player, String key, Object... args) {
-        player.sendMessage(Component.trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat(), player.getUUID());
+        player.sendMessage(BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat(), player.getUUID());
     }
 
     /**
@@ -118,9 +119,9 @@ public final class MessageUtils {
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(Component.trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
+            source.sendSuccess(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            source.sendFailure(Component.trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
+            source.sendFailure(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -186,11 +187,11 @@ public final class MessageUtils {
      */
     public static Component literalComponent(ServerPlayerEntity player, Component component) {
         if (component == null || component.isEmpty()) {
-            return Component.literal("");
+            return BaniraComponent.get().literal("");
         }
         String lang = Translator.getPlayerLanguage(player);
         String resolved = component.getString(lang, true, true);
-        return Component.literal(resolved != null ? resolved : "");
+        return BaniraComponent.get().literal(resolved != null ? resolved : "");
     }
 
     /**

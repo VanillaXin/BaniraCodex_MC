@@ -30,8 +30,8 @@ import static java.util.Collections.emptyList;
  * <p><b>接入示例</b>（仅在客户端线程调用）：</p>
  * <pre>{@code
  * QuickActionRegistry reg = QuickActionRegistry.get();
- * reg.registerIcon("home", new ItemStack(Items.COMPASS), new Component("回家"), ctx -> { },
- *     new QuickActionContextMenuItem(new Component("子命令"), subCtx -> { }));
+ * reg.registerIcon("home", new ItemStack(Items.COMPASS), BaniraComponent.get().literal("回家"), ctx -> { },
+ *     new QuickActionContextMenuItem(BaniraComponent.get().literal("子命令"), subCtx -> { }));
  * reg.menuAnchorEntryId("home");
  * }</pre>
  */

@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
+import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.PacketBuffer;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
@@ -40,7 +42,7 @@ public class NotificationToClient {
     }
 
     public NotificationToClient(Component component, EnumPosition position, EnumMoveType animation, long durationTime, EnumNotificationStyle style) {
-        this.componentJson = JsonUtils.toString(Component.serialize(component));
+        this.componentJson = JsonUtils.toString(AbstractComponent.serialize(component));
         this.positionName = position != null ? position.name() : DEFAULT_POSITION;
         this.animationName = animation != null ? animation.name() : DEFAULT_ANIMATION;
         this.durationTime = durationTime > 0 ? durationTime : 5000L;
@@ -87,7 +89,7 @@ public class NotificationToClient {
 
         private static void handle(NotificationToClient packet) {
             try {
-                Component component = Component.deserialize(JsonUtils.parseObject(packet.componentJson()));
+                Component component = BaniraComponent.get().deserialize(JsonUtils.parseObject(packet.componentJson()));
                 EnumPosition position = EnumPosition.valueOfEx(packet.positionName());
                 if (position == null) position = EnumPosition.TOP_RIGHT;
                 EnumMoveType animation;

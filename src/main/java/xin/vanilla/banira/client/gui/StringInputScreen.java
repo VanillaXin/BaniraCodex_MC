@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -48,7 +49,7 @@ public class StringInputScreen extends BaniraScreen {
     private ScrollbarWidget scrollbarWidget;
 
     public StringInputScreen(Args args) {
-        super(args.getTitle() != null ? args.getTitle().toComponent() : Component.literal("StringInputScreen"));
+        super(args.getTitle() != null ? args.getTitle().toComponent() : BaniraComponent.get().literal("StringInputScreen"));
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;

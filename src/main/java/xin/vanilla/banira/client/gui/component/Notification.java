@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui.component;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -78,7 +79,7 @@ public class Notification extends NotificationData {
      * @param fromNetwork true 时按 {@link EnumNotificationStyle} 应用当前客户端主题
      */
     public static Notification fromData(NotificationData data, boolean fromNetwork) {
-        Component comp = data.component() != null ? data.component().clone() : Component.empty().clone();
+        Component comp = data.component() != null ? data.component().clone() : BaniraComponent.get().empty().clone();
         Notification n = new Notification(comp);
         n.position(data.position());
         n.animation(data.animation());

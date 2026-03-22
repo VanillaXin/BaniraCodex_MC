@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.util;
 
+import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.item.ItemEntity;
@@ -66,7 +67,7 @@ public final class PlayerUtils {
 
     public static ITextComponent getPlayerName(PlayerEntity player) {
         return player == null
-                ? Component.empty().toVanilla()
+                ? BaniraComponent.get().empty().toVanilla()
                 : player.getName();
     }
 
@@ -80,7 +81,7 @@ public final class PlayerUtils {
     @Nonnull
     public static ITextComponent getPlayerDisplayName(PlayerEntity player) {
         return player == null
-                ? Component.empty().toVanilla()
+                ? BaniraComponent.get().empty().toVanilla()
                 : player.getDisplayName();
     }
 

@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -99,7 +100,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
-        super(Component.transClientAuto(BaniraCodex.MODID, "config_editor_title").toVanilla());
+        super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
         this.args = args != null ? args : new Args();
         previousScreen(args != null ? args.parentScreen() : null);
@@ -144,15 +145,15 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         ButtonWidget saveBtn = new ButtonWidget(this);
         saveBtn.id("save");
-        saveBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save").toString());
+        saveBtn.text(BaniraComponent.get().transClientAuto("config_editor_save").toString());
         saveBtn.onClick(b -> saveConfig());
         if (holder.canSyncToServer()) {
             saveBtn.onLongPress(b -> fetchConfigFromServer());
         }
         TooltipWidget saveTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
         saveTip.text(holder.canSyncToServer()
-                ? Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_tooltip_network")
-                : Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_tooltip"));
+                ? BaniraComponent.get().transClientAuto("config_editor_save_tooltip_network")
+                : BaniraComponent.get().transClientAuto("config_editor_save_tooltip"));
         saveTip.popupAtScreenCoords(true);
         saveBtn.addChild(saveTip);
         bottomButtons.add(saveBtn);
@@ -160,11 +161,11 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (holder.canSyncToServer()) {
             ButtonWidget syncBtn = new ButtonWidget(this);
             syncBtn.id("sync");
-            syncBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync").toString());
+            syncBtn.text(BaniraComponent.get().transClientAuto("config_editor_sync").toString());
             syncBtn.onClick(b -> syncToServer());
             syncBtn.onLongPress(b -> syncToServerFull());
             TooltipWidget syncTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
-            syncTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_tooltip"));
+            syncTip.text(BaniraComponent.get().transClientAuto("config_editor_sync_tooltip"));
             syncTip.popupAtScreenCoords(true);
             syncBtn.addChild(syncTip);
             bottomButtons.add(syncBtn);
@@ -172,7 +173,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
-        closeBtn.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_close").toString());
+        closeBtn.text(BaniraComponent.get().transClientAuto("config_editor_close").toString());
         closeBtn.onClick(b -> onClose());
         bottomButtons.add(closeBtn);
 
@@ -420,7 +421,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
         resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
-        resetTip.text(Component.transClientAuto(BaniraCodex.MODID, "config_editor_reset_tooltip"));
+        resetTip.text(BaniraComponent.get().transClientAuto("config_editor_reset_tooltip"));
         resetTip.popupAtScreenCoords(true);
         row.addChild(btn);
         row.addChild(resetTip);
@@ -693,7 +694,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void saveConfig() {
         collectModifiedFromWidgets();
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
@@ -704,14 +705,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         modifiedValues.clear();
         try {
             holder.save();
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_success"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
             NotificationManager.get().addNotification(n);
             // if (previousScreen() != null) {
             //     onClose();
             // }
         } catch (Exception ex) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_save_failed", ex.getMessage()));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_failed", ex.getMessage()));
             n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(n);
         }
@@ -719,14 +720,14 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private void syncToServer() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_nothing"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
             NotificationManager.get().addNotification(n);
             return;
@@ -744,7 +745,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }
@@ -755,20 +756,20 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private void syncToServerFull() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
         }
         if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_not_connected"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_nothing"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
             NotificationManager.get().addNotification(n);
             return;
@@ -786,7 +787,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }
@@ -800,7 +801,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_not_connected"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
@@ -809,7 +810,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigFetchRequestToServer(holder.getConfigName()));
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }

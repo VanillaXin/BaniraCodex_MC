@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
+import xin.vanilla.banira.BaniraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.network.PacketBuffer;
@@ -96,7 +97,7 @@ public class ConfigSnapshotToClient {
             } catch (Exception ex) {
                 LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
                 Notification err = Notification.ofComponent(
-                        Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_apply_failed",
+                        BaniraComponent.get().transClientAuto("config_editor_fetch_apply_failed",
                                 ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
                 err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
                 NotificationManager.get().addNotification(err);
@@ -107,7 +108,7 @@ public class ConfigSnapshotToClient {
                 ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(packet.configName());
             }
             Notification ok = Notification.ofComponent(
-                    Component.transClientAuto(BaniraCodex.MODID, "config_editor_fetch_applied", packet.snapshot().size()));
+                    BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));
             ok.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(ok);
         }

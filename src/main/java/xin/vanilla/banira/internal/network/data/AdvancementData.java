@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.network.data;
 
+import xin.vanilla.banira.BaniraComponent;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.Advancement;
@@ -69,7 +70,7 @@ public class AdvancementData {
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
-                , Component.literal(title).toVanilla(), Component.literal(description).toVanilla()
+                , BaniraComponent.get().literal(title).toVanilla(), BaniraComponent.get().literal(description).toVanilla()
                 , Identifier.id().empty(), FrameType.TASK
                 , false, false, false);
     }

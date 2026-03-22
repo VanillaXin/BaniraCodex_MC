@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.util;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.brigadier.StringReader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
@@ -869,14 +870,14 @@ public final class ItemUtils {
             List<Component> tooltip = new ArrayList<>();
             ITextComponent hoverName = itemStack.getHoverName();
             if (hoverName instanceof IFormattableTextComponent) {
-                tooltip.add(Component.object(hoverName));
+                tooltip.add(BaniraComponent.get().object(hoverName));
             } else {
-                tooltip.add(Component.literal(hoverName.getString()));
+                tooltip.add(BaniraComponent.get().literal(hoverName.getString()));
             }
             if (advanced) {
                 ResourceLocation registryName = getItemRegistry(itemStack);
                 if (registryName != null) {
-                    Component registryComponent = Component.literal(registryName.toString())
+                    Component registryComponent = BaniraComponent.get().literal(registryName.toString())
                             .color(Color.argb(0xFF404040));
                     tooltip.add(registryComponent);
                 }
@@ -917,9 +918,9 @@ public final class ItemUtils {
                 ITextComponent nameComponent = baseTooltip.get(0);
                 Component name;
                 if (nameComponent instanceof IFormattableTextComponent) {
-                    name = Component.object(nameComponent);
+                    name = BaniraComponent.get().object(nameComponent);
                 } else {
-                    name = Component.literal(nameComponent.getString());
+                    name = BaniraComponent.get().literal(nameComponent.getString());
                 }
                 result.add(name);
 
@@ -940,18 +941,18 @@ public final class ItemUtils {
                         if (textComponent instanceof IFormattableTextComponent) {
                             IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
                             if (StringUtils.isNotNullOrEmpty(c.getString())) {
-                                result.add(Component.object(textComponent));
+                                result.add(BaniraComponent.get().object(textComponent));
                             }
                         } else {
                             String text = textComponent.getString();
                             if (StringUtils.isNotNullOrEmpty(text)) {
-                                result.add(Component.literal(text));
+                                result.add(BaniraComponent.get().literal(text));
                             }
                         }
                     }
                     // 3. 物品ID
                     if (registryName != null && !baseTooltipContainsRegistry) {
-                        Component registryComponent = Component.literal(registryName.toString())
+                        Component registryComponent = BaniraComponent.get().literal(registryName.toString())
                                 .color(Color.argb(0xFF404040));
                         result.add(registryComponent);
                     }
@@ -977,7 +978,7 @@ public final class ItemUtils {
                 if (itemGroup != null) {
                     IFormattableTextComponent groupName = itemGroup.getDisplayName().copy();
                     groupName.withStyle(TextFormatting.BLUE);
-                    Component groupComponent = Component.object(groupName);
+                    Component groupComponent = BaniraComponent.get().object(groupName);
                     result.add(groupComponent);
                 }
 
@@ -987,12 +988,12 @@ public final class ItemUtils {
                     if (textComponent instanceof IFormattableTextComponent) {
                         IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
                         if (StringUtils.isNotNullOrEmpty(c.getString())) {
-                            result.add(Component.object(textComponent));
+                            result.add(BaniraComponent.get().object(textComponent));
                         }
                     } else {
                         String text = textComponent.getString();
                         if (StringUtils.isNotNullOrEmpty(text)) {
-                            result.add(Component.literal(text));
+                            result.add(BaniraComponent.get().literal(text));
                         }
                     }
                 }
@@ -1002,7 +1003,7 @@ public final class ItemUtils {
                     List<ResourceLocation> tagIds = new ArrayList<>(item.getTags());
                     tagIds.sort(Comparator.comparing(ResourceLocation::toString));
                     for (ResourceLocation tagId : tagIds) {
-                        Component tagComponent = Component.literal("#" + tagId)
+                        Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));
                         result.add(tagComponent);
                     }
@@ -1012,7 +1013,7 @@ public final class ItemUtils {
 
                 // 6. 物品ID
                 if (registryName != null && !baseTooltipContainsRegistry) {
-                    Component registryComponent = Component.literal(registryName.toString())
+                    Component registryComponent = BaniraComponent.get().literal(registryName.toString())
                             .color(Color.argb(0xFF404040));
                     result.add(registryComponent);
                 }
@@ -1020,7 +1021,7 @@ public final class ItemUtils {
                 // 7. 模组名称
                 if (registryName != null && !"minecraft".equals(registryName.getNamespace())) {
                     String modName = getModName(registryName.getNamespace());
-                    Component modComponent = Component.literal(modName)
+                    Component modComponent = BaniraComponent.get().literal(modName)
                             .color(Color.argb(0xFF808080));
                     result.add(modComponent);
                 }
@@ -1031,9 +1032,9 @@ public final class ItemUtils {
                 if (result.isEmpty()) {
                     ITextComponent hoverName = itemStack.getHoverName();
                     if (hoverName instanceof IFormattableTextComponent) {
-                        result.add(Component.object(hoverName));
+                        result.add(BaniraComponent.get().object(hoverName));
                     } else {
-                        result.add(Component.literal(hoverName.getString()));
+                        result.add(BaniraComponent.get().literal(hoverName.getString()));
                     }
                 }
                 return result;

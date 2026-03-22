@@ -125,7 +125,7 @@ public class BaniraCodex {
     public static class ClientProxy {
         public static void init() {
             BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
-                Component label = Component.transClient(MODID, "key.banira_codex.notification_log");
+                Component label = BaniraComponent.get().transClient("key.banira_codex.notification_log");
                 Consumer<QuickActionContext> action = ctx ->
                         Minecraft.getInstance().setScreen(
                                 new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(ctx.currentScreen()))

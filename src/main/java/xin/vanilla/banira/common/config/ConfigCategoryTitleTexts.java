@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.config;
 
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
@@ -18,26 +20,26 @@ public final class ConfigCategoryTitleTexts {
                                                    @Nullable String fallbackDisplayName) {
         String fb = fallbackDisplayName != null ? fallbackDisplayName : "";
         if (spec == null) {
-            return Component.literal(fb);
+            return BaniraComponent.get().literal(fb);
         }
         switch (spec.getKind()) {
             case TRANSLATION_KEY:
                 if (StringUtils.isNullOrEmptyEx(spec.getTranslationKey())) {
-                    return Component.literal(fb);
+                    return BaniraComponent.get().literal(fb);
                 }
-                return Component.transClientAuto(modId, spec.getTranslationKey());
+                return new ScopedComponent(modId).transClientAuto(spec.getTranslationKey());
             case LOCALIZED_STATIC:
                 String picked = Translator.pickLocalizedMapValue(Translator.getClientLanguage(), spec.getLocalizedByLang());
                 if (!StringUtils.isNullOrEmptyEx(picked)) {
-                    return Component.literal(picked);
+                    return BaniraComponent.get().literal(picked);
                 }
-                return Component.literal(fb);
+                return BaniraComponent.get().literal(fb);
             case LITERAL:
             default:
                 if (!StringUtils.isNullOrEmptyEx(spec.getLiteral())) {
-                    return Component.literal(spec.getLiteral());
+                    return BaniraComponent.get().literal(spec.getLiteral());
                 }
-                return Component.literal(fb);
+                return BaniraComponent.get().literal(fb);
         }
     }
 }

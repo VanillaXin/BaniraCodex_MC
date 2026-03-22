@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
+import xin.vanilla.banira.BaniraComponent;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -104,8 +105,8 @@ public class ConfigSyncToServer {
     private static void sendNotify(ServerPlayerEntity player, String langKey, long durationMs, Object... args) {
         String lang = Translator.getPlayerLanguage(player);
         Component text = args.length > 0
-                ? Component.transAuto(BaniraCodex.MODID, langKey, args).languageCode(lang)
-                : Component.transAuto(BaniraCodex.MODID, langKey).languageCode(lang);
+                ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
+                : BaniraComponent.get().transAuto(langKey).languageCode(lang);
         MessageUtils.sendNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
     }
 

@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
@@ -138,12 +139,12 @@ public class Translator implements ITranslator {
 
     @Override
     public Component enabled(@NonNull String languageCode, boolean enabled) {
-        return Component.trans(modId, EnumI18nType.WORD, enabled ? "enabled" : "disabled").languageCode(languageCode);
+        return new ScopedComponent(modId).trans(EnumI18nType.WORD, enabled ? "enabled" : "disabled").languageCode(languageCode);
     }
 
     @Override
     public Component enabled(boolean enabled) {
-        return Component.trans(modId, EnumI18nType.WORD, enabled ? "enabled" : "disabled");
+        return new ScopedComponent(modId).trans(EnumI18nType.WORD, enabled ? "enabled" : "disabled");
     }
 
     @Override

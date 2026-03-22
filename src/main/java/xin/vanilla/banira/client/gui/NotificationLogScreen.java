@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -62,7 +63,7 @@ public class NotificationLogScreen extends BaniraScreen {
     private int selectedIndex = -1;
 
     public NotificationLogScreen(Args args) {
-        super(Component.transClientAuto(BaniraCodex.MODID, "notification_log_title").toVanilla());
+        super(BaniraComponent.get().transClientAuto("notification_log_title").toVanilla());
         this.args = args != null ? args : new Args();
         BaniraScreen.inheritThemeAndSeason(this, this.args.parentScreen(), this.args.theme(), this.args.season());
     }
@@ -124,14 +125,14 @@ public class NotificationLogScreen extends BaniraScreen {
         visibleRows = Math.max(1, listAreaH / LIST_ROW_HEIGHT);
         listH = visibleRows * LIST_ROW_HEIGHT;
 
-        String optAll = Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter_all").toString();
-        String optLocal = Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter_local").toString();
-        String optNetwork = Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter_network").toString();
+        String optAll = BaniraComponent.get().transClientAuto("notification_log_filter_all").toString();
+        String optLocal = BaniraComponent.get().transClientAuto("notification_log_filter_local").toString();
+        String optNetwork = BaniraComponent.get().transClientAuto("notification_log_filter_network").toString();
         filterDropdown = new DropdownSelectWidget(this);
         filterDropdown.id("filter");
         filterDropdown.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, FILTER_H));
         filterDropdown.options(Arrays.asList(optAll, optLocal, optNetwork));
-        filterDropdown.text(Component.transClientAuto(BaniraCodex.MODID, "notification_log_filter").toString());
+        filterDropdown.text(BaniraComponent.get().transClientAuto("notification_log_filter").toString());
         filterDropdown.selectedValues(Collections.singletonList(
                 FILTER_ALL.equals(filterSource) ? optAll : FILTER_LOCAL.equals(filterSource) ? optLocal : optNetwork));
         filterDropdown.onSelectionChanged(values -> {
@@ -283,8 +284,8 @@ public class NotificationLogScreen extends BaniraScreen {
         NotificationLogEntry entry = filteredEntries.get(selectedIndex);
         String timeStr = TIME_FORMAT.format(new Date(entry.timestamp()));
         String sourceDisplay = "network".equals(entry.source())
-                ? Component.transClientAuto(BaniraCodex.MODID, "notification_log_source_network").toString()
-                : Component.transClientAuto(BaniraCodex.MODID, "notification_log_source_local").toString();
+                ? BaniraComponent.get().transClientAuto("notification_log_source_network").toString()
+                : BaniraComponent.get().transClientAuto("notification_log_source_local").toString();
 
         int lineH = font.lineHeight + 4;
         int curY = y;

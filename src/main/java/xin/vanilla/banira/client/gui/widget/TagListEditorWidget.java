@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
@@ -269,7 +270,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 .bounds(new ScreenCoordinate(w - BTN_SIZE * 2 - 4, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         clearButton.onClick(b -> onClearOrUndoClicked());
         clearButtonTooltip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
-        clearButtonTooltip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_clear_tooltip"));
+        clearButtonTooltip.text(BaniraComponent.get().transClientAuto("tag_list_clear_tooltip"));
         clearButtonTooltip.popupAtScreenCoords(true);
         clearButton.addChild(clearButtonTooltip);
         addChild(clearButton);
@@ -280,7 +281,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 .bounds(new ScreenCoordinate(w - BTN_SIZE - 2, (HEADER_HEIGHT - BTN_SIZE) / 2.0, BTN_SIZE, BTN_SIZE));
         addButton.onClick(b -> enterAddingMode());
         TooltipWidget addTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, BTN_SIZE));
-        addTip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_add_tooltip"));
+        addTip.text(BaniraComponent.get().transClientAuto("tag_list_add_tooltip"));
         addTip.popupAtScreenCoords(true);
         addButton.addChild(addTip);
         addChild(addButton);
@@ -407,7 +408,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 .bounds(new ScreenCoordinate(confirmBtnX, inputY, BTN_SIZE, ADD_INPUT_HEIGHT));
         addConfirmButton.onClick(b -> confirmAddFromInput());
         TooltipWidget confirmTip = new TooltipWidget(screen, new ScreenCoordinate(0, 0, BTN_SIZE, ADD_INPUT_HEIGHT));
-        confirmTip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_confirm_add"));
+        confirmTip.text(BaniraComponent.get().transClientAuto("tag_list_confirm_add"));
         confirmTip.popupAtScreenCoords(true);
         addConfirmButton.addChild(confirmTip);
         if (screen != null) {
@@ -484,7 +485,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             lastClearedItems.clear();
             clearButton.presetStyle(ButtonWidget.PresetStyle.MINUS);
             if (clearButtonTooltip != null) {
-                clearButtonTooltip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_clear_tooltip"));
+                clearButtonTooltip.text(BaniraComponent.get().transClientAuto("tag_list_clear_tooltip"));
             }
         }
     }
@@ -611,7 +612,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
         Minecraft.getInstance().keyboardHandler.setClipboard(s);
-        Notification n = Notification.ofComponent(Component.transClientAuto(BaniraCodex.MODID, "tag_list_copied"));
+        Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
         NotificationManager.get().addNotification(n);
     }
 
@@ -652,7 +653,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             undoMode = false;
             clearButton.presetStyle(ButtonWidget.PresetStyle.MINUS);
             if (clearButtonTooltip != null) {
-                clearButtonTooltip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_clear_tooltip"));
+                clearButtonTooltip.text(BaniraComponent.get().transClientAuto("tag_list_clear_tooltip"));
             }
         } else {
             lastClearedItems.clear();
@@ -661,7 +662,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             undoMode = true;
             clearButton.presetStyle(ButtonWidget.PresetStyle.ARROW_LEFT);
             if (clearButtonTooltip != null) {
-                clearButtonTooltip.text(Component.transClientAuto(BaniraCodex.MODID, "tag_list_undo_tooltip"));
+                clearButtonTooltip.text(BaniraComponent.get().transClientAuto("tag_list_undo_tooltip"));
             }
         }
         listScrollOffset = 0;
@@ -845,7 +846,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             int mx = (int) screen.inputState().mouseX();
             int my = (int) screen.inputState().mouseY();
             final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;
-            Text rowHint = Text.from(Component.transClientAuto(BaniraCodex.MODID, "tag_list_row_hint"));
+            Text rowHint = Text.from(BaniraComponent.get().transClientAuto("tag_list_row_hint"));
             final BaniraColorConfig tooltipTheme = theme;
             screen.addDeferredTooltipRender(s -> {
                 s.pushPose();

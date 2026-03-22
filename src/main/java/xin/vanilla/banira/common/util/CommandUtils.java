@@ -21,6 +21,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.data.Component;
@@ -45,7 +46,7 @@ public final class CommandUtils {
             CommandSource source = context.getSource();
             Entity entity = source.getEntity();
             if (entity instanceof ServerPlayerEntity) {
-                MessageUtils.sendMessage((ServerPlayerEntity) entity, Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "mod_disabled"));
+                MessageUtils.sendMessage((ServerPlayerEntity) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
             }
         }
         return modDisabled.get();
@@ -215,13 +216,13 @@ public final class CommandUtils {
         if (entity instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) entity;
             if (!playerData.isNotified()) {
-                Component button = Component.literal(command)
+                Component button = BaniraComponent.get().literal(command)
                         .color(EnumMCColor.AQUA.getColor())
                         .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                        .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(command)
+                        .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, BaniraComponent.get().literal(command)
                                 .toVanilla())
                         );
-                MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "notify_help", modName, button));
+                MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "notify_help", modName, button));
                 playerData.setNotified(true);
             }
         }
@@ -323,7 +324,7 @@ public final class CommandUtils {
 
         ForgeConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
         if (cv == null) {
-            Component component = Component.trans(EnumI18nType.FORMAT, "config_key_absent", configKey);
+            Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_key_absent", configKey);
             source.sendFailure(component.toChat(lang));
             return 0;
         }
@@ -334,7 +335,7 @@ public final class CommandUtils {
             parsed = parseStringToType(configValue, type);
         } catch (Exception e) {
             LOGGER.error(e);
-            Component component = Component.trans(EnumI18nType.FORMAT, "config_value_parse_error", configValue, e.getMessage());
+            Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_parse_error", configValue, e.getMessage());
             source.sendFailure(component.toChat(lang));
             return 0;
         }
@@ -342,14 +343,14 @@ public final class CommandUtils {
         if (validateConfigValueWithSpec(cv, parsed)) {
             ((ForgeConfigSpec.ConfigValue) cv).set(parsed);
         } else {
-            Component component = Component.trans(EnumI18nType.FORMAT, "config_value_set_error", configKey, configValue);
+            Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_error", configKey, configValue);
             source.sendFailure(component.toChat(lang));
             return 0;
         }
 
         tryApplyServerConfigBake(configClazz);
 
-        Component component = Component.trans(EnumI18nType.FORMAT, "config_value_set_success", configKey, parsed);
+        Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_success", configKey, parsed);
         source.sendSuccess(component.toChat(lang), true);
 
         return 1;

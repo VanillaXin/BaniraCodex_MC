@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.Getter;
@@ -61,7 +62,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
     private final Args args;
 
-    private static final Component TITLE = Component.literal("AdvancementSelectScreen");
+    private static final Component TITLE = BaniraComponent.get().literal("AdvancementSelectScreen");
 
     private String inputFieldText = "";
     private final List<AdvancementData> advancementList = new ArrayList<>();
@@ -601,7 +602,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                                 try {
                                     Identifier.id().parse(input.value());
                                 } catch (IllegalArgumentException e) {
-                                    return Component.transClientAuto(BaniraCodex.MODID, "enter_advancement_id_error", input.value()).toString();
+                                    return BaniraComponent.get().transClientAuto("enter_advancement_id_error", input.value()).toString();
                                 }
                                 return null;
                             })

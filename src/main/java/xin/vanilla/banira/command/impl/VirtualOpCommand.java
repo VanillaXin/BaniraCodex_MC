@@ -1,5 +1,6 @@
 package xin.vanilla.banira.command.impl;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -40,13 +41,13 @@ public final class VirtualOpCommand {
         EnumOperationType type = EnumOperationType.fromString(StringArgumentType.getString(context, "operation"));
         if (type == null) {
             String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));
+            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));
             return 0;
         }
         if (!CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP)
                 && (source.getEntity() == null || !source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))) {
             String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(Component.trans(BaniraCodex.MODID, EnumI18nType.WORD, "command_disabled").languageCode(lang).toChat(lang));
+            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled").languageCode(lang).toChat(lang));
             return 0;
         }
         EnumCommandType[] rules;
@@ -92,14 +93,14 @@ public final class VirtualOpCommand {
             }
             Set<EnumCommandType> permissions = VirtualPermissionManager.getVirtualPermission(target);
             String permissionsStr = VirtualPermissionManager.buildPermissionsString(permissions);
-            MessageUtils.sendMessage(target, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+            MessageUtils.sendMessage(target, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
             if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
                 ServerPlayerEntity player = source.getPlayerOrException();
                 if (!target.getStringUUID().equalsIgnoreCase(player.getStringUUID())) {
-                    MessageUtils.sendMessage(player, Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+                    MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
                 }
             } else {
-                source.sendSuccess(Component.trans(BaniraCodex.MODID, EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
+                source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
             }
             source.getServer().getPlayerList().sendPlayerPermissionLevel(target);
         }

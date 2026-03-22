@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.data;
 
+import xin.vanilla.banira.BaniraComponent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,11 +30,11 @@ public class NotificationLogEntry {
     private String source; // "network" | "local"
 
     public Component component() {
-        if (componentJson == null || componentJson.isEmpty()) return Component.empty();
+        if (componentJson == null || componentJson.isEmpty()) return BaniraComponent.get().empty();
         try {
-            return Component.deserialize(JsonUtils.parseObject(componentJson));
+            return BaniraComponent.get().deserialize(JsonUtils.parseObject(componentJson));
         } catch (Exception e) {
-            return Component.empty();
+            return BaniraComponent.get().empty();
         }
     }
 

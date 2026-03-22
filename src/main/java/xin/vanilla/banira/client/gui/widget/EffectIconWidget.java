@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
@@ -114,7 +115,7 @@ public class EffectIconWidget extends BaseWidget {
                                     .popupUseTexture(theme.tooltipUseTexture()),
                             theme, screen.season());
                 } else {
-                    screen.renderTooltip(stack, Component.literal(tip.toString()).toVanilla(), mouseX, mouseY);
+                    screen.renderTooltip(stack, BaniraComponent.get().literal(tip.toString()).toVanilla(), mouseX, mouseY);
                 }
             }
             stack.popPose();
@@ -173,7 +174,7 @@ public class EffectIconWidget extends BaseWidget {
         if (showText) {
             // 效果等级
             if (effectInstance.getAmplifier() >= 0) {
-                Component amplifierString = Component.literal(NumberUtils.intToRoman(effectInstance.getAmplifier() + 1));
+                Component amplifierString = BaniraComponent.get().literal(NumberUtils.intToRoman(effectInstance.getAmplifier() + 1));
                 int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
@@ -182,7 +183,7 @@ public class EffectIconWidget extends BaseWidget {
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                Component durationString = Component.literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                Component durationString = BaniraComponent.get().literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
                 int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;

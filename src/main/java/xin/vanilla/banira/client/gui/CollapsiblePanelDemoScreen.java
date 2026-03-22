@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -25,7 +26,7 @@ public class CollapsiblePanelDemoScreen extends BaniraScreen {
     private static final int BUTTON_HEIGHT = 24;
 
     public CollapsiblePanelDemoScreen(@Nullable Screen parent) {
-        super(Component.transClientAuto(BaniraCodex.MODID, "collapsible_panel_demo_title").toVanilla());
+        super(BaniraComponent.get().transClientAuto("collapsible_panel_demo_title").toVanilla());
         if (parent != null) {
             previousScreen(parent);
         }

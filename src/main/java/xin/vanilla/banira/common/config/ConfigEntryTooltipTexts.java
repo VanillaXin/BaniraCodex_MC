@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.config;
 
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
@@ -42,21 +44,21 @@ public final class ConfigEntryTooltipTexts {
 
     public static Component guiTooltipComponent(ConfigEntryDescriptor desc, String modId) {
         if (desc == null) {
-            return Component.literal("");
+            return BaniraComponent.get().literal("");
         }
         switch (desc.getTooltipGuiKind()) {
             case TRANSLATION_KEY:
-                return Component.transClientAuto(modId, desc.getTooltipTranslationKey());
+                return new ScopedComponent(modId).transClientAuto(desc.getTooltipTranslationKey());
             case LOCALIZED_STATIC:
-                return Component.literal(Translator.pickLocalizedMapValue(Translator.getClientLanguage(),
+                return BaniraComponent.get().literal(Translator.pickLocalizedMapValue(Translator.getClientLanguage(),
                         desc.getTooltipLocalizedByLang()));
             case MULTILINE_LITERAL:
             default:
                 List<String> lines = desc.getTooltip();
                 if (lines == null || lines.isEmpty()) {
-                    return Component.literal("");
+                    return BaniraComponent.get().literal("");
                 }
-                return Component.literal(String.join("\n", lines));
+                return BaniraComponent.get().literal(String.join("\n", lines));
         }
     }
 }

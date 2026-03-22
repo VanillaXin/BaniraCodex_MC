@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -8,10 +7,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.enums.EnumStringInputRegex;
@@ -21,7 +22,6 @@ import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -32,9 +32,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * 字符串输入Screen
+ * 多字段输入表单界面：支持文本、数字滑块、文件路径与颜色等，带校验与提交/取消。
  */
-public class StringInputScreen extends BaniraScreen {
+public class InputFormScreen extends BaniraScreen {
+    private static final int FORM_PANEL_PAD = 12;
+
     private final Args args;
     private final List<InputField> inputFields = new ArrayList<>();
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
@@ -48,8 +50,8 @@ public class StringInputScreen extends BaniraScreen {
     @Nullable
     private ScrollbarWidget scrollbarWidget;
 
-    public StringInputScreen(Args args) {
-        super(args.getTitle() != null ? args.getTitle().toComponent() : BaniraComponent.get().literal("StringInputScreen"));
+    public InputFormScreen(Args args) {
+        super(args.getTitle() != null ? args.getTitle().toComponent() : BaniraComponent.get().literal("InputForm"));
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
@@ -693,12 +695,32 @@ public class StringInputScreen extends BaniraScreen {
         }
     }
 
+    // region 背景与表单面板
+
+    private void renderFormPanel(MatrixStack stack) {
+        int panelLeft = contentLeft - FORM_PANEL_PAD;
+        int panelTop = listTop - FORM_PANEL_PAD;
+        int panelW = contentTotalWidth + FORM_PANEL_PAD * 2;
+        int panelH = btnY + BTN_H + FORM_PANEL_PAD - panelTop;
+        if (panelW <= 0 || panelH <= 0) {
+            return;
+        }
+        ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
+        panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
+        BaseShapeWidget.drawShape(panelBg);
+    }
+
+    // endregion 背景与表单面板
+
     @Override
     protected void onRender(MatrixStack stack, float partialTicks) {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
+
+        renderBackground(stack);
+        renderFormPanel(stack);
 
         renderWidgets(stack, partialTicks);
 
@@ -710,10 +732,6 @@ public class StringInputScreen extends BaniraScreen {
             }
         }
 
-        if (widgets().isEmpty()) {
-            this.renderBackground(stack);
-        }
-
         super.renderButtons(stack, partialTicks);
 
         for (int i = 0; i < inputFields.size(); i++) {
@@ -722,12 +740,12 @@ public class StringInputScreen extends BaniraScreen {
                 Text errorTextItem = this.errorTextMap.get(i);
                 if (errorTextItem != null) {
                     TooltipWidget.drawPopupMessage(stack, FontDrawArgs.of(errorTextItem.stack(stack))
-                            .x(inputState.mouseX() + 5)
-                            .y(inputState.mouseY() + 5)
-                            .padding(0)
-                            .maxWidth(200)
-                            .position(EnumEllipsisPosition.MIDDLE)
-                            .popupUseTexture(false),
+                                    .x(inputState.mouseX() + 5)
+                                    .y(inputState.mouseY() + 5)
+                                    .padding(0)
+                                    .maxWidth(200)
+                                    .position(EnumEllipsisPosition.MIDDLE)
+                                    .popupUseTexture(false),
                             getEffectiveTheme(), season());
                 }
             }

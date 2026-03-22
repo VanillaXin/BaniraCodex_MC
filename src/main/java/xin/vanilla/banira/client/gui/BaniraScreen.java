@@ -511,7 +511,8 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
-        for (IWidget widget : widgets) {
+        List<IWidget> snapshot = new ArrayList<>(widgets);
+        for (IWidget widget : snapshot) {
             if (widget.visible() && widget.parent() == null) {
                 if (widget.enabled() && widget.needsUpdate()) {
                     widget.update();

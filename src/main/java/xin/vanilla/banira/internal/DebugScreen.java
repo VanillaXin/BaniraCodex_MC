@@ -391,15 +391,15 @@ public class DebugScreen extends BaniraScreen {
                 addNotificationTest(EnumPosition.TOP_RIGHT);
                 break;
             case "opt_input":
-                StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                InputFormScreen.Args screenArgs = new InputFormScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.Widget().name("input").title(Text.literal("enter_something")))
-                        .addWidget(new StringInputScreen.Widget()
+                        .addWidget(new InputFormScreen.Widget().name("input").title(Text.literal("enter_something")))
+                        .addWidget(new InputFormScreen.Widget()
                                 .name("input")
                                 .title(Text.literal("enter_something"))
-                                .type(StringInputScreen.WidgetType.NUMERIC))
+                                .type(InputFormScreen.WidgetType.NUMERIC))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
-                Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+                Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
                 break;
             case "opt_item":
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
@@ -462,9 +462,9 @@ public class DebugScreen extends BaniraScreen {
                 LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));
             })));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
-            StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+            InputFormScreen.Args screenArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("name")
                             .title(Text.literal("enter_name"))
                             .validator((input) -> {
@@ -474,48 +474,48 @@ public class DebugScreen extends BaniraScreen {
                                 return null;
                             })
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("author")
                             .title(Text.literal("enter_author_name"))
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("version")
                             .title(Text.literal("enter_version"))
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("description")
                             .title(Text.literal("enter_description"))
                             .allowEmpty(true)
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("color")
                             .title(Text.literal("enter_color"))
-                            .type(StringInputScreen.WidgetType.COLOR)
+                            .type(InputFormScreen.WidgetType.COLOR)
                             .allowEmpty(true)
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("file")
                             .title(Text.literal("enter_file_name"))
-                            .type(StringInputScreen.WidgetType.FILE)
+                            .type(InputFormScreen.WidgetType.FILE)
                             .allowEmpty(true)
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("1")
                             .title(Text.literal("enter_1"))
                             .allowEmpty(true)
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("2")
                             .title(Text.literal("enter_2"))
                             .allowEmpty(true)
                     )
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .name("3")
                             .title(Text.literal("enter_3"))
                             .allowEmpty(true)
                     )
                     .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
-            Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
             args.parentScreen(this).defaultAdvancement(Identifier.id().empty());

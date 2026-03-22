@@ -510,9 +510,9 @@ public class ItemSelectScreen extends BaniraScreen {
             this.inventoryMode = !this.inventoryMode;
             this.updateSearchResults();
         } else if (operationCode == ButtonType.ITEM.code()) {
-            StringInputScreen.Args args = new StringInputScreen.Args()
+            InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_item_id"))
                             .defaultValue(ItemUtils.getItemRegistryString(this.selectedItem))
                             .validator((input) -> {
@@ -529,11 +529,11 @@ public class ItemSelectScreen extends BaniraScreen {
                         itemStack.setCount(count);
                         this.selectedItem = itemStack.copy();
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(args));
+            Minecraft.getInstance().setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.COUNT.code()) {
-            StringInputScreen.Args args = new StringInputScreen.Args()
+            InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_item_quantity"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.selectedItem.getCount()))
@@ -551,12 +551,12 @@ public class ItemSelectScreen extends BaniraScreen {
                         itemStack.setCount(count);
                         this.selectedItem = itemStack.copy();
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(args));
+            Minecraft.getInstance().setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.NBT.code()) {
             String itemNbtJsonString = ItemUtils.serializeItemStackTag((this.selectedItem));
-            StringInputScreen.Args args = new StringInputScreen.Args()
+            InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_item_nbt"))
                             .defaultValue(itemNbtJsonString)
                             .validator((input) -> {
@@ -580,7 +580,7 @@ public class ItemSelectScreen extends BaniraScreen {
                             input.runningResult(e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(args));
+            Minecraft.getInstance().setScreen(new InputFormScreen(args));
         }
     }
 }

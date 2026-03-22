@@ -124,7 +124,6 @@ public final class LogoModifier {
                 }
 
                 FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
-                LOGGER.debug("Modify logo of {} to {}", info.getModId(), customLogo.get());
             }
         } catch (Exception e) {
             LOGGER.error("Failed to modify mod logos", e);

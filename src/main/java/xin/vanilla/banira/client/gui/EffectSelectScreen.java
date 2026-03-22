@@ -552,9 +552,9 @@ public class EffectSelectScreen extends BaniraScreen {
             this.playerMode = !this.playerMode;
             this.updateSearchResults();
         } else if (operationCode == ButtonType.EFFECT.code()) {
-            StringInputScreen.Args inputArgs = new StringInputScreen.Args()
+            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_id"))
                             .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
                             .defaultValue(EffectUtils.getEffectRegistryString(this.currentEffect))
@@ -573,11 +573,11 @@ public class EffectSelectScreen extends BaniraScreen {
                             this.currentEffect = new EffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                         }
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(inputArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.DURATION.code()) {
-            StringInputScreen.Args inputArgs = new StringInputScreen.Args()
+            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_duration"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.currentEffect.getDuration()))
@@ -593,11 +593,11 @@ public class EffectSelectScreen extends BaniraScreen {
                         int duration = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new EffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(inputArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
-            StringInputScreen.Args inputArgs = new StringInputScreen.Args()
+            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_amplifier"))
                             .regex("\\d{0,3}")
                             .defaultValue(String.valueOf(this.currentEffect.getAmplifier() + 1))
@@ -613,7 +613,7 @@ public class EffectSelectScreen extends BaniraScreen {
                         int amplifier = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new EffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(inputArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

@@ -592,9 +592,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
             this.updateSearchResults();
         } else if (operationCode == ButtonType.ADVANCEMENT.code()) {
             String effectString = this.currentAdvancement != null ? this.currentAdvancement.toString() : "";
-            StringInputScreen.Args inputArgs = new StringInputScreen.Args()
+            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.Widget()
+                    .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(BaniraCodex.MODID, "enter_advancement_id"))
                             .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
                             .defaultValue(effectString)
@@ -617,7 +617,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                             LOGGER.debug("Unexpected error parsing advancement id: {}", id, e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new StringInputScreen(inputArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

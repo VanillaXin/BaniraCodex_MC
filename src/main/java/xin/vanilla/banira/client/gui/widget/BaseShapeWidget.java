@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 /**
  * 基础形状
@@ -17,11 +18,11 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 public abstract class BaseShapeWidget extends BaseWidget {
     @Getter
     @Setter
-    protected int bgColor = BaniraColorConfig.winter().bgSurface();
+    protected int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgSurface();
 
     @Getter
     @Setter
-    protected int borderColor = BaniraColorConfig.winter().border();
+    protected int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).border();
 
     @Getter
     @Setter

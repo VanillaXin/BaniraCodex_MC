@@ -709,7 +709,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible) return;
         ensureChildren();
 
-        BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.winter();
+        BaniraColorConfig theme = screen != null ? screen.getEffectiveTheme() : BaniraColorConfig.forSeason(EnumSeason.AUTO);
 
         double ox = x();
         double oy = y();

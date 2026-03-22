@@ -32,10 +32,10 @@ import java.util.*;
  * ForgeConfigAdapter.register(CommonConfig.class, BaniraCodex.MODID);
  *
  * // 3. 使用
- * CommonConfig config = CommonConfig.get();
+ * CommonConfig.RootView config = CommonConfig.get();
  * String h = config.help().helpHeader();
  * config.help().helpHeader("new");
- * // 或直接 holder：config.holder().set(CommonConfig.Key.HELP_HEADER, "new");
+ * // 或直接 holder：config.holder().set("help.helpHeader", "new");
  * }</pre>
  */
 public final class ForgeConfigAdapter {

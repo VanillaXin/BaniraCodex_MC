@@ -83,42 +83,42 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.winter().inputText();
+    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputText();
 
     /**
      * 背景颜色
      */
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.winter().inputBg();
+    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBg();
 
     /**
      * 错误状态时的背景颜色
      */
     @Getter
     @Setter
-    private int errorBgColor = BaniraColorConfig.winter().inputBgError();
+    private int errorBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBgError();
 
     /**
      * 不可编辑时的文本颜色
      */
     @Getter
     @Setter
-    private int uneditableTextColor = BaniraColorConfig.winter().inputTextUneditable();
+    private int uneditableTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputTextUneditable();
 
     /**
      * 提示文本颜色
      */
     @Getter
     @Setter
-    private int hintColor = BaniraColorConfig.winter().inputHint();
+    private int hintColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputHint();
 
     /**
      * 光标颜色
      */
     @Getter
     @Setter
-    private int cursorColor = BaniraColorConfig.winter().inputCursor();
+    private int cursorColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputCursor();
 
     /**
      * 文本字体大小
@@ -139,21 +139,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.winter().inputBorder();
+    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorder();
 
     /**
      * 焦点时的边框颜色
      */
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.winter().inputBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderFocused();
 
     /**
      * 禁用时的边框颜色
      */
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.winter().inputBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderDisabled();
 
     /**
      * 边框宽度

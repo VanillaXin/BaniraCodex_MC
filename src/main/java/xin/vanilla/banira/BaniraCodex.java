@@ -18,6 +18,7 @@ import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -49,6 +50,7 @@ public class BaniraCodex {
     public BaniraCodex() {
         // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
+        ForgeConfigAdapter.register(ClientConfig.class, MODID);
         // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();

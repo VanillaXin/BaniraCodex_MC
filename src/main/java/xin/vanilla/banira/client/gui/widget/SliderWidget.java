@@ -17,6 +17,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -165,19 +166,19 @@ public class SliderWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int trackColor = BaniraColorConfig.winter().scrollbarBg();
+    private int trackColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.winter().scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
 
     @Getter
     @Setter
-    private int thumbHoverColor = BaniraColorConfig.winter().scrollbarThumbHover();
+    private int thumbHoverColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
 
     @Getter
     @Setter
-    private int valueTextColor = BaniraColorConfig.winter().textPrimary();
+    private int valueTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
 
     /**
      * 数值显示区域背景色（半透明，避免与轨道融合）。0 表示根据文字颜色自动选择半透明白/黑

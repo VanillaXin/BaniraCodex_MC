@@ -20,7 +20,6 @@ import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nonnull;
@@ -109,7 +108,7 @@ public abstract class BaniraScreen extends Screen {
     public BaniraColorConfig getEffectiveTheme() {
         if (cachedTheme != null) return cachedTheme;
         if (theme != null) return theme;
-        return BaniraColorConfig.forSeason(season == EnumSeason.AUTO || season == null ? DateUtils.getSeason() : season);
+        return BaniraColorConfig.forSeason(season == null ? EnumSeason.AUTO : season);
     }
 
     // endregion 基础属性

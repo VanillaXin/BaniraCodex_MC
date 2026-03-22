@@ -4,12 +4,16 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.client.data.*;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
-import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -48,15 +52,15 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.winter().scrollbarBg();
+    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.winter().scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
 
     @Getter
     @Setter
-    private int hoverThumbColor = BaniraColorConfig.winter().scrollbarThumbHover();
+    private int hoverThumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
 
     @Getter
     @Setter

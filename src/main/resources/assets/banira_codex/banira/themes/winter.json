@@ -1,0 +1,23 @@
+{
+  "accent": "FF3D7AB8",
+  "accentHover": "FFA0C8E8",
+  "accentFocused": "FF78B0D8",
+  "accentPressed": "FF2D6AA8",
+  "bgPrimary": "FFFFFCFD",
+  "bgSecondary": "FFF5FAFF",
+  "bgSurface": "FFF0F8FF",
+  "bgTertiary": "FFE8F0F8",
+  "bgQuaternary": "FFE0E8F5",
+  "bgDisabled": "FFEEF2F8",
+  "textPrimary": "FF4A6B8B",
+  "textSecondary": "FF6A8BA8",
+  "textHint": "FFA8C0D8",
+  "textDisabled": "FFB0C0D0",
+  "border": "FF78B0D8",
+  "borderHover": "FF3D7AB8",
+  "borderFocused": "FF2D6AA8",
+  "borderDisabled": "FFD0D8E5",
+  "error": "FFB00020",
+  "cursorLightPressedOverride": "FF1D4A88",
+  "tooltipUseTexture": true
+}

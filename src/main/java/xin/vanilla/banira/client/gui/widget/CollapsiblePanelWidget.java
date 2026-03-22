@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -125,19 +126,19 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int headerBgColor = BaniraColorConfig.winter().bgSecondary();
+    private int headerBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgSecondary();
 
     @Getter
     @Setter
-    private int headerHoverBgColor = BaniraColorConfig.winter().bgTertiary();
+    private int headerHoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgTertiary();
 
     @Getter
     @Setter
-    private int headerBorderColor = BaniraColorConfig.winter().textHint();
+    private int headerBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textHint();
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.winter().textPrimary();
+    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
 
     @Getter
     @Setter

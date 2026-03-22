@@ -2,13 +2,17 @@ package xin.vanilla.banira.client.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.internal.config.ClientConfig;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * 统一主题配置
+ * 统一主题配置（数值可由资源包 banira/themes/&lt;season&gt;.json 覆盖）
  */
 @Data
 @Accessors(chain = true, fluent = true)
@@ -96,6 +100,16 @@ public final class BaniraColorConfig {
      * 列表项文字色覆盖
      */
     private int listItemTextOverride;
+
+    /**
+     * 输入框背景覆盖（0 表示使用默认浅色底）
+     */
+    private int inputBgOverride;
+
+    /**
+     * 输入框错误背景覆盖（0 表示使用默认浅红底）
+     */
+    private int inputBgErrorOverride;
 
     /**
      * 悬浮提示是否使用纹理绘制，默认 true。AUTO 模式时生效。
@@ -203,11 +217,11 @@ public final class BaniraColorConfig {
     }
 
     public int inputBg() {
-        return 0xFFFFFFFF;
+        return inputBgOverride != 0 ? inputBgOverride : 0xFFFFFFFF;
     }
 
     public int inputBgError() {
-        return 0xFFFFEBEE;
+        return inputBgErrorOverride != 0 ? inputBgErrorOverride : 0xFFFFEBEE;
     }
 
     public int inputTextUneditable() {
@@ -388,12 +402,82 @@ public final class BaniraColorConfig {
     }
     // endregion
 
-    // region 季节预设
+    // region 解析与加载
+
+    /**
+     * 将界面季节（含 AUTO、null）解析为具体春夏秋冬：显式季节优先，否则客户端配置的 guiThemeStyle，再否则日历季节。
+     */
+    @Nonnull
+    public static EnumSeason resolveEffectiveSeason(@Nullable EnumSeason screenSeason) {
+        if (screenSeason != null && screenSeason != EnumSeason.AUTO) {
+            return screenSeason;
+        }
+        EnumSeason cfg = ClientConfig.get().guiThemeStyle();
+        if (cfg != null && cfg != EnumSeason.AUTO) {
+            return cfg;
+        }
+        return DateUtils.getSeason();
+    }
+
+    /**
+     * 按「已解析的」具体季节取主题（资源包 + 内置回退）
+     */
+    @Nonnull
+    public static BaniraColorConfig themeForConcreteSeason(@Nonnull EnumSeason concreteSeason) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            return BaniraColorThemeLoader.get().resolve(concreteSeason);
+        }
+        return builtinForConcreteSeason(concreteSeason);
+    }
+
+    /**
+     * 按界面季节取主题；AUTO/null 时经 {@link #resolveEffectiveSeason(EnumSeason)} 再加载。
+     */
+    @Nonnull
+    public static BaniraColorConfig forSeason(@Nullable EnumSeason season) {
+        return themeForConcreteSeason(resolveEffectiveSeason(season));
+    }
+
+    /**
+     * 春/夏/秋/冬：与 {@link #themeForConcreteSeason(EnumSeason)} 相同（含资源包）
+     */
+    public static BaniraColorConfig spring() {
+        return themeForConcreteSeason(EnumSeason.SPRING);
+    }
+
+    public static BaniraColorConfig summer() {
+        return themeForConcreteSeason(EnumSeason.SUMMER);
+    }
+
+    public static BaniraColorConfig autumn() {
+        return themeForConcreteSeason(EnumSeason.AUTUMN);
+    }
+
+    public static BaniraColorConfig winter() {
+        return themeForConcreteSeason(EnumSeason.WINTER);
+    }
+
+    /**
+     * 内置配色（资源缺失或解析失败时由 {@link BaniraColorThemeLoader} 使用）
+     */
+    static BaniraColorConfig builtinForConcreteSeason(@Nonnull EnumSeason season) {
+        switch (season) {
+            case SPRING:
+                return builtinSpring();
+            case SUMMER:
+                return builtinSummer();
+            case AUTUMN:
+                return builtinAutumn();
+            case WINTER:
+            default:
+                return builtinWinter();
+        }
+    }
 
     /**
      * 春 - 樱花粉：白底微粉，层次由浅到深
      */
-    public static BaniraColorConfig spring() {
+    private static BaniraColorConfig builtinSpring() {
         BaniraColorConfig c = new BaniraColorConfig()
                 .accent(0xFFE8A0B0).accentHover(0xFFF5D0DC).accentFocused(0xFFF0B8C8).accentPressed(0xFFE090A8)
                 .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFFFF5F8).bgSurface(0xFFFFF0F5).bgTertiary(0xFFFFE8EF).bgQuaternary(0xFFFFE0E8).bgDisabled(0xFFF5EEF0)
@@ -408,7 +492,7 @@ public final class BaniraColorConfig {
     /**
      * 夏 - 清新绿：白底微绿，清爽通透
      */
-    public static BaniraColorConfig summer() {
+    private static BaniraColorConfig builtinSummer() {
         return new BaniraColorConfig()
                 .accent(0xFF5BA85B).accentHover(0xFFA8D8A8).accentFocused(0xFF88C888).accentPressed(0xFF4A9A4A)
                 .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFF5FFF5).bgSurface(0xFFF0FFF0).bgTertiary(0xFFE8F5E8).bgQuaternary(0xFFE0F0E0).bgDisabled(0xFFEEF5EE)
@@ -421,7 +505,7 @@ public final class BaniraColorConfig {
     /**
      * 秋 - 活力橙：白底暖橙，层次分明
      */
-    public static BaniraColorConfig autumn() {
+    private static BaniraColorConfig builtinAutumn() {
         return new BaniraColorConfig()
                 .accent(0xFFE88A38).accentHover(0xFFF5C8A0).accentFocused(0xFFF0B070).accentPressed(0xFFD87A28)
                 .bgPrimary(0xFFFFFCF8).bgSecondary(0xFFFFF5EB).bgSurface(0xFFFFF0E0).bgTertiary(0xFFFFE8D0).bgQuaternary(0xFFFFE0C0).bgDisabled(0xFFF5EDE5)
@@ -434,7 +518,7 @@ public final class BaniraColorConfig {
     /**
      * 冬 - 宝石蓝：白底冰蓝，清冽通透
      */
-    public static BaniraColorConfig winter() {
+    private static BaniraColorConfig builtinWinter() {
         return new BaniraColorConfig()
                 .accent(0xFF3D7AB8).accentHover(0xFFA0C8E8).accentFocused(0xFF78B0D8).accentPressed(0xFF2D6AA8)
                 .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFF5FAFF).bgSurface(0xFFF0F8FF).bgTertiary(0xFFE8F0F8).bgQuaternary(0xFFE0E8F5).bgDisabled(0xFFEEF2F8)
@@ -442,24 +526,6 @@ public final class BaniraColorConfig {
                 .border(0xFF78B0D8).borderHover(0xFF3D7AB8).borderFocused(0xFF2D6AA8).borderDisabled(0xFFD0D8E5)
                 .error(0xFFB00020)
                 .cursorLightPressedOverride(0xFF1D4A88);
-    }
-
-    public static BaniraColorConfig forSeason(@Nullable EnumSeason season) {
-        if (season == null || season == EnumSeason.AUTO) {
-            return forSeason(DateUtils.getSeason());
-        }
-        switch (season) {
-            case SPRING:
-                return spring();
-            case SUMMER:
-                return summer();
-            case AUTUMN:
-                return autumn();
-            case WINTER:
-                return winter();
-            default:
-                return winter();
-        }
     }
     // endregion
 }

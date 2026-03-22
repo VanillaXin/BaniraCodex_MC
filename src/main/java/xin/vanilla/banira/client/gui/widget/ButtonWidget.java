@@ -14,6 +14,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.function.Consumer;
 
@@ -90,43 +91,43 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.winter().buttonBg();
+    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBg();
 
     @Getter
     @Setter
-    private int hoverBgColor = BaniraColorConfig.winter().buttonBgHover();
+    private int hoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgHover();
 
     @Getter
     @Setter
-    private int focusedBgColor = BaniraColorConfig.winter().buttonBgFocused();
+    private int focusedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgFocused();
 
     @Getter
     @Setter
-    private int pressedBgColor = BaniraColorConfig.winter().buttonBgPressed();
+    private int pressedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgPressed();
 
     @Getter
     @Setter
-    private int disabledBgColor = BaniraColorConfig.winter().buttonBgDisabled();
+    private int disabledBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgDisabled();
 
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.winter().buttonBorder();
+    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorder();
 
     @Getter
     @Setter
-    private int hoverBorderColor = BaniraColorConfig.winter().buttonBorderHover();
+    private int hoverBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderHover();
 
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.winter().buttonBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderFocused();
 
     @Getter
     @Setter
-    private int pressedBorderColor = BaniraColorConfig.winter().buttonBorderPressed();
+    private int pressedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderPressed();
 
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.winter().buttonBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderDisabled();
 
     @Getter
     @Setter
@@ -134,23 +135,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.winter().buttonText();
+    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonText();
 
     @Getter
     @Setter
-    private int hoverTextColor = BaniraColorConfig.winter().buttonTextHover();
+    private int hoverTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextHover();
 
     @Getter
     @Setter
-    private int focusedTextColor = BaniraColorConfig.winter().buttonTextFocused();
+    private int focusedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextFocused();
 
     @Getter
     @Setter
-    private int pressedTextColor = BaniraColorConfig.winter().buttonTextPressed();
+    private int pressedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextPressed();
 
     @Getter
     @Setter
-    private int disabledTextColor = BaniraColorConfig.winter().buttonTextDisabled();
+    private int disabledTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextDisabled();
 
     @Getter
     @Setter

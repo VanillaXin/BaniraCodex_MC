@@ -7,7 +7,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,6 +52,6 @@ public final class ClientThemeManager {
         if (defaultTheme != null) {
             return defaultTheme;
         }
-        return BaniraColorConfig.forSeason(defaultSeason == null || defaultSeason == EnumSeason.AUTO ? DateUtils.getSeason() : defaultSeason);
+        return BaniraColorConfig.forSeason(defaultSeason);
     }
 }

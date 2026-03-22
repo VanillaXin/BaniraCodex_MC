@@ -24,7 +24,6 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.ItemUtils;
 
 import javax.annotation.Nullable;
@@ -156,9 +155,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * 获取指定季节的提示纹理路径
      */
     public static String getSeasonTexturePath(EnumSeason season) {
-        if (season == null || season == EnumSeason.AUTO) {
-            season = DateUtils.getSeason();
-        }
+        season = BaniraColorConfig.resolveEffectiveSeason(season);
         switch (season) {
             case SUMMER:
                 return "textures/gui/aotake_cat.png";
@@ -194,7 +191,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
     private static void useTexture(FontDrawArgs drawArgs, @Nullable EnumSeason season) {
         if (drawArgs.texture() == null) {
-            EnumSeason s = (season != null && season != EnumSeason.AUTO) ? season : DateUtils.getSeason();
+            EnumSeason s = BaniraColorConfig.resolveEffectiveSeason(season);
             drawArgs.texture(Texture.of(TextureUtils.loadCustomTexture(Identifier.id(), getSeasonTexturePath(s))));
         }
         drawArgs.bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
@@ -208,7 +205,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
     private static BaniraColorConfig resolveTheme(@Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         if (theme != null) return theme;
-        return BaniraColorConfig.forSeason(season == null || season == EnumSeason.AUTO ? DateUtils.getSeason() : season);
+        return BaniraColorConfig.forSeason(season);
     }
 
     /**
@@ -222,7 +219,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * 使用当前季节纹理绘制
      */
     public static void drawPopupMessageWithSeasonTexture(MatrixStack stack, FontDrawArgs args) {
-        drawPopupMessageWithSeasonTexture(stack, args, DateUtils.getSeason());
+        drawPopupMessageWithSeasonTexture(stack, args, EnumSeason.AUTO);
     }
 
     /**

@@ -3,11 +3,13 @@ package xin.vanilla.banira.client.event;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 
 /**
@@ -58,6 +60,16 @@ public final class BaniraClientForgeEventHandler {
     }
 
     // endregion BaniraClientEventHub Forge 转发
+
+    // region 资源重载
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener(BaniraColorThemeLoader.INSTANCE);
+    }
+
+    // endregion 资源重载
 
     // region 本 Mod GUI（快捷栏 overlay 等）
 

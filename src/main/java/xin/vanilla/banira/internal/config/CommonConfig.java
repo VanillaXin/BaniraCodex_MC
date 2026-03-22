@@ -15,11 +15,8 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 /**
  * 通用（Common）配置：注解结构用于构建 ForgeConfigSpec 与配置编辑器；
  * <p>
- * 运行时通过 {@code get().help()} / {@code command()} 等分层 API 读 {@link ConfigHolder}。
+ * 运行时通过 {@link #get()} 返回的 {@link RootView} 分层读 {@link ConfigHolder}（路径由代理按字段名推导，无需 Key 与手写 get/set）。
  */
-@Getter
-@Setter
-@Accessors(chain = true, fluent = true)
 @Config(name = "banira_codex-common", type = ModConfig.Type.COMMON)
 public class CommonConfig implements ConfigData {
 
@@ -47,63 +44,76 @@ public class CommonConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(zh_cn = "权限相关设置", en_us = "Permission settings")
     private PermissionCategory permission = new PermissionCategory();
 
-    private final ConfigHolder holder;
-    private final Help helpApi;
-    private final Language languageApi;
-    private final Command commandApi;
-    private final Permission permissionApi;
-
-    private CommonConfig() {
-        this(null);
+    public CommonConfig() {
     }
 
-    CommonConfig(ConfigHolder holder) {
-        this.holder = holder;
-        this.helpApi = new Help(holder);
-        this.languageApi = new Language(holder);
-        this.commandApi = new Command(holder);
-        this.permissionApi = new Permission(holder);
+    public static RootView get() {
+        return CommonConfigAccess.root(ForgeConfigAdapter.getHolder(CommonConfig.class));
     }
 
-    public static CommonConfig get() {
-        return new CommonConfig(ForgeConfigAdapter.getHolder(CommonConfig.class));
+    // region 运行时视图接口
+
+    public interface RootView {
+        HelpView help();
+
+        LanguageView language();
+
+        CommandView command();
+
+        PermissionView permission();
+
+        ConfigHolder holder();
     }
 
-    public Help help() {
-        return helpApi;
+    public interface HelpView {
+        String helpHeader();
+
+        HelpView helpHeader(String value);
+
+        int helpInfoNumPerPage();
+
+        HelpView helpInfoNumPerPage(int value);
     }
 
-    public Language language() {
-        return languageApi;
+    public interface LanguageView {
+        String defaultLanguage();
+
+        LanguageView defaultLanguage(String value);
     }
 
-    public Command command() {
-        return commandApi;
+    public interface CommandView {
+        String commandPrefix();
+
+        CommandView commandPrefix(String value);
+
+        String commandHelp();
+
+        CommandView commandHelp(String value);
+
+        String commandLanguage();
+
+        CommandView commandLanguage(String value);
+
+        String commandVirtualOp();
+
+        CommandView commandVirtualOp(String value);
     }
 
-    public Permission permission() {
-        return permissionApi;
+    public interface PermissionView {
+        int virtualOpPermission();
+
+        PermissionView virtualOpPermission(int value);
+
+        int editServerConfigPermission();
+
+        PermissionView editServerConfigPermission(int value);
+
+        String editServerConfigVirtualPermissionKey();
+
+        PermissionView editServerConfigVirtualPermissionKey(String value);
     }
 
-    /**
-     * {@link ConfigHolder#get(String)} / {@link ConfigHolder#set(String, Object)} 使用的路径常量。
-     */
-    public static final class Key {
-
-        private Key() {
-        }
-
-        public static final String HELP_HEADER = "help.helpHeader";
-        public static final String HELP_INFO_NUM_PER_PAGE = "help.helpInfoNumPerPage";
-        public static final String LANGUAGE_DEFAULT = "language.defaultLanguage";
-        public static final String COMMAND_PREFIX = "command.commandPrefix";
-        public static final String COMMAND_HELP = "command.commandHelp";
-        public static final String COMMAND_LANGUAGE = "command.commandLanguage";
-        public static final String COMMAND_VIRTUAL_OP = "command.commandVirtualOp";
-        public static final String PERMISSION_VIRTUAL_OP = "permission.virtualOpPermission";
-        public static final String PERMISSION_EDIT_SERVER_CONFIG = "permission.editServerConfigPermission";
-        public static final String PERMISSION_EDIT_SERVER_CONFIG_VKEY = "permission.editServerConfigVirtualPermissionKey";
-    }
+    // endregion 运行时视图接口
 
     @Getter
     @Setter
@@ -158,184 +168,5 @@ public class CommonConfig implements ConfigData {
         @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需虚拟权限完整键（modId:id，与虚拟OP中授予的键一致）",
                 en_us = "Full virtual permission key (modId:id) for editing server config; match keys granted via virtual OP")
         private String editServerConfigVirtualPermissionKey = BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
-    }
-
-    public static final class Help {
-        private final ConfigHolder holder;
-
-        Help(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        public String helpHeader() {
-            if (holder == null) {
-                return null;
-            }
-            return holder.get(Key.HELP_HEADER);
-        }
-
-        public Help helpHeader(String value) {
-            if (holder != null) {
-                holder.set(Key.HELP_HEADER, value);
-            }
-            return this;
-        }
-
-        public int helpInfoNumPerPage() {
-            if (holder == null) {
-                return 10;
-            }
-            Integer v = holder.get(Key.HELP_INFO_NUM_PER_PAGE);
-            return v != null ? v : 10;
-        }
-
-        public Help helpInfoNumPerPage(int value) {
-            if (holder != null) {
-                holder.set(Key.HELP_INFO_NUM_PER_PAGE, value);
-            }
-            return this;
-        }
-    }
-
-    public static final class Language {
-        private final ConfigHolder holder;
-
-        Language(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        public String defaultLanguage() {
-            if (holder == null) {
-                return "en_us";
-            }
-            String v = holder.get(Key.LANGUAGE_DEFAULT);
-            return v != null ? v : "en_us";
-        }
-
-        public Language defaultLanguage(String value) {
-            if (holder != null) {
-                holder.set(Key.LANGUAGE_DEFAULT, value);
-            }
-            return this;
-        }
-    }
-
-    public static final class Command {
-        private final ConfigHolder holder;
-
-        Command(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        public String commandPrefix() {
-            if (holder == null) {
-                return "banira";
-            }
-            String v = holder.get(Key.COMMAND_PREFIX);
-            return v != null && !v.isEmpty() ? v : "banira";
-        }
-
-        public Command commandPrefix(String value) {
-            if (holder != null) {
-                holder.set(Key.COMMAND_PREFIX, value);
-            }
-            return this;
-        }
-
-        public String commandHelp() {
-            if (holder == null) {
-                return "help";
-            }
-            String v = holder.get(Key.COMMAND_HELP);
-            return v != null && !v.isEmpty() ? v : "help";
-        }
-
-        public Command commandHelp(String value) {
-            if (holder != null) {
-                holder.set(Key.COMMAND_HELP, value);
-            }
-            return this;
-        }
-
-        public String commandLanguage() {
-            if (holder == null) {
-                return null;
-            }
-            return holder.get(Key.COMMAND_LANGUAGE);
-        }
-
-        public Command commandLanguage(String value) {
-            if (holder != null) {
-                holder.set(Key.COMMAND_LANGUAGE, value);
-            }
-            return this;
-        }
-
-        public String commandVirtualOp() {
-            if (holder == null) {
-                return null;
-            }
-            return holder.get(Key.COMMAND_VIRTUAL_OP);
-        }
-
-        public Command commandVirtualOp(String value) {
-            if (holder != null) {
-                holder.set(Key.COMMAND_VIRTUAL_OP, value);
-            }
-            return this;
-        }
-    }
-
-    public static final class Permission {
-        private final ConfigHolder holder;
-
-        Permission(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        public int virtualOpPermission() {
-            if (holder == null) {
-                return 4;
-            }
-            Integer v = holder.get(Key.PERMISSION_VIRTUAL_OP);
-            return v != null ? v : 4;
-        }
-
-        public Permission virtualOpPermission(int value) {
-            if (holder != null) {
-                holder.set(Key.PERMISSION_VIRTUAL_OP, value);
-            }
-            return this;
-        }
-
-        public int editServerConfigPermission() {
-            if (holder == null) {
-                return 2;
-            }
-            Integer v = holder.get(Key.PERMISSION_EDIT_SERVER_CONFIG);
-            return v != null ? v : 2;
-        }
-
-        public Permission editServerConfigPermission(int value) {
-            if (holder != null) {
-                holder.set(Key.PERMISSION_EDIT_SERVER_CONFIG, value);
-            }
-            return this;
-        }
-
-        public String editServerConfigVirtualPermissionKey() {
-            if (holder == null) {
-                return BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
-            }
-            String v = holder.get(Key.PERMISSION_EDIT_SERVER_CONFIG_VKEY);
-            return v != null && !v.isEmpty() ? v : BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
-        }
-
-        public Permission editServerConfigVirtualPermissionKey(String value) {
-            if (holder != null) {
-                holder.set(Key.PERMISSION_EDIT_SERVER_CONFIG_VKEY, value);
-            }
-            return this;
-        }
     }
 }

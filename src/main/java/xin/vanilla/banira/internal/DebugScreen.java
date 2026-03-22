@@ -20,6 +20,7 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -33,8 +34,8 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -144,22 +145,9 @@ public class DebugScreen extends BaniraScreen {
         configBtn.id("config_editor");
         configBtn.bounds(new ScreenCoordinate(190, 140, 75, 24));
         configBtn.text("配置编辑");
-        configBtn.onClick(b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
+        configBtn.onClick(b -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
+        configBtn.onLongPress(1000L, b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
         addWidget(configBtn);
-
-        ButtonWidget collapsibleDemoBtn = new ButtonWidget(this);
-        collapsibleDemoBtn.id("collapsible_panel_demo");
-        collapsibleDemoBtn.bounds(new ScreenCoordinate(270, 140, 75, 24));
-        collapsibleDemoBtn.text("折叠面板测试");
-        collapsibleDemoBtn.onClick(b -> CollapsiblePanelDemoScreen.open(this));
-        addWidget(collapsibleDemoBtn);
-
-        ButtonWidget tagListDemoBtn = new ButtonWidget(this);
-        tagListDemoBtn.id("tag_list_editor_demo");
-        tagListDemoBtn.bounds(new ScreenCoordinate(350, 140, 75, 24));
-        tagListDemoBtn.text("标签列表测试");
-        tagListDemoBtn.onClick(b -> TagListEditorDemoScreen.open(this));
-        addWidget(tagListDemoBtn);
 
         ButtonWidget quickActionPlusBtn = new ButtonWidget(this);
         quickActionPlusBtn.id("debug_quick_action_plus");

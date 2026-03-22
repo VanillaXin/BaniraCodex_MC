@@ -74,6 +74,25 @@ public final class MessageUtils {
     }
 
     /**
+     * 发送消息
+     *
+     * @param source  指令来源
+     * @param success 是否成功
+     */
+    public static void sendMessage(CommandSource source, boolean success, Component message) {
+        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
+            try {
+                sendMessage(source.getPlayerOrException(), message);
+            } catch (CommandSyntaxException ignored) {
+            }
+        } else if (success) {
+            source.sendSuccess(message.languageCode(Translator.getServerLanguage()).toChat(), false);
+        } else {
+            source.sendFailure(message.languageCode(Translator.getServerLanguage()).toChat());
+        }
+    }
+
+    /**
      * 发送翻译消息
      *
      * @param player 玩家

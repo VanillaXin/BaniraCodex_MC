@@ -16,6 +16,9 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
@@ -66,7 +69,62 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         RESET,
     }
 
+    /**
+     * 长按进度条填充方向
+     */
+    public enum LongPressProgressMode {
+        /**
+         * 从左至右，粒子向右崩裂并下落
+         */
+        LEFT_TO_RIGHT,
+        /**
+         * 从右至左，粒子向左崩裂并下落
+         */
+        RIGHT_TO_LEFT,
+        /**
+         * 由内向外扩展，粒子从四周边缘崩出并下落
+         */
+        INSIDE_OUT,
+        /**
+         * 由外向内收缩，粒子在中心崩出并下落
+         */
+        OUTSIDE_IN,
+        /**
+         * 从上至下，粒子从下边崩出并下落
+         */
+        TOP_TO_BOTTOM,
+        /**
+         * 从下至上，粒子向上崩出并下落
+         */
+        BOTTOM_TO_TOP,
+        ;
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
+
+    /**
+     * 长按判定完成瞬间的「崩裂」粒子存活时间（毫秒）
+     */
+    private static final int LONG_PRESS_BURST_DURATION_MS = 520;
+
+    /**
+     * 崩裂粒子数量
+     */
+    private static final int LONG_PRESS_BURST_PARTICLE_COUNT = 40;
+
+    /**
+     * 崩裂粒子重力（像素/秒²，屏幕 Y 向下为正）
+     */
+    private static final float LONG_PRESS_BURST_GRAVITY = 380f;
+
+    private final List<LongPressBurstParticle> longPressBurstParticles = new ArrayList<>();
+
+    /**
+     * 长按进度条模式，默认从左至右
+     */
+    @Getter
+    @Setter
+    private LongPressProgressMode longPressProgressMode = LongPressProgressMode.INSIDE_OUT;
 
     @Getter
     private Text text = Text.empty();
@@ -415,21 +473,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             float progress = longPressHandlerFired
                     ? 1f
                     : Math.min(1f, (System.currentTimeMillis() - mousePressStartMillis()) / (float) longPressDurationMs);
-            int fillW = Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress)));
+            int absClipX = (int) Math.round(absoluteX()) + marginLeft;
+            int absClipY = (int) Math.round(absoluteY()) + marginTop;
 
             ShapeDrawArgs track = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, hoverBgColor);
             applyButtonRectCorners(track);
             BaseShapeWidget.drawShape(track);
 
-            if (fillW > 0) {
-                int ax = (int) Math.round(absoluteX()) + marginLeft;
-                int ay = (int) Math.round(absoluteY()) + marginTop;
-                AbstractGuiUtils.pushScissor(ax, ay, fillW, drawHeight);
-                ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
-                applyButtonRectCorners(fill);
-                BaseShapeWidget.drawShape(fill);
-                AbstractGuiUtils.popScissor();
-            }
+            renderLongPressPressedFill(stack, drawX, drawY, drawWidth, drawHeight, progress, absClipX, absClipY);
 
             if (borderWidth > 0) {
                 currentBorderColor = hoverBorderColor;
@@ -538,8 +589,331 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             }
         }
 
+        if (!longPressBurstParticles.isEmpty()) {
+            drawLongPressBurstParticles(stack, drawX, drawY, drawWidth, drawHeight);
+        }
+
         renderChildren(stack, partialTicks);
     }
+
+    private void renderLongPressPressedFill(MatrixStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
+        switch (longPressProgressMode) {
+            case LEFT_TO_RIGHT:
+                renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
+                        Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress))), drawHeight, 0, 0);
+                break;
+            case RIGHT_TO_LEFT: {
+                int fillW = Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress)));
+                renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
+                        fillW, drawHeight, drawWidth - fillW, 0);
+                break;
+            }
+            case TOP_TO_BOTTOM: {
+                int fillH = Math.max(0, Math.min(drawHeight, (int) Math.ceil(drawHeight * progress)));
+                renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
+                        drawWidth, fillH, 0, 0);
+                break;
+            }
+            case BOTTOM_TO_TOP: {
+                int fillH = Math.max(0, Math.min(drawHeight, (int) Math.ceil(drawHeight * progress)));
+                renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
+                        drawWidth, fillH, 0, drawHeight - fillH);
+                break;
+            }
+            case INSIDE_OUT: {
+                int fw = Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress)));
+                int fh = Math.max(0, Math.min(drawHeight, (int) Math.ceil(drawHeight * progress)));
+                if (fw > 0 && fh > 0) {
+                    int ox = (drawWidth - fw) / 2;
+                    int oy = (drawHeight - fh) / 2;
+                    renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
+                            fw, fh, ox, oy);
+                }
+                break;
+            }
+            case OUTSIDE_IN:
+                renderLongPressOutsideInFill(stack, drawX, drawY, drawWidth, drawHeight, progress, absClipX, absClipY);
+                break;
+        }
+    }
+
+    private void renderLongPressFillSingleScissor(MatrixStack stack, int drawX, int drawY, int drawWidth, int drawHeight, int absClipX, int absClipY,
+                                                  int clipW, int clipH, int clipOffsetX, int clipOffsetY) {
+        if (clipW <= 0 || clipH <= 0) {
+            return;
+        }
+        AbstractGuiUtils.pushScissor(absClipX + clipOffsetX, absClipY + clipOffsetY, clipW, clipH);
+        ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+        applyButtonRectCorners(fill);
+        BaseShapeWidget.drawShape(fill);
+        AbstractGuiUtils.popScissor();
+    }
+
+    private void renderLongPressOutsideInFill(MatrixStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
+        int innerW = (int) Math.floor(drawWidth * (1f - progress));
+        int innerH = (int) Math.floor(drawHeight * (1f - progress));
+        innerW = Math.max(0, Math.min(drawWidth, innerW));
+        innerH = Math.max(0, Math.min(drawHeight, innerH));
+        int holeX = absClipX + (drawWidth - innerW) / 2;
+        int holeY = absClipY + (drawHeight - innerH) / 2;
+
+        int topH = holeY - absClipY;
+        if (topH > 0) {
+            AbstractGuiUtils.pushScissor(absClipX, absClipY, drawWidth, topH);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            applyButtonRectCorners(fill);
+            BaseShapeWidget.drawShape(fill);
+            AbstractGuiUtils.popScissor();
+        }
+
+        int bottomY = holeY + innerH;
+        int bottomH = absClipY + drawHeight - bottomY;
+        if (bottomH > 0) {
+            AbstractGuiUtils.pushScissor(absClipX, bottomY, drawWidth, bottomH);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            applyButtonRectCorners(fill);
+            BaseShapeWidget.drawShape(fill);
+            AbstractGuiUtils.popScissor();
+        }
+
+        int leftW = holeX - absClipX;
+        if (leftW > 0 && innerH > 0) {
+            AbstractGuiUtils.pushScissor(absClipX, holeY, leftW, innerH);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            applyButtonRectCorners(fill);
+            BaseShapeWidget.drawShape(fill);
+            AbstractGuiUtils.popScissor();
+        }
+
+        int rightX = holeX + innerW;
+        int rightW = absClipX + drawWidth - rightX;
+        if (rightW > 0 && innerH > 0) {
+            AbstractGuiUtils.pushScissor(rightX, holeY, rightW, innerH);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            applyButtonRectCorners(fill);
+            BaseShapeWidget.drawShape(fill);
+            AbstractGuiUtils.popScissor();
+        }
+    }
+
+    // region 长按崩裂粒子
+
+    /**
+     * 左右向进度完成时的崩裂：沿前缘整段高度、扇形飞散、扁平碎块、回弹碎屑与高光火星
+     */
+    private void spawnHorizontalBurstStrip(ThreadLocalRandom r, float hw, float hh, long now, boolean rightToLeft) {
+        float sign = rightToLeft ? -1f : 1f;
+
+        for (int i = 0; i < 26; i++) {
+            float x0 = sign * hw * (0.74f + r.nextFloat() * 0.24f);
+            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.99f;
+            float fan = (r.nextFloat() - 0.5f) * 1.25f;
+            float speed = 145f + r.nextFloat() * 235f;
+            float vx = sign * (float) Math.cos(fan) * speed;
+            float vy = (float) Math.sin(fan) * speed * 0.82f + (r.nextFloat() - 0.5f) * 62f;
+            if (r.nextFloat() < 0.16f) {
+                vx -= sign * (55f + r.nextFloat() * 140f);
+            }
+            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            if (r.nextFloat() < 0.15f) {
+                c = brightenArgb(c, 1.12f + r.nextFloat() * 0.12f);
+            }
+            float dw = 1.8f + r.nextFloat() * 2.6f;
+            float dh = 0.55f + r.nextFloat() * 0.85f;
+            float g = 0.58f + r.nextFloat() * 0.22f;
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, g));
+        }
+
+        for (int i = 0; i < 20; i++) {
+            float x0 = sign * hw * (0.48f + r.nextFloat() * 0.34f);
+            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.92f;
+            float fan = (r.nextFloat() - 0.5f) * 1.65f;
+            float speed = 88f + r.nextFloat() * 195f;
+            float vx = sign * (float) Math.cos(fan) * speed;
+            float vy = (float) Math.sin(fan) * speed * 0.9f + (r.nextFloat() - 0.5f) * 85f;
+            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            float dw = 1f + r.nextFloat() * 1.5f;
+            float dh = dw;
+            float gScale = 0.78f + r.nextFloat() * 0.18f;
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
+        }
+
+        for (int i = 0; i < 16; i++) {
+            float x0 = sign * hw * (0.68f + r.nextFloat() * 0.30f);
+            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.98f;
+            float fan = (r.nextFloat() - 0.5f) * 1.0f;
+            float speed = 165f + r.nextFloat() * 260f;
+            float vx = sign * (float) Math.cos(fan) * speed;
+            float vy = (float) Math.sin(fan) * speed * 0.75f + (r.nextFloat() - 0.5f) * 45f;
+            int c = brightenArgb(pressedBgColor, 1.28f + r.nextFloat() * 0.25f);
+            if (r.nextFloat() < 0.35f) {
+                c = 0xFFFFE8D0;
+            }
+            float dw = 0.75f + r.nextFloat() * 1.05f;
+            float dh = dw;
+            float gScale = 0.45f + r.nextFloat() * 0.2f;
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
+        }
+    }
+
+    private void tickLongPressBurstParticles() {
+        long now = System.currentTimeMillis();
+        longPressBurstParticles.removeIf(p -> now - p.spawnTimeMs > LONG_PRESS_BURST_DURATION_MS);
+    }
+
+    private void spawnLongPressBurst(int drawWidth, int drawHeight) {
+        longPressBurstParticles.clear();
+        if (drawWidth < 1 || drawHeight < 1) {
+            return;
+        }
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        long now = System.currentTimeMillis();
+        float hw = drawWidth * 0.5f;
+        float hh = drawHeight * 0.5f;
+        if (longPressProgressMode == LongPressProgressMode.LEFT_TO_RIGHT || longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT) {
+            spawnHorizontalBurstStrip(r, hw, hh, now, longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT);
+            return;
+        }
+        float spreadY = Math.max(2f, hh * 0.5f);
+        for (int i = 0; i < LONG_PRESS_BURST_PARTICLE_COUNT; i++) {
+            float x0 = 0f;
+            float y0 = 0f;
+            float vx = 0f;
+            float vy = 0f;
+            switch (longPressProgressMode) {
+                case INSIDE_OUT: {
+                    int edge = r.nextInt(4);
+                    float speed = 75f + r.nextFloat() * 155f;
+                    if (edge == 0) {
+                        x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.96f;
+                        y0 = -hh;
+                        vx = (r.nextFloat() - 0.5f) * 130f;
+                        vy = -(speed + r.nextFloat() * 45f);
+                    } else if (edge == 1) {
+                        x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.96f;
+                        y0 = hh;
+                        vx = (r.nextFloat() - 0.5f) * 130f;
+                        vy = speed + r.nextFloat() * 55f;
+                    } else if (edge == 2) {
+                        x0 = -hw;
+                        y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.96f;
+                        vx = -(speed + r.nextFloat() * 45f);
+                        vy = (r.nextFloat() - 0.5f) * 130f;
+                    } else {
+                        x0 = hw;
+                        y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.96f;
+                        vx = speed + r.nextFloat() * 45f;
+                        vy = (r.nextFloat() - 0.5f) * 130f;
+                    }
+                    break;
+                }
+                case OUTSIDE_IN: {
+                    float spread = Math.max(2f, Math.min(hw, hh) * 0.26f);
+                    x0 = (r.nextFloat() - 0.5f) * 2f * spread;
+                    y0 = (r.nextFloat() - 0.5f) * 2f * spread;
+                    double ang = r.nextDouble() * Math.PI * 2;
+                    float speed = 85f + r.nextFloat() * 165f;
+                    vx = (float) (Math.cos(ang) * speed);
+                    vy = (float) (Math.sin(ang) * speed) - 18f - r.nextFloat() * 35f;
+                    break;
+                }
+                case TOP_TO_BOTTOM:
+                    x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.92f;
+                    y0 = hh * (0.52f + r.nextFloat() * 0.48f);
+                    vx = (r.nextFloat() - 0.5f) * 110f;
+                    vy = 105f + r.nextFloat() * 175f;
+                    break;
+                case BOTTOM_TO_TOP:
+                    x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.9f;
+                    y0 = -hh * (0.52f + r.nextFloat() * 0.48f);
+                    vx = (r.nextFloat() - 0.5f) * 110f;
+                    vy = -(195f + r.nextFloat() * 230f);
+                    break;
+            }
+            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            if (r.nextFloat() < 0.18f) {
+                c = brightenArgb(c, 1.18f + r.nextFloat() * 0.15f);
+            }
+            float size = 1f + r.nextFloat() * (r.nextFloat() < 0.12f ? 3.2f : 1.8f);
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, size));
+        }
+    }
+
+    private static int brightenArgb(int argb, float factor) {
+        int a = (argb >>> 24) & 0xFF;
+        int cr = (argb >> 16) & 0xFF;
+        int cg = (argb >> 8) & 0xFF;
+        int cb = argb & 0xFF;
+        cr = Math.min(255, Math.round(cr * factor));
+        cg = Math.min(255, Math.round(cg * factor));
+        cb = Math.min(255, Math.round(cb * factor));
+        return (a << 24) | (cr << 16) | (cg << 8) | cb;
+    }
+
+    private void drawLongPressBurstParticles(MatrixStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
+        if (drawWidth < 1 || drawHeight < 1) {
+            return;
+        }
+        float cx = drawX + drawWidth * 0.5f;
+        float cy = drawY + drawHeight * 0.5f;
+        long now = System.currentTimeMillis();
+        float maxAge = LONG_PRESS_BURST_DURATION_MS / 1000f;
+        for (LongPressBurstParticle p : longPressBurstParticles) {
+            float t = (now - p.spawnTimeMs) / 1000f;
+            if (t <= 0f || t >= maxAge) {
+                continue;
+            }
+            float px = p.x0 + p.vx * t;
+            float py = p.y0 + p.vy * t + LONG_PRESS_BURST_GRAVITY * p.gravityScale * t * t;
+            float life = 1f - t / maxAge;
+            life = Math.max(0f, Math.min(1f, life));
+            int alpha = (int) (255f * life * life);
+            if (alpha < 6) {
+                continue;
+            }
+            int col = withAlphaArgb(p.baseColor, alpha);
+            float lifeScale = 0.75f + 0.35f * life;
+            int wPx = Math.max(1, Math.round(p.drawW * lifeScale));
+            int hPx = Math.max(1, Math.round(p.drawH * lifeScale));
+            int ix = Math.round(cx + px - wPx * 0.5f);
+            int iy = Math.round(cy + py - hPx * 0.5f);
+            AbstractGuiUtils.fill(stack, ix, iy, wPx, hPx, col);
+        }
+    }
+
+    private static int withAlphaArgb(int argb, int alpha) {
+        return (argb & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
+    }
+
+    private static final class LongPressBurstParticle {
+        final float x0;
+        final float y0;
+        final float vx;
+        final float vy;
+        final int baseColor;
+        final long spawnTimeMs;
+        final float drawW;
+        final float drawH;
+        final float gravityScale;
+
+        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float uniformSize) {
+            this(x0, y0, vx, vy, baseColor, spawnTimeMs, uniformSize, uniformSize, 1f);
+        }
+
+        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float drawW, float drawH, float gravityScale) {
+            this.x0 = x0;
+            this.y0 = y0;
+            this.vx = vx;
+            this.vy = vy;
+            this.baseColor = baseColor;
+            this.spawnTimeMs = spawnTimeMs;
+            this.drawW = drawW;
+            this.drawH = drawH;
+            this.gravityScale = gravityScale;
+        }
+    }
+
+    // endregion 长按崩裂粒子
 
     /**
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
@@ -622,11 +996,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void update() {
         super.update();
-        if (!visible || !enabled || longPressHandler == null) {
+        if (!visible || !enabled) {
+            longPressBurstParticles.clear();
+            return;
+        }
+        tickLongPressBurstParticles();
+        if (longPressHandler == null) {
             return;
         }
         if (mousePressed && pressedMouseButton == 0 && !longPressHandlerFired) {
             if (System.currentTimeMillis() - mousePressStartMillis() >= longPressDurationMs) {
+                int dw = (int) width() - marginLeft - marginRight;
+                int dh = (int) height() - marginTop - marginBottom;
+                spawnLongPressBurst(Math.max(1, dw), Math.max(1, dh));
                 longPressHandlerFired = true;
                 longPressHandler.accept(this);
                 LOGGER.debug("Button long-pressed: id={}", id);
@@ -640,6 +1022,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         if (event != null && event.button() == 0 && enabled) {
             if (longPressHandler != null) {
                 longPressHandlerFired = false;
+                longPressBurstParticles.clear();
             }
             result = true;
         }

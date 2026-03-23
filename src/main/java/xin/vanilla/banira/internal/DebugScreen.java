@@ -138,6 +138,9 @@ public class DebugScreen extends BaniraScreen {
             Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);
             NotificationManager.get().addNotification(n);
+            int ordinal = longPressBtn.longPressProgressMode().ordinal();
+            int i = (ordinal + 1) % ButtonWidget.LongPressProgressMode.values().length;
+            longPressBtn.longPressProgressMode(ButtonWidget.LongPressProgressMode.values()[i]);
         });
         addWidget(longPressBtn);
 

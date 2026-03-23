@@ -253,13 +253,77 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 .disabledTextColor(theme.buttonTextDisabled());
     }
 
+    /**
+     * 左上圆角半径
+     */
     @Getter
     @Setter
-    private float radius = 2.0f;
+    private float topLeftRadius = 2.0f;
+
+    /**
+     * 右上圆角半径
+     */
+    @Getter
+    @Setter
+    private float topRightRadius = 2.0f;
+
+    /**
+     * 左下圆角半径
+     */
+    @Getter
+    @Setter
+    private float bottomLeftRadius = 2.0f;
+
+    /**
+     * 右下圆角半径
+     */
+    @Getter
+    @Setter
+    private float bottomRightRadius = 2.0f;
 
     @Getter
     @Setter
     private ShapeDrawArgs.RoundedCornerMode cornerMode = ShapeDrawArgs.RoundedCornerMode.FINE;
+
+    /**
+     * 四角使用同一圆角半径
+     */
+    public ButtonWidget radius(float radius) {
+        this.topLeftRadius = radius;
+        this.topRightRadius = radius;
+        this.bottomLeftRadius = radius;
+        this.bottomRightRadius = radius;
+        return this;
+    }
+
+    /**
+     * 分别指定左上、右上、左下、右下圆角半径
+     */
+    public ButtonWidget radius(float topLeft, float topRight, float bottomLeft, float bottomRight) {
+        this.topLeftRadius = topLeft;
+        this.topRightRadius = topRight;
+        this.bottomLeftRadius = bottomLeft;
+        this.bottomRightRadius = bottomRight;
+        return this;
+    }
+
+    /**
+     * 四角圆角一致时返回该值，否则返回四角中的最大值
+     */
+    public float radius() {
+        if (topLeftRadius == topRightRadius && topLeftRadius == bottomLeftRadius && topLeftRadius == bottomRightRadius) {
+            return topLeftRadius;
+        }
+        return Math.max(Math.max(topLeftRadius, topRightRadius), Math.max(bottomLeftRadius, bottomRightRadius));
+    }
+
+    // region 圆角绘制
+
+    private void applyButtonRectCorners(ShapeDrawArgs shape) {
+        shape.rect().radius(topLeftRadius, topRightRadius, bottomLeftRadius, bottomRightRadius).cornerMode(cornerMode);
+    }
+
+    // endregion 圆角绘制
 
     public ButtonWidget(BaniraScreen screen) {
         super(screen);
@@ -354,7 +418,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             int fillW = Math.max(0, Math.min(drawWidth, (int) Math.ceil(drawWidth * progress)));
 
             ShapeDrawArgs track = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, hoverBgColor);
-            track.rect().radius(radius).cornerMode(cornerMode);
+            applyButtonRectCorners(track);
             BaseShapeWidget.drawShape(track);
 
             if (fillW > 0) {
@@ -362,7 +426,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 int ay = (int) Math.round(absoluteY()) + marginTop;
                 AbstractGuiUtils.pushScissor(ax, ay, fillW, drawHeight);
                 ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
-                fill.rect().radius(radius).cornerMode(cornerMode);
+                applyButtonRectCorners(fill);
                 BaseShapeWidget.drawShape(fill);
                 AbstractGuiUtils.popScissor();
             }
@@ -370,7 +434,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             if (borderWidth > 0) {
                 currentBorderColor = hoverBorderColor;
                 ShapeDrawArgs border = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBorderColor);
-                border.rect().radius(radius).cornerMode(cornerMode).border(borderWidth);
+                applyButtonRectCorners(border);
+                border.rect().border(borderWidth);
                 BaseShapeWidget.drawShape(border);
             }
 
@@ -390,7 +455,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             }
 
             ShapeDrawArgs rect = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBgColor);
-            rect.rect().radius(radius).cornerMode(cornerMode);
+            applyButtonRectCorners(rect);
             BaseShapeWidget.drawShape(rect);
 
             if (borderWidth > 0) {
@@ -407,7 +472,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 }
 
                 ShapeDrawArgs border = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, currentBorderColor);
-                border.rect().radius(radius).cornerMode(cornerMode).border(borderWidth);
+                applyButtonRectCorners(border);
+                border.rect().border(borderWidth);
                 BaseShapeWidget.drawShape(border);
             }
 

@@ -9,7 +9,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.EntityTeleportEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
@@ -21,6 +20,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.event.BaniraGenericTeleportEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -82,7 +82,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<PlayerInteractEvent.EntityInteractSpecific>> playerEntityInteractCallbacks = new ArrayList<>();
 
     private static final List<Consumer<EntityJoinWorldEvent>> entityJoinWorldCallbacks = new ArrayList<>();
-    private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraGenericTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
     private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
@@ -254,6 +254,7 @@ public final class BaniraEventBus {
 
     /**
      * 实体进入世界、传送等
+     * <p>1.16.4 无 Forge 通用传送事件，传送由 Mixin 在 {@code Entity#teleportTo} 相关入口派发 {@link BaniraGenericTeleportEvent}。</p>
      */
     public static final class EntityEvents {
         private EntityEvents() {
@@ -263,8 +264,15 @@ public final class BaniraEventBus {
             entityJoinWorldCallbacks.add(callback);
         }
 
-        public static void onTeleport(@Nonnull Consumer<EntityTeleportEvent> callback) {
+        public static void onTeleport(@Nonnull Consumer<BaniraGenericTeleportEvent> callback) {
             entityTeleportCallbacks.add(callback);
+        }
+
+        /**
+         * 由 Mixin 在 {@code Entity#teleportTo} / {@code ServerPlayerEntity#teleportTo} 完成后调用。
+         */
+        public static void dispatchEntityTeleport(BaniraGenericTeleportEvent event) {
+            fire(entityTeleportCallbacks, event, "entity teleport");
         }
     }
 
@@ -426,11 +434,6 @@ public final class BaniraEventBus {
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
         fire(entityJoinWorldCallbacks, event, "entity join world");
-    }
-
-    @SubscribeEvent
-    public static void onEntityTeleport(EntityTeleportEvent event) {
-        fire(entityTeleportCallbacks, event, "entity teleport");
     }
 
     @SubscribeEvent

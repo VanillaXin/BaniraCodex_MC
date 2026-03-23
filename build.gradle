@@ -50,8 +50,10 @@ minecraft {
                 }
             }
 
-            jvmArgs.add "-XX:+AllowEnhancedClassRedefinition"
-            jvmArgs.add "-XX:HotswapAgent=fatjar"
+            if (project.hasProperty('baniraDcevm')) {
+                jvmArgs.add "-XX:+AllowEnhancedClassRedefinition"
+                jvmArgs.add "-XX:HotswapAgent=fatjar"
+            }
         }
 
         client {}
@@ -99,9 +101,9 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
-    runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
-    runtimeOnly fg.deobf("curse.maven:textrues-embeddium-options-910506:${textrues_embeddium_options_id}")
+    // runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
+    // runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
+    // runtimeOnly fg.deobf("curse.maven:textrues-embeddium-options-910506:${textrues_embeddium_options_id}")
 }
 
 tasks.named('processResources', ProcessResources).configure {

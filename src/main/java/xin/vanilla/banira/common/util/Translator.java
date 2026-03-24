@@ -4,11 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +17,6 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
@@ -194,7 +193,7 @@ public class Translator implements ITranslator {
     private Collection<ResourceLocation> loadFromResourcePacks(ResourceManager manager) {
         Set<ResourceLocation> result = new HashSet<>();
         try {
-            ((ResourceManagerAccessor) manager).banira$packs().forEach(pack -> {
+            manager.listPacks().forEach(pack -> {
                 try {
                     if (pack.getNamespaces(PackType.CLIENT_RESOURCES).contains(modId)) {
                         Collection<ResourceLocation> locs = pack.getResources(

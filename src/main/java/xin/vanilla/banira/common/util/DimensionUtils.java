@@ -74,7 +74,7 @@ public final class DimensionUtils {
     }
 
     public static int getWorldMinY(Level world) {
-        return 0;
+        return world.getMinBuildHeight();
     }
 
     public static int getWorldMaxY(Level world) {

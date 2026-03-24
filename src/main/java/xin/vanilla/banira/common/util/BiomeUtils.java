@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.util;
 
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -82,9 +84,15 @@ public final class BiomeUtils {
      */
     public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         if (world == null || start == null || biome == null) return null;
-        BlockPos pos = world.findNearestBiome(biome, start.toBlockPos(), radius, minDistance);
-        if (pos != null) {
-            return start.clone().x(pos.getX()).z(pos.getZ());
+        var registry = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
+        var biomeKey = registry.getResourceKey(biome).orElse(null);
+        if (biomeKey == null) return null;
+        Pair<BlockPos, Holder<Biome>> nearestBiome = world.findNearestBiome(holder -> holder.is(biomeKey), start.toBlockPos(), radius, minDistance);
+        if (nearestBiome != null) {
+            BlockPos pos = nearestBiome.getFirst();
+            if (pos != null) {
+                return start.clone().x(pos.getX()).z(pos.getZ());
+            }
         }
         return null;
     }

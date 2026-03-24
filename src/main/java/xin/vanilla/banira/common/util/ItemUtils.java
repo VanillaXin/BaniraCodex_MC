@@ -8,6 +8,7 @@ import net.minecraft.commands.arguments.item.ItemParser;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
@@ -503,14 +504,12 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                ResourceLocation itemId = item.getRegistryName();
-                if (itemId != null) {
-                    // 获取物品的所有标签
-                    item.getTags().forEach(tag -> {
-                        tags.add(tag.toString().toLowerCase());
-                        tags.add(tag.getPath().toLowerCase());
-                    });
-                }
+                ForgeRegistries.ITEMS.tags().getReverseTag(item).ifPresent(reverseTag ->
+                        reverseTag.getTagKeys().forEach(tagKey -> {
+                            ResourceLocation loc = tagKey.location();
+                            tags.add(loc.toString().toLowerCase());
+                            tags.add(loc.getPath().toLowerCase());
+                        }));
             } catch (Exception e) {
                 LOGGER.debug("Failed to get tags for item: {}", registry, e);
             }
@@ -991,8 +990,11 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = new ArrayList<>(item.getTags());
-                    tagIds.sort(Comparator.comparing(ResourceLocation::toString));
+                    List<ResourceLocation> tagIds = ForgeRegistries.ITEMS.tags().getReverseTag(item)
+                            .map(rt -> rt.getTagKeys().map(TagKey::location)
+                                    .sorted(Comparator.comparing(ResourceLocation::toString))
+                                    .collect(Collectors.toList()))
+                            .orElse(Collections.emptyList());
                     for (ResourceLocation tagId : tagIds) {
                         Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));

@@ -2,7 +2,7 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
 

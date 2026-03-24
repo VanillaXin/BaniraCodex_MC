@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.util.PlayerUtils;
 
 import java.util.function.Supplier;

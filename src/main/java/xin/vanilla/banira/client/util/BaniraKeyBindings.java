@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.KeyMapping;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fmlclient.registry.ClientRegistry;
+import net.minecraftforge.client.ClientRegistry;
 import xin.vanilla.banira.client.data.GLFWKey;
 
 import javax.annotation.Nonnull;

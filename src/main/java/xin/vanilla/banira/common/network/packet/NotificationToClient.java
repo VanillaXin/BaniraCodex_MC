@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;

@@ -14,10 +14,10 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fmlserverevents.FMLServerStartedEvent;
-import net.minecraftforge.fmlserverevents.FMLServerStartingEvent;
-import net.minecraftforge.fmlserverevents.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * 事件总线工具类
  * <p>
  * 用于统一管理游戏事件的监听和回调，提供清晰的模块化 API。
- * 客户端专用类型（{@code GuiScreenEvent} 等）见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}，不得写入本类，否则专用服无法 {@code register}。
+ * 客户端专用类型（{@code ScreenEvent} 等）见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}，不得写入本类，否则专用服无法 {@code register}。
  * </p>
  * <h3>使用示例</h3>
  * <pre>{@code
@@ -328,17 +328,17 @@ public final class BaniraEventBus {
     // region Forge 事件订阅
 
     @SubscribeEvent
-    public static void onServerStarting(FMLServerStartingEvent event) {
+    public static void onServerStarting(ServerStartingEvent event) {
         fire(serverStartingCallbacks, event.getServer(), "server starting");
     }
 
     @SubscribeEvent
-    public static void onServerStarted(FMLServerStartedEvent event) {
+    public static void onServerStarted(ServerStartedEvent event) {
         fire(serverStartedCallbacks, event.getServer(), "server started");
     }
 
     @SubscribeEvent
-    public static void onServerStopping(FMLServerStoppingEvent event) {
+    public static void onServerStopping(ServerStoppingEvent event) {
         fire(serverStoppingCallbacks, event.getServer(), "server stopping");
     }
 

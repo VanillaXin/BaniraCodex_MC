@@ -5,7 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -405,32 +405,32 @@ public final class InputStateManager {
     // region 事件监听
 
     @SubscribeEvent
-    public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
+    public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
         InputStateManager.instance().onDrawScreenPre(event.getMouseX(), event.getMouseY());
     }
 
     @SubscribeEvent
-    public static void onKeyPressed(GuiScreenEvent.KeyboardKeyPressedEvent.Pre event) {
+    public static void onKeyPressed(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
         InputStateManager.instance().onKeyPressed(event.getKeyCode());
     }
 
     @SubscribeEvent
-    public static void onKeyReleased(GuiScreenEvent.KeyboardKeyReleasedEvent.Post event) {
+    public static void onKeyReleased(ScreenEvent.KeyboardKeyReleasedEvent.Post event) {
         InputStateManager.instance().onKeyReleased(event.getKeyCode());
     }
 
     @SubscribeEvent
-    public static void onMouseClicked(GuiScreenEvent.MouseClickedEvent.Pre event) {
+    public static void onMouseClicked(ScreenEvent.MouseClickedEvent.Pre event) {
         InputStateManager.instance().onMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
     }
 
     @SubscribeEvent
-    public static void onMouseReleased(GuiScreenEvent.MouseReleasedEvent.Post event) {
+    public static void onMouseReleased(ScreenEvent.MouseReleasedEvent.Post event) {
         InputStateManager.instance().onMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
     }
 
     @SubscribeEvent
-    public static void onMouseScroll(GuiScreenEvent.MouseScrollEvent.Pre event) {
+    public static void onMouseScroll(ScreenEvent.MouseScrollEvent.Pre event) {
         InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
     }
 

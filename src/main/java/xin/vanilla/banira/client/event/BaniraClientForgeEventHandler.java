@@ -49,7 +49,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onGuiScreen(GuiScreenEvent event) {
+    public static void onGuiScreen(ScreenEvent event) {
         BaniraClientEventHub.dispatchGuiScreen(event);
     }
 
@@ -75,7 +75,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onGuiOpen(GuiOpenEvent event) {
+    public static void onGuiOpen(ScreenOpenEvent event) {
         QuickActionOverlay.get().resetInteractionState();
         BaniraClientEventHub.Client.fireGuiChanged(event);
     }
@@ -88,47 +88,47 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
-        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            QuickActionOverlay.get().tickInteraction(event.getGui(), event.getMouseX(), event.getMouseY());
+    public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
+        if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
+            QuickActionOverlay.get().tickInteraction(event.getScreen(), event.getMouseX(), event.getMouseY());
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
+    public static void onDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
         BaniraClientEventHub.Client.fireDrawScreenPost(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onDrawScreenPostInventoryQuickAction(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            QuickActionOverlay.get().render(event.getMatrixStack(), event.getGui(), event.getMouseX(), event.getMouseY(), event.getRenderPartialTicks());
+    public static void onDrawScreenPostInventoryQuickAction(ScreenEvent.DrawScreenEvent.Post event) {
+        if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
+            QuickActionOverlay.get().render(event.getPoseStack(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTicks());
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseClickedPre(GuiScreenEvent.MouseClickedEvent.Pre event) {
-        if (QuickActionOverlay.get().handleMouseClicked(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+    public static void onGuiMouseClickedPre(ScreenEvent.MouseClickedEvent.Pre event) {
+        if (QuickActionOverlay.get().handleMouseClicked(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseReleasedPre(GuiScreenEvent.MouseReleasedEvent.Pre event) {
-        if (QuickActionOverlay.get().handleMouseReleased(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+    public static void onGuiMouseReleasedPre(ScreenEvent.MouseReleasedEvent.Pre event) {
+        if (QuickActionOverlay.get().handleMouseReleased(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseScrollPre(GuiScreenEvent.MouseScrollEvent.Pre event) {
-        if (QuickActionOverlay.get().handleMouseScroll(event.getGui(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
+    public static void onGuiMouseScrollPre(ScreenEvent.MouseScrollEvent.Pre event) {
+        if (QuickActionOverlay.get().handleMouseScroll(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
             event.setCanceled(true);
         }
     }

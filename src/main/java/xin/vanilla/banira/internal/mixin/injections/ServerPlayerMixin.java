@@ -16,6 +16,6 @@ public abstract class ServerPlayerMixin {
     )
     private void banira$afterUpdateOptions(ServerboundClientInformationPacket packet, CallbackInfo ci) {
         ServerPlayer player = (ServerPlayer) (Object) this;
-        PlayerLanguageManager.set(player, packet.getLanguage());
+        PlayerLanguageManager.set(player, packet.language());
     }
 }

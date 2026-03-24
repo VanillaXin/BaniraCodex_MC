@@ -411,7 +411,6 @@ public final class QuickActionOverlay {
      * 每格绘制前恢复 GUI 纹理/混合/颜色状态，避免上一格悬停半透明或 blit 残留导致下一格 PNG 半透明边缘异常。
      */
     private static void prepareQuickActionSlotDrawState() {
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -1369,7 +1368,6 @@ public final class QuickActionOverlay {
         menuOutline.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(CONTEXT_MENU_BORDER_THICKNESS);
         BaseShapeWidget.drawShape(menuOutline);
         // 圆角菜单绘制后需保证混合与 GUI 着色器可用（见 AbstractGuiUtils#restoreGuiRenderState）
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 

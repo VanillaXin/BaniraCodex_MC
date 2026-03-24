@@ -105,7 +105,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 boolean useTexture = resolvePopupUseTexture(theme);
                 screen.addDeferredTooltipRender(s -> {
                     s.pushPose();
-                    s.last().pose().setIdentity();
+                    s.last().pose().identity();
                     if (itemStack != null && !itemStack.isEmpty()) {
                         drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {

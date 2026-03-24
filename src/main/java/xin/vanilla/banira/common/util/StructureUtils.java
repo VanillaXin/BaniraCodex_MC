@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -41,7 +42,7 @@ public final class StructureUtils {
         if (id == null) return null;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getOptional(id).orElse(null);
+            return server.registryAccess().registryOrThrow(Registries.STRUCTURE).getOptional(id).orElse(null);
         }
         return null;
     }
@@ -49,7 +50,7 @@ public final class StructureUtils {
     public static Structure getStructure(ServerLevel world, ResourceLocation id) {
         if (id == null) return null;
         if (world != null) {
-            return world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getOptional(id).orElse(null);
+            return world.registryAccess().registryOrThrow(Registries.STRUCTURE).getOptional(id).orElse(null);
         }
         return getStructure(id);
     }
@@ -60,35 +61,35 @@ public final class StructureUtils {
     }
 
     public static ResourceKey<Structure> getKey(ResourceLocation id) {
-        return id != null ? ResourceKey.create(Registry.STRUCTURE_REGISTRY, id) : null;
+        return id != null ? ResourceKey.create(Registries.STRUCTURE, id) : null;
     }
 
     public static Optional<ResourceKey<Structure>> getKey(Structure structure) {
         if (structure == null) return Optional.empty();
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getResourceKey(structure);
+            return server.registryAccess().registryOrThrow(Registries.STRUCTURE).getResourceKey(structure);
         }
         return Optional.empty();
     }
 
     public static Optional<ResourceKey<Structure>> getKey(ServerLevel world, Structure structure) {
         if (structure == null || world == null) return Optional.empty();
-        return world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getResourceKey(structure);
+        return world.registryAccess().registryOrThrow(Registries.STRUCTURE).getResourceKey(structure);
     }
 
-    public static Optional<Holder<Structure>> getHolder(ResourceLocation id) {
+    public static Optional<Holder.Reference<Structure>> getHolder(ResourceLocation id) {
         if (id == null) return Optional.empty();
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getHolder(getKey(id));
+            return server.registryAccess().registryOrThrow(Registries.STRUCTURE).getHolder(getKey(id));
         }
         return Optional.empty();
     }
 
-    public static Optional<Holder<Structure>> getHolder(ServerLevel world, ResourceLocation id) {
+    public static Optional<Holder.Reference<Structure>> getHolder(ServerLevel world, ResourceLocation id) {
         if (id == null || world == null) return Optional.empty();
-        return world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY).getHolder(getKey(id));
+        return world.registryAccess().registryOrThrow(Registries.STRUCTURE).getHolder(getKey(id));
     }
 
     /**
@@ -103,7 +104,7 @@ public final class StructureUtils {
         if (id == null) return Optional.empty();
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            var registry = server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+            var registry = server.registryAccess().registryOrThrow(Registries.STRUCTURE);
             return resolveStructureHolderSet(registry, id);
         }
         return Optional.empty();
@@ -111,7 +112,7 @@ public final class StructureUtils {
 
     public static Optional<HolderSet<Structure>> getHolderSet(ServerLevel world, ResourceLocation id) {
         if (id == null || world == null) return Optional.empty();
-        var registry = world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+        var registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
         return resolveStructureHolderSet(registry, id);
     }
 
@@ -120,7 +121,7 @@ public final class StructureUtils {
     }
 
     public static TagKey<Structure> getStructureTag(ResourceLocation id) {
-        return id != null ? TagKey.create(Registry.STRUCTURE_REGISTRY, id) : null;
+        return id != null ? TagKey.create(Registries.STRUCTURE, id) : null;
     }
 
     public static TagKey<Structure> getStructureTag(String id) {
@@ -132,7 +133,7 @@ public final class StructureUtils {
         if (id == null) return false;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            var registry = server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+            var registry = server.registryAccess().registryOrThrow(Registries.STRUCTURE);
             if (registry.containsKey(id)) return true;
             try {
                 return registry.getTag(getStructureTag(id)).isPresent();
@@ -152,7 +153,7 @@ public final class StructureUtils {
     public static Set<String> getAllIds() {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            var registry = server.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+            var registry = server.registryAccess().registryOrThrow(Registries.STRUCTURE);
             Set<String> result = new HashSet<>();
             registry.keySet().stream().map(ResourceLocation::toString).forEach(result::add);
             registry.getTagNames().map(tagKey -> tagKey.location().toString()).forEach(result::add);
@@ -166,7 +167,7 @@ public final class StructureUtils {
      */
     public static WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, TagKey<Structure> structureTag, int radius) {
         if (world == null || start == null || structureTag == null) return null;
-        var registry = world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+        var registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
         var holderSetOpt = registry.getTag(structureTag);
         return holderSetOpt.map(holders ->
                 findNearestMapFeatureImpl(world, start, holders, radius)
@@ -178,7 +179,7 @@ public final class StructureUtils {
      */
     public static WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, ResourceLocation structureId, int radius) {
         if (world == null || start == null || structureId == null) return null;
-        var registry = world.registryAccess().registryOrThrow(Registry.STRUCTURE_REGISTRY);
+        var registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
         return resolveStructureHolderSet(registry, structureId)
                 .map(holders -> findNearestMapFeatureImpl(world, start, holders, radius))
                 .orElse(null);
@@ -188,7 +189,7 @@ public final class StructureUtils {
     private static Optional<HolderSet<Structure>> resolveStructureHolderSet(Registry<Structure> registry, ResourceLocation id) {
         if (id == null) return Optional.empty();
         if (registry.containsKey(id)) {
-            return registry.getHolder(ResourceKey.create(Registry.STRUCTURE_REGISTRY, id)).map(HolderSet::direct);
+            return registry.getHolder(ResourceKey.create(Registries.STRUCTURE, id)).map(HolderSet::direct);
         }
         return (Optional<HolderSet<Structure>>) (Optional<?>) registry.getTag(getStructureTag(id));
     }

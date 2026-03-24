@@ -196,7 +196,7 @@ public class Translator implements ITranslator {
      * <p>
      * 不再依赖 {@link net.minecraft.server.packs.PackResources#getNamespaces} 预过滤：部分 Mod jar
      * 的 {@code PackResources} 实现未把本 Mod 命名空间列入 {@code getNamespaces}，但
-     * {@link net.minecraft.server.packs.PackResources#getResources} 仍能列出资源，仅用命名空间判断会漏掉本 Mod 语言文件。
+     * {@link net.minecraft.server.packs.PackResources#listResources} 仍能列出资源，仅用命名空间判断会漏掉本 Mod 语言文件。
      * </p>
      */
     private Collection<ResourceLocation> collectModLangJsonLocations(ResourceManager manager) {
@@ -211,11 +211,13 @@ public class Translator implements ITranslator {
         try {
             manager.listPacks().forEach(pack -> {
                 try {
-                    Collection<ResourceLocation> locs = pack.getResources(
-                            PackType.CLIENT_RESOURCES, modId, "lang", langJson);
-                    result.addAll(locs);
+                    pack.listResources(PackType.CLIENT_RESOURCES, modId, "lang", (loc, supplier) -> {
+                        if (langJson.test(loc)) {
+                            result.add(loc);
+                        }
+                    });
                 } catch (Exception e) {
-                    LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
+                    LOGGER.trace("Failed to list lang from pack {}: {}", pack.packId(), e.getMessage());
                 }
             });
         } catch (Exception e) {
@@ -239,7 +241,7 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (FMLEnvironment.dist.isClient()) {
-            return normalizeLanguageCode(Minecraft.getInstance().getLanguageManager().getSelected().getCode());
+            return normalizeLanguageCode(Minecraft.getInstance().getLanguageManager().getSelected());
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }

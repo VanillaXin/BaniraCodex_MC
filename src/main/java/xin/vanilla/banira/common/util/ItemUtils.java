@@ -5,7 +5,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -429,39 +428,20 @@ public final class ItemUtils {
         addedItems.add(Items.AIR);
 
         try {
-            // 首先从创造模式搜索标签中获取所有物品变体
+            // 从各标签页收集展示物品（含搜索页变体）
             try {
-                CreativeModeTab searchTab = CreativeModeTab.TAB_SEARCH;
-                if (searchTab != null) {
-                    NonNullList<ItemStack> creativeItems = NonNullList.create();
-                    searchTab.fillItemList(creativeItems);
-
-                    if (CollectionUtils.isNotNullOrEmpty(creativeItems)) {
-                        for (ItemStack stack : creativeItems) {
-                            if (stack != null && !stack.isEmpty()) {
-                                items.add(stack.copy());
-                                addedItems.add(stack.getItem());
-                            }
-                        }
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == CreativeModeTabs.HOTBAR) {
+                        continue;
                     }
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get items from creative search tab", e);
-            }
-
-            // 然后添加创造模式物品栏中其他物品组的物品
-            try {
-                for (CreativeModeTab group : CreativeModeTab.TABS) {
-                    if (group == null || group == CreativeModeTab.TAB_SEARCH) continue;
                     try {
-                        NonNullList<ItemStack> groupItems = NonNullList.create();
-                        group.fillItemList(groupItems);
-                        if (CollectionUtils.isNotNullOrEmpty(groupItems)) {
-                            for (ItemStack stack : groupItems) {
+                        java.util.Collection<ItemStack> tabItems = tab == CreativeModeTabs.SEARCH
+                                ? tab.getSearchTabDisplayItems()
+                                : tab.getDisplayItems();
+                        if (CollectionUtils.isNotNullOrEmpty(tabItems)) {
+                            for (ItemStack stack : tabItems) {
                                 if (stack != null && !stack.isEmpty()) {
-                                    // 检查是否已存在相同的物品，不比较NBT
-                                    boolean exists = items.stream().anyMatch(existing ->
-                                            areItemsEqual(existing, stack));
+                                    boolean exists = items.stream().anyMatch(existing -> areItemsEqual(existing, stack));
                                     if (!exists) {
                                         items.add(stack.copy());
                                         addedItems.add(stack.getItem());
@@ -470,12 +450,12 @@ public final class ItemUtils {
                             }
                         }
                     } catch (Exception e) {
-                        LOGGER.debug("Failed to get items from item group: {}",
-                                group.getDisplayName().getString(), e);
+                        LOGGER.debug("Failed to get items from creative tab: {}",
+                                tab.getDisplayName().getString(), e);
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to get items from item groups", e);
+                LOGGER.warn("Failed to get items from creative tabs", e);
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
@@ -990,18 +970,17 @@ public final class ItemUtils {
 
                 // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
                 // 2. 物品组信息
-                CreativeModeTab itemGroup = item.getItemCategory();
-                if (itemGroup == null && item == Items.ENCHANTED_BOOK) {
-                    // 附魔书的特殊处理
-                    Map<net.minecraft.world.item.enchantment.Enchantment, Integer> enchantments = net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(itemStack);
-                    if (enchantments.size() == 1) {
-                        net.minecraft.world.item.enchantment.Enchantment enchantment = enchantments.keySet().iterator().next();
-                        for (CreativeModeTab group : CreativeModeTab.TABS) {
-                            if (group.hasEnchantmentCategory(enchantment.category)) {
-                                itemGroup = group;
-                                break;
-                            }
+                CreativeModeTab itemGroup = null;
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == CreativeModeTabs.SEARCH || tab == CreativeModeTabs.HOTBAR) {
+                        continue;
+                    }
+                    try {
+                        if (tab.contains(itemStack)) {
+                            itemGroup = tab;
+                            break;
                         }
+                    } catch (Exception ignored) {
                     }
                 }
                 if (itemGroup != null) {

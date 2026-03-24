@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -54,7 +54,7 @@ public final class BiomeUtils {
         if (id == null) return null;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
+            return server.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
         }
         return ForgeRegistries.BIOMES.getValue(id);
     }
@@ -62,7 +62,7 @@ public final class BiomeUtils {
     public static Biome getBiome(ServerLevel world, ResourceLocation id) {
         if (id == null) return null;
         if (world != null) {
-            return world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
+            return world.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
         }
         return getBiome(id);
     }
@@ -70,7 +70,7 @@ public final class BiomeUtils {
     public static Set<String> getAllIds() {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).keySet().stream()
+            return server.registryAccess().registryOrThrow(Registries.BIOME).keySet().stream()
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
@@ -84,7 +84,7 @@ public final class BiomeUtils {
      */
     public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         if (world == null || start == null || biome == null) return null;
-        var registry = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
+        var registry = world.registryAccess().registryOrThrow(Registries.BIOME);
         var biomeKey = registry.getResourceKey(biome).orElse(null);
         if (biomeKey == null) return null;
         int h = Math.max(1, minDistance);

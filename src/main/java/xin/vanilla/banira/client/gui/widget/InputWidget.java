@@ -676,7 +676,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 : (textureMode == EnumTooltipTextureMode.TEXTURE);
         screen.addDeferredTooltipRender(s -> {
             s.pushPose();
-            s.last().pose().setIdentity();
+            s.last().pose().identity();
             TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
             s.popPose();
         });

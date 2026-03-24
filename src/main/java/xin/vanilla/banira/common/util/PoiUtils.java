@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -36,7 +36,7 @@ public final class PoiUtils {
         if (id == null) return null;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getOptional(id).orElse(null);
+            return server.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getOptional(id).orElse(null);
         }
         return null;
     }
@@ -44,7 +44,7 @@ public final class PoiUtils {
     public static PoiType getPoi(ServerLevel world, ResourceLocation id) {
         if (id == null) return null;
         if (world != null) {
-            return world.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getOptional(id).orElse(null);
+            return world.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getOptional(id).orElse(null);
         }
         return getPoi(id);
     }
@@ -55,35 +55,35 @@ public final class PoiUtils {
     }
 
     public static ResourceKey<PoiType> getKey(ResourceLocation id) {
-        return id != null ? ResourceKey.create(Registry.POINT_OF_INTEREST_TYPE_REGISTRY, id) : null;
+        return id != null ? ResourceKey.create(Registries.POINT_OF_INTEREST_TYPE, id) : null;
     }
 
     public static Optional<ResourceKey<PoiType>> getKey(PoiType poiType) {
         if (poiType == null) return Optional.empty();
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getResourceKey(poiType);
+            return server.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getResourceKey(poiType);
         }
         return Optional.empty();
     }
 
     public static Optional<ResourceKey<PoiType>> getKey(ServerLevel world, PoiType poiType) {
         if (poiType == null || world == null) return Optional.empty();
-        return world.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getResourceKey(poiType);
+        return world.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getResourceKey(poiType);
     }
 
-    public static Optional<Holder<PoiType>> getHolder(ResourceLocation id) {
+    public static Optional<Holder.Reference<PoiType>> getHolder(ResourceLocation id) {
         if (id == null) return Optional.empty();
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getHolder(getKey(id));
+            return server.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getHolder(getKey(id));
         }
         return Optional.empty();
     }
 
-    public static Optional<Holder<PoiType>> getHolder(ServerLevel world, ResourceLocation id) {
+    public static Optional<Holder.Reference<PoiType>> getHolder(ServerLevel world, ResourceLocation id) {
         if (id == null || world == null) return Optional.empty();
-        return world.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getHolder(getKey(id));
+        return world.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).getHolder(getKey(id));
     }
 
     public static ResourceLocation getResourceLocation(PoiType poiType) {
@@ -91,7 +91,7 @@ public final class PoiUtils {
     }
 
     public static TagKey<PoiType> getPoiTag(ResourceLocation id) {
-        return TagKey.create(Registry.POINT_OF_INTEREST_TYPE_REGISTRY, id);
+        return TagKey.create(Registries.POINT_OF_INTEREST_TYPE, id);
     }
 
     public static TagKey<PoiType> getPoiTag(String id) {
@@ -102,7 +102,7 @@ public final class PoiUtils {
         if (id == null) return false;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            var registry = server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY);
+            var registry = server.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE);
             if (registry.containsKey(id)) return true;
             try {
                 return registry.getTag(getPoiTag(id)).isPresent();
@@ -119,7 +119,7 @@ public final class PoiUtils {
     public static Set<String> getAllIds() {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).keySet().stream()
+            return server.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE).keySet().stream()
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
@@ -135,7 +135,7 @@ public final class PoiUtils {
 
     public static WorldCoordinate findNearestPoi(ServerLevel world, WorldCoordinate start, TagKey<PoiType> poiTag, int radius, PoiManager.Occupancy occupancy) {
         if (world == null || start == null || poiTag == null) return null;
-        var registry = world.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY);
+        var registry = world.registryAccess().registryOrThrow(Registries.POINT_OF_INTEREST_TYPE);
         var holderSetOpt = registry.getTag(poiTag);
         return holderSetOpt.map(holders -> findNearestPoiImpl(world, start, holders, radius, occupancy)).orElse(null);
     }

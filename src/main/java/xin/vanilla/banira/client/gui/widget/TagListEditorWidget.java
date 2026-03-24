@@ -846,7 +846,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             final BaniraColorConfig tooltipTheme = theme;
             screen.addDeferredTooltipRender(s -> {
                 s.pushPose();
-                s.last().pose().setIdentity();
+                s.last().pose().identity();
                 TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(rowHint.stack(s)).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
                 s.popPose();
             });

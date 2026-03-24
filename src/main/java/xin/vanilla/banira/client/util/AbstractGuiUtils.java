@@ -3,8 +3,6 @@ package xin.vanilla.banira.client.util;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiComponent;
@@ -13,6 +11,8 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -99,7 +99,6 @@ public final class AbstractGuiUtils {
      * 恢复与 {@link GuiComponent} 一致的常见 GUI 状态，供自定义绘制链结束后调用。
      */
     public static void restoreGuiRenderState() {
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -221,15 +220,15 @@ public final class AbstractGuiUtils {
 
         // 旋转
         if (args.angle() % 360 != 0) {
-            args.stack().mulPose(Vector3f.ZP.rotationDegrees((float) args.angle()));
+            args.stack().mulPose(new Quaternionf().rotationZ((float) Math.toRadians(args.angle())));
         }
 
         // 翻转
         if (args.flipHorizontal()) {
-            args.stack().mulPose(Vector3f.YP.rotationDegrees(180));
+            args.stack().mulPose(new Quaternionf().rotationY((float) Math.PI));
         }
         if (args.flipVertical()) {
-            args.stack().mulPose(Vector3f.XP.rotationDegrees(180));
+            args.stack().mulPose(new Quaternionf().rotationX((float) Math.PI));
         }
 
         // 返回原点
@@ -1255,13 +1254,11 @@ public final class AbstractGuiUtils {
     private static void setupBlendRender() {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableTexture();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
     }
 
     private static void finishBlendRender() {
         Tesselator.getInstance().end();
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
     }
@@ -1335,7 +1332,6 @@ public final class AbstractGuiUtils {
         }
 
         Tesselator.getInstance().end();
-        RenderSystem.enableTexture();
         RenderSystem.enableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -45,11 +45,11 @@ public final class DimensionUtils {
 
 
     public static ResourceKey<Level> parse(String dimension) {
-        return ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimension));
+        return ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(dimension));
     }
 
     public static ResourceKey<Level> parse(ResourceLocation dimension) {
-        return ResourceKey.create(Registry.DIMENSION_REGISTRY, dimension);
+        return ResourceKey.create(Registries.DIMENSION, dimension);
     }
 
     public static ServerLevel getLevel(ResourceKey<Level> dimension) {

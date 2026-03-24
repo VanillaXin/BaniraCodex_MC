@@ -13,6 +13,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 
@@ -111,7 +112,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
 
     static ResourceLocation themeJsonLocation(EnumSeason season) {
         String name = season.name().toLowerCase() + ".json";
-        return new ResourceLocation(BaniraCodex.MODID, "banira/themes/" + name);
+        return Identifier.id().create(BaniraCodex.MODID, "banira/themes/" + name);
     }
 
     static void applyThemeJsonOverlay(BaniraColorConfig c, JsonObject o) {

@@ -12,7 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.Level;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.util.JsonUtils;
@@ -238,7 +238,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
     // region Serialization
 
     public BlockPos toBlockPos() {
-        return new BlockPos(x, y, z);
+        return BlockPos.containing(x, y, z);
     }
 
     public WorldCoordinate fromBlockPos(BlockPos pos) {
@@ -285,7 +285,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.z = tag.getDouble("z");
         coordinate.yaw = tag.getDouble("yaw");
         coordinate.pitch = tag.getDouble("pitch");
-        coordinate.dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(tag.getString("dimension")));
+        coordinate.dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(tag.getString("dimension")));
         return coordinate;
     }
 
@@ -329,7 +329,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.yaw = JsonUtils.getDouble(json, "yaw", 0);
         coordinate.pitch = JsonUtils.getDouble(json, "pitch", 0);
         String dimensionStr = JsonUtils.getString(json, "dimension", Level.OVERWORLD.location().toString());
-        coordinate.dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimensionStr));
+        coordinate.dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(dimensionStr));
         return coordinate;
     }
 
@@ -341,12 +341,12 @@ public class WorldCoordinate implements Serializable, Cloneable {
         try {
             String[] split = str.split(",");
             if (split.length == 5) {
-                ResourceKey<Level> dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(split[0].trim()));
                 Direction direction = valuOfDirection(split[4].trim());
                 result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension).direction(direction);
             } else if (split.length == 4) {
                 if (split[0].contains(":")) {
-                    ResourceKey<Level> dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                    ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(split[0].trim()));
                     result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension);
                 } else if (Arrays.stream(Direction.values()).anyMatch(dir -> dir.getName().equals(split[3].trim()))) {
                     Direction direction = valuOfDirection(split[3].trim());

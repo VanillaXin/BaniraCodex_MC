@@ -1,13 +1,13 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import com.mojang.blaze3d.platform.Lighting;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -174,7 +174,6 @@ public class ItemWidget extends BaseWidget {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         ItemRenderer itemRenderer = mc.getItemRenderer();
@@ -199,24 +198,20 @@ public class ItemWidget extends BaseWidget {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         float s = size / 16f;
-        PoseStack modelView = RenderSystem.getModelViewStack();
-        modelView.pushPose();
+        // 1.19+：renderGuiItem(PoseStack,...) 使用「GUI 局部」PoseStack，勿传入 RenderSystem#getModelViewStack，否则会打乱全局矩阵导致物品不显示
+        PoseStack poseStack = new PoseStack();
+        poseStack.translate(x, y, 200f);
+        poseStack.scale(s, s, s);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        Lighting.setupFor3DItems();
         try {
-            modelView.translate(x, y, 200f);
-            modelView.scale(s, s, s);
-            RenderSystem.applyModelViewMatrix();
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            Lighting.setupFor3DItems();
-            mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+            mc.getItemRenderer().renderGuiItem(poseStack, stack, 0, 0);
         } finally {
             Lighting.setupForFlatItems();
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            modelView.popPose();
-            RenderSystem.applyModelViewMatrix();
             AbstractGuiUtils.restoreGuiRenderState();
         }
     }
@@ -226,8 +221,10 @@ public class ItemWidget extends BaseWidget {
      */
     public static void renderItem(ItemRenderer itemRenderer, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+        if (showText && !itemStack.isEmpty()) {
+            PoseStack poseStack = new PoseStack();
+            poseStack.translate(x, y, 200f);
+            itemRenderer.renderGuiItemDecorations(poseStack, font, itemStack, 0, 0, String.valueOf(itemStack.getCount()));
         }
     }
 }

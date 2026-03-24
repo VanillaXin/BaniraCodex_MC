@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;
 import java.util.UUID;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlayerLanguageManager {
     private static final Map<UUID, String> languageMap = new ConcurrentHashMap<>();
 
-    public static String get(ServerPlayerEntity player) {
+    public static String get(ServerPlayer player) {
         return get(player.getUUID());
     }
 
@@ -18,7 +18,7 @@ public final class PlayerLanguageManager {
         return languageMap.getOrDefault(uuid, "en_us");
     }
 
-    public static void set(ServerPlayerEntity player, String language) {
+    public static void set(ServerPlayer player, String language) {
         set(player.getUUID(), language);
     }
 
@@ -26,7 +26,7 @@ public final class PlayerLanguageManager {
         languageMap.put(uuid, language);
     }
 
-    public static void remove(ServerPlayerEntity player) {
+    public static void remove(ServerPlayer player) {
         remove(player.getUUID());
     }
 

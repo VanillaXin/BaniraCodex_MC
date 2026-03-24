@@ -163,8 +163,7 @@ public class SafeExpressionEvaluator {
         if (o == null) return 0.0;
         if (o instanceof Number) return ((Number) o).doubleValue();
         if (o instanceof Boolean) return (Boolean) o ? 1.0 : 0.0;
-        if (o instanceof String) {
-            String s = (String) o;
+        if (o instanceof String s) {
             if (isNumericString(s)) {
                 return Double.parseDouble(s);
             } else {
@@ -804,8 +803,7 @@ public class SafeExpressionEvaluator {
                         if (Objects.equals(el, needle)) return true;
                     }
                     return false;
-                } else if (tar instanceof String) {
-                    String s = (String) tar;
+                } else if (tar instanceof String s) {
                     return s.contains(String.valueOf(needle));
                 } else {
                     throw new RuntimeException("contains is not supported on type: " + tar.getClass());
@@ -1041,8 +1039,7 @@ public class SafeExpressionEvaluator {
     private static Class<?> resolveClass(Object o) {
         if (o == null) return null;
         if (o instanceof Class) return (Class<?>) o;
-        if (o instanceof String) {
-            String s = (String) o;
+        if (o instanceof String s) {
             try {
                 return Class.forName(s);
             } catch (ClassNotFoundException e) {

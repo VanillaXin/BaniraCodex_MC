@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -76,7 +76,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawRectShape(ShapeDrawArgs args) {
         ShapeDrawArgs.RectParams rect = args.rect();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         if (rect.border() > 0) {
@@ -112,7 +112,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawCircleShape(ShapeDrawArgs args) {
         ShapeDrawArgs.CircleParams circle = args.circle();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         int segments = circle.segments();
@@ -129,7 +129,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawEllipseShape(ShapeDrawArgs args) {
         ShapeDrawArgs.EllipseParams ellipse = args.ellipse();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         int segments = ellipse.segments();
@@ -155,7 +155,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawPolygonShape(ShapeDrawArgs args) {
         ShapeDrawArgs.PolygonParams polygon = args.polygon();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         if (polygon.border() > 0) {
@@ -168,7 +168,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawSectorShape(ShapeDrawArgs args) {
         ShapeDrawArgs.SectorParams sector = args.sector();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         int segments = sector.segments();
@@ -185,7 +185,7 @@ public abstract class BaseShapeWidget extends BaseWidget {
 
     private static void drawSectorRingShape(ShapeDrawArgs args) {
         ShapeDrawArgs.SectorRingParams params = args.sectorRing();
-        MatrixStack stack = args.stack();
+        PoseStack stack = args.stack();
         int color = args.color();
 
         int segments = params.segments();

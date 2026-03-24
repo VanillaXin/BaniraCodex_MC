@@ -1,17 +1,15 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
@@ -48,7 +46,7 @@ public final class PlayerUtils {
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
-    public static void cloneClientSettings(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
+    public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
         ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
         ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
 
@@ -57,43 +55,43 @@ public final class PlayerUtils {
 
     // region 玩家信息
 
-    public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
+    public static UUID getPlayerUUID(@Nonnull Player player) {
         return player.getUUID();
     }
 
-    public static String getPlayerUUIDString(@Nonnull PlayerEntity player) {
+    public static String getPlayerUUIDString(@Nonnull Player player) {
         return player.getUUID().toString();
     }
 
-    public static ITextComponent getPlayerName(PlayerEntity player) {
+    public static net.minecraft.network.chat.Component getPlayerName(Player player) {
         return player == null
                 ? BaniraComponent.get().empty().toVanilla()
                 : player.getName();
     }
 
     @Nonnull
-    public static String getPlayerNameString(PlayerEntity player) {
+    public static String getPlayerNameString(Player player) {
         return player == null
                 ? ""
                 : player.getName().getString();
     }
 
     @Nonnull
-    public static ITextComponent getPlayerDisplayName(PlayerEntity player) {
+    public static net.minecraft.network.chat.Component getPlayerDisplayName(Player player) {
         return player == null
                 ? BaniraComponent.get().empty().toVanilla()
                 : player.getDisplayName();
     }
 
     @Nonnull
-    public static String getPlayerDisplayNameString(PlayerEntity player) {
+    public static String getPlayerDisplayNameString(Player player) {
         return player == null
                 ? ""
                 : player.getDisplayName().getString();
     }
 
     @Nullable
-    public static ServerPlayerEntity getPlayerByUUID(String uuid) {
+    public static ServerPlayer getPlayerByUUID(String uuid) {
         return StringUtils.isNullOrEmptyEx(uuid)
                 ? null
                 : BaniraCodex.serverInstance().key().getPlayerList().getPlayer(UUID.fromString(uuid));
@@ -112,7 +110,7 @@ public final class PlayerUtils {
      */
     @Deprecated
     @Nonnull
-    public static List<ItemStack> getAllPlayerItems(@Nonnull PlayerEntity player) {
+    public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
         return ItemUtils.getAllPlayerItems(player);
     }
 
@@ -125,7 +123,7 @@ public final class PlayerUtils {
      * @param itemStack 物品
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         return removePlayerItem(player, itemStack, false);
     }
 
@@ -137,11 +135,11 @@ public final class PlayerUtils {
      * @param compareNBT 是否比较NBT
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack, boolean compareNBT) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack, boolean compareNBT) {
         if (itemStack.isEmpty()) {
             return 0;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.getInventory();
         if (inventory == null) {
             return 0;
         }
@@ -186,7 +184,7 @@ public final class PlayerUtils {
      * @param count  数量
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         if (count <= 0) {
             return 0;
         }
@@ -201,11 +199,11 @@ public final class PlayerUtils {
      * @param player    玩家
      * @param itemStack 要检查的物品
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         if (itemStack.isEmpty()) {
             return false;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.getInventory();
         if (inventory == null) {
             return false;
         }
@@ -226,11 +224,11 @@ public final class PlayerUtils {
      * @param item   物品类型
      * @param count  最小数量
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         if (count <= 0) {
             return false;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.getInventory();
         if (inventory == null) {
             return false;
         }
@@ -254,7 +252,7 @@ public final class PlayerUtils {
      * @param player 玩家
      * @param item   物品类型\
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull Item item) {
         return hasPlayerItem(player, item, 1);
     }
 
@@ -268,11 +266,11 @@ public final class PlayerUtils {
      * @return 给予结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack, boolean dropOnGround, boolean abortIfNoSpace) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack, boolean dropOnGround, boolean abortIfNoSpace) {
         if (itemStack.isEmpty()) {
             return GiveItemResult.success(0, 0);
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.getInventory();
         if (inventory == null) {
             return GiveItemResult.failure(0, 0, itemStack.getCount());
         }
@@ -322,7 +320,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         return givePlayerItem(player, itemStack, false, true);
     }
 
@@ -337,7 +335,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count, boolean dropOnGround, boolean abortIfNoSpace) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull Item item, int count, boolean dropOnGround, boolean abortIfNoSpace) {
         if (count <= 0) {
             return GiveItemResult.success(0, 0);
         }
@@ -353,7 +351,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         return givePlayerItem(player, item, count, false, true);
     }
 
@@ -367,7 +365,7 @@ public final class PlayerUtils {
      * @param player 玩家
      * @param synced 数据是否已同步
      */
-    public static void setPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
+    public static void setPlayerModInstalled(@Nonnull Player player, @Nonnull String modid, boolean synced) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         playerDataStatus.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
@@ -375,7 +373,7 @@ public final class PlayerUtils {
     /**
      * 移除该玩家的全部mod状态
      */
-    public static void removePlayerDataStatus(@Nonnull PlayerEntity player) {
+    public static void removePlayerDataStatus(@Nonnull Player player) {
         String uuid = getPlayerUUIDString(player);
         playerDataStatus.keySet().removeIf(key -> key.endsWith(":" + uuid));
     }
@@ -385,7 +383,7 @@ public final class PlayerUtils {
      *
      * @param player 玩家
      */
-    public static void removePlayerDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static void removePlayerDataStatus(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         playerDataStatus.remove(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -393,7 +391,7 @@ public final class PlayerUtils {
     /**
      * 玩家是否安装指定mod
      */
-    public static boolean isPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isPlayerModInstalled(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return false;
         return playerDataStatus.containsKey(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -403,7 +401,7 @@ public final class PlayerUtils {
      *
      * @return 未安装mod 或 已同步
      */
-    public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isPlayerDataSynced(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return true;
         return playerDataStatus.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
     }

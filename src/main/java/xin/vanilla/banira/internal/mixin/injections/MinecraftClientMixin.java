@@ -20,11 +20,11 @@ public class MinecraftClientMixin {
 
     @Inject(
             at = {@At("HEAD")},
-            method = {"allowsChat"},
+            method = {"getChatStatus"},
             cancellable = true
     )
-    public void banira$chat(CallbackInfoReturnable<Boolean> callbackInfo) {
-        callbackInfo.setReturnValue(true);
+    public void banira$chat(CallbackInfoReturnable<Minecraft.ChatStatus> callbackInfo) {
+        callbackInfo.setReturnValue(Minecraft.ChatStatus.ENABLED);
         callbackInfo.cancel();
     }
 }

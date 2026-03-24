@@ -129,11 +129,7 @@ public final class StringUtils {
      * 获取指定数量的某个字符串
      */
     public static String getString(String s, int count) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < count; i++) {
-            sb.append(s);
-        }
-        return sb.toString();
+        return String.valueOf(s).repeat(Math.max(0, count));
     }
 
     /**

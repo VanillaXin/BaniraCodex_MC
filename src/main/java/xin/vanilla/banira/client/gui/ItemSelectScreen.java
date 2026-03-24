@@ -1,15 +1,15 @@
 package xin.vanilla.banira.client.gui;
 
 import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -117,7 +117,7 @@ public class ItemSelectScreen extends BaniraScreen {
     @Data
     @Accessors(chain = true, fluent = true)
     public static final class Args {
-        private net.minecraft.client.gui.screen.Screen parentScreen;
+        private net.minecraft.client.gui.screens.Screen parentScreen;
         private ItemStack defaultItem = new ItemStack(Items.AIR);
         private Consumer<ItemStack> onDataReceived1;
         private Function<ItemStack, String> onDataReceived2;
@@ -332,7 +332,7 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
@@ -390,7 +390,7 @@ public class ItemSelectScreen extends BaniraScreen {
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
         this.itemList.clear();
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (this.inventoryMode && player != null) {
             this.itemList.addAll(ItemUtils.searchPlayerItems(player, s));
         } else {

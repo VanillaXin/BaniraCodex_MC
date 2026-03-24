@@ -4,11 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.resources.ResourcePackType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,7 +173,7 @@ public class Translator implements ITranslator {
 
     private List<String> loadFromResourceManager() {
         try {
-            IResourceManager manager = BaniraCodex.serverInstance().key().getDataPackRegistries().getResourceManager();
+            ResourceManager manager = BaniraCodex.serverInstance().key().getResourceManager();
             Collection<ResourceLocation> resources = loadFromResourcePacks(manager);
             return resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
@@ -191,14 +191,14 @@ public class Translator implements ITranslator {
         }
     }
 
-    private Collection<ResourceLocation> loadFromResourcePacks(IResourceManager manager) {
+    private Collection<ResourceLocation> loadFromResourcePacks(ResourceManager manager) {
         Set<ResourceLocation> result = new HashSet<>();
         try {
             ((ResourceManagerAccessor) manager).banira$packs().forEach(pack -> {
                 try {
-                    if (pack.getNamespaces(ResourcePackType.CLIENT_RESOURCES).contains(modId)) {
+                    if (pack.getNamespaces(PackType.CLIENT_RESOURCES).contains(modId)) {
                         Collection<ResourceLocation> locs = pack.getResources(
-                                ResourcePackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
+                                PackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
                         result.addAll(locs);
                     }
                 } catch (Exception e) {
@@ -241,17 +241,17 @@ public class Translator implements ITranslator {
     /**
      * 获取服务端玩家语言
      */
-    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
+    public static String getServerPlayerLanguage(ServerPlayer player) {
         return PlayerLanguageManager.get(player);
     }
 
     /**
      * 解析有效语言（支持 "client"、"server" 等特殊值）
      */
-    public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
+    public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            return player instanceof ServerPlayerEntity
-                    ? getServerPlayerLanguage((ServerPlayerEntity) player)
+            return player instanceof ServerPlayer
+                    ? getServerPlayerLanguage((ServerPlayer) player)
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {
@@ -263,7 +263,7 @@ public class Translator implements ITranslator {
     /**
      * 获取玩家语言
      */
-    public static String getPlayerLanguage(@NonNull PlayerEntity player) {
+    public static String getPlayerLanguage(@NonNull Player player) {
         try {
             String lang = player.isLocalPlayer()
                     ? CustomConfig.getPlayerLanguageClient(PlayerUtils.getPlayerUUIDString(player))

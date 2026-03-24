@@ -271,21 +271,22 @@ public final class DialogUtils {
     private static int openMessageBoxSyncInternal(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
         String dialogType = buttonType.name().replace("_", "");
 
-        MemoryStack stack = stackGet();
-        int stackPointer = stack.getPointer();
-        try {
-            stack.nUTF8Safe(title, true);
-            long titleEncoded = title == null ? 0L : stack.getPointerAddress();
-            stack.nUTF8Safe(msg, true);
-            long msgEncoded = msg == null ? 0L : stack.getPointerAddress();
-            stack.nASCII(dialogType, true);
-            long dialogTypeEncoded = stack.getPointerAddress();
-            stack.nASCII(iconType.name(), true);
-            long iconTypeEncoded = stack.getPointerAddress();
+        try (MemoryStack stack = stackGet()) {
+            int stackPointer = stack.getPointer();
+            try {
+                stack.nUTF8Safe(title, true);
+                long titleEncoded = title == null ? 0L : stack.getPointerAddress();
+                stack.nUTF8Safe(msg, true);
+                long msgEncoded = msg == null ? 0L : stack.getPointerAddress();
+                stack.nASCII(dialogType, true);
+                long dialogTypeEncoded = stack.getPointerAddress();
+                stack.nASCII(iconType.name(), true);
+                long iconTypeEncoded = stack.getPointerAddress();
 
-            return TinyFileDialogs.ntinyfd_messageBox(titleEncoded, msgEncoded, dialogTypeEncoded, iconTypeEncoded, 0);
-        } finally {
-            stack.setPointer(stackPointer);
+                return TinyFileDialogs.ntinyfd_messageBox(titleEncoded, msgEncoded, dialogTypeEncoded, iconTypeEncoded, 0);
+            } finally {
+                stack.setPointer(stackPointer);
+            }
         }
     }
 }

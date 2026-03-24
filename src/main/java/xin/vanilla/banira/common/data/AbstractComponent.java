@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 
 /**
@@ -41,7 +41,7 @@ public abstract class AbstractComponent {
         return Component.trans(modId(), type, key, args);
     }
 
-    public Component trans(ServerPlayerEntity player, EnumI18nType type, String key, Object... args) {
+    public Component trans(ServerPlayer player, EnumI18nType type, String key, Object... args) {
         return Component.trans(player, type, key, args).modId(modId());
     }
 

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -59,7 +59,7 @@ public class NinePatchImageWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -104,7 +104,7 @@ public class NinePatchImageWidget extends BaseWidget {
      * @param destHeight 目标高度（缩放后的最终高度）
      * @param scale      缩放比例（用于根据右参考线高度缩放，<=0 时自动计算）
      */
-    public static void drawNinePatch(MatrixStack stack, Texture texture, int x, int y, int destWidth, int destHeight, double scale) {
+    public static void drawNinePatch(PoseStack stack, Texture texture, int x, int y, int destWidth, int destHeight, double scale) {
         if (texture == null) {
             return;
         }

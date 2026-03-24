@@ -9,7 +9,6 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @OnlyIn(Dist.CLIENT)
@@ -141,7 +140,7 @@ public final class GLFWKeyUtils {
 
     public static List<String> getKeyRecordKeys(int... codes) {
         List<String> recordKeys = new ArrayList<>();
-        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().collect(Collectors.toList());
+        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().toList();
         for (Integer code : sortedCodes) {
             String name = KEY_CODE_TO_NAME.get(code);
             if (name == null) continue;
@@ -152,7 +151,7 @@ public final class GLFWKeyUtils {
 
     public static List<String> getMouseRecordKeys(int... codes) {
         List<String> recordKeys = new ArrayList<>();
-        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().collect(Collectors.toList());
+        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().toList();
         for (Integer code : sortedCodes) {
             String name = MOUSE_CODE_TO_NAME.get(code);
             if (name == null) continue;

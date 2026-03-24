@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -33,7 +33,7 @@ public final class EffectUtils {
     /**
      * 所有效果缓存
      */
-    private static volatile List<Effect> allEffectsCache = new ArrayList<>();
+    private static volatile List<MobEffect> allEffectsCache = new ArrayList<>();
 
     // region 获取效果信息
 
@@ -41,15 +41,15 @@ public final class EffectUtils {
      * 获取效果的注册ID
      */
     @Nullable
-    public static ResourceLocation getEffectRegistry(Effect effect) {
+    public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return effect.getRegistryName();
+        return ForgeRegistries.MOB_EFFECTS.getKey(effect);
     }
 
     /**
      * 获取效果的注册ID字符串
      */
-    public static String getEffectRegistryString(Effect effect) {
+    public static String getEffectRegistryString(MobEffect effect) {
         ResourceLocation registryName = getEffectRegistry(effect);
         return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
     }
@@ -58,7 +58,7 @@ public final class EffectUtils {
      * 获取效果实例的注册ID
      */
     @Nullable
-    public static ResourceLocation getEffectRegistry(EffectInstance effectInstance) {
+    public static ResourceLocation getEffectRegistry(MobEffectInstance effectInstance) {
         if (effectInstance == null) return null;
         return getEffectRegistry(effectInstance.getEffect());
     }
@@ -66,7 +66,7 @@ public final class EffectUtils {
     /**
      * 获取效果实例的注册ID字符串
      */
-    public static String getEffectRegistryString(EffectInstance effectInstance) {
+    public static String getEffectRegistryString(MobEffectInstance effectInstance) {
         if (effectInstance == null) return UNKNOWN_EFFECT.toString();
         return getEffectRegistryString(effectInstance.getEffect());
     }
@@ -74,7 +74,7 @@ public final class EffectUtils {
     /**
      * 获取效果的显示名称（翻译键）
      */
-    public static String getEffectNameKey(Effect effect) {
+    public static String getEffectNameKey(MobEffect effect) {
         if (effect == null) return "";
         return effect.getDescriptionId();
     }
@@ -82,7 +82,7 @@ public final class EffectUtils {
     /**
      * 获取效果的显示名称字符串
      */
-    public static String getEffectDisplayName(Effect effect) {
+    public static String getEffectDisplayName(MobEffect effect) {
         if (effect == null) return "";
         return effect.getDisplayName().getString();
     }
@@ -90,7 +90,7 @@ public final class EffectUtils {
     /**
      * 获取效果实例的显示名称字符串
      */
-    public static String getEffectDisplayName(EffectInstance effectInstance) {
+    public static String getEffectDisplayName(MobEffectInstance effectInstance) {
         if (effectInstance == null) return "";
         return getEffectDisplayName(effectInstance.getEffect());
     }
@@ -102,16 +102,30 @@ public final class EffectUtils {
     /**
      * 检查效果实例是否为空或无效
      */
-    public static boolean isEffectNull(EffectInstance effectInstance) {
+    public static boolean isEffectNull(MobEffectInstance effectInstance) {
         return effectInstance == null || effectInstance.getEffect() == null;
     }
 
     /**
      * 复制效果实例
      */
-    public static EffectInstance copyEffectInstance(EffectInstance effectInstance) {
+    public static MobEffectInstance copyEffectInstance(MobEffectInstance effectInstance) {
         if (effectInstance == null) return null;
-        return new EffectInstance(effectInstance);
+        return new MobEffectInstance(effectInstance);
+    }
+
+    /**
+     * 复制效果实例
+     */
+    public static MobEffectInstance copyMobEffectInstance(MobEffectInstance effectInstance) {
+        return copyEffectInstance(effectInstance);
+    }
+
+    /**
+     * 复制效果实例
+     */
+    public static MobEffectInstance deserializeMobEffectInstance(String effectString) {
+        return deserializeEffectInstance(effectString);
     }
 
     // endregion
@@ -122,7 +136,7 @@ public final class EffectUtils {
      * 将效果实例序列化为字符串
      * 格式: effect_id[duration,amplifier] 或 effect_id
      */
-    public static String serializeEffectInstance(EffectInstance effectInstance) {
+    public static String serializeEffectInstance(MobEffectInstance effectInstance) {
         if (isEffectNull(effectInstance)) return "";
         try {
             String id = getEffectRegistryString(effectInstance);
@@ -142,16 +156,16 @@ public final class EffectUtils {
      * 从字符串反序列化效果实例
      * 支持格式: effect_id 或 effect_id[duration,amplifier]
      */
-    public static EffectInstance deserializeEffectInstance(String effectString) {
+    public static MobEffectInstance deserializeEffectInstance(String effectString) {
         return deserializeEffectInstance(effectString, 600, 0);
     }
 
     /**
      * 从字符串反序列化效果实例，可指定默认持续时间和等级
      */
-    public static EffectInstance deserializeEffectInstance(String effectString, int defaultDuration, int defaultAmplifier) {
+    public static MobEffectInstance deserializeEffectInstance(String effectString, int defaultDuration, int defaultAmplifier) {
         if (StringUtils.isNullOrEmptyEx(effectString)) {
-            return new EffectInstance(Effects.LUCK, defaultDuration, defaultAmplifier);
+            return new MobEffectInstance(MobEffects.LUCK, defaultDuration, defaultAmplifier);
         }
         effectString = effectString.trim();
         String idPart = effectString;
@@ -180,12 +194,12 @@ public final class EffectUtils {
     /**
      * 根据效果ID创建效果实例
      */
-    public static EffectInstance createEffectInstance(String effectId, int duration, int amplifier) {
-        Effect effect = getEffectFromRegistry(effectId);
+    public static MobEffectInstance createEffectInstance(String effectId, int duration, int amplifier) {
+        MobEffect effect = getEffectFromRegistry(effectId);
         if (effect == null) {
-            return new EffectInstance(Effects.LUCK, duration, amplifier);
+            return new MobEffectInstance(MobEffects.LUCK, duration, amplifier);
         }
-        return new EffectInstance(effect, duration, amplifier);
+        return new MobEffectInstance(effect, duration, amplifier);
     }
 
     // endregion
@@ -193,17 +207,17 @@ public final class EffectUtils {
     // region 注册表查询
 
     @Nullable
-    public static Effect getEffectFromRegistry(String effectId) {
+    public static MobEffect getEffectFromRegistry(String effectId) {
         if (StringUtils.isNullOrEmptyEx(effectId)) return null;
         ResourceLocation location = Identifier.id().parse(effectId);
         return getEffectFromRegistry(location);
     }
 
     @Nullable
-    public static Effect getEffectFromRegistry(ResourceLocation location) {
+    public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.POTIONS.getValue(location);
+            return ForgeRegistries.MOB_EFFECTS.getValue(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -224,11 +238,11 @@ public final class EffectUtils {
     /**
      * 获取所有效果的列表
      */
-    public static List<Effect> getAllEffects() {
+    public static List<MobEffect> getAllEffects() {
         if (allEffectsCache.isEmpty()) {
             synchronized (EffectUtils.class) {
                 if (allEffectsCache.isEmpty()) {
-                    allEffectsCache = ForgeRegistries.POTIONS.getValues().stream()
+                    allEffectsCache = ForgeRegistries.MOB_EFFECTS.getValues().stream()
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
                     LOGGER.debug("Built effect list with {} effects", allEffectsCache.size());
@@ -242,10 +256,10 @@ public final class EffectUtils {
      * 获取玩家当前拥有的效果列表
      */
     @OnlyIn(Dist.CLIENT)
-    public static List<Effect> getPlayerEffects() {
-        List<Effect> result = new ArrayList<>();
+    public static List<MobEffect> getPlayerEffects() {
+        List<MobEffect> result = new ArrayList<>();
         try {
-            PlayerEntity player = Minecraft.getInstance().player;
+            Player player = Minecraft.getInstance().player;
             if (player != null) {
                 result.addAll(player.getActiveEffectsMap().keySet());
             }
@@ -260,8 +274,8 @@ public final class EffectUtils {
      * @param keyword 搜索关键字（匹配注册ID和显示名称）
      * @return 匹配的效果列表
      */
-    public static List<Effect> searchEffects(String keyword) {
-        List<Effect> all = getAllEffects();
+    public static List<MobEffect> searchEffects(String keyword) {
+        List<MobEffect> all = getAllEffects();
         if (StringUtils.isNullOrEmpty(keyword)) {
             return all;
         }
@@ -281,7 +295,7 @@ public final class EffectUtils {
     /**
      * 根据注册ID查找效果
      */
-    public static Effect findEffectByRegistry(String registry) {
+    public static MobEffect findEffectByRegistry(String registry) {
         if (StringUtils.isNullOrEmpty(registry)) return null;
         return getEffectFromRegistry(registry);
     }
@@ -289,7 +303,7 @@ public final class EffectUtils {
     /**
      * 根据注册ID查找效果
      */
-    public static Effect findEffectByRegistry(ResourceLocation location) {
+    public static MobEffect findEffectByRegistry(ResourceLocation location) {
         if (location == null) return null;
         return getEffectFromRegistry(location);
     }

@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
 
@@ -24,7 +24,7 @@ public class DimensionToClient extends SplitPacket
         this.dimensionIds = dimensionIds != null ? new ArrayList<>(dimensionIds) : new ArrayList<>();
     }
 
-    public DimensionToClient(PacketBuffer buf) {
+    public DimensionToClient(FriendlyByteBuf buf) {
         super(buf);
         int size = buf.readVarInt();
         this.dimensionIds = new ArrayList<>(size);
@@ -74,7 +74,7 @@ public class DimensionToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
         buf.writeVarInt(dimensionIds.size());
         for (String id : dimensionIds) {

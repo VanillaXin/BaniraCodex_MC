@@ -161,8 +161,7 @@ public final class NumberUtils {
             return null;
         }
 
-        if (number instanceof BigDecimal) {
-            BigDecimal bd = (BigDecimal) number;
+        if (number instanceof BigDecimal bd) {
             if (bd.scale() == 0) {
                 long longValue = bd.longValue();
                 if (longValue >= Byte.MIN_VALUE && longValue <= Byte.MAX_VALUE) {

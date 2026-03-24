@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.gen.feature.structure.Structure;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
@@ -18,11 +18,11 @@ public final class StructureUtils {
     private StructureUtils() {
     }
 
-    public static Structure<?> getStructure(String id) {
+    public static StructureFeature<?> getStructure(String id) {
         return getStructure(Identifier.id().parse(id));
     }
 
-    public static Structure<?> getStructure(ResourceLocation id) {
+    public static StructureFeature<?> getStructure(ResourceLocation id) {
         return id != null ? ForgeRegistries.STRUCTURE_FEATURES.getValue(id) : null;
     }
 
@@ -35,7 +35,7 @@ public final class StructureUtils {
     /**
      * 在指定范围内查找最近的结构位置
      */
-    public static WorldCoordinate findNearestStructure(ServerWorld world, WorldCoordinate start, Structure<?> structure, int radius) {
+    public static WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, StructureFeature<?> structure, int radius) {
         if (world == null || start == null || structure == null) return null;
         BlockPos pos = world.findNearestMapFeature(structure, start.toBlockPos(), radius, true);
         if (pos != null) {

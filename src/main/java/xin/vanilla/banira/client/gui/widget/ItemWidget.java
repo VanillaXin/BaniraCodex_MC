@@ -1,20 +1,20 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.model.IBakedModel;
-import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.gui.Font;
+import com.mojang.blaze3d.platform.Lighting;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -79,7 +79,7 @@ public class ItemWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -129,10 +129,10 @@ public class ItemWidget extends BaseWidget {
     /**
      * 渲染 Tooltip
      */
-    private void renderTooltip(MatrixStack stack, int mouseX, int mouseY, ItemStack itemStack) {
-        List<ITextComponent> tooltip = itemStack.getTooltipLines(
+    private void renderTooltip(PoseStack stack, int mouseX, int mouseY, ItemStack itemStack) {
+        List<Component> tooltip = itemStack.getTooltipLines(
                 Minecraft.getInstance().player,
-                InputStateManager.isShiftPressingStatic() ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL
+                InputStateManager.isShiftPressingStatic() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
         );
 
         if (!tooltip.isEmpty()) {
@@ -168,9 +168,9 @@ public class ItemWidget extends BaseWidget {
 
 
     /**
-     * 用方块图集精灵做平面绘制，走 {@link com.mojang.blaze3d.matrix.MatrixStack} 与 {@link AbstractGuiUtils#blit}
+     * 用方块图集精灵做平面绘制，走 {@link com.mojang.blaze3d.vertex.PoseStack} 与 {@link AbstractGuiUtils#blit}
      */
-    public static void renderGuiItemFlatBlit(@Nonnull MatrixStack pose, @Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
+    public static void renderGuiItemFlatBlit(@Nonnull PoseStack pose, @Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
@@ -178,17 +178,18 @@ public class ItemWidget extends BaseWidget {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         ItemRenderer itemRenderer = mc.getItemRenderer();
-        IBakedModel model = itemRenderer.getModel(stack, null, mc.player);
+        BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
         TextureAtlasSprite sprite = model.getParticleIcon();
         int tint = mc.getItemColors().getColor(stack, 0);
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;
             float cg = (float) (tint >> 8 & 255) / 255.0F;
             float cb = (float) (tint & 255) / 255.0F;
-            RenderSystem.color4f(cr, cg, cb, 1f);
+            RenderSystem.setShaderColor(cr, cg, cb, 1f);
         }
-        AbstractGuiUtils.blit(pose, AtlasTexture.LOCATION_BLOCKS, x, y, 0, size, size, sprite);
-        RenderSystem.color4f(1f, 1f, 1f, 1f);
+        AbstractGuiUtils.blit(pose, TextureAtlas.LOCATION_BLOCKS, x, y, 0, size, size, sprite);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        AbstractGuiUtils.restoreGuiRenderState();
     }
 
     /**
@@ -202,19 +203,28 @@ public class ItemWidget extends BaseWidget {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         float s = size / 16f;
-        RenderSystem.pushMatrix();
-        RenderSystem.translatef(x, y, 200f);
-        RenderSystem.scalef(s, s, s);
-        RenderHelper.setupFor3DItems();
-        mc.getItemRenderer().renderGuiItem(stack, 0, 0);
-        RenderHelper.turnOff();
-        RenderSystem.popMatrix();
+        PoseStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushPose();
+        try {
+            modelView.translate(x, y, 200f);
+            modelView.scale(s, s, s);
+            RenderSystem.applyModelViewMatrix();
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            Lighting.setupFor3DItems();
+            mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+        } finally {
+            Lighting.setupForFlatItems();
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            modelView.popPose();
+            RenderSystem.applyModelViewMatrix();
+            AbstractGuiUtils.restoreGuiRenderState();
+        }
     }
 
     /**
      * 绘制物品图标
      */
-    public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
+    public static void renderItem(ItemRenderer itemRenderer, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
         if (showText) {
             itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));

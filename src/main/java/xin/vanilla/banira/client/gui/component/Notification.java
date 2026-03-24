@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui.component;
 
 import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -149,7 +149,7 @@ public class Notification extends NotificationData {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+    public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
@@ -346,7 +346,7 @@ public class Notification extends NotificationData {
                 info.y() < screenInfo.height();
     }
 
-    private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
+    private void doRender(PoseStack stack, ScreenCoordinate coordinate) {
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;

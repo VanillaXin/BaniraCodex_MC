@@ -196,7 +196,7 @@ public class ConfigHolder {
         public CategoryGroup(String categoryPath, String displayName, List<ConfigEntryDescriptor> entries) {
             this.categoryPath = categoryPath;
             this.displayName = displayName;
-            this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
+            this.entries = List.copyOf(entries);
         }
     }
 
@@ -213,7 +213,7 @@ public class ConfigHolder {
         public CategoryTreeNode(String categoryPath, String displayName, List<ConfigEntryDescriptor> entries) {
             this.categoryPath = categoryPath;
             this.displayName = displayName;
-            this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
+            this.entries = List.copyOf(entries);
         }
 
         void addChild(CategoryTreeNode child) {

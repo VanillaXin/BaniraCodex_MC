@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -57,7 +57,7 @@ public final class BiomeUtils {
         return ForgeRegistries.BIOMES.getValue(id);
     }
 
-    public static Biome getBiome(ServerWorld world, ResourceLocation id) {
+    public static Biome getBiome(ServerLevel world, ResourceLocation id) {
         if (id == null) return null;
         if (world != null) {
             return world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
@@ -80,7 +80,7 @@ public final class BiomeUtils {
     /**
      * 在指定范围内查找最近的生物群系位置
      */
-    public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
+    public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         if (world == null || start == null || biome == null) return null;
         BlockPos pos = world.findNearestBiome(biome, start.toBlockPos(), radius, minDistance);
         if (pos != null) {

@@ -1,10 +1,10 @@
 package xin.vanilla.banira.common.network;
 
 import lombok.Getter;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.fmllegacy.network.NetworkRegistry;
+import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
 
@@ -54,8 +54,8 @@ public class NetworkHandler {
      * @param <MSG>       包类型
      */
     public <MSG> void register(Class<MSG> packetClass,
-                               BiConsumer<MSG, PacketBuffer> encoder,
-                               Function<PacketBuffer, MSG> decoder,
+                               BiConsumer<MSG, FriendlyByteBuf> encoder,
+                               Function<FriendlyByteBuf, MSG> decoder,
                                BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
         channel.registerMessage(
                 nextPacketId++,
@@ -77,8 +77,8 @@ public class NetworkHandler {
      */
     public <MSG extends SplitPacket> void registerSplit(
             Class<MSG> packetClass,
-            BiConsumer<MSG, PacketBuffer> encoder,
-            Function<PacketBuffer, MSG> decoder,
+            BiConsumer<MSG, FriendlyByteBuf> encoder,
+            Function<FriendlyByteBuf, MSG> decoder,
             BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
         BiConsumer<MSG, Supplier<NetworkEvent.Context>> wrappedHandler = (packet, ctx) -> {
             // 保存原始上下文

@@ -37,8 +37,7 @@ public class ScheduledTask implements Comparable<ScheduledTask> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ScheduledTask)) return false;
-        ScheduledTask that = (ScheduledTask) o;
+        if (!(o instanceof ScheduledTask that)) return false;
         return executeTick == that.executeTick && seqNo == that.seqNo && runnable.equals(that.runnable);
     }
 

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.data;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -15,7 +15,7 @@ public class ShapeDrawArgs {
     /**
      * 矩阵栈
      */
-    private MatrixStack stack;
+    private PoseStack stack;
 
     /**
      * 颜色
@@ -502,7 +502,7 @@ public class ShapeDrawArgs {
     /**
      * 创建矩形绘制参数
      */
-    public static ShapeDrawArgs rect(MatrixStack stack, float x, float y, float width, float height, int color) {
+    public static ShapeDrawArgs rect(PoseStack stack, float x, float y, float width, float height, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -513,7 +513,7 @@ public class ShapeDrawArgs {
     /**
      * 创建圆形绘制参数
      */
-    public static ShapeDrawArgs circle(MatrixStack stack, float centerX, float centerY, float radius, int color) {
+    public static ShapeDrawArgs circle(PoseStack stack, float centerX, float centerY, float radius, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -524,7 +524,7 @@ public class ShapeDrawArgs {
     /**
      * 创建椭圆绘制参数
      */
-    public static ShapeDrawArgs ellipse(MatrixStack stack, float centerX, float centerY, float radiusX, float radiusY, int color) {
+    public static ShapeDrawArgs ellipse(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -535,7 +535,7 @@ public class ShapeDrawArgs {
     /**
      * 创建扇形绘制参数
      */
-    public static ShapeDrawArgs sector(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+    public static ShapeDrawArgs sector(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -546,7 +546,7 @@ public class ShapeDrawArgs {
     /**
      * 使用弧度创建扇形绘制参数
      */
-    public static ShapeDrawArgs sectorRad(MatrixStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+    public static ShapeDrawArgs sectorRad(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -557,7 +557,7 @@ public class ShapeDrawArgs {
     /**
      * 创建扇环绘制参数
      */
-    public static ShapeDrawArgs sectorRing(MatrixStack stack, float centerX, float centerY, float outerRadius, float innerRadius, double startAngle, double endAngle, int color) {
+    public static ShapeDrawArgs sectorRing(PoseStack stack, float centerX, float centerY, float outerRadius, float innerRadius, double startAngle, double endAngle, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -568,7 +568,7 @@ public class ShapeDrawArgs {
     /**
      * 创建扇环绘制参数（使用弧度）
      */
-    public static ShapeDrawArgs sectorRingRad(MatrixStack stack, float centerX, float centerY, float outerRadius, double startAngle, double endAngle, int color) {
+    public static ShapeDrawArgs sectorRingRad(PoseStack stack, float centerX, float centerY, float outerRadius, double startAngle, double endAngle, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)
@@ -579,7 +579,7 @@ public class ShapeDrawArgs {
     /**
      * 创建多边形绘制参数
      */
-    public static ShapeDrawArgs polygon(MatrixStack stack, float centerX, float centerY, float radius, int sides, int color) {
+    public static ShapeDrawArgs polygon(PoseStack stack, float centerX, float centerY, float radius, int sides, int color) {
         return new ShapeDrawArgs()
                 .stack(stack)
                 .color(color)

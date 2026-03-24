@@ -1,11 +1,10 @@
 package xin.vanilla.banira.common.network.packet;
 
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraComponent;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
@@ -34,11 +33,11 @@ public class ConfigFetchRequestToServer {
         this.configName = configName != null ? configName : "";
     }
 
-    public ConfigFetchRequestToServer(PacketBuffer buf) {
+    public ConfigFetchRequestToServer(FriendlyByteBuf buf) {
         this.configName = buf.readUtf(256);
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(configName, 256);
     }
 
@@ -51,7 +50,7 @@ public class ConfigFetchRequestToServer {
             if (!ctx.get().getDirection().getReceptionSide().isServer()) {
                 return;
             }
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayer player = ctx.get().getSender();
             if (player == null) {
                 return;
             }
@@ -79,7 +78,7 @@ public class ConfigFetchRequestToServer {
         ctx.get().setPacketHandled(true);
     }
 
-    private static void sendErr(ServerPlayerEntity player, String langKey, Object... args) {
+    private static void sendErr(ServerPlayer player, String langKey, Object... args) {
         String lang = Translator.getPlayerLanguage(player);
         Component text = args.length > 0
                 ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)

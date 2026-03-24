@@ -1,12 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -28,7 +28,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * 弹出层选项框。支持链式调用，默认 FINE 模式绘制。
@@ -80,7 +79,7 @@ public class PopupOption extends BaseWidget {
     @Getter
     private String id;
     @Setter
-    private FontRenderer font;
+    private Font font;
 
     private int width = -1, height = -1;
     private int adjustedX = -1, adjustedY = -1;
@@ -213,7 +212,7 @@ public class PopupOption extends BaseWidget {
         Text literal = Text.literal(text);
         List<Text> lines = Arrays.stream(StringUtils.replaceLineBreak(text).split("\n"))
                 .map(Text::literal)
-                .collect(Collectors.toList());
+                .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
         }
@@ -232,7 +231,7 @@ public class PopupOption extends BaseWidget {
         String resolvedId = !StringUtils.isNullOrEmptyEx(id) ? id : String.valueOf(optionList.size());
         List<Text> lines = Arrays.stream(StringUtils.replaceLineBreak(text.content()).split("\n"))
                 .map(s -> text.clone().text(s).hoverText(s).withStyle(text))
-                .collect(Collectors.toList());
+                .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
         }
@@ -279,7 +278,7 @@ public class PopupOption extends BaseWidget {
      * @deprecated 使用 {@link #showAt(double, double)} 替代
      */
     @Deprecated
-    public PopupOption build(FontRenderer font, double x, double y, String id) {
+    public PopupOption build(Font font, double x, double y, String id) {
         this.font = font;
         return showAt(x, y, id);
     }
@@ -426,7 +425,7 @@ public class PopupOption extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (beforeRender != null) beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
             if (afterRender != null) afterRender.accept(this);
@@ -484,7 +483,7 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(MatrixStack stack, InputStateManager inputState) {
+    public void render(PoseStack stack, InputStateManager inputState) {
         render(stack, 0);
     }
 
@@ -516,7 +515,7 @@ public class PopupOption extends BaseWidget {
         bounds(new ScreenCoordinate(adjustedX, adjustedY, width, height));
     }
 
-    private void renderOptionTip(MatrixStack stack, InputStateManager inputState) {
+    private void renderOptionTip(PoseStack stack, InputStateManager inputState) {
         int optIdx = getSelectedIndex();
         if (optIdx < 0) return;
         Text tip = tipsMap.get(optIdx);

@@ -8,19 +8,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import lombok.NonNull;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.arguments.DimensionArgument;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.DimensionArgument;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
@@ -41,20 +40,20 @@ public final class CommandUtils {
     private static final Logger LOGGER = LogManager.getLogger();
 
 
-    public static boolean checkModStatus(CommandContext<CommandSource> context, Supplier<Boolean> modDisabled) {
+    public static boolean checkModStatus(CommandContext<CommandSourceStack> context, Supplier<Boolean> modDisabled) {
         if (modDisabled.get()) {
-            CommandSource source = context.getSource();
+            CommandSourceStack source = context.getSource();
             Entity entity = source.getEntity();
-            if (entity instanceof ServerPlayerEntity) {
-                MessageUtils.sendMessage((ServerPlayerEntity) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
+            if (entity instanceof ServerPlayer) {
+                MessageUtils.sendMessage((ServerPlayer) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
             }
         }
         return modDisabled.get();
     }
 
-    public static String getLanguage(CommandSource source) {
+    public static String getLanguage(CommandSourceStack source) {
         String lang = Translator.getServerLanguage();
-        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
+        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayer) {
             try {
                 lang = Translator.getPlayerLanguage(source.getPlayerOrException());
             } catch (Exception ignored) {
@@ -70,17 +69,16 @@ public final class CommandUtils {
      * @param type   指令类型
      */
     public static boolean hasVirtualPermission(Entity source, IVirtualPermissionType type) {
-        if (!(source instanceof PlayerEntity)) {
+        if (!(source instanceof Player player)) {
             return false;
         }
-        PlayerEntity player = (PlayerEntity) source;
         return VirtualPermissionManager.getRawVirtualPermission(player).contains(type.modId() + ":" + type.id());
     }
 
     /**
      * 是否拥有指定完整虚拟权限键（{@code modId:id}）
      */
-    public static boolean hasVirtualPermission(PlayerEntity player, String fullPermissionKey) {
+    public static boolean hasVirtualPermission(Player player, String fullPermissionKey) {
         if (player == null || fullPermissionKey == null || fullPermissionKey.isEmpty()) {
             return false;
         }
@@ -90,11 +88,11 @@ public final class CommandUtils {
     /**
      * 执行指令
      */
-    public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command, int permission, boolean suppressedOutput) {
+    public static boolean executeCommand(@NonNull ServerPlayer player, @NonNull String command, int permission, boolean suppressedOutput) {
         boolean result = false;
         try {
             MinecraftServer server = player.getServer();
-            CommandSource commandSourceStack = player.createCommandSourceStack();
+            CommandSourceStack commandSourceStack = player.createCommandSourceStack();
             if (permission > 0) {
                 commandSourceStack = commandSourceStack.withPermission(permission);
             }
@@ -111,21 +109,21 @@ public final class CommandUtils {
     /**
      * 执行指令
      */
-    public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command) {
+    public static boolean executeCommand(@NonNull ServerPlayer player, @NonNull String command) {
         return executeCommand(player, command, 0, false);
     }
 
     /**
      * 执行指令
      */
-    public static boolean executeCommandNoOutput(@NonNull ServerPlayerEntity player, @NonNull String command) {
+    public static boolean executeCommandNoOutput(@NonNull ServerPlayer player, @NonNull String command) {
         return executeCommandNoOutput(player, command, 0);
     }
 
     /**
      * 执行指令
      */
-    public static boolean executeCommandNoOutput(@NonNull ServerPlayerEntity player, @NonNull String command, int permission) {
+    public static boolean executeCommandNoOutput(@NonNull ServerPlayer player, @NonNull String command, int permission) {
         return executeCommand(player, command, permission, true);
     }
 
@@ -197,8 +195,8 @@ public final class CommandUtils {
         return result;
     }
 
-    public static ServerWorld getDimensionDefault(CommandContext<CommandSource> context, String name, ServerWorld defaultValue) {
-        ServerWorld result;
+    public static ServerLevel getDimensionDefault(CommandContext<CommandSourceStack> context, String name, ServerLevel defaultValue) {
+        ServerLevel result;
         try {
             result = DimensionArgument.getDimension(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException e) {
@@ -210,11 +208,10 @@ public final class CommandUtils {
     /**
      * 若为第一次使用指令则进行提示
      */
-    public static void notifyHelp(CommandContext<CommandSource> context, ICommandNotify playerData, Component modName, String command) {
-        CommandSource source = context.getSource();
+    public static void notifyHelp(CommandContext<CommandSourceStack> context, ICommandNotify playerData, Component modName, String command) {
+        CommandSourceStack source = context.getSource();
         Entity entity = source.getEntity();
-        if (entity instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) entity;
+        if (entity instanceof ServerPlayer player) {
             if (!playerData.isNotified()) {
                 Component button = BaniraComponent.get().literal(command)
                         .color(EnumMCColor.AQUA.getColor())
@@ -316,8 +313,8 @@ public final class CommandUtils {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static int executeModifyConfig(Class<?> configClazz, CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
+    public static int executeModifyConfig(Class<?> configClazz, CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
         String lang = getLanguage(source);
         String configKey = StringArgumentType.getString(context, "configKey");
         String configValue = StringArgumentType.getString(context, "configValue");
@@ -383,8 +380,7 @@ public final class CommandUtils {
             for (Field f : getAllConfigValueFields(k)) {
                 try {
                     Object raw = f.get(null);
-                    if (raw instanceof ForgeConfigSpec.ConfigValue) {
-                        ForgeConfigSpec.ConfigValue<?> cv = (ForgeConfigSpec.ConfigValue<?>) raw;
+                    if (raw instanceof ForgeConfigSpec.ConfigValue<?> cv) {
                         String path = getConfigValuePath(cv);
                         if (path != null) {
                             map.put(path, cv);
@@ -409,7 +405,7 @@ public final class CommandUtils {
 
         List<String> matches = map.keySet().stream()
                 .filter(s -> s.toLowerCase(Locale.ROOT).contains(key.toLowerCase(Locale.ROOT)))
-                .collect(Collectors.toList());
+                .toList();
         if (matches.size() == 1) return map.get(matches.get(0));
 
         return null;

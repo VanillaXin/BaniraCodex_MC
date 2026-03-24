@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -20,7 +20,6 @@ import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
@@ -67,7 +66,6 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_GAP = 1;
 
     private final ConfigHolder holder;
-    private final Args args;
 
     private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
@@ -102,7 +100,6 @@ public class ConfigEditorScreen extends BaniraScreen {
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
-        this.args = args != null ? args : new Args();
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
@@ -567,7 +564,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             case INTEGER:
                 return (int) Math.round(v);
             case LONG:
-                return (long) Math.round(v);
+                return Math.round(v);
             case DOUBLE: {
                 int dp = desc.getDecimalPlaces();
                 double factor = Math.pow(10, dp);
@@ -591,7 +588,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         Object current = holder.get(desc.getPath());
         List<String> options = Arrays.stream(desc.getEnumClass().getEnumConstants())
-                .map(e -> ((Enum<?>) e).name())
+                .map(Enum::name)
                 .collect(Collectors.toList());
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
@@ -923,7 +920,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(MatrixStack stack, float partialTicks) {
+    protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
@@ -985,7 +982,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         renderWidgets(stack, partialTicks);
     }
 
@@ -1130,7 +1127,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
 
         @Override
-        public void render(MatrixStack stack, float partialTicks) {
+        public void render(PoseStack stack, float partialTicks) {
             if (!visible) return;
             renderChildren(stack, partialTicks);
         }

@@ -1,10 +1,9 @@
 package xin.vanilla.banira.common.network.packet;
 
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.BaniraComponent;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
@@ -35,7 +34,7 @@ public class ConfigSyncToServer {
         this.changes = changes != null ? new HashMap<>(changes) : new HashMap<>();
     }
 
-    public ConfigSyncToServer(PacketBuffer buf) {
+    public ConfigSyncToServer(FriendlyByteBuf buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.changes = new HashMap<>(size);
@@ -46,7 +45,7 @@ public class ConfigSyncToServer {
         }
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(changes.size());
         for (Map.Entry<String, String> e : changes.entrySet()) {
@@ -60,7 +59,7 @@ public class ConfigSyncToServer {
             if (!ctx.get().getDirection().getReceptionSide().isServer()) {
                 return;
             }
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayer player = ctx.get().getSender();
             if (player == null) {
                 return;
             }
@@ -102,7 +101,7 @@ public class ConfigSyncToServer {
         ctx.get().setPacketHandled(true);
     }
 
-    private static void sendNotify(ServerPlayerEntity player, String langKey, long durationMs, Object... args) {
+    private static void sendNotify(ServerPlayer player, String langKey, long durationMs, Object... args) {
         String lang = Translator.getPlayerLanguage(player);
         Component text = args.length > 0
                 ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
@@ -114,8 +113,7 @@ public class ConfigSyncToServer {
      * 将配置值编码为网络传输用的字符串（与 {@link #decodeNetworkValue} 成对使用）。
      */
     public static String encodeConfigValue(Object value) {
-        if (value instanceof List) {
-            List<?> list = (List<?>) value;
+        if (value instanceof List<?> list) {
             return list.stream().map(String::valueOf).collect(Collectors.joining(","));
         }
         return String.valueOf(value);

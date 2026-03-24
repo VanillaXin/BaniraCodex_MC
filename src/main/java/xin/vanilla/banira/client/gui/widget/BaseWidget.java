@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -792,7 +792,7 @@ public abstract class BaseWidget implements IWidget {
         return cachedAbsY;
     }
 
-    protected void renderChildren(MatrixStack stack, float partialTicks) {
+    protected void renderChildren(PoseStack stack, float partialTicks) {
         if (!visible || children.isEmpty()) {
             return;
         }

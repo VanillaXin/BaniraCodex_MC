@@ -1,14 +1,13 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -68,7 +67,7 @@ public abstract class BaniraScreen extends Screen {
     @Getter
     protected final InputStateManager inputState = InputStateManager.instance();
 
-    public FontRenderer getFont() {
+    public Font getFont() {
         return font;
     }
 
@@ -129,7 +128,7 @@ public abstract class BaniraScreen extends Screen {
         }
     }
 
-    protected BaniraScreen(ITextComponent textComponent) {
+    protected BaniraScreen(net.minecraft.network.chat.Component textComponent) {
         super(textComponent);
     }
 
@@ -137,16 +136,16 @@ public abstract class BaniraScreen extends Screen {
         super(component.toVanilla(Translator.getClientLanguage()));
     }
 
-    public void renderButtons(MatrixStack stack, float partialTicks) {
+    public void renderButtons(PoseStack stack, float partialTicks) {
         this.renderButtons(stack, inputState.mouseX(), inputState.mouseY(), partialTicks);
     }
 
-    public void renderButtons(MatrixStack stack, double mouseX, double mouseY, float partialTicks) {
-        this.buttons.forEach(button -> button.render(stack, (int) mouseX, (int) mouseY, partialTicks));
+    public void renderButtons(PoseStack stack, double mouseX, double mouseY, float partialTicks) {
+        this.renderables.forEach(button -> button.render(stack, (int) mouseX, (int) mouseY, partialTicks));
     }
 
     @Override
-    public void renderBackground(@Nonnull MatrixStack stack) {
+    public void renderBackground(@Nonnull PoseStack stack) {
         if (this.minecraft != null && this.minecraft.level != null) {
             super.renderBackground(stack);
         } else {
@@ -184,23 +183,23 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
      */
-    private final List<Consumer<MatrixStack>> deferredTooltipRenders = new ArrayList<>();
+    private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
      */
-    public void addDeferredTooltipRender(Consumer<MatrixStack> render) {
+    public void addDeferredTooltipRender(Consumer<PoseStack> render) {
         if (render != null) deferredTooltipRenders.add(render);
     }
 
-    private void flushDeferredTooltipRenders(MatrixStack stack) {
-        for (Consumer<MatrixStack> r : deferredTooltipRenders) r.accept(stack);
+    private void flushDeferredTooltipRenders(PoseStack stack) {
+        for (Consumer<PoseStack> r : deferredTooltipRenders) r.accept(stack);
         deferredTooltipRenders.clear();
     }
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
         if (LOGGER.isDebugEnabled()) {
             totalRenderCount++;
             this.renderCount++;
@@ -215,7 +214,7 @@ public abstract class BaniraScreen extends Screen {
         cachedTheme = null;
     }
 
-    protected abstract void onRender(MatrixStack stack, float partialTicks);
+    protected abstract void onRender(PoseStack stack, float partialTicks);
 
     @Override
     public void removed() {
@@ -510,7 +509,7 @@ public abstract class BaniraScreen extends Screen {
         return false;
     }
 
-    protected void renderWidgets(MatrixStack stack, float partialTicks) {
+    protected void renderWidgets(PoseStack stack, float partialTicks) {
         List<IWidget> snapshot = new ArrayList<>(widgets);
         for (IWidget widget : snapshot) {
             if (widget.visible() && widget.parent() == null) {

@@ -3,8 +3,8 @@ package xin.vanilla.banira.client.gui.quickaction;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;

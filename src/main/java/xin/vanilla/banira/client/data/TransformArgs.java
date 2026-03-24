@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.data;
 
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -12,7 +12,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 @Data
 @Accessors(chain = true, fluent = true)
 public class TransformArgs {
-    private MatrixStack stack;
+    private PoseStack stack;
     private double x;
     private double y;
     private double width;
@@ -46,7 +46,7 @@ public class TransformArgs {
      */
     private boolean blend = false;
 
-    public TransformArgs(MatrixStack stack) {
+    public TransformArgs(PoseStack stack) {
         this.stack = stack;
     }
 

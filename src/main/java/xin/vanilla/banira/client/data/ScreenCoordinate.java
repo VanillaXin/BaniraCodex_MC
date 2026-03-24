@@ -8,6 +8,7 @@ import xin.vanilla.banira.client.enums.EnumCoordinateType;
 import xin.vanilla.banira.client.enums.EnumSizeType;
 import xin.vanilla.banira.common.util.JsonUtils;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 @Data
@@ -15,6 +16,7 @@ import java.io.Serializable;
 @Accessors(chain = true, fluent = true)
 public class ScreenCoordinate implements Serializable, Cloneable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     // region Fields

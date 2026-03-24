@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
@@ -35,8 +34,8 @@ public final class BaniraClientEventHub {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEntity>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
+    private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedInCallbacks = new ArrayList<>();
+    private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
 
     private static final List<Consumer<GuiOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<TextureStitchEvent.Post>> clientTextureReloadCallbacks = new ArrayList<>();
@@ -114,11 +113,11 @@ public final class BaniraClientEventHub {
         private Player() {
         }
 
-        public static void onClientLoggedIn(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onClientLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
             clientPlayerLoggedInCallbacks.add(callback);
         }
 
-        public static void onClientLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onClientLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
             clientPlayerLoggedOutCallbacks.add(callback);
         }
     }

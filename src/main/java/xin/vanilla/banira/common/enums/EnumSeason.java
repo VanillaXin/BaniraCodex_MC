@@ -24,9 +24,8 @@ public enum EnumSeason {
 
     public static EnumSeason valueOfEx(Object obj) {
         if (obj instanceof EnumSeason) return (EnumSeason) obj;
-        if (obj instanceof String) {
+        if (obj instanceof String str) {
             for (EnumSeason value : values()) {
-                String str = (String) obj;
                 if (value.name().equalsIgnoreCase(str) || value.getChineseName().equals(str) || value.getEnglishName().equals(str)) {
                     return value;
                 }

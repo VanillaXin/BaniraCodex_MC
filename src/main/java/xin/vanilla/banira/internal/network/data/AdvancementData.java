@@ -1,17 +1,16 @@
 package xin.vanilla.banira.internal.network.data;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.advancements.FrameType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;
 
@@ -51,7 +50,7 @@ public class AdvancementData {
         return new AdvancementData(advancement.getId(), displayInfo);
     }
 
-    public static AdvancementData readFromBuffer(PacketBuffer buffer) {
+    public static AdvancementData readFromBuffer(FriendlyByteBuf buffer) {
         ResourceLocation id = buffer.readResourceLocation();
         return new AdvancementData(id, DisplayInfo.fromNetwork(buffer));
     }
@@ -75,7 +74,7 @@ public class AdvancementData {
                 , false, false, false);
     }
 
-    public void writeToBuffer(PacketBuffer buffer) {
+    public void writeToBuffer(FriendlyByteBuf buffer) {
         buffer.writeResourceLocation(id);
         displayInfo.serializeToNetwork(buffer);
     }

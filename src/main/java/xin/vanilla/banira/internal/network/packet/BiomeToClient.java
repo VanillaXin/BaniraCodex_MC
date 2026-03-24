@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
 
@@ -25,7 +25,7 @@ public class BiomeToClient extends SplitPacket
         this.biomeIds = biomeIds != null ? new ArrayList<>(biomeIds) : new ArrayList<>();
     }
 
-    public BiomeToClient(PacketBuffer buf) {
+    public BiomeToClient(FriendlyByteBuf buf) {
         super(buf);
         int size = buf.readVarInt();
         this.biomeIds = new ArrayList<>(size);
@@ -75,7 +75,7 @@ public class BiomeToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
         buf.writeVarInt(biomeIds.size());
         for (String id : biomeIds) {

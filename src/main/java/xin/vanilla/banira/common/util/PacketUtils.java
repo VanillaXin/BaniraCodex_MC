@@ -2,10 +2,10 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.IPacket;
-import net.minecraftforge.fml.network.PacketDistributor;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
+import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 
@@ -32,7 +32,7 @@ public final class PacketUtils {
      *
      * @param packet 数据包
      */
-    public static void broadcastPacket(IPacket<?> packet) {
+    public static void broadcastPacket(Packet<?> packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 player.connection.send(packet)
         );
@@ -87,7 +87,7 @@ public final class PacketUtils {
     /**
      * 发送数据包至玩家
      */
-    public static <MSG> void sendPacketToPlayer(Supplier<SimpleChannel> channel, MSG msg, ServerPlayerEntity player) {
+    public static <MSG> void sendPacketToPlayer(Supplier<SimpleChannel> channel, MSG msg, ServerPlayer player) {
         sendPacketToPlayer(channel.get(), msg, player);
     }
 
@@ -111,7 +111,7 @@ public final class PacketUtils {
      * @param player  目标玩家
      * @param <T>     分包类型
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(Supplier<SimpleChannel> channel, T packet, ServerPlayerEntity player) {
+    public static <T extends SplitPacket> void sendSplitPacketToPlayer(Supplier<SimpleChannel> channel, T packet, ServerPlayer player) {
         sendSplitPacketToPlayer(channel.get(), packet, player);
     }
 
@@ -137,7 +137,7 @@ public final class PacketUtils {
     /**
      * 发送数据包至玩家
      */
-    public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayerEntity player) {
+    public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
         channel.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
@@ -164,7 +164,7 @@ public final class PacketUtils {
      * @param player  目标玩家
      * @param <T>     分包类型
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayerEntity player) {
+    public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
         sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player));
     }
 

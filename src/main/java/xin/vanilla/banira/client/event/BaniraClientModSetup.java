@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.event;
 
-import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.client.KeyMapping;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -16,9 +16,9 @@ import xin.vanilla.banira.client.util.NotificationManager;
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class BaniraClientModSetup {
 
-    public static final KeyBinding DEBUG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "debug", GLFWKey.GLFW_KEY_UNKNOWN);
+    public static final KeyMapping DEBUG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "debug", GLFWKey.GLFW_KEY_UNKNOWN);
 
-    public static final KeyBinding NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
+    public static final KeyMapping NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
 
     private BaniraClientModSetup() {
     }

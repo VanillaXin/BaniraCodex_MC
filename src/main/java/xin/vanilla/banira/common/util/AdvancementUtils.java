@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -326,7 +326,7 @@ public final class AdvancementUtils {
                 .filter(StringUtils::isNotNullOrEmpty)
                 .map(String::trim)
                 .filter(k -> !k.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
 
         if (validKeywords.isEmpty()) {
             return getAllAdvancements();

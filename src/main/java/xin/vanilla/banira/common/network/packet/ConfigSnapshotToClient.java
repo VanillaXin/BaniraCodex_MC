@@ -1,21 +1,19 @@
 package xin.vanilla.banira.common.network.packet;
 
-import xin.vanilla.banira.BaniraComponent;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import java.util.HashMap;
@@ -37,7 +35,7 @@ public class ConfigSnapshotToClient {
         this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
     }
 
-    public ConfigSnapshotToClient(PacketBuffer buf) {
+    public ConfigSnapshotToClient(FriendlyByteBuf buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.snapshot = new HashMap<>(size);
@@ -48,7 +46,7 @@ public class ConfigSnapshotToClient {
         }
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(snapshot.size());
         for (Map.Entry<String, String> e : snapshot.entrySet()) {

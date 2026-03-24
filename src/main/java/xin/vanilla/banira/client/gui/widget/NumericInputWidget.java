@@ -3,10 +3,11 @@ package xin.vanilla.banira.client.gui.widget;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -148,7 +149,8 @@ public class NumericInputWidget extends InputWidget {
             return String.valueOf((int) Math.round(v));
         }
         if (decimalPlaces >= 0) {
-            return String.format("%." + decimalPlaces + "f", v);
+            // return String.format("%." + decimalPlaces + "f", v);
+            return NumberUtils.toFixedEx(v, decimalPlaces);
         }
         return v == (long) v ? String.valueOf((long) v) : BigDecimal.valueOf(v).toPlainString();
     }

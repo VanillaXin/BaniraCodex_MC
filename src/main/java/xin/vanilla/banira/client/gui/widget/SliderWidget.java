@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -294,7 +294,7 @@ public class SliderWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -359,7 +359,7 @@ public class SliderWidget extends BaseWidget {
         // endregion 渲染逻辑
     }
 
-    private void renderRoundStyle(MatrixStack stack, int x, int y, int width, int height) {
+    private void renderRoundStyle(PoseStack stack, int x, int y, int width, int height) {
         int trackT = Math.max(1, Math.min(trackThickness, orientation == EnumOrientation.VERTICAL ? width : height));
         int inset = thumbRadius;
 
@@ -399,7 +399,7 @@ public class SliderWidget extends BaseWidget {
         BaseShapeWidget.drawShape(thumbCircle);
     }
 
-    private void renderSquareStyle(MatrixStack stack, int x, int y, int width, int height) {
+    private void renderSquareStyle(PoseStack stack, int x, int y, int width, int height) {
         // 方形轨道
         ShapeDrawArgs trackRect = ShapeDrawArgs.rect(stack, x, y, width, height, trackColor);
         BaseShapeWidget.drawShape(trackRect);
@@ -419,8 +419,8 @@ public class SliderWidget extends BaseWidget {
         }
     }
 
-    private void renderValue(MatrixStack stack, int x, int y, int width, int height) {
-        FontRenderer font = Minecraft.getInstance().font;
+    private void renderValue(PoseStack stack, int x, int y, int width, int height) {
+        Font font = Minecraft.getInstance().font;
         String valueStr = formatDisplayValue(value);
         int textW = font.width(valueStr);
         int textH = font.lineHeight;
@@ -600,7 +600,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screen.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
         double newValue = value + (event.delta() < 0 ? stepVal : -stepVal);
         setValue(newValue);
         return true;
@@ -667,7 +667,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screen.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
         boolean handled = false;
 
         if (orientation == EnumOrientation.VERTICAL) {

@@ -6,12 +6,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
-import xin.vanilla.banira.BaniraCodex;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.Component;
@@ -25,14 +24,13 @@ import xin.vanilla.banira.internal.config.CommonConfig;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public final class HelpCommand {
     private HelpCommand() {
     }
 
-    public static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    public static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         String command;
         int page;
         try {
@@ -152,7 +150,7 @@ public final class HelpCommand {
         }
     }
 
-    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String input = CommandUtils.getStringEmpty(context, "command");
         boolean isInputEmpty = input == null || input.isEmpty();
         int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / CommonConfig.get().help().helpInfoNumPerPage());
@@ -164,7 +162,7 @@ public final class HelpCommand {
                 .filter(t -> !t.ignore())
                 .filter(t -> !t.name().toLowerCase().contains("concise"))
                 .sorted(Comparator.comparingInt(EnumCommandType::sort))
-                .collect(Collectors.toList())) {
+                .toList()) {
             if (isInputEmpty || type.name().toLowerCase().contains(input.toLowerCase())) {
                 builder.suggest(type.name());
             }
@@ -172,7 +170,7 @@ public final class HelpCommand {
         return builder.buildFuture();
     }
 
-    public static LiteralArgumentBuilder<CommandSource> create() {
+    public static LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal(CommonConfig.get().command().commandHelp())
                 .executes(HelpCommand::execute)
                 .then(Commands.argument("command", StringArgumentType.word())

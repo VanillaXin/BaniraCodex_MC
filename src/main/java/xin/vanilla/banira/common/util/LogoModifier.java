@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
+import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,11 +91,11 @@ public final class LogoModifier {
 
         try {
             if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                List<? extends ModInfo> mods = ModList.get().getMods();
+                List<? extends IModInfo> mods = ModList.get().getMods();
                 if (mods.isEmpty()) {
                     return;
                 }
-                ModInfo sample = mods.get(0);
+                IModInfo sample = mods.get(0);
                 for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
                     try {
                         @SuppressWarnings("unchecked")
@@ -113,13 +114,13 @@ public final class LogoModifier {
                 }
             }
 
-            for (ModInfo info : ModList.get().getMods()) {
+            for (IModInfo info : ModList.get().getMods()) {
                 if (!(info instanceof ModInfo)) {
                     continue;
                 }
 
                 Optional<String> customLogo = getLogoFile(info.getModId());
-                if (!customLogo.isPresent()) {
+                if (customLogo.isEmpty()) {
                     continue;
                 }
 

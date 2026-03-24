@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.data;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true, fluent = true)
 public class TransformDrawArgs {
-    private final MatrixStack stack;
+    private final PoseStack stack;
     private double x;
     private double y;
     private double width;

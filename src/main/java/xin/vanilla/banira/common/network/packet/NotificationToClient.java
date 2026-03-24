@@ -1,12 +1,12 @@
 package xin.vanilla.banira.common.network.packet;
 
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.component.Notification;
@@ -57,7 +57,7 @@ public class NotificationToClient {
         this(component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L);
     }
 
-    public NotificationToClient(PacketBuffer buf) {
+    public NotificationToClient(FriendlyByteBuf buf) {
         this.componentJson = buf.readUtf(MAX_COMPONENT_JSON_LENGTH);
         this.positionName = buf.readUtf(64);
         this.animationName = buf.readUtf(64);
@@ -65,7 +65,7 @@ public class NotificationToClient {
         this.styleName = buf.readUtf(32);
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(this.componentJson != null ? this.componentJson : "{}", MAX_COMPONENT_JSON_LENGTH);
         buf.writeUtf(this.positionName != null ? this.positionName : DEFAULT_POSITION, 64);
         buf.writeUtf(this.animationName != null ? this.animationName : DEFAULT_ANIMATION, 64);

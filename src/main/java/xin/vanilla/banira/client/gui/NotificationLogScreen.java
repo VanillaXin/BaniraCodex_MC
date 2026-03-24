@@ -1,28 +1,27 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 
 import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;
@@ -205,7 +204,7 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
 
         ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
@@ -237,7 +236,7 @@ public class NotificationLogScreen extends BaniraScreen {
         super.renderWidgets(stack, partialTicks);
     }
 
-    private void renderListRow(MatrixStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
+    private void renderListRow(PoseStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
         boolean selected = index == selectedIndex;
         int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x40)
                 : "network".equals(entry.source()) ? ColorUtils.applyAlphaToArgb(theme.bgTertiary(), 0x30)
@@ -266,7 +265,7 @@ public class NotificationLogScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(args);
     }
 
-    private void renderDetailPane(MatrixStack stack, BaniraColorConfig theme) {
+    private void renderDetailPane(PoseStack stack, BaniraColorConfig theme) {
         int pad = 16;
         int x = rightX + pad;
         int y = rightY + pad;

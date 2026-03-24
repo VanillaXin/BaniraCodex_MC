@@ -4,11 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.client.resources.ReloadListener;
-import net.minecraft.profiler.IProfiler;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +31,7 @@ import java.util.Map;
  * 通过 Forge {@link net.minecraftforge.event.AddReloadListenerEvent} 注册。
  */
 @OnlyIn(Dist.CLIENT)
-public final class BaniraColorThemeLoader extends ReloadListener<Void> {
+public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {
 
     public static final BaniraColorThemeLoader INSTANCE = new BaniraColorThemeLoader();
 
@@ -48,21 +48,22 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
 
     @Nonnull
     @Override
-    public String getName() {
-        return "banira_codex_color_themes";
-    }
-
-    @Override
-    protected Void prepare(@Nonnull IResourceManager resourceManagerIn, @Nonnull IProfiler profilerIn) {
+    protected Void prepare(@Nonnull ResourceManager resourceManager, @Nonnull ProfilerFiller profiler) {
         return null;
     }
 
     @Override
-    protected void apply(@Nonnull Void objectIn, @Nonnull IResourceManager resourceManagerIn,@Nonnull  IProfiler profilerIn) {
-        reloadFrom(resourceManagerIn);
+    protected void apply(@Nonnull Void unused, @Nonnull ResourceManager resourceManager, @Nonnull ProfilerFiller profiler) {
+        reloadFrom(resourceManager);
     }
 
-    private void reloadFrom(IResourceManager resourceManager) {
+    @Nonnull
+    @Override
+    public String getName() {
+        return "banira_codex_color_themes";
+    }
+
+    private void reloadFrom(ResourceManager resourceManager) {
         EnumMap<EnumSeason, BaniraColorConfig> next = new EnumMap<>(EnumSeason.class);
         for (EnumSeason s : new EnumSeason[]{EnumSeason.SPRING, EnumSeason.SUMMER, EnumSeason.AUTUMN, EnumSeason.WINTER}) {
             BaniraColorConfig parsed = tryLoadSeason(resourceManager, s);
@@ -82,10 +83,10 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
         return BaniraColorConfig.builtinForConcreteSeason(concreteSeason);
     }
 
-    private static BaniraColorConfig tryLoadSeason(IResourceManager resourceManager, EnumSeason season) {
+    private static BaniraColorConfig tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
         ResourceLocation loc = themeJsonLocation(season);
         try {
-            IResource res;
+            Resource res;
             try {
                 res = resourceManager.getResource(loc);
             } catch (Exception missing) {

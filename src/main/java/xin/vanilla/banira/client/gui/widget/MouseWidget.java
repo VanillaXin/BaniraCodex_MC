@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -102,7 +102,7 @@ public class MouseWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
         int mouseX = (int) screen.inputState().mouseX();
         int mouseY = (int) screen.inputState().mouseY();
@@ -111,7 +111,7 @@ public class MouseWidget extends BaseWidget {
 
     private static final float BRIGHTNESS_THRESHOLD = 0.5f;
 
-    private void drawCursor(MatrixStack stack, int mouseX, int mouseY) {
+    private void drawCursor(PoseStack stack, int mouseX, int mouseY) {
         if (this.drawCount % 10 == 0) {
             int pixelColor = AbstractGuiUtils.getPixelArgb(mouseX, mouseY);
             float bgBrightness = ColorUtils.getBrightnessFromArgb(pixelColor);
@@ -152,7 +152,7 @@ public class MouseWidget extends BaseWidget {
     /**
      * 绘制指针形状
      */
-    private void drawPointerShape(MatrixStack stack, int x, int y, int colorLeft, int colorRight, int colorCenter) {
+    private void drawPointerShape(PoseStack stack, int x, int y, int colorLeft, int colorRight, int colorCenter) {
         // 中心/中键
         AbstractGuiUtils.drawPixel(stack, x, y, colorCenter);
         // 左键区域
@@ -232,7 +232,7 @@ public class MouseWidget extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用绘制（在顶层渲染）
      */
-    public void draw(MatrixStack stack, int mouseX, int mouseY) {
+    public void draw(PoseStack stack, int mouseX, int mouseY) {
         if (!visible) return;
         drawCursor(stack, mouseX, mouseY);
     }

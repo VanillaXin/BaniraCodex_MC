@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.enums;
 
+import lombok.Getter;
 import lombok.experimental.Accessors;
 
 /**
@@ -12,6 +13,7 @@ public enum EnumLogicalOperator {
     NOT("!"),
     ;
 
+    @Getter
     private final String operator;
 
     EnumLogicalOperator(String operator) {

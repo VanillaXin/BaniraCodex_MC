@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
@@ -32,11 +32,11 @@ public final class DimensionUtils {
      */
     private static final List<String> CLIENT_DIMENSION_IDS = new CopyOnWriteArrayList<>();
 
-    private static final List<String> DEFAULT_DIMENSION_IDS = Collections.unmodifiableList(Arrays.asList(
-            World.OVERWORLD.location().toString(),
-            World.NETHER.location().toString(),
-            World.END.location().toString()
-    ));
+    private static final List<String> DEFAULT_DIMENSION_IDS = List.of(
+            Level.OVERWORLD.location().toString(),
+            Level.NETHER.location().toString(),
+            Level.END.location().toString()
+    );
 
     /**
      * 是否已经向服务器请求过数据
@@ -44,24 +44,24 @@ public final class DimensionUtils {
     private static boolean requestedData = false;
 
 
-    public static RegistryKey<World> parse(String dimension) {
-        return RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimension));
+    public static ResourceKey<Level> parse(String dimension) {
+        return ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimension));
     }
 
-    public static RegistryKey<World> parse(ResourceLocation dimension) {
-        return RegistryKey.create(Registry.DIMENSION_REGISTRY, dimension);
+    public static ResourceKey<Level> parse(ResourceLocation dimension) {
+        return ResourceKey.create(Registry.DIMENSION_REGISTRY, dimension);
     }
 
-    public static ServerWorld getLevel(RegistryKey<World> dimension) {
+    public static ServerLevel getLevel(ResourceKey<Level> dimension) {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         return server != null ? server.getLevel(dimension) : null;
     }
 
-    public static ServerWorld getLevel(ResourceLocation dimension) {
+    public static ServerLevel getLevel(ResourceLocation dimension) {
         return getLevel(parse(dimension));
     }
 
-    public static ServerWorld getLevel(String dimension) {
+    public static ServerLevel getLevel(String dimension) {
         return getLevel(parse(dimension));
     }
 
@@ -73,11 +73,11 @@ public final class DimensionUtils {
         return ids;
     }
 
-    public static int getWorldMinY(World world) {
+    public static int getWorldMinY(Level world) {
         return 0;
     }
 
-    public static int getWorldMaxY(World world) {
+    public static int getWorldMaxY(Level world) {
         return world.getMaxBuildHeight();
     }
 

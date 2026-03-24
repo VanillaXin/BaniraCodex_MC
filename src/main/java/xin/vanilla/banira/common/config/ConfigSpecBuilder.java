@@ -36,7 +36,7 @@ public final class ConfigSpecBuilder {
     private final List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
     private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
 
-    private Deque<String> pathStack = new ArrayDeque<>();
+    private final Deque<String> pathStack = new ArrayDeque<>();
 
     private ConfigSpecBuilder(String configName, ModConfig.Type configType) {
         this.configName = configName;

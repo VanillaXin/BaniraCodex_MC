@@ -6,14 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Direction;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.Registry;
+import net.minecraft.world.level.Level;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
@@ -38,7 +38,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
     private double yaw = 0;
     private double pitch = 0;
     private double stepSize = 1;
-    private RegistryKey<World> dimension = World.OVERWORLD;
+    private ResourceKey<Level> dimension = Level.OVERWORLD;
     private Direction direction = null;
 
     // endregion Fields
@@ -50,8 +50,8 @@ public class WorldCoordinate implements Serializable, Cloneable {
         this.x = entity.getX();
         this.y = entity.getY();
         this.z = entity.getZ();
-        this.yaw = entity.yRot;
-        this.pitch = entity.xRot;
+        this.yaw = entity.getYRot();
+        this.pitch = entity.getXRot();
         this.dimension = entity.level.dimension();
     }
 
@@ -61,7 +61,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         this.z = z;
     }
 
-    public WorldCoordinate(double x, double y, double z, RegistryKey<World> dimension) {
+    public WorldCoordinate(double x, double y, double z, ResourceKey<Level> dimension) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -76,7 +76,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         this.pitch = pitch;
     }
 
-    public WorldCoordinate(double x, double y, double z, double yaw, double pitch, RegistryKey<World> dimension) {
+    public WorldCoordinate(double x, double y, double z, double yaw, double pitch, ResourceKey<Level> dimension) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -249,11 +249,11 @@ public class WorldCoordinate implements Serializable, Cloneable {
     }
 
 
-    public Vector3d toVector3d() {
-        return new Vector3d(x, y, z);
+    public Vec3 toVec3() {
+        return new Vec3(x, y, z);
     }
 
-    public WorldCoordinate fromVector3d(Vector3d pos) {
+    public WorldCoordinate fromVec3(Vec3 pos) {
         this.x = pos.x();
         this.y = pos.y();
         this.z = pos.z();
@@ -264,8 +264,8 @@ public class WorldCoordinate implements Serializable, Cloneable {
     /**
      * 序列化到 CompoundTag
      */
-    public CompoundNBT toTag() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag toTag() {
+        CompoundTag tag = new CompoundTag();
         tag.putDouble("x", x);
         tag.putDouble("y", y);
         tag.putDouble("z", z);
@@ -278,14 +278,14 @@ public class WorldCoordinate implements Serializable, Cloneable {
     /**
      * 从CompoundTag反序列化
      */
-    public static WorldCoordinate fromTag(CompoundNBT tag) {
+    public static WorldCoordinate fromTag(CompoundTag tag) {
         WorldCoordinate coordinate = new WorldCoordinate();
         coordinate.x = tag.getDouble("x");
         coordinate.y = tag.getDouble("y");
         coordinate.z = tag.getDouble("z");
         coordinate.yaw = tag.getDouble("yaw");
         coordinate.pitch = tag.getDouble("pitch");
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(tag.getString("dimension")));
+        coordinate.dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(tag.getString("dimension")));
         return coordinate;
     }
 
@@ -328,8 +328,8 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.z = JsonUtils.getDouble(json, "z", 0);
         coordinate.yaw = JsonUtils.getDouble(json, "yaw", 0);
         coordinate.pitch = JsonUtils.getDouble(json, "pitch", 0);
-        String dimensionStr = JsonUtils.getString(json, "dimension", World.OVERWORLD.location().toString());
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimensionStr));
+        String dimensionStr = JsonUtils.getString(json, "dimension", Level.OVERWORLD.location().toString());
+        coordinate.dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimensionStr));
         return coordinate;
     }
 
@@ -341,12 +341,12 @@ public class WorldCoordinate implements Serializable, Cloneable {
         try {
             String[] split = str.split(",");
             if (split.length == 5) {
-                RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                ResourceKey<Level> dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
                 Direction direction = valuOfDirection(split[4].trim());
                 result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension).direction(direction);
             } else if (split.length == 4) {
                 if (split[0].contains(":")) {
-                    RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                    ResourceKey<Level> dimension = ResourceKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
                     result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension);
                 } else if (Arrays.stream(Direction.values()).anyMatch(dir -> dir.getName().equals(split[3].trim()))) {
                     Direction direction = valuOfDirection(split[3].trim());

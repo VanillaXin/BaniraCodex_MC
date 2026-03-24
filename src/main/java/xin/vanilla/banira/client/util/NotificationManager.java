@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
@@ -19,7 +19,6 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -66,7 +65,7 @@ public final class NotificationManager {
      * 获取持久化的通知日志
      */
     public List<NotificationLogEntry> getLog() {
-        return Collections.unmodifiableList(new ArrayList<>(log));
+        return List.copyOf(log);
     }
 
     /**
@@ -101,7 +100,7 @@ public final class NotificationManager {
         File file = path.toFile();
         if (!file.exists()) return;
         try {
-            String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+            String content = Files.readString(path);
             JsonObject root = JsonUtils.parseObject(content);
             JsonElement entriesEl = root.get("entries");
             if (entriesEl == null || !entriesEl.isJsonArray()) return;
@@ -155,7 +154,7 @@ public final class NotificationManager {
                     arr.add(obj);
                 }
                 root.add("entries", arr);
-                Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+                Files.writeString(path, JsonUtils.toPrettyString(root));
             } catch (Exception e) {
                 LOGGER.warn("Failed to save notification log: {}", e.getMessage());
             }
@@ -163,7 +162,7 @@ public final class NotificationManager {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public void render(MatrixStack stack) {
+    public void render(PoseStack stack) {
         Minecraft mc = Minecraft.getInstance();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
                 .width(mc.getWindow().getGuiScaledWidth())

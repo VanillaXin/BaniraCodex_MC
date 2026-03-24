@@ -1,19 +1,22 @@
 package xin.vanilla.banira.client.util;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.renderer.texture.MissingTextureSprite;
-import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
@@ -22,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,7 +72,7 @@ public final class TextureUtils {
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
         ResourceLocation rl = factory.create(safePath);
-        IResourceManager resourceManager = mc.getResourceManager();
+        ResourceManager resourceManager = mc.getResourceManager();
         TextureManager textureManager = mc.getTextureManager();
 
         // region 资源包纹理
@@ -121,27 +126,25 @@ public final class TextureUtils {
         if (location == null) {
             return false;
         }
-        if (MissingTextureSprite.getLocation().equals(location)) {
+        if (MissingTextureAtlasSprite.getLocation().equals(location)) {
             return false;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
+        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+        DynamicTexture miss = MissingTextureAtlasSprite.getTexture();
+        AbstractTexture texture = textureManager.getTexture(location, miss);
+        if (texture == miss) {
             return false;
         }
-        TextureManager textureManager = mc.getTextureManager();
-        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
-        if (texture == null) {
-            return mc.getResourceManager().hasResource(location);
-        }
+        // 确保纹理已经加载
         return texture.getId() != -1;
     }
 
     /**
      * 获取药水效果图标
      */
-    public static ResourceLocation getEffectTexture(IIdentifier factory, EffectInstance effectInstance) {
+    public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = effectInstance.getEffect().getRegistryName();
+        ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(effectInstance.getEffect());
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
@@ -258,16 +261,18 @@ public final class TextureUtils {
             if (mc == null) {
                 return null;
             }
-            net.minecraft.client.renderer.texture.Texture gpuTexture = mc.getTextureManager().getTexture(texture);
+            AbstractTexture gpuTexture = mc.getTextureManager().getTexture(texture);
             if (gpuTexture instanceof DynamicTexture) {
                 return ((DynamicTexture) gpuTexture).getPixels();
             }
             return null;
         }
         try {
-            // 获取资源管理器
-            IResource resource = Minecraft.getInstance().getResourceManager().getResource(texture);
-            // 打开资源输入流并加载为 NativeImage
+            ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
+            if (!resourceManager.hasResource(texture)) {
+                return null;
+            }
+            Resource resource = resourceManager.getResource(texture);
             try (InputStream inputStream = resource.getInputStream()) {
                 NativeImage nativeImage = NativeImage.read(inputStream);
                 CACHE.put(texture, nativeImage);
@@ -347,8 +352,8 @@ public final class TextureUtils {
 
         // 解析水平引导线
         // 找出所有分割点和每个区域是否可拉伸
-        java.util.List<Integer> horizontalDivs = new java.util.ArrayList<>();
-        java.util.List<Boolean> horizontalStretch = new java.util.ArrayList<>();
+        List<Integer> horizontalDivs = new ArrayList<>();
+        List<Boolean> horizontalStretch = new ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
         int firstPixel = image.getPixelRGBA(contentStartX, textureStartY);
@@ -385,8 +390,8 @@ public final class TextureUtils {
 
         // 解析垂直引导线
         // 找出所有分割点和每个区域是否可拉伸
-        java.util.List<Integer> verticalDivs = new java.util.ArrayList<>();
-        java.util.List<Boolean> verticalStretch = new java.util.ArrayList<>();
+        List<Integer> verticalDivs = new ArrayList<>();
+        List<Boolean> verticalStretch = new ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
         int firstVPixel = image.getPixelRGBA(textureStartX, contentStartY);
@@ -533,7 +538,7 @@ public final class TextureUtils {
     }
 
     /**
-     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.Client} 触发。
+     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link BaniraClientEventHub.Client} 触发。
      */
     public static void resourceReloadEvent() {
         clearAll();

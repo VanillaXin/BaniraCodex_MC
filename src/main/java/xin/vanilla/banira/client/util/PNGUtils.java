@@ -405,7 +405,7 @@ public final class PNGUtils {
             while ((len = inflater.read(buffer)) != -1) {
                 baos.write(buffer, 0, len);
             }
-            return baos.toString(StandardCharsets.UTF_8.name());
+            return baos.toString(StandardCharsets.UTF_8);
         }
     }
 

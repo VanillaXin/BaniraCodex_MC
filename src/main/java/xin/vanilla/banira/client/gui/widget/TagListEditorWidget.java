@@ -1,13 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import xin.vanilla.banira.BaniraCodex;
+import net.minecraft.client.gui.Font;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -137,7 +136,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     /**
      * 清空前保存的列表，用于撤销
      */
-    private List<Object> lastClearedItems = new ArrayList<>();
+    private final List<Object> lastClearedItems = new ArrayList<>();
 
     private ButtonWidget clearButton;
     private TooltipWidget clearButtonTooltip;
@@ -416,8 +415,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         addChild(addConfirmButton);
 
-        if (addInputWidget instanceof DropdownSelectWidget) {
-            DropdownSelectWidget dd = (DropdownSelectWidget) addInputWidget;
+        if (addInputWidget instanceof DropdownSelectWidget dd) {
             dd.excludedCloseAreasSupplier(() -> {
                 if (addConfirmButton == null) return Collections.emptyList();
                 return Collections.singletonList(new ScreenCoordinate(
@@ -435,8 +433,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private void confirmAddFromInput() {
         if (addInputWidget == null) return;
         boolean added = false;
-        if (addInputWidget instanceof DropdownSelectWidget) {
-            DropdownSelectWidget dropdown = (DropdownSelectWidget) addInputWidget;
+        if (addInputWidget instanceof DropdownSelectWidget dropdown) {
             List<String> sel = dropdown.getSelectedValues();
             for (String v : sel) {
                 if (v == null || v.trim().isEmpty()) continue;
@@ -454,8 +451,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 added = true;
                 ((InputWidget) addInputWidget).value("");
             }
-        } else if (addInputWidget instanceof NumericInputWidget) {
-            NumericInputWidget numInput = (NumericInputWidget) addInputWidget;
+        } else if (addInputWidget instanceof NumericInputWidget numInput) {
             String v = numInput.value();
             if (v == null || v.trim().isEmpty()) return;
             items.add(numInput.getParsedValue());
@@ -706,7 +702,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
         ensureChildren();
 
@@ -803,7 +799,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
 
-        FontRenderer font = Minecraft.getInstance().font;
+        Font font = Minecraft.getInstance().font;
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
@@ -869,14 +865,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         return String.valueOf(item);
     }
 
-    private void drawArrowDown(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
     }
 
-    private void drawArrowRight(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowRight(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
@@ -940,8 +936,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         // region 行内编辑失焦则取消（恢复原列表显示，等同 Esc，不提交）
-        if (expanded && editingIndex >= 0 && editWidget instanceof BaseWidget) {
-            BaseWidget eb = (BaseWidget) editWidget;
+        if (expanded && editingIndex >= 0 && editWidget instanceof BaseWidget eb) {
             if (eb.focused()) {
                 inlineEditHadFocus = true;
             } else if (inlineEditHadFocus) {

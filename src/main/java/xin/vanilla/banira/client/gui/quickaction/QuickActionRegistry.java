@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Effect;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +25,7 @@ import static java.util.Collections.emptyList;
  * 注册为 {@link EnumQuickActionDisplay#ICON} 的项显示在图标组；
  * {@link EnumQuickActionDisplay#LIST_ONLY} 仅出现在「菜单锚点」图标的右键下拉列表中。
  * </p>
- * <p>图标可使用 {@link ItemStack}、{@link Item}、{@link Effect} 或 {@link ResourceLocation}（纹理），见各类 {@code register*} 重载。</p>
+ * <p>图标可使用 {@link ItemStack}、{@link Item}、{@link MobEffect} 或 {@link ResourceLocation}（纹理），见各类 {@code register*} 重载。</p>
  * <p>可选在注册时附加 {@link QuickActionContextMenuItem}，在<strong>右键该托盘图标</strong>时与「隐藏此格」一并显示；左键点击图标仍触发 {@code onActivate}。</p>
  * <p><b>接入示例</b>（仅在客户端线程调用）：</p>
  * <pre>{@code
@@ -110,7 +110,7 @@ public final class QuickActionRegistry {
 
     public void registerIcon(
             @Nonnull String id,
-            @Nonnull Effect effect,
+            @Nonnull MobEffect effect,
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action
     ) {
@@ -148,7 +148,7 @@ public final class QuickActionRegistry {
 
     public void registerIcon(
             @Nonnull String id,
-            @Nonnull Effect effect,
+            @Nonnull MobEffect effect,
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action,
             @Nonnull QuickActionContextMenuItem... contextMenuItems
@@ -217,7 +217,7 @@ public final class QuickActionRegistry {
 
     public void registerListOnly(
             @Nonnull String id,
-            @Nonnull Effect effect,
+            @Nonnull MobEffect effect,
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action
     ) {
@@ -255,7 +255,7 @@ public final class QuickActionRegistry {
 
     public void registerListOnly(
             @Nonnull String id,
-            @Nonnull Effect effect,
+            @Nonnull MobEffect effect,
             @Nonnull Component label,
             @Nullable Consumer<QuickActionContext> action,
             @Nonnull QuickActionContextMenuItem... contextMenuItems

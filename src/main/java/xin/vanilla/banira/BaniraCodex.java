@@ -3,9 +3,9 @@ package xin.vanilla.banira;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.storage.FolderName;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
@@ -52,7 +52,7 @@ public class BaniraCodex {
      * 玩家数据管理器
      */
     public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(() ->
-                    serverInstance().key().getWorldPath(FolderName.PLAYER_DATA_DIR)
+                    serverInstance().key().getWorldPath(LevelResource.PLAYER_DATA_DIR)
             , MODID
             , StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
     );
@@ -111,7 +111,7 @@ public class BaniraCodex {
                 playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
         );
         BaniraEventBus.Player.onLoggedOut(player -> {
-            if (player instanceof ServerPlayerEntity) {
+            if (player instanceof ServerPlayer) {
                 PlayerUtils.removePlayerDataStatus(player);
             }
         });

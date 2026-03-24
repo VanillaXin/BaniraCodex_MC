@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -11,7 +11,6 @@ import xin.vanilla.banira.internal.network.data.AdvancementData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 @Getter
@@ -25,7 +24,7 @@ public class AdvancementToClient extends SplitPacket
         this.advancements = advancements;
     }
 
-    public AdvancementToClient(PacketBuffer buf) {
+    public AdvancementToClient(FriendlyByteBuf buf) {
         super(buf);
         int size = buf.readVarInt();
         ArraySet<AdvancementData> advancements = new ArraySet<>();
@@ -38,7 +37,7 @@ public class AdvancementToClient extends SplitPacket
     private AdvancementToClient(List<AdvancementToClient> packets) {
         super();
         this.advancements = new ArraySet<>();
-        this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).collect(Collectors.toList()));
+        this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).toList());
     }
 
     /**
@@ -87,7 +86,7 @@ public class AdvancementToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
         buf.writeVarInt(this.advancements.size());
         for (AdvancementData data : this.advancements) {

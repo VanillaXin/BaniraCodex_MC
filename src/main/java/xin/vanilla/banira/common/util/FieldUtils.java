@@ -399,8 +399,7 @@ public final class FieldUtils {
         }
         if (targetType == char.class || targetType == Character.class) {
             if (value instanceof Character) return value;
-            if (value instanceof String) {
-                String str = (String) value;
+            if (value instanceof String str) {
                 return str.isEmpty() ? '\u0000' : str.charAt(0);
             }
         }

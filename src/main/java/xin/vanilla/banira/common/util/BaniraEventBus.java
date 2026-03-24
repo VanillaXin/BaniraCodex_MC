@@ -1,24 +1,23 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.EntityTeleportEvent;
+import net.minecraftforge.event.entity.EntityTeleportEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStartedEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStartingEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,13 +60,13 @@ public final class BaniraEventBus {
     private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
+    private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedInCallbacks = new ArrayList<>();
+    private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedOutCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEvent.PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<ServerPlayer>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
     private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
@@ -154,11 +153,11 @@ public final class BaniraEventBus {
         private Player() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
             playerLoggedInCallbacks.add(callback);
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
             playerLoggedOutCallbacks.add(callback);
         }
 
@@ -169,10 +168,10 @@ public final class BaniraEventBus {
         /**
          * 仅当玩家进入新维度时触发
          */
-        public static void onEnterDimension(@Nonnull Consumer<ServerPlayerEntity> callback) {
+        public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayerEntity) {
-                    callback.accept((ServerPlayerEntity) event.getPlayer());
+                if (event.getPlayer() instanceof ServerPlayer) {
+                    callback.accept((ServerPlayer) event.getPlayer());
                 }
             });
         }
@@ -180,15 +179,15 @@ public final class BaniraEventBus {
         /**
          * 仅当玩家退出维度时触发
          */
-        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayerEntity, RegistryKey<World>> callback) {
+        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayerEntity) {
-                    callback.accept((ServerPlayerEntity) event.getPlayer(), event.getFrom());
+                if (event.getPlayer() instanceof ServerPlayer) {
+                    callback.accept((ServerPlayer) event.getPlayer(), event.getFrom());
                 }
             });
         }
 
-        public static void onSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
+        public static void onSave(@Nonnull Consumer<ServerPlayer> callback) {
             playerSaveCallbacks.add(callback);
         }
 
@@ -223,7 +222,7 @@ public final class BaniraEventBus {
             chunkSaveCallbacks.add(callback);
         }
 
-        public static void onPlayerSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
+        public static void onPlayerSave(@Nonnull Consumer<ServerPlayer> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
@@ -233,7 +232,7 @@ public final class BaniraEventBus {
     // region 分类 API：WorldEvents
 
     /**
-     * 世界加载/卸载与世界级 Tick（与 {@link net.minecraft.world.World} 区分命名）
+     * 世界加载/卸载与世界级 Tick（与 {@link Level} 区分命名）
      */
     public static final class WorldEvents {
         private WorldEvents() {
@@ -366,7 +365,7 @@ public final class BaniraEventBus {
 
     @SubscribeEvent
     public static void onWorldSave(WorldEvent.Save event) {
-        IWorld world = event.getWorld();
+        LevelAccessor world = event.getWorld();
         if (!world.isClientSide()) {
             fire(worldSaveCallbacks, "world save");
         }
@@ -374,7 +373,7 @@ public final class BaniraEventBus {
 
     @SubscribeEvent
     public static void onChunkSave(ChunkEvent.Save event) {
-        IWorld world = event.getWorld();
+        LevelAccessor world = event.getWorld();
         if (world != null && !world.isClientSide()) {
             fire(chunkSaveCallbacks, "chunk save");
         }
@@ -382,9 +381,9 @@ public final class BaniraEventBus {
 
     @SubscribeEvent
     public static void onPlayerSaveToFile(PlayerEvent.SaveToFile event) {
-        PlayerEntity player = event.getPlayer();
-        if (player instanceof ServerPlayerEntity) {
-            fire(playerSaveCallbacks, (ServerPlayerEntity) player, "player save");
+        net.minecraft.world.entity.player.Player player = event.getPlayer();
+        if (player instanceof ServerPlayer) {
+            fire(playerSaveCallbacks, (ServerPlayer) player, "player save");
         }
     }
 

@@ -12,9 +12,8 @@ public enum EnumOperationType {
 
     public static EnumOperationType valueOfEx(Object type) {
         if (type instanceof EnumOperationType) return (EnumOperationType) type;
-        if (type instanceof String) {
+        if (type instanceof String str) {
             for (EnumOperationType value : values()) {
-                String str = (String) type;
                 if (value.name().equalsIgnoreCase(str) || value.name().equals(str)) {
                     return value;
                 }

@@ -2,8 +2,8 @@ package xin.vanilla.banira.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
@@ -25,12 +25,12 @@ public class BaniraCommand {
     /**
      * LANGUAGE 子指令结构
      */
-    public static final LiteralArgumentBuilder<CommandSource> LANGUAGE = LanguageCommand.create();
+    public static final LiteralArgumentBuilder<CommandSourceStack> LANGUAGE = LanguageCommand.create();
 
     /**
      * VIRTUAL_OP 子指令结构
      */
-    public static final LiteralArgumentBuilder<CommandSource> VIRTUAL_OP = VirtualOpCommand.create();
+    public static final LiteralArgumentBuilder<CommandSourceStack> VIRTUAL_OP = VirtualOpCommand.create();
 
     /**
      * 与非精简版完全相同的精简版条目不进入帮助列表，避免同一指令出现两行
@@ -94,10 +94,10 @@ public class BaniraCommand {
      *
      * @param dispatcher 命令调度器
      */
-    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         refreshHelpMessage();
 
-        LiteralArgumentBuilder<CommandSource> mainCommand = Commands.literal(getCommandPrefix());
+        LiteralArgumentBuilder<CommandSourceStack> mainCommand = Commands.literal(getCommandPrefix());
 
         mainCommand.executes(HelpCommand::execute);
 

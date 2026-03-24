@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class RequestToBoth {
     /**
      * 请求类型ID到处理器的映射
      */
-    private static final Map<Integer, BiConsumer<RequestToBoth, ServerPlayerEntity>> handlers = new HashMap<>();
+    private static final Map<Integer, BiConsumer<RequestToBoth, ServerPlayer>> handlers = new HashMap<>();
 
     /**
      * 请求包的类型ID
@@ -32,11 +32,11 @@ public class RequestToBoth {
         this.requestType = requestType;
     }
 
-    public RequestToBoth(PacketBuffer buf) {
+    public RequestToBoth(FriendlyByteBuf buf) {
         this.requestType = buf.readVarInt();
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeVarInt(this.requestType);
     }
 
@@ -46,7 +46,7 @@ public class RequestToBoth {
      * @param requestType 请求类型ID
      * @param handler     处理器
      */
-    public static void registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayerEntity> handler) {
+    public static void registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayer> handler) {
         handlers.put(requestType, handler);
     }
 
@@ -59,9 +59,9 @@ public class RequestToBoth {
     public static void handle(RequestToBoth packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                ServerPlayerEntity player = ctx.get().getSender();
+                ServerPlayer player = ctx.get().getSender();
                 if (player != null) {
-                    BiConsumer<RequestToBoth, ServerPlayerEntity> handler = handlers.get(packet.getRequestType());
+                    BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
                     if (handler != null) {
                         handler.accept(packet, player);
                     }

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.player;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.util.NBTUtils;
@@ -74,10 +74,10 @@ public final class PlayerDataManager {
 
 
     private static final class CachedPlayerData {
-        volatile CompoundNBT root;
+        volatile CompoundTag root;
         volatile boolean dirty = false;
 
-        CachedPlayerData(CompoundNBT root) {
+        CachedPlayerData(CompoundTag root) {
             this.root = root;
         }
     }
@@ -95,7 +95,7 @@ public final class PlayerDataManager {
      *
      * @return 缓存中节点的引用
      */
-    public CompoundNBT getOrCreate(UUID playerUuid) {
+    public CompoundTag getOrCreate(UUID playerUuid) {
         return getOrCreate(playerUuid, this.modId);
     }
 
@@ -104,10 +104,10 @@ public final class PlayerDataManager {
      *
      * @return 缓存中节点的引用
      */
-    public CompoundNBT getOrCreate(UUID playerUuid, String modId) {
+    public CompoundTag getOrCreate(UUID playerUuid, String modId) {
         CachedPlayerData cached = loadRootIfAbsent(playerUuid);
         synchronized (cached) {
-            CompoundNBT node = cached.root.contains(modId, 10) ? cached.root.getCompound(modId) : new CompoundNBT();
+            CompoundTag node = cached.root.contains(modId, 10) ? cached.root.getCompound(modId) : new CompoundTag();
             cached.root.put(modId, node);
             cached.dirty = true;
             return node;
@@ -118,7 +118,7 @@ public final class PlayerDataManager {
      * 覆盖某个 mod 的节点
      * tag 为 null 时会移除该节点，但不从 cache 中移除整玩家数据
      */
-    public void put(UUID playerUuid, CompoundNBT tag) {
+    public void put(UUID playerUuid, CompoundTag tag) {
         put(playerUuid, this.modId, tag);
     }
 
@@ -126,7 +126,7 @@ public final class PlayerDataManager {
      * 覆盖某个 mod 的节点
      * tag 为 null 时会移除该节点，但不从 cache 中移除整玩家数据
      */
-    public void put(UUID playerUuid, String modId, CompoundNBT tag) {
+    public void put(UUID playerUuid, String modId, CompoundTag tag) {
         CachedPlayerData cached = loadRootIfAbsent(playerUuid);
         synchronized (cached) {
             if (tag == null) {
@@ -144,20 +144,20 @@ public final class PlayerDataManager {
     /**
      * 从磁盘读取某玩家的 root 并返回该 mod 的节点
      */
-    public CompoundNBT loadFromDisk(UUID playerUuid) {
+    public CompoundTag loadFromDisk(UUID playerUuid) {
         return loadFromDisk(playerUuid, this.modId);
     }
 
     /**
      * 从磁盘读取某玩家的 root 并返回该 mod 的节点
      */
-    public CompoundNBT loadFromDisk(UUID playerUuid, String modId) {
+    public CompoundTag loadFromDisk(UUID playerUuid, String modId) {
         CachedPlayerData cached = loadRootFromDisk(playerUuid);
         synchronized (cached) {
             if (cached.root.contains(modId, 10)) {
                 return cached.root.getCompound(modId);
             } else {
-                CompoundNBT node = new CompoundNBT();
+                CompoundTag node = new CompoundTag();
                 cached.root.put(modId, node);
                 cached.dirty = true;
                 return node;
@@ -249,17 +249,17 @@ public final class PlayerDataManager {
             existing = playerCache.get(playerUuid);
             if (existing != null) return existing;
 
-            CompoundNBT root;
+            CompoundTag root;
             if (file.exists()) {
                 try {
                     root = NBTUtils.readCompressed(file);
                 } catch (Exception e) {
                     LOGGER.warn("PlayerDataManager[{}] failed to read {}, using empty root. Error: {}",
                             suffix, file.getAbsolutePath(), e.getMessage());
-                    root = new CompoundNBT();
+                    root = new CompoundTag();
                 }
             } else {
-                root = new CompoundNBT();
+                root = new CompoundTag();
             }
             CachedPlayerData cached = new CachedPlayerData(root);
             playerCache.put(playerUuid, cached);
@@ -278,17 +278,17 @@ public final class PlayerDataManager {
         ReentrantLock lock = fileLocks.computeIfAbsent(filePath, p -> new ReentrantLock());
         lock.lock();
         try {
-            CompoundNBT root;
+            CompoundTag root;
             if (file.exists()) {
                 try {
                     root = NBTUtils.readCompressed(file);
                 } catch (Exception e) {
                     LOGGER.warn("PlayerDataManager[{}] failed to read {}, using empty root. Error: {}",
                             suffix, file.getAbsolutePath(), e.getMessage());
-                    root = new CompoundNBT();
+                    root = new CompoundTag();
                 }
             } else {
-                root = new CompoundNBT();
+                root = new CompoundTag();
             }
             CachedPlayerData cached = new CachedPlayerData(root);
             playerCache.put(playerUuid, cached);
@@ -309,7 +309,7 @@ public final class PlayerDataManager {
         return new File(dir, uuid + ".nbt");
     }
 
-    private void atomicWrite(CompoundNBT root, File target) throws IOException {
+    private void atomicWrite(CompoundTag root, File target) throws IOException {
         File dir = target.getParentFile();
         File tmpFile = new File(dir, target.getName() + ".tmp");
         File bakFile = new File(dir, target.getName() + ".bak");

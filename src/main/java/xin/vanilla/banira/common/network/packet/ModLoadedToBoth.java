@@ -2,9 +2,9 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import xin.vanilla.banira.common.util.PlayerUtils;
 
 import java.util.function.Supplier;
@@ -20,18 +20,18 @@ public class ModLoadedToBoth {
         this.modid = modid;
     }
 
-    public ModLoadedToBoth(PacketBuffer buf) {
+    public ModLoadedToBoth(FriendlyByteBuf buf) {
         this.modid = buf.readUtf(256);
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(this.modid != null ? this.modid : "", 256);
     }
 
     public static void handle(ModLoadedToBoth packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                ServerPlayerEntity player = ctx.get().getSender();
+                ServerPlayer player = ctx.get().getSender();
                 if (player != null && packet.modid() != null && !packet.modid().isEmpty()) {
                     PlayerUtils.setPlayerModInstalled(player, packet.modid(), false);
                 }

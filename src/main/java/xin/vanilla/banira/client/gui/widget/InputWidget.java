@@ -1,16 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.Style;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -281,8 +280,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private BiFunction<String, Integer, IReorderingProcessor> formatter = (text, pos) ->
-            IReorderingProcessor.forward(text, Style.EMPTY);
+    private BiFunction<String, Integer, FormattedCharSequence> formatter = (text, pos) ->
+            FormattedCharSequence.forward(text, Style.EMPTY);
 
     /**
      * 文本变化回调
@@ -346,7 +345,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 字体渲染
      */
-    private final FontRenderer font;
+    private final Font font;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -367,7 +366,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     // region 渲染
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -388,7 +387,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         renderChildren(stack, partialTicks);
     }
 
-    private void render(MatrixStack stack, int x, int y, int width, int height) {
+    private void render(PoseStack stack, int x, int y, int width, int height) {
         int drawX = x + marginLeft;
         int drawY = y + marginTop;
         int drawWidth = width - marginLeft - marginRight;
@@ -574,9 +573,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private static final int SELECTION_HIGHLIGHT_COLOR = 0x40000080;
 
     /**
-     * 绘制文本选择高亮。使用 MatrixStack 确保在嵌套父级时坐标正确。
+     * 绘制文本选择高亮。使用 PoseStack 确保在嵌套父级时坐标正确。
      */
-    private void renderHighlight(MatrixStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
+    private void renderHighlight(PoseStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
         if (x1 > x2) {
             int temp = x1;
             x1 = x2;
@@ -656,7 +655,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。默认跟随主题配置。
      */
-    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text) {
+    protected void drawTooltipAtScreenCoords(PoseStack stack, double mx, double my, Text text) {
         drawTooltipAtScreenCoords(stack, mx, my, text, EnumTooltipTextureMode.AUTO);
     }
 
@@ -665,7 +664,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      *
      * @param textureMode AUTO 时使用主题配置，TEXTURE/COLOR 时使用指定模式
      */
-    protected void drawTooltipAtScreenCoords(MatrixStack stack, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
+    protected void drawTooltipAtScreenCoords(PoseStack stack, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
         if (screen == null) return;
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason season = screen.season();
@@ -685,7 +684,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     // endregion 渲染
 
-    private static void drawClearIcon(MatrixStack stack, int centerX, int centerY, int color) {
+    private static void drawClearIcon(PoseStack stack, int centerX, int centerY, int color) {
         float r = CLEAR_BUTTON_RADIUS * 0.4f; // x 略小于圆的 1/2
         AbstractGuiUtils.drawLine(stack, centerX - r, centerY - r, centerX + r, centerY + r, 1f, color);
         AbstractGuiUtils.drawLine(stack, centerX + r, centerY - r, centerX - r, centerY + r, 1f, color);
@@ -782,7 +781,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
         if (area == 2) {
             LAST_CLICK_TIME = System.currentTimeMillis();
-            int clickX = MathHelper.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
+            int clickX = Mth.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
             String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
@@ -944,9 +943,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.error = false;
         }
         int valueLength = value.length();
-        this.displayPos = MathHelper.clamp(this.displayPos, 0, valueLength);
-        this.highlightPos = MathHelper.clamp(this.highlightPos, 0, valueLength);
-        this.cursorPosition = MathHelper.clamp(this.cursorPosition, 0, valueLength);
+        this.displayPos = Mth.clamp(this.displayPos, 0, valueLength);
+        this.highlightPos = Mth.clamp(this.highlightPos, 0, valueLength);
+        this.cursorPosition = Mth.clamp(this.cursorPosition, 0, valueLength);
         this.updateDisplayPos();
         if (onTextChanged != null) {
             onTextChanged.accept(value);
@@ -957,7 +956,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 设置光标位置
      */
     public void setCursorPosition(int pos) {
-        int newPos = MathHelper.clamp(pos, 0, value.length());
+        int newPos = Mth.clamp(pos, 0, value.length());
         if (this.cursorPosition != newPos) {
             long now = System.currentTimeMillis();
             LAST_CLICK_TIME = now;
@@ -981,7 +980,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 移动光标
      */
     public void moveCursor(int num) {
-        int newPos = MathHelper.clamp(this.cursorPosition + num, 0, value.length());
+        int newPos = Mth.clamp(this.cursorPosition + num, 0, value.length());
         setCursorPosition(newPos);
     }
 
@@ -1026,7 +1025,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (value.isEmpty()) {
             return;
         }
-        int pos = MathHelper.clamp(cursorPosition, 0, value.length());
+        int pos = Mth.clamp(cursorPosition, 0, value.length());
         int refPos = pos;
         if (pos < value.length() && StringUtils.isWordBoundaryWhitespace(value.charAt(pos))) {
             int idx = pos - 1;
@@ -1050,7 +1049,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private void updateHighlightPos(int pos) {
         String value = this.value;
         int valueLength = value.length();
-        this.highlightPos = MathHelper.clamp(pos, 0, valueLength);
+        this.highlightPos = Mth.clamp(pos, 0, valueLength);
         this.updateDisplayPos();
     }
 
@@ -1151,7 +1150,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        this.displayPos = MathHelper.clamp(this.displayPos, 0, valueLength);
+        this.displayPos = Mth.clamp(this.displayPos, 0, valueLength);
     }
 
     @Override
@@ -1177,8 +1176,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         String value = this.value;
         int valueLen = value.length();
-        int cursorPos = MathHelper.clamp(this.cursorPosition, 0, valueLen);
-        int highlightPos = MathHelper.clamp(this.highlightPos, 0, valueLen);
+        int cursorPos = Mth.clamp(this.cursorPosition, 0, valueLen);
+        int highlightPos = Mth.clamp(this.highlightPos, 0, valueLen);
         int start = Math.min(cursorPos, highlightPos);
         int end = Math.max(cursorPos, highlightPos);
         boolean hasSelection = start != end;
@@ -1297,7 +1296,6 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 获取选中的文本
      */
-    @MethodsReturnNonnullByDefault
     public String getHighlighted() {
         int start = Math.min(this.cursorPosition, this.highlightPos);
         int end = Math.max(this.cursorPosition, this.highlightPos);

@@ -10,7 +10,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
@@ -751,7 +751,7 @@ public final class QuickActionOverlay {
         stack.popPose();
 
         if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
-            screen.renderTooltip(stack, new TextComponent(contextTooltipLine), mouseX, mouseY);
+            screen.renderTooltip(stack, Component.literal(contextTooltipLine), mouseX, mouseY);
         }
 
         renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);

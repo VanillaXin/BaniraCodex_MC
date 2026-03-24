@@ -3,7 +3,12 @@ package xin.vanilla.banira.client.event;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.*;
+import net.minecraftforge.client.event.ClientChatEvent;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.client.event.TextureStitchEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.logging.log4j.LogManager;
@@ -37,15 +42,15 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<ScreenOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
+    private static final List<Consumer<ScreenEvent.Opening>> clientGuiChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<TextureStitchEvent.Post>> clientTextureReloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<ScreenEvent.DrawScreenEvent.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<ScreenEvent.Render.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<RenderGuiOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
 
     private static final List<Consumer<TickEvent.ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
     private static final List<Consumer<ClientChatEvent>> clientChatCallbacks = new ArrayList<>();
     private static final List<Consumer<ScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<RenderGuiOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
 
     private static final List<Consumer<FMLClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
 
@@ -72,8 +77,8 @@ public final class BaniraClientEventHub {
         });
         Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getPoseStack()));
         Client.onRenderOverlayPost(event -> {
-            if (event.getType() == RenderGameOverlayEvent.ElementType.ALL && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.getMatrixStack());
+            if (VanillaGuiOverlay.PLAYER_LIST.id().equals(event.getOverlay().id()) && Minecraft.getInstance().screen == null) {
+                NotificationManager.get().render(event.getPoseStack());
             }
         });
     }
@@ -82,11 +87,11 @@ public final class BaniraClientEventHub {
         fire(modClientSetupCallbacks, event, "mod client setup");
     }
 
-    public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+    public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
     }
 
-    public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+    public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
     }
 
@@ -103,7 +108,7 @@ public final class BaniraClientEventHub {
         fire(clientGuiScreenCallbacks, event, "client gui screen");
     }
 
-    public static void dispatchRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+    public static void dispatchRenderOverlayPre(RenderGuiOverlayEvent.Pre event) {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
@@ -130,11 +135,11 @@ public final class BaniraClientEventHub {
         private Client() {
         }
 
-        public static void onGuiChanged(@Nonnull Consumer<ScreenOpenEvent> callback) {
+        public static void onGuiChanged(@Nonnull Consumer<ScreenEvent.Opening> callback) {
             clientGuiChangedCallbacks.add(callback);
         }
 
-        public static void fireGuiChanged(ScreenOpenEvent event) {
+        public static void fireGuiChanged(ScreenEvent.Opening event) {
             fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
 
@@ -142,11 +147,11 @@ public final class BaniraClientEventHub {
             clientTextureReloadCallbacks.add(callback);
         }
 
-        public static void onDrawScreenPost(@Nonnull Consumer<ScreenEvent.DrawScreenEvent.Post> callback) {
+        public static void onDrawScreenPost(@Nonnull Consumer<ScreenEvent.Render.Post> callback) {
             clientDrawScreenPostCallbacks.add(callback);
         }
 
-        public static void onRenderOverlayPost(@Nonnull Consumer<RenderGameOverlayEvent.Post> callback) {
+        public static void onRenderOverlayPost(@Nonnull Consumer<RenderGuiOverlayEvent.Post> callback) {
             clientRenderOverlayPostCallbacks.add(callback);
         }
 
@@ -162,7 +167,7 @@ public final class BaniraClientEventHub {
             clientGuiScreenCallbacks.add(callback);
         }
 
-        public static void onRenderOverlayPre(@Nonnull Consumer<RenderGameOverlayEvent.Pre> callback) {
+        public static void onRenderOverlayPre(@Nonnull Consumer<RenderGuiOverlayEvent.Pre> callback) {
             clientRenderOverlayPreCallbacks.add(callback);
         }
 
@@ -170,11 +175,11 @@ public final class BaniraClientEventHub {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
 
-        public static void fireDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
+        public static void fireDrawScreenPost(ScreenEvent.Render.Post event) {
             fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
         }
 
-        public static void fireRenderOverlayPost(RenderGameOverlayEvent.Post event) {
+        public static void fireRenderOverlayPost(RenderGuiOverlayEvent.Post event) {
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
     }

@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -173,7 +174,7 @@ public class Translator implements ITranslator {
     private List<String> loadFromResourceManager() {
         try {
             ResourceManager manager = BaniraCodex.serverInstance().key().getResourceManager();
-            Collection<ResourceLocation> resources = loadFromResourcePacks(manager);
+            Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
             return resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
                     .map(loc -> {
@@ -190,16 +191,29 @@ public class Translator implements ITranslator {
         }
     }
 
-    private Collection<ResourceLocation> loadFromResourcePacks(ResourceManager manager) {
+    /**
+     * 枚举 {@code assets/<modId>/lang/*.json} 对应的 {@link ResourceLocation}。
+     * <p>
+     * 不再依赖 {@link net.minecraft.server.packs.PackResources#getNamespaces} 预过滤：部分 Mod jar
+     * 的 {@code PackResources} 实现未把本 Mod 命名空间列入 {@code getNamespaces}，但
+     * {@link net.minecraft.server.packs.PackResources#getResources} 仍能列出资源，仅用命名空间判断会漏掉本 Mod 语言文件。
+     * </p>
+     */
+    private Collection<ResourceLocation> collectModLangJsonLocations(ResourceManager manager) {
         Set<ResourceLocation> result = new HashSet<>();
+        Predicate<ResourceLocation> langJson = rl ->
+                modId.equals(rl.getNamespace()) && rl.getPath().endsWith(".json");
+        try {
+            result.addAll(manager.listResources("lang", langJson).keySet());
+        } catch (Exception e) {
+            LOGGER.trace("ResourceManager.listResources(lang) failed: {}", e.getMessage());
+        }
         try {
             manager.listPacks().forEach(pack -> {
                 try {
-                    if (pack.getNamespaces(PackType.CLIENT_RESOURCES).contains(modId)) {
-                        Collection<ResourceLocation> locs = pack.getResources(
-                                PackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
-                        result.addAll(locs);
-                    }
+                    Collection<ResourceLocation> locs = pack.getResources(
+                            PackType.CLIENT_RESOURCES, modId, "lang", langJson);
+                    result.addAll(locs);
                 } catch (Exception e) {
                     LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
                 }

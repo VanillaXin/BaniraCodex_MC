@@ -164,14 +164,10 @@ public final class PoiUtils {
     }
 
     private static WorldCoordinate findNearestPoiImpl(ServerLevel world, WorldCoordinate start, HolderSet<PoiType> holderSet, int radius, PoiManager.Occupancy occupancy) {
-        var registry = world.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY);
-        Predicate<PoiType> typePredicate = type -> registry.getResourceKey(type)
-                .flatMap(registry::getHolder)
-                .map(holderSet::contains)
-                .orElse(false);
         BlockPos origin = start.toBlockPos();
         PoiManager poiManager = world.getPoiManager();
         poiManager.ensureLoadedAndValid(world, origin, radius);
+        Predicate<Holder<PoiType>> typePredicate = holderSet::contains;
         Optional<BlockPos> found = poiManager.findClosest(typePredicate, origin, radius, occupancy);
         return found.map(pos -> start.clone().x(pos.getX()).y(pos.getY()).z(pos.getZ())).orElse(null);
     }

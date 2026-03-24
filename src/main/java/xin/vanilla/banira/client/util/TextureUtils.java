@@ -76,12 +76,12 @@ public final class TextureUtils {
         TextureManager textureManager = mc.getTextureManager();
 
         // region 资源包纹理
-        if (resourceManager.hasResource(rl)) {
+        if (resourceManager.getResource(rl).isPresent()) {
             return rl;
         }
         if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
             ResourceLocation parsed = ResourceLocation.tryParse(normalized);
-            if (parsed != null && resourceManager.hasResource(parsed)) {
+            if (parsed != null && resourceManager.getResource(parsed).isPresent()) {
                 return parsed;
             }
         }
@@ -269,11 +269,11 @@ public final class TextureUtils {
         }
         try {
             ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
-            if (!resourceManager.hasResource(texture)) {
+            if (resourceManager.getResource(texture).isEmpty()) {
                 return null;
             }
-            Resource resource = resourceManager.getResource(texture);
-            try (InputStream inputStream = resource.getInputStream()) {
+            Resource resource = resourceManager.getResource(texture).get();
+            try (InputStream inputStream = resource.open()) {
                 NativeImage nativeImage = NativeImage.read(inputStream);
                 CACHE.put(texture, nativeImage);
                 return nativeImage;

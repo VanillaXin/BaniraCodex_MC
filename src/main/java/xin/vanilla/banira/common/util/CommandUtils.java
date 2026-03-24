@@ -99,7 +99,9 @@ public final class CommandUtils {
             if (suppressedOutput) {
                 commandSourceStack = commandSourceStack.withSuppressedOutput();
             }
-            result = server.getCommands().performCommand(commandSourceStack, command) > 0;
+            if (server != null) {
+                result = server.getCommands().performPrefixedCommand(commandSourceStack, command) > 0;
+            }
         } catch (Exception e) {
             LOGGER.error("Failed to execute command: {}", command, e);
         }

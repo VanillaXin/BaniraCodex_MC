@@ -3,14 +3,13 @@ package xin.vanilla.banira;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -57,14 +56,13 @@ public class BaniraCodex {
             , StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
     );
 
-    public BaniraCodex() {
+    public BaniraCodex(FMLJavaModLoadingContext context) {
         // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
         ForgeConfigAdapter.register(ClientConfig.class, MODID);
         // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.addListener(BaniraEventBus::dispatchModCommonSetup);
+        context.getModEventBus().addListener(BaniraEventBus::dispatchModCommonSetup);
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);

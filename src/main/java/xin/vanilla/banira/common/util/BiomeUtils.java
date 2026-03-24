@@ -87,7 +87,8 @@ public final class BiomeUtils {
         var registry = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
         var biomeKey = registry.getResourceKey(biome).orElse(null);
         if (biomeKey == null) return null;
-        Pair<BlockPos, Holder<Biome>> nearestBiome = world.findNearestBiome(holder -> holder.is(biomeKey), start.toBlockPos(), radius, minDistance);
+        int h = Math.max(1, minDistance);
+        Pair<BlockPos, Holder<Biome>> nearestBiome = world.findClosestBiome3d(holder -> holder.is(biomeKey), start.toBlockPos(), radius, h, h);
         if (nearestBiome != null) {
             BlockPos pos = nearestBiome.getFirst();
             if (pos != null) {

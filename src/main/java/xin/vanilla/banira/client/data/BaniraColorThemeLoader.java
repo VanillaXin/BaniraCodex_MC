@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.data;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -15,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.util.JsonUtils;
 
 import javax.annotation.Nonnull;
 import java.io.InputStream;
@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/banira/themes/&lt;season&gt;.json），
@@ -86,15 +87,14 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
     private static BaniraColorConfig tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
         ResourceLocation loc = themeJsonLocation(season);
         try {
-            Resource res;
-            try {
-                res = resourceManager.getResource(loc);
-            } catch (Exception missing) {
+            Optional<Resource> opt = resourceManager.getResource(loc);
+            if (opt.isEmpty()) {
                 return null;
             }
-            try (InputStream in = res.getInputStream();
+            Resource res = opt.get();
+            try (InputStream in = res.open();
                  InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                JsonElement root = new JsonParser().parse(reader);
+                JsonElement root = JsonUtils.parseElement(reader);
                 if (!root.isJsonObject()) {
                     LOGGER.warn("Theme JSON root must be object: {}", loc);
                     return null;

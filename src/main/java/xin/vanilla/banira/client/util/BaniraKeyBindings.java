@@ -4,9 +4,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.ClientRegistry;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import org.apache.commons.lang3.ArrayUtils;
 import xin.vanilla.banira.client.data.GLFWKey;
 
 import javax.annotation.Nonnull;
@@ -15,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 便捷注册 {@link KeyMapping}：静态字段初始化阶段入队，在客户端 {@code FMLClientSetupEvent} 中
- * {@link #flushPendingRegistrations()} 一次性提交；若在 flush 之后调用 {@link #register}，会立即 {@link ClientRegistry#registerKeyBinding}。
+ * 便捷注册 {@link KeyMapping}：静态字段初始化阶段入队，在客户端 {@link RegisterKeyMappingsEvent} 中
+ * {@link #flushPendingRegistrations(RegisterKeyMappingsEvent)} 一次性提交；若在 flush 之后调用 {@link #register}，会尝试写入 {@link Options#keyMappings}。
  *
  * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
  *
@@ -65,7 +68,7 @@ public final class BaniraKeyBindings {
     // region 注册
 
     /**
-     * 使用 {@link #defaultCategory(String)} 注册；若在首次 {@link #flushPendingRegistrations()} 之前调用，仅入队。
+     * 使用 {@link #defaultCategory(String)} 注册；若在首次 {@link #flushPendingRegistrations(RegisterKeyMappingsEvent)} 之前调用，仅入队。
      */
     @Nonnull
     public static KeyMapping register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode) {
@@ -99,11 +102,11 @@ public final class BaniraKeyBindings {
     }
 
     /**
-     * 应在客户端 {@code FMLClientSetupEvent} 中尽早调用（本模组由 {@link xin.vanilla.banira.client.event.BaniraClientModSetup} 调用）。
+     * 应在客户端 {@link RegisterKeyMappingsEvent} 中调用（本模组由 {@link xin.vanilla.banira.client.event.BaniraClientModSetup} 订阅）。
      */
-    public static void flushPendingRegistrations() {
+    public static void flushPendingRegistrations(@Nonnull RegisterKeyMappingsEvent event) {
         for (KeyMapping binding : PENDING) {
-            ClientRegistry.registerKeyBinding(binding);
+            event.register(binding);
         }
         PENDING.clear();
         flushCompleted = true;
@@ -151,7 +154,11 @@ public final class BaniraKeyBindings {
 
     private static void enqueueOrRegister(@Nonnull KeyMapping binding) {
         if (flushCompleted) {
-            ClientRegistry.registerKeyBinding(binding);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc != null && mc.options != null) {
+                Options options = mc.options;
+                options.keyMappings = ArrayUtils.add(options.keyMappings, binding);
+            }
         } else {
             PENDING.add(binding);
         }

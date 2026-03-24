@@ -2,10 +2,10 @@ package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -184,8 +184,9 @@ public class DebugScreen extends BaniraScreen {
                 NotificationManager.get().addNotification(notification);
             });
         } else {
-            reg.registerIcon(id, CollectionUtils.getRandomElement(ItemUtils.getAllItems()), label, ctx -> {
-                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Item Quick Action %s", ctx.entryId())));
+            ItemStack itemStack = CollectionUtils.getRandomElement(ItemUtils.getAllItems());
+            reg.registerIcon(id, itemStack, label, ctx -> {
+                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked %s: %s", ctx.entryId(), ItemUtils.getItemHoverNameString(itemStack))));
                 notification.durationTime(3000);
                 NotificationManager.get().addNotification(notification);
             });

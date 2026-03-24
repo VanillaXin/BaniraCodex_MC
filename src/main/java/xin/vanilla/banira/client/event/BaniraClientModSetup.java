@@ -4,6 +4,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -24,8 +25,12 @@ public final class BaniraClientModSetup {
     }
 
     @SubscribeEvent
+    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+        BaniraKeyBindings.flushPendingRegistrations(event);
+    }
+
+    @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        BaniraKeyBindings.flushPendingRegistrations();
         NotificationManager.get().loadLog();
 
         BaniraClientEventHub.registerCodexDefaults();

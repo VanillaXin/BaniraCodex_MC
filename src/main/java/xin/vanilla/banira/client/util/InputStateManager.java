@@ -405,32 +405,32 @@ public final class InputStateManager {
     // region 事件监听
 
     @SubscribeEvent
-    public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
+    public static void onDrawScreenPre(ScreenEvent.Render.Pre event) {
         InputStateManager.instance().onDrawScreenPre(event.getMouseX(), event.getMouseY());
     }
 
     @SubscribeEvent
-    public static void onKeyPressed(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
+    public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
         InputStateManager.instance().onKeyPressed(event.getKeyCode());
     }
 
     @SubscribeEvent
-    public static void onKeyReleased(ScreenEvent.KeyboardKeyReleasedEvent.Post event) {
+    public static void onKeyReleased(ScreenEvent.KeyReleased.Post event) {
         InputStateManager.instance().onKeyReleased(event.getKeyCode());
     }
 
     @SubscribeEvent
-    public static void onMouseClicked(ScreenEvent.MouseClickedEvent.Pre event) {
+    public static void onMouseClicked(ScreenEvent.MouseButtonPressed.Pre event) {
         InputStateManager.instance().onMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
     }
 
     @SubscribeEvent
-    public static void onMouseReleased(ScreenEvent.MouseReleasedEvent.Post event) {
+    public static void onMouseReleased(ScreenEvent.MouseButtonReleased.Post event) {
         InputStateManager.instance().onMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
     }
 
     @SubscribeEvent
-    public static void onMouseScroll(ScreenEvent.MouseScrollEvent.Pre event) {
+    public static void onMouseScroll(ScreenEvent.MouseScrolled.Pre event) {
         InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
     }
 

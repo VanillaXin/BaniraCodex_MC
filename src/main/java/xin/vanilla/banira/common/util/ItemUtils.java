@@ -1,10 +1,10 @@
 package xin.vanilla.banira.common.util;
 
-import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.arguments.item.ItemInput;
-import net.minecraft.commands.arguments.item.ItemParser;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -92,7 +92,7 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return item.getRegistryName();
+        return ForgeRegistries.ITEMS.getKey(item);
     }
 
     /**
@@ -302,18 +302,56 @@ public final class ItemUtils {
             return ItemStack.EMPTY;
         }
         itemString = itemString.trim();
-        ItemStack cached = deserializeCache.computeIfAbsent(itemString, k -> {
-            try {
-                ItemParser parse = new ItemParser(new StringReader(k), false).parse();
-                ItemInput itemInput = new ItemInput(parse.getItem(), parse.getNbt());
-                ItemStack result = itemInput.createItemStack(1, false);
-                return result.copy();
-            } catch (Exception e) {
-                LOGGER.error("Failed to deserialize item stack from string: {}", k, e);
+        ItemStack cached = deserializeCache.computeIfAbsent(itemString, ItemUtils::deserializeItemStackUncached);
+        return cached.isEmpty() ? ItemStack.EMPTY : cached.copy();
+    }
+
+    private static ItemStack deserializeItemStackUncached(String k) {
+        try {
+            if (k.startsWith("{")) {
+                CompoundTag root = TagParser.parseTag(k);
+                return readItemStackFromRootTag(root);
+            }
+            int brace = k.indexOf('{');
+            String idPart = brace >= 0 ? k.substring(0, brace).trim() : k.trim();
+            ResourceLocation rl = ResourceLocation.tryParse(idPart);
+            if (rl == null) {
                 return ItemStack.EMPTY;
             }
-        });
-        return cached.isEmpty() ? ItemStack.EMPTY : cached.copy();
+            Item item = ForgeRegistries.ITEMS.getValue(rl);
+            if (item == null || item == Items.AIR) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack stack = new ItemStack(item);
+            if (brace >= 0) {
+                CompoundTag extra = TagParser.parseTag(k.substring(brace));
+                stack.setTag(extra);
+            }
+            return stack;
+        } catch (CommandSyntaxException e) {
+            LOGGER.error("Failed to deserialize item stack from string: {}", k, e);
+            return ItemStack.EMPTY;
+        }
+    }
+
+    private static ItemStack readItemStackFromRootTag(CompoundTag root) {
+        if (!root.contains("id")) {
+            return ItemStack.EMPTY;
+        }
+        ResourceLocation id = ResourceLocation.tryParse(root.getString("id"));
+        if (id == null) {
+            return ItemStack.EMPTY;
+        }
+        Item item = ForgeRegistries.ITEMS.getValue(id);
+        if (item == null || item == Items.AIR) {
+            return ItemStack.EMPTY;
+        }
+        int count = root.contains("Count") ? root.getInt("Count") : (root.contains("count") ? root.getInt("count") : 1);
+        ItemStack stack = new ItemStack(item, Math.max(1, count));
+        if (root.contains("tag")) {
+            stack.setTag(root.getCompound("tag"));
+        }
+        return stack;
     }
 
     @Nullable
@@ -452,7 +490,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                item.getRegistryName(), e);
+                                ForgeRegistries.ITEMS.getKey(item), e);
                     }
                 }
             }

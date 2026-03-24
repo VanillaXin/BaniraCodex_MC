@@ -1,10 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -30,7 +27,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayer player, Component message) {
-        player.server.getPlayerList().broadcastMessage(new TranslatableComponent("chat.type.announcement", player.getDisplayName(), message.toChat()), ChatType.SYSTEM, Util.NIL_UUID);
+        player.server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toChat()), false);
     }
 
     /**
@@ -40,7 +37,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastMessage(new TranslatableComponent("chat.type.announcement", "Server", message.toChat()), ChatType.SYSTEM, Util.NIL_UUID);
+        server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", net.minecraft.network.chat.Component.literal("Server"), message.toChat()), false);
     }
 
     /**
@@ -59,7 +56,12 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(Player player, Component message) {
-        player.sendMessage(message.toChat(Translator.getPlayerLanguage(player)), player.getUUID());
+        net.minecraft.network.chat.Component chat = message.toChat(Translator.getPlayerLanguage(player));
+        if (player instanceof ServerPlayer sp) {
+            sp.sendSystemMessage(chat);
+        } else {
+            player.displayClientMessage(chat, false);
+        }
     }
 
     /**
@@ -69,7 +71,12 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(Player player, String message) {
-        player.sendMessage(BaniraComponent.get().literal(message).toChat(), player.getUUID());
+        net.minecraft.network.chat.Component chat = BaniraComponent.get().literal(message).toChat();
+        if (player instanceof ServerPlayer sp) {
+            sp.sendSystemMessage(chat);
+        } else {
+            player.displayClientMessage(chat, false);
+        }
     }
 
     /**
@@ -99,7 +106,12 @@ public final class MessageUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(Player player, String key, Object... args) {
-        player.sendMessage(BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat(), player.getUUID());
+        net.minecraft.network.chat.Component chat = BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat();
+        if (player instanceof ServerPlayer sp) {
+            sp.sendSystemMessage(chat);
+        } else {
+            player.displayClientMessage(chat, false);
+        }
     }
 
     /**

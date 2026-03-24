@@ -2,7 +2,11 @@ package xin.vanilla.banira.client.event;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.*;
+import net.minecraftforge.client.event.ClientChatEvent;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -25,13 +29,13 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         BaniraClientEventHub.dispatchClientPlayerLoggedIn(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+    public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         BaniraClientEventHub.dispatchClientPlayerLoggedOut(event);
     }
 
@@ -55,7 +59,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+    public static void onRenderOverlayPre(RenderGuiOverlayEvent.Pre event) {
         BaniraClientEventHub.dispatchRenderOverlayPre(event);
     }
 
@@ -75,7 +79,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onGuiOpen(ScreenOpenEvent event) {
+    public static void onGuiOpen(ScreenEvent.Opening event) {
         QuickActionOverlay.get().resetInteractionState();
         BaniraClientEventHub.Client.fireGuiChanged(event);
     }
@@ -88,7 +92,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
+    public static void onDrawScreenPre(ScreenEvent.Render.Pre event) {
         if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
             QuickActionOverlay.get().tickInteraction(event.getScreen(), event.getMouseX(), event.getMouseY());
         }
@@ -96,22 +100,22 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
+    public static void onDrawScreenPost(ScreenEvent.Render.Post event) {
         BaniraClientEventHub.Client.fireDrawScreenPost(event);
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onDrawScreenPostInventoryQuickAction(ScreenEvent.DrawScreenEvent.Post event) {
+    public static void onDrawScreenPostInventoryQuickAction(ScreenEvent.Render.Post event) {
         if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
-            QuickActionOverlay.get().render(event.getPoseStack(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTicks());
+            QuickActionOverlay.get().render(event.getPoseStack(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseClickedPre(ScreenEvent.MouseClickedEvent.Pre event) {
+    public static void onGuiMouseClickedPre(ScreenEvent.MouseButtonPressed.Pre event) {
         if (QuickActionOverlay.get().handleMouseClicked(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
@@ -119,7 +123,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseReleasedPre(ScreenEvent.MouseReleasedEvent.Pre event) {
+    public static void onGuiMouseReleasedPre(ScreenEvent.MouseButtonReleased.Pre event) {
         if (QuickActionOverlay.get().handleMouseReleased(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
@@ -127,7 +131,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onGuiMouseScrollPre(ScreenEvent.MouseScrollEvent.Pre event) {
+    public static void onGuiMouseScrollPre(ScreenEvent.MouseScrolled.Pre event) {
         if (QuickActionOverlay.get().handleMouseScroll(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
             event.setCanceled(true);
         }
@@ -135,7 +139,7 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
+    public static void onRenderOverlayPost(RenderGuiOverlayEvent.Post event) {
         BaniraClientEventHub.Client.fireRenderOverlayPost(event);
     }
 

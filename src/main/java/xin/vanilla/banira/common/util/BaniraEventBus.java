@@ -7,16 +7,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityTeleportEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.world.ChunkEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.level.ChunkDataEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +39,7 @@ import java.util.function.Consumer;
  * BaniraEventBus.Player.onLoggedOut(player -> ...);
  * BaniraClientEventHub.Client.onGuiChanged(e -> ...); // 客户端见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}
  * BaniraEventBus.WorldEvents.onUnload(e -> ...);
- * BaniraEventBus.EntityEvents.onJoinWorld(e -> ...);
+ * BaniraEventBus.EntityEvents.onJoinLevel(e -> ...);
  * BaniraEventBus.Commands.onRegister(e -> ...);
  * BaniraEventBus.ModLifecycle.onCommonSetup(e -> ...);
  *
@@ -69,9 +69,9 @@ public final class BaniraEventBus {
     private static final List<Consumer<ServerPlayer>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<TickEvent.LevelTickEvent>> worldTickCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<WorldEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<LevelEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
 
     private static final List<Consumer<PlayerEvent.Clone>> playerCloneCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEvent>> playerEventCallbacks = new ArrayList<>();
@@ -80,7 +80,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<PlayerInteractEvent.RightClickBlock>> playerRightClickBlockCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerInteractEvent.EntityInteractSpecific>> playerEntityInteractCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<EntityJoinWorldEvent>> entityJoinWorldCallbacks = new ArrayList<>();
+    private static final List<Consumer<EntityJoinLevelEvent>> entityJoinLevelCallbacks = new ArrayList<>();
     private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
@@ -170,8 +170,8 @@ public final class BaniraEventBus {
          */
         public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayer) {
-                    callback.accept((ServerPlayer) event.getPlayer());
+                if (event.getEntity() instanceof ServerPlayer) {
+                    callback.accept((ServerPlayer) event.getEntity());
                 }
             });
         }
@@ -181,8 +181,8 @@ public final class BaniraEventBus {
          */
         public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayer) {
-                    callback.accept((ServerPlayer) event.getPlayer(), event.getFrom());
+                if (event.getEntity() instanceof ServerPlayer) {
+                    callback.accept((ServerPlayer) event.getEntity(), event.getFrom());
                 }
             });
         }
@@ -238,11 +238,11 @@ public final class BaniraEventBus {
         private WorldEvents() {
         }
 
-        public static void onUnload(@Nonnull Consumer<WorldEvent.Unload> callback) {
+        public static void onUnload(@Nonnull Consumer<LevelEvent.Unload> callback) {
             worldUnloadCallbacks.add(callback);
         }
 
-        public static void onTick(@Nonnull Consumer<TickEvent.WorldTickEvent> callback) {
+        public static void onTick(@Nonnull Consumer<TickEvent.LevelTickEvent> callback) {
             worldTickCallbacks.add(callback);
         }
     }
@@ -258,8 +258,13 @@ public final class BaniraEventBus {
         private EntityEvents() {
         }
 
-        public static void onJoinWorld(@Nonnull Consumer<EntityJoinWorldEvent> callback) {
-            entityJoinWorldCallbacks.add(callback);
+        @Deprecated
+        public static void onJoinWorld(@Nonnull Consumer<EntityJoinLevelEvent> callback) {
+            entityJoinLevelCallbacks.add(callback);
+        }
+
+        public static void onJoinLevel(@Nonnull Consumer<EntityJoinLevelEvent> callback) {
+            entityJoinLevelCallbacks.add(callback);
         }
 
         public static void onTeleport(@Nonnull Consumer<EntityTeleportEvent> callback) {
@@ -350,12 +355,12 @@ public final class BaniraEventBus {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        fire(playerLoggedInCallbacks, event.getPlayer(), "player logged in");
+        fire(playerLoggedInCallbacks, event.getEntity(), "player logged in");
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        fire(playerLoggedOutCallbacks, event.getPlayer(), "player logged out");
+        fire(playerLoggedOutCallbacks, event.getEntity(), "player logged out");
     }
 
     @SubscribeEvent
@@ -364,16 +369,16 @@ public final class BaniraEventBus {
     }
 
     @SubscribeEvent
-    public static void onWorldSave(WorldEvent.Save event) {
-        LevelAccessor world = event.getWorld();
+    public static void onWorldSave(LevelEvent.Save event) {
+        LevelAccessor world = event.getLevel();
         if (!world.isClientSide()) {
             fire(worldSaveCallbacks, "world save");
         }
     }
 
     @SubscribeEvent
-    public static void onChunkSave(ChunkEvent.Save event) {
-        LevelAccessor world = event.getWorld();
+    public static void onChunkSave(ChunkDataEvent.Save event) {
+        LevelAccessor world = event.getLevel();
         if (world != null && !world.isClientSide()) {
             fire(chunkSaveCallbacks, "chunk save");
         }
@@ -381,19 +386,19 @@ public final class BaniraEventBus {
 
     @SubscribeEvent
     public static void onPlayerSaveToFile(PlayerEvent.SaveToFile event) {
-        net.minecraft.world.entity.player.Player player = event.getPlayer();
+        net.minecraft.world.entity.player.Player player = event.getEntity();
         if (player instanceof ServerPlayer) {
             fire(playerSaveCallbacks, (ServerPlayer) player, "player save");
         }
     }
 
     @SubscribeEvent
-    public static void onWorldUnload(WorldEvent.Unload event) {
+    public static void onWorldUnload(LevelEvent.Unload event) {
         fire(worldUnloadCallbacks, event, "world unload");
     }
 
     @SubscribeEvent
-    public static void onWorldTick(TickEvent.WorldTickEvent event) {
+    public static void onWorldTick(TickEvent.LevelTickEvent event) {
         fire(worldTickCallbacks, event, "world tick");
     }
 
@@ -423,8 +428,8 @@ public final class BaniraEventBus {
     }
 
     @SubscribeEvent
-    public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
-        fire(entityJoinWorldCallbacks, event, "entity join world");
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        fire(entityJoinLevelCallbacks, event, "entity join level");
     }
 
     @SubscribeEvent

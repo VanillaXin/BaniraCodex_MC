@@ -1,0 +1,50 @@
+package xin.vanilla.banira.common.enums;
+
+import lombok.Getter;
+
+/**
+ * GUI 主题夜间模式（与昼夜配色联动，由客户端配置控制）
+ */
+@Getter
+public enum EnumGuiNightMode {
+    OFF("关闭", "Off"),
+    ALWAYS("总是夜晚", "Always night"),
+    SCHEDULED("指定时间段", "Scheduled"),
+    AUTO("自动判断", "Auto"),
+    ;
+
+    private final String chineseName;
+    private final String englishName;
+
+    EnumGuiNightMode(String chineseName, String englishName) {
+        this.chineseName = chineseName;
+        this.englishName = englishName;
+    }
+
+    public static EnumGuiNightMode valueOfEx(Object obj) {
+        if (obj instanceof EnumGuiNightMode) {
+            return (EnumGuiNightMode) obj;
+        }
+        if (obj instanceof String) {
+            for (EnumGuiNightMode value : values()) {
+                String str = (String) obj;
+                if (value.name().equalsIgnoreCase(str)
+                        || value.getChineseName().equals(str)
+                        || value.getEnglishName().equalsIgnoreCase(str)) {
+                    return value;
+                }
+            }
+        } else if (obj instanceof Number) {
+            int i = ((Number) obj).intValue();
+            if (i >= 0 && i < values().length) {
+                return values()[i];
+            }
+        }
+        return null;
+    }
+
+    public static EnumGuiNightMode valueOfDefault(Object obj) {
+        EnumGuiNightMode v = valueOfEx(obj);
+        return v == null ? OFF : v;
+    }
+}

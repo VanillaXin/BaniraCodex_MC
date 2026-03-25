@@ -211,6 +211,13 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Setter
     private int disabledTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextDisabled();
 
+    /**
+     * 长按进度填充色（与 hover 轨道区分），由主题 {@link BaniraColorConfig#buttonLongPressProgressFill()} 提供
+     */
+    @Getter
+    @Setter
+    private int longPressProgressFillColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonLongPressProgressFill();
+
     @Getter
     @Setter
     private float fontSize = 9.0f;
@@ -308,7 +315,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 .disabledBorderColor(theme.buttonBorderDisabled())
                 .textColor(theme.buttonText()).hoverTextColor(theme.buttonTextHover())
                 .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
-                .disabledTextColor(theme.buttonTextDisabled());
+                .disabledTextColor(theme.buttonTextDisabled())
+                .longPressProgressFillColor(theme.buttonLongPressProgressFill());
+        if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
+            iconColor(theme.buttonPresetIconColor())
+                    .hoverIconColor(theme.buttonPresetIconHoverColor())
+                    .focusedIconColor(theme.buttonPresetIconFocusedColor())
+                    .pressedIconColor(theme.buttonPresetIconPressedColor())
+                    .disabledIconColor(theme.buttonPresetIconDisabledColor());
+        }
     }
 
     /**
@@ -643,7 +658,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             return;
         }
         AbstractGuiUtils.pushScissor(absClipX + clipOffsetX, absClipY + clipOffsetY, clipW, clipH);
-        ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+        ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, longPressProgressFillColor);
         applyButtonRectCorners(fill);
         BaseShapeWidget.drawShape(fill);
         AbstractGuiUtils.popScissor();
@@ -660,7 +675,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int topH = holeY - absClipY;
         if (topH > 0) {
             AbstractGuiUtils.pushScissor(absClipX, absClipY, drawWidth, topH);
-            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, longPressProgressFillColor);
             applyButtonRectCorners(fill);
             BaseShapeWidget.drawShape(fill);
             AbstractGuiUtils.popScissor();
@@ -670,7 +685,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int bottomH = absClipY + drawHeight - bottomY;
         if (bottomH > 0) {
             AbstractGuiUtils.pushScissor(absClipX, bottomY, drawWidth, bottomH);
-            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, longPressProgressFillColor);
             applyButtonRectCorners(fill);
             BaseShapeWidget.drawShape(fill);
             AbstractGuiUtils.popScissor();
@@ -679,7 +694,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int leftW = holeX - absClipX;
         if (leftW > 0 && innerH > 0) {
             AbstractGuiUtils.pushScissor(absClipX, holeY, leftW, innerH);
-            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, longPressProgressFillColor);
             applyButtonRectCorners(fill);
             BaseShapeWidget.drawShape(fill);
             AbstractGuiUtils.popScissor();
@@ -689,7 +704,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int rightW = absClipX + drawWidth - rightX;
         if (rightW > 0 && innerH > 0) {
             AbstractGuiUtils.pushScissor(rightX, holeY, rightW, innerH);
-            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, pressedBgColor);
+            ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, drawX, drawY, drawWidth, drawHeight, longPressProgressFillColor);
             applyButtonRectCorners(fill);
             BaseShapeWidget.drawShape(fill);
             AbstractGuiUtils.popScissor();
@@ -714,7 +729,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             if (r.nextFloat() < 0.16f) {
                 vx -= sign * (55f + r.nextFloat() * 140f);
             }
-            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
             if (r.nextFloat() < 0.15f) {
                 c = brightenArgb(c, 1.12f + r.nextFloat() * 0.12f);
             }
@@ -731,7 +746,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             float speed = 88f + r.nextFloat() * 195f;
             float vx = sign * (float) Math.cos(fan) * speed;
             float vy = (float) Math.sin(fan) * speed * 0.9f + (r.nextFloat() - 0.5f) * 85f;
-            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
             float dw = 1f + r.nextFloat() * 1.5f;
             float dh = dw;
             float gScale = 0.78f + r.nextFloat() * 0.18f;
@@ -745,7 +760,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             float speed = 165f + r.nextFloat() * 260f;
             float vx = sign * (float) Math.cos(fan) * speed;
             float vy = (float) Math.sin(fan) * speed * 0.75f + (r.nextFloat() - 0.5f) * 45f;
-            int c = brightenArgb(pressedBgColor, 1.28f + r.nextFloat() * 0.25f);
+            int c = brightenArgb(longPressProgressFillColor, 1.28f + r.nextFloat() * 0.25f);
             if (r.nextFloat() < 0.35f) {
                 c = 0xFFFFE8D0;
             }
@@ -830,7 +845,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                     vy = -(195f + r.nextFloat() * 230f);
                     break;
             }
-            int c = r.nextBoolean() ? pressedBgColor : hoverBgColor;
+            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
             if (r.nextFloat() < 0.18f) {
                 c = brightenArgb(c, 1.18f + r.nextFloat() * 0.15f);
             }

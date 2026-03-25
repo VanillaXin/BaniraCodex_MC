@@ -9,6 +9,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 /**
@@ -25,6 +26,26 @@ public class ClientConfig implements ConfigData {
             en_us = "GUI theme style: with screen season on Auto, uses calendar season unless you pick a fixed season here.")
     private EnumSeason guiThemeStyle = EnumSeason.AUTO;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "GUI 夜间配色：关闭则始终用日间主题；总是夜晚；指定时间段按本机时钟；自动则在游戏内按世界昼夜，主菜单等无世界时用本机 6:00–18:00 为日间。",
+            en_us = "GUI night palette: Off (day only); Always night; Scheduled uses local clock; Auto uses world day/night in-game, else local 6:00–18:00 as day.")
+    private EnumGuiNightMode guiNightMode = EnumGuiNightMode.OFF;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式「指定时间段」开始时刻（从 0 点算起的分钟数，0–1439）。与结束时刻共同定义夜间区间；可跨午夜（例如 1320–360 表示 22:00–次日 6:00）。",
+            en_us = "Scheduled night mode: start minute of day (0–1439). Together with end minute defines the night window; may wrap midnight (e.g. 1320–360 = 22:00–06:00).")
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 1439)
+    private int guiNightModeStartMinute = 22 * 60;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式「指定时间段」结束时刻（从 0 点算起的分钟数，0–1439）。",
+            en_us = "Scheduled night mode: end minute of day (0–1439).")
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 1439)
+    private int guiNightModeEndMinute = 6 * 60;
+
     public ClientConfig() {
     }
 
@@ -38,6 +59,18 @@ public class ClientConfig implements ConfigData {
         EnumSeason guiThemeStyle();
 
         RootView guiThemeStyle(EnumSeason value);
+
+        EnumGuiNightMode guiNightMode();
+
+        RootView guiNightMode(EnumGuiNightMode value);
+
+        int guiNightModeStartMinute();
+
+        RootView guiNightModeStartMinute(int value);
+
+        int guiNightModeEndMinute();
+
+        RootView guiNightModeEndMinute(int value);
 
         ConfigHolder holder();
     }

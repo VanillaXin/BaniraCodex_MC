@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -13,6 +13,7 @@ import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -332,13 +333,14 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
         if (selectedItemWidget != null) selectedItemWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
 
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();

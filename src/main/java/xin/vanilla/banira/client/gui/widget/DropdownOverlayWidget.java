@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -47,7 +48,8 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!parent.dropdownOpen()) return;
 
         ScreenCoordinate db = parent.getDropdownBounds();
@@ -119,7 +121,7 @@ class DropdownOverlayWidget extends BaseWidget {
                 int textMaxWidth = contentWidth - PAD * 2 - 4 - leftOffset;
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;
-                font.draw(s, display, textX, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor);
+                graphics.drawString(font, display, textX, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
             }
 
             AbstractGuiUtils.disableScissor();

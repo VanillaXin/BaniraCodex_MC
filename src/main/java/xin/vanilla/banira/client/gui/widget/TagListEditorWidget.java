@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -702,7 +703,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         ensureChildren();
 
@@ -739,7 +741,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         FontDrawArgs args = FontDrawArgs.of(
                 Text.literal(displayTitle).stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(headerTextColor));
         args.x(textX).y(textY).maxWidth((int) Math.max(0, titleBtnLeft - textX - 4)).wrap(false).inScreen(false);
-        LabelWidget.drawLimitedText(args);
+        LabelWidget.drawLimitedText(graphics, args);
 
         stack.popPose();
         // endregion 标题栏
@@ -815,7 +817,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
             AbstractGuiUtils.fill(stack, 0, (int) tagY, tagW, TAG_HEIGHT, tagBg);
             AbstractGuiUtils.fill(stack, 0, (int) tagY, 2, TAG_HEIGHT, tagBorder);
-            font.draw(stack, display, TAG_PAD, (float) (tagY + (TAG_HEIGHT - font.lineHeight) / 2), textColor);
+            graphics.drawString(font, display, TAG_PAD, (float) (tagY + (TAG_HEIGHT - font.lineHeight) / 2), textColor, false);
 
             int closeColor = closePressed ? 0xFFE53935 : (closeHovered ? 0xFFE53935 : 0xFF999999);
             AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, closeColor);
@@ -836,7 +838,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             editWidget.visible(true);
         }
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
 
         if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null) {
             int mx = (int) screen.inputState().mouseX();
@@ -844,11 +846,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;
             Text rowHint = Text.from(BaniraComponent.get().transClientAuto("tag_list_row_hint"));
             final BaniraColorConfig tooltipTheme = theme;
-            screen.addDeferredTooltipRender(s -> {
-                s.pushPose();
-                s.last().pose().identity();
-                TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(rowHint.stack(s)).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
-                s.popPose();
+            screen.addDeferredTooltipRender(g -> {
+                g.pose().pushPose();
+                g.pose().last().pose().identity();
+                TooltipWidget.drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(rowHint.stack(g.pose())).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
+                g.pose().popPose();
             });
         }
     }

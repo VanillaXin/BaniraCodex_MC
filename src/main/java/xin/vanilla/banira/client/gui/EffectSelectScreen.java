@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -348,13 +349,14 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
         if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
 
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();

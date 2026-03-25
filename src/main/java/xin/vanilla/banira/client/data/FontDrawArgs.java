@@ -5,10 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+
+import javax.annotation.Nullable;
 
 /**
  * 字体绘制参数
@@ -123,6 +126,12 @@ public class FontDrawArgs implements Cloneable {
      * 弹出层边距 AUTO：最终绘制时根据绘制模式决定边距。颜色绘制时加边距，材质绘制时不加（材质自带）
      */
     private boolean popupPaddingAuto = false;
+
+    /**
+     * 非空时 {@link xin.vanilla.banira.client.gui.widget.LabelWidget#drawLimitedText(FontDrawArgs)} 走 {@link GuiGraphics#drawString}；否则回退 {@link Font#drawInBatch}。
+     */
+    @Nullable
+    private GuiGraphics guiGraphics;
 
     private static final int POPUP_PADDING_TOP = 4, POPUP_PADDING_BOTTOM = 4, POPUP_PADDING_LEFT = 8, POPUP_PADDING_RIGHT = 8;
 

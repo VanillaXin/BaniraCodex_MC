@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -792,17 +793,18 @@ public abstract class BaseWidget implements IWidget {
         return cachedAbsY;
     }
 
-    protected void renderChildren(PoseStack stack, float partialTicks) {
+    protected void renderChildren(GuiGraphics graphics, float partialTicks) {
         if (!visible || children.isEmpty()) {
             return;
         }
 
+        PoseStack stack = graphics.pose();
         stack.pushPose();
         stack.translate(x(), y(), 0);
 
         for (IWidget child : children) {
             if (child != null && child.visible()) {
-                child.render(stack, partialTicks);
+                child.render(graphics, partialTicks);
             }
         }
 

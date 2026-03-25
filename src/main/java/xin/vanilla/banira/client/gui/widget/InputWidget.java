@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -366,7 +367,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     // region 渲染
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -382,12 +384,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         this.updateDisplayPos();
 
-        render(stack, x, y, width, height);
+        render(graphics, stack, x, y, width, height);
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
     }
 
-    private void render(PoseStack stack, int x, int y, int width, int height) {
+    private void render(GuiGraphics graphics, PoseStack stack, int x, int y, int width, int height) {
         int drawX = x + marginLeft;
         int drawY = y + marginTop;
         int drawWidth = width - marginLeft - marginRight;
@@ -464,12 +466,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         stack.pushPose();
                         stack.translate(textX, textY, 0);
                         stack.scale(fontScale, fontScale, 1.0f);
-                        textDrawX = (int) (textX + this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
-                                0, 0, currentTextColor) * fontScale);
+                        textDrawX = (int) (textX + graphics.drawString(this.font, this.formatter.apply(beforeCursor, displayPos),
+                                0, 0, currentTextColor, false) * fontScale);
                         stack.popPose();
                     } else {
-                        textDrawX = this.font.draw(stack, this.formatter.apply(beforeCursor, displayPos),
-                                (float) textX, (float) textY, currentTextColor);
+                        textDrawX = graphics.drawString(this.font, this.formatter.apply(beforeCursor, displayPos),
+                                (float) textX, (float) textY, currentTextColor, false);
                     }
                 }
             }
@@ -489,12 +491,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                     stack.pushPose();
                     stack.translate(textDrawX, textY, 0);
                     stack.scale(fontScale, fontScale, 1.0f);
-                    this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
-                            0, 0, currentTextColor);
+                    graphics.drawString(this.font, this.formatter.apply(afterCursor, cursorPos),
+                            0, 0, currentTextColor, false);
                     stack.popPose();
                 } else {
-                    this.font.draw(stack, this.formatter.apply(afterCursor, cursorPos),
-                            (float) textDrawX, (float) textY, currentTextColor);
+                    graphics.drawString(this.font, this.formatter.apply(afterCursor, cursorPos),
+                            (float) textDrawX, (float) textY, currentTextColor, false);
                 }
             }
 
@@ -507,12 +509,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                     stack.scale(hintFontScale, hintFontScale, 1.0f);
                     FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale))
                             .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
+                    LabelWidget.drawLimitedText(graphics, args);
                     stack.popPose();
                 } else {
                     FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth)
                             .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
+                    LabelWidget.drawLimitedText(graphics, args);
                 }
             }
 
@@ -541,11 +543,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal("清空"), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(graphics, mx, my, Text.literal("清空"), EnumTooltipTextureMode.AUTO);
             } else if (error && errorMessage != null && !errorMessage.isEmpty() && isMouseOverTextArea() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(graphics, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
             }
 
             if (shouldShowCursor) {
@@ -554,10 +556,10 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         stack.pushPose();
                         stack.translate(cursorX, textY, 0);
                         stack.scale(fontScale, fontScale, 1.0f);
-                        this.font.draw(stack, "_", 0, 0, currentTextColor);
+                        graphics.drawString(this.font, "_", 0, 0, currentTextColor, false);
                         stack.popPose();
                     } else {
-                        this.font.draw(stack, "_", cursorX, textY, currentTextColor);
+                        graphics.drawString(this.font, "_", cursorX, textY, currentTextColor, false);
                     }
                 } else {
                     int cursorHeight = (int) actualFontSize;
@@ -655,8 +657,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。默认跟随主题配置。
      */
-    protected void drawTooltipAtScreenCoords(PoseStack stack, double mx, double my, Text text) {
-        drawTooltipAtScreenCoords(stack, mx, my, text, EnumTooltipTextureMode.AUTO);
+    protected void drawTooltipAtScreenCoords(GuiGraphics graphics, double mx, double my, Text text) {
+        drawTooltipAtScreenCoords(graphics, mx, my, text, EnumTooltipTextureMode.AUTO);
     }
 
     /**
@@ -664,7 +666,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      *
      * @param textureMode AUTO 时使用主题配置，TEXTURE/COLOR 时使用指定模式
      */
-    protected void drawTooltipAtScreenCoords(PoseStack stack, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
+    protected void drawTooltipAtScreenCoords(GuiGraphics graphics, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
         if (screen == null) return;
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason season = screen.season();
@@ -674,11 +676,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         boolean useTexture = textureMode == EnumTooltipTextureMode.AUTO
                 ? theme.tooltipUseTexture()
                 : (textureMode == EnumTooltipTextureMode.TEXTURE);
-        screen.addDeferredTooltipRender(s -> {
-            s.pushPose();
-            s.last().pose().identity();
-            TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
-            s.popPose();
+        screen.addDeferredTooltipRender(g -> {
+            g.pose().pushPose();
+            g.pose().last().pose().identity();
+            TooltipWidget.drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(textToDraw.stack(g.pose())).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
+            g.pose().popPose();
         });
     }
 

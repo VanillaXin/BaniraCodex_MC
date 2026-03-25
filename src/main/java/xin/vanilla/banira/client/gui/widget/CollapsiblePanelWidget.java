@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -186,7 +187,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -223,14 +225,14 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             FontDrawArgs args = FontDrawArgs.of(
                     text.stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(textColor));
             args.x(textX).y(textY).maxWidth((int) Math.max(0, w - textX - 4)).wrap(false).inScreen(false);
-            LabelWidget.drawLimitedText(args);
+            LabelWidget.drawLimitedText(graphics, args);
         }
         stack.popPose();
         // endregion 绘制标题栏
 
         // region 绘制内容区（仅展开时）
         if (isExpanded && !children.isEmpty()) {
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
         }
         // endregion 绘制内容区
 
@@ -599,7 +601,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             IWidget childThatChanged = panel;
             for (IWidget parentPanel = panel.parent(); parentPanel != null; parentPanel = parentPanel.parent()) {
                 if (parentPanel instanceof CollapsiblePanelWidget collapsiblePanelWidget) {
-                    if (childThatChanged instanceof CollapsiblePanelWidget  child) {
+                    if (childThatChanged instanceof CollapsiblePanelWidget child) {
                         collapsiblePanelWidget.refreshHeightAndReorderSiblings(child);
                     }
                 }

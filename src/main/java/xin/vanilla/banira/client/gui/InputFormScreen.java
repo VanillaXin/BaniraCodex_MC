@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
@@ -663,7 +664,7 @@ public class InputFormScreen extends BaniraScreen {
     }
 
     @Override
-    protected void renderWidgets(PoseStack stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
         if (scrollMode) {
             AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight);
         }
@@ -676,7 +677,7 @@ public class InputFormScreen extends BaniraScreen {
                 deferred.add(widget);
             } else {
                 if (widget.enabled() && widget.needsUpdate()) widget.update();
-                widget.render(stack, partialTicks);
+                widget.render(graphics, partialTicks);
             }
         }
 
@@ -693,7 +694,7 @@ public class InputFormScreen extends BaniraScreen {
                 }
                 if (widget != null) {
                     if (widget.enabled() && widget.needsUpdate()) widget.update();
-                    widget.render(stack, partialTicks);
+                    widget.render(graphics, partialTicks);
                 }
             }
         }
@@ -717,16 +718,17 @@ public class InputFormScreen extends BaniraScreen {
     // endregion 背景与表单面板
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;
         }
 
-        renderBackground(stack);
+        renderBackground(graphics);
         renderFormPanel(stack);
 
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
 
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
@@ -736,7 +738,7 @@ public class InputFormScreen extends BaniraScreen {
             }
         }
 
-        super.renderButtons(stack, partialTicks);
+        super.renderButtons(graphics, partialTicks);
 
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);

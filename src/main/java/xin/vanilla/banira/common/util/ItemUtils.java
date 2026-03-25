@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.MutableComponent;
@@ -193,7 +194,7 @@ public final class ItemUtils {
         if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
         if (stack1.isEmpty() || stack2.isEmpty()) return false;
-        return ItemStack.isSame(stack1, stack2);
+        return ItemStack.isSameItem(stack1, stack2);
     }
 
     /**
@@ -208,7 +209,7 @@ public final class ItemUtils {
         if (!areItemsEqual(stack1, stack2)) return false;
         // if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
-        return ItemStack.tagMatches(stack1, stack2);
+        return ItemStack.isSameItemSameTags(stack1, stack2);
     }
 
     /**
@@ -430,12 +431,14 @@ public final class ItemUtils {
         try {
             // 从各标签页收集展示物品（含搜索页变体）
             try {
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
                 for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
-                    if (tab == null || tab == CreativeModeTabs.HOTBAR) {
+                    if (tab == null || tab == hotbarTab) {
                         continue;
                     }
                     try {
-                        java.util.Collection<ItemStack> tabItems = tab == CreativeModeTabs.SEARCH
+                        java.util.Collection<ItemStack> tabItems = tab == searchTab
                                 ? tab.getSearchTabDisplayItems()
                                 : tab.getDisplayItems();
                         if (CollectionUtils.isNotNullOrEmpty(tabItems)) {
@@ -971,8 +974,10 @@ public final class ItemUtils {
                 // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
                 // 2. 物品组信息
                 CreativeModeTab itemGroup = null;
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
                 for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
-                    if (tab == null || tab == CreativeModeTabs.SEARCH || tab == CreativeModeTabs.HOTBAR) {
+                    if (tab == null || tab == searchTab || tab == hotbarTab) {
                         continue;
                     }
                     try {

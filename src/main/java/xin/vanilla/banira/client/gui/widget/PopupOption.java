@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -425,7 +426,8 @@ public class PopupOption extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (beforeRender != null) beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
             if (afterRender != null) afterRender.accept(this);
@@ -463,7 +465,7 @@ public class PopupOption extends BaseWidget {
                     FontDrawArgs args = FontDrawArgs.of(text.stack(stack).font(font).color(textColor))
                             .x(adjustedX + PAD_LEFT).y(adjustedY + PAD_TOP + i * (font.lineHeight + 1));
                     if (maxWidth > 0) args.maxWidth(maxWidth).position(EnumEllipsisPosition.MIDDLE);
-                    LabelWidget.drawLimitedText(args);
+                    LabelWidget.drawLimitedText(graphics, args);
                     lineOffset += StringUtils.getLineCount(text.content());
                 }
             }
@@ -483,8 +485,8 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(PoseStack stack, InputStateManager inputState) {
-        render(stack, 0);
+    public void render(GuiGraphics graphics, InputStateManager inputState) {
+        render(graphics, 0);
     }
 
     private void ensureNotBuilt() {

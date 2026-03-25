@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -459,7 +460,8 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         if (renderCoordinate == null) return;
 
@@ -470,7 +472,7 @@ public class DropdownSelectWidget extends InputWidget {
         if (tagMode) {
             skipTextContentForRendering = true;
         }
-        super.render(stack, partialTicks);
+        super.render(graphics, partialTicks);
         skipTextContentForRendering = false;
         paddingRight(5);
 
@@ -483,7 +485,7 @@ public class DropdownSelectWidget extends InputWidget {
         int contentWidth = tagMode ? getTagContentWidth() : (drawWidth - paddingLeft() - paddingRight());
 
         if (tagMode) {
-            renderTags(stack, contentLeft, drawY, contentWidth, drawHeight);
+            renderTags(graphics, contentLeft, drawY, contentWidth, drawHeight);
         }
 
         if (!value().isEmpty() || tagMode) {
@@ -508,16 +510,16 @@ public class DropdownSelectWidget extends InputWidget {
         }
 
         if (!value().isEmpty() && isMouseOverClearButton() && screen != null) {
-            drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal("清空"));
+            drawTooltipAtScreenCoords(graphics, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal("清空"));
         }
 
         if (screen != null && !isMouseOverClearButton() && !isMouseOverArrow()) {
             if (tagMode && isMouseOverInputArea()) {
-                drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", selectedValues)));
+                drawTooltipAtScreenCoords(graphics, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", selectedValues)));
             } else if (!value().isEmpty() && !dropdownOpen && isMouseOverInputArea()) {
                 String fullContent = value();
                 if (!fullContent.isEmpty()) {
-                    drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(fullContent));
+                    drawTooltipAtScreenCoords(graphics, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(fullContent));
                 }
             }
         }
@@ -566,7 +568,8 @@ public class DropdownSelectWidget extends InputWidget {
         return mx >= absX && mx < absX + w && my >= absY && my < absY + renderCoordinate.height();
     }
 
-    private void renderTags(PoseStack stack, int contentLeft, int drawY, int contentWidth, int drawHeight) {
+    private void renderTags(GuiGraphics graphics, int contentLeft, int drawY, int contentWidth, int drawHeight) {
+        PoseStack stack = graphics.pose();
         if (selectedValues.isEmpty()) return;
         if (screen == null) return;
 
@@ -613,7 +616,7 @@ public class DropdownSelectWidget extends InputWidget {
 
             AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
             AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-            font.draw(stack, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
+            graphics.drawString(font, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor, false);
 
             int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
             AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);

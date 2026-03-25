@@ -3,11 +3,7 @@ package xin.vanilla.banira.client.event;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ClientChatEvent;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.client.event.TextureStitchEvent;
+import net.minecraftforge.client.event.*;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -75,10 +71,10 @@ public final class BaniraClientEventHub {
                 QuickActionOverlay.resetSystemIconTextureCache();
             }
         });
-        Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getPoseStack()));
+        Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getGuiGraphics().pose()));
         Client.onRenderOverlayPost(event -> {
             if (VanillaGuiOverlay.PLAYER_LIST.id().equals(event.getOverlay().id()) && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.getPoseStack());
+                NotificationManager.get().render(event.getGuiGraphics().pose());
             }
         });
     }

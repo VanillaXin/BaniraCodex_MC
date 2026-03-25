@@ -92,7 +92,7 @@ public final class MessageUtils {
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(message.languageCode(Translator.getServerLanguage()).toChat(), false);
+            source.sendSuccess(() -> message.languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
             source.sendFailure(message.languageCode(Translator.getServerLanguage()).toChat());
         }
@@ -129,7 +129,7 @@ public final class MessageUtils {
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
+            source.sendSuccess(() -> BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
             source.sendFailure(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
         }

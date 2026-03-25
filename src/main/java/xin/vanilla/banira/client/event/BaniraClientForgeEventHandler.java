@@ -2,11 +2,7 @@ package xin.vanilla.banira.client.event;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ClientChatEvent;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.client.event.TextureStitchEvent;
+import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -108,7 +104,7 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPostInventoryQuickAction(ScreenEvent.Render.Post event) {
         if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
-            QuickActionOverlay.get().render(event.getPoseStack(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+            QuickActionOverlay.get().render(event.getGuiGraphics(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
     }

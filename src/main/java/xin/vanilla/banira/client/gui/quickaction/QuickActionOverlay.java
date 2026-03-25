@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -66,6 +67,11 @@ public final class QuickActionOverlay {
     private static final int MENU_ICON_GAP = 4;
     private static final float CONTEXT_MENU_CORNER_RADIUS = 2;
     private static final float CONTEXT_MENU_BORDER_THICKNESS = 1f;
+    /**
+     * 托盘格子内物品由 {@link xin.vanilla.banira.client.gui.widget.ItemWidget#renderGuiItemScaled} 在局部 pose 上再 translate z=200，
+     * 右键菜单与悬停提示若与物品同层则会被挡住，须在菜单/提示绘制前额外抬高 Z（须大于 200）。
+     */
+    private static final float CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS = 400f;
     /**
      * 在配置的 cellGap 上额外增加格子间距（像素）
      */
@@ -628,7 +634,8 @@ public final class QuickActionOverlay {
         }
     }
 
-    public void render(PoseStack stack, Screen screen, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics graphics, Screen screen, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!isSupportedInventoryScreen(screen)) {
             closeUi();
             return;
@@ -676,7 +683,7 @@ public final class QuickActionOverlay {
         hoveredSlot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, allowEmptyHover);
 
         stack.pushPose();
-        stack.translate(0, 0, 800);
+        stack.translate(0, 0, 4000);
 
         RenderSystem.enableBlend();
 
@@ -706,7 +713,7 @@ public final class QuickActionOverlay {
             int ix = xy[0] + iconOff;
             int iy = xy[1] + iconOff;
             if (s == 0) {
-                systemIcon().render(stack, mc, ix, iy, iconSize);
+                systemIcon().render(graphics, mc, ix, iy, iconSize);
             } else {
                 boolean skipIcon = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot;
                 if (!skipIcon) {
@@ -718,7 +725,7 @@ public final class QuickActionOverlay {
                         drawEntry = reg.getEntry(id);
                     }
                     if (drawEntry != null && drawEntry.display() == EnumQuickActionDisplay.ICON) {
-                        drawEntry.quickIcon().render(stack, mc, ix, iy, iconSize);
+                        drawEntry.quickIcon().render(graphics, mc, ix, iy, iconSize);
                     }
                 }
             }
@@ -739,27 +746,32 @@ public final class QuickActionOverlay {
                 int gy = mouseY - cell / 2;
                 prepareQuickActionSlotDrawState();
                 drawSlotBorder(stack, gx, gy, cell, borderRgb);
-                dragged.quickIcon().render(stack, mc, gx + iconOff, gy + iconOff, iconSize);
+                dragged.quickIcon().render(graphics, mc, gx + iconOff, gy + iconOff, iconSize);
             }
         }
 
+        stack.pushPose();
+        stack.translate(0, 0, CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+
         if (contextOpen) {
-            renderContextMenu(stack, screen, mc, mouseX, mouseY, theme);
+            renderContextMenu(graphics, stack, screen, mc, mouseX, mouseY, theme);
         }
+
+        if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
+            graphics.renderTooltip(mc.font, Component.literal(contextTooltipLine), mouseX, mouseY);
+        }
+
+        renderQuickActionEntryIconTooltipIfHovered(graphics, stack, mc, mouseX, mouseY, theme);
 
         stack.popPose();
 
-        if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
-            screen.renderTooltip(stack, Component.literal(contextTooltipLine), mouseX, mouseY);
-        }
-
-        renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);
+        stack.popPose();
     }
 
     /**
      * 悬停于带 label 的快捷图标时，使用主题 Tooltip 样式绘制说明。
      */
-    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderQuickActionEntryIconTooltipIfHovered(GuiGraphics graphics, PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
         if (contextOpen) {
             return;
         }
@@ -1351,7 +1363,7 @@ public final class QuickActionOverlay {
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }
 
-    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderContextMenu(GuiGraphics graphics, PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
         List<CtxRow> rows = buildContextRows();
         layoutContextMenu(rows, mc);
 
@@ -1407,13 +1419,13 @@ public final class QuickActionOverlay {
             if (row.menuIcon != null) {
                 int iconX = x + MENU_TEXT_PAD_X;
                 int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
+                row.menuIcon.renderForMenu(graphics, mc, iconX, iconY, MENU_ICON_SIZE);
             }
             float textX = row.menuIcon != null
                     ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
                     : x + MENU_TEXT_PAD_X;
             float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
-            font.draw(stack, shown, textX, textY, textColor);
+            graphics.drawString(font, shown, textX, textY, textColor, false);
             if (hi && !shown.equals(full)) {
                 contextTooltipLine = full;
             }

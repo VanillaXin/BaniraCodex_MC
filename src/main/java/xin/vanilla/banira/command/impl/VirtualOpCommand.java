@@ -98,7 +98,9 @@ public final class VirtualOpCommand {
                     MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
                 }
             } else {
-                source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
+                final String langFinal = language;
+                final String targetDisplayName = target.getDisplayName().getString();
+                source.sendSuccess(() -> BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", targetDisplayName, permissionsStr).languageCode(langFinal).toChat(langFinal), true);
             }
             source.getServer().getPlayerList().sendPlayerPermissionLevel(target);
         }

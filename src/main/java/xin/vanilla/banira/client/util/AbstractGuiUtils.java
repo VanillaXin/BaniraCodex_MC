@@ -5,7 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
@@ -96,7 +95,7 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 恢复与 {@link GuiComponent} 一致的常见 GUI 状态，供自定义绘制链结束后调用。
+     * 恢复与 {@link net.minecraft.client.gui.GuiGraphics} 绘制链常见的 GUI 状态，供自定义绘制链结束后调用。
      */
     public static void restoreGuiRenderState() {
         RenderSystem.enableBlend();
@@ -105,9 +104,79 @@ public final class AbstractGuiUtils {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
     }
 
+    /**
+     * 与 {@link net.minecraft.client.gui.GuiGraphics} 中 {@code innerBlit(ResourceLocation,...)} 等价的纹理四边形绘制（使用当前 PoseStack）。
+     */
+    private static void innerBlitTexture(
+            PoseStack poseStack,
+            ResourceLocation texture,
+            int x0,
+            int x1,
+            int y0,
+            int y1,
+            int z,
+            float u0,
+            float u1,
+            float v0,
+            float v1
+    ) {
+        RenderSystem.setShaderTexture(0, texture);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        Matrix4f matrix4f = poseStack.last().pose();
+        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferBuilder.vertex(matrix4f, (float) x0, (float) y0, (float) z).uv(u0, v0).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x0, (float) y1, (float) z).uv(u0, v1).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x1, (float) y1, (float) z).uv(u1, v1).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x1, (float) y0, (float) z).uv(u1, v0).endVertex();
+        BufferUploader.drawWithShader(bufferBuilder.end());
+    }
+
+    private static void blitInner(
+            PoseStack poseStack,
+            ResourceLocation texture,
+            int x0,
+            int x1,
+            int y0,
+            int y1,
+            int z,
+            float uOffset,
+            float vOffset,
+            int regionWidth,
+            int regionHeight,
+            int textureWidth,
+            int textureHeight
+    ) {
+        innerBlitTexture(
+                poseStack,
+                texture,
+                x0,
+                x1,
+                y0,
+                y1,
+                z,
+                (uOffset + 0.0F) / (float) textureWidth,
+                (uOffset + (float) regionWidth) / (float) textureWidth,
+                (vOffset + 0.0F) / (float) textureHeight,
+                (vOffset + (float) regionHeight) / (float) textureHeight
+        );
+    }
+
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
         AbstractGuiUtils.bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, z, destWidth, destHeight, sprite);
+        innerBlitTexture(
+                stack,
+                sprite.atlasLocation(),
+                x0,
+                x0 + destWidth,
+                y0,
+                y0 + destHeight,
+                z,
+                sprite.getU0(),
+                sprite.getU1(),
+                sprite.getV0(),
+                sprite.getV1()
+        );
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
@@ -116,7 +185,7 @@ public final class AbstractGuiUtils {
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
         AbstractGuiUtils.bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, z, (float) u0, (float) v0, width, height, textureHeight, textureWidth);
+        blitInner(stack, texture, x0, x0 + width, y0, y0 + height, z, (float) u0, (float) v0, width, height, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
@@ -125,7 +194,7 @@ public final class AbstractGuiUtils {
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
         AbstractGuiUtils.bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
+        blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
@@ -134,7 +203,7 @@ public final class AbstractGuiUtils {
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
         AbstractGuiUtils.bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
+        blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
@@ -735,7 +804,7 @@ public final class AbstractGuiUtils {
      * @param argb 像素的颜色
      */
     public static void drawPixel(PoseStack stack, int x, int y, int argb) {
-        GuiComponent.fill(stack, x, y, x + 1, y + 1, argb);
+        fillEx(stack, x, y, 1f, 1f, argb);
     }
 
     /**
@@ -801,7 +870,7 @@ public final class AbstractGuiUtils {
      */
     public static void drawRoundedRect(PoseStack stack, int x, int y, int width, int height, int argb, int radius) {
         if (radius <= 0) {
-            GuiComponent.fill(stack, x, y, x + width, y + height, argb);
+            fillEx(stack, x, y, width, height, argb);
             return;
         }
 

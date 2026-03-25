@@ -6,14 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
@@ -52,7 +52,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         this.z = entity.getZ();
         this.yaw = entity.getYRot();
         this.pitch = entity.getXRot();
-        this.dimension = entity.level.dimension();
+        this.dimension = entity.level().dimension();
     }
 
     public WorldCoordinate(double x, double y, double z) {

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -41,7 +42,8 @@ public class CircleWidget extends BaseShapeWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -82,6 +84,6 @@ public class CircleWidget extends BaseShapeWidget {
             BaseShapeWidget.drawShape(borderArgs);
         }
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
     }
 }

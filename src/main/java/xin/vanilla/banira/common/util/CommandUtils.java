@@ -350,7 +350,7 @@ public final class CommandUtils {
         tryApplyServerConfigBake(configClazz);
 
         Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_success", configKey, parsed);
-        source.sendSuccess(component.toChat(lang), true);
+        source.sendSuccess(() -> component.toChat(lang), true);
 
         return 1;
     }

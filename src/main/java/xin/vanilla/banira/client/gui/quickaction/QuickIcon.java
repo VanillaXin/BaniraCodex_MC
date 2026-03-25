@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -105,27 +106,28 @@ public class QuickIcon {
     /**
      * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
      */
-    public void renderForMenu(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void renderForMenu(@Nonnull GuiGraphics graphics, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
         if (kind == Kind.ITEM) {
-            ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
+            ItemWidget.renderGuiItemFlatBlit(graphics.pose(), mc, itemStack, x, y, size);
             return;
         }
-        render(stack, mc, x, y, size);
+        render(graphics, mc, x, y, size);
     }
 
     /**
      * 在 GUI 坐标系下绘制图标，尺寸为 {@code size}×{@code size}。
      */
-    public void render(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
+        PoseStack stack = graphics.pose();
         switch (kind) {
             case ITEM: {
-                ItemWidget.renderGuiItemScaled(mc, itemStack, x, y, size);
+                ItemWidget.renderGuiItemScaled(graphics, itemStack, x, y, size);
                 break;
             }
             case EFFECT: {
@@ -138,7 +140,7 @@ public class QuickIcon {
             case RESOURCE: {
                 ResourceLocation loc = texture;
                 if (loc == null) {
-                    item(new ItemStack(Items.PAPER)).render(stack, mc, x, y, size);
+                    item(new ItemStack(Items.PAPER)).render(graphics, mc, x, y, size);
                     return;
                 }
                 KeyValue<Integer, Integer> sz = TextureUtils.getTextureSize(loc);

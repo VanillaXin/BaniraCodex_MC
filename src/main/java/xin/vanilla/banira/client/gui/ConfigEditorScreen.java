@@ -2,6 +2,7 @@ package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
@@ -920,7 +921,8 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(PoseStack stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         BaniraColorConfig theme = getEffectiveTheme();
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
@@ -956,11 +958,11 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
-            contentRootPanel.render(stack, partialTicks);
+            contentRootPanel.render(graphics, partialTicks);
         }
         if (scrollbar != null && scrollbar.visible()) {
             if (scrollbar.enabled() && scrollbar.needsUpdate()) scrollbar.update();
-            scrollbar.render(stack, partialTicks);
+            scrollbar.render(graphics, partialTicks);
         }
 
         AbstractGuiUtils.disableScissor();
@@ -968,7 +970,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         for (ButtonWidget btn : bottomButtons) {
             if (btn.visible()) {
                 if (btn.enabled() && btn.needsUpdate()) btn.update();
-                btn.render(stack, partialTicks);
+                btn.render(graphics, partialTicks);
             }
         }
 
@@ -977,13 +979,13 @@ public class ConfigEditorScreen extends BaniraScreen {
             if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) continue;
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget.enabled() && widget.needsUpdate()) widget.update();
-            widget.render(stack, partialTicks);
+            widget.render(graphics, partialTicks);
         }
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
-        renderWidgets(stack, partialTicks);
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        renderWidgets(graphics, partialTicks);
     }
 
     @Override
@@ -1127,9 +1129,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
 
         @Override
-        public void render(PoseStack stack, float partialTicks) {
+        public void render(GuiGraphics graphics, float partialTicks) {
+            PoseStack stack = graphics.pose();
             if (!visible) return;
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
         }
     }
 }

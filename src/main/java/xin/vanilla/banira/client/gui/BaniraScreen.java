@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -136,21 +137,21 @@ public abstract class BaniraScreen extends Screen {
         super(component.toVanilla(Translator.getClientLanguage()));
     }
 
-    public void renderButtons(PoseStack stack, float partialTicks) {
-        this.renderButtons(stack, inputState.mouseX(), inputState.mouseY(), partialTicks);
+    public void renderButtons(GuiGraphics graphics, float partialTicks) {
+        this.renderButtons(graphics, inputState.mouseX(), inputState.mouseY(), partialTicks);
     }
 
-    public void renderButtons(PoseStack stack, double mouseX, double mouseY, float partialTicks) {
-        this.renderables.forEach(button -> button.render(stack, (int) mouseX, (int) mouseY, partialTicks));
+    public void renderButtons(GuiGraphics graphics, double mouseX, double mouseY, float partialTicks) {
+        this.renderables.forEach(button -> button.render(graphics, (int) mouseX, (int) mouseY, partialTicks));
     }
 
     @Override
-    public void renderBackground(@Nonnull PoseStack stack) {
+    public void renderBackground(@Nonnull GuiGraphics graphics) {
         if (this.minecraft != null && this.minecraft.level != null) {
-            super.renderBackground(stack);
+            super.renderBackground(graphics);
         } else {
             BaniraColorConfig t = getEffectiveTheme();
-            fillGradient(stack, 0, 0, this.width, this.height, t.bgPrimary(), t.bgSecondary());
+            graphics.fillGradient(0, 0, this.width, this.height, t.bgPrimary(), t.bgSecondary());
         }
     }
 
@@ -183,38 +184,39 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
      */
-    private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
+    private final List<Consumer<GuiGraphics>> deferredTooltipRenders = new ArrayList<>();
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
      */
-    public void addDeferredTooltipRender(Consumer<PoseStack> render) {
+    public void addDeferredTooltipRender(Consumer<GuiGraphics> render) {
         if (render != null) deferredTooltipRenders.add(render);
     }
 
-    private void flushDeferredTooltipRenders(PoseStack stack) {
-        for (Consumer<PoseStack> r : deferredTooltipRenders) r.accept(stack);
+    private void flushDeferredTooltipRenders(GuiGraphics graphics) {
+        for (Consumer<GuiGraphics> r : deferredTooltipRenders) r.accept(graphics);
         deferredTooltipRenders.clear();
     }
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (LOGGER.isDebugEnabled()) {
             totalRenderCount++;
             this.renderCount++;
         }
         cachedTheme = getEffectiveTheme();
 
-        this.onRender(stack, partialTicks);
-        this.flushDeferredTooltipRenders(stack);
+        this.onRender(graphics, mouseX, mouseY, partialTicks);
+        this.flushDeferredTooltipRenders(graphics);
 
-        this.popupOption.render(stack, inputState);
+        this.popupOption.render(graphics, inputState);
         this.cursor.draw(stack, mouseX, mouseY);
         cachedTheme = null;
     }
 
-    protected abstract void onRender(PoseStack stack, float partialTicks);
+    protected abstract void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks);
 
     @Override
     public void removed() {
@@ -509,14 +511,14 @@ public abstract class BaniraScreen extends Screen {
         return false;
     }
 
-    protected void renderWidgets(PoseStack stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
         List<IWidget> snapshot = new ArrayList<>(widgets);
         for (IWidget widget : snapshot) {
             if (widget.visible() && widget.parent() == null) {
                 if (widget.enabled() && widget.needsUpdate()) {
                     widget.update();
                 }
-                widget.render(stack, partialTicks);
+                widget.render(graphics, partialTicks);
             }
         }
     }

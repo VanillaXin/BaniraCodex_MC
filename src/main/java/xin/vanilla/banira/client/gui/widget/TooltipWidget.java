@@ -1,15 +1,16 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -92,7 +93,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         if (mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
@@ -103,19 +105,19 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 EnumSeason season = screen.season();
                 Text textToDraw = text;
                 boolean useTexture = resolvePopupUseTexture(theme);
-                screen.addDeferredTooltipRender(s -> {
-                    s.pushPose();
-                    s.last().pose().identity();
+                screen.addDeferredTooltipRender(g -> {
+                    g.pose().pushPose();
+                    g.pose().last().pose().identity();
                     if (itemStack != null && !itemStack.isEmpty()) {
-                        drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
+                        drawItemTooltip(g.pose(), itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {
                         List<net.minecraft.network.chat.Component> tip = new ArrayList<>();
                         tip.add(textToDraw.toComponent().toChat());
-                        screen.renderComponentTooltip(s, tip, mouseX, mouseY);
+                        g.renderTooltip(screen.getFont(), tip, java.util.Optional.empty(), mouseX, mouseY);
                     } else {
-                        drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
+                        drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(textToDraw.stack(g.pose())).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
                     }
-                    s.popPose();
+                    g.pose().popPose();
                 });
             } else {
                 stack.pushPose();
@@ -128,7 +130,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                     if (tooltip.isEmpty()) {
                         tooltip.add(text.toComponent().toChat());
                     }
-                    screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
+                    graphics.renderTooltip(screen.getFont(), tooltip, java.util.Optional.empty(), mouseX, mouseY);
                 } else {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     EnumSeason season = screen.season();
@@ -137,7 +139,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 stack.popPose();
             }
         }
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
     }
 
     private boolean resolvePopupUseTexture(BaniraColorConfig theme) {

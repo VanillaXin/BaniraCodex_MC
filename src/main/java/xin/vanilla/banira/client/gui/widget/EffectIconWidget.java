@@ -4,7 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import xin.vanilla.banira.BaniraComponent;
@@ -66,13 +69,14 @@ public class EffectIconWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         if (renderCoordinate == null) return;
 
         MobEffectInstance current = getCurrentMobEffectInstance();
         if (current == null || EffectUtils.isEffectNull(current)) {
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
             return;
         }
 
@@ -82,16 +86,16 @@ public class EffectIconWidget extends BaseWidget {
         int h = (int) renderCoordinate.height();
         drawEffectIcon(stack, screen.getFont(), current, x, y, w, h, showText);
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
 
         if (enableTooltip && mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
-            renderTooltip(stack, mouseX, mouseY, current);
+            renderTooltip(graphics, stack, mouseX, mouseY, current);
         }
     }
 
-    private void renderTooltip(PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
+    private void renderTooltip(GuiGraphics graphics, PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
         String displayName = EffectUtils.getEffectDisplayName(effectInstance);
         String duration = effectInstance.getDuration() > 0
                 ? DateUtils.toMaxUnitString(effectInstance.getDuration(),
@@ -115,7 +119,7 @@ public class EffectIconWidget extends BaseWidget {
                                     .popupUseTexture(theme.tooltipUseTexture()),
                             theme, screen.season());
                 } else {
-                    screen.renderTooltip(stack, BaniraComponent.get().literal(tip.toString()).toVanilla(), mouseX, mouseY);
+                    graphics.renderTooltip(screen.getFont(), BaniraComponent.get().literal(tip.toString()).toVanilla(), mouseX, mouseY);
                 }
             }
             stack.popPose();
@@ -141,6 +145,23 @@ public class EffectIconWidget extends BaseWidget {
         return this;
     }
 
+
+    private static void drawEffectIconText(Font font, PoseStack stack, net.minecraft.network.chat.Component vanilla, float x, float y, int color) {
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        font.drawInBatch(
+                vanilla.getVisualOrderText(),
+                x,
+                y,
+                color,
+                false,
+                stack.last().pose(),
+                bufferSource,
+                Font.DisplayMode.NORMAL,
+                0,
+                15728880
+        );
+        bufferSource.endBatch();
+    }
 
     /**
      * 绘制效果图标
@@ -179,7 +200,7 @@ public class EffectIconWidget extends BaseWidget {
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
                 int argb = 0xFFFFFFFF;
-                font.draw(stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
+                drawEffectIconText(font, stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
@@ -188,7 +209,7 @@ public class EffectIconWidget extends BaseWidget {
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
                 int argb = 0xFFFFFFFF;
-                font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
+                drawEffectIconText(font, stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
         }
     }

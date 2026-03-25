@@ -4,7 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -81,7 +84,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -95,9 +99,53 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 args.y(y() + Math.max(0, (height() - textHeight) / 2.0));
             }
         }
-        drawLimitedText(args);
+        drawLimitedText(graphics, args);
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
+    }
+
+    /**
+     * 在具备 {@link GuiGraphics} 时使用其字符串绘制（与 Screen 批处理一致）；否则回退 {@link Font#drawInBatch}。
+     */
+    private static void drawComponentLine(
+            FontDrawArgs args,
+            Font font,
+            net.minecraft.network.chat.Component vanilla,
+            float x,
+            float y,
+            int color,
+            boolean shadow
+    ) {
+        GuiGraphics g = args.guiGraphics();
+        PoseStack stack = args.text().stack();
+        if (g != null) {
+            g.drawString(font, vanilla, (int) x, (int) y, color, shadow);
+        } else {
+            MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+            font.drawInBatch(
+                    vanilla.getVisualOrderText(),
+                    x,
+                    y,
+                    color,
+                    shadow,
+                    stack.last().pose(),
+                    bufferSource,
+                    Font.DisplayMode.NORMAL,
+                    0,
+                    15728880
+            );
+            bufferSource.endBatch();
+        }
+    }
+
+    public static void drawLimitedText(@Nonnull GuiGraphics graphics, @Nonnull FontDrawArgs args) {
+        GuiGraphics prev = args.guiGraphics();
+        args.guiGraphics(graphics);
+        try {
+            drawLimitedText(args);
+        } finally {
+            args.guiGraphics(prev);
+        }
     }
 
     /**
@@ -357,11 +405,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 }
 
                 Text lineText = textTemplate.text(line);
-                if (hasShadow) {
-                    font.drawShadow(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
-                } else {
-                    font.draw(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
-                }
+                net.minecraft.network.chat.Component vanillaLine = lineText.toComponent().toVanilla(Translator.getClientLanguage());
+                drawComponentLine(args, font, vanillaLine, (float) drawX + xOffset, yPos, textColor, hasShadow);
             }
 
             if (needsScale) {

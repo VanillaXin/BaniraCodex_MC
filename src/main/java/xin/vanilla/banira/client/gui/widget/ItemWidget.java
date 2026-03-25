@@ -8,13 +8,14 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraftforge.client.model.data.ModelData;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -25,6 +26,7 @@ import xin.vanilla.banira.common.util.ItemUtils;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 物品Widget
@@ -79,7 +81,7 @@ public class ItemWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -90,22 +92,21 @@ public class ItemWidget extends BaseWidget {
 
         ItemStack currentItemStack = getCurrentItemStack();
         if (currentItemStack == null || currentItemStack.isEmpty()) {
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
             return;
         }
 
         currentItemStack.setCount(itemCount);
 
-        ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
-        renderItem(itemRenderer, screen.getFont(), currentItemStack, (int) absoluteX(), (int) absoluteY(), showCountText);
+        renderItem(graphics, screen.getFont(), currentItemStack, (int) x(), (int) y(), showCountText);
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
 
         if (enableTooltip && !ItemUtils.isItemNull(currentItemStack)) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
             if (mouseInside) {
-                renderTooltip(stack, mouseX, mouseY, currentItemStack);
+                deferTooltipRender(currentItemStack, mouseX, mouseY);
             }
         }
     }
@@ -127,25 +128,31 @@ public class ItemWidget extends BaseWidget {
     }
 
     /**
-     * 渲染 Tooltip
+     * 延迟到帧末、在单位矩阵下绘制，避免父级 translate 导致错位
      */
-    private void renderTooltip(PoseStack stack, int mouseX, int mouseY, ItemStack itemStack) {
-        List<Component> tooltip = itemStack.getTooltipLines(
+    private void deferTooltipRender(ItemStack itemStack, int mouseX, int mouseY) {
+        List<net.minecraft.network.chat.Component> tooltip = itemStack.getTooltipLines(
                 Minecraft.getInstance().player,
                 InputStateManager.isShiftPressingStatic() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
         );
-
-        if (!tooltip.isEmpty()) {
-            stack.pushPose();
-            stack.translate(-absoluteX(), -absoluteY(), 0);
-            if (vanillaTooltip) {
-                screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
-            } else {
-                EnumSeason season = seasonTooltip && screen != null ? screen.season() : null;
-                TooltipWidget.drawItemTooltip(stack, itemStack, mouseX, mouseY, season);
-            }
-            stack.popPose();
+        if (tooltip.isEmpty()) {
+            return;
         }
+        final int mx = mouseX;
+        final int my = mouseY;
+        final ItemStack tipStack = itemStack.copy();
+        EnumSeason season = seasonTooltip && screen != null ? screen.season() : null;
+        final EnumSeason seasonFinal = season;
+        screen.addDeferredTooltipRender(g -> {
+            g.pose().pushPose();
+            g.pose().last().pose().identity();
+            if (vanillaTooltip) {
+                g.renderTooltip(screen.getFont(), tooltip, Optional.empty(), mx, my);
+            } else {
+                TooltipWidget.drawItemTooltip(g.pose(), tipStack, mx, my, seasonFinal);
+            }
+            g.pose().popPose();
+        });
     }
 
     /**
@@ -178,7 +185,7 @@ public class ItemWidget extends BaseWidget {
         RenderSystem.defaultBlendFunc();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
-        TextureAtlasSprite sprite = model.getParticleIcon();
+        TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
         int tint = mc.getItemColors().getColor(stack, 0);
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;
@@ -194,22 +201,23 @@ public class ItemWidget extends BaseWidget {
     /**
      * 在 GUI 中按像素边长绘制物品堆栈
      */
-    public static void renderGuiItemScaled(@Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
+    public static void renderGuiItemScaled(@Nonnull GuiGraphics graphics, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         float s = size / 16f;
-        // 1.19+：renderGuiItem(PoseStack,...) 使用「GUI 局部」PoseStack，勿传入 RenderSystem#getModelViewStack，否则会打乱全局矩阵导致物品不显示
-        PoseStack poseStack = new PoseStack();
-        poseStack.translate(x, y, 200f);
-        poseStack.scale(s, s, s);
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x, y, 200f);
+        pose.scale(s, s, s);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         Lighting.setupFor3DItems();
         try {
-            mc.getItemRenderer().renderGuiItem(poseStack, stack, 0, 0);
+            graphics.renderItem(stack, 0, 0);
         } finally {
+            pose.popPose();
             Lighting.setupForFlatItems();
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             AbstractGuiUtils.restoreGuiRenderState();
@@ -219,12 +227,10 @@ public class ItemWidget extends BaseWidget {
     /**
      * 绘制物品图标
      */
-    public static void renderItem(ItemRenderer itemRenderer, Font font, ItemStack itemStack, int x, int y, boolean showText) {
-        renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
+    public static void renderItem(GuiGraphics graphics, Font font, ItemStack itemStack, int x, int y, boolean showText) {
+        renderGuiItemScaled(graphics, itemStack, x, y, 16);
         if (showText && !itemStack.isEmpty()) {
-            PoseStack poseStack = new PoseStack();
-            poseStack.translate(x, y, 200f);
-            itemRenderer.renderGuiItemDecorations(poseStack, font, itemStack, 0, 0, String.valueOf(itemStack.getCount()));
+            graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
         }
     }
 }

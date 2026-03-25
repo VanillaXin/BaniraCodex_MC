@@ -18,7 +18,7 @@ public interface IIdentifier {
     }
 
     default ResourceLocation create(String namespace, String path) {
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+        return ResourceLocation.tryBuild(namespace, path);
     }
 
     default ResourceLocation parse(String identifier) {

@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -43,7 +44,8 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!parent.previewExpanded()) return;
 
         ScreenCoordinate pb = parent.getPreviewBounds();
@@ -107,7 +109,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
                     AbstractGuiUtils.fill(s, (int) pb.x() + 1, itemY, contentWidth, ITEM_HEIGHT, popupSelected);
                 }
 
-                font.draw(s, display, (int) pb.x() + PAD, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor);
+                graphics.drawString(font, display, (int) pb.x() + PAD, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
 
                 int closeX = (int) (pb.x() + contentWidth - PAD - TAG_CLOSE_SIZE);
                 int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;

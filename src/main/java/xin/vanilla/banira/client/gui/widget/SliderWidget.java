@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -294,7 +295,8 @@ public class SliderWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -317,7 +319,7 @@ public class SliderWidget extends BaseWidget {
                 inlineInputWidget.bounds(new ScreenCoordinate(0, 0, width, height));
                 inlineInputWidget.visible(true);
             }
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
             return;
         }
 
@@ -351,11 +353,11 @@ public class SliderWidget extends BaseWidget {
                 renderSquareStyle(stack, x, y, width, height);
             }
             if (showValue) {
-                renderValue(stack, x, y, width, height);
+                renderValue(graphics, stack, x, y, width, height);
             }
         }
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
         // endregion 渲染逻辑
     }
 
@@ -419,7 +421,7 @@ public class SliderWidget extends BaseWidget {
         }
     }
 
-    private void renderValue(PoseStack stack, int x, int y, int width, int height) {
+    private void renderValue(GuiGraphics graphics, PoseStack stack, int x, int y, int width, int height) {
         Font font = Minecraft.getInstance().font;
         String valueStr = formatDisplayValue(value);
         int textW = font.width(valueStr);
@@ -437,7 +439,7 @@ public class SliderWidget extends BaseWidget {
             bgRect.rect().radius(2).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(bgRect);
         }
-        font.draw(stack, valueStr, textX, textY, valueTextColor);
+        graphics.drawString(font, valueStr, textX, textY, valueTextColor, false);
     }
 
     /**

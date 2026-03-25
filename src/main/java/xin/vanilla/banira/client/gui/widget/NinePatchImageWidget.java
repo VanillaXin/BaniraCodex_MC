@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.data.TransformArgs;
@@ -59,7 +60,8 @@ public class NinePatchImageWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) {
             return;
         }
@@ -90,7 +92,7 @@ public class NinePatchImageWidget extends BaseWidget {
                 }
         );
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
     }
 
     /**

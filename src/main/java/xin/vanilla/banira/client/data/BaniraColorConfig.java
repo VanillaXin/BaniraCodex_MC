@@ -257,7 +257,7 @@ public final class BaniraColorConfig {
         if (surfaceReadsAsDarkUi()) {
             return lerpRgbOpaque(0xFF000000 | (bgSurface & 0xFFFFFF), a, 0.62f);
         }
-        return lerpRgbOpaque(0xFF000000 | (bgSurface & 0xFFFFFF), a, 0.52f);
+        return 0xFF000000 | a;
     }
 
     /**

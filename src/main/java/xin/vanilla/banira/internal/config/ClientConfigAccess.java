@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.config;
 
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.lang.reflect.Method;
@@ -12,6 +13,9 @@ import java.lang.reflect.Proxy;
 final class ClientConfigAccess {
 
     private static final EnumSeason DEFAULT_GUI_THEME_STYLE = EnumSeason.AUTO;
+    private static final EnumGuiNightMode DEFAULT_GUI_NIGHT_MODE = EnumGuiNightMode.OFF;
+    private static final int DEFAULT_NIGHT_START_MINUTE = 22 * 60;
+    private static final int DEFAULT_NIGHT_END_MINUTE = 6 * 60;
 
     private ClientConfigAccess() {
     }
@@ -49,10 +53,51 @@ final class ClientConfigAccess {
                     holder.set("guiThemeStyle", args[0]);
                 }
                 return proxy;
+            case "guiNightMode":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_GUI_NIGHT_MODE;
+                    }
+                    return EnumGuiNightMode.valueOfDefault(holder.get("guiNightMode"));
+                }
+                if (holder != null) {
+                    holder.set("guiNightMode", args[0]);
+                }
+                return proxy;
+            case "guiNightModeStartMinute":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NIGHT_START_MINUTE;
+                    }
+                    return intConfig(holder, "guiNightModeStartMinute", DEFAULT_NIGHT_START_MINUTE);
+                }
+                if (holder != null) {
+                    holder.set("guiNightModeStartMinute", args[0]);
+                }
+                return proxy;
+            case "guiNightModeEndMinute":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NIGHT_END_MINUTE;
+                    }
+                    return intConfig(holder, "guiNightModeEndMinute", DEFAULT_NIGHT_END_MINUTE);
+                }
+                if (holder != null) {
+                    holder.set("guiNightModeEndMinute", args[0]);
+                }
+                return proxy;
             case "holder":
                 return holder;
             default:
                 throw new UnsupportedOperationException(method.toString());
         }
+    }
+
+    private static int intConfig(ConfigHolder holder, String path, int def) {
+        Object v = holder.get(path);
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
+        return def;
     }
 }

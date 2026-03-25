@@ -184,8 +184,9 @@ public class DebugScreen extends BaniraScreen {
                 NotificationManager.get().addNotification(notification);
             });
         } else {
-            reg.registerIcon(id, CollectionUtils.getRandomElement(ItemUtils.getAllItems()), label, ctx -> {
-                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Item Quick Action %s", ctx.entryId())));
+            ItemStack itemStack = CollectionUtils.getRandomElement(ItemUtils.getAllItems());
+            reg.registerIcon(id, itemStack, label, ctx -> {
+                Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked %s: %s", ctx.entryId(), ItemUtils.getItemHoverNameString(itemStack))));
                 notification.durationTime(3000);
                 NotificationManager.get().addNotification(notification);
             });

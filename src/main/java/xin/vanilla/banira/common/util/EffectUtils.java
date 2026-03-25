@@ -1,6 +1,9 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -54,6 +57,17 @@ public final class EffectUtils {
         return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
     }
 
+    @Nullable
+    public static ResourceLocation getEffectRegistry(Holder<MobEffect> holder) {
+        if (holder == null) return null;
+        return holder.unwrapKey().map(ResourceKey::location).orElse(null);
+    }
+
+    public static String getEffectRegistryString(Holder<MobEffect> holder) {
+        ResourceLocation registryName = getEffectRegistry(holder);
+        return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
+    }
+
     /**
      * 获取效果实例的注册ID
      */
@@ -92,7 +106,7 @@ public final class EffectUtils {
      */
     public static String getEffectDisplayName(MobEffectInstance effectInstance) {
         if (effectInstance == null) return "";
-        return getEffectDisplayName(effectInstance.getEffect());
+        return getEffectDisplayName(effectInstance.getEffect().value());
     }
 
     // endregion
@@ -103,7 +117,7 @@ public final class EffectUtils {
      * 检查效果实例是否为空或无效
      */
     public static boolean isEffectNull(MobEffectInstance effectInstance) {
-        return effectInstance == null || effectInstance.getEffect() == null;
+        return effectInstance == null;
     }
 
     /**
@@ -199,7 +213,7 @@ public final class EffectUtils {
         if (effect == null) {
             return new MobEffectInstance(MobEffects.LUCK, duration, amplifier);
         }
-        return new MobEffectInstance(effect, duration, amplifier);
+        return new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), duration, amplifier);
     }
 
     // endregion
@@ -261,7 +275,7 @@ public final class EffectUtils {
         try {
             Player player = Minecraft.getInstance().player;
             if (player != null) {
-                result.addAll(player.getActiveEffectsMap().keySet());
+                player.getActiveEffectsMap().keySet().forEach(h -> result.add(h.value()));
             }
         } catch (Throwable ignored) {
         }

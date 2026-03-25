@@ -41,9 +41,7 @@ public final class BaniraScheduler {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server == null) return;
 
@@ -52,9 +50,7 @@ public final class BaniraScheduler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
         runTask(clientTicks.incrementAndGet(), clientTasks, clientExecutedCount);
     }
 

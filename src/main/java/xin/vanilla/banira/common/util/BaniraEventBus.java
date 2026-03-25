@@ -348,8 +348,7 @@ public final class BaniraEventBus {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
         fire(serverTickCallbacks, event, "server tick");
     }
 

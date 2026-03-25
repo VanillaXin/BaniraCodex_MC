@@ -2,7 +2,8 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -10,8 +11,6 @@ import xin.vanilla.banira.internal.network.data.AdvancementData;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
-
 
 @Getter
 public class AdvancementToClient extends SplitPacket
@@ -28,8 +27,9 @@ public class AdvancementToClient extends SplitPacket
         super(buf);
         int size = buf.readVarInt();
         ArraySet<AdvancementData> advancements = new ArraySet<>();
+        RegistryFriendlyByteBuf regBuf = (RegistryFriendlyByteBuf) buf;
         for (int i = 0; i < size; i++) {
-            advancements.add(AdvancementData.readFromBuffer(buf));
+            advancements.add(AdvancementData.readFromBuffer(regBuf));
         }
         this.advancements = advancements;
     }
@@ -43,13 +43,13 @@ public class AdvancementToClient extends SplitPacket
     /**
      * 处理数据包
      */
-    public static void handle(AdvancementToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(AdvancementToClient packet, CustomPayloadEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
                 AdvancementUtils.advancementData(packet.getAdvancements());
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     @Override
@@ -89,8 +89,9 @@ public class AdvancementToClient extends SplitPacket
     public void toBytes(FriendlyByteBuf buf) {
         super.toBytes(buf);
         buf.writeVarInt(this.advancements.size());
+        RegistryFriendlyByteBuf regBuf = (RegistryFriendlyByteBuf) buf;
         for (AdvancementData data : this.advancements) {
-            data.writeToBuffer(buf);
+            data.writeToBuffer(regBuf);
         }
     }
 

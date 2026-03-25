@@ -2,16 +2,11 @@ package xin.vanilla.banira.internal.network;
 
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.NetworkHandler;
-import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.common.network.packet.NotificationToClient;
-import xin.vanilla.banira.common.network.packet.RequestToBoth;
+import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
 import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
-import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
-import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
@@ -47,5 +42,7 @@ public final class NetworkInit {
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
+
+        HANDLER.build();
     }
 }

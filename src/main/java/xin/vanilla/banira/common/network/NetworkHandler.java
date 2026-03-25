@@ -2,22 +2,20 @@ package xin.vanilla.banira.common.network;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraftforge.network.ChannelBuilder;
+import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * 网络处理器
  */
 public class NetworkHandler {
-    private static final String PROTOCOL_VERSION = "1";
     private static int nextPacketId = 0;
 
     @Getter
@@ -31,17 +29,22 @@ public class NetworkHandler {
      * @return NetworkHandler 实例
      */
     public static NetworkHandler create(String channelName, IIdentifier IIdentifier) {
-        SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                IIdentifier.create(channelName),
-                () -> PROTOCOL_VERSION,
-                clientVersion -> true,      // 客户端版本始终有效
-                serverVersion -> true       // 服务端版本始终有效
-        );
+        SimpleChannel channel = ChannelBuilder.named(IIdentifier.create(channelName))
+                .networkProtocolVersion(1)
+                .acceptedVersions((status, version) -> true)
+                .simpleChannel();
         return new NetworkHandler(channel);
     }
 
     private NetworkHandler(SimpleChannel channel) {
         this.channel = channel;
+    }
+
+    /**
+     * 在所有 {@link #register} / {@link #registerSplit} 完成之后调用，完成通道构建；此前不可使用通道发包。
+     */
+    public void build() {
+        channel.build();
     }
 
     /**
@@ -56,14 +59,15 @@ public class NetworkHandler {
     public <MSG> void register(Class<MSG> packetClass,
                                BiConsumer<MSG, FriendlyByteBuf> encoder,
                                Function<FriendlyByteBuf, MSG> decoder,
-                               BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
-        channel.registerMessage(
-                nextPacketId++,
-                packetClass,
-                encoder,
-                decoder,
-                handler
-        );
+                               BiConsumer<MSG, CustomPayloadEvent.Context> handler) {
+        channel.messageBuilder(packetClass, nextPacketId++)
+                .encoder(encoder)
+                .decoder(decoder)
+                .consumerMainThread((msg, ctx) -> {
+                    handler.accept(msg, ctx);
+                    ctx.setPacketHandled(true);
+                })
+                .add();
     }
 
     /**
@@ -79,20 +83,16 @@ public class NetworkHandler {
             Class<MSG> packetClass,
             BiConsumer<MSG, FriendlyByteBuf> encoder,
             Function<FriendlyByteBuf, MSG> decoder,
-            BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
-        BiConsumer<MSG, Supplier<NetworkEvent.Context>> wrappedHandler = (packet, ctx) -> {
-            // 保存原始上下文
-            final Supplier<NetworkEvent.Context> contextSupplier = ctx;
-            // 处理分包逻辑
+            BiConsumer<MSG, CustomPayloadEvent.Context> handler) {
+        BiConsumer<MSG, CustomPayloadEvent.Context> wrappedHandler = (packet, ctx) -> {
             List<MSG> completePackets = SplitPacket.handle(packet);
             if (completePackets != null && !completePackets.isEmpty()) {
-                // 所有分包已接收完成，合并并调用处理器
                 MSG mergedPacket = SplitPacket.merge(completePackets);
                 if (mergedPacket != null) {
-                    ctx.get().enqueueWork(() -> handler.accept(mergedPacket, contextSupplier));
+                    ctx.enqueueWork(() -> handler.accept(mergedPacket, ctx));
                 }
             }
-            ctx.get().setPacketHandled(true);
+            ctx.setPacketHandled(true);
         };
         register(packetClass, encoder, decoder, wrappedHandler);
     }

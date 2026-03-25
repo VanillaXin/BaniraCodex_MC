@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
-import net.minecraft.network.protocol.game.ServerboundClientInformationPacket;
+import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,8 +14,8 @@ public abstract class ServerPlayerMixin {
             method = "updateOptions",
             at = @At("TAIL")
     )
-    private void banira$afterUpdateOptions(ServerboundClientInformationPacket packet, CallbackInfo ci) {
+    private void banira$afterUpdateOptions(ClientInformation clientInformation, CallbackInfo ci) {
         ServerPlayer player = (ServerPlayer) (Object) this;
-        PlayerLanguageManager.set(player, packet.language());
+        PlayerLanguageManager.set(player, clientInformation.language());
     }
 }

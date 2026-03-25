@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -15,7 +15,6 @@ import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -54,12 +53,12 @@ public class ConfigSyncToServer {
         }
     }
 
-    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public static void handle(ConfigSyncToServer packet, CustomPayloadEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerSide()) {
                 return;
             }
-            ServerPlayer player = ctx.get().getSender();
+            ServerPlayer player = ctx.getSender();
             if (player == null) {
                 return;
             }
@@ -98,7 +97,7 @@ public class ConfigSyncToServer {
                 sendNotify(player, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     private static void sendNotify(ServerPlayer player, String langKey, long durationMs, Object... args) {

@@ -131,8 +131,14 @@ public class ItemWidget extends BaseWidget {
      * 延迟到帧末、在单位矩阵下绘制，避免父级 translate 导致错位
      */
     private void deferTooltipRender(ItemStack itemStack, int mouseX, int mouseY) {
+        var player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        net.minecraft.world.item.Item.TooltipContext ctx = net.minecraft.world.item.Item.TooltipContext.of(player.level());
         List<net.minecraft.network.chat.Component> tooltip = itemStack.getTooltipLines(
-                Minecraft.getInstance().player,
+                ctx,
+                player,
                 InputStateManager.isShiftPressingStatic() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
         );
         if (tooltip.isEmpty()) {

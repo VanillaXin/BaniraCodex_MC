@@ -2,8 +2,8 @@ package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -13,12 +13,10 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
-import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * 客户端请求服务端返回指定配置的全量快照
@@ -45,12 +43,12 @@ public class ConfigFetchRequestToServer {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, Supplier<NetworkEvent.Context> ctx, SimpleChannel replyChannel) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public static void handle(ConfigFetchRequestToServer packet, CustomPayloadEvent.Context ctx, SimpleChannel replyChannel) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerSide()) {
                 return;
             }
-            ServerPlayer player = ctx.get().getSender();
+            ServerPlayer player = ctx.getSender();
             if (player == null) {
                 return;
             }
@@ -73,9 +71,9 @@ public class ConfigFetchRequestToServer {
                 Object v = holder.get(path);
                 snapshot.put(path, v != null ? ConfigSyncToServer.encodeConfigValue(v) : "");
             }
-            PacketUtils.sendPacketToPlayer(replyChannel, new ConfigSnapshotToClient(packet.configName, snapshot), player);
+            replyChannel.reply(new ConfigSnapshotToClient(packet.configName, snapshot), ctx);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     private static void sendErr(ServerPlayer player, String langKey, Object... args) {

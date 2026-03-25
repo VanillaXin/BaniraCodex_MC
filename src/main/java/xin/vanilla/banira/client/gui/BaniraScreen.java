@@ -146,9 +146,9 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@Nonnull GuiGraphics graphics) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft != null && this.minecraft.level != null) {
-            super.renderBackground(graphics);
+            super.renderBackground(graphics, mouseX, mouseY, partialTick);
         } else {
             BaniraColorConfig t = getEffectiveTheme();
             graphics.fillGradient(0, 0, this.width, this.height, t.bgPrimary(), t.bgSecondary());
@@ -332,7 +332,8 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        double delta = deltaY != 0 ? deltaY : deltaX;
         MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
         this.cursor.mouseScrolled(scrollEvent);
 
@@ -360,7 +361,7 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .delta(delta);
         onMouseScrolled(args);
-        return args.consumed() || super.mouseScrolled(mouseX, mouseY, delta);
+        return args.consumed() || super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 
     /**

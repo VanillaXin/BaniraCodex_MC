@@ -255,7 +255,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             } else {
                 advancementButtonItemWidget = iconWidget;
                 AdvancementData sel = findAdvancementData(currentAdvancement);
-                iconWidget.itemStack(sel != null ? sel.displayInfo().getIcon().copy() : new net.minecraft.world.item.ItemStack(Items.END_CRYSTAL));
+                iconWidget.itemStack(sel != null ? AdvancementData.iconStackForListRendering(sel.displayInfo().getIcon()) : new net.minecraft.world.item.ItemStack(Items.END_CRYSTAL));
                 iconWidget.enableTooltip(false);
                 advancementTooltip = new TooltipWidget(this, tooltipBounds);
                 advancementTooltip.seasonTooltip(useSeasonTooltip);
@@ -457,7 +457,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 String advancementId = advancementData.id().toString();
                 String displayName = AdvancementUtils.getDisplayName(advancementData);
                 String description = AdvancementUtils.getDescription(advancementData);
-                iw.itemStack(advancementData.displayInfo().getIcon().copy());
+                iw.itemStack(AdvancementData.iconStackForListRendering(advancementData.displayInfo().getIcon()));
                 iw.visible(true);
                 lw.text(Text.literal(displayName).color(Color.argb(getEffectiveTheme().listItemText())));
                 lw.visible(true);
@@ -503,7 +503,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             AdvancementData sel = findAdvancementData(currentAdvancement);
             boolean hasSelection = sel != null;
             advancementButtonItemWidget.visible(hasSelection);
-            advancementButtonItemWidget.itemStack(hasSelection ? sel.displayInfo().getIcon().copy() : new ItemStack(Items.AIR));
+            advancementButtonItemWidget.itemStack(hasSelection ? AdvancementData.iconStackForListRendering(sel.displayInfo().getIcon()) : new ItemStack(Items.AIR));
         }
         if (advancementTooltip != null) {
             AdvancementData sel = findAdvancementData(currentAdvancement);

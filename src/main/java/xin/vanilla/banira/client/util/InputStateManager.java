@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -28,7 +27,6 @@ import java.util.Set;
 /**
  * 统一的输入状态管理器
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class InputStateManager {
@@ -431,12 +429,12 @@ public final class InputStateManager {
 
     @SubscribeEvent
     public static void onMouseScroll(ScreenEvent.MouseScrolled.Pre event) {
-        InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
+        InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getDeltaY());
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null) {
+    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+        if (Minecraft.getInstance().screen == null) {
             InputStateManager.instance().onScreenClosed();
         }
     }

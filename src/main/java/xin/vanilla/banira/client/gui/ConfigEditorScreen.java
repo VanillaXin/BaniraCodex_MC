@@ -989,13 +989,14 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        double delta = deltaY != 0 ? deltaY : deltaX;
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
                 && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
             return true;
         }
-        if (super.mouseScrolled(mouseX, mouseY, delta)) {
+        if (super.mouseScrolled(mouseX, mouseY, deltaX, deltaY)) {
             return true;
         }
         if (scrollbar != null && delta != 0) {

@@ -9,7 +9,8 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
-    "injections.MinecraftClientMixin"
+    "injections.MinecraftClientMixin",
+    "injections.PlayerTabOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

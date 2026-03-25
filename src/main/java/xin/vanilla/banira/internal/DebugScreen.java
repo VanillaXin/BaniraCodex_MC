@@ -575,11 +575,9 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new DebugScreen());
-            }
+    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+        if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
+            Minecraft.getInstance().setScreen(new DebugScreen());
         }
     }
 

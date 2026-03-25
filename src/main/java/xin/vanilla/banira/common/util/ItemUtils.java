@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -12,6 +13,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.ModList;
@@ -209,7 +211,7 @@ public final class ItemUtils {
         if (!areItemsEqual(stack1, stack2)) return false;
         // if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
-        return ItemStack.isSameItemSameTags(stack1, stack2);
+        return ItemStack.isSameItemSameComponents(stack1, stack2);
     }
 
     /**
@@ -325,7 +327,7 @@ public final class ItemUtils {
             ItemStack stack = new ItemStack(item);
             if (brace >= 0) {
                 CompoundTag extra = TagParser.parseTag(k.substring(brace));
-                stack.setTag(extra);
+                CustomData.set(DataComponents.CUSTOM_DATA, stack, extra);
             }
             return stack;
         } catch (CommandSyntaxException e) {
@@ -349,7 +351,7 @@ public final class ItemUtils {
         int count = root.contains("Count") ? root.getInt("Count") : (root.contains("count") ? root.getInt("count") : 1);
         ItemStack stack = new ItemStack(item, Math.max(1, count));
         if (root.contains("tag")) {
-            stack.setTag(root.getCompound("tag"));
+            CustomData.set(DataComponents.CUSTOM_DATA, stack, root.getCompound("tag"));
         }
         return stack;
     }
@@ -382,11 +384,11 @@ public final class ItemUtils {
      * 将物的的NBT序列化为字符串
      */
     public static String serializeItemStackTag(ItemStack itemStack) {
-        String result = "";
-        if (itemStack.hasTag() && itemStack.getTag() != null) {
-            result = itemStack.getTag().toString();
+        CustomData cd = itemStack.get(DataComponents.CUSTOM_DATA);
+        if (cd != null && !cd.isEmpty()) {
+            return cd.copyTag().toString();
         }
-        return result;
+        return "";
     }
 
     // endregion
@@ -508,8 +510,11 @@ public final class ItemUtils {
             // 获取描述, 仅客户端
             try {
                 if (Minecraft.getInstance().player != null) {
+                    var player = Minecraft.getInstance().player;
+                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     List<net.minecraft.network.chat.Component> tooltip = stack.getTooltipLines(
-                            Minecraft.getInstance().player,
+                            ctx,
+                            player,
                             TooltipFlag.Default.NORMAL
                     );
                     if (CollectionUtils.isNotNullOrEmpty(tooltip)) {
@@ -910,7 +915,9 @@ public final class ItemUtils {
                 // 获取基础tooltip
                 List<net.minecraft.network.chat.Component> baseTooltip = new ArrayList<>();
                 if (player != null) {
+                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     baseTooltip.addAll(itemStack.getTooltipLines(
+                            ctx,
                             player,
                             advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
                     ));

@@ -1,14 +1,14 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraftforge.network.NetworkEvent;
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.AbstractComponent;
@@ -18,9 +18,6 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
-
-import java.util.function.Supplier;
-
 
 @Getter
 @Accessors(fluent = true)
@@ -73,13 +70,13 @@ public class NotificationToClient {
         buf.writeUtf(this.styleName != null ? this.styleName : DEFAULT_STYLE, 32);
     }
 
-    public static void handle(NotificationToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(NotificationToClient packet, CustomPayloadEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
                 ClientSide.handle(packet);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
 

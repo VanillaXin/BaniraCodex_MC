@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import lombok.*;
 import lombok.experimental.Accessors;
 import net.minecraft.network.chat.*;
@@ -724,8 +725,10 @@ public final class Component implements Cloneable, Serializable {
         if (component instanceof MutableComponent) {
             TextColor color = component.getStyle().getColor();
             if (color != null && color.serialize().startsWith("#")) {
-                Style style = component.getStyle().withColor(TextColor.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.parseArgb(color.serialize())).name().toLowerCase()));
-                ((MutableComponent) component).setStyle(style);
+                TextColor reparsed = TextColor.parseColor(ColorUtils.argbToMinecraftColor(ColorUtils.parseArgb(color.serialize())).name().toLowerCase()).result().orElse(null);
+                if (reparsed != null) {
+                    ((MutableComponent) component).setStyle(component.getStyle().withColor(reparsed));
+                }
             }
         }
         for (net.minecraft.network.chat.Component sibling : component.getSiblings()) {
@@ -875,7 +878,7 @@ public final class Component implements Cloneable, Serializable {
         }
         JsonObject hover = JsonUtils.getJsonObject(jsonObject, "hoverEvent", null);
         if (hover != null) {
-            result.hoverEvent(HoverEvent.deserialize(hover));
+            HoverEvent.CODEC.parse(JsonOps.INSTANCE, hover).result().ifPresent(result::hoverEvent);
         }
         for (JsonElement childJson : JsonUtils.getJsonArray(jsonObject, "children", new JsonArray())) {
             result.getChildren().add(deserialize((JsonObject) childJson));
@@ -921,11 +924,11 @@ public final class Component implements Cloneable, Serializable {
             JsonUtils.set(result, "obfuscated", component.obfuscated());
         }
         if (component.clickEvent() != null) {
-            JsonUtils.set(result, "clickEvent.action", component.clickEvent().getAction().getName());
+            JsonUtils.set(result, "clickEvent.action", component.clickEvent().getAction().getSerializedName());
             JsonUtils.set(result, "clickEvent.value", component.clickEvent().getValue());
         }
         if (component.hoverEvent() != null) {
-            JsonUtils.set(result, "hoverEvent", component.hoverEvent().serialize());
+            HoverEvent.CODEC.encodeStart(JsonOps.INSTANCE, component.hoverEvent()).result().ifPresent(h -> JsonUtils.set(result, "hoverEvent", h));
         }
         JsonArray children = new JsonArray();
         for (Component child : component.getChildren()) {

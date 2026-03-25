@@ -5,7 +5,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -18,7 +18,6 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
@@ -63,14 +62,14 @@ public class ConfigSnapshotToClient {
         return snapshot;
     }
 
-    public static void handle(ConfigSnapshotToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(ConfigSnapshotToClient packet, CustomPayloadEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isClientSide()) {
                 return;
             }
             ClientSide.apply(packet);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     @OnlyIn(Dist.CLIENT)

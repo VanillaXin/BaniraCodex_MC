@@ -2,12 +2,19 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.List;
 import java.util.Map;
@@ -72,7 +79,7 @@ public final class PacketUtils {
      */
     public static <T extends SplitPacket> void broadcastSplitPacket(SimpleChannel channel, T packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player))
+                sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(player))
         );
     }
 
@@ -131,14 +138,19 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG> void sendPacketToServer(SimpleChannel channel, MSG msg) {
-        channel.sendToServer(msg);
+        var mc = Minecraft.getInstance();
+        if (mc.getConnection() != null && hasChannel(channel.getName())) {
+            channel.send(msg, mc.getConnection().getConnection());
+        }
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
-        channel.send(PacketDistributor.PLAYER.with(() -> player), msg);
+        if (hasChannel(player, channel.getName())) {
+            channel.send(msg, PacketDistributor.PLAYER.with(player));
+        }
     }
 
     /**
@@ -150,9 +162,19 @@ public final class PacketUtils {
      * @param <T>     分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacket(SimpleChannel channel, T packet, PacketDistributor.PacketTarget target) {
+        if (target.direction() == NetworkDirection.PLAY_TO_SERVER) {
+            if (!hasChannel(channel.getName())) {
+                return;
+            }
+        }
+        if (target.direction() == NetworkDirection.PLAY_TO_CLIENT) {
+            if (!hasChannel(null, channel.getName())) {
+                return;
+            }
+        }
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.send(target, splitPacket);
+            channel.send(splitPacket, target);
         }
     }
 
@@ -165,7 +187,7 @@ public final class PacketUtils {
      * @param <T>     分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
-        sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player));
+        sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(player));
     }
 
     /**
@@ -178,7 +200,25 @@ public final class PacketUtils {
     public static <T extends SplitPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.sendToServer(splitPacket);
+            sendPacketToServer(channel, splitPacket);
         }
+    }
+
+
+    @OnlyIn(Dist.CLIENT)
+    public static boolean hasBaniraServer() {
+        return hasChannel(NetworkInit.HANDLER.getChannel().getName());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SuppressWarnings("UnstableApiUsage")
+    public static boolean hasChannel(ResourceLocation channel) {
+        var connection = Minecraft.getInstance().getConnection();
+        return connection != null && NetworkRegistry.findTarget(channel) != null;
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
+        return NetworkRegistry.findTarget(channel) != null;
     }
 }

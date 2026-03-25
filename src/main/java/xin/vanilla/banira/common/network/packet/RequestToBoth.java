@@ -1,14 +1,13 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 /**
  * 请求数据同步包
@@ -56,10 +55,10 @@ public class RequestToBoth {
      * @param packet 请求包
      * @param ctx    网络事件上下文
      */
-    public static void handle(RequestToBoth packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                ServerPlayer player = ctx.get().getSender();
+    public static void handle(RequestToBoth packet, CustomPayloadEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isServerSide()) {
+                ServerPlayer player = ctx.getSender();
                 if (player != null) {
                     BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
                     if (handler != null) {
@@ -68,6 +67,6 @@ public class RequestToBoth {
                 }
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 }

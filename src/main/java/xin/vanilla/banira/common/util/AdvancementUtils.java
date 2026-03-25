@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -114,7 +113,7 @@ public final class AdvancementUtils {
         // 服务端
         if (advancementData.isEmpty() && BaniraCodex.serverInstance().val()) {
             advancementData(BaniraCodex.serverInstance().key().getAdvancements().getAllAdvancements().stream()
-                    .map(AdvancementData::fromAdvancement).collect(Collectors.toList())
+                    .map(AdvancementData::fromHolder).collect(Collectors.toList())
             );
         }
         // 客户端
@@ -176,7 +175,7 @@ public final class AdvancementUtils {
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
                 .filter(Objects::nonNull)
-                .filter(o -> o.displayInfo().getIcon().getItem() != Items.AIR)
+                .filter(o -> AdvancementData.hasTabListIcon(o.displayInfo().getIcon()))
                 .collect(Collectors.toList());
     }
 

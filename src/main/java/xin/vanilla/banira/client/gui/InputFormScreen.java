@@ -725,7 +725,7 @@ public class InputFormScreen extends BaniraScreen {
             return;
         }
 
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTicks);
         renderFormPanel(stack);
 
         renderWidgets(graphics, partialTicks);

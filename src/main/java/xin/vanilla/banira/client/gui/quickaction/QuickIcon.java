@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -91,7 +92,7 @@ public class QuickIcon {
     public static QuickIcon effect(@Nonnull MobEffect effectType) {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.EFFECT);
-        q.mobEffect(effectType != null ? effectType : MobEffects.LUCK);
+        q.mobEffect(effectType != null ? effectType : MobEffects.LUCK.value());
         return q;
     }
 
@@ -131,8 +132,8 @@ public class QuickIcon {
                 break;
             }
             case EFFECT: {
-                MobEffect e = mobEffect != null ? mobEffect : MobEffects.LUCK;
-                MobEffectInstance inst = new MobEffectInstance(e, 1, 0);
+                MobEffect e = mobEffect != null ? mobEffect : MobEffects.LUCK.value();
+                MobEffectInstance inst = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(e), 1, 0);
                 EffectIconWidget.drawEffectIcon(stack, mc.font, inst, x, y, size, size, false);
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;

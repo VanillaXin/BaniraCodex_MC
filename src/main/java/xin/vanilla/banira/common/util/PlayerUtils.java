@@ -302,7 +302,7 @@ public final class PlayerUtils {
             int droppedCount = 0;
             if (itemEntity != null) {
                 itemEntity.setNoPickUpDelay();
-                itemEntity.setThrower(player.getUUID());
+                itemEntity.setThrower(player);
                 droppedCount = remainingCount;
             }
             return GiveItemResult.success(addedCount, droppedCount);

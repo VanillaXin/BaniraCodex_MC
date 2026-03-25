@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -426,7 +427,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 MobEffect effect = effectList.get(index);
                 String effectId = EffectUtils.getEffectRegistryString(effect);
                 String displayName = EffectUtils.getEffectDisplayName(effect);
-                MobEffectInstance instance = new MobEffectInstance(effect, currentEffect.getDuration(), currentEffect.getAmplifier());
+                MobEffectInstance instance = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), currentEffect.getDuration(), currentEffect.getAmplifier());
                 ew.effectInstance(instance);
                 ew.visible(true);
                 lw.text(Text.literal(displayName).color(Color.argb(getEffectiveTheme().listItemText())));
@@ -533,7 +534,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (StringUtils.isNotNullOrEmpty(effectId)) {
             MobEffect effect = EffectUtils.getEffectFromRegistry(effectId);
             if (effect != null) {
-                this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                this.currentEffect = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                 LOGGER.debug("Select effect: {}", EffectUtils.getEffectDisplayName(effect));
                 refreshEffectButtons();
             }
@@ -576,7 +577,7 @@ public class EffectSelectScreen extends BaniraScreen {
                         String id = input.firstValue();
                         MobEffect effect = EffectUtils.getEffectFromRegistry(id);
                         if (effect != null) {
-                            this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                            this.currentEffect = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                         }
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));

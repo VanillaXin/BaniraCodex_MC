@@ -172,8 +172,8 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null && BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
+    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+        if (Minecraft.getInstance().screen == null && BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
             Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
         }
     }

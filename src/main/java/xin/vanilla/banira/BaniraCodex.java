@@ -6,13 +6,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
@@ -56,18 +57,18 @@ public class BaniraCodex {
             , StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
     );
 
-    public BaniraCodex(FMLJavaModLoadingContext context) {
+    public BaniraCodex(IEventBus modEventBus, ModContainer modContainer) {
         // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
         ForgeConfigAdapter.register(ClientConfig.class, MODID);
         // ForgeConfigAdapter.register(TestConfig.class, MODID);
 
-        context.getModEventBus().addListener(BaniraEventBus::dispatchModCommonSetup);
+        modEventBus.addListener(BaniraEventBus::dispatchModCommonSetup);
 
         // 注册游戏事件总线
-        MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
-        MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
+        NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(BaniraScheduler.class);
+        NeoForge.EVENT_BUS.register(BaniraEventBus.class);
         // 注册网络通道
         NetworkInit.register();
 

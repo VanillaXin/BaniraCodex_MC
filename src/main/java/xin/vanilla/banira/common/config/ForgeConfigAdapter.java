@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -14,7 +14,7 @@ import java.lang.reflect.Proxy;
 import java.util.*;
 
 /**
- * 从注解配置类构建 ForgeConfigSpec。
+ * 从注解配置类构建 ModConfigSpec。
  * 配置类结构需与 Fabric Cloth Config 兼容，便于跨平台迁移。
  * <p>
  * 使用方式：
@@ -56,15 +56,15 @@ public final class ForgeConfigAdapter {
         String configName = configAnn.name();
         ModConfig.Type configType = configAnn.type();
 
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
-        Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
+        Map<String, ModConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
         Map<String, String> categoryTooltips = new LinkedHashMap<>();
         Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs = new LinkedHashMap<>();
 
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
-        ForgeConfigSpec spec = builder.build();
+        ModConfigSpec spec = builder.build();
         ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
                 categoryTitleSpecs);
 
@@ -102,9 +102,9 @@ public final class ForgeConfigAdapter {
         return HOLDER_MAP.get(configClass);
     }
 
-    private static void buildFromClass(ForgeConfigSpec.Builder builder, Class<?> clazz, String prefix,
+    private static void buildFromClass(ModConfigSpec.Builder builder, Class<?> clazz, String prefix,
                                        List<ConfigEntryDescriptor> descriptors,
-                                       Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
+                                       Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
                                        Map<String, String> categoryTooltips,
                                        Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         for (Field field : getAllFields(clazz)) {
@@ -139,39 +139,39 @@ public final class ForgeConfigAdapter {
                 Object defaultValue = getDefaultValue(field);
 
                 if (type == String.class) {
-                    ForgeConfigSpec.ConfigValue<String> cv = applyFileComments(builder, comments).define(key, (String) defaultValue);
+                    ModConfigSpec.ConfigValue<String> cv = applyFileComments(builder, comments).define(key, (String) defaultValue);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING, defaultValue, null, null, null, tr, 2);
                 } else if (type == boolean.class || type == Boolean.class) {
-                    ForgeConfigSpec.ConfigValue<Boolean> cv = applyFileComments(builder, comments).define(key, (Boolean) defaultValue);
+                    ModConfigSpec.ConfigValue<Boolean> cv = applyFileComments(builder, comments).define(key, (Boolean) defaultValue);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.BOOLEAN, defaultValue, null, null, null, tr, 2);
                 } else if (type == int.class || type == Integer.class) {
                     ConfigEntry.BoundedDiscrete bd = field.getAnnotation(ConfigEntry.BoundedDiscrete.class);
                     int min = bd != null ? bd.min() : Integer.MIN_VALUE;
                     int max = bd != null ? bd.max() : Integer.MAX_VALUE;
-                    ForgeConfigSpec.IntValue cv = applyFileComments(builder, comments).defineInRange(key, (Integer) defaultValue, min, max);
+                    ModConfigSpec.IntValue cv = applyFileComments(builder, comments).defineInRange(key, (Integer) defaultValue, min, max);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.INTEGER, defaultValue, min, max, null, tr, 2);
                 } else if (type == long.class || type == Long.class) {
                     ConfigEntry.BoundedLong bl = field.getAnnotation(ConfigEntry.BoundedLong.class);
                     long min = bl != null ? bl.min() : Long.MIN_VALUE;
                     long max = bl != null ? bl.max() : Long.MAX_VALUE;
-                    ForgeConfigSpec.LongValue cv = applyFileComments(builder, comments).defineInRange(key, (Long) defaultValue, min, max);
+                    ModConfigSpec.LongValue cv = applyFileComments(builder, comments).defineInRange(key, (Long) defaultValue, min, max);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.LONG, defaultValue, min, max, null, tr, 2);
                 } else if (type == double.class || type == Double.class) {
                     ConfigEntry.BoundedDouble bd = field.getAnnotation(ConfigEntry.BoundedDouble.class);
                     double min = bd != null ? bd.min() : Double.MIN_VALUE;
                     double max = bd != null ? bd.max() : Double.MAX_VALUE;
                     int decimalPlaces = bd != null ? bd.decimalPlaces() : 2;
-                    ForgeConfigSpec.DoubleValue cv = applyFileComments(builder, comments).defineInRange(key, (Double) defaultValue, min, max);
+                    ModConfigSpec.DoubleValue cv = applyFileComments(builder, comments).defineInRange(key, (Double) defaultValue, min, max);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tr, decimalPlaces);
                 } else if (List.class.isAssignableFrom(type)) {
                     @SuppressWarnings("unchecked")
                     List<String> defList = (List<String>) defaultValue;
-                    ForgeConfigSpec.ConfigValue<List<? extends String>> cv = applyFileComments(builder, comments)
+                    ModConfigSpec.ConfigValue<List<? extends String>> cv = applyFileComments(builder, comments)
                             .defineList(key, defList != null ? defList : new ArrayList<>(), o -> o instanceof String);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tr, 2);
                 } else if (type.isEnum()) {
                     @SuppressWarnings({"unchecked", "rawtypes"})
-                    ForgeConfigSpec.EnumValue cv = applyFileComments(builder, comments).defineEnum(key, (Enum) defaultValue);
+                    ModConfigSpec.EnumValue cv = applyFileComments(builder, comments).defineEnum(key, (Enum) defaultValue);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.ENUM, defaultValue, null, null, (Class<? extends Enum<?>>) type, tr, 2);
                 }
             } catch (Exception e) {
@@ -180,7 +180,7 @@ public final class ForgeConfigAdapter {
         }
     }
 
-    private static ForgeConfigSpec.Builder applyFileComments(ForgeConfigSpec.Builder builder, String[] comments) {
+    private static ModConfigSpec.Builder applyFileComments(ModConfigSpec.Builder builder, String[] comments) {
         if (comments != null && comments.length > 0) {
             return builder.comment(comments);
         }
@@ -362,9 +362,9 @@ public final class ForgeConfigAdapter {
         return null;
     }
 
-    private static void addDescriptor(Field field, String path, ForgeConfigSpec.ConfigValue<?> cv,
+    private static void addDescriptor(Field field, String path, ModConfigSpec.ConfigValue<?> cv,
                                       List<ConfigEntryDescriptor> descriptors,
-                                      Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
+                                      Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
                                       ConfigEntryDescriptor.ConfigValueType valueType,
                                       Object defaultValue, Number min, Number max, Class<? extends Enum<?>> enumClass,
                                       TooltipResolution tr, int decimalPlaces) {

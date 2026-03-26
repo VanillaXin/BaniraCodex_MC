@@ -1,14 +1,14 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * 配置持有者，封装 ForgeConfigSpec 与元数据，提供统一访问接口
+ * 配置持有者，封装 ModConfigSpec 与元数据，提供统一访问接口
  */
 @Getter
 public class ConfigHolder {
@@ -20,9 +20,9 @@ public class ConfigHolder {
 
     private final String configName;
     private final ModConfig.Type configType;
-    private final ForgeConfigSpec spec;
+    private final ModConfigSpec spec;
     private final List<ConfigEntryDescriptor> descriptors;
-    private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap;
+    private final Map<String, ModConfigSpec.ConfigValue<?>> valueMap;
     /**
      * 分类路径 -> 显示名（用于 GUI 层级展示，兼容旧逻辑；配置编辑器折叠标题优先 {@link #categoryTitleSpecs}）
      */
@@ -36,8 +36,8 @@ public class ConfigHolder {
     @Nullable
     private ModConfig modConfig;
 
-    ConfigHolder(String modId, String configName, ModConfig.Type configType, ForgeConfigSpec spec,
-                 List<ConfigEntryDescriptor> descriptors, Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
+    ConfigHolder(String modId, String configName, ModConfig.Type configType, ModConfigSpec spec,
+                 List<ConfigEntryDescriptor> descriptors, Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
                  Map<String, String> categoryTooltips,
                  Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
@@ -78,7 +78,7 @@ public class ConfigHolder {
      */
     @SuppressWarnings("unchecked")
     public <T> T get(String path) {
-        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
+        ModConfigSpec.ConfigValue<?> cv = valueMap.get(path);
         return cv != null ? (T) cv.get() : null;
     }
 
@@ -87,7 +87,7 @@ public class ConfigHolder {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void set(String path, Object value) {
-        ForgeConfigSpec.ConfigValue cv = valueMap.get(path);
+        ModConfigSpec.ConfigValue cv = valueMap.get(path);
         if (cv != null) {
             cv.set(value);
         }

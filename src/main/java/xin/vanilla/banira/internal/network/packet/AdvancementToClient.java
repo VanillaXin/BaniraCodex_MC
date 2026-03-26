@@ -3,10 +3,15 @@ package xin.vanilla.banira.internal.network.packet;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
 import java.util.ArrayList;
@@ -15,7 +20,13 @@ import java.util.List;
 @Getter
 public class AdvancementToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<AdvancementToClient>,
-        SplitPacket.SplittableSplitPacket<AdvancementToClient> {
+        SplitPacket.SplittableSplitPacket<AdvancementToClient>, CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<AdvancementToClient> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("advancement_sync"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, AdvancementToClient> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(AdvancementToClient::toBytes, AdvancementToClient::new);
+
     private final ArraySet<AdvancementData> advancements;
 
     public AdvancementToClient(ArraySet<AdvancementData> advancements) {
@@ -43,13 +54,17 @@ public class AdvancementToClient extends SplitPacket
     /**
      * 处理数据包
      */
-    public static void handle(AdvancementToClient packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(AdvancementToClient packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientSide()) {
+            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
                 AdvancementUtils.advancementData(packet.getAdvancements());
             }
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     @Override

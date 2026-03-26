@@ -2,9 +2,15 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,7 +21,13 @@ import java.util.stream.Collectors;
 @Getter
 public class BiomeToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<BiomeToClient>,
-        SplitPacket.SplittableSplitPacket<BiomeToClient> {
+        SplitPacket.SplittableSplitPacket<BiomeToClient>, CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<BiomeToClient> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("biome_sync"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, BiomeToClient> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(BiomeToClient::toBytes, BiomeToClient::new);
+
 
     private final List<String> biomeIds;
 
@@ -33,13 +45,17 @@ public class BiomeToClient extends SplitPacket
         }
     }
 
-    public static void handle(BiomeToClient packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(BiomeToClient packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientSide()) {
+            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
                 BiomeUtils.setClientBiomeIds(packet.getBiomeIds());
             }
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     @Override

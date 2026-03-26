@@ -3,7 +3,7 @@ package xin.vanilla.banira.internal.config;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;

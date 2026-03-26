@@ -1,10 +1,14 @@
 package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.network.SimpleChannel;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
@@ -14,6 +18,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,7 +26,13 @@ import java.util.Map;
 /**
  * 客户端请求服务端返回指定配置的全量快照
  */
-public class ConfigFetchRequestToServer {
+public class ConfigFetchRequestToServer implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<ConfigFetchRequestToServer> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("config_fetch"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, ConfigFetchRequestToServer> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new);
+
 
     private static final long NOTIFY_ERR_MS = 4500L;
 
@@ -43,13 +54,9 @@ public class ConfigFetchRequestToServer {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, CustomPayloadEvent.Context ctx, SimpleChannel replyChannel) {
+    public static void handle(ConfigFetchRequestToServer packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isServerSide()) {
-                return;
-            }
-            ServerPlayer player = ctx.getSender();
-            if (player == null) {
+            if (ctx.flow() != PacketFlow.SERVERBOUND || !(ctx.player() instanceof ServerPlayer player)) {
                 return;
             }
             if (!ConfigEditPermission.canAccessServerConfigEditor(player)) {
@@ -71,9 +78,13 @@ public class ConfigFetchRequestToServer {
                 Object v = holder.get(path);
                 snapshot.put(path, v != null ? ConfigSyncToServer.encodeConfigValue(v) : "");
             }
-            replyChannel.reply(new ConfigSnapshotToClient(packet.configName, snapshot), ctx);
+            ctx.reply(new ConfigSnapshotToClient(packet.configName, snapshot));
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     private static void sendErr(ServerPlayer player, String langKey, Object... args) {

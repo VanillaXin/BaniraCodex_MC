@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 /**
  * 运行环境判断

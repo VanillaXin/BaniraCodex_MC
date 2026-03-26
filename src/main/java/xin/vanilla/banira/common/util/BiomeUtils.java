@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -8,9 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -56,7 +56,11 @@ public final class BiomeUtils {
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
         }
-        return ForgeRegistries.BIOMES.getValue(id);
+        var clientLevel = Minecraft.getInstance().level;
+        if (clientLevel != null) {
+            return clientLevel.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
+        }
+        return null;
     }
 
     public static Biome getBiome(ServerLevel world, ResourceLocation id) {
@@ -74,9 +78,13 @@ public final class BiomeUtils {
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
-        return ForgeRegistries.BIOMES.getKeys().stream()
-                .map(ResourceLocation::toString)
-                .collect(Collectors.toSet());
+        var clientLevel = Minecraft.getInstance().level;
+        if (clientLevel != null) {
+            return clientLevel.registryAccess().registryOrThrow(Registries.BIOME).keySet().stream()
+                    .map(ResourceLocation::toString)
+                    .collect(Collectors.toSet());
+        }
+        return Set.of();
     }
 
     /**
@@ -121,8 +129,7 @@ public final class BiomeUtils {
     public static void requestDataFromServer() {
         if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
             requestedData = true;
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
+            PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
             LOGGER.debug("Request biome data from server.");
         }
     }

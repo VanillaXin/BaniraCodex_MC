@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -13,7 +13,7 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
 /**
- * 通用（Common）配置：注解结构用于构建 ForgeConfigSpec 与配置编辑器；
+ * 通用（Common）配置：注解结构用于构建 ModConfigSpec 与配置编辑器；
  * <p>
  * 运行时通过 {@link #get()} 返回的 {@link RootView} 分层读 {@link ConfigHolder}（路径由代理按字段名推导，无需 Key 与手写 get/set）。
  */

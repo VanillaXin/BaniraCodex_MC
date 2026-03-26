@@ -1,10 +1,11 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -41,7 +42,7 @@ public final class BaniraScheduler {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server == null) return;
 
@@ -50,7 +51,7 @@ public final class BaniraScheduler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         runTask(clientTicks.incrementAndGet(), clientTasks, clientExecutedCount);
     }
 

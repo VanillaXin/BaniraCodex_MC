@@ -1,14 +1,14 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.*;
 import java.util.function.Predicate;
 
 /**
- * ForgeConfigSpec 便捷构建器，提供类似 Fabric Cloth Config 的声明式 API
+ * ModConfigSpec 便捷构建器，提供类似 Fabric Cloth Config 的声明式 API
  * <p>
  * 使用示例：
  * <pre>{@code
@@ -32,16 +32,16 @@ public final class ConfigSpecBuilder {
     @Getter
     private final ModConfig.Type configType;
 
-    private final ForgeConfigSpec.Builder builder;
+    private final ModConfigSpec.Builder builder;
     private final List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
-    private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
+    private final Map<String, ModConfigSpec.ConfigValue<?>> valueMap = new LinkedHashMap<>();
 
     private final Deque<String> pathStack = new ArrayDeque<>();
 
     private ConfigSpecBuilder(String configName, ModConfig.Type configType) {
         this.configName = configName;
         this.configType = configType;
-        this.builder = new ForgeConfigSpec.Builder();
+        this.builder = new ModConfigSpec.Builder();
     }
 
     /**
@@ -82,7 +82,7 @@ public final class ConfigSpecBuilder {
      * 定义字符串配置项
      */
     public ConfigSpecBuilder define(String key, String defaultValue, String... comments) {
-        ForgeConfigSpec.ConfigValue<String> cv = builder
+        ModConfigSpec.ConfigValue<String> cv = builder
                 .comment(comments)
                 .define(key, defaultValue);
         String path = getPathString(cv);
@@ -102,7 +102,7 @@ public final class ConfigSpecBuilder {
      * 定义布尔配置项
      */
     public ConfigSpecBuilder define(String key, boolean defaultValue, String... comments) {
-        ForgeConfigSpec.ConfigValue<Boolean> cv = builder
+        ModConfigSpec.ConfigValue<Boolean> cv = builder
                 .comment(comments)
                 .define(key, defaultValue);
         String path = getPathString(cv);
@@ -122,7 +122,7 @@ public final class ConfigSpecBuilder {
      * 定义整数配置项（带范围）
      */
     public ConfigSpecBuilder defineInRange(String key, int defaultValue, int min, int max, String... comments) {
-        ForgeConfigSpec.IntValue cv = builder
+        ModConfigSpec.IntValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
         String path = getPathString(cv);
@@ -144,7 +144,7 @@ public final class ConfigSpecBuilder {
      * 定义长整数配置项（带范围）
      */
     public ConfigSpecBuilder defineInRange(String key, long defaultValue, long min, long max, String... comments) {
-        ForgeConfigSpec.LongValue cv = builder
+        ModConfigSpec.LongValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
         String path = getPathString(cv);
@@ -166,7 +166,7 @@ public final class ConfigSpecBuilder {
      * 定义双精度浮点数配置项（带范围）
      */
     public ConfigSpecBuilder defineInRange(String key, double defaultValue, double min, double max, String... comments) {
-        ForgeConfigSpec.DoubleValue cv = builder
+        ModConfigSpec.DoubleValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
         String path = getPathString(cv);
@@ -188,7 +188,7 @@ public final class ConfigSpecBuilder {
      * 定义字符串列表配置项
      */
     public ConfigSpecBuilder defineList(String key, List<String> defaultValue, Predicate<Object> elementValidator, String... comments) {
-        ForgeConfigSpec.ConfigValue<List<? extends String>> cv = builder
+        ModConfigSpec.ConfigValue<List<? extends String>> cv = builder
                 .comment(comments)
                 .defineList(key, defaultValue, elementValidator != null ? elementValidator : o -> o instanceof String);
         String path = getPathString(cv);
@@ -209,7 +209,7 @@ public final class ConfigSpecBuilder {
      */
     @SuppressWarnings({"unchecked"})
     public <E extends Enum<E>> ConfigSpecBuilder defineEnum(String key, E defaultValue, String... comments) {
-        ForgeConfigSpec.EnumValue<E> cv = builder
+        ModConfigSpec.EnumValue<E> cv = builder
                 .comment(comments)
                 .defineEnum(key, defaultValue);
         String path = getPathString(cv);
@@ -226,19 +226,19 @@ public final class ConfigSpecBuilder {
         return this;
     }
 
-    private static String getPathString(ForgeConfigSpec.ConfigValue<?> cv) {
+    private static String getPathString(ModConfigSpec.ConfigValue<?> cv) {
         return String.join(".", cv.getPath().stream().map(String::valueOf).toArray(String[]::new));
     }
 
     /**
-     * 构建 ForgeConfigSpec 并创建 ConfigHolder
+     * 构建 ModConfigSpec 并创建 ConfigHolder
      */
     public ConfigHolder build() {
         return build("");
     }
 
     /**
-     * 构建 ForgeConfigSpec 并创建 ConfigHolder
+     * 构建 ModConfigSpec 并创建 ConfigHolder
      */
     public ConfigHolder build(String modId) {
         // 确保所有 push 都有对应的 pop
@@ -246,7 +246,7 @@ public final class ConfigSpecBuilder {
             builder.pop();
             pathStack.pop();
         }
-        ForgeConfigSpec spec = builder.build();
+        ModConfigSpec spec = builder.build();
         return new ConfigHolder(modId, configName, configType, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap),
                 Collections.emptyMap(), Collections.emptyMap());
     }

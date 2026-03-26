@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.config;
 
 import lombok.Builder;
 import lombok.Getter;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
 import java.util.Collections;
@@ -83,7 +83,7 @@ public class ConfigEntryDescriptor {
     /**
      * 关联的 ConfigValue
      */
-    private final ForgeConfigSpec.ConfigValue<?> configValue;
+    private final ModConfigSpec.ConfigValue<?> configValue;
 
     /**
      * 修改该条目（服务端同步）时的权限策略

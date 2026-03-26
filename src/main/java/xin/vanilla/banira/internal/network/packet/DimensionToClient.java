@@ -2,9 +2,15 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +20,13 @@ import java.util.stream.Collectors;
 @Getter
 public class DimensionToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<DimensionToClient>,
-        SplitPacket.SplittableSplitPacket<DimensionToClient> {
+        SplitPacket.SplittableSplitPacket<DimensionToClient>, CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<DimensionToClient> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("dimension_sync"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, DimensionToClient> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(DimensionToClient::toBytes, DimensionToClient::new);
+
 
     private final List<String> dimensionIds;
 
@@ -32,13 +44,17 @@ public class DimensionToClient extends SplitPacket
         }
     }
 
-    public static void handle(DimensionToClient packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(DimensionToClient packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientSide()) {
+            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
                 DimensionUtils.setClientDimensionIds(packet.getDimensionIds());
             }
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     @Override

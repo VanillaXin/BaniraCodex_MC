@@ -13,7 +13,6 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -167,7 +166,7 @@ public final class MessageUtils {
     public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style) {
         Component payload = literalComponent(player, component);
         NotificationData data = NotificationData.of(payload, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style);
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
+        PacketUtils.sendPacketToPlayer(player, new NotificationToClient(data));
     }
 
     /**
@@ -189,7 +188,7 @@ public final class MessageUtils {
     public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
         Component payload = literalComponent(player, component);
         NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style);
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
+        PacketUtils.sendPacketToPlayer(player, new NotificationToClient(data));
     }
 
     /**

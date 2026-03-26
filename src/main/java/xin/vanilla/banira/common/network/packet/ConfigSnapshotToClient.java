@@ -3,18 +3,24 @@ package xin.vanilla.banira.common.network.packet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +28,13 @@ import java.util.Map;
 /**
  * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
  */
-public class ConfigSnapshotToClient {
+public class ConfigSnapshotToClient implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<ConfigSnapshotToClient> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("config_snapshot"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, ConfigSnapshotToClient> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(ConfigSnapshotToClient::toBytes, ConfigSnapshotToClient::new);
+
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -62,14 +74,17 @@ public class ConfigSnapshotToClient {
         return snapshot;
     }
 
-    public static void handle(ConfigSnapshotToClient packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ConfigSnapshotToClient packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isClientSide()) {
-                return;
+            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
+                ClientSide.apply(packet);
             }
-            ClientSide.apply(packet);
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     @OnlyIn(Dist.CLIENT)

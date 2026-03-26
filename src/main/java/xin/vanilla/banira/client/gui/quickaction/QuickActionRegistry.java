@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;

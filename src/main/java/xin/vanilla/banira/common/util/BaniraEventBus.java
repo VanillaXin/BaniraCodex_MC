@@ -5,19 +5,21 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityTeleportEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.ChunkDataEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.ChunkDataEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,8 +70,8 @@ public final class BaniraEventBus {
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
     private static final List<Consumer<ServerPlayer>> playerSaveCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<TickEvent.LevelTickEvent>> worldTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<LevelTickEvent>> worldTickCallbacks = new ArrayList<>();
 
     private static final List<Consumer<LevelEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
 
@@ -137,7 +139,7 @@ public final class BaniraEventBus {
         /**
          * 注册服务器每 tick 回调（Phase.END 阶段）
          */
-        public static void onTick(@Nonnull Consumer<TickEvent.ServerTickEvent> callback) {
+        public static void onTick(@Nonnull Consumer<ServerTickEvent> callback) {
             serverTickCallbacks.add(callback);
         }
     }
@@ -196,7 +198,8 @@ public final class BaniraEventBus {
         }
 
         /**
-         * 任意 {@link PlayerEvent}（含登录、克隆等所有子类；若只需克隆请用 {@link #onClone}）
+         * 在已订阅的 {@link PlayerEvent} 子类上触发回调（登录、登出、换维、存档写入、克隆等）。
+         * NeoForge 总线不允许监听抽象类 {@link PlayerEvent}，故无法覆盖未在本类中单独订阅的子类。
          */
         public static void onPlayerEvent(@Nonnull Consumer<PlayerEvent> callback) {
             playerEventCallbacks.add(callback);
@@ -242,7 +245,7 @@ public final class BaniraEventBus {
             worldUnloadCallbacks.add(callback);
         }
 
-        public static void onTick(@Nonnull Consumer<TickEvent.LevelTickEvent> callback) {
+        public static void onTick(@Nonnull Consumer<LevelTickEvent> callback) {
             worldTickCallbacks.add(callback);
         }
     }
@@ -317,7 +320,7 @@ public final class BaniraEventBus {
     // region 分类 API：ModLifecycle
 
     /**
-     * Mod 公共加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}）；客户端 {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent} 见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.ModLifecycle}
+     * Mod 公共加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}）；客户端 {@link net.neoforged.fml.event.lifecycle.FMLClientSetupEvent} 见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.ModLifecycle}
      */
     public static final class ModLifecycle {
         private ModLifecycle() {
@@ -348,23 +351,26 @@ public final class BaniraEventBus {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
+    public static void onServerTick(ServerTickEvent.Post event) {
         fire(serverTickCallbacks, event, "server tick");
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         fire(playerLoggedInCallbacks, event.getEntity(), "player logged in");
+        firePlayerEventCallbacks(event);
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         fire(playerLoggedOutCallbacks, event.getEntity(), "player logged out");
+        firePlayerEventCallbacks(event);
     }
 
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         fire(playerChangedDimensionCallbacks, event, "player changed dimension");
+        firePlayerEventCallbacks(event);
     }
 
     @SubscribeEvent
@@ -389,6 +395,7 @@ public final class BaniraEventBus {
         if (player instanceof ServerPlayer) {
             fire(playerSaveCallbacks, (ServerPlayer) player, "player save");
         }
+        firePlayerEventCallbacks(event);
     }
 
     @SubscribeEvent
@@ -397,18 +404,14 @@ public final class BaniraEventBus {
     }
 
     @SubscribeEvent
-    public static void onWorldTick(TickEvent.LevelTickEvent event) {
+    public static void onWorldTick(LevelTickEvent.Post event) {
         fire(worldTickCallbacks, event, "world tick");
     }
 
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
         fire(playerCloneCallbacks, event, "player clone");
-    }
-
-    @SubscribeEvent
-    public static void onAnyPlayerEvent(PlayerEvent event) {
-        fire(playerEventCallbacks, event, "player event");
+        firePlayerEventCallbacks(event);
     }
 
     @SubscribeEvent
@@ -442,7 +445,7 @@ public final class BaniraEventBus {
     }
 
     /**
-     * 由 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()} {@code addListener} 注册
+     * 由 {@link IEventBus} {@code addListener} 注册
      */
     public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
         fire(modCommonSetupCallbacks, event, "mod common setup");
@@ -451,6 +454,10 @@ public final class BaniraEventBus {
     // endregion Forge 事件订阅
 
     // region 内部回调执行
+
+    private static void firePlayerEventCallbacks(PlayerEvent event) {
+        fire(playerEventCallbacks, event, "player event");
+    }
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {
         for (Consumer<T> callback : callbacks) {

@@ -1,8 +1,7 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,31 +90,35 @@ public final class LogoModifier {
 
         try {
             if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                List<? extends IModInfo> mods = ModList.get().getMods();
+                List<?> mods = ModList.get().getMods();
                 if (mods.isEmpty()) {
                     return;
                 }
-                IModInfo sample = mods.get(0);
-                for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
-                    try {
-                        @SuppressWarnings("unchecked")
-                        Optional<String> logo = (Optional<String>) FieldUtils.getPrivateFieldValue(ModInfo.class, sample, name);
-                        if (logo != null && logo.isPresent()
-                                && StringUtils.isNotNullOrEmpty(logo.get())
-                                && logo.get().matches(".*\\.png$")) {
-                            FIELD_NAME = name;
-                            break;
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
-                if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
+                Object sample = mods.get(0);
+                if (!(sample instanceof ModInfo modSample)) {
                     FIELD_NAME = "logoFile";
+                } else {
+                    for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
+                        try {
+                            @SuppressWarnings("unchecked")
+                            Optional<String> logo = (Optional<String>) FieldUtils.getPrivateFieldValue(ModInfo.class, modSample, name);
+                            if (logo != null && logo.isPresent()
+                                    && StringUtils.isNotNullOrEmpty(logo.get())
+                                    && logo.get().matches(".*\\.png$")) {
+                                FIELD_NAME = name;
+                                break;
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
+                        FIELD_NAME = "logoFile";
+                    }
                 }
             }
 
-            for (IModInfo info : ModList.get().getMods()) {
-                if (!(info instanceof ModInfo)) {
+            for (Object o : ModList.get().getMods()) {
+                if (!(o instanceof ModInfo info)) {
                     continue;
                 }
 

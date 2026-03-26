@@ -6,9 +6,9 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.apache.commons.lang3.ArrayUtils;
 import xin.vanilla.banira.client.data.GLFWKey;
 
@@ -21,7 +21,7 @@ import java.util.List;
  * 便捷注册 {@link KeyMapping}：静态字段初始化阶段入队，在客户端 {@link RegisterKeyMappingsEvent} 中
  * {@link #flushPendingRegistrations(RegisterKeyMappingsEvent)} 一次性提交；若在 flush 之后调用 {@link #register}，会尝试写入 {@link Options#keyMappings}。
  *
- * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
+ * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code neoforge.mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
  *
  * <pre>{@code
  * public static final KeyMapping MY_KEY = BaniraKeyBindings.register(MyMod.MODID, "my_action", GLFWKey.GLFW_KEY_K);

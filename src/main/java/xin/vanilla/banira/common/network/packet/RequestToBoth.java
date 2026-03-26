@@ -2,8 +2,14 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +19,13 @@ import java.util.function.BiConsumer;
  * 请求数据同步包
  */
 @Getter
-public class RequestToBoth {
+public class RequestToBoth implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<RequestToBoth> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("request_to_both"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, RequestToBoth> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(RequestToBoth::toBytes, RequestToBoth::new);
+
     /**
      * 请求类型ID到处理器的映射
      */
@@ -55,18 +67,19 @@ public class RequestToBoth {
      * @param packet 请求包
      * @param ctx    网络事件上下文
      */
-    public static void handle(RequestToBoth packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(RequestToBoth packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isServerSide()) {
-                ServerPlayer player = ctx.getSender();
-                if (player != null) {
-                    BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
-                    if (handler != null) {
-                        handler.accept(packet, player);
-                    }
+            if (ctx.flow() == PacketFlow.SERVERBOUND && ctx.player() instanceof ServerPlayer player) {
+                BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
+                if (handler != null) {
+                    handler.accept(packet, player);
                 }
             }
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

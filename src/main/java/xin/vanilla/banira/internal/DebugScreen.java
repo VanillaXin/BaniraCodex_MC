@@ -7,10 +7,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -46,7 +46,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public class DebugScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -575,7 +575,7 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
             Minecraft.getInstance().setScreen(new DebugScreen());
         }

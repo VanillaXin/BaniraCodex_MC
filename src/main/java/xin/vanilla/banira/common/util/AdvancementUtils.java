@@ -3,9 +3,9 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -58,8 +58,7 @@ public final class AdvancementUtils {
         if (FMLEnvironment.dist.isClient() && !requestedAdvancementData) {
             requestedAdvancementData = true;
             dataLoaded = false;
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
+            PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
             LOGGER.debug("Request advancement data from server.");
         }
     }

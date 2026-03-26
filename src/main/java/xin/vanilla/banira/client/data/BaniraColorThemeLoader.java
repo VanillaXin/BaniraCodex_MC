@@ -8,8 +8,8 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -32,7 +32,7 @@ import java.util.Optional;
  * 资源缺失或解析失败时回退 {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
  * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}；当前是否用夜间由 {@link BaniraGuiNightMode} 与客户端配置决定。
  * <p>
- * 通过 Forge {@link net.minecraftforge.event.AddReloadListenerEvent} 注册。
+ * 通过 Forge {@link net.neoforged.neoforge.event.AddReloadListenerEvent} 注册。
  */
 @OnlyIn(Dist.CLIENT)
 public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {

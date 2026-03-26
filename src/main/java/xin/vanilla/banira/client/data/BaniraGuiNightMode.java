@@ -1,8 +1,8 @@
 package xin.vanilla.banira.client.data;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.internal.config.ClientConfig;
 

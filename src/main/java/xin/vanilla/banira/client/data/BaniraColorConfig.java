@@ -2,8 +2,8 @@ package xin.vanilla.banira.client.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;

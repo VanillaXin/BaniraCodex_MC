@@ -1,14 +1,10 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ClientChatEvent;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.client.event.TextureStitchEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -19,7 +15,6 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.LogoModifier;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -41,11 +36,11 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
 
     private static final List<Consumer<ScreenEvent.Opening>> clientGuiChangedCallbacks = new ArrayList<>();
-    private static final List<Consumer<TextureStitchEvent.Post>> clientTextureReloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<TextureAtlasStitchedEvent>> clientTextureReloadCallbacks = new ArrayList<>();
     private static final List<Consumer<ScreenEvent.Render.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraGuiOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<TickEvent.ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
     private static final List<Consumer<ClientChatEvent>> clientChatCallbacks = new ArrayList<>();
     private static final List<Consumer<ScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
 
@@ -62,7 +57,7 @@ public final class BaniraClientEventHub {
         }
         codexDefaultsRegistered = true;
         Player.onClientLoggedIn(player ->
-                PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(BaniraCodex.MODID))
+                PacketUtils.sendPacketToServer(new ModLoadedToBoth(BaniraCodex.MODID))
         );
         Player.onClientLoggedOut(player -> AdvancementUtils.clearAdvancementData());
         Client.onGuiChanged(event -> LogoModifier.modifyLogo());
@@ -92,7 +87,7 @@ public final class BaniraClientEventHub {
         fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
     }
 
-    public static void dispatchClientTick(TickEvent.ClientTickEvent.Post event) {
+    public static void dispatchClientTick(ClientTickEvent.Post event) {
         fire(clientTickCallbacks, event, "client tick");
     }
 
@@ -135,7 +130,7 @@ public final class BaniraClientEventHub {
             fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
 
-        public static void onTextureReload(@Nonnull Consumer<TextureStitchEvent.Post> callback) {
+        public static void onTextureReload(@Nonnull Consumer<TextureAtlasStitchedEvent> callback) {
             clientTextureReloadCallbacks.add(callback);
         }
 
@@ -147,7 +142,7 @@ public final class BaniraClientEventHub {
             clientRenderOverlayPostCallbacks.add(callback);
         }
 
-        public static void onClientTick(@Nonnull Consumer<TickEvent.ClientTickEvent> callback) {
+        public static void onClientTick(@Nonnull Consumer<ClientTickEvent> callback) {
             clientTickCallbacks.add(callback);
         }
 
@@ -155,11 +150,16 @@ public final class BaniraClientEventHub {
             clientChatCallbacks.add(callback);
         }
 
+        /**
+         * 在已单独转发的 {@link ScreenEvent} 子类上触发：{@link BaniraClientForgeEventHandler}（Opening、Render、鼠标 Pre 等）与
+         * {@link xin.vanilla.banira.client.util.InputStateManager}（键盘、{@code MouseButtonReleased.Post}）。
+         * 总线不允许监听抽象类 {@link ScreenEvent}，故无法覆盖未单独转发的子类。
+         */
         public static void onGuiScreen(@Nonnull Consumer<ScreenEvent> callback) {
             clientGuiScreenCallbacks.add(callback);
         }
 
-        public static void fireTextureReload(TextureStitchEvent.Post event) {
+        public static void fireTextureReload(TextureAtlasStitchedEvent event) {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
 

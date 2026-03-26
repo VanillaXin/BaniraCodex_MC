@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -27,7 +27,6 @@ import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -35,7 +34,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
+ * 配置编辑界面，支持可视化编辑 ModConfigSpec 配置。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
@@ -735,7 +734,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             toSync.put(e.getKey(), serializeValue(e.getValue()));
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
             modifiedValues.clear();
             syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
@@ -777,7 +776,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             toSync.put(e.getKey(), serializeValue(e.getValue()));
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
             modifiedValues.clear();
             syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
@@ -805,7 +804,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigFetchRequestToServer(holder.getConfigName()));
+            PacketUtils.sendPacketToServer(new ConfigFetchRequestToServer(holder.getConfigName()));
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));

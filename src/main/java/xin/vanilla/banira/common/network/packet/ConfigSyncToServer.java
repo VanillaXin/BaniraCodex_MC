@@ -1,9 +1,14 @@
 package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
@@ -13,6 +18,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,7 +26,13 @@ import java.util.stream.Collectors;
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
  */
-public class ConfigSyncToServer {
+public class ConfigSyncToServer implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<ConfigSyncToServer> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.id().create("config_sync"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, ConfigSyncToServer> STREAM_CODEC =
+            BaniraStreamCodecs.registryBuf(ConfigSyncToServer::toBytes, ConfigSyncToServer::new);
+
 
     private static final long NOTIFY_OK_MS = 3000L;
     private static final long NOTIFY_ERR_MS = 4500L;
@@ -53,13 +65,9 @@ public class ConfigSyncToServer {
         }
     }
 
-    public static void handle(ConfigSyncToServer packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ConfigSyncToServer packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isServerSide()) {
-                return;
-            }
-            ServerPlayer player = ctx.getSender();
-            if (player == null) {
+            if (ctx.flow() != PacketFlow.SERVERBOUND || !(ctx.player() instanceof ServerPlayer player)) {
                 return;
             }
             if (packet.changes.isEmpty()) {
@@ -97,7 +105,11 @@ public class ConfigSyncToServer {
                 sendNotify(player, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
-        ctx.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     private static void sendNotify(ServerPlayer player, String langKey, long durationMs, Object... args) {

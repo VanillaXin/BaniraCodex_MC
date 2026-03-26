@@ -4,21 +4,20 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.SimpleChannel;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 
 @Accessors(fluent = true)
@@ -45,146 +44,74 @@ public final class PacketUtils {
     }
 
     /**
-     * 广播数据包至所有玩家
+     * 广播自定义载荷至所有玩家
      */
-    public static <MSG> void broadcastPacket(Supplier<SimpleChannel> channel, MSG msg) {
-        broadcastPacket(channel.get(), msg);
-    }
-
-    /**
-     * 广播数据包至所有玩家
-     */
-    public static <MSG> void broadcastPacket(SimpleChannel channel, MSG msg) {
+    public static void broadcastPayload(CustomPacketPayload payload) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPacketToPlayer(channel, msg, player)
+                sendPayloadToPlayer(player, payload)
         );
     }
 
     /**
-     * 广播分包数据包至所有玩家
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     */
-    public static <T extends SplitPacket> void broadcastSplitPacket(Supplier<SimpleChannel> channel, T packet) {
-        broadcastSplitPacket(channel.get(), packet);
-    }
-
-    /**
-     * 广播分包数据包至所有玩家
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     */
-    public static <T extends SplitPacket> void broadcastSplitPacket(SimpleChannel channel, T packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacketToPlayer(channel, packet, player)
-        );
-    }
-
-
-    /**
-     * 发送数据包至服务器
-     */
-    public static <MSG> void sendPacketToServer(Supplier<SimpleChannel> channel, MSG msg) {
-        sendPacketToServer(channel.get(), msg);
-    }
-
-    /**
-     * 发送数据包至玩家
-     */
-    public static <MSG> void sendPacketToPlayer(Supplier<SimpleChannel> channel, MSG msg, ServerPlayer player) {
-        sendPacketToPlayer(channel.get(), msg, player);
-    }
-
-    /**
-     * 发送分包数据包至玩家
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param player  目标玩家
-     * @param <T>     分包类型
-     */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(Supplier<SimpleChannel> channel, T packet, ServerPlayer player) {
-        sendSplitPacketToPlayer(channel.get(), packet, player);
-    }
-
-    /**
-     * 发送分包数据包至服务器
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param <T>     分包类型
-     */
-    public static <T extends SplitPacket> void sendSplitPacketToServer(Supplier<SimpleChannel> channel, T packet) {
-        sendSplitPacketToServer(channel.get(), packet);
-    }
-
-
-    /**
-     * 发送数据包至服务器
+     * 发送载荷至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    public static <MSG> void sendPacketToServer(SimpleChannel channel, MSG msg) {
-        var mc = Minecraft.getInstance();
-        if (mc.getConnection() == null || !hasChannel(channel.getName())) return;
-        channel.send(msg, mc.getConnection().getConnection());
+    public static void sendPacketToServer(CustomPacketPayload msg) {
+        if (!hasChannel(msg.type().id())) {
+            return;
+        }
+        PacketDistributor.sendToServer(msg);
     }
 
     /**
-     * 发送数据包至玩家
+     * 发送载荷至玩家
      */
-    public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
-        if (!hasChannel(player, channel.getName())) return;
-        channel.send(msg, PacketDistributor.PLAYER.with(player));
+    public static void sendPacketToPlayer(ServerPlayer player, CustomPacketPayload msg) {
+        sendPayloadToPlayer(player, msg);
+    }
+
+    private static void sendPayloadToPlayer(ServerPlayer player, CustomPacketPayload msg) {
+        if (!hasChannel(player, msg.type().id())) {
+            return;
+        }
+        PacketDistributor.sendToPlayer(player, msg);
     }
 
     /**
-     * 发送分包数据包至玩家
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param player  目标玩家
-     * @param <T>     分包类型
+     * 发送分包载荷至玩家
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
-        if (!hasChannel(player, channel.getName())) return;
-        PacketDistributor.PacketTarget target = PacketDistributor.PLAYER.with(player);
+    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.send(splitPacket, target);
+            sendPacketToPlayer(player, splitPacket);
         }
     }
 
     /**
-     * 发送分包数据包至服务器
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param <T>     分包类型
+     * 发送分包载荷至服务器
      */
-    public static <T extends SplitPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
+    @OnlyIn(Dist.CLIENT)
+    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToServer(T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            sendPacketToServer(channel, splitPacket);
+            sendPacketToServer(splitPacket);
         }
     }
-
 
     @OnlyIn(Dist.CLIENT)
     public static boolean hasBaniraServer() {
-        return hasChannel(NetworkInit.HANDLER.getChannel().getName());
+        return hasChannel(ModLoadedToBoth.TYPE.id());
     }
 
     @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("UnstableApiUsage")
-    public static boolean hasChannel(ResourceLocation channel) {
-        var connection = Minecraft.getInstance().getConnection();
-        return connection != null && NetworkRegistry.findTarget(channel) != null;
+    public static boolean hasChannel(ResourceLocation payloadId) {
+        var listener = Minecraft.getInstance().getConnection();
+        return listener != null && NetworkRegistry.hasChannel(listener, payloadId);
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
-        return NetworkRegistry.findTarget(channel) != null;
+    public static boolean hasChannel(ServerPlayer player, ResourceLocation payloadId) {
+        return NetworkRegistry.hasChannel(player.connection, payloadId);
     }
 }

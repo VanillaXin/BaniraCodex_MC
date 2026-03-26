@@ -17,7 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -238,7 +238,7 @@ public final class CommandUtils {
         configKey = configKey.trim();
         boolean isEmpty = configKey.isEmpty();
 
-        Map<String, ForgeConfigSpec.ConfigValue<?>> map = buildConfigKeyMap(configClazz);
+        Map<String, ModConfigSpec.ConfigValue<?>> map = buildConfigKeyMap(configClazz);
         if (CollectionUtils.isNullOrEmpty(map)) return;
 
         String lowerInput = configKey.toLowerCase(Locale.ROOT);
@@ -289,11 +289,11 @@ public final class CommandUtils {
 
     @SuppressWarnings("rawtypes")
     public static void configValueSuggestion(Class<?> configClazz, SuggestionsBuilder builder, String configKey) {
-        ForgeConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
+        ModConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
         if (cv == null) return;
         else builder.suggest(String.valueOf(cv.get()));
 
-        ForgeConfigSpec.ValueSpec vs = getValueSpec(cv);
+        ModConfigSpec.ValueSpec vs = getValueSpec(cv);
         if (vs != null) {
             builder.suggest(String.valueOf(vs.getDefault()));
         }
@@ -322,7 +322,7 @@ public final class CommandUtils {
         String configKey = StringArgumentType.getString(context, "configKey");
         String configValue = StringArgumentType.getString(context, "configValue");
 
-        ForgeConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
+        ModConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
         if (cv == null) {
             Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_key_absent", configKey);
             source.sendFailure(component.toChat(lang));
@@ -341,7 +341,7 @@ public final class CommandUtils {
         }
 
         if (validateConfigValueWithSpec(cv, parsed)) {
-            ((ForgeConfigSpec.ConfigValue) cv).set(parsed);
+            ((ModConfigSpec.ConfigValue) cv).set(parsed);
         } else {
             Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_error", configKey, configValue);
             source.sendFailure(component.toChat(lang));
@@ -364,7 +364,7 @@ public final class CommandUtils {
             List<Field> out = new ArrayList<>();
             for (Field f : k.getDeclaredFields()) {
                 try {
-                    if (ForgeConfigSpec.ConfigValue.class.isAssignableFrom(f.getType())) {
+                    if (ModConfigSpec.ConfigValue.class.isAssignableFrom(f.getType())) {
                         f.setAccessible(true);
                         out.add(f);
                     }
@@ -375,15 +375,15 @@ public final class CommandUtils {
         });
     }
 
-    public static final Map<Class<?>, Map<String, ForgeConfigSpec.ConfigValue<?>>> configKeyMapCache = new HashMap<>();
+    public static final Map<Class<?>, Map<String, ModConfigSpec.ConfigValue<?>>> configKeyMapCache = new HashMap<>();
 
-    private static Map<String, ForgeConfigSpec.ConfigValue<?>> buildConfigKeyMap(Class<?> configClazz) {
+    private static Map<String, ModConfigSpec.ConfigValue<?>> buildConfigKeyMap(Class<?> configClazz) {
         return configKeyMapCache.computeIfAbsent(configClazz, (k) -> {
-            Map<String, ForgeConfigSpec.ConfigValue<?>> map = new LinkedHashMap<>();
+            Map<String, ModConfigSpec.ConfigValue<?>> map = new LinkedHashMap<>();
             for (Field f : getAllConfigValueFields(k)) {
                 try {
                     Object raw = f.get(null);
-                    if (raw instanceof ForgeConfigSpec.ConfigValue<?> cv) {
+                    if (raw instanceof ModConfigSpec.ConfigValue<?> cv) {
                         String path = getConfigValuePath(cv);
                         if (path != null) {
                             map.put(path, cv);
@@ -396,13 +396,13 @@ public final class CommandUtils {
         });
     }
 
-    private static String getConfigValuePath(ForgeConfigSpec.ConfigValue<?> cv) {
+    private static String getConfigValuePath(ModConfigSpec.ConfigValue<?> cv) {
         return cv.getPath().stream().map(String::valueOf).collect(Collectors.joining("."));
     }
 
-    private static ForgeConfigSpec.ConfigValue<?> findConfigValueByKey(Class<?> configClazz, String key) {
+    private static ModConfigSpec.ConfigValue<?> findConfigValueByKey(Class<?> configClazz, String key) {
         if (key == null) return null;
-        Map<String, ForgeConfigSpec.ConfigValue<?>> map = buildConfigKeyMap(configClazz);
+        Map<String, ModConfigSpec.ConfigValue<?>> map = buildConfigKeyMap(configClazz);
 
         if (map.containsKey(key)) return map.get(key);
 
@@ -414,7 +414,7 @@ public final class CommandUtils {
         return null;
     }
 
-    private static Class<?> getConfigValueType(ForgeConfigSpec.ConfigValue<?> cv) {
+    private static Class<?> getConfigValueType(ModConfigSpec.ConfigValue<?> cv) {
         try {
             Object cur = cv.get();
             if (cur != null) return cur.getClass();
@@ -482,16 +482,16 @@ public final class CommandUtils {
         }
     }
 
-    private static final Map<String, ForgeConfigSpec.ValueSpec> valueSpecCache = new HashMap<>();
+    private static final Map<String, ModConfigSpec.ValueSpec> valueSpecCache = new HashMap<>();
 
-    public static ForgeConfigSpec.ValueSpec getValueSpec(ForgeConfigSpec.ConfigValue<?> cv) {
+    public static ModConfigSpec.ValueSpec getValueSpec(ModConfigSpec.ConfigValue<?> cv) {
         return valueSpecCache.computeIfAbsent(getConfigValuePath(cv), (k) -> {
             try {
-                ForgeConfigSpec spec = null;
-                for (String candidate : FieldUtils.getPrivateFieldNames(ForgeConfigSpec.ConfigValue.class, ForgeConfigSpec.class)) {
-                    Object value = FieldUtils.getPrivateFieldValue(ForgeConfigSpec.ConfigValue.class, cv, candidate);
+                ModConfigSpec spec = null;
+                for (String candidate : FieldUtils.getPrivateFieldNames(ModConfigSpec.ConfigValue.class, ModConfigSpec.class)) {
+                    Object value = FieldUtils.getPrivateFieldValue(ModConfigSpec.ConfigValue.class, cv, candidate);
                     if (value != null) {
-                        spec = (ForgeConfigSpec) value;
+                        spec = (ModConfigSpec) value;
                         break;
                     }
                 }
@@ -504,9 +504,9 @@ public final class CommandUtils {
         });
     }
 
-    public static boolean validateConfigValueWithSpec(ForgeConfigSpec.ConfigValue<?> cv, Object parsedValue) {
+    public static boolean validateConfigValueWithSpec(ModConfigSpec.ConfigValue<?> cv, Object parsedValue) {
         if (cv == null) return false;
-        ForgeConfigSpec.ValueSpec vs = getValueSpec(cv);
+        ModConfigSpec.ValueSpec vs = getValueSpec(cv);
         return vs != null && vs.test(parsedValue);
     }
 

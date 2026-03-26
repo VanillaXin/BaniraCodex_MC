@@ -6,10 +6,10 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public class NotificationLogScreen extends BaniraScreen {
 
     public static final String FILTER_ALL = "all";
@@ -172,7 +172,7 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         if (Minecraft.getInstance().screen == null && BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
             Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
         }

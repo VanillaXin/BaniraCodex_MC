@@ -9,9 +9,8 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
@@ -46,7 +45,7 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return ForgeRegistries.MOB_EFFECTS.getKey(effect);
+        return BuiltInRegistries.MOB_EFFECT.getKey(effect);
     }
 
     /**
@@ -231,7 +230,7 @@ public final class EffectUtils {
     public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.MOB_EFFECTS.getValue(location);
+            return BuiltInRegistries.MOB_EFFECT.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -256,7 +255,7 @@ public final class EffectUtils {
         if (allEffectsCache.isEmpty()) {
             synchronized (EffectUtils.class) {
                 if (allEffectsCache.isEmpty()) {
-                    allEffectsCache = ForgeRegistries.MOB_EFFECTS.getValues().stream()
+                    allEffectsCache = BuiltInRegistries.MOB_EFFECT.stream()
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
                     LOGGER.debug("Built effect list with {} effects", allEffectsCache.size());

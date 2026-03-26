@@ -1,7 +1,8 @@
 package xin.vanilla.banira.common.config;
 
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,7 +16,7 @@ public final class ConfigRegistry {
     /**
      * 注册配置
      *
-     * @param holder 配置持有者
+     * @param holder       配置持有者
      * @param modContainer Mod 容器
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {

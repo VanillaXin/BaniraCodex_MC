@@ -14,10 +14,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -94,7 +93,7 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return ForgeRegistries.ITEMS.getKey(item);
+        return BuiltInRegistries.ITEM.getKey(item);
     }
 
     /**
@@ -320,7 +319,7 @@ public final class ItemUtils {
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
-            Item item = ForgeRegistries.ITEMS.getValue(rl);
+            Item item = BuiltInRegistries.ITEM.get(rl);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -344,7 +343,7 @@ public final class ItemUtils {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        Item item = ForgeRegistries.ITEMS.getValue(id);
+        Item item = BuiltInRegistries.ITEM.get(id);
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -366,7 +365,7 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.ITEMS.getValue(location);
+            return BuiltInRegistries.ITEM.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -464,7 +463,7 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : ForgeRegistries.ITEMS) {
+            for (Item item : BuiltInRegistries.ITEM) {
                 if (item == null) continue;
                 if (!addedItems.contains(item)) {
                     try {
@@ -475,7 +474,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                ForgeRegistries.ITEMS.getKey(item), e);
+                                BuiltInRegistries.ITEM.getKey(item), e);
                     }
                 }
             }
@@ -530,8 +529,8 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                ForgeRegistries.ITEMS.tags().getReverseTag(item).ifPresent(reverseTag ->
-                        reverseTag.getTagKeys().forEach(tagKey -> {
+                BuiltInRegistries.ITEM.getResourceKey(item).flatMap(BuiltInRegistries.ITEM::getHolder).ifPresent(holder ->
+                        holder.tags().forEach(tagKey -> {
                             ResourceLocation loc = tagKey.location();
                             tags.add(loc.toString().toLowerCase());
                             tags.add(loc.getPath().toLowerCase());
@@ -1019,8 +1018,8 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = ForgeRegistries.ITEMS.tags().getReverseTag(item)
-                            .map(rt -> rt.getTagKeys().map(TagKey::location)
+                    List<ResourceLocation> tagIds = BuiltInRegistries.ITEM.getResourceKey(item).flatMap(BuiltInRegistries.ITEM::getHolder)
+                            .map(holder -> holder.tags().map(TagKey::location)
                                     .sorted(Comparator.comparing(ResourceLocation::toString))
                                     .collect(Collectors.toList()))
                             .orElse(Collections.emptyList());

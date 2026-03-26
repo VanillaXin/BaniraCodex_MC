@@ -8,7 +8,7 @@ public final class BaniraLang extends Translator {
     public static final BaniraLang INSTANCE = new BaniraLang();
 
     private BaniraLang() {
-        super(BaniraCodex.MODID);
+        super(BaniraCodex.class);
         registerInCache();
     }
 }

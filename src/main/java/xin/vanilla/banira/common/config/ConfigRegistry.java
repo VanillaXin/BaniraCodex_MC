@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 
 import java.util.LinkedHashMap;
@@ -21,8 +22,7 @@ public final class ConfigRegistry {
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {
         String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = new ModConfig(holder.getConfigType(), holder.getSpec(), modContainer, fileName);
-        modContainer.addConfig(modConfig);
+        ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(holder.getConfigType(), holder.getSpec(), modContainer, fileName);
         holder.setModConfig(modConfig);
         HOLDERS.put(holder.getConfigName(), holder);
     }

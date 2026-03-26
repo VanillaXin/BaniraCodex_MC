@@ -69,7 +69,10 @@ public class ConfigHolder {
      */
     public void save() {
         if (modConfig != null) {
-            modConfig.save();
+            var loaded = modConfig.getLoadedConfig();
+            if (loaded != null) {
+                loaded.save();
+            }
         }
     }
 

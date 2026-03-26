@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.banira.common.config.annotation.Config;
@@ -70,8 +71,7 @@ public final class ForgeConfigAdapter {
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
-            container.addConfig(modConfig);
+            ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(configType, spec, container, fileName);
             holder.setModConfig(modConfig);
         });
 

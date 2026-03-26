@@ -18,6 +18,6 @@ public abstract class PlayerTabOverlayMixin {
     private void banira$afterTabListRender(GuiGraphics guiGraphics, int width, Scoreboard scoreboard, Objective objective, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         BaniraClientEventHub.Client.fireRenderOverlayPost(
-                new BaniraGuiOverlayEvent.Post(guiGraphics, mc.getPartialTick(), BaniraGuiOverlayEvent.PLAYER_LIST));
+                new BaniraGuiOverlayEvent.Post(guiGraphics, mc.getTimer().getGameTimeDeltaPartialTick(false), BaniraGuiOverlayEvent.PLAYER_LIST));
     }
 }

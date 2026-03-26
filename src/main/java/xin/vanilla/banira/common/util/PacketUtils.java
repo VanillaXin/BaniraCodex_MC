@@ -72,7 +72,7 @@ public final class PacketUtils {
      */
     public static <T extends SplitPacket> void broadcastSplitPacket(SimpleChannel channel, T packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player))
+                sendSplitPacketToPlayer(channel, packet, player)
         );
     }
 
@@ -89,18 +89,6 @@ public final class PacketUtils {
      */
     public static <MSG> void sendPacketToPlayer(Supplier<SimpleChannel> channel, MSG msg, ServerPlayer player) {
         sendPacketToPlayer(channel.get(), msg, player);
-    }
-
-    /**
-     * 发送分包数据包
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param target  发送目标
-     * @param <T>     分包类型
-     */
-    public static <T extends SplitPacket> void sendSplitPacket(Supplier<SimpleChannel> channel, T packet, PacketDistributor.PacketTarget target) {
-        sendSplitPacket(channel.get(), packet, target);
     }
 
     /**
@@ -142,21 +130,6 @@ public final class PacketUtils {
     }
 
     /**
-     * 发送分包数据包
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param target  发送目标
-     * @param <T>     分包类型
-     */
-    public static <T extends SplitPacket> void sendSplitPacket(SimpleChannel channel, T packet, PacketDistributor.PacketTarget target) {
-        List<T> splitPackets = packet.split();
-        for (T splitPacket : splitPackets) {
-            channel.send(target, splitPacket);
-        }
-    }
-
-    /**
      * 发送分包数据包至玩家
      *
      * @param channel 网络通道
@@ -165,7 +138,11 @@ public final class PacketUtils {
      * @param <T>     分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
-        sendSplitPacket(channel, packet, PacketDistributor.PLAYER.with(() -> player));
+        PacketDistributor.PacketTarget target = PacketDistributor.PLAYER.with(() -> player);
+        List<T> splitPackets = packet.split();
+        for (T splitPacket : splitPackets) {
+            channel.send(target, splitPacket);
+        }
     }
 
     /**

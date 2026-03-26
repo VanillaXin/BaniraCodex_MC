@@ -9,9 +9,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.ModFileScanData;
+import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.Type;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
@@ -29,13 +35,14 @@ import java.util.stream.Collectors;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 每个 Mod 只需继承此类并传入 modId 即可：
+ * 构造时传入带 {@link Mod} 的主类（与入口 {@code @Mod("modid")} 为同一类），modId 从注解读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
- *     private MyModLang() { super(MyMod.MODID); }
+ *     private MyModLang() { super(MyMod.class); }
  * }
  * }</pre>
+ * 仅使用 {@link #of(String)} 时通过 {@link ModList} 与 {@link ModFileScanData} 扫描结果解析该 mod 的 {@code @Mod} 主类（NeoForge 中 {@code ModContainer} 不再持有 mod 实例）。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -52,17 +59,87 @@ public class Translator implements ITranslator {
 
     private final Map<String, JsonObject> languages = new ConcurrentHashMap<>();
     private final String modId;
+    /**
+     * {@code @Mod} 主类：用于 {@link Class#getResourceAsStream(String)}（须与 {@code assets/&lt;modId&gt;/lang} 同 JAR），且 modId 来自该类上的 {@link Mod#value()}。
+     */
+    private final Class<?> modMainClass;
 
     /**
-     * 子类构造函数，传入 modId 即可完成初始化。
-     * 注意：由 {@link #of(String)} 创建的实例由 computeIfAbsent 自动注册；
-     * 子类直接 new 时需在构造末尾调用 {@link #registerInCache()}。
+     * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
      */
-    protected Translator(@NonNull String modId) {
-        this.modId = modId;
+    protected Translator(@NonNull Class<?> modMainClass) {
+        this.modMainClass = modMainClass;
+        this.modId = modIdFromModMainClass(modMainClass);
         loadLanguage(DEFAULT_LANGUAGE);
         getI18nFiles().forEach(this::loadLanguage);
     }
+
+    // region mod 主类与 modId（@Mod）
+
+    @NonNull
+    private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
+        Mod mod = modMainClass.getAnnotation(Mod.class);
+        if (mod == null) {
+            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
+        }
+        String id = mod.value();
+        if (StringUtils.isNullOrEmptyEx(id)) {
+            throw new IllegalArgumentException("@Mod value is empty on: " + modMainClass.getName());
+        }
+        return id;
+    }
+
+    @NonNull
+    private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
+        try {
+            IModInfo modInfo = ModList.get().getModContainerById(modId)
+                    .orElseThrow(() -> new IllegalStateException("No mod container for id: " + modId))
+                    .getModInfo();
+            IModFile modFile = modInfo.getOwningFile().getFile();
+            ModFileScanData scan = modFile.getScanResult();
+            if (scan == null) {
+                throw new IllegalStateException("No ModFileScanData for mod id: " + modId);
+            }
+            Type modAnnotationType = Type.getType(Mod.class);
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            for (ModFileScanData.AnnotationData ad : scan.getAnnotations()) {
+                if (!modAnnotationType.equals(ad.annotationType())) {
+                    continue;
+                }
+                if (!modIdMatchesModAnnotation(modId, ad.annotationData())) {
+                    continue;
+                }
+                String binaryName = ad.clazz().getClassName();
+                return Class.forName(binaryName, false, loader);
+            }
+            throw new IllegalStateException("No @Mod class in scan data for mod id: " + modId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Failed to load @Mod class for mod id: " + modId, e);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Failed to resolve @Mod main class for mod id: " + modId, t);
+        }
+    }
+
+    private static boolean modIdMatchesModAnnotation(@NonNull String modId, @Nullable Map<String, ?> annotationData) {
+        if (annotationData == null) {
+            return false;
+        }
+        Object v = annotationData.get("value");
+        if (v instanceof String s) {
+            return modId.equals(s);
+        }
+        if (v instanceof String[] arr && arr.length == 1) {
+            return modId.equals(arr[0]);
+        }
+        if (v instanceof List<?> list && list.size() == 1 && list.get(0) instanceof String s) {
+            return modId.equals(s);
+        }
+        return false;
+    }
+
+    // endregion mod 主类与 modId（@Mod）
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -80,7 +157,7 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(modId);
+        return new Translator(resolveModMainClassFromModList(modId));
     }
 
     @Override
@@ -154,7 +231,7 @@ public class Translator implements ITranslator {
             try {
                 String path = String.format(getLangFilePath(), languageCode);
                 try (InputStreamReader reader = new InputStreamReader(
-                        Objects.requireNonNull(Translator.class.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
+                        Objects.requireNonNull(modMainClass.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
                     JsonObject json = JsonUtils.parseObject(reader);
                     languages.put(languageCode, json);
                 }

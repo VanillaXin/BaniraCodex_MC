@@ -16,6 +16,7 @@ final class ClientConfigAccess {
     private static final EnumGuiNightMode DEFAULT_GUI_NIGHT_MODE = EnumGuiNightMode.OFF;
     private static final int DEFAULT_NIGHT_START_MINUTE = 22 * 60;
     private static final int DEFAULT_NIGHT_END_MINUTE = 6 * 60;
+    private static final int DEFAULT_NOTIFICATION_LOG_MAX_ENTRIES = 500;
 
     private ClientConfigAccess() {
     }
@@ -84,6 +85,17 @@ final class ClientConfigAccess {
                 }
                 if (holder != null) {
                     holder.set("guiNightModeEndMinute", args[0]);
+                }
+                return proxy;
+            case "notificationLogMaxEntries":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NOTIFICATION_LOG_MAX_ENTRIES;
+                    }
+                    return intConfig(holder, "notificationLogMaxEntries", DEFAULT_NOTIFICATION_LOG_MAX_ENTRIES);
+                }
+                if (holder != null) {
+                    holder.set("notificationLogMaxEntries", args[0]);
                 }
                 return proxy;
             case "holder":

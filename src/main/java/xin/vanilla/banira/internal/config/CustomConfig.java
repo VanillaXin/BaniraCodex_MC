@@ -181,6 +181,50 @@ public class CustomConfig {
         setDirty(true);
     }
 
+    public static void setPlayerLanguageClient(String uuid, String language) {
+        JsonUtils.setString(clientConfig, String.format("player.%s.language", uuid), language);
+    }
+
+    public static void setPlayerNotificationReceiveModeClient(String uuid, String mode) {
+        String normalized = normalizeNotificationReceiveMode(mode);
+        JsonUtils.setString(clientConfig, String.format("player.%s.notification_receive_mode", uuid), normalized);
+    }
+
+    /**
+     * Banira 通知 UI 模式（默认）
+     */
+    public static final String notificationReceiveModeNotification = "notification";
+
+    /**
+     * 原版消息（聊天栏；若调用方指定 ACTION_BAR 回退则为操作栏）
+     */
+    public static final String notificationReceiveModeVanillaMessage = "vanilla_message";
+
+    public static String getPlayerNotificationReceiveMode(String uuid) {
+        String raw = JsonUtils.getString(customConfig, String.format("player.%s.notification_receive_mode", uuid),
+                notificationReceiveModeNotification);
+        return normalizeNotificationReceiveMode(raw);
+    }
+
+    public static String getPlayerNotificationReceiveModeClient(String uuid) {
+        String raw = JsonUtils.getString(clientConfig, String.format("player.%s.notification_receive_mode", uuid),
+                notificationReceiveModeNotification);
+        return normalizeNotificationReceiveMode(raw);
+    }
+
+    public static void setPlayerNotificationReceiveMode(String uuid, String mode) {
+        String normalized = normalizeNotificationReceiveMode(mode);
+        JsonUtils.setString(customConfig, String.format("player.%s.notification_receive_mode", uuid), normalized);
+        setDirty(true);
+    }
+
+    private static String normalizeNotificationReceiveMode(String mode) {
+        if (mode != null && notificationReceiveModeVanillaMessage.equalsIgnoreCase(mode.trim())) {
+            return notificationReceiveModeVanillaMessage;
+        }
+        return notificationReceiveModeNotification;
+    }
+
     public static JsonObject getVirtualPermission() {
         return JsonUtils.getJsonObject(customConfig, "server.virtual_permission", new JsonObject());
     }

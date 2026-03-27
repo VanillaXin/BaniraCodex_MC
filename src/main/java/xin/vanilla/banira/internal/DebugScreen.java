@@ -7,13 +7,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -21,7 +16,6 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -46,7 +40,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
-@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public class DebugScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -64,7 +57,7 @@ public class DebugScreen extends BaniraScreen {
     private boolean warp = false;
 
 
-    protected DebugScreen() {
+    public DebugScreen() {
         super(BaniraComponent.get().empty().toVanilla());
     }
 
@@ -572,13 +565,6 @@ public class DebugScreen extends BaniraScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
-        if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
-            Minecraft.getInstance().setScreen(new DebugScreen());
-        }
     }
 
 }

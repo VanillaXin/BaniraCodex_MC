@@ -17,13 +17,14 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
-import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -85,7 +86,10 @@ public class BaniraCodex {
 
     private void registerBaniraEvent() {
         // 通用事件
-        BaniraEventBus.ModLifecycle.onCommonSetup(event -> CustomConfig.loadCustomConfig(false));
+        BaniraEventBus.ModLifecycle.onCommonSetup(event -> {
+            CustomConfig.loadCustomConfig(false);
+            ModLoadedPresence.register(MODID);
+        });
 
         // 服务器事件
         BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
@@ -111,7 +115,7 @@ public class BaniraCodex {
         );
         BaniraEventBus.Player.onLoggedOut(player -> {
             if (player instanceof ServerPlayer) {
-                PlayerUtils.removePlayerDataStatus(player);
+                PlayerUtils.removeRemoteClientDataStatus(player);
             }
         });
 
@@ -124,12 +128,12 @@ public class BaniraCodex {
     public static class ClientProxy {
         public static void init() {
             BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
-                Component label = BaniraComponent.get().transClient("key.banira_codex.notification_log");
+                Component label = BaniraComponent.get().transClient("key.banira_codex.codex_navigation");
                 Consumer<QuickActionContext> action = ctx ->
                         Minecraft.getInstance().setScreen(
-                                new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(ctx.currentScreen()))
+                                new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
                         );
-                QuickActionRegistry.get().registerListOnly(MODID + ":quick_notification_log_screen", label, action);
+                QuickActionRegistry.get().registerListOnly(MODID + ":quick_codex_navigation", label, action);
             });
         }
     }

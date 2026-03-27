@@ -18,8 +18,6 @@ import xin.vanilla.banira.client.util.NotificationManager;
 @EventBusSubscriber(modid = BaniraCodex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class BaniraClientModSetup {
 
-    public static final KeyMapping DEBUG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "debug", GLFWKey.GLFW_KEY_UNKNOWN);
-
     public static final KeyMapping NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
 
     private BaniraClientModSetup() {

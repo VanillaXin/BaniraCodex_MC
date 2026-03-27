@@ -46,6 +46,13 @@ public class ClientConfig implements ConfigData {
     @ConfigEntry.BoundedDiscrete(min = 0, max = 1439)
     private int guiNightModeEndMinute = 6 * 60;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "通知日志中最多保留的条数（超出时丢弃最旧记录）。",
+            en_us = "Maximum number of entries kept in the notification log (oldest dropped when exceeded).")
+    @ConfigEntry.BoundedDiscrete(min = 1, max = 10000)
+    private int notificationLogMaxEntries = 500;
+
     public ClientConfig() {
     }
 
@@ -71,6 +78,10 @@ public class ClientConfig implements ConfigData {
         int guiNightModeEndMinute();
 
         RootView guiNightModeEndMinute(int value);
+
+        int notificationLogMaxEntries();
+
+        RootView notificationLogMaxEntries(int value);
 
         ConfigHolder holder();
     }

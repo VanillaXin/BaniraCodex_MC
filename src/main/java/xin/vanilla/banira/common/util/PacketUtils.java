@@ -60,7 +60,20 @@ public final class PacketUtils {
         if (!hasChannel(msg.type().id())) {
             return;
         }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        // ModLoadedToBoth 为握手首包，不依赖已记录的远程服务端状态
+        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, msg.type().id().getNamespace())) {
+            return;
+        }
         PacketDistributor.sendToServer(msg);
+    }
+
+    /**
+     * 发送载荷至玩家
+     */
+    public static void sendPacketToPlayer(CustomPacketPayload msg, ServerPlayer player) {
+        sendPayloadToPlayer(player, msg);
     }
 
     /**
@@ -74,7 +87,15 @@ public final class PacketUtils {
         if (!hasChannel(player, msg.type().id())) {
             return;
         }
+        if (!PlayerUtils.isRemoteClientModInstalled(player, msg.type().id().getNamespace())) return;
         PacketDistributor.sendToPlayer(player, msg);
+    }
+
+    /**
+     * 发送分包载荷至玩家
+     */
+    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
+        sendSplitPacketToPlayer(player, packet);
     }
 
     /**
@@ -104,10 +125,19 @@ public final class PacketUtils {
     }
 
     @OnlyIn(Dist.CLIENT)
+    public static boolean hasChannel(CustomPacketPayload msg) {
+        return hasChannel(msg.type().id());
+    }
+
+    @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("UnstableApiUsage")
     public static boolean hasChannel(ResourceLocation payloadId) {
         var listener = Minecraft.getInstance().getConnection();
         return listener != null && NetworkRegistry.hasChannel(listener, payloadId);
+    }
+
+    public static boolean hasChannel(ServerPlayer player, CustomPacketPayload msg) {
+        return hasChannel(player, msg.type().id());
     }
 
     @SuppressWarnings("UnstableApiUsage")

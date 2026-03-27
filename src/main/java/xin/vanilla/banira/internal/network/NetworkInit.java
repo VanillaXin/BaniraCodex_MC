@@ -46,10 +46,12 @@ public final class NetworkInit {
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar reg = event.registrar("1");
 
-        reg.playToServer(RequestToBoth.TYPE, RequestToBoth.STREAM_CODEC, RequestToBoth::handle);
-        reg.playToServer(ModLoadedToBoth.TYPE, ModLoadedToBoth.STREAM_CODEC, ModLoadedToBoth::handle);
+        reg.playBidirectional(RequestToBoth.TYPE, RequestToBoth.STREAM_CODEC, RequestToBoth::handle);
+        reg.playBidirectional(ModLoadedToBoth.TYPE, ModLoadedToBoth.STREAM_CODEC, ModLoadedToBoth::handle);
+
         reg.playToServer(ConfigSyncToServer.TYPE, ConfigSyncToServer.STREAM_CODEC, ConfigSyncToServer::handle);
         reg.playToServer(ConfigFetchRequestToServer.TYPE, ConfigFetchRequestToServer.STREAM_CODEC, ConfigFetchRequestToServer::handle);
+        reg.playToServer(CustomPlayerConfigSyncToServer.TYPE, CustomPlayerConfigSyncToServer.STREAM_CODEC, CustomPlayerConfigSyncToServer::handle);
 
         reg.playToClient(NotificationToClient.TYPE, NotificationToClient.STREAM_CODEC, NotificationToClient::handle);
         reg.playToClient(ConfigSnapshotToClient.TYPE, ConfigSnapshotToClient.STREAM_CODEC, ConfigSnapshotToClient::handle);

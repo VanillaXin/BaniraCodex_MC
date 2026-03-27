@@ -243,8 +243,8 @@ public class EffectSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object effectId = b.property("effectId");
-                if (effectId instanceof String) {
-                    handleEffect((String) effectId);
+                if (effectId instanceof String s) {
+                    handleEffect(s);
                     if (selectedEffectWidget != null) selectedEffectWidget.focused(false);
                     selectedEffectWidget = btn;
                 }

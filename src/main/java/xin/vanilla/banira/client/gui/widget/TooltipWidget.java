@@ -1,8 +1,7 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -10,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -94,6 +94,10 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     @Override
     public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
+        if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
+            renderChildren(stack, partialTicks);
+            return;
+        }
         if (mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
@@ -399,9 +403,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 Texture tex = args.texture();
-                AbstractGuiUtils.blit(s, tex.location(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
-                        tex.u0(), tex.v0(), tex.uWidth(), tex.vHeight(),
-                        tex.uvWidth(), tex.uvHeight());
+                ImageWidget.blit(s, tex, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight);
                 AbstractGuiUtils.restoreGuiRenderState();
             } else if (useThemeColor && theme != null) {
                 int radius = args.bgBorderRadius();

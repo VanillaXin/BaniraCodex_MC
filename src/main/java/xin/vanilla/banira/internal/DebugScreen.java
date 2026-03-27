@@ -6,14 +6,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
@@ -24,6 +23,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMCColor;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -158,6 +158,19 @@ public class DebugScreen extends BaniraScreen {
         quickActionMinusBtn.text("快捷入口项-1");
         quickActionMinusBtn.onClick(b -> debugQuickActionRemove());
         addWidget(quickActionMinusBtn);
+
+        Texture[] skin = PlayerUtils.getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerUUID());
+        if (skin != null && skin.length == 2) {
+            ImageWidget face = new ImageWidget(this);
+            face.texture(skin[0]);
+            face.bounds(new ScreenCoordinate((super.width - 16) / 2f, (super.height - 16) / 2f, 16, 16));
+            addWidget(face);
+
+            ImageWidget hat = new ImageWidget(this);
+            hat.texture(skin[1]);
+            hat.bounds(new ScreenCoordinate((super.width - 16) / 2f, (super.height - 16) / 2f, 16, 16));
+            addWidget(hat);
+        }
 
         addPresetStyleButtons();
     }
@@ -339,7 +352,7 @@ public class DebugScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容长度：" + contentLength)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("字体大小：" + fontSize)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("自动换行：" + warp)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("N 通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
         if (inputState.isPressingLeftEx()) {
@@ -390,11 +403,38 @@ public class DebugScreen extends BaniraScreen {
             case "opt_input":
                 InputFormScreen.Args screenArgs = new InputFormScreen.Args()
                         .setParentScreen(this)
+                        .setHeaderTitle(Text.literal("输入框测试"))
                         .addWidget(new InputFormScreen.Widget().name("input").title(Text.literal("enter_something")))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("input")
                                 .title(Text.literal("enter_something"))
                                 .type(InputFormScreen.WidgetType.NUMERIC))
+                        .addWidget(new InputFormScreen.Widget()
+                                .name("season")
+                                .title(Text.literal("季节"))
+                                .type(InputFormScreen.WidgetType.DROPDOWN)
+                                .dropdownOptionEntries(Arrays.asList(
+                                        new DropdownOption("春", new ItemStack(Items.BAMBOO), null),
+                                        new DropdownOption("夏", Identifier.id().create("minecraft", "textures/item/emerald.png"), null),
+                                        new DropdownOption("秋", new ItemStack(Items.DIAMOND), BaniraComponent.get().literal("钻石")),
+                                        new DropdownOption("冬", new ItemStack(Items.SNOW), BaniraComponent.get().literal("嗜血"))
+                                ))
+                                .defaultValue("夏")
+                                .hint(Text.transAuto(BaniraCodex.MODID, "choose_option")))
+                        .addWidget(new InputFormScreen.Widget()
+                                .name("mc_color")
+                                .title(Text.literal("MC颜色"))
+                                .type(InputFormScreen.WidgetType.DROPDOWN)
+                                .dropdownOptions(EnumMCColor.class)
+                                .dropdownMultiSelect(true)
+                                .defaultValue(EnumMCColor.BLACK, EnumMCColor.BLUE)
+                                .allowEmpty(true))
+                        .addWidget(new InputFormScreen.Widget()
+                                .name("color")
+                                .title(Text.literal("颜色"))
+                                .type(InputFormScreen.WidgetType.COLOR)
+                                .defaultValue("#FF0000")
+                                .hint(Text.transAuto(BaniraCodex.MODID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
                 Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
                 break;

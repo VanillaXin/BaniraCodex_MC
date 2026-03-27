@@ -1,6 +1,5 @@
 package xin.vanilla.banira.command.impl;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -11,9 +10,8 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
@@ -102,7 +100,7 @@ public final class VirtualOpCommand {
             } else {
                 source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
             }
-            source.getServer().getPlayerList().sendPlayerPermissionLevel(target);
+            CommandUtils.refreshPermission(target);
         }
         return 1;
     }

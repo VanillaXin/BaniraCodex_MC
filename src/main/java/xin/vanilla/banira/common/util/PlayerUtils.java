@@ -9,6 +9,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.GiveItemResult;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Accessors(fluent = true)
 public final class PlayerUtils {
@@ -62,6 +64,26 @@ public final class PlayerUtils {
 
     // region 玩家信息
 
+    /**
+     * 获取随机玩家
+     */
+    public static ServerPlayerEntity getRandomPlayer() {
+        try {
+            List<ServerPlayerEntity> players = BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+            return players.get(ThreadLocalRandom.current().nextInt(players.size()));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取随机玩家UUID
+     */
+    public static UUID getRandomPlayerUUID() {
+        PlayerEntity randomPlayer = getRandomPlayer();
+        return randomPlayer != null ? randomPlayer.getUUID() : null;
+    }
+
     public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
         return player.getUUID();
     }
@@ -97,11 +119,64 @@ public final class PlayerUtils {
                 : player.getDisplayName().getString();
     }
 
+    @Nonnull
+    public static String getPlayerNameString(UUID uuid) {
+        String nameString = getPlayerNameString(getPlayerByUUID(uuid));
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            try {
+                if (EnvironmentUtils.isClient()) {
+                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
+                            .filter(info -> info.getProfile().getId().equals(uuid))
+                            .findFirst().orElse(null).getProfile().getName();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            nameString = UsernameCache.getLastKnownUsername(uuid);
+        }
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            nameString = uuid.toString();
+        }
+        return nameString;
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
     @Nullable
-    public static ServerPlayerEntity getPlayerByUUID(String uuid) {
-        return StringUtils.isNullOrEmptyEx(uuid)
-                ? null
-                : BaniraCodex.serverInstance().key().getPlayerList().getPlayer(UUID.fromString(uuid));
+    public static PlayerEntity getPlayerByUUID(String uuid) {
+        try {
+            return getPlayerByUUID(UUID.fromString(uuid));
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
+    @Nullable
+    public static ServerPlayerEntity getServerPlayerByUUID(UUID uuid) {
+        try {
+            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
+    @Nullable
+    public static PlayerEntity getPlayerByUUID(UUID uuid) {
+        PlayerEntity entity = getServerPlayerByUUID(uuid);
+        if (entity != null) return entity;
+        try {
+            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
+        } catch (Throwable ignored) {
+        }
+        return entity;
     }
 
     // endregion 玩家信息

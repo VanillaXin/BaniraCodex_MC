@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
@@ -74,11 +75,28 @@ public final class DimensionUtils {
     }
 
     public static int getWorldMinY(World world) {
+        if (world == null) return 0;
         return 0;
     }
 
     public static int getWorldMaxY(World world) {
+        if (world == null) return 0;
         return world.getMaxBuildHeight();
+    }
+
+    public static String getDimensionId(Entity entity) {
+        if (entity == null) return null;
+        return getDimensionId(entity.level);
+    }
+
+    public static String getDimensionId(World world) {
+        if (world == null) return null;
+        return getDimensionId(world.dimension());
+    }
+
+    public static String getDimensionId(RegistryKey<World> dimension) {
+        if (dimension == null) return null;
+        return dimension.location().toString();
     }
 
 

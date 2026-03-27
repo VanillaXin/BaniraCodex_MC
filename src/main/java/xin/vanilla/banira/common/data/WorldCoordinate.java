@@ -102,6 +102,14 @@ public class WorldCoordinate implements Serializable, Cloneable {
         return (int) z;
     }
 
+    public int chunkX() {
+        return xInt() >> 4;
+    }
+
+    public int chunkZ() {
+        return zInt() >> 4;
+    }
+
 
     public String xString() {
         return NumberUtils.toFixedEx(x, 1);

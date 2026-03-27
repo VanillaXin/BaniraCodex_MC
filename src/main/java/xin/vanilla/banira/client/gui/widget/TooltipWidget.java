@@ -96,6 +96,10 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     public void render(GuiGraphics graphics, float partialTicks) {
         PoseStack stack = graphics.pose();
         if (!visible) return;
+        if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
+            renderChildren(graphics, partialTicks);
+            return;
+        }
         if (mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
@@ -401,9 +405,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 Texture tex = args.texture();
-                AbstractGuiUtils.blit(s, tex.location(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
-                        tex.u0(), tex.v0(), tex.uWidth(), tex.vHeight(),
-                        tex.uvWidth(), tex.uvHeight());
+                ImageWidget.blit(s, tex, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight);
                 AbstractGuiUtils.restoreGuiRenderState();
             } else if (useThemeColor && theme != null) {
                 int radius = args.bgBorderRadius();

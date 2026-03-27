@@ -72,23 +72,26 @@ public class ImageWidget extends BaseWidget {
                 .blend(true);
         AbstractGuiUtils.renderByTransform(args,
                 drawArgs -> {
-                    AbstractGuiUtils.blit(drawArgs.stack(),
-                            texture.location(),
+                    blit(drawArgs.stack(),
+                            texture,
                             (int) drawArgs.x(),
                             (int) drawArgs.y(),
                             (int) drawArgs.width(),
-                            (int) drawArgs.height(),
-                            texture.u0(),
-                            texture.v0(),
-                            texture.uWidth(),
-                            texture.vHeight(),
-                            texture.uvWidth(),
-                            texture.uvHeight()
+                            (int) drawArgs.height()
                     );
                 }
         );
 
         renderChildren(graphics, partialTicks);
+    }
+
+
+    public static void blit(PoseStack stack, Texture texture, int x, int y, int width, int height) {
+        AbstractGuiUtils.blit(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
+    }
+
+    public static void blitBlend(PoseStack stack, Texture texture, int x, int y, int width, int height) {
+        AbstractGuiUtils.blitBlend(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
     }
 
 }

@@ -10,12 +10,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
+import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
+import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 public final class MessageUtils {
@@ -151,11 +154,25 @@ public final class MessageUtils {
 
     /**
      * 向指定玩家发送 Notification
+     *
+     * @param vanillaFallback 对端无 Banira 客户端时的回退展示（默认聊天栏）
+     */
+    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationVanillaFallback vanillaFallback) {
+        sendNotification(player, component, EnumNotificationStyle.NORMAL, vanillaFallback);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
      */
     public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style) {
-        Component payload = literalComponent(player, component);
-        NotificationData data = NotificationData.of(payload, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style);
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
+        sendNotification(player, component, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     */
+    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback);
     }
 
     /**
@@ -174,14 +191,45 @@ public final class MessageUtils {
     /**
      * 向指定玩家发送 Notification
      */
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationVanillaFallback vanillaFallback) {
+        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, vanillaFallback);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     */
     public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
+        sendNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    /**
+     * 向指定玩家发送 Notification
+     */
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
         Component payload = literalComponent(player, component);
+        if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
+            if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
+                sendActionBarMessage(player, payload);
+            } else {
+                sendMessage(player, payload);
+            }
+            return;
+        }
+        String uuid = PlayerUtils.getPlayerUUIDString(player);
+        if (CustomConfig.notificationReceiveModeVanillaMessage.equals(CustomConfig.getPlayerNotificationReceiveMode(uuid))) {
+            if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
+                sendActionBarMessage(player, payload);
+            } else {
+                sendMessage(player, payload);
+            }
+            return;
+        }
         NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style);
         PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
     }
 
     /**
-     * 将通知内容按目标玩家语言解析为纯文本 {@link xin.vanilla.banira.common.data.AbstractComponent#literal}
+     * 将通知内容按目标玩家语言解析为纯文本 {@link AbstractComponent#literal}
      */
     public static Component literalComponent(ServerPlayer player, Component component) {
         if (component == null || component.isEmpty()) {
@@ -202,9 +250,23 @@ public final class MessageUtils {
     /**
      * 向所有在线玩家广播 Notification
      */
+    public static void broadcastNotification(Component component, EnumNotificationVanillaFallback vanillaFallback) {
+        broadcastNotification(component, EnumNotificationStyle.NORMAL, vanillaFallback);
+    }
+
+    /**
+     * 向所有在线玩家广播 Notification
+     */
     public static void broadcastNotification(Component component, EnumNotificationStyle style) {
+        broadcastNotification(component, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    /**
+     * 向所有在线玩家广播 Notification
+     */
+    public static void broadcastNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
         for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
-            sendNotification(player, component, style);
+            sendNotification(player, component, style, vanillaFallback);
         }
     }
 

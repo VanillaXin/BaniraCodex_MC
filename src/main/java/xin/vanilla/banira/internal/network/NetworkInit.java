@@ -44,7 +44,7 @@ public final class NetworkInit {
 
     @SubscribeEvent
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar reg = event.registrar("1");
+        PayloadRegistrar reg = event.registrar("1").optional();
 
         reg.playBidirectional(RequestToBoth.TYPE, RequestToBoth.STREAM_CODEC, RequestToBoth::handle);
         reg.playBidirectional(ModLoadedToBoth.TYPE, ModLoadedToBoth.STREAM_CODEC, ModLoadedToBoth::handle);

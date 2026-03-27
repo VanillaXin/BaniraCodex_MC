@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -14,12 +15,14 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -261,8 +264,8 @@ public final class TextureUtils {
                 return null;
             }
             AbstractTexture gpuTexture = mc.getTextureManager().getTexture(texture);
-            if (gpuTexture instanceof DynamicTexture) {
-                return ((DynamicTexture) gpuTexture).getPixels();
+            if (gpuTexture instanceof DynamicTexture dt) {
+                return dt.getPixels();
             }
             return null;
         }
@@ -298,6 +301,62 @@ public final class TextureUtils {
             TEXTURE_SIZE_CACHE.put(texture, size);
         }
         return size;
+    }
+
+    /**
+     * 解析用于绘制的纹理尺寸：优先资源/缓存图像，失败时从已上传的 GPU 纹理查询（适用于玩家皮肤等不在资源包中的纹理）
+     */
+    public static KeyValue<Integer, Integer> resolveTextureSizeForDraw(ResourceLocation texture) {
+        KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
+        if (cached != null && cached.key() > 0 && cached.val() > 0) {
+            return cached;
+        }
+        NativeImage textureImage = getTextureImage(texture);
+        if (textureImage != null) {
+            KeyValue<Integer, Integer> size = new KeyValue<>(textureImage.getWidth(), textureImage.getHeight());
+            TEXTURE_SIZE_CACHE.put(texture, size);
+            return size;
+        }
+        KeyValue<Integer, Integer> gpu = tryGetGpuTextureSize(texture);
+        if (gpu != null && gpu.key() > 0 && gpu.val() > 0) {
+            TEXTURE_SIZE_CACHE.put(texture, gpu);
+            return gpu;
+        }
+        if (cached != null) {
+            return cached;
+        }
+        KeyValue<Integer, Integer> zero = new KeyValue<>(0, 0);
+        TEXTURE_SIZE_CACHE.put(texture, zero);
+        return zero;
+    }
+
+    @Nullable
+    private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) {
+            return null;
+        }
+        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = mc.getTextureManager().getTexture(location);
+        if (gpuTexture == null) {
+            return null;
+        }
+        int tid = gpuTexture.getId();
+        if (tid == -1) {
+            return null;
+        }
+        int[] prev = new int[1];
+        GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
+        try {
+            RenderSystem.bindTexture(tid);
+            int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+            int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+            if (w <= 0 || h <= 0) {
+                return null;
+            }
+            return new KeyValue<>(w, h);
+        } finally {
+            RenderSystem.bindTexture(prev[0]);
+        }
     }
 
     /**

@@ -2,13 +2,16 @@ package xin.vanilla.banira.client.enums;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 /**
  * 渲染深度
  */
 @Getter
 @Accessors(fluent = true)
-public enum EnumRenderDepth {
+public enum EnumRenderDepth implements IEnumDescribable {
     /**
      * 背景
      */
@@ -46,5 +49,10 @@ public enum EnumRenderDepth {
 
     EnumRenderDepth(int depth) {
         this.depth = depth;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

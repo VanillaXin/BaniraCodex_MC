@@ -34,6 +34,8 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     DropdownPreviewOverlayWidget(BaniraScreen screen, DropdownSelectWidget parent) {
         super(screen, createFullScreenBounds());
         this.parent = parent;
+        // 在 InputFormScreen 等带列表裁剪的界面中延后绘制，避免整层被裁掉
+        this.renderDepth(EnumRenderDepth.TOOLTIP);
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
@@ -91,40 +93,42 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
             borderArgs.rect().radius(4).border(1).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(borderArgs);
 
-            AbstractGuiUtils.enableScissor((int) pb.x() + 1, (int) pb.y() + 1, contentWidth, (int) pb.height() - 2);
+            AbstractGuiUtils.pushScissor((int) pb.x() + 1, (int) pb.y() + 1, contentWidth, (int) pb.height() - 2);
 
             int contentY = (int) pb.y() + PAD - scrollOffset;
-            for (int i = 0; i < items.size(); i++) {
-                int itemY = contentY + i * ITEM_HEIGHT;
-                if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
+            try {
+                for (int i = 0; i < items.size(); i++) {
+                    int itemY = contentY + i * ITEM_HEIGHT;
+                    if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
 
-                String item = items.get(i);
-                int textMaxWidth = contentWidth - PAD * 2 - TAG_CLOSE_SIZE - 4;
-                String display = font.plainSubstrByWidth(item, textMaxWidth);
+                    String item = items.get(i);
+                    int textMaxWidth = contentWidth - PAD * 2 - TAG_CLOSE_SIZE - 4;
+                    String display = font.plainSubstrByWidth(item, textMaxWidth);
 
-                boolean hovered = mouseX >= pb.x() && mouseX < pb.x() + pb.width()
-                        && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                    boolean hovered = mouseX >= pb.x() && mouseX < pb.x() + pb.width()
+                            && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
 
-                if (hovered) {
-                    AbstractGuiUtils.fill(s, (int) pb.x() + 1, itemY, contentWidth, ITEM_HEIGHT, popupSelected);
+                    if (hovered) {
+                        AbstractGuiUtils.fill(s, (int) pb.x() + 1, itemY, contentWidth, ITEM_HEIGHT, popupSelected);
+                    }
+
+                    graphics.drawString(font, display, (int) pb.x() + PAD, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
+
+                    int closeX = (int) (pb.x() + contentWidth - PAD - TAG_CLOSE_SIZE);
+                    int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
+                    boolean closeHovered = mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE
+                            && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE;
+                    int closeColor = closeHovered ? 0xFFE53935 : 0xFF999999;
+                    AbstractGuiUtils.fill(s, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, closeColor);
+                    float r = 2f;
+                    int cx = closeX + TAG_CLOSE_SIZE / 2;
+                    int cy = closeY + TAG_CLOSE_SIZE / 2;
+                    AbstractGuiUtils.drawLine(s, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
+                    AbstractGuiUtils.drawLine(s, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
                 }
-
-                graphics.drawString(font, display, (int) pb.x() + PAD, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
-
-                int closeX = (int) (pb.x() + contentWidth - PAD - TAG_CLOSE_SIZE);
-                int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
-                boolean closeHovered = mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE
-                        && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE;
-                int closeColor = closeHovered ? 0xFFE53935 : 0xFF999999;
-                AbstractGuiUtils.fill(s, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, closeColor);
-                float r = 2f;
-                int cx = closeX + TAG_CLOSE_SIZE / 2;
-                int cy = closeY + TAG_CLOSE_SIZE / 2;
-                AbstractGuiUtils.drawLine(s, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
-                AbstractGuiUtils.drawLine(s, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
+            } finally {
+                AbstractGuiUtils.popScissor();
             }
-
-            AbstractGuiUtils.disableScissor();
 
             if (scrollable) {
                 drawScrollbar(s, pb, scrollOffset, contentHeight, visibleHeight, scrollbarBg,

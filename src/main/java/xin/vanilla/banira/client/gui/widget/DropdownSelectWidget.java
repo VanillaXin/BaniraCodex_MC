@@ -7,14 +7,20 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.enums.IEnumDropdownIcon;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -40,6 +46,9 @@ import java.util.stream.Collectors;
  * DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
  * dropdown.bounds(new ScreenCoordinate(10, 10, 200, 24));
  * dropdown.options(Arrays.asList("选项A", "选项B", "选项C"));
+ * // 或带图标与提示：dropdown.optionEntries(List.of(
+ * //     new DropdownOption("a", new ItemStack(Items.APPLE), BaniraComponent.get().transClientAuto("tip_a"))));
+ * // 或从枚举：dropdown.optionsEnum(MyEnum.class);  // 枚举可实现 IEnumDescribable / IEnumDropdownIcon
  * dropdown.multiSelect(true);  // 可选，默认单选
  * dropdown.selectedValues(Collections.singletonList("选项A"));
  * dropdown.onSelectionChanged(values -> { ... });
@@ -61,10 +70,25 @@ public class DropdownSelectWidget extends InputWidget {
     private static final int TAG_CLOSE_SIZE = 10;
     private static final int TAG_MIN_HEIGHT = 16;
     private static final int TAG_RIGHT_MARGIN = 4;
+    /**
+     * 下拉项左侧图标区
+     */
+    public static final int DROPDOWN_ICON_INSET = 2;
+    /**
+     * 下拉项左侧图标绘制边长
+     */
+    public static final int DROPDOWN_ICON_DRAW_SIZE = 16;
+    /**
+     * 图标右缘与文字左缘之间的间距
+     */
+    public static final int DROPDOWN_ICON_TEXT_GAP = 4;
+    /**
+     * 下拉项左侧图标列总宽度（含内边距与文字间距）
+     */
+    public static final int DROPDOWN_ICON_COLUMN =
+            DROPDOWN_ICON_INSET + DROPDOWN_ICON_DRAW_SIZE + DROPDOWN_ICON_TEXT_GAP;
 
-    @Getter
-    @Setter
-    private List<String> options = new ArrayList<>();
+    private List<DropdownOption> optionEntries = new ArrayList<>();
 
     @Getter
     @Setter
@@ -221,6 +245,78 @@ public class DropdownSelectWidget extends InputWidget {
         showClearButton(false);
     }
 
+    /**
+     * 当前全部选项条目（值、图标、提示）。
+     */
+    public List<DropdownOption> optionEntries() {
+        return new ArrayList<>(optionEntries);
+    }
+
+    /**
+     * 设置选项条目（含图标与悬浮提示）。
+     */
+    public DropdownSelectWidget optionEntries(List<DropdownOption> entries) {
+        this.optionEntries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
+        return this;
+    }
+
+    /**
+     * 仅字符串选项，无图标与提示。
+     */
+    public DropdownSelectWidget options(List<String> strings) {
+        if (strings == null) {
+            this.optionEntries = new ArrayList<>();
+        } else {
+            this.optionEntries = strings.stream().map(DropdownOption::new).collect(Collectors.toList());
+        }
+        return this;
+    }
+
+    /**
+     * 与 {@link #options(List)} 对应的纯文本值列表。
+     */
+    public List<String> options() {
+        return optionEntries.stream().map(DropdownOption::value).collect(Collectors.toList());
+    }
+
+    /**
+     * 从枚举构建选项：{@code name()} 为值；若实现 {@link IEnumDropdownIcon} 则绘制左侧图标；
+     * 若实现 {@link IEnumDescribable} 则使用其描述作为悬浮提示。
+     */
+    public DropdownSelectWidget optionsEnum(Class<? extends Enum<?>> clazz) {
+        Enum<?>[] constants = clazz.getEnumConstants();
+        if (constants == null) {
+            this.optionEntries = new ArrayList<>();
+            return this;
+        }
+        List<DropdownOption> list = new ArrayList<>();
+        for (Enum<?> e : constants) {
+            ItemStack icon = ItemStack.EMPTY;
+            Texture tex = null;
+            if (e instanceof IEnumDropdownIcon id) {
+                ResourceLocation rl = id.dropdownTextureLocation();
+                if (rl != null) {
+                    tex = Texture.of(rl);
+                }
+                icon = id.dropdownIcon();
+            }
+            Component tooltip = null;
+            if (e instanceof IEnumDescribable id) {
+                tooltip = id.enumDescription();
+            }
+            list.add(new DropdownOption(e.name(), icon, new Texture[]{tex}, tooltip));
+        }
+        this.optionEntries = list;
+        return this;
+    }
+
+    /**
+     * 是否存在任意带图标的选项（用于为整列预留图标宽度）。
+     */
+    public boolean hasAnyDropdownIcon() {
+        return optionEntries.stream().anyMatch(o -> o.hasTexture() || !o.icon().isEmpty());
+    }
+
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
@@ -246,12 +342,19 @@ public class DropdownSelectWidget extends InputWidget {
      * 获取过滤后的选项列表（根据当前输入内容）
      */
     public List<String> getFilteredOptions() {
+        return getFilteredOptionEntries().stream().map(DropdownOption::value).collect(Collectors.toList());
+    }
+
+    /**
+     * 过滤后的选项条目（与 {@link #getFilteredOptions()} 顺序一致）。
+     */
+    public List<DropdownOption> getFilteredOptionEntries() {
         String filter = value().toLowerCase().trim();
         if (StringUtils.isNullOrEmpty(filter)) {
-            return new ArrayList<>(options);
+            return new ArrayList<>(optionEntries);
         }
-        return options.stream()
-                .filter(opt -> opt.toLowerCase().contains(filter))
+        return optionEntries.stream()
+                .filter(opt -> opt.value().toLowerCase().contains(filter))
                 .collect(Collectors.toList());
     }
 
@@ -595,41 +698,43 @@ public class DropdownSelectWidget extends InputWidget {
 
         int scissorX = (int) (absoluteX() + contentLeft - x());
         int scissorY = (int) (absoluteY() + drawY - y() + 1);
-        AbstractGuiUtils.enableScissor(scissorX, scissorY, contentWidth, drawHeight - 2);
+        // 使用 push/pop，避免 disableScissor 关掉外层界面的全局裁剪
+        AbstractGuiUtils.pushScissor(scissorX, scissorY, contentWidth, drawHeight - 2);
 
         double mx = screen.inputState().mouseX();
         double my = screen.inputState().mouseY();
 
-        for (int i = 0; i < selectedValues.size(); i++) {
-            String item = selectedValues.get(i);
-            int textW = font.width(item);
-            int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
+        try {
+            for (String item : selectedValues) {
+                int textW = font.width(item);
+                int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
 
-            if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
+                if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
+                    currentX += tagW + TAG_GAP;
+                    continue;
+                }
+
+                int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
+                int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
+                boolean closeHovered = mx >= closeX && mx < closeX + TAG_CLOSE_SIZE && my >= closeY && my < closeY + TAG_CLOSE_SIZE;
+
+                AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
+                AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
+                graphics.drawString(font, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor, false);
+
+                int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
+                AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);
+                float r = 2f;
+                int cx = closeX + TAG_CLOSE_SIZE / 2;
+                int cy = closeY + TAG_CLOSE_SIZE / 2;
+                AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
+                AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
+
                 currentX += tagW + TAG_GAP;
-                continue;
             }
-
-            int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
-            int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
-            boolean closeHovered = mx >= closeX && mx < closeX + TAG_CLOSE_SIZE && my >= closeY && my < closeY + TAG_CLOSE_SIZE;
-
-            AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
-            AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-            graphics.drawString(font, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor, false);
-
-            int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
-            AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);
-            float r = 2f;
-            int cx = closeX + TAG_CLOSE_SIZE / 2;
-            int cy = closeY + TAG_CLOSE_SIZE / 2;
-            AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
-            AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
-
-            currentX += tagW + TAG_GAP;
+        } finally {
+            AbstractGuiUtils.popScissor();
         }
-
-        AbstractGuiUtils.disableScissor();
 
         int centerY = drawY + drawHeight / 2;
         int dotColor = textColor;
@@ -797,7 +902,18 @@ public class DropdownSelectWidget extends InputWidget {
 
     @Override
     public boolean handleMouseScroll(MouseScrollEvent event) {
-        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && event != null && isMouseInside(event.mouseX(), event.mouseY())) {
+        if (event == null) {
+            return false;
+        }
+        double mx = event.mouseX();
+        double my = event.mouseY();
+        if (previewExpanded && previewOverlayWidget != null) {
+            ScreenCoordinate pb = getPreviewBounds();
+            if (pb != null && mx >= pb.x() && mx < pb.x() + pb.width() && my >= pb.y() && my < pb.y() + pb.height()) {
+                return previewOverlayWidget.handleMouseScroll(event);
+            }
+        }
+        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
             Font font = Minecraft.getInstance().font;
             int totalWidth = 0;
             for (String item : selectedValues) {
@@ -815,6 +931,9 @@ public class DropdownSelectWidget extends InputWidget {
                 }
                 return true;
             }
+        }
+        if (previewExpanded) {
+            return false;
         }
         return super.handleMouseScroll(event);
     }

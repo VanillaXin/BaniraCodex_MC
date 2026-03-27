@@ -107,8 +107,8 @@ final class ClientConfigAccess {
 
     private static int intConfig(ConfigHolder holder, String path, int def) {
         Object v = holder.get(path);
-        if (v instanceof Number) {
-            return ((Number) v).intValue();
+        if (v instanceof Number n) {
+            return n.intValue();
         }
         return def;
     }

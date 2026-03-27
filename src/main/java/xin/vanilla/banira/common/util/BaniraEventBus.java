@@ -172,8 +172,8 @@ public final class BaniraEventBus {
          */
         public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getEntity() instanceof ServerPlayer) {
-                    callback.accept((ServerPlayer) event.getEntity());
+                if (event.getEntity() instanceof ServerPlayer player) {
+                    callback.accept(player);
                 }
             });
         }
@@ -183,8 +183,8 @@ public final class BaniraEventBus {
          */
         public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
             playerChangedDimensionCallbacks.add(event -> {
-                if (event.getEntity() instanceof ServerPlayer) {
-                    callback.accept((ServerPlayer) event.getEntity(), event.getFrom());
+                if (event.getEntity() instanceof ServerPlayer player) {
+                    callback.accept(player, event.getFrom());
                 }
             });
         }
@@ -392,8 +392,8 @@ public final class BaniraEventBus {
     @SubscribeEvent
     public static void onPlayerSaveToFile(PlayerEvent.SaveToFile event) {
         net.minecraft.world.entity.player.Player player = event.getEntity();
-        if (player instanceof ServerPlayer) {
-            fire(playerSaveCallbacks, (ServerPlayer) player, "player save");
+        if (player instanceof ServerPlayer s) {
+            fire(playerSaveCallbacks, s, "player save");
         }
         firePlayerEventCallbacks(event);
     }

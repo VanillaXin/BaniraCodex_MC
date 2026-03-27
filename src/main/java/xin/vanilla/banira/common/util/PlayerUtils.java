@@ -2,15 +2,23 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -19,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Accessors(fluent = true)
 public final class PlayerUtils {
@@ -61,6 +70,34 @@ public final class PlayerUtils {
 
     // region 玩家信息
 
+    /**
+     * 获取随机玩家
+     */
+    public static ServerPlayer getRandomPlayer() {
+        try {
+            List<ServerPlayer> players = BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+            return players.get(ThreadLocalRandom.current().nextInt(players.size()));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取随机玩家UUID
+     */
+    public static UUID getRandomPlayerUUID() {
+        Player randomPlayer = getRandomPlayer();
+        return randomPlayer != null ? randomPlayer.getUUID() : null;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static UUID getPlayerUUID() {
+        if (net.minecraft.client.Minecraft.getInstance().player == null) {
+            return null;
+        }
+        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
+    }
+
     public static UUID getPlayerUUID(@Nonnull Player player) {
         return player.getUUID();
     }
@@ -96,11 +133,130 @@ public final class PlayerUtils {
                 : player.getDisplayName().getString();
     }
 
+    @Nonnull
+    public static String getPlayerNameString(UUID uuid) {
+        String nameString = getPlayerNameString(getPlayerByUUID(uuid));
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            try {
+                if (EnvironmentUtils.isClient()) {
+                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
+                            .filter(info -> info.getProfile().getId().equals(uuid))
+                            .findFirst().orElse(null).getProfile().getName();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            nameString = UsernameCache.getLastKnownUsername(uuid);
+        }
+        if (StringUtils.isNullOrEmpty(nameString)) {
+            nameString = uuid.toString();
+        }
+        return nameString;
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
     @Nullable
-    public static ServerPlayer getPlayerByUUID(String uuid) {
-        return StringUtils.isNullOrEmptyEx(uuid)
-                ? null
-                : BaniraCodex.serverInstance().key().getPlayerList().getPlayer(UUID.fromString(uuid));
+    public static Player getPlayerByUUID(String uuid) {
+        try {
+            return getPlayerByUUID(UUID.fromString(uuid));
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
+    @Nullable
+    public static ServerPlayer getServerPlayerByUUID(UUID uuid) {
+        try {
+            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 通过UUID获取对应的玩家
+     */
+    @Nullable
+    public static Player getPlayerByUUID(UUID uuid) {
+        Player entity = getServerPlayerByUUID(uuid);
+        if (entity != null) return entity;
+        try {
+            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
+        } catch (Throwable ignored) {
+        }
+        return entity;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static ResourceLocation getPlayerSkin(UUID uuid) {
+        try {
+            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
+                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
+                        .filter(info -> info.getProfile().getId().equals(uuid))
+                        .findFirst().orElse(null).getSkin().texture();
+            }
+        } catch (Throwable ignored) {
+        }
+        return Identifier.id().create("minecraft", "textures/entity/steve.png");
+    }
+
+    /**
+     * 玩家皮肤「头部正面」用于 GUI 绘制的两层纹理：{@code [0]} 底层脸，{@code [1]} 头盔/外层（含透明像素时需叠在底层上）
+     *
+     * @param skin {@link #getPlayerSkin(UUID)} 等资源定位，为 null 时返回 null
+     * @return 长度为 2 的数组，无法解析尺寸时退回 64×64 假定布局
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable ResourceLocation skin) {
+        if (skin == null) {
+            return null;
+        }
+        KeyValue<Integer, Integer> wh = TextureUtils.resolveTextureSizeForDraw(skin);
+        int tw = wh.key();
+        int th = wh.val();
+        if (tw <= 0 || th <= 0) {
+            tw = 64;
+            th = 64;
+        }
+        int uFace = skinTemplateU(8, tw);
+        int vFace = skinTemplateV(8, th);
+        int uHat = skinTemplateU(40, tw);
+        int side = skinTemplateSize(8, tw);
+        Texture base = Texture.of(skin, tw, th).u0(uFace).v0(vFace).uWidth(side).vHeight(side);
+        Texture overlay = Texture.of(skin, tw, th).u0(uHat).v0(vFace).uWidth(side).vHeight(side);
+        return new Texture[]{base, overlay};
+    }
+
+    /**
+     * @see #getPlayerSkinHeadFaceTextures(ResourceLocation)
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable UUID uuid) {
+        return getPlayerSkinHeadFaceTextures(getPlayerSkin(uuid));
+    }
+
+    private static int skinTemplateU(int uStd, int texW) {
+        return Math.round(uStd * (texW / 64f));
+    }
+
+    private static int skinTemplateV(int vStd, int texH) {
+        if (texH < 64) {
+            return vStd;
+        }
+        return Math.round(vStd * (texH / 64f));
+    }
+
+    private static int skinTemplateSize(int sizeStd, int texW) {
+        return Math.round(sizeStd * (texW / 64f));
     }
 
     // endregion 玩家信息

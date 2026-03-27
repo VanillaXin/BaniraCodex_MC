@@ -2,10 +2,13 @@ package xin.vanilla.banira.client.enums;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 @Getter
 @Accessors(fluent = true)
-public enum EnumStringInputRegex {
+public enum EnumStringInputRegex implements IEnumDescribable {
     NONE(""),
     INTEGER("-?\\d*"),
     POSITIVE_INTEGER("\\d*"),
@@ -23,5 +26,10 @@ public enum EnumStringInputRegex {
 
     EnumStringInputRegex(String regex) {
         this.regex = regex;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

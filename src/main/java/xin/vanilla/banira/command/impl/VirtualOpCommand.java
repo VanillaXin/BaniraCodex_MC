@@ -36,7 +36,7 @@ public final class VirtualOpCommand {
 
     private static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        EnumOperationType type = EnumOperationType.fromString(StringArgumentType.getString(context, "operation"));
+        EnumOperationType type = EnumOperationType.valueOfEx(StringArgumentType.getString(context, "operation"));
         if (type == null) {
             String lang = CommandUtils.getLanguage(source);
             source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));
@@ -100,7 +100,7 @@ public final class VirtualOpCommand {
             } else {
                 source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
             }
-            source.getServer().getPlayerList().sendPlayerPermissionLevel(target);
+            CommandUtils.refreshPermission(target);
         }
         return 1;
     }

@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -150,31 +151,24 @@ public final class ItemUtils {
     }
 
     /**
+     * 获取物品显示名称
+     *
+     * @param itemStack 物品
+     */
+    public static Component getItemHoverName(ItemStack itemStack) {
+        if (isItemNull(itemStack)) return BaniraComponent.get().empty();
+        return BaniraComponent.get().object(itemStack.getHoverName());
+    }
+
+    /**
      * 获取物品显示名称字符串
      *
      * @param itemStack 物品
      */
     public static String getItemHoverNameString(ItemStack itemStack) {
         if (isItemNull(itemStack)) return "";
-        return itemStack.getHoverName().getString();
-    }
-
-    /**
-     * 获取本地化的物品显示名称字符串
-     * <p>
-     * 客户端专用
-     *
-     * @param itemStack 物品
-     */
-    @OnlyIn(Dist.CLIENT)
-    public static String getItemHoverNameStringLocalized(ItemStack itemStack) {
-        if (isItemNull(itemStack)) return "";
-        try {
-            return itemStack.getHoverName().getString();
-        } catch (Exception e) {
-            LOGGER.warn("Failed to get localized display name for item stack", e);
-            return getItemHoverNameString(itemStack);
-        }
+        net.minecraft.network.chat.Component hoverName = itemStack.getHoverName();
+        return hoverName.getString();
     }
 
     // endregion
@@ -747,21 +741,80 @@ public final class ItemUtils {
      */
     @Nonnull
     public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
-        List<ItemStack> items = new ArrayList<>();
+        Set<ItemStack> items = new HashSet<>();
         items.add(new ItemStack(Items.AIR));
 
         Inventory inventory = player.getInventory();
         if (inventory == null) {
-            return items;
+            return new ArrayList<>(items);
         }
         // 获取所有槽位的物品
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty()) {
-                items.add(stack.copy());
+                items.add(stack);
             }
         }
-        return items;
+        return new ArrayList<>(items);
+    }
+
+    /**
+     * 移除玩家背包中的指定物品
+     *
+     * @param toRemove 要移除的物品
+     * @return 是否全部移除成功
+     */
+    public static boolean removePlayerItem(ServerPlayer player, ItemStack toRemove) {
+        Inventory inventory = player.getInventory();
+
+        // 剩余要移除的数量
+        int remainingAmount = toRemove.getCount();
+        // 记录成功移除的物品数量，以便失败时进行回滚
+        int successfullyRemoved = 0;
+
+        // 遍历玩家背包的所有插槽
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            // 获取背包中的物品
+            ItemStack stack = inventory.getItem(i);
+            ItemStack copy = toRemove.copy();
+            copy.setCount(stack.getCount());
+
+            // 如果插槽中的物品是目标物品
+            if (stack.equals(copy, false)) {
+                // 获取当前物品堆叠的数量
+                int stackSize = stack.getCount();
+
+                // 如果堆叠数量大于或等于剩余需要移除的数量
+                if (stackSize >= remainingAmount) {
+                    // 移除指定数量的物品
+                    stack.shrink(remainingAmount);
+                    // 记录成功移除的数量
+                    successfullyRemoved += remainingAmount;
+                    // 移除完毕
+                    remainingAmount = 0;
+                    break;
+                } else {
+                    // 移除该堆所有物品
+                    stack.setCount(0);
+                    // 记录成功移除的数量
+                    successfullyRemoved += stackSize;
+                    // 减少剩余需要移除的数量
+                    remainingAmount -= stackSize;
+                }
+            }
+        }
+
+        // 如果没有成功移除所有物品，撤销已移除的部分
+        if (remainingAmount > 0) {
+            // 创建副本并还回成功移除的物品
+            ItemStack copy = toRemove.copy();
+            copy.setCount(successfullyRemoved);
+            // 将已移除的物品添加回背包
+            player.getInventory().add(copy);
+        }
+
+        // 是否成功移除所有物品
+        return remainingAmount == 0;
     }
 
     /**

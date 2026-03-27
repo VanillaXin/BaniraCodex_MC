@@ -309,8 +309,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         addingMode = false;
         updateHeightForAddingMode(false);
         if (addInputWidget != null) {
-            if (addInputWidget instanceof DropdownSelectWidget) {
-                ((DropdownSelectWidget) addInputWidget).closeDropdown();
+            if (addInputWidget instanceof DropdownSelectWidget selectWidget) {
+                selectWidget.closeDropdown();
             }
             removeChild(addInputWidget);
             addInputWidget = null;
@@ -351,8 +351,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private void createAddInputWidget() {
         if (addInputWidget != null) {
-            if (addInputWidget instanceof DropdownSelectWidget) {
-                ((DropdownSelectWidget) addInputWidget).closeDropdown();
+            if (addInputWidget instanceof DropdownSelectWidget selectWidget) {
+                selectWidget.closeDropdown();
             }
             removeChild(addInputWidget);
             addInputWidget = null;
@@ -442,14 +442,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 added = true;
             }
             if (added) dropdown.selectedValues(Collections.emptyList());
-        } else if (addInputWidget instanceof InputWidget && !(addInputWidget instanceof NumericInputWidget)) {
-            String v = ((InputWidget) addInputWidget).value();
+        } else if (addInputWidget instanceof InputWidget inputWidget && !(addInputWidget instanceof NumericInputWidget)) {
+            String v = inputWidget.value();
             if (itemType == ItemType.TEXT && (v == null || v.trim().isEmpty())) return;
             Object value = v != null ? v.trim() : "";
             if (value != null) {
                 items.add(value);
                 added = true;
-                ((InputWidget) addInputWidget).value("");
+                inputWidget.value("");
             }
         } else if (addInputWidget instanceof NumericInputWidget numInput) {
             String v = numInput.value();
@@ -488,7 +488,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private void cancelInlineEdit() {
         if (editWidget != null) {
-            if (screen != null && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused()) {
+            if (screen != null && editWidget instanceof BaseWidget baseWidget && baseWidget.focused()) {
                 screen.unfocusWidget(editWidget);
             }
             removeChild(editWidget);
@@ -838,7 +838,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         renderChildren(stack, partialTicks);
 
-        if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null) {
+        if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null
+                && !(screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen())) {
             int mx = (int) screen.inputState().mouseX();
             int my = (int) screen.inputState().mouseY();
             final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;
@@ -855,10 +856,10 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private String formatItemLabel(Object item) {
         if (item == null) return "";
-        if (item instanceof Boolean) return ((Boolean) item) ? "true" : "false";
-        if (item instanceof BigDecimal) return ((BigDecimal) item).toPlainString();
-        if (item instanceof Number) {
-            double d = ((Number) item).doubleValue();
+        if (item instanceof Boolean b) return b ? "true" : "false";
+        if (item instanceof BigDecimal bd) return bd.toPlainString();
+        if (item instanceof Number n) {
+            double d = n.doubleValue();
             if (d == (long) d) return String.valueOf((long) d);
             return BigDecimal.valueOf(d).toPlainString();
         }
@@ -946,13 +947,13 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         // endregion 行内编辑失焦则取消
 
         if (addingMode && addInputWidget != null && addConfirmButton != null) {
-            boolean inputFocused = addInputWidget instanceof BaseWidget && ((BaseWidget) addInputWidget).focused();
+            boolean inputFocused = addInputWidget instanceof BaseWidget baseWidget && baseWidget.focused();
             boolean confirmFocused = addConfirmButton.focused();
-            boolean dropdownOpen = addInputWidget instanceof DropdownSelectWidget
-                    && ((DropdownSelectWidget) addInputWidget).dropdownOpen();
-            boolean previewExpanded = addInputWidget instanceof DropdownSelectWidget
-                    && ((DropdownSelectWidget) addInputWidget).previewExpanded();
-            boolean inlineEditing = editingIndex >= 0 && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused();
+            boolean dropdownOpen = addInputWidget instanceof DropdownSelectWidget selectWidget
+                    && selectWidget.dropdownOpen();
+            boolean previewExpanded = addInputWidget instanceof DropdownSelectWidget selectWidget
+                    && selectWidget.previewExpanded();
+            boolean inlineEditing = editingIndex >= 0 && editWidget instanceof BaseWidget baseWidget && baseWidget.focused();
             if (!inputFocused && !confirmFocused && !dropdownOpen && !previewExpanded && !inlineEditing) {
                 exitAddingMode();
             }
@@ -1096,7 +1097,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     @Override
     public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
         if (!visible || !enabled) return false;
-        if (editingIndex >= 0 && editWidget != null && editWidget instanceof BaseWidget && ((BaseWidget) editWidget).focused()) {
+        if (editingIndex >= 0 && editWidget != null && editWidget instanceof BaseWidget baseWidget && baseWidget.focused()) {
             if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
                 cancelInlineEdit();
                 return true;

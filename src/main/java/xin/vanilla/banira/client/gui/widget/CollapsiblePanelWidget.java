@@ -496,17 +496,17 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             IWidget sibling = children.get(i);
             if (sibling == null || !sibling.visible()) continue;
             ScreenCoordinate b = sibling.bounds();
-            if (b != null && sibling instanceof BaseWidget) {
+            if (b != null && sibling instanceof BaseWidget baseWidget) {
                 double sh = sibling.effectiveHeight();
-                ((BaseWidget) sibling).bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
+                baseWidget.bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
                 runningY += sh + contentGap;
             }
         }
         contentHeight = 0;
         refreshHeightFromContent();
         IWidget p = parent();
-        if (p instanceof CollapsiblePanelWidget) {
-            ((CollapsiblePanelWidget) p).refreshLayoutFromChild(this);
+        if (p instanceof CollapsiblePanelWidget panelWidget) {
+            panelWidget.refreshLayoutFromChild(this);
         }
     }
 
@@ -521,9 +521,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             IWidget sibling = children.get(i);
             if (sibling == null || !sibling.visible()) continue;
             ScreenCoordinate b = sibling.bounds();
-            if (b != null && sibling instanceof BaseWidget) {
+            if (b != null && sibling instanceof BaseWidget baseWidget) {
                 double sh = sibling.effectiveHeight();
-                ((BaseWidget) sibling).bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
+                baseWidget.bounds(new ScreenCoordinate(b.x(), runningY, b.width(), sh));
                 runningY += sh + contentGap;
             }
         }
@@ -581,8 +581,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
     @Override
     public void addChild(IWidget child) {
-        if (child instanceof CollapsiblePanelWidget) {
-            bindCollapsibleChildExpandListener((CollapsiblePanelWidget) child);
+        if (child instanceof CollapsiblePanelWidget panelWidget) {
+            bindCollapsibleChildExpandListener(panelWidget);
         }
         super.addChild(child);
         if (expanded) {
@@ -598,9 +598,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         childPanel.onExpandChanged(panel -> {
             IWidget childThatChanged = panel;
             for (IWidget parentPanel = panel.parent(); parentPanel != null; parentPanel = parentPanel.parent()) {
-                if (parentPanel instanceof CollapsiblePanelWidget collapsiblePanelWidget) {
-                    if (childThatChanged instanceof CollapsiblePanelWidget  child) {
-                        collapsiblePanelWidget.refreshHeightAndReorderSiblings(child);
+                if (parentPanel instanceof CollapsiblePanelWidget panelWidget) {
+                    if (childThatChanged instanceof CollapsiblePanelWidget child) {
+                        panelWidget.refreshHeightAndReorderSiblings(child);
                     }
                 }
                 childThatChanged = parentPanel;
@@ -639,8 +639,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (ch <= 0 && existing != null && existing.height() > 0) {
             ch = existing.height();
         }
-        if (child instanceof BaseWidget) {
-            ((BaseWidget) child).bounds(new ScreenCoordinate(cx, cy, cw, ch));
+        if (child instanceof BaseWidget baseWidget) {
+            baseWidget.bounds(new ScreenCoordinate(cx, cy, cw, ch));
         }
         addChild(child);
         return this;
@@ -654,9 +654,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     public CollapsiblePanelWidget refreshLayout() {
         boolean hasCollapsibleChildren = false;
         for (IWidget child : children) {
-            if (child instanceof CollapsiblePanelWidget) {
+            if (child instanceof CollapsiblePanelWidget panelWidget) {
                 hasCollapsibleChildren = true;
-                ((CollapsiblePanelWidget) child).refreshLayout();
+                panelWidget.refreshLayout();
             }
         }
         ScreenCoordinate coord = bounds();

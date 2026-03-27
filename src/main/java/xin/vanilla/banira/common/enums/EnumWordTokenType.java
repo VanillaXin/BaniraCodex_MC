@@ -1,12 +1,14 @@
 package xin.vanilla.banira.common.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 /**
  * 词法分析器枚举
  */
 @Getter
-public enum EnumWordTokenType {
+public enum EnumWordTokenType implements IEnumDescribable {
     /**
      * ASCII字母、下划线
      */
@@ -33,5 +35,10 @@ public enum EnumWordTokenType {
 
     EnumWordTokenType(int value) {
         this.value = value;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

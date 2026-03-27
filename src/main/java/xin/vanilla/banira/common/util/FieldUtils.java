@@ -390,12 +390,12 @@ public final class FieldUtils {
         if (targetType.isAssignableFrom(valueClass)) {
             return value;
         }
-        if (value instanceof Number) {
-            return convertNumber((Number) value, targetType);
+        if (value instanceof Number n) {
+            return convertNumber(n, targetType);
         }
         if (targetType == boolean.class || targetType == Boolean.class) {
             if (value instanceof Boolean) return value;
-            if (value instanceof String) return Boolean.parseBoolean((String) value);
+            if (value instanceof String s) return Boolean.parseBoolean(s);
         }
         if (targetType == char.class || targetType == Character.class) {
             if (value instanceof Character) return value;

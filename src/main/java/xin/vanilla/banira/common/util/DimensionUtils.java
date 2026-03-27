@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -74,11 +75,28 @@ public final class DimensionUtils {
     }
 
     public static int getWorldMinY(Level world) {
+        if (world == null) return 0;
         return world.getMinBuildHeight();
     }
 
     public static int getWorldMaxY(Level world) {
+        if (world == null) return 0;
         return world.getMaxBuildHeight();
+    }
+
+    public static String getDimensionId(Entity entity) {
+        if (entity == null) return null;
+        return getDimensionId(entity.level);
+    }
+
+    public static String getDimensionId(Level world) {
+        if (world == null) return null;
+        return getDimensionId(world.dimension());
+    }
+
+    public static String getDimensionId(ResourceKey<Level> dimension) {
+        if (dimension == null) return null;
+        return dimension.location().toString();
     }
 
 

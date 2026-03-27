@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
@@ -13,6 +12,7 @@ import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -274,8 +274,8 @@ public class ItemSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object itemId = b.property("itemId");
-                if (itemId instanceof String) {
-                    handleItem((String) itemId);
+                if (itemId instanceof String id) {
+                    handleItem(id);
                     if (selectedItemWidget != null) selectedItemWidget.focused(false);
                     selectedItemWidget = btn;
                 }

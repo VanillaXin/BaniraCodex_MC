@@ -666,6 +666,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     protected void drawTooltipAtScreenCoords(PoseStack stack, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
         if (screen == null) return;
+        if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
+            return;
+        }
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason season = screen.season();
         Text textToDraw = text;

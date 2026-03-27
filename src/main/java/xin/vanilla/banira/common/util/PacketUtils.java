@@ -12,6 +12,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
@@ -126,8 +127,14 @@ public final class PacketUtils {
      */
     @OnlyIn(Dist.CLIENT)
     public static <MSG> void sendPacketToServer(SimpleChannel channel, MSG msg) {
-        var mc = Minecraft.getInstance();
-        if (mc.getConnection() == null || !hasChannel(channel.getName())) return;
+        if (!hasChannel(channel)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        // ModLoadedToBoth 为握手首包，不依赖已记录的远程服务端状态
+        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, channel.getName().getNamespace())) {
+            return;
+        }
+
         channel.send(msg, mc.getConnection().getConnection());
     }
 
@@ -136,6 +143,7 @@ public final class PacketUtils {
      */
     public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
         if (!hasChannel(player, channel.getName())) return;
+        if (!PlayerUtils.isRemoteClientModInstalled(player, channel.getName().getNamespace())) return;
         channel.send(msg, PacketDistributor.PLAYER.with(player));
     }
 
@@ -148,11 +156,9 @@ public final class PacketUtils {
      * @param <T>     分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
-        if (!hasChannel(player, channel.getName())) return;
-        PacketDistributor.PacketTarget target = PacketDistributor.PLAYER.with(player);
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.send(splitPacket, target);
+            sendPacketToPlayer(channel, splitPacket, player);
         }
     }
 
@@ -177,10 +183,19 @@ public final class PacketUtils {
     }
 
     @OnlyIn(Dist.CLIENT)
+    public static boolean hasChannel(SimpleChannel channel) {
+        return hasChannel(channel.getName());
+    }
+
+    @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("UnstableApiUsage")
     public static boolean hasChannel(ResourceLocation channel) {
         var connection = Minecraft.getInstance().getConnection();
         return connection != null && NetworkRegistry.findTarget(channel) != null;
+    }
+
+    public static boolean hasChannel(ServerPlayer player, SimpleChannel channel) {
+        return hasChannel(player, channel.getName());
     }
 
     @SuppressWarnings("UnstableApiUsage")

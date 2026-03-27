@@ -1,6 +1,9 @@
 package xin.vanilla.banira.common.enums;
 
-public enum EnumOperationType {
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
+public enum EnumOperationType implements IEnumDescribable {
     ADD,
     SET,
     REMOVE,
@@ -11,24 +14,22 @@ public enum EnumOperationType {
     ;
 
     public static EnumOperationType valueOfEx(Object type) {
-        if (type instanceof EnumOperationType) return (EnumOperationType) type;
+        if (type instanceof EnumOperationType ot) return ot;
         if (type instanceof String str) {
             for (EnumOperationType value : values()) {
                 if (value.name().equalsIgnoreCase(str) || value.name().equals(str)) {
                     return value;
                 }
             }
-        } else if (type instanceof Number) {
-            int i = ((Number) type).intValue();
+        } else if (type instanceof Number n) {
+            int i = n.intValue();
             if (i >= 0 && i < values().length) return values()[i];
         }
         return null;
     }
 
-    /**
-     * 从字符串解析操作类型，无效时返回 null
-     */
-    public static EnumOperationType fromString(String str) {
-        return valueOfEx(str);
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

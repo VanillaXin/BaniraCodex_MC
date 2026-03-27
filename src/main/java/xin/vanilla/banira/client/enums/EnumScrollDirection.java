@@ -1,9 +1,13 @@
 package xin.vanilla.banira.client.enums;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
 /**
  * 滚动条方向
  */
-public enum EnumScrollDirection {
+public enum EnumScrollDirection implements IEnumDescribable {
     /**
      * 垂直滚动
      */
@@ -11,5 +15,11 @@ public enum EnumScrollDirection {
     /**
      * 横向滚动
      */
-    HORIZONTAL
+    HORIZONTAL,
+    ;
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
+    }
 }

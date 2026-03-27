@@ -113,9 +113,7 @@ public class NinePatchImageWidget extends BaseWidget {
 
         TextureUtils.NinePatchInfo info = TextureUtils.parseNinePatch(texture);
         if (info == null) {
-            AbstractGuiUtils.blit(stack, texture.location(), x, y, destWidth, destHeight,
-                    texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(),
-                    texture.uvWidth(), texture.uvHeight());
+            ImageWidget.blit(stack, texture, x, y, destWidth, destHeight);
             return;
         }
         if (scale <= 0) {

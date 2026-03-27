@@ -379,8 +379,8 @@ public final class Component implements Cloneable, Serializable {
     public Component appendIndex(int index, Object... objs) {
         for (int i = 0; i < objs.length; i++) {
             Object obj = objs[i];
-            if (obj instanceof Component) {
-                this.getChildren().add(index + i, ((Component) obj).withStyle(this));
+            if (obj instanceof Component c) {
+                this.getChildren().add(index + i, c.withStyle(this));
             } else {
                 this.getChildren().add(index + i, new Component(obj.toString()).withStyle(this));
             }
@@ -395,8 +395,8 @@ public final class Component implements Cloneable, Serializable {
     public Component appendArgIndex(int index, Object... objs) {
         for (int i = 0; i < objs.length; i++) {
             Object obj = objs[i];
-            if (obj instanceof Component) {
-                this.getArgs().add(index + i, ((Component) obj).withStyle(this));
+            if (obj instanceof Component c) {
+                this.getArgs().add(index + i, c.withStyle(this));
             } else {
                 this.getArgs().add(index + i, new Component(obj.toString()).withStyle(this));
             }

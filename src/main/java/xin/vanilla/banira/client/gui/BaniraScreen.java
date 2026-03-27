@@ -119,13 +119,13 @@ public abstract class BaniraScreen extends Screen {
     public static void inheritThemeAndSeason(BaniraScreen target, Screen parent, @Nullable BaniraColorConfig argsTheme, @Nullable EnumSeason argsSeason) {
         if (argsTheme != null) {
             target.theme(argsTheme);
-        } else if (parent instanceof BaniraScreen) {
-            target.theme(((BaniraScreen) parent).theme());
+        } else if (parent instanceof BaniraScreen baniraScreen) {
+            target.theme(baniraScreen.theme());
         }
         if (argsSeason != null) {
             target.season(argsSeason);
-        } else if (parent instanceof BaniraScreen) {
-            target.season(((BaniraScreen) parent).season());
+        } else if (parent instanceof BaniraScreen baniraScreen) {
+            target.season(baniraScreen.season());
         }
     }
 
@@ -191,6 +191,33 @@ public abstract class BaniraScreen extends Screen {
      */
     public void addDeferredTooltipRender(Consumer<GuiGraphics> render) {
         if (render != null) deferredTooltipRenders.add(render);
+    }
+
+    /**
+     * 是否存在已展开的下拉选择（含子树中的 {@link DropdownSelectWidget}）。
+     * 用于在下拉全屏浮层显示时抑制后方控件的 {@link TooltipWidget}，避免与下拉项提示叠显。
+     */
+    public boolean isAnyDropdownSelectOpen() {
+        for (IWidget w : this.widgets) {
+            if (anyDropdownSelectOpenInTree(w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean anyDropdownSelectOpenInTree(IWidget node) {
+        if (node instanceof DropdownSelectWidget widget && widget.dropdownOpen()) {
+            return true;
+        }
+        if (node instanceof BaseWidget) {
+            for (IWidget c : node.children()) {
+                if (anyDropdownSelectOpenInTree(c)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void flushDeferredTooltipRenders(GuiGraphics graphics) {
@@ -535,8 +562,8 @@ public abstract class BaniraScreen extends Screen {
     protected void addWidget(IWidget widget) {
         if (widget != null) {
             widget.applyTheme(getEffectiveTheme());
-            if (widget instanceof CollapsiblePanelWidget) {
-                ((CollapsiblePanelWidget) widget).refreshLayout();
+            if (widget instanceof CollapsiblePanelWidget panelWidget) {
+                panelWidget.refreshLayout();
             }
             widgets.add(widget);
             if (widget.id() != null) {
@@ -626,8 +653,8 @@ public abstract class BaniraScreen extends Screen {
         registerFocusableWidget(widget);
         unfocusAllExcept(widget);
         focusedWidget = widget;
-        if (widget instanceof BaseWidget) {
-            ((BaseWidget) widget).focused(true);
+        if (widget instanceof BaseWidget baseWidget) {
+            baseWidget.focused(true);
         }
         LOGGER.debug("Widget focused: id={}", widget.id());
         return true;
@@ -635,8 +662,8 @@ public abstract class BaniraScreen extends Screen {
 
     public void unfocusAllExcept(@Nullable IWidget exceptWidget) {
         if (focusedWidget != null && focusedWidget != exceptWidget) {
-            if (focusedWidget instanceof BaseWidget) {
-                ((BaseWidget) focusedWidget).focused(false);
+            if (focusedWidget instanceof BaseWidget baseWidget) {
+                baseWidget.focused(false);
             }
             focusedWidget = null;
         }
@@ -644,8 +671,8 @@ public abstract class BaniraScreen extends Screen {
             focusableWidgets.removeIf(ref -> {
                 IWidget widget = ref.get();
                 if (widget == null) return true;
-                if (widget != exceptWidget && widget instanceof BaseWidget) {
-                    ((BaseWidget) widget).focused(false);
+                if (widget != exceptWidget && widget instanceof BaseWidget baseWidget) {
+                    baseWidget.focused(false);
                 }
                 return false;
             });
@@ -654,8 +681,8 @@ public abstract class BaniraScreen extends Screen {
 
     public void unfocusWidget(IWidget widget) {
         if (widget == null) return;
-        if (widget instanceof BaseWidget) {
-            ((BaseWidget) widget).focused(false);
+        if (widget instanceof BaseWidget baseWidget) {
+            baseWidget.focused(false);
         }
         if (focusedWidget == widget) {
             focusedWidget = null;

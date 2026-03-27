@@ -522,8 +522,8 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         Object raw = holder.get(desc.getPath());
         double initVal = 0;
-        if (raw instanceof Number) {
-            initVal = ((Number) raw).doubleValue();
+        if (raw instanceof Number n) {
+            initVal = n.doubleValue();
         } else if (raw != null) {
             try {
                 initVal = Double.parseDouble(raw.toString());
@@ -549,13 +549,13 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.addChild(label);
         row.addChild(slider);
         addResetButton(row, desc, w, rowH, v -> {
-            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
+            double d = v instanceof Number n ? n.doubleValue() : 0;
             slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
         });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
-            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
+            double d = v instanceof Number n ? n.doubleValue() : 0;
             slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
         }, () -> true);
     }
@@ -588,14 +588,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         label.textVerticalAlign(EnumAlignment.CENTER);
 
         Object current = holder.get(desc.getPath());
-        List<String> options = Arrays.stream(desc.getEnumClass().getEnumConstants())
+        Class<? extends Enum<?>> enumClass = desc.getEnumClass();
+        List<String> options = Arrays.stream(enumClass.getEnumConstants())
                 .map(Enum::name)
                 .collect(Collectors.toList());
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
         dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
         dropdown.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        dropdown.options(options);
+        dropdown.optionsEnum(enumClass);
         dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
         dropdown.onSelectionChanged(v -> {
             if (!v.isEmpty()) {
@@ -652,15 +653,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.bounds(new ScreenCoordinate(0, 0, w, tagList.effectiveHeight()));
         tagList.onBoundsHeightChanged(t -> {
             IWidget rowWidget = t.parent();
-            if (rowWidget instanceof BaseWidget) {
+            if (rowWidget instanceof BaseWidget baseWidget) {
                 double newH = t.effectiveHeight();
                 ScreenCoordinate b = rowWidget.bounds();
                 if (b != null) {
-                    ((BaseWidget) rowWidget).bounds(new ScreenCoordinate(b.x(), b.y(), b.width(), newH));
+                    baseWidget.bounds(new ScreenCoordinate(b.x(), b.y(), b.width(), newH));
                 }
                 IWidget panel = rowWidget.parent();
-                if (panel instanceof CollapsiblePanelWidget) {
-                    ((CollapsiblePanelWidget) panel).refreshLayoutFromChild(rowWidget);
+                if (panel instanceof CollapsiblePanelWidget panelWidget) {
+                    panelWidget.refreshLayoutFromChild(rowWidget);
                 }
             }
             syncContentHeight();
@@ -674,8 +675,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.addChild(label);
         row.addChild(tagList);
         addResetButton(row, desc, w, tagRowH, v -> {
-            if (v instanceof List) {
-                tagList.items(((List<?>) v).stream().map(String::valueOf).collect(Collectors.toList()));
+            if (v instanceof List<?> vList) {
+                tagList.items(vList.stream().map(String::valueOf).collect(Collectors.toList()));
             }
         });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
@@ -683,8 +684,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         return new ConfigEntryWidgetAdapter(desc, row, label, tagList, tooltip,
                 () -> tagList.items().stream().map(String::valueOf).collect(Collectors.toList()),
                 v -> {
-                    if (v instanceof List) {
-                        tagList.items(((List<?>) v).stream().map(String::valueOf).collect(Collectors.toList()));
+                    if (v instanceof List<?> vList) {
+                        tagList.items(vList.stream().map(String::valueOf).collect(Collectors.toList()));
                     }
                 });
     }
@@ -840,8 +841,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private Object parseValue(String path, String value) {
         Object decoded = ConfigSyncToServer.decodeNetworkValue(holder, path, value);
         ConfigEntryDescriptor desc = holder.getDescriptor(path);
-        if (desc != null && desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE && decoded instanceof Double) {
-            double d = (Double) decoded;
+        if (desc != null && desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE && decoded instanceof Double d) {
             int dp = desc.getDecimalPlaces();
             double factor = Math.pow(10, dp);
             return Math.round(d * factor) / factor;

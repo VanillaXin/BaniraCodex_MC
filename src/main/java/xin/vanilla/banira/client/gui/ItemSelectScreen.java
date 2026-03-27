@@ -275,8 +275,8 @@ public class ItemSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object itemId = b.property("itemId");
-                if (itemId instanceof String) {
-                    handleItem((String) itemId);
+                if (itemId instanceof String id) {
+                    handleItem(id);
                     if (selectedItemWidget != null) selectedItemWidget.focused(false);
                     selectedItemWidget = btn;
                 }

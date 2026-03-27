@@ -5,10 +5,7 @@ import lombok.NonNull;
 
 import java.io.Reader;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -82,19 +79,19 @@ public final class JsonUtils {
     }
 
     private static void addItem(JsonArray array, Object item) {
-        if (item instanceof JsonElement) {
-            array.add((JsonElement) item);
-        } else if (item instanceof String) {
-            array.add(new JsonPrimitive((String) item));
-        } else if (item instanceof Number) {
-            array.add(new JsonPrimitive(((Number) item).doubleValue()));
-        } else if (item instanceof Boolean) {
-            array.add(new JsonPrimitive((Boolean) item));
+        if (item instanceof JsonElement e) {
+            array.add(e);
+        } else if (item instanceof String s) {
+            array.add(new JsonPrimitive(s));
+        } else if (item instanceof Number n) {
+            array.add(new JsonPrimitive(n.doubleValue()));
+        } else if (item instanceof Boolean b) {
+            array.add(new JsonPrimitive(b));
         } else if (item instanceof Character) {
             array.add(new JsonPrimitive(String.valueOf(item)));
-        } else if (item instanceof Collection) {
+        } else if (item instanceof Collection<?> c) {
             JsonArray arr = new JsonArray();
-            for (Object it : (Collection<?>) item) {
+            for (Object it : c) {
                 addItem(arr, it);
             }
         } else if (item.getClass().isArray()) {
@@ -127,11 +124,58 @@ public final class JsonUtils {
             }
         }
 
-        if (sb.length() > 0) {
+        if (!sb.isEmpty()) {
             parts.add(sb.toString());
         }
 
         return parts;
+    }
+
+
+    private static JsonElement mergeInternal(JsonElement json, JsonElement other, boolean copy) {
+        if (json == null || json.isJsonNull()) {
+            return copy ? deepCopy(other) : other;
+        }
+        if (other == null || other.isJsonNull()) {
+            return copy ? deepCopy(json) : json;
+        }
+
+        // Object
+        if (json.isJsonObject() && other.isJsonObject()) {
+            JsonObject target = copy ? deepCopy(json.getAsJsonObject()).getAsJsonObject() : json.getAsJsonObject();
+            JsonObject source = other.getAsJsonObject();
+
+            for (Map.Entry<String, JsonElement> entry : source.entrySet()) {
+                String key = entry.getKey();
+                JsonElement value = entry.getValue();
+
+                if (target.has(key)) {
+                    JsonElement merged = mergeInternal(target.get(key), value, copy);
+                    target.add(key, merged);
+                } else {
+                    target.add(key, copy ? deepCopy(value) : value);
+                }
+            }
+            return target;
+        }
+
+        // Array：追加
+        if (json.isJsonArray() && other.isJsonArray()) {
+            JsonArray target = copy ? deepCopy(json.getAsJsonArray()).getAsJsonArray() : json.getAsJsonArray();
+            JsonArray source = other.getAsJsonArray();
+
+            for (JsonElement el : source) {
+                target.add(copy ? deepCopy(el) : el);
+            }
+            return target;
+        }
+
+        // Primitive 或类型冲突 → 覆盖
+        return copy ? deepCopy(other) : other;
+    }
+
+    private static JsonElement deepCopy(JsonElement element) {
+        return element == null ? null : parseElement(element.toString());
     }
 
 
@@ -672,19 +716,19 @@ public final class JsonUtils {
      * 设置值
      */
     public static JsonElement set(@NonNull JsonElement json, @NonNull String path, @NonNull Object value) {
-        if (value instanceof JsonElement) {
-            return setJsonElement(json, path, (JsonElement) value);
-        } else if (value instanceof String) {
-            return setString(json, path, (String) value);
-        } else if (value instanceof Number) {
-            return setDouble(json, path, ((Number) value).doubleValue());
-        } else if (value instanceof Boolean) {
-            return setBoolean(json, path, (Boolean) value);
-        } else if (value instanceof Character) {
-            return setChar(json, path, (Character) value);
-        } else if (value instanceof Collection) {
+        if (value instanceof JsonElement e) {
+            return setJsonElement(json, path, e);
+        } else if (value instanceof String s) {
+            return setString(json, path, s);
+        } else if (value instanceof Number n) {
+            return setDouble(json, path, n.doubleValue());
+        } else if (value instanceof Boolean b) {
+            return setBoolean(json, path, b);
+        } else if (value instanceof Character c) {
+            return setChar(json, path, c);
+        } else if (value instanceof Collection<?> c) {
             JsonArray array = new JsonArray();
-            for (Object item : (Collection<?>) value) {
+            for (Object item : c) {
                 addItem(array, item);
             }
             return setJsonArray(json, path, array);
@@ -699,6 +743,20 @@ public final class JsonUtils {
         } else {
             throw new IllegalArgumentException("Unsupported type: " + value.getClass());
         }
+    }
+
+    /**
+     * 直接合并到 json
+     */
+    public static JsonElement mergeInPlace(@NonNull JsonElement json, @NonNull JsonElement other) {
+        return mergeInternal(json, other, false);
+    }
+
+    /**
+     * 返回一个新的合并结果
+     */
+    public static JsonElement mergeCopy(@NonNull JsonElement json, @NonNull JsonElement other) {
+        return mergeInternal(json, other, true);
     }
 
     public static boolean isNullOrEmpty(JsonElement element) {

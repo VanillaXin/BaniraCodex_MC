@@ -1,9 +1,13 @@
 package xin.vanilla.banira.client.enums;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
 /**
  * 坐标类型
  */
-public enum EnumCoordinateType {
+public enum EnumCoordinateType implements IEnumDescribable {
     /**
      * 绝对坐标(仍然需要加上父坐标)
      */
@@ -24,4 +28,10 @@ public enum EnumCoordinateType {
      * 相对鼠标坐标
      */
     RELATIVE_MOUSE,
+    ;
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
+    }
 }

@@ -301,8 +301,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object advId = b.property("advancementId");
-                if (advId instanceof String) {
-                    handleAdvancement((String) advId);
+                if (advId instanceof String string) {
+                    handleAdvancement(string);
                     if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(false);
                     selectedAdvancementWidget = btn;
                 }
@@ -354,6 +354,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private AdvancementData findAdvancementData(ResourceLocation id) {
         if (id == null) return null;
+        if (id == Identifier.id().empty()) return null;
         String idStr = id.toString();
         if (StringUtils.isNullOrEmpty(idStr) || ":".equals(idStr)) return null;
         try {

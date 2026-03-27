@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -11,6 +10,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -95,6 +95,10 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) return;
+        if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
+            renderChildren(stack, partialTicks);
+            return;
+        }
         if (mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();

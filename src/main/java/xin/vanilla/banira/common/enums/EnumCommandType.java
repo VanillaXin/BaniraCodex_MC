@@ -9,13 +9,15 @@ import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
-public enum EnumCommandType implements IVirtualPermissionType {
+public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable {
     HELP(HelpCommand::create, false, false),
     LANGUAGE(LanguageCommand::create, false, false),
     LANGUAGE_CONCISE(),
@@ -97,5 +99,10 @@ public enum EnumCommandType implements IVirtualPermissionType {
             return EnumCommandType.valueOf(this.name().replace("_CONCISE", ""));
         }
         return this;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

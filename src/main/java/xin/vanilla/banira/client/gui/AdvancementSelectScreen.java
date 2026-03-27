@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.Getter;
@@ -13,6 +12,7 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -354,6 +354,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private AdvancementData findAdvancementData(ResourceLocation id) {
         if (id == null) return null;
+        if (id == Identifier.id().empty()) return null;
         String idStr = id.toString();
         if (StringUtils.isNullOrEmpty(idStr) || ":".equals(idStr)) return null;
         try {

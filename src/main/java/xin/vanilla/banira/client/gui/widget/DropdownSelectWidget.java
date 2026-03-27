@@ -6,14 +6,20 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.enums.IEnumDropdownIcon;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -39,6 +45,9 @@ import java.util.stream.Collectors;
  * DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
  * dropdown.bounds(new ScreenCoordinate(10, 10, 200, 24));
  * dropdown.options(Arrays.asList("选项A", "选项B", "选项C"));
+ * // 或带图标与提示：dropdown.optionEntries(List.of(
+ * //     new DropdownOption("a", new ItemStack(Items.APPLE), BaniraComponent.get().transClientAuto("tip_a"))));
+ * // 或从枚举：dropdown.optionsEnum(MyEnum.class);  // 枚举可实现 IEnumDescribable / IEnumDropdownIcon
  * dropdown.multiSelect(true);  // 可选，默认单选
  * dropdown.selectedValues(Collections.singletonList("选项A"));
  * dropdown.onSelectionChanged(values -> { ... });
@@ -60,10 +69,12 @@ public class DropdownSelectWidget extends InputWidget {
     private static final int TAG_CLOSE_SIZE = 10;
     private static final int TAG_MIN_HEIGHT = 16;
     private static final int TAG_RIGHT_MARGIN = 4;
+    /**
+     * 下拉项左侧图标列宽度（含与文字的间距），与 {@link DropdownOverlayWidget} 中一致
+     */
+    public static final int DROPDOWN_ICON_COLUMN = 18;
 
-    @Getter
-    @Setter
-    private List<String> options = new ArrayList<>();
+    private List<DropdownOption> optionEntries = new ArrayList<>();
 
     @Getter
     @Setter
@@ -220,6 +231,79 @@ public class DropdownSelectWidget extends InputWidget {
         showClearButton(false);
     }
 
+    /**
+     * 当前全部选项条目（值、图标、提示）。
+     */
+    public List<DropdownOption> optionEntries() {
+        return new ArrayList<>(optionEntries);
+    }
+
+    /**
+     * 设置选项条目（含图标与悬浮提示）。
+     */
+    public DropdownSelectWidget optionEntries(List<DropdownOption> entries) {
+        this.optionEntries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
+        return this;
+    }
+
+    /**
+     * 仅字符串选项，无图标与提示。
+     */
+    public DropdownSelectWidget options(List<String> strings) {
+        if (strings == null) {
+            this.optionEntries = new ArrayList<>();
+        } else {
+            this.optionEntries = strings.stream().map(DropdownOption::new).collect(Collectors.toList());
+        }
+        return this;
+    }
+
+    /**
+     * 与 {@link #options(List)} 对应的纯文本值列表。
+     */
+    public List<String> options() {
+        return optionEntries.stream().map(DropdownOption::value).collect(Collectors.toList());
+    }
+
+    /**
+     * 从枚举构建选项：{@code name()} 为值；若实现 {@link IEnumDropdownIcon} 则绘制左侧图标；
+     * 若实现 {@link IEnumDescribable} 则使用其描述作为悬浮提示。
+     */
+    public DropdownSelectWidget optionsEnum(Class<? extends Enum<?>> clazz) {
+        Enum<?>[] constants = clazz.getEnumConstants();
+        if (constants == null) {
+            this.optionEntries = new ArrayList<>();
+            return this;
+        }
+        List<DropdownOption> list = new ArrayList<>();
+        for (Enum<?> e : constants) {
+            ItemStack icon = ItemStack.EMPTY;
+            Texture tex = null;
+            if (e instanceof IEnumDropdownIcon) {
+                IEnumDropdownIcon id = (IEnumDropdownIcon) e;
+                ResourceLocation rl = id.dropdownTextureLocation();
+                if (rl != null) {
+                    tex = Texture.of(rl);
+                }
+                icon = id.dropdownIcon();
+            }
+            Component tooltip = null;
+            if (e instanceof IEnumDescribable) {
+                tooltip = ((IEnumDescribable) e).enumDescription();
+            }
+            list.add(new DropdownOption(e.name(), icon, tex, tooltip));
+        }
+        this.optionEntries = list;
+        return this;
+    }
+
+    /**
+     * 是否存在任意带图标的选项（用于为整列预留图标宽度）。
+     */
+    public boolean hasAnyDropdownIcon() {
+        return optionEntries.stream().anyMatch(o -> o.hasTexture() || !o.icon().isEmpty());
+    }
+
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
@@ -245,12 +329,19 @@ public class DropdownSelectWidget extends InputWidget {
      * 获取过滤后的选项列表（根据当前输入内容）
      */
     public List<String> getFilteredOptions() {
+        return getFilteredOptionEntries().stream().map(DropdownOption::value).collect(Collectors.toList());
+    }
+
+    /**
+     * 过滤后的选项条目（与 {@link #getFilteredOptions()} 顺序一致）。
+     */
+    public List<DropdownOption> getFilteredOptionEntries() {
         String filter = value().toLowerCase().trim();
         if (StringUtils.isNullOrEmpty(filter)) {
-            return new ArrayList<>(options);
+            return new ArrayList<>(optionEntries);
         }
-        return options.stream()
-                .filter(opt -> opt.toLowerCase().contains(filter))
+        return optionEntries.stream()
+                .filter(opt -> opt.value().toLowerCase().contains(filter))
                 .collect(Collectors.toList());
     }
 

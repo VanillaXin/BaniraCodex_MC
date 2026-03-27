@@ -1,9 +1,13 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
 /**
  * 图标组锚点在XY轴上的坐标系
  */
-public enum EnumQuickCoordinateMode {
+public enum EnumQuickCoordinateMode implements IEnumDescribable {
     /**
      * 屏幕比例
      */
@@ -13,4 +17,9 @@ public enum EnumQuickCoordinateMode {
      */
     ABSOLUTE,
     ;
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
+    }
 }

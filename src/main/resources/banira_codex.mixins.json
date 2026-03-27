@@ -5,8 +5,10 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "banira_codex.refmap.json",
   "mixins": [
+    "accessors.NetworkRegistryAccessor",
     "accessors.ResourceManagerAccessor",
     "accessors.ServerPlayerAccessor",
+    "accessors.SimpleChannelAccessor",
     "injections.ServerPlayerMixin"
   ],
   "client": [

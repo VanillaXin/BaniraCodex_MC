@@ -16,6 +16,7 @@ import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.File;
@@ -31,7 +32,6 @@ public final class NotificationManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String LOG_FILE_NAME = "notification_log.json";
-    private static final int MAX_LOG_SIZE = 500;
 
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
     private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
@@ -86,7 +86,8 @@ public final class NotificationManager {
                 .source(fromNetwork ? "network" : "local");
         synchronized (log) {
             log.add(0, entry);
-            while (log.size() > MAX_LOG_SIZE) {
+            int max = notificationLogMaxEntries();
+            while (log.size() > max) {
                 log.remove(log.size() - 1);
             }
         }
@@ -121,6 +122,10 @@ public final class NotificationManager {
                             .source(JsonUtils.getString(obj, "source", "local"));
                     log.add(entry);
                 }
+                int max = notificationLogMaxEntries();
+                while (log.size() > max) {
+                    log.remove(log.size() - 1);
+                }
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to load notification log: {}", e.getMessage());
@@ -130,6 +135,10 @@ public final class NotificationManager {
     /**
      * 异步保存日志到文件
      */
+    private static int notificationLogMaxEntries() {
+        return Math.max(1, ClientConfig.get().notificationLogMaxEntries());
+    }
+
     private void saveLogAsync() {
         new Thread(() -> {
             try {

@@ -2,12 +2,21 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
+import xin.vanilla.banira.internal.mixin.accessors.SimpleChannelAccessor;
+import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.List;
 import java.util.Map;
@@ -118,7 +127,16 @@ public final class PacketUtils {
     /**
      * 发送数据包至服务器
      */
+    @OnlyIn(Dist.CLIENT)
     public static <MSG> void sendPacketToServer(SimpleChannel channel, MSG msg) {
+        if (!hasChannel(channel)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        // ModLoadedToBoth 为握手首包，不依赖已记录的远程服务端状态
+        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, getModId(channel))) {
+            return;
+        }
+
         channel.sendToServer(msg);
     }
 
@@ -126,6 +144,9 @@ public final class PacketUtils {
      * 发送数据包至玩家
      */
     public static <MSG> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayerEntity player) {
+        if (!hasChannel(player, channel)) return;
+        if (!PlayerUtils.isRemoteClientModInstalled(player, getModId(channel))) return;
+
         channel.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
@@ -138,10 +159,9 @@ public final class PacketUtils {
      * @param <T>     分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayerEntity player) {
-        PacketDistributor.PacketTarget target = PacketDistributor.PLAYER.with(() -> player);
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.send(target, splitPacket);
+            sendPacketToPlayer(channel, splitPacket, player);
         }
     }
 
@@ -155,7 +175,49 @@ public final class PacketUtils {
     public static <T extends SplitPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            channel.sendToServer(splitPacket);
+            sendPacketToServer(channel, splitPacket);
         }
+    }
+
+
+    private static NetworkRegistryAccessor NETWORK_REGISTRY = null;
+
+    private static void init() {
+        if (NETWORK_REGISTRY == null) {
+            NETWORK_REGISTRY = (NetworkRegistryAccessor) new NetworkRegistry();
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static boolean hasBaniraServer() {
+        return hasChannel(NetworkInit.HANDLER.getChannel());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static boolean hasChannel(SimpleChannel channel) {
+        return hasChannel(getChannelName(channel));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static boolean hasChannel(ResourceLocation channel) {
+        init();
+        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
+    }
+
+    public static boolean hasChannel(ServerPlayerEntity player, SimpleChannel channel) {
+        return hasChannel(player, getChannelName(channel));
+    }
+
+    public static boolean hasChannel(ServerPlayerEntity player, ResourceLocation channel) {
+        init();
+        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
+    }
+
+    public static ResourceLocation getChannelName(SimpleChannel channel) {
+        return ((SimpleChannelAccessor) channel).banira$instance().getChannelName();
+    }
+
+    public static String getModId(SimpleChannel channel) {
+        return getChannelName(channel).getNamespace();
     }
 }

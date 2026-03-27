@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.item.ItemEntity;
@@ -11,7 +10,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
@@ -28,14 +27,20 @@ public final class PlayerUtils {
     }
 
     /**
-     * 已安装 mod 的玩家列表（按 modid 区分）</br>
+     * 服务端：各玩家对应的<strong>远程客户端</strong>是否已声明安装该 mod（按 modid 区分）。</br>
      * Key: modid + ":" + 玩家UUID</br>
-     * Value: 是否已同步数据</br>
-     * 在该 map 的玩家都为已安装对应 mod</br>
-     * 布尔值为 false 时为未同步数据，将会在玩家 tick 事件中检测并同步数据
+     * Value: 是否已同步数据（false 表示未同步，可由 tick 等逻辑补同步）
      */
     @Getter
-    private static final Map<String, Boolean> playerDataStatus = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> remoteClientModInstalled = new ConcurrentHashMap<>();
+
+    /**
+     * 客户端：本连接上<strong>远程服务端</strong>是否已声明安装该 mod（按 modid 区分）。</br>
+     * Key: modid + ":" + 玩家UUID</br>
+     * Value: 是否已同步数据
+     */
+    @Getter
+    private static final Map<String, Boolean> remoteServerModInstalled = new ConcurrentHashMap<>();
 
     private static String makeKey(String modid, String uuid) {
         return (modid != null ? modid : "") + ":" + (uuid != null ? uuid : "");
@@ -362,50 +367,83 @@ public final class PlayerUtils {
     // region 玩家状态
 
     /**
-     * 设置玩家mod安装及数据同步状态
+     * 服务端：设置<strong>远程客户端</strong>已声明安装该 mod 及数据同步状态。
      *
-     * @param player 玩家
+     * @param player 服务端玩家实体
      * @param synced 数据是否已同步
      */
-    public static void setPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
+    public static void setRemoteClientModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
-        playerDataStatus.put(makeKey(modid, getPlayerUUIDString(player)), synced);
+        remoteClientModInstalled.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
 
     /**
-     * 移除该玩家的全部mod状态
+     * 客户端：设置<strong>远程服务端</strong>已声明安装该 mod 及数据同步状态。
      */
-    public static void removePlayerDataStatus(@Nonnull PlayerEntity player) {
-        String uuid = getPlayerUUIDString(player);
-        playerDataStatus.keySet().removeIf(key -> key.endsWith(":" + uuid));
-    }
-
-    /**
-     * 移除玩家指定mod的状态
-     *
-     * @param player 玩家
-     */
-    public static void removePlayerDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static void setRemoteServerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
-        playerDataStatus.remove(makeKey(modid, getPlayerUUIDString(player)));
+        remoteServerModInstalled.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
 
     /**
-     * 玩家是否安装指定mod
+     * 服务端：远程客户端是否已声明安装指定 mod。
      */
-    public static boolean isPlayerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isRemoteClientModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return false;
-        return playerDataStatus.containsKey(makeKey(modid, getPlayerUUIDString(player)));
+        return remoteClientModInstalled.containsKey(makeKey(modid, getPlayerUUIDString(player)));
     }
 
     /**
-     * 玩家数据是否同步
+     * 客户端：远程服务端是否已声明安装指定 mod。
+     */
+    public static boolean isRemoteServerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return false;
+        return remoteServerModInstalled.containsKey(makeKey(modid, getPlayerUUIDString(player)));
+    }
+
+    /**
+     * 服务端：移除该玩家在「远程客户端 mod」侧的全部状态。
+     */
+    public static void removeRemoteClientDataStatus(@Nonnull PlayerEntity player) {
+        String uuid = getPlayerUUIDString(player);
+        remoteClientModInstalled.keySet().removeIf(key -> key.endsWith(":" + uuid));
+    }
+
+    /**
+     * 客户端：移除该玩家在「远程服务端 mod」侧的全部状态。
+     */
+    public static void removeRemoteServerDataStatus(@Nonnull PlayerEntity player) {
+        String uuid = getPlayerUUIDString(player);
+        remoteServerModInstalled.keySet().removeIf(key -> key.endsWith(":" + uuid));
+    }
+
+    /**
+     * 服务端：移除该玩家指定 mod 的远程客户端状态。
+     */
+    public static void removeRemoteClientDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return;
+        remoteClientModInstalled.remove(makeKey(modid, getPlayerUUIDString(player)));
+    }
+
+    /**
+     * 客户端：移除该玩家指定 mod 的远程服务端状态。
+     */
+    public static void removeRemoteServerDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+        if (StringUtils.isNullOrEmptyEx(modid)) return;
+        remoteServerModInstalled.remove(makeKey(modid, getPlayerUUIDString(player)));
+    }
+
+    /**
+     * 数据是否已同步（按逻辑侧读取对应 map：客户端看远程服务端，服务端看远程客户端）。
      *
-     * @return 未安装mod 或 已同步
+     * @return 未记录对端 mod 或已同步
      */
     public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return true;
-        return playerDataStatus.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
+        if (player.level.isClientSide()) {
+            return remoteServerModInstalled.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
+        }
+        return remoteClientModInstalled.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
     }
 
     // endregion 玩家状态

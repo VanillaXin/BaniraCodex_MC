@@ -17,11 +17,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
+import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.TextureUtils;
-import xin.vanilla.banira.common.data.KeyValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,7 +59,7 @@ public class QuickIcon {
     @Getter
     @Setter
     @Nullable
-    private ResourceLocation texture;
+    private Texture texture;
 
     @Nonnull
     public static QuickIcon none() {
@@ -100,7 +100,15 @@ public class QuickIcon {
     public static QuickIcon resource(@Nonnull ResourceLocation textureLocation) {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
-        q.texture(textureLocation);
+        q.texture(Texture.of(textureLocation));
+        return q;
+    }
+
+    @Nonnull
+    public static QuickIcon resource(@Nonnull Texture texture) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.RESOURCE);
+        q.texture(texture);
         return q;
     }
 
@@ -139,19 +147,15 @@ public class QuickIcon {
                 break;
             }
             case RESOURCE: {
-                ResourceLocation loc = texture;
-                if (loc == null) {
+                if (texture == null) {
                     item(new ItemStack(Items.PAPER)).render(graphics, mc, x, y, size);
                     return;
                 }
-                KeyValue<Integer, Integer> sz = TextureUtils.getTextureSize(loc);
-                int tw = sz.key() != null && sz.key() > 0 ? sz.key() : 16;
-                int th = sz.value() != null && sz.value() > 0 ? sz.value() : 16;
 
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-                AbstractGuiUtils.blit(stack, loc, x, y, size, size, 0, 0, tw, th, tw, th);
+                ImageWidget.blit(stack, texture, x, y, size, size);
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;

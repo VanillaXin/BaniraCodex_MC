@@ -646,13 +646,13 @@ public abstract class BaseWidget implements IWidget {
         if (parent == this) return;
         if (isDescendantOf(parent)) return;
 
-        if (this.parent != null && this.parent instanceof BaseWidget) {
-            ((BaseWidget) this.parent).children.remove(this);
+        if (this.parent != null && this.parent instanceof BaseWidget baseWidget) {
+            baseWidget.children.remove(this);
         }
         this.parent = parent;
         invalidateAbsCache();
-        if (parent instanceof BaseWidget) {
-            ((BaseWidget) parent).children.add(this);
+        if (parent instanceof BaseWidget baseWidget) {
+            baseWidget.children.add(this);
         }
     }
 
@@ -665,8 +665,7 @@ public abstract class BaseWidget implements IWidget {
             if (current == ancestor) {
                 return true;
             }
-            if (current instanceof BaseWidget) {
-                BaseWidget baseWidget = (BaseWidget) current;
+            if (current instanceof BaseWidget baseWidget) {
                 current = baseWidget.parent;
             } else {
                 break;
@@ -689,16 +688,15 @@ public abstract class BaseWidget implements IWidget {
             return;
         }
         // 防止循环引用
-        if (child == this || (child instanceof BaseWidget && ((BaseWidget) child).isDescendantOf(this))) {
+        if (child == this || (child instanceof BaseWidget baseWidget && baseWidget.isDescendantOf(this))) {
             return;
         }
         children.add(child);
 
-        if (child instanceof BaseWidget) {
-            BaseWidget childWidget = (BaseWidget) child;
+        if (child instanceof BaseWidget childWidget) {
             IWidget oldParent = childWidget.parent;
-            if (oldParent instanceof BaseWidget) {
-                ((BaseWidget) oldParent).children.remove(child);
+            if (oldParent instanceof BaseWidget baseWidget) {
+                baseWidget.children.remove(child);
             }
             childWidget.parent = this;
         }
@@ -710,8 +708,8 @@ public abstract class BaseWidget implements IWidget {
             return false;
         }
         boolean removed = children.remove(child);
-        if (removed && child instanceof BaseWidget) {
-            ((BaseWidget) child).parent = null;
+        if (removed && child instanceof BaseWidget baseWidget) {
+            baseWidget.parent = null;
         }
         return removed;
     }
@@ -755,8 +753,8 @@ public abstract class BaseWidget implements IWidget {
     @Override
     public void clearChildren() {
         for (IWidget child : children) {
-            if (child instanceof BaseWidget) {
-                ((BaseWidget) child).parent = null;
+            if (child instanceof BaseWidget baseWidget) {
+                baseWidget.parent = null;
             }
         }
         children.clear();
@@ -766,8 +764,8 @@ public abstract class BaseWidget implements IWidget {
         if (absCacheValid) {
             absCacheValid = false;
             for (IWidget child : children) {
-                if (child instanceof BaseWidget) {
-                    ((BaseWidget) child).invalidateAbsCache();
+                if (child instanceof BaseWidget baseWidget) {
+                    baseWidget.invalidateAbsCache();
                 }
             }
         }

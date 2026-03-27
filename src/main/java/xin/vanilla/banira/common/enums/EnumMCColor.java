@@ -1,9 +1,11 @@
 package xin.vanilla.banira.common.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 @Getter
-public enum EnumMCColor {
+public enum EnumMCColor implements IEnumDescribable {
     BLACK('0', 0),
     DARK_BLUE('1', 170),
     DARK_GREEN('2', 43520),
@@ -27,5 +29,10 @@ public enum EnumMCColor {
     EnumMCColor(char code, int color) {
         this.code = code;
         this.color = color;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

@@ -5,15 +5,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.List;
 
@@ -55,7 +56,7 @@ class DropdownOverlayWidget extends BaseWidget {
         ScreenCoordinate db = parent.getDropdownBounds();
         if (db == null) return;
 
-        List<String> options = parent.getFilteredOptions();
+        List<DropdownOption> options = parent.getFilteredOptionEntries();
         if (options.isEmpty()) return;
 
         Font font = Minecraft.getInstance().font;
@@ -78,6 +79,7 @@ class DropdownOverlayWidget extends BaseWidget {
         int contentHeight = options.size() * ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - PAD * 2;
         boolean scrollable = contentHeight > visibleHeight;
+        int iconCol = parent.hasAnyDropdownIcon() ? DropdownSelectWidget.DROPDOWN_ICON_COLUMN : 0;
         int contentWidth = scrollable ? (int) db.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN : (int) db.width() - 2;
 
         int hoveredIndex = findHoveredOptionIndex(db, options, mouseX, mouseY, contentWidth);
@@ -104,7 +106,8 @@ class DropdownOverlayWidget extends BaseWidget {
                 int itemY = (int) db.y() + PAD + i * ITEM_HEIGHT - scrollOffset;
                 if (itemY + ITEM_HEIGHT < db.y() || itemY >= db.y() + db.height()) continue;
 
-                String opt = options.get(i);
+                DropdownOption optEntry = options.get(i);
+                String opt = optEntry.value();
                 boolean selected = parent.isOptionSelected(opt);
                 boolean hovered = hoveredIndex == i;
                 int itemBg = hovered ? popupSelected : (selected ? popupSelected : 0);
@@ -117,8 +120,23 @@ class DropdownOverlayWidget extends BaseWidget {
                 }
 
                 int leftOffset = multi ? leftBorderWidth : 0;
-                int textX = (int) (db.x() + PAD + leftOffset);
-                int textMaxWidth = contentWidth - PAD * 2 - 4 - leftOffset;
+                int textX = (int) (db.x() + PAD + leftOffset + iconCol);
+                int textMaxWidth = contentWidth - PAD * 2 - 4 - leftOffset - iconCol;
+                if (optEntry.hasTexture()) {
+                    for (Texture t : optEntry.texture()) {
+                        if (t != null) {
+                            int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
+                            int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
+                            int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
+                            ImageWidget.blitBlend(s, t, iconX, iconY, sz, sz);
+                        }
+                    }
+                } else if (!optEntry.icon().isEmpty()) {
+                    int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
+                    int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
+                    int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
+                    ItemWidget.renderGuiItemFlatBlit(s, Minecraft.getInstance(), optEntry.icon(), iconX, iconY, sz);
+                }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;
                 graphics.drawString(font, display, textX, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
@@ -131,9 +149,26 @@ class DropdownOverlayWidget extends BaseWidget {
                         scrollbarDragging || scrollbarThumbHovered ? scrollbarThumbHover : scrollbarThumb);
             }
         });
+
+        if (hoveredIndex >= 0 && hoveredIndex < options.size()) {
+            Component tip = options.get(hoveredIndex).tooltip();
+            if (tip != null && !tip.isEmpty()) {
+                boolean useTexture = theme.tooltipUseTexture();
+                Text textToDraw = new Text(tip.clone());
+                int tipX = (int) scr.inputState().mouseX();
+                int tipY = (int) scr.inputState().mouseY();
+                EnumSeason season = scr.season();
+                scr.addDeferredTooltipRender(t -> {
+                    t.pose().pushPose();
+                    t.pose().last().pose().identity();
+                    TooltipWidget.drawPopupMessage(t.pose(), FontDrawArgs.ofPopo(textToDraw.stack(t.pose())).x(tipX).y(tipY).popupUseTexture(useTexture), theme, season);
+                    t.pose().popPose();
+                });
+            }
+        }
     }
 
-    private int findHoveredOptionIndex(ScreenCoordinate db, List<String> options, double mouseX, double mouseY, int contentWidth) {
+    private int findHoveredOptionIndex(ScreenCoordinate db, List<DropdownOption> options, double mouseX, double mouseY, int contentWidth) {
         if (mouseX < db.x() || mouseX >= db.x() + contentWidth) return -1;
         if (mouseY < db.y() + PAD || mouseY >= db.y() + db.height() - PAD) return -1;
 
@@ -171,7 +206,7 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private boolean isMouseOverScrollbarThumb(ScreenCoordinate db, double mouseX, double mouseY) {
-        List<String> options = parent.getFilteredOptions();
+        List<DropdownOption> options = parent.getFilteredOptionEntries();
         int contentHeight = options.size() * ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -207,11 +242,11 @@ class DropdownOverlayWidget extends BaseWidget {
         if (parent.isInDropdownOptions(mouseX, mouseY)) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                int contentWidth = (int) db.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN;
-                List<String> options = parent.getFilteredOptions();
+                List<DropdownOption> options = parent.getFilteredOptionEntries();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;
+                int contentWidth = scrollable ? (int) db.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN : (int) db.width();
 
                 if (scrollable && isMouseOverScrollbarTrack(db, mouseX, mouseY)) {
                     int trackY = (int) db.y() + PAD;
@@ -264,14 +299,14 @@ class DropdownOverlayWidget extends BaseWidget {
         if (event.button() == 0 && pressedOptionIndex >= 0) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                List<String> options = parent.getFilteredOptions();
+                List<DropdownOption> options = parent.getFilteredOptionEntries();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;
                 int contentWidth = scrollable ? (int) db.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN : (int) db.width();
                 int releaseIdx = findHoveredOptionIndex(db, options, mouseX, mouseY, contentWidth);
                 if (releaseIdx == pressedOptionIndex && releaseIdx >= 0 && releaseIdx < options.size()) {
-                    parent.selectOption(options.get(releaseIdx));
+                    parent.selectOption(options.get(releaseIdx).value());
                 }
             }
             pressedOptionIndex = -1;

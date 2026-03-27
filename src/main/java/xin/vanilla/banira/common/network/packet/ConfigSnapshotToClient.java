@@ -102,8 +102,8 @@ public class ConfigSnapshotToClient {
                 return;
             }
             Screen open = Minecraft.getInstance().screen;
-            if (open instanceof ConfigEditorScreen) {
-                ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(packet.configName());
+            if (open instanceof ConfigEditorScreen screen) {
+                screen.refreshUIFromHolderAfterRemoteFetch(packet.configName());
             }
             Notification ok = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));

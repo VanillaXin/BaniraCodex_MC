@@ -46,8 +46,8 @@ public final class ClientThemeManager {
     public static BaniraColorConfig getEffectiveTheme() {
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
-        if (screen instanceof BaniraScreen) {
-            return ((BaniraScreen) screen).getEffectiveTheme();
+        if (screen instanceof BaniraScreen baniraScreen) {
+            return baniraScreen.getEffectiveTheme();
         }
         if (defaultTheme != null) {
             return defaultTheme;

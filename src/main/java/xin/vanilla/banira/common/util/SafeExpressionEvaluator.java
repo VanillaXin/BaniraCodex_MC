@@ -104,12 +104,12 @@ public class SafeExpressionEvaluator {
         if (o instanceof Float || o instanceof Double) {
             return false;
         }
-        if (o instanceof Number) {
-            double d = ((Number) o).doubleValue();
+        if (o instanceof Number n) {
+            double d = n.doubleValue();
             return d == Math.floor(d) && !Double.isInfinite(d);
         }
-        if (o instanceof String) {
-            String s = ((String) o).trim();
+        if (o instanceof String str) {
+            String s = str.trim();
             return INTEGER_PATTERN.matcher(s).matches();
         }
         return false;
@@ -120,16 +120,16 @@ public class SafeExpressionEvaluator {
      */
     private static long toLong(Object o) {
         if (o == null) return 0L;
-        if (o instanceof Byte) return ((Byte) o).longValue();
-        if (o instanceof Short) return ((Short) o).longValue();
-        if (o instanceof Integer) return ((Integer) o).longValue();
-        if (o instanceof Long) return (Long) o;
-        if (o instanceof Number) {
-            double d = ((Number) o).doubleValue();
+        if (o instanceof Byte b) return b.longValue();
+        if (o instanceof Short s) return s.longValue();
+        if (o instanceof Integer i) return i.longValue();
+        if (o instanceof Long l) return l;
+        if (o instanceof Number n) {
+            double d = n.doubleValue();
             return (long) d;
         }
-        if (o instanceof String) {
-            String s = ((String) o).trim();
+        if (o instanceof String str) {
+            String s = str.trim();
             if (INTEGER_PATTERN.matcher(s).matches()) {
                 return Long.parseLong(s);
             }
@@ -161,8 +161,8 @@ public class SafeExpressionEvaluator {
 
     private static double toDouble(Object o) {
         if (o == null) return 0.0;
-        if (o instanceof Number) return ((Number) o).doubleValue();
-        if (o instanceof Boolean) return (Boolean) o ? 1.0 : 0.0;
+        if (o instanceof Number n) return n.doubleValue();
+        if (o instanceof Boolean b) return b ? 1.0 : 0.0;
         if (o instanceof String s) {
             if (isNumericString(s)) {
                 return Double.parseDouble(s);
@@ -175,8 +175,8 @@ public class SafeExpressionEvaluator {
 
     private static boolean toBoolean(Object o) {
         if (o == null) return false;
-        if (o instanceof Boolean) return (Boolean) o;
-        if (o instanceof Number) return ((Number) o).doubleValue() != 0.0;
+        if (o instanceof Boolean b) return b;
+        if (o instanceof Number n) return n.doubleValue() != 0.0;
         if (o instanceof String) {
             return StringUtils.stringToBoolean(o.toString());
         }
@@ -559,8 +559,8 @@ public class SafeExpressionEvaluator {
                 if (next.type != TokenType.IDENT) throw new RuntimeException("Expect identifier after '.'");
                 String member = next.text;
                 if ("class".equals(member)) {
-                    if (node instanceof VarNode) {
-                        node = new ClassAccessNode((VarNode) node);
+                    if (node instanceof VarNode vn) {
+                        node = new ClassAccessNode(vn);
                     }
                 } else {
                     if (tok.peek().type == TokenType.LPAREN) {
@@ -666,9 +666,9 @@ public class SafeExpressionEvaluator {
             for (Node n : args) {
                 Object v = n.evaluate(vars);
                 if (v == null) evalArgs.add(0.0);
-                else if (v instanceof Number) evalArgs.add(((Number) v).doubleValue());
-                else if (v instanceof String && isNumericString((String) v))
-                    evalArgs.add(Double.parseDouble((String) v));
+                else if (v instanceof Number number) evalArgs.add(number.doubleValue());
+                else if (v instanceof String string && isNumericString(string))
+                    evalArgs.add(Double.parseDouble(string));
                 else throw new RuntimeException("Function " + name + " requires numeric args, got " + v);
             }
             switch (name) {
@@ -862,14 +862,14 @@ public class SafeExpressionEvaluator {
                 if (lvObj == null && rvObj == null) return true;
                 if (lvObj == null || rvObj == null) return false;
                 if (lvObj instanceof Number || rvObj instanceof Number
-                        || (lvObj instanceof String && isNumericString((String) lvObj))
-                        || (rvObj instanceof String && isNumericString((String) rvObj))) {
+                        || (lvObj instanceof String ls && isNumericString(ls))
+                        || (rvObj instanceof String rs && isNumericString(rs))) {
                     double a = toDouble(lvObj), b = toDouble(rvObj);
                     return Double.compare(a, b) == 0;
                 }
                 if (lvObj instanceof String || rvObj instanceof String) {
-                    String a = lvObj instanceof String ? (String) lvObj : lvObj.toString();
-                    String b = rvObj instanceof String ? (String) rvObj : rvObj.toString();
+                    String a = lvObj instanceof String ls ? ls : lvObj.toString();
+                    String b = rvObj instanceof String rs ? rs : rvObj.toString();
                     return a.equals(b);
                 }
                 return Objects.equals(lvObj, rvObj);
@@ -877,14 +877,14 @@ public class SafeExpressionEvaluator {
                 if (lvObj == null && rvObj == null) return false;
                 if (lvObj == null || rvObj == null) return true;
                 if (lvObj instanceof Number || rvObj instanceof Number
-                        || (lvObj instanceof String && isNumericString((String) lvObj))
-                        || (rvObj instanceof String && isNumericString((String) rvObj))) {
+                        || (lvObj instanceof String ls && isNumericString(ls))
+                        || (rvObj instanceof String rs && isNumericString(rs))) {
                     double a = toDouble(lvObj), b = toDouble(rvObj);
                     return Double.compare(a, b) != 0;
                 }
                 if (lvObj instanceof String || rvObj instanceof String) {
-                    String a = lvObj instanceof String ? (String) lvObj : lvObj.toString();
-                    String b = rvObj instanceof String ? (String) rvObj : rvObj.toString();
+                    String a = lvObj instanceof String ls ? ls : lvObj.toString();
+                    String b = rvObj instanceof String rs ? rs : rvObj.toString();
                     return !a.equals(b);
                 }
                 return !Objects.equals(lvObj, rvObj);
@@ -894,8 +894,8 @@ public class SafeExpressionEvaluator {
                     return false;
                 }
                 if (lvObj instanceof Number || rvObj instanceof Number
-                        || (lvObj instanceof String && isNumericString((String) lvObj))
-                        || (rvObj instanceof String && isNumericString((String) rvObj))) {
+                        || (lvObj instanceof String ls && isNumericString(ls))
+                        || (rvObj instanceof String rs && isNumericString(rs))) {
                     double a = toDouble(lvObj), b = toDouble(rvObj);
                     switch (op) {
                         case "<":

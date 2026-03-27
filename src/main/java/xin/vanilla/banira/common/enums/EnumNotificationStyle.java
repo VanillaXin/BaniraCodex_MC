@@ -1,9 +1,12 @@
 package xin.vanilla.banira.common.enums;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
 /**
  * 通知语义样式
  */
-public enum EnumNotificationStyle {
+public enum EnumNotificationStyle implements IEnumDescribable {
 
     /**
      * 普通
@@ -32,5 +35,10 @@ public enum EnumNotificationStyle {
         } catch (IllegalArgumentException e) {
             return NORMAL;
         }
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

@@ -13,10 +13,12 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.LogoModifier;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nonnull;
@@ -60,10 +62,26 @@ public final class BaniraClientEventHub {
             return;
         }
         codexDefaultsRegistered = true;
-        Player.onClientLoggedIn(player ->
-                PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(BaniraCodex.MODID))
-        );
-        Player.onClientLoggedOut(player -> AdvancementUtils.clearAdvancementData());
+        ModLoadedToBoth.registerClientHandler(packet -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null) {
+                return;
+            }
+            for (String modid : packet.modids()) {
+                PlayerUtils.setRemoteServerModInstalled(mc.player, modid, false);
+            }
+        });
+        Player.onClientLoggedIn(player -> {
+            List<String> ids = ModLoadedPresence.announcedModIds();
+            if (!ids.isEmpty()) {
+                PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(ids));
+            }
+        });
+        Player.onClientLoggedOut(player -> {
+            if (player == null) return;
+            AdvancementUtils.clearAdvancementData();
+            PlayerUtils.removeRemoteServerDataStatus(player);
+        });
         Client.onGuiChanged(event -> LogoModifier.modifyLogo());
         Client.onTextureReload(event -> {
             if (BaniraCodex.MODID.equals(event.getMap().location().getNamespace())) {

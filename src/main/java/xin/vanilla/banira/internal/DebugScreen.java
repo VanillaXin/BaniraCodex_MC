@@ -6,13 +6,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -20,7 +15,6 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -45,7 +39,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DebugScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -63,7 +56,7 @@ public class DebugScreen extends BaniraScreen {
     private boolean warp = false;
 
 
-    protected DebugScreen() {
+    public DebugScreen() {
         super(BaniraComponent.get().empty().toVanilla());
     }
 
@@ -570,15 +563,6 @@ public class DebugScreen extends BaniraScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            if (Minecraft.getInstance().screen == null && BaniraClientModSetup.DEBUG_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new DebugScreen());
-            }
-        }
     }
 
 }

@@ -1,9 +1,12 @@
 package xin.vanilla.banira.common.enums;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
 /**
  * 相对位置
  */
-public enum EnumPosition {
+public enum EnumPosition implements IEnumDescribable {
     TOP_LEFT,
     TOP_RIGHT,
     TOP_CENTER,
@@ -48,4 +51,8 @@ public enum EnumPosition {
         return valueOfEx(obj) != null;
     }
 
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
+    }
 }

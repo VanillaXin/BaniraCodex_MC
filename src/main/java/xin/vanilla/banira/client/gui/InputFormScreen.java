@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.enums.EnumStringInputRegex;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -30,9 +31,10 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
- * 多字段输入表单界面：支持文本、数字滑块、文件路径与颜色等，带校验与提交/取消。
+ * 多字段输入表单界面：支持文本、下拉选择、数字滑块、文件路径与颜色等，带校验与提交/取消。
  */
 public class InputFormScreen extends BaniraScreen {
     private static final int FORM_PANEL_PAD = 12;
@@ -89,6 +91,19 @@ public class InputFormScreen extends BaniraScreen {
         private boolean disabled;
         private WidgetType type = WidgetType.TEXT;
         private String fileFilter = "";
+        private List<String> dropdownOptions = new ArrayList<>();
+        /**
+         * 若通过 {@link #dropdownOptions(Class)} 指定枚举，则构建下拉时使用 {@link DropdownSelectWidget#optionsEnum}，
+         * 以保留 {@link xin.vanilla.banira.common.enums.IEnumDescribable} 等元数据。
+         */
+        @Nullable
+        private Class<? extends Enum<?>> dropdownEnumClass;
+        /**
+         * 自定义选项（值、物品/纹理图标、提示）。非空时优先于 {@link #dropdownEnumClass()} 与 {@link #dropdownOptions}。
+         */
+        @Nullable
+        private List<DropdownOption> dropdownOptionEntries;
+        private boolean dropdownMultiSelect;
         private Function<Results, String> validator = s -> "";
         private Consumer<Inputs> changed;
 
@@ -104,6 +119,57 @@ public class InputFormScreen extends BaniraScreen {
             this.type = type;
             return this;
         }
+
+        public List<String> dropdownOptions() {
+            return this.dropdownOptions;
+        }
+
+        public Widget dropdownOptions(String... options) {
+            this.dropdownEnumClass = null;
+            this.dropdownOptionEntries = null;
+            this.dropdownOptions = Arrays.asList(options);
+            return this;
+        }
+
+        public Widget dropdownOptions(Class<? extends Enum<?>> options) {
+            this.dropdownEnumClass = options;
+            this.dropdownOptionEntries = null;
+            this.dropdownOptions = Arrays.stream(options.getEnumConstants()).map(Enum::name).collect(Collectors.toList());
+            return this;
+        }
+
+        public Widget dropdownOptions(Collection<String> options) {
+            this.dropdownEnumClass = null;
+            this.dropdownOptionEntries = null;
+            this.dropdownOptions = options.stream().map(String::valueOf).collect(Collectors.toList());
+            return this;
+        }
+
+        /**
+         * 使用完整 {@link DropdownOption} 列表（可含物品图标、客户端 Texture 纹理、提示文案）
+         */
+        public Widget dropdownOptionEntries(List<DropdownOption> entries) {
+            this.dropdownOptionEntries = entries != null && !entries.isEmpty() ? new ArrayList<>(entries) : null;
+            this.dropdownEnumClass = null;
+            if (this.dropdownOptionEntries != null) {
+                this.dropdownOptions = this.dropdownOptionEntries.stream().map(DropdownOption::value).collect(Collectors.toList());
+            }
+            return this;
+        }
+
+        public String defaultValue() {
+            return this.defaultValue;
+        }
+
+        public Widget defaultValue(String... defaultValue) {
+            this.defaultValue = String.join(", ", defaultValue);
+            return this;
+        }
+
+        public Widget defaultValue(Enum<?>... defaultValue) {
+            this.defaultValue = Arrays.stream(defaultValue).map(Enum::name).collect(Collectors.joining(", "));
+            return this;
+        }
     }
 
     public enum WidgetType {
@@ -111,6 +177,7 @@ public class InputFormScreen extends BaniraScreen {
         NUMERIC,
         FILE,
         COLOR,
+        DROPDOWN,
     }
 
     @Data
@@ -252,6 +319,14 @@ public class InputFormScreen extends BaniraScreen {
             Objects.requireNonNull(this.getCallback());
             if (this.getWidgets().isEmpty()) {
                 throw new RuntimeException("Widgets list cannot be empty");
+            }
+            for (Widget w : this.getWidgets()) {
+                if (w.type() == WidgetType.DROPDOWN
+                        && (w.dropdownOptions() == null || w.dropdownOptions().isEmpty())
+                        && (w.dropdownOptionEntries() == null || w.dropdownOptionEntries().isEmpty())
+                        && w.dropdownEnumClass() == null) {
+                    throw new RuntimeException("DROPDOWN widget requires non-empty dropdownOptions, dropdownOptionEntries, or dropdownOptions(Class)");
+                }
             }
         }
     }
@@ -402,6 +477,36 @@ public class InputFormScreen extends BaniraScreen {
 
                 inputField.input(inputWidget);
                 addWidget(inputWidget);
+            } else if (widget.type() == WidgetType.DROPDOWN) {
+                DropdownSelectWidget dd = new DropdownSelectWidget(this);
+                dd.id("input_" + i);
+                dd.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
+                if (widget.dropdownOptionEntries() != null && !widget.dropdownOptionEntries().isEmpty()) {
+                    dd.optionEntries(widget.dropdownOptionEntries());
+                } else if (widget.dropdownEnumClass() != null) {
+                    dd.optionsEnum(widget.dropdownEnumClass());
+                } else {
+                    dd.options(new ArrayList<>(widget.dropdownOptions()));
+                }
+                dd.multiSelect(widget.dropdownMultiSelect());
+                dd.text(widget.hint());
+                dd.selectedValues(parseDropdownInitialValues(widget, currentValue));
+                dd.enabled(!widget.disabled());
+
+                int finalI = i;
+                dd.onSelectionChanged(values -> {
+                    String joined = joinDropdownValues(values, widget.dropdownMultiSelect());
+                    if (finalI < inputValues.size()) {
+                        inputValues.set(finalI, joined);
+                    } else {
+                        while (inputValues.size() <= finalI) inputValues.add("");
+                        inputValues.set(finalI, joined);
+                    }
+                    validateAndUpdateError(widget, finalI, joined, dd);
+                });
+
+                inputField.input(dd);
+                addWidget(dd);
             } else if (widget.type() == WidgetType.NUMERIC) {
                 double parsedVal = 0;
                 try {
@@ -552,16 +657,54 @@ public class InputFormScreen extends BaniraScreen {
             String val;
             if (i == overrideIndex && overrideValue != null) {
                 val = overrideValue;
-            } else if (field.input() != null) {
-                val = field.input().value();
-            } else if (field.slider() != null) {
-                val = field.slider().valueString();
             } else {
-                val = "";
+                val = inputFieldValueString(field);
+                if (val == null) {
+                    val = "";
+                }
             }
             r.value(args.getWidgets().get(i).name(), i, val);
         }
         return r;
+    }
+
+    private static List<String> parseDropdownInitialValues(Widget widget, String currentValue) {
+        if (StringUtils.isNullOrEmptyEx(currentValue)) {
+            return new ArrayList<>();
+        }
+        if (widget.dropdownMultiSelect()) {
+            List<String> list = new ArrayList<>();
+            for (String part : currentValue.split(",")) {
+                String t = part.trim();
+                if (StringUtils.isNotNullOrEmpty(t)) {
+                    list.add(t);
+                }
+            }
+            return list;
+        }
+        return Collections.singletonList(currentValue);
+    }
+
+    private static String joinDropdownValues(List<String> values, boolean multi) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+        return multi ? String.join(", ", values) : values.get(0);
+    }
+
+    @Nullable
+    private static String inputFieldValueString(InputField field) {
+        if (field.input() instanceof DropdownSelectWidget) {
+            DropdownSelectWidget dd = (DropdownSelectWidget) field.input();
+            return joinDropdownValues(dd.getSelectedValues(), dd.multiSelect());
+        }
+        if (field.input() != null) {
+            return field.input().value();
+        }
+        if (field.slider() != null) {
+            return field.slider().valueString();
+        }
+        return null;
     }
 
     /**
@@ -615,8 +758,7 @@ public class InputFormScreen extends BaniraScreen {
         Results results = new Results();
         for (int i = 0; i < this.args.getWidgets().size() && i < this.inputFields.size(); i++) {
             InputField field = inputFields.get(i);
-            String val = field.input() != null ? field.input().value()
-                    : (field.slider() != null ? field.slider().valueString() : null);
+            String val = inputFieldValueString(field);
             if (val != null) {
                 results.value(args.getWidgets().get(i).name(), i, val);
             }
@@ -669,8 +811,14 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         List<IWidget> deferred = null;
+        List<IWidget> deferredTooltipDepth = null;
         for (IWidget widget : widgets()) {
             if (widget.parent() != null || !widget.visible()) continue;
+            if (widget instanceof BaseWidget && ((BaseWidget) widget).renderDepth() == EnumRenderDepth.TOOLTIP) {
+                if (deferredTooltipDepth == null) deferredTooltipDepth = new ArrayList<>();
+                deferredTooltipDepth.add(widget);
+                continue;
+            }
             if (widget == scrollbarWidget || widget == submitButtonWidget || widget == cancelButtonWidget) {
                 if (deferred == null) deferred = new ArrayList<>();
                 deferred.add(widget);
@@ -689,6 +837,13 @@ public class InputFormScreen extends BaniraScreen {
                 if (widget == scrollbarWidget) {
                     scrollbarWidget.bounds(new ScreenCoordinate(contentLeft + inputW + SCROLLBAR_GAP, listTop, SCROLLBAR_WIDTH, listAreaHeight));
                 }
+                if (widget.enabled() && widget.needsUpdate()) widget.update();
+                widget.render(stack, partialTicks);
+            }
+        }
+
+        if (deferredTooltipDepth != null) {
+            for (IWidget widget : deferredTooltipDepth) {
                 if (widget.enabled() && widget.needsUpdate()) widget.update();
                 widget.render(stack, partialTicks);
             }
@@ -728,7 +883,8 @@ public class InputFormScreen extends BaniraScreen {
             InputField field = inputFields.get(i);
             if (field.input() != null) {
                 while (inputValues.size() <= i) inputValues.add("");
-                inputValues.set(i, field.input().value());
+                String v = inputFieldValueString(field);
+                inputValues.set(i, v != null ? v : "");
             }
         }
 
@@ -763,7 +919,13 @@ public class InputFormScreen extends BaniraScreen {
                 int index = args.getWidgets().indexOf(wi);
                 if (index >= 0 && index < inputFields.size()) {
                     InputField field = inputFields.get(index);
-                    return wi.allowEmpty() || (field.input() != null && StringUtils.isNotNullOrEmpty(field.input().value()));
+                    if (wi.allowEmpty()) {
+                        return true;
+                    }
+                    if (field.input() instanceof DropdownSelectWidget) {
+                        return !((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
+                    }
+                    return field.input() != null && StringUtils.isNotNullOrEmpty(field.input().value());
                 }
                 return true;
             });

@@ -1,13 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -842,7 +841,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         renderChildren(stack, partialTicks);
 
-        if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null) {
+        if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null
+                && !(screen instanceof BaniraScreen && ((BaniraScreen) screen).isAnyDropdownSelectOpen())) {
             int mx = (int) screen.inputState().mouseX();
             int my = (int) screen.inputState().mouseY();
             final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;

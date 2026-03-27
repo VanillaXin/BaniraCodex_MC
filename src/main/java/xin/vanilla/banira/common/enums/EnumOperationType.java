@@ -1,6 +1,9 @@
 package xin.vanilla.banira.common.enums;
 
-public enum EnumOperationType {
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+
+public enum EnumOperationType implements IEnumDescribable {
     ADD,
     SET,
     REMOVE,
@@ -31,5 +34,10 @@ public enum EnumOperationType {
      */
     public static EnumOperationType fromString(String str) {
         return valueOfEx(str);
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

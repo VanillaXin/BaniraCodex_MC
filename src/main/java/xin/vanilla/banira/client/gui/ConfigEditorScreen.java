@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -20,7 +20,6 @@ import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
@@ -590,14 +589,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         label.textVerticalAlign(EnumAlignment.CENTER);
 
         Object current = holder.get(desc.getPath());
-        List<String> options = Arrays.stream(desc.getEnumClass().getEnumConstants())
-                .map(e -> ((Enum<?>) e).name())
+        Class<? extends Enum<?>> enumClass = desc.getEnumClass();
+        List<String> options = Arrays.stream(enumClass.getEnumConstants())
+                .map(Enum::name)
                 .collect(Collectors.toList());
 
         DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
         dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
         dropdown.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        dropdown.options(options);
+        dropdown.optionsEnum(enumClass);
         dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
         dropdown.onSelectionChanged(v -> {
             if (!v.isEmpty()) {

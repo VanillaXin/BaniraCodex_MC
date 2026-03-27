@@ -1,12 +1,14 @@
 package xin.vanilla.banira.common.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 /**
  * GUI 主题夜间模式（与昼夜配色联动，由客户端配置控制）
  */
 @Getter
-public enum EnumGuiNightMode {
+public enum EnumGuiNightMode implements IEnumDescribable {
     OFF("关闭", "Off"),
     ALWAYS("总是夜晚", "Always night"),
     SCHEDULED("指定时间段", "Scheduled"),
@@ -46,5 +48,10 @@ public enum EnumGuiNightMode {
     public static EnumGuiNightMode valueOfDefault(Object obj) {
         EnumGuiNightMode v = valueOfEx(obj);
         return v == null ? OFF : v;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

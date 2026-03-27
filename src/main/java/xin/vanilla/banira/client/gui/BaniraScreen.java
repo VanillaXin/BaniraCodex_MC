@@ -193,6 +193,33 @@ public abstract class BaniraScreen extends Screen {
         if (render != null) deferredTooltipRenders.add(render);
     }
 
+    /**
+     * 是否存在已展开的下拉选择（含子树中的 {@link DropdownSelectWidget}）。
+     * 用于在下拉全屏浮层显示时抑制后方控件的 {@link TooltipWidget}，避免与下拉项提示叠显。
+     */
+    public boolean isAnyDropdownSelectOpen() {
+        for (IWidget w : this.widgets) {
+            if (anyDropdownSelectOpenInTree(w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean anyDropdownSelectOpenInTree(IWidget node) {
+        if (node instanceof DropdownSelectWidget && ((DropdownSelectWidget) node).dropdownOpen()) {
+            return true;
+        }
+        if (node instanceof BaseWidget) {
+            for (IWidget c : node.children()) {
+                if (anyDropdownSelectOpenInTree(c)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void flushDeferredTooltipRenders(MatrixStack stack) {
         for (Consumer<MatrixStack> r : deferredTooltipRenders) r.accept(stack);
         deferredTooltipRenders.clear();

@@ -1,12 +1,14 @@
 package xin.vanilla.banira.common.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
 /**
  * 季节枚举
  */
 @Getter
-public enum EnumSeason {
+public enum EnumSeason implements IEnumDescribable {
     SPRING("春", "Spring"),
     SUMMER("夏", "Summer"),
     AUTUMN("秋", "Autumn"),
@@ -41,5 +43,10 @@ public enum EnumSeason {
     public static EnumSeason valueOfDefault(Object obj) {
         EnumSeason value = valueOfEx(obj);
         return value == null ? AUTO : value;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(this);
     }
 }

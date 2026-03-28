@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * 进度信息
@@ -77,5 +78,19 @@ public class AdvancementData {
     public void writeToBuffer(FriendlyByteBuf buffer) {
         buffer.writeResourceLocation(id);
         displayInfo.serializeToNetwork(buffer);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AdvancementData)) return false;
+        AdvancementData that = (AdvancementData) o;
+        return Objects.equals(id(), that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        return id().hashCode();
     }
 }

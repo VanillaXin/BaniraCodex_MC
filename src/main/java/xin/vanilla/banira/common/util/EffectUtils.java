@@ -17,8 +17,9 @@ import xin.vanilla.banira.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -255,9 +256,7 @@ public final class EffectUtils {
         if (allEffectsCache.isEmpty()) {
             synchronized (EffectUtils.class) {
                 if (allEffectsCache.isEmpty()) {
-                    allEffectsCache = BuiltInRegistries.MOB_EFFECT.stream()
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList());
+                    allEffectsCache = buildUniqueEffectsList();
                     LOGGER.debug("Built effect list with {} effects", allEffectsCache.size());
                 }
             }
@@ -274,11 +273,32 @@ public final class EffectUtils {
         try {
             Player player = Minecraft.getInstance().player;
             if (player != null) {
-                player.getActiveEffectsMap().keySet().forEach(h -> result.add(h.value()));
+                Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
+                for (Holder<MobEffect> e : player.getActiveEffectsMap().keySet()) {
+                    if (e == null) continue;
+                    ResourceLocation rl = getEffectRegistry(e);
+                    if (rl == null) rl = UNKNOWN_EFFECT;
+                    byId.putIfAbsent(rl, e.value());
+                }
+                result.addAll(byId.values());
             }
         } catch (Throwable ignored) {
         }
         return result;
+    }
+
+    /**
+     * 按注册 id 去重
+     */
+    private static List<MobEffect> buildUniqueEffectsList() {
+        Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
+        for (MobEffect effect : BuiltInRegistries.MOB_EFFECT) {
+            if (effect == null) continue;
+            ResourceLocation rl = getEffectRegistry(effect);
+            if (rl == null) rl = UNKNOWN_EFFECT;
+            byId.putIfAbsent(rl, effect);
+        }
+        return new ArrayList<>(byId.values());
     }
 
     /**

@@ -14,9 +14,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -300,13 +298,14 @@ public final class BlockUtils {
         if (allBlocksCache.isEmpty()) {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
-                    List<Block> list = new ArrayList<>();
+                    Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
                     for (Block block : BuiltInRegistries.BLOCK) {
-                        if (block != null) {
-                            list.add(block);
-                        }
+                        if (block == null) continue;
+                        ResourceLocation rl = getBlockRegistry(block);
+                        if (rl == null) rl = UNKNOWN_BLOCK;
+                        byId.putIfAbsent(rl, block);
                     }
-                    allBlocksCache = Collections.unmodifiableList(list);
+                    allBlocksCache = List.copyOf(byId.values());
                 }
             }
         }

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.item.Items;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -100,10 +101,16 @@ public final class AdvancementUtils {
      */
     public static void advancementData(Collection<AdvancementData> advancementData) {
         if (CollectionUtils.isNotNullOrEmpty(advancementData)) {
+            Map<ResourceLocation, AdvancementData> byId = new LinkedHashMap<>();
+            for (AdvancementData d : advancementData) {
+                if (d != null) {
+                    byId.put(d.id(), d);
+                }
+            }
             AdvancementUtils.advancementData.clear();
-            AdvancementUtils.advancementData.addAll(advancementData);
+            AdvancementUtils.advancementData.addAll(byId.values());
             dataLoaded = true;
-            LOGGER.debug("Advancement data loaded: {} items", advancementData.size());
+            LOGGER.debug("Advancement data loaded: {} items", byId.size());
         }
     }
 

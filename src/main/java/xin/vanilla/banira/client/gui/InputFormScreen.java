@@ -13,16 +13,14 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
-import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
-import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.enums.EnumRenderDepth;
-import xin.vanilla.banira.client.enums.EnumStringInputRegex;
+import xin.vanilla.banira.client.enums.*;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -53,12 +51,22 @@ public class InputFormScreen extends BaniraScreen {
     private ScrollbarWidget scrollbarWidget;
 
     public InputFormScreen(Args args) {
-        super(args.getTitle() != null ? args.getTitle().toComponent() : BaniraComponent.get().literal("InputForm"));
+        super(resolveScreenTitle(args));
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
         this.previousScreen(args.getParentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.getParentScreen(), null, null);
+    }
+
+    private static Component resolveScreenTitle(Args args) {
+        if (args.getTitle() != null) {
+            return args.getTitle().toComponent();
+        }
+        if (args.getHeaderTitle() != null) {
+            return args.getHeaderTitle().toComponent();
+        }
+        return BaniraComponent.get().literal("InputForm");
     }
 
     @Data
@@ -303,7 +311,15 @@ public class InputFormScreen extends BaniraScreen {
     @Accessors(chain = true)
     public static final class Args {
         private Screen parentScreen;
+        /**
+         * 窗口标题（Screen），不参与表单内绘制；未设置且 {@link #headerTitle} 非空时用头部标题作为窗口标题。
+         */
         private Text title;
+        /**
+         * 表单面板顶部显示的标题；未设置时不预留头部区域。
+         */
+        @Nullable
+        private Text headerTitle;
         private List<Widget> widgets = new ArrayList<>();
         private Consumer<Results> callback;
         private Supplier<Boolean> invisible = () -> false;
@@ -342,6 +358,16 @@ public class InputFormScreen extends BaniraScreen {
     }
 
     private static final int TOP_MARGIN = 12;
+    /**
+     * 头部标题区：上内边距（尽量小）、行高、与下方字段的间距
+     */
+    private static final int HEADER_TOP_PAD = 1;
+    private static final int HEADER_TEXT_H = 9;
+    private static final int HEADER_BOTTOM_GAP = 4;
+    /**
+     * 有头部标题时面板顶边与标题区的间距（小于 {@link #FORM_PANEL_PAD}，避免标题离面板顶过远）
+     */
+    private static final int HEADER_PANEL_TOP_INSET = 4;
     private static final int BOTTOM_MARGIN = 12;
     private static final int LIST_BTN_GAP = 12;
     private static final int TITLE_TOP_MARGIN = 2;
@@ -391,6 +417,10 @@ public class InputFormScreen extends BaniraScreen {
      * 按钮区域 Y
      */
     private int btnY;
+    /**
+     * 表单面板内容区顶部 Y（含头部标题时位于标题区域顶端）
+     */
+    private int formHeaderAreaTop;
 
     @Override
     protected void initWidgets() {
@@ -398,7 +428,10 @@ public class InputFormScreen extends BaniraScreen {
         int w = width;
         int h = height;
         int listHeight = args.getWidgets().size() * ITEM_HEIGHT;
-        int contentHeight = TOP_MARGIN + listHeight + LIST_BTN_GAP + BTN_H + BOTTOM_MARGIN;
+        int headerBlock = args.getHeaderTitle() != null
+                ? HEADER_TOP_PAD + HEADER_TEXT_H + HEADER_BOTTOM_GAP
+                : 0;
+        int contentHeight = TOP_MARGIN + headerBlock + listHeight + LIST_BTN_GAP + BTN_H + BOTTOM_MARGIN;
 
         contentTotalWidth = Math.min(w - TOP_MARGIN * 2, CONTENT_MAX_WIDTH + SCROLLBAR_WIDTH + SCROLLBAR_GAP);
         inputW = contentTotalWidth - SCROLLBAR_WIDTH - SCROLLBAR_GAP;
@@ -407,14 +440,15 @@ public class InputFormScreen extends BaniraScreen {
         scrollMode = contentHeight > h;
         if (scrollMode) {
             btnY = h - BOTTOM_MARGIN - BTN_H;
-            listTop = TOP_MARGIN;
+            listTop = TOP_MARGIN + headerBlock;
             listAreaHeight = Math.max(0, btnY - listTop - LIST_BTN_GAP);
         } else {
             int contentTop = (h - contentHeight) / 2 + TOP_MARGIN;
-            listTop = contentTop;
-            btnY = contentTop + listHeight + LIST_BTN_GAP;
+            listTop = contentTop + headerBlock;
+            btnY = contentTop + headerBlock + listHeight + LIST_BTN_GAP;
             listAreaHeight = listHeight;
         }
+        formHeaderAreaTop = listTop - headerBlock;
 
         submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
@@ -807,7 +841,8 @@ public class InputFormScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
         if (scrollMode) {
-            AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight);
+            AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH,
+                    Math.max(1, listAreaHeight));
         }
 
         List<IWidget> deferred = null;
@@ -854,7 +889,8 @@ public class InputFormScreen extends BaniraScreen {
 
     private void renderFormPanel(MatrixStack stack) {
         int panelLeft = contentLeft - FORM_PANEL_PAD;
-        int panelTop = listTop - FORM_PANEL_PAD;
+        int panelTopInset = args.getHeaderTitle() != null ? HEADER_PANEL_TOP_INSET : FORM_PANEL_PAD;
+        int panelTop = formHeaderAreaTop - panelTopInset;
         int panelW = contentTotalWidth + FORM_PANEL_PAD * 2;
         int panelH = btnY + BTN_H + FORM_PANEL_PAD - panelTop;
         if (panelW <= 0 || panelH <= 0) {
@@ -876,6 +912,20 @@ public class InputFormScreen extends BaniraScreen {
 
         renderBackground(stack);
         renderFormPanel(stack);
+
+        if (args.getHeaderTitle() != null) {
+            Text headerDraw = args.getHeaderTitle().clone().stack(stack);
+            if (headerDraw.colorEmpty()) {
+                headerDraw.color(getEffectiveTheme().textPrimary());
+            }
+            LabelWidget.drawLimitedText(FontDrawArgs.of(headerDraw)
+                    .x(contentLeft)
+                    .y(formHeaderAreaTop + HEADER_TOP_PAD)
+                    .maxWidth(inputW)
+                    .wrap(false)
+                    .align(EnumAlignment.CENTER)
+                    .position(EnumEllipsisPosition.END));
+        }
 
         renderWidgets(stack, partialTicks);
 
@@ -948,13 +998,23 @@ public class InputFormScreen extends BaniraScreen {
 
     @Override
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
-        if (scrollbarWidget != null && scrollbarWidget.maxValue() > 0) {
-            double currentValue = scrollbarWidget.value();
-            double targetValue = Math.max(0, Math.min(scrollbarWidget.maxValue(), currentValue - eventArgs.delta() * 20));
-            scrollbarWidget.setValue(targetValue);
-            updateInputFieldsPosition();
-            eventArgs.consumed(true);
+        if (scrollbarWidget == null || scrollbarWidget.maxValue() <= 0) {
+            return;
         }
+        if (scrollMode) {
+            double mx = inputState.mouseX();
+            double my = inputState.mouseY();
+            boolean inList = mx >= contentLeft && mx < contentLeft + inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH
+                    && my >= listTop && my < listTop + listAreaHeight;
+            if (!inList) {
+                return;
+            }
+        }
+        double currentValue = scrollbarWidget.value();
+        double targetValue = Math.max(0, Math.min(scrollbarWidget.maxValue(), currentValue - eventArgs.delta() * 20));
+        scrollbarWidget.setValue(targetValue);
+        updateInputFieldsPosition();
+        eventArgs.consumed(true);
     }
 
     @Override

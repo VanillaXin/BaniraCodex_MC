@@ -696,41 +696,43 @@ public class DropdownSelectWidget extends InputWidget {
 
         int scissorX = (int) (absoluteX() + contentLeft - x());
         int scissorY = (int) (absoluteY() + drawY - y() + 1);
-        AbstractGuiUtils.enableScissor(scissorX, scissorY, contentWidth, drawHeight - 2);
+        // 使用 push/pop，避免 disableScissor 关掉外层界面的全局裁剪
+        AbstractGuiUtils.pushScissor(scissorX, scissorY, contentWidth, drawHeight - 2);
 
         double mx = screen.inputState().mouseX();
         double my = screen.inputState().mouseY();
 
-        for (int i = 0; i < selectedValues.size(); i++) {
-            String item = selectedValues.get(i);
-            int textW = font.width(item);
-            int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
+        try {
+            for (String item : selectedValues) {
+                int textW = font.width(item);
+                int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
 
-            if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
+                if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
+                    currentX += tagW + TAG_GAP;
+                    continue;
+                }
+
+                int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
+                int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
+                boolean closeHovered = mx >= closeX && mx < closeX + TAG_CLOSE_SIZE && my >= closeY && my < closeY + TAG_CLOSE_SIZE;
+
+                AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
+                AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
+                font.draw(stack, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
+
+                int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
+                AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);
+                float r = 2f;
+                int cx = closeX + TAG_CLOSE_SIZE / 2;
+                int cy = closeY + TAG_CLOSE_SIZE / 2;
+                AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
+                AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
+
                 currentX += tagW + TAG_GAP;
-                continue;
             }
-
-            int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
-            int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
-            boolean closeHovered = mx >= closeX && mx < closeX + TAG_CLOSE_SIZE && my >= closeY && my < closeY + TAG_CLOSE_SIZE;
-
-            AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
-            AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-            font.draw(stack, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
-
-            int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
-            AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);
-            float r = 2f;
-            int cx = closeX + TAG_CLOSE_SIZE / 2;
-            int cy = closeY + TAG_CLOSE_SIZE / 2;
-            AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
-            AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
-
-            currentX += tagW + TAG_GAP;
+        } finally {
+            AbstractGuiUtils.popScissor();
         }
-
-        AbstractGuiUtils.disableScissor();
 
         int centerY = drawY + drawHeight / 2;
         int dotColor = textColor;
@@ -898,7 +900,18 @@ public class DropdownSelectWidget extends InputWidget {
 
     @Override
     public boolean handleMouseScroll(MouseScrollEvent event) {
-        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && event != null && isMouseInside(event.mouseX(), event.mouseY())) {
+        if (event == null) {
+            return false;
+        }
+        double mx = event.mouseX();
+        double my = event.mouseY();
+        if (previewExpanded && previewOverlayWidget != null) {
+            ScreenCoordinate pb = getPreviewBounds();
+            if (pb != null && mx >= pb.x() && mx < pb.x() + pb.width() && my >= pb.y() && my < pb.y() + pb.height()) {
+                return previewOverlayWidget.handleMouseScroll(event);
+            }
+        }
+        if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
             FontRenderer font = Minecraft.getInstance().font;
             int totalWidth = 0;
             for (String item : selectedValues) {
@@ -916,6 +929,9 @@ public class DropdownSelectWidget extends InputWidget {
                 }
                 return true;
             }
+        }
+        if (previewExpanded) {
+            return false;
         }
         return super.handleMouseScroll(event);
     }

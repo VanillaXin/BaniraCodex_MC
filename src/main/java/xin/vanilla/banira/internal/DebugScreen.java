@@ -403,6 +403,7 @@ public class DebugScreen extends BaniraScreen {
             case "opt_input":
                 InputFormScreen.Args screenArgs = new InputFormScreen.Args()
                         .setParentScreen(this)
+                        .setHeaderTitle(Text.literal("输入框测试"))
                         .addWidget(new InputFormScreen.Widget().name("input").title(Text.literal("enter_something")))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("input")

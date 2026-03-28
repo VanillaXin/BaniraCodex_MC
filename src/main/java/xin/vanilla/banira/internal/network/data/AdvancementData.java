@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.network.data;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.Advancement;
@@ -10,10 +9,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * 进度信息
@@ -78,5 +78,19 @@ public class AdvancementData {
     public void writeToBuffer(PacketBuffer buffer) {
         buffer.writeResourceLocation(id);
         displayInfo.serializeToNetwork(buffer);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AdvancementData)) return false;
+        AdvancementData that = (AdvancementData) o;
+        return Objects.equals(id(), that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        return id().hashCode();
     }
 }

@@ -15,6 +15,7 @@ import xin.vanilla.banira.Identifier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -110,5 +111,19 @@ public class AdvancementData {
         return new DisplayInfo(icon,
                 d.getTitle(), d.getDescription(), d.getBackground(), d.getType(),
                 d.shouldShowToast(), d.shouldAnnounceChat(), d.isHidden());
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AdvancementData)) return false;
+        AdvancementData that = (AdvancementData) o;
+        return Objects.equals(id(), that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        return id().hashCode();
     }
 }

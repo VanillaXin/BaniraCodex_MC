@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -98,10 +99,16 @@ public final class AdvancementUtils {
      */
     public static void advancementData(Collection<AdvancementData> advancementData) {
         if (CollectionUtils.isNotNullOrEmpty(advancementData)) {
+            Map<ResourceLocation, AdvancementData> byId = new LinkedHashMap<>();
+            for (AdvancementData d : advancementData) {
+                if (d != null) {
+                    byId.put(d.id(), d);
+                }
+            }
             AdvancementUtils.advancementData.clear();
-            AdvancementUtils.advancementData.addAll(advancementData);
+            AdvancementUtils.advancementData.addAll(byId.values());
             dataLoaded = true;
-            LOGGER.debug("Advancement data loaded: {} items", advancementData.size());
+            LOGGER.debug("Advancement data loaded: {} items", byId.size());
         }
     }
 

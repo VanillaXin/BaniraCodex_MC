@@ -36,7 +36,7 @@ public final class VirtualOpCommand {
 
     private static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
         CommandSource source = context.getSource();
-        EnumOperationType type = EnumOperationType.fromString(StringArgumentType.getString(context, "operation"));
+        EnumOperationType type = EnumOperationType.valueOfEx(StringArgumentType.getString(context, "operation"));
         if (type == null) {
             String lang = CommandUtils.getLanguage(source);
             source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));

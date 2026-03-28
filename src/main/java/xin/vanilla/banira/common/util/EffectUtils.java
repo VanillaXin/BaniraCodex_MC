@@ -15,8 +15,9 @@ import xin.vanilla.banira.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -228,9 +229,7 @@ public final class EffectUtils {
         if (allEffectsCache.isEmpty()) {
             synchronized (EffectUtils.class) {
                 if (allEffectsCache.isEmpty()) {
-                    allEffectsCache = ForgeRegistries.POTIONS.getValues().stream()
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList());
+                    allEffectsCache = buildUniqueEffectsList();
                     LOGGER.debug("Built effect list with {} effects", allEffectsCache.size());
                 }
             }
@@ -247,11 +246,32 @@ public final class EffectUtils {
         try {
             PlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
-                result.addAll(player.getActiveEffectsMap().keySet());
+                Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
+                for (Effect e : player.getActiveEffectsMap().keySet()) {
+                    if (e == null) continue;
+                    ResourceLocation rl = getEffectRegistry(e);
+                    if (rl == null) rl = UNKNOWN_EFFECT;
+                    byId.putIfAbsent(rl, e);
+                }
+                result.addAll(byId.values());
             }
         } catch (Throwable ignored) {
         }
         return result;
+    }
+
+    /**
+     * 按注册 id 去重
+     */
+    private static List<Effect> buildUniqueEffectsList() {
+        Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
+        for (Effect effect : ForgeRegistries.POTIONS) {
+            if (effect == null) continue;
+            ResourceLocation rl = getEffectRegistry(effect);
+            if (rl == null) rl = UNKNOWN_EFFECT;
+            byId.putIfAbsent(rl, effect);
+        }
+        return new ArrayList<>(byId.values());
     }
 
     /**

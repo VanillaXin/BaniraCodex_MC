@@ -6,11 +6,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.command.arguments.BlockStateParser;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -118,6 +120,32 @@ public final class BlockUtils {
     /**
      * 获取方块显示名称字符串
      *
+     * @param state 方块状态
+     */
+    public static Component getBlockHoverName(BlockState state) {
+        if (state == null) {
+            return BaniraComponent.get().empty();
+        }
+        String key = getBlockNameKey(state);
+        return BaniraComponent.get().object(new TranslationTextComponent(key));
+    }
+
+    /**
+     * 获取方块显示名称字符串
+     *
+     * @param block 方块
+     */
+    public static Component getBlockHoverName(Block block) {
+        if (block == null) {
+            return BaniraComponent.get().empty();
+        }
+        String key = getBlockNameKey(block);
+        return BaniraComponent.get().object(new TranslationTextComponent(key));
+    }
+
+    /**
+     * 获取方块显示名称字符串
+     *
      * @param block 方块
      */
     public static String getBlockHoverNameString(Block block) {
@@ -125,11 +153,7 @@ public final class BlockUtils {
             return "";
         }
         String key = getBlockNameKey(block);
-        if (EnvironmentUtils.isClient()) {
-            return BaniraComponent.get().transClient(key).toString();
-        } else {
-            return BaniraComponent.get().trans(key).toString();
-        }
+        return new TranslationTextComponent(key).toString();
     }
 
     /**

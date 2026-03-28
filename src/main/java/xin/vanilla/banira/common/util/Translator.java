@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.resources.IResourceManager;
+import net.minecraft.resources.IResourcePack;
 import net.minecraft.resources.ResourcePackType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.ModContainer;
@@ -22,7 +23,9 @@ import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -54,21 +57,24 @@ public class Translator implements ITranslator {
      */
     private static final Map<String, ITranslator> CACHE = new ConcurrentHashMap<>();
 
-    private final Map<String, JsonObject> languages = new ConcurrentHashMap<>();
-    private final String modId;
     /**
-     * {@code @Mod} 主类：用于 {@link Class#getResourceAsStream(String)}（须与 {@code assets/&lt;modId&gt;/lang} 同 JAR），且 modId 来自该类上的 {@link Mod#value()}。
+     * 所有语言配置
      */
-    private final Class<?> modMainClass;
+    private static final Map<String, JsonObject> LANGUAGES = new ConcurrentHashMap<>();
+
+    /**
+     * 当前MOD的语言列表
+     */
+    private final Set<String> languages = new HashSet<>();
+
+    private final String modId;
 
     /**
      * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this.modMainClass = modMainClass;
         this.modId = modIdFromModMainClass(modMainClass);
-        loadLanguage(DEFAULT_LANGUAGE);
-        getI18nFiles().forEach(this::loadLanguage);
+        getI18nFiles();
     }
 
     // region mod 主类与 modId（@Mod）
@@ -144,9 +150,42 @@ public class Translator implements ITranslator {
 
     @Override
     public String getTranslation(@NonNull String key, @NonNull String languageCode) {
-        languageCode = languageCode.toLowerCase(Locale.ROOT);
-        JsonObject lang = languages.getOrDefault(languageCode, languages.get(DEFAULT_LANGUAGE));
-        return JsonUtils.getString(lang, key.replaceAll("\\.", "\\\\."), key);
+        String path = key.replaceAll("\\.", "\\\\.");
+        String norm = normalizeLanguageCode(languageCode);
+        if (StringUtils.isNullOrEmptyEx(norm)) {
+            norm = DEFAULT_LANGUAGE;
+        }
+        String result = lookupTranslation(path, norm);
+        if (result != null) {
+            return result;
+        }
+        Map<String, String> langKeys = new HashMap<>();
+        for (String k : LANGUAGES.keySet()) {
+            langKeys.put(normalizeLanguageCode(k), "");
+        }
+        for (String code : orderedFallbackCodesForPrimary(primaryLanguagePart(norm), norm, langKeys)) {
+            result = lookupTranslation(path, code);
+            if (result != null) {
+                return result;
+            }
+        }
+        result = lookupTranslation(path, DEFAULT_LANGUAGE);
+        if (result != null) {
+            return result;
+        }
+        return key;
+    }
+
+    @Nullable
+    private static String lookupTranslation(@NonNull String path, @Nullable String normalizedLangCode) {
+        if (StringUtils.isNullOrEmptyEx(normalizedLangCode)) {
+            return null;
+        }
+        JsonObject lang = LANGUAGES.get(normalizedLangCode);
+        if (lang == null) {
+            return null;
+        }
+        return JsonUtils.getString(lang, path, null);
     }
 
     @Override
@@ -163,7 +202,7 @@ public class Translator implements ITranslator {
     public boolean hasTranslation(@NonNull EnumI18nType type, @NonNull String key, @NonNull String languageCode) {
         String fullKey = getKey(type, key);
         languageCode = languageCode.toLowerCase(Locale.ROOT);
-        JsonObject lang = languages.getOrDefault(languageCode, languages.get(DEFAULT_LANGUAGE));
+        JsonObject lang = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(DEFAULT_LANGUAGE));
         if (lang == null) {
             return false;
         }
@@ -188,33 +227,23 @@ public class Translator implements ITranslator {
 
     @Override
     public void loadLanguage(@NonNull String languageCode) {
-        languageCode = languageCode.toLowerCase(Locale.ROOT);
-        if (!languages.containsKey(languageCode)) {
-            try {
-                String path = String.format(getLangFilePath(), languageCode);
-                try (InputStreamReader reader = new InputStreamReader(
-                        Objects.requireNonNull(modMainClass.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
-                    JsonObject json = JsonUtils.parseObject(reader);
-                    languages.put(languageCode, json);
-                }
-            } catch (Exception e) {
-                LOGGER.error("Failed to load language file: {}", languageCode, e);
-            }
-        }
     }
 
     /**
      * 获取 I18n 文件列表
      */
     public List<String> getI18nFiles() {
-        return loadFromResourceManager();
+        if (languages.isEmpty()) {
+            loadFromResourceManager();
+        }
+        return new ArrayList<>(languages);
     }
 
-    private List<String> loadFromResourceManager() {
+    private void loadFromResourceManager() {
         try {
             IResourceManager manager = BaniraCodex.serverInstance().key().getDataPackRegistries().getResourceManager();
             Collection<ResourceLocation> resources = loadFromResourcePacks(manager);
-            return resources.stream()
+            languages.addAll(resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
                     .map(loc -> {
                         String path = loc.getPath();
@@ -222,11 +251,10 @@ public class Translator implements ITranslator {
                         String name = slash >= 0 ? path.substring(slash + 1) : path;
                         return name.replace(".json", "");
                     })
-                    .distinct()
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet()));
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
-            return Collections.emptyList();
+            languages.add(DEFAULT_LANGUAGE);
         }
     }
 
@@ -240,6 +268,8 @@ public class Translator implements ITranslator {
                                 ResourcePackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
                         result.addAll(locs);
                     }
+                    loadAllLanguages(pack, ResourcePackType.CLIENT_RESOURCES);
+                    loadAllLanguages(pack, ResourcePackType.SERVER_DATA);
                 } catch (Exception e) {
                     LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
                 }
@@ -248,6 +278,48 @@ public class Translator implements ITranslator {
             LOGGER.debug("Failed to list lang from resource packs:", e);
         }
         return result;
+    }
+
+    private static void loadAllLanguages(IResourcePack pack, ResourcePackType packType) throws IOException {
+        for (String namespace : pack.getNamespaces(packType)) {
+            for (ResourceLocation lang : pack.getResources(
+                    packType, namespace, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json")
+            )) {
+                try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, lang), StandardCharsets.UTF_8)) {
+                    String path = lang.getPath();
+                    int slash = path.lastIndexOf('/');
+                    String name = slash >= 0 ? path.substring(slash + 1) : path;
+                    String languageCode = name.replace(".json", "");
+
+                    JsonObject json = JsonUtils.parseObject(reader);
+                    JsonObject object = LANGUAGES.get(languageCode);
+                    if (object == null) {
+                        LANGUAGES.put(languageCode, json);
+                    } else {
+                        JsonUtils.mergeInPlace(object, json);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void loadModLanguage(@Nonnull Class<?> clazz, @Nonnull String modId, @NonNull String languageCode) {
+        try {
+            String path = String.format("/assets/%s/lang/%s.json", modId, languageCode);
+            try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(clazz.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
+
+                JsonObject json = JsonUtils.parseObject(reader);
+                JsonObject object = LANGUAGES.get(languageCode);
+                if (object == null) {
+                    LANGUAGES.put(languageCode, json);
+                } else {
+                    JsonUtils.mergeInPlace(object, json);
+                }
+            }
+            LOGGER.debug("Loaded language file for mod {}: {}", modId, path);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to load language file for mod {}: {}", modId, e.getMessage());
+        }
     }
 
     private String getLangPath() {

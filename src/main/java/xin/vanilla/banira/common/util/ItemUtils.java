@@ -20,7 +20,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.ModList;
@@ -160,6 +159,16 @@ public final class ItemUtils {
     }
 
     /**
+     * 获取物品显示名称
+     *
+     * @param itemStack 物品
+     */
+    public static Component getItemHoverName(ItemStack itemStack) {
+        if (isItemNull(itemStack)) return BaniraComponent.get().empty();
+        return BaniraComponent.get().object(itemStack.getHoverName());
+    }
+
+    /**
      * 获取物品显示名称字符串
      *
      * @param itemStack 物品
@@ -167,14 +176,6 @@ public final class ItemUtils {
     public static String getItemHoverNameString(ItemStack itemStack) {
         if (isItemNull(itemStack)) return "";
         ITextComponent hoverName = itemStack.getHoverName();
-        if (hoverName instanceof TranslationTextComponent) {
-            String key = getItemNameKey(itemStack);
-            if (EnvironmentUtils.isClient()) {
-                return BaniraComponent.get().transClient(key).toString();
-            } else {
-                return BaniraComponent.get().trans(key).toString();
-            }
-        }
         return hoverName.getString();
     }
 

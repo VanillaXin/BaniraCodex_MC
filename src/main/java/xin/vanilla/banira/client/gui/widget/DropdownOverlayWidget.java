@@ -23,7 +23,6 @@ import java.util.List;
 class DropdownOverlayWidget extends BaseWidget {
 
     private static final int ITEM_HEIGHT = 20;
-    private static final int ICON_DRAW_SIZE = 16;
     private static final int PAD = 4;
     private static final int SCROLLBAR_WIDTH = 6;
     private static final int SCROLLBAR_MARGIN = 2;
@@ -122,17 +121,19 @@ class DropdownOverlayWidget extends BaseWidget {
                 int textX = (int) (db.x() + PAD + leftOffset + iconCol);
                 int textMaxWidth = contentWidth - PAD * 2 - 4 - leftOffset - iconCol;
                 if (optEntry.hasTexture()) {
-                    Texture t = optEntry.texture();
-                    if (t != null) {
-                        int iconX = (int) (db.x() + PAD + leftOffset + 2);
-                        int iconY = itemY + (ITEM_HEIGHT - ICON_DRAW_SIZE) / 2;
-                        AbstractGuiUtils.blitBlend(s, t.location(), iconX, iconY, ICON_DRAW_SIZE, ICON_DRAW_SIZE,
-                                t.u0(), t.v0(), t.uWidth(), t.vHeight(), t.uvWidth(), t.uvHeight());
+                    for (Texture t : optEntry.texture()) {
+                        if (t != null) {
+                            int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
+                            int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
+                            int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
+                            ImageWidget.blitBlend(s, t, iconX, iconY, sz, sz);
+                        }
                     }
                 } else if (!optEntry.icon().isEmpty()) {
-                    int iconX = (int) (db.x() + PAD + leftOffset + 2);
-                    int iconY = itemY + (ITEM_HEIGHT - ICON_DRAW_SIZE) / 2;
-                    ItemWidget.renderGuiItemFlatBlit(s, Minecraft.getInstance(), optEntry.icon(), iconX, iconY, ICON_DRAW_SIZE);
+                    int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
+                    int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
+                    int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
+                    ItemWidget.renderGuiItemFlatBlit(s, Minecraft.getInstance(), optEntry.icon(), iconX, iconY, sz);
                 }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;

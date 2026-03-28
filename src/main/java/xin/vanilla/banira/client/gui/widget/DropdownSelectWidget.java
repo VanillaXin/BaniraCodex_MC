@@ -70,9 +70,22 @@ public class DropdownSelectWidget extends InputWidget {
     private static final int TAG_MIN_HEIGHT = 16;
     private static final int TAG_RIGHT_MARGIN = 4;
     /**
-     * 下拉项左侧图标列宽度（含与文字的间距），与 {@link DropdownOverlayWidget} 中一致
+     * 下拉项左侧图标区
      */
-    public static final int DROPDOWN_ICON_COLUMN = 18;
+    public static final int DROPDOWN_ICON_INSET = 2;
+    /**
+     * 下拉项左侧图标绘制边长
+     */
+    public static final int DROPDOWN_ICON_DRAW_SIZE = 16;
+    /**
+     * 图标右缘与文字左缘之间的间距
+     */
+    public static final int DROPDOWN_ICON_TEXT_GAP = 4;
+    /**
+     * 下拉项左侧图标列总宽度（含内边距与文字间距）
+     */
+    public static final int DROPDOWN_ICON_COLUMN =
+            DROPDOWN_ICON_INSET + DROPDOWN_ICON_DRAW_SIZE + DROPDOWN_ICON_TEXT_GAP;
 
     private List<DropdownOption> optionEntries = new ArrayList<>();
 
@@ -291,7 +304,7 @@ public class DropdownSelectWidget extends InputWidget {
             if (e instanceof IEnumDescribable) {
                 tooltip = ((IEnumDescribable) e).enumDescription();
             }
-            list.add(new DropdownOption(e.name(), icon, tex, tooltip));
+            list.add(new DropdownOption(e.name(), icon, new Texture[]{tex}, tooltip));
         }
         this.optionEntries = list;
         return this;

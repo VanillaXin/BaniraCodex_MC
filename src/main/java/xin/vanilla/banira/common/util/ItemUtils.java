@@ -474,11 +474,34 @@ public final class ItemUtils {
                 }
             }
 
+            items = dedupeIdenticalItemStacks(items);
             LOGGER.info("Built item list with {} items", items.size());
         } catch (Exception e) {
             LOGGER.error("Failed to build all items list", e);
         }
         return items;
+    }
+
+    /**
+     * 去除序列化键完全相同的物品堆
+     */
+    private static List<ItemStack> dedupeIdenticalItemStacks(List<ItemStack> items) {
+        Map<String, ItemStack> byKey = new LinkedHashMap<>();
+        for (ItemStack stack : items) {
+            if (stack == null) continue;
+            if (stack.getItem() == Items.AIR) {
+                byKey.putIfAbsent("__air__", stack);
+                continue;
+            }
+            if (stack.isEmpty()) continue;
+            String key = serializeItemStack(stack);
+            if (StringUtils.isNullOrEmptyEx(key)) {
+                byKey.putIfAbsent("__bad_" + System.identityHashCode(stack), stack);
+            } else {
+                byKey.putIfAbsent(key, stack);
+            }
+        }
+        return new ArrayList<>(byKey.values());
     }
 
     /**
@@ -662,7 +685,7 @@ public final class ItemUtils {
                 .filter(StringUtils::isNotNullOrEmpty)
                 .map(String::trim)
                 .filter(k -> !k.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
 
         if (validKeywords.isEmpty()) {
             return getAllItems();

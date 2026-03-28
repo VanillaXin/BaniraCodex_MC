@@ -12,10 +12,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
 import xin.vanilla.banira.client.gui.component.Notification;
@@ -161,6 +158,19 @@ public class DebugScreen extends BaniraScreen {
         quickActionMinusBtn.text("快捷入口项-1");
         quickActionMinusBtn.onClick(b -> debugQuickActionRemove());
         addWidget(quickActionMinusBtn);
+
+        Texture[] skin = PlayerUtils.getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerUUID());
+        if (skin != null && skin.length == 2) {
+            ImageWidget face = new ImageWidget(this);
+            face.texture(skin[0]);
+            face.bounds(new ScreenCoordinate((super.width - 16) / 2f, (super.height - 16) / 2f, 16, 16));
+            addWidget(face);
+
+            ImageWidget hat = new ImageWidget(this);
+            hat.texture(skin[1]);
+            hat.bounds(new ScreenCoordinate((super.width - 16) / 2f, (super.height - 16) / 2f, 16, 16));
+            addWidget(hat);
+        }
 
         addPresetStyleButtons();
     }

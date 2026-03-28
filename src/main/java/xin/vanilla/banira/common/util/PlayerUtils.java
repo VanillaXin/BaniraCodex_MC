@@ -8,11 +8,18 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -82,6 +89,14 @@ public final class PlayerUtils {
     public static UUID getRandomPlayerUUID() {
         PlayerEntity randomPlayer = getRandomPlayer();
         return randomPlayer != null ? randomPlayer.getUUID() : null;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static UUID getPlayerUUID() {
+        if (net.minecraft.client.Minecraft.getInstance().player == null) {
+            return null;
+        }
+        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
     }
 
     public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
@@ -177,6 +192,72 @@ public final class PlayerUtils {
         } catch (Throwable ignored) {
         }
         return entity;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static ResourceLocation getPlayerSkin(UUID uuid) {
+        try {
+            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
+                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
+                        .filter(info -> info.getProfile().getId().equals(uuid))
+                        .findFirst().orElse(null).getSkinLocation();
+            }
+        } catch (Throwable ignored) {
+        }
+        return Identifier.id().create("minecraft", "textures/entity/steve.png");
+    }
+
+    /**
+     * 玩家皮肤「头部正面」用于 GUI 绘制的两层纹理：{@code [0]} 底层脸，{@code [1]} 头盔/外层（含透明像素时需叠在底层上）
+     *
+     * @param skin {@link #getPlayerSkin(UUID)} 等资源定位，为 null 时返回 null
+     * @return 长度为 2 的数组，无法解析尺寸时退回 64×64 假定布局
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable ResourceLocation skin) {
+        if (skin == null) {
+            return null;
+        }
+        KeyValue<Integer, Integer> wh = TextureUtils.resolveTextureSizeForDraw(skin);
+        int tw = wh.key();
+        int th = wh.val();
+        if (tw <= 0 || th <= 0) {
+            tw = 64;
+            th = 64;
+        }
+        int uFace = skinTemplateU(8, tw);
+        int vFace = skinTemplateV(8, th);
+        int uHat = skinTemplateU(40, tw);
+        int side = skinTemplateSize(8, tw);
+        Texture base = Texture.of(skin, tw, th).u0(uFace).v0(vFace).uWidth(side).vHeight(side);
+        Texture overlay = Texture.of(skin, tw, th).u0(uHat).v0(vFace).uWidth(side).vHeight(side);
+        return new Texture[]{base, overlay};
+    }
+
+    /**
+     * @see #getPlayerSkinHeadFaceTextures(ResourceLocation)
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable UUID uuid) {
+        return getPlayerSkinHeadFaceTextures(getPlayerSkin(uuid));
+    }
+
+    private static int skinTemplateU(int uStd, int texW) {
+        return Math.round(uStd * (texW / 64f));
+    }
+
+    private static int skinTemplateV(int vStd, int texH) {
+        if (texH < 64) {
+            return vStd;
+        }
+        return Math.round(vStd * (texH / 64f));
+    }
+
+    private static int skinTemplateSize(int sizeStd, int texW) {
+        return Math.round(sizeStd * (texW / 64f));
     }
 
     // endregion 玩家信息

@@ -5,10 +5,7 @@ import lombok.NonNull;
 
 import java.io.Reader;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -132,6 +129,53 @@ public final class JsonUtils {
         }
 
         return parts;
+    }
+
+
+    private static JsonElement mergeInternal(JsonElement json, JsonElement other, boolean copy) {
+        if (json == null || json.isJsonNull()) {
+            return copy ? deepCopy(other) : other;
+        }
+        if (other == null || other.isJsonNull()) {
+            return copy ? deepCopy(json) : json;
+        }
+
+        // Object
+        if (json.isJsonObject() && other.isJsonObject()) {
+            JsonObject target = copy ? deepCopy(json.getAsJsonObject()).getAsJsonObject() : json.getAsJsonObject();
+            JsonObject source = other.getAsJsonObject();
+
+            for (Map.Entry<String, JsonElement> entry : source.entrySet()) {
+                String key = entry.getKey();
+                JsonElement value = entry.getValue();
+
+                if (target.has(key)) {
+                    JsonElement merged = mergeInternal(target.get(key), value, copy);
+                    target.add(key, merged);
+                } else {
+                    target.add(key, copy ? deepCopy(value) : value);
+                }
+            }
+            return target;
+        }
+
+        // Array：追加
+        if (json.isJsonArray() && other.isJsonArray()) {
+            JsonArray target = copy ? deepCopy(json.getAsJsonArray()).getAsJsonArray() : json.getAsJsonArray();
+            JsonArray source = other.getAsJsonArray();
+
+            for (JsonElement el : source) {
+                target.add(copy ? deepCopy(el) : el);
+            }
+            return target;
+        }
+
+        // Primitive 或类型冲突 → 覆盖
+        return copy ? deepCopy(other) : other;
+    }
+
+    private static JsonElement deepCopy(JsonElement element) {
+        return element == null ? null : parseElement(element.toString());
     }
 
 
@@ -699,6 +743,20 @@ public final class JsonUtils {
         } else {
             throw new IllegalArgumentException("Unsupported type: " + value.getClass());
         }
+    }
+
+    /**
+     * 直接合并到 json
+     */
+    public static JsonElement mergeInPlace(@NonNull JsonElement json, @NonNull JsonElement other) {
+        return mergeInternal(json, other, false);
+    }
+
+    /**
+     * 返回一个新的合并结果
+     */
+    public static JsonElement mergeCopy(@NonNull JsonElement json, @NonNull JsonElement other) {
+        return mergeInternal(json, other, true);
     }
 
     public static boolean isNullOrEmpty(JsonElement element) {

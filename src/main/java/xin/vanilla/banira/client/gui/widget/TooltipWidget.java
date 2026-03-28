@@ -404,9 +404,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 Texture tex = args.texture();
-                AbstractGuiUtils.blit(s, tex.location(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight,
-                        tex.u0(), tex.v0(), tex.uWidth(), tex.vHeight(),
-                        tex.uvWidth(), tex.uvHeight());
+                ImageWidget.blit(s, tex, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight);
                 RenderSystem.disableBlend();
             } else if (useThemeColor && theme != null) {
                 int radius = args.bgBorderRadius();

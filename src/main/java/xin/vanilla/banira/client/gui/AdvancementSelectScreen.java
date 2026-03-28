@@ -354,7 +354,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private AdvancementData findAdvancementData(ResourceLocation id) {
         if (id == null) return null;
-        if (id == Identifier.id().empty()) return null;
+        if (Identifier.id().empty().equals(id)) return null;
         String idStr = id.toString();
         if (StringUtils.isNullOrEmpty(idStr) || ":".equals(idStr)) return null;
         try {

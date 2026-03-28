@@ -25,11 +25,11 @@ import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -242,7 +242,7 @@ public class Translator implements ITranslator {
     private void loadFromResourceManager() {
         try {
             ResourceManager manager = BaniraCodex.serverInstance().key().getResourceManager();
-            Collection<ResourceLocation> resources = loadFromResourcePacks(manager);
+            Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
             languages.addAll(resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
                     .map(loc -> {
@@ -258,18 +258,18 @@ public class Translator implements ITranslator {
         }
     }
 
-    private Collection<ResourceLocation> loadFromResourcePacks(ResourceManager manager) {
+    private Collection<ResourceLocation> collectModLangJsonLocations(ResourceManager manager) {
         Set<ResourceLocation> result = new HashSet<>();
+        Predicate<String> predicate = path -> path.endsWith(".json");
         try {
             ((ResourceManagerAccessor) manager).banira$packs().forEach(pack -> {
                 try {
-                    if (pack.getNamespaces(PackType.CLIENT_RESOURCES).contains(modId)) {
-                        Collection<ResourceLocation> locs = pack.getResources(
-                                PackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json"));
-                        result.addAll(locs);
+                    Collection<ResourceLocation> locs = pack.getResources(PackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, predicate);
+                    result.addAll(locs);
+                    for (ResourceLocation loc : locs) {
+                        loadAllLanguages(PackType.CLIENT_RESOURCES, pack, loc);
+                        loadAllLanguages(PackType.SERVER_DATA, pack, loc);
                     }
-                    loadAllLanguages(pack, PackType.CLIENT_RESOURCES);
-                    loadAllLanguages(pack, PackType.SERVER_DATA);
                 } catch (Exception e) {
                     LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
                 }
@@ -280,26 +280,22 @@ public class Translator implements ITranslator {
         return result;
     }
 
-    private static void loadAllLanguages(PackResources pack, PackType packType) throws IOException {
-        for (String namespace : pack.getNamespaces(packType)) {
-            for (ResourceLocation lang : pack.getResources(
-                    packType, namespace, "lang", Integer.MAX_VALUE, path -> path.endsWith(".json")
-            )) {
-                try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, lang), StandardCharsets.UTF_8)) {
-                    String path = lang.getPath();
-                    int slash = path.lastIndexOf('/');
-                    String name = slash >= 0 ? path.substring(slash + 1) : path;
-                    String languageCode = name.replace(".json", "");
+    private static void loadAllLanguages(PackType packType, PackResources pack, ResourceLocation location) {
+        try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, location), StandardCharsets.UTF_8)) {
+            String path = location.getPath();
+            int slash = path.lastIndexOf('/');
+            String name = slash >= 0 ? path.substring(slash + 1) : path;
+            String languageCode = name.replace(".json", "").toLowerCase();
 
-                    JsonObject json = JsonUtils.parseObject(reader);
-                    JsonObject object = LANGUAGES.get(languageCode);
-                    if (object == null) {
-                        LANGUAGES.put(languageCode, json);
-                    } else {
-                        JsonUtils.mergeInPlace(object, json);
-                    }
-                }
+            JsonObject json = JsonUtils.parseObject(reader);
+            JsonObject object = LANGUAGES.get(languageCode);
+            if (object == null) {
+                LANGUAGES.put(languageCode, json);
+            } else {
+                JsonUtils.mergeInPlace(object, json);
             }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to load language file: {}", t.getMessage());
         }
     }
 

@@ -53,6 +53,12 @@ public class ClientConfig implements ConfigData {
     @ConfigEntry.BoundedDiscrete(min = 1, max = 10000)
     private int notificationLogMaxEntries = 500;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "是否在 Banira GUI 中使用本 Mod 绘制的自定义鼠标指针；关闭则使用系统默认光标。",
+            en_us = "Use this mod's drawn cursor in Banira GUIs; when off, the system default cursor is shown.")
+    private boolean useCustomCursor = true;
+
     public ClientConfig() {
     }
 
@@ -82,6 +88,10 @@ public class ClientConfig implements ConfigData {
         int notificationLogMaxEntries();
 
         RootView notificationLogMaxEntries(int value);
+
+        boolean useCustomCursor();
+
+        RootView useCustomCursor(boolean value);
 
         ConfigHolder holder();
     }

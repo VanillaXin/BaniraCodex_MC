@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 
 import java.util.Locale;
@@ -16,11 +16,11 @@ public final class EnumDescriptionHelper {
     /**
      * 与 {@link #describeKey(Enum)} 对应的翻译组件。
      */
-    public static Component transAutoDesc(String key) {
+    public static Component transAutoDesc(AbstractComponent component, String key) {
         if (EnvironmentUtils.isClient()) {
-            return BaniraComponent.get().transClientAuto(key);
+            return component.transClientAuto(key);
         }
-        return BaniraComponent.get().transAuto(key);
+        return component.transAuto(key);
     }
 
     /**
@@ -39,7 +39,7 @@ public final class EnumDescriptionHelper {
     /**
      * 默认实现：{@code transAutoDesc(describeKey(constant))}。
      */
-    public static Component describeEnum(Enum<?> constant) {
-        return transAutoDesc(describeKey(constant));
+    public static Component describeEnum(AbstractComponent component, Enum<?> constant) {
+        return transAutoDesc(component, describeKey(constant));
     }
 }

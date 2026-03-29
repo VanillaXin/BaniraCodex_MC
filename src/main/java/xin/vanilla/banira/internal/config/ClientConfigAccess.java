@@ -17,6 +17,7 @@ final class ClientConfigAccess {
     private static final int DEFAULT_NIGHT_START_MINUTE = 22 * 60;
     private static final int DEFAULT_NIGHT_END_MINUTE = 6 * 60;
     private static final int DEFAULT_NOTIFICATION_LOG_MAX_ENTRIES = 500;
+    private static final boolean DEFAULT_USE_CUSTOM_CURSOR = true;
 
     private ClientConfigAccess() {
     }
@@ -98,6 +99,17 @@ final class ClientConfigAccess {
                     holder.set("notificationLogMaxEntries", args[0]);
                 }
                 return proxy;
+            case "useCustomCursor":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_USE_CUSTOM_CURSOR;
+                    }
+                    return boolConfig(holder, "useCustomCursor", DEFAULT_USE_CUSTOM_CURSOR);
+                }
+                if (holder != null) {
+                    holder.set("useCustomCursor", args[0]);
+                }
+                return proxy;
             case "holder":
                 return holder;
             default:
@@ -109,6 +121,14 @@ final class ClientConfigAccess {
         Object v = holder.get(path);
         if (v instanceof Number n) {
             return n.intValue();
+        }
+        return def;
+    }
+
+    private static boolean boolConfig(ConfigHolder holder, String path, boolean def) {
+        Object v = holder.get(path);
+        if (v instanceof Boolean) {
+            return (Boolean) v;
         }
         return def;
     }

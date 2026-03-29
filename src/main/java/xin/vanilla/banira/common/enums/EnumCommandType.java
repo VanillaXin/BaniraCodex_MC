@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.command.CommandSource;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
@@ -103,6 +104,6 @@ public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable 
 
     @Override
     public Component enumDescription() {
-        return EnumDescriptionHelper.describeEnum(this);
+        return EnumDescriptionHelper.describeEnum(BaniraComponent.get(), this);
     }
 }

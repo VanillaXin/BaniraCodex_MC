@@ -2,6 +2,7 @@ package xin.vanilla.banira.client.enums;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.EnumDescriptionHelper;
@@ -25,6 +26,6 @@ public enum EnumLogicalOperator implements IEnumDescribable {
 
     @Override
     public Component enumDescription() {
-        return EnumDescriptionHelper.describeEnum(this);
+        return EnumDescriptionHelper.describeEnum(BaniraComponent.get(), this);
     }
 }

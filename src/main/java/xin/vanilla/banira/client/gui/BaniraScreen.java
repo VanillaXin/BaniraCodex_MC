@@ -21,6 +21,7 @@ import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -157,7 +158,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     protected void init() {
-        this.cursor = MouseWidget.init(this);
+        this.cursor = MouseWidget.init(this, ClientConfig.get().useCustomCursor());
         this.popupOption = PopupOption.init(this);
         this.openingTime = System.currentTimeMillis();
         ClientThemeManager.setDefaultTheme(getEffectiveTheme());

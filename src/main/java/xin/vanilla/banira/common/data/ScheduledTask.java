@@ -20,11 +20,11 @@ public class ScheduledTask implements Comparable<ScheduledTask> {
     private final boolean clientSide;
 
     public static ScheduledTask server(long executeTick, Runnable runnable) {
-        return new ScheduledTask(executeTick, SEQ.getAndIncrement(), runnable, false);
+        return new ScheduledTask(SEQ.getAndIncrement(), executeTick, runnable, false);
     }
 
     public static ScheduledTask client(long executeTick, Runnable runnable) {
-        return new ScheduledTask(executeTick, SEQ.getAndIncrement(), runnable, true);
+        return new ScheduledTask(SEQ.getAndIncrement(), executeTick, runnable, true);
     }
 
     @Override

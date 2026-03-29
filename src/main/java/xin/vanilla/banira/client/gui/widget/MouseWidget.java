@@ -41,24 +41,31 @@ public class MouseWidget extends BaseWidget {
     private int curColorMain;
     private int curColorPressed;
 
-    public MouseWidget(BaniraScreen screen) {
+    /**
+     * @param useCustomCursor true：隐藏系统光标并绘制自定义指针；false：保留系统光标且不绘制
+     */
+    public MouseWidget(BaniraScreen screen, boolean useCustomCursor) {
         super(screen, new ScreenCoordinate(0, 0, 1, 1));
         this.renderDepth(EnumRenderDepth.MOUSE);
-        hideSystemCursor();
+        if (useCustomCursor) {
+            hideSystemCursor();
+        } else {
+            this.visible = false;
+        }
     }
 
     /**
      * 初始化鼠标光标
      */
-    public static MouseWidget init(BaniraScreen screen) {
-        return new MouseWidget(screen);
+    public static MouseWidget init(BaniraScreen screen, boolean useCustomCursor) {
+        return new MouseWidget(screen, useCustomCursor);
     }
 
     /**
-     * 初始化鼠标光标
+     * 初始化鼠标光标（指定主色）
      */
-    public static MouseWidget init(BaniraScreen screen, int lightColorMain, int darkColorMain) {
-        MouseWidget cursor = new MouseWidget(screen);
+    public static MouseWidget init(BaniraScreen screen, boolean useCustomCursor, int lightColorMain, int darkColorMain) {
+        MouseWidget cursor = new MouseWidget(screen, useCustomCursor);
         cursor.customLightMain = lightColorMain;
         cursor.customDarkMain = darkColorMain;
         cursor.curColorMain = lightColorMain;

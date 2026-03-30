@@ -86,11 +86,6 @@ public final class BaniraClientEventHub {
             }
         });
         Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getGuiGraphics().pose()));
-        Client.onRenderOverlayPost(event -> {
-            if (BaniraGuiOverlayEvent.PLAYER_LIST.equals(event.overlayId()) && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.guiGraphics().pose());
-            }
-        });
     }
 
     public static void dispatchModClientSetup(FMLClientSetupEvent event) {

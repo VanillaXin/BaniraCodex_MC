@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
@@ -241,7 +240,12 @@ public class Translator implements ITranslator {
 
     private void loadFromResourceManager() {
         try {
-            ResourceManager manager = BaniraCodex.serverInstance().key().getResourceManager();
+            ResourceManager manager;
+            if (BaniraCodex.serverInstance().val()) {
+                manager = BaniraCodex.serverInstance().key().getResourceManager();
+            } else {
+                manager = net.minecraft.client.Minecraft.getInstance().getResourceManager();
+            }
             Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
             languages.addAll(resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
@@ -334,7 +338,7 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (FMLEnvironment.dist.isClient()) {
-            return normalizeLanguageCode(Minecraft.getInstance().getLanguageManager().getSelected());
+            return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected());
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }

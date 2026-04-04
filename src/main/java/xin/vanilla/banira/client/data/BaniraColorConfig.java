@@ -12,7 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * 统一主题配置（数值可由资源包 banira/themes/&lt;season&gt;.json 覆盖）
+ * 统一主题配置（数值可由资源包 themes/&lt;season&gt;.json 覆盖）
  */
 @Data
 @Accessors(chain = true, fluent = true)

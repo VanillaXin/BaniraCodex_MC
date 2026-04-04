@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.config;
 import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.Setter;
-import net.neoforged.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -18,9 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class CustomConfig {
@@ -54,10 +51,7 @@ public class CustomConfig {
     }
 
     public static Path getConfigDirectory() {
-        return FMLPaths.CONFIGDIR.get()
-                .resolve(Arrays.stream(BaniraCodex.ARTIFACT_ID.split("\\."))
-                        .sorted().collect(Collectors.joining("."))
-                );
+        return BaniraCodex.BANIRA_CONFIG_PATH.get();
     }
 
     /**

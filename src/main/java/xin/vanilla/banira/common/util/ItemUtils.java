@@ -181,6 +181,27 @@ public final class ItemUtils {
         return hoverName.getString();
     }
 
+    public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
+        String result = "";
+        CompoundNBT compoundnbt = itemStack.getTagElement("display");
+        if (compoundnbt != null && compoundnbt.contains("Name", 8)) {
+            result = compoundnbt.getString("Name");
+        }
+        return result;
+    }
+
+    public static ITextComponent getItemCustomNameFromJson(String json) {
+        ITextComponent result = null;
+        if (StringUtils.isNotNullOrEmpty(json)) {
+            try {
+                result = ITextComponent.Serializer.fromJson(json);
+            } catch (Exception e) {
+                LOGGER.error("Invalid unsafe item name: {}", json, e);
+            }
+        }
+        return result;
+    }
+
     // endregion
 
     // region Tag操作
@@ -325,6 +346,22 @@ public final class ItemUtils {
 
     public static boolean isItemNull(ItemStack itemStack) {
         return itemStack == null || (!isAir(itemStack) && itemStack.isEmpty());
+    }
+
+    public static boolean isUnknownItem(ItemStack itemStack) {
+        return itemStack == null || getItemRegistryString(itemStack).equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(Item item) {
+        return item == null || getItemRegistryString(item).equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(ResourceLocation itemId) {
+        return itemId == null || itemId.toString().equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(String itemId) {
+        return StringUtils.isNullOrEmpty(itemId) || itemId.equals(UNKNOWN_ITEM.toString());
     }
 
     // endregion

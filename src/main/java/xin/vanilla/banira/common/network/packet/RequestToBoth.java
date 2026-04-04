@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.HashMap;

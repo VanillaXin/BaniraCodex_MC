@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import lombok.NonNull;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
@@ -171,7 +172,110 @@ public final class ItemUtils {
         return hoverName.getString();
     }
 
+    public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
+        String result = "";
+        CompoundTag tag = itemStack.getTagElement("display");
+        if (tag != null && tag.contains("Name", 8)) {
+            result = tag.getString("Name");
+        }
+        return result;
+    }
+
+    public static net.minecraft.network.chat.Component getItemCustomNameFromJson(String json) {
+        net.minecraft.network.chat.Component result = null;
+        if (StringUtils.isNotNullOrEmpty(json)) {
+            try {
+                result = net.minecraft.network.chat.Component.Serializer.fromJson(json);
+            } catch (Exception e) {
+                LOGGER.error("Invalid unsafe item name: {}", json, e);
+            }
+        }
+        return result;
+    }
+
     // endregion
+
+    // region Tag操作
+
+    /**
+     * 判断物品是否拥有模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static boolean hasCustomTag(String modId, ItemStack item) {
+        if (item == null) return false;
+        CompoundTag tag = item.getTag();
+        return tag != null && tag.contains(modId);
+    }
+
+    /**
+     * 获取物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static CompoundTag getCustomTag(String modId, @NonNull ItemStack item) {
+        CompoundTag tag = item.getTag();
+        if (tag == null) {
+            tag = new CompoundTag();
+            item.setTag(tag);
+        }
+        if (!tag.contains(modId)) {
+            tag.put(modId, new CompoundTag());
+        }
+        return tag.getCompound(modId);
+    }
+
+    /**
+     * 设置物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag CustomTag) {
+        CompoundTag tag = item.getTag();
+        if (tag == null) {
+            tag = new CompoundTag();
+            item.setTag(tag);
+        }
+        tag.put(modId, CustomTag);
+    }
+
+    /**
+     * 清除物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static CompoundTag clearCustomTag(String modId, ItemStack item) {
+        if (item == null) return null;
+        CompoundTag tag = item.getTag();
+        if (tag != null) {
+            tag.remove(modId);
+        }
+        return tag;
+    }
+
+    /**
+     * 删除物品空Tag
+     */
+    public static void trimCustomTag(ItemStack item) {
+        if (item == null) return;
+        CompoundTag tag = item.getTag();
+        if (tag != null && tag.isEmpty()) {
+            item.setTag(null);
+        }
+    }
+
+    /**
+     * 清除物品的模组CustomTag，并删除空Tag
+     */
+    public static void clearCustomTagEx(String modId, ItemStack item) {
+        if (item == null) return;
+        CompoundTag tag = clearCustomTag(modId, item);
+        if (tag != null && tag.isEmpty()) {
+            item.setTag(null);
+        }
+    }
+
+    // endregion Tag操作
 
     // region 物品比较
 
@@ -233,6 +337,22 @@ public final class ItemUtils {
 
     public static boolean isItemNull(ItemStack itemStack) {
         return itemStack == null || (!isAir(itemStack) && itemStack.isEmpty());
+    }
+
+    public static boolean isUnknownItem(ItemStack itemStack) {
+        return itemStack == null || getItemRegistryString(itemStack).equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(Item item) {
+        return item == null || getItemRegistryString(item).equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(ResourceLocation itemId) {
+        return itemId == null || itemId.toString().equals(UNKNOWN_ITEM.toString());
+    }
+
+    public static boolean isUnknownItem(String itemId) {
+        return StringUtils.isNullOrEmpty(itemId) || itemId.equals(UNKNOWN_ITEM.toString());
     }
 
     // endregion
@@ -1114,7 +1234,7 @@ public final class ItemUtils {
 
                 return result;
             } catch (Exception e) {
-                LOGGER.error("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
+                LOGGER.debug("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
                 if (result.isEmpty()) {
                     net.minecraft.network.chat.Component hoverName = itemStack.getHoverName();
                     if (hoverName instanceof MutableComponent) {

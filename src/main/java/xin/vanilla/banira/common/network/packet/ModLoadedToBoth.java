@@ -61,7 +61,7 @@ public class ModLoadedToBoth implements CustomPacketPayload {
     private final List<String> modids;
 
     public ModLoadedToBoth(@Nonnull List<String> modids) {
-        this.modids = Collections.unmodifiableList(new ArrayList<>(modids));
+        this.modids = List.copyOf(modids);
     }
 
     /**

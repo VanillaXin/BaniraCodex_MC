@@ -230,13 +230,13 @@ public final class ItemUtils {
      *
      * @param modId 模组ID
      */
-    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag CustomTag) {
+    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag customTag) {
         CompoundTag tag = item.getTag();
         if (tag == null) {
             tag = new CompoundTag();
             item.setTag(tag);
         }
-        tag.put(modId, CustomTag);
+        tag.put(modId, customTag);
     }
 
     /**

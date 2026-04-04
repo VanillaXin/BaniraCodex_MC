@@ -71,11 +71,18 @@ public final class PlayerUtils {
     // region 玩家信息
 
     /**
+     * 获取所有玩家
+     */
+    public static List<ServerPlayer> getAllPlayers() {
+        return BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+    }
+
+    /**
      * 获取随机玩家
      */
     public static ServerPlayer getRandomPlayer() {
         try {
-            List<ServerPlayer> players = BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+            List<ServerPlayer> players = getAllPlayers();
             return players.get(ThreadLocalRandom.current().nextInt(players.size()));
         } catch (Exception ignored) {
             return null;

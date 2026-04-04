@@ -197,6 +197,22 @@ public final class BlockUtils {
         return state != null && state.isAir();
     }
 
+    public static boolean isUnknownBlock(Block block) {
+        return block == null || getBlockRegistryString(block).equals(UNKNOWN_BLOCK.toString());
+    }
+
+    public static boolean isUnknownBlock(BlockState state) {
+        return state == null || getBlockRegistryString(state).equals(UNKNOWN_BLOCK.toString());
+    }
+
+    public static boolean isUnknownBlock(ResourceLocation blockId) {
+        return blockId == null || blockId.toString().equals(UNKNOWN_BLOCK.toString());
+    }
+
+    public static boolean isUnknownBlock(String blockId) {
+        return StringUtils.isNullOrEmpty(blockId) || blockId.equals(UNKNOWN_BLOCK.toString());
+    }
+
     // endregion
 
     // region 序列化与反序列化

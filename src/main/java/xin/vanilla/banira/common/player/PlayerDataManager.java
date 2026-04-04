@@ -27,17 +27,33 @@ public final class PlayerDataManager {
     private static final Map<String, PlayerDataManager> INSTANCES = new ConcurrentHashMap<>();
 
     private final Supplier<Path> playerDataDirSupplier;
+    private final @Nullable Supplier<Path> legacyPlayerDataBaseSupplier;
     private final String modId;
+    /**
+     * 新区 NBT 相对 {@code playerDataDirSupplier} 的子目录，空串表示直接存于该根目录下
+     */
     private final String suffix;
+    /**
+     * 旧版迁移时相对 {@code legacyPlayerDataBaseSupplier} 的子目录；为 null 时与 {@link #suffix} 相同
+     */
+    private final @Nullable String legacyMigrationSubdir;
 
     // 实例的缓存与锁
     private final Map<UUID, CachedPlayerData> playerCache = new ConcurrentHashMap<>();
     private final Map<Path, ReentrantLock> fileLocks = new ConcurrentHashMap<>();
 
-    private PlayerDataManager(Supplier<Path> playerDataDirSupplier, String modId, String suffix) {
+    private PlayerDataManager(
+            Supplier<Path> playerDataDirSupplier,
+            @Nullable Supplier<Path> legacyPlayerDataBaseSupplier,
+            String modId,
+            String suffix,
+            @Nullable String legacyMigrationSubdir
+    ) {
         this.playerDataDirSupplier = playerDataDirSupplier;
+        this.legacyPlayerDataBaseSupplier = legacyPlayerDataBaseSupplier;
         this.modId = modId;
         this.suffix = sanitizeSuffix(suffix);
+        this.legacyMigrationSubdir = legacyMigrationSubdir == null ? null : sanitizeSuffix(legacyMigrationSubdir);
     }
 
 
@@ -52,14 +68,43 @@ public final class PlayerDataManager {
     /**
      * 创建或获取实例
      *
-     * @param playerDataDirSupplier 延迟提供 world/playerdata 目录
+     * @param playerDataDirSupplier 延迟提供玩家 NBT 根目录（通常为 {@code world/VanillaXin/playerdata}）
      * @param suffix                实例标识符
      */
     public static PlayerDataManager getOrCreateInstance(Supplier<Path> playerDataDirSupplier, String modId, String suffix) {
+        return getOrCreateInstance(playerDataDirSupplier, null, modId, suffix);
+    }
+
+    /**
+     * 创建或获取实例；若提供 {@code legacyPlayerDataBaseSupplier}，则在新区无文件且旧版路径存在文件时自动迁移。
+     *
+     * @param playerDataDirSupplier        新区玩家 NBT 根目录
+     * @param legacyPlayerDataBaseSupplier 旧版 {@code world/playerdata} 目录，可为 null
+     * @param suffix                       新区实例子目录名，空串表示 NBT 直接位于 {@code playerDataDirSupplier} 根下
+     */
+    public static PlayerDataManager getOrCreateInstance(
+            Supplier<Path> playerDataDirSupplier,
+            @Nullable Supplier<Path> legacyPlayerDataBaseSupplier,
+            String modId,
+            String suffix
+    ) {
+        return getOrCreateInstance(playerDataDirSupplier, legacyPlayerDataBaseSupplier, modId, suffix, null);
+    }
+
+    /**
+     * @param legacyMigrationSubdir 旧版数据所在子目录（相对 {@code world/playerdata}）；为 null 时与 {@code suffix} 相同
+     */
+    public static PlayerDataManager getOrCreateInstance(
+            Supplier<Path> playerDataDirSupplier,
+            @Nullable Supplier<Path> legacyPlayerDataBaseSupplier,
+            String modId,
+            String suffix,
+            @Nullable String legacyMigrationSubdir
+    ) {
         String key = sanitizeSuffixStatic(suffix);
         return INSTANCES.computeIfAbsent(key, k -> {
-            LOGGER.info("Creating PlayerDataManager instance for suffix '{}'", k);
-            return new PlayerDataManager(playerDataDirSupplier, modId, k);
+            LOGGER.info("Creating PlayerDataManager instance for suffix '{}'", k.isEmpty() ? "(root)" : k);
+            return new PlayerDataManager(playerDataDirSupplier, legacyPlayerDataBaseSupplier, modId, k, legacyMigrationSubdir);
         });
     }
 
@@ -250,6 +295,7 @@ public final class PlayerDataManager {
             if (existing != null) return existing;
 
             CompoundNBT root;
+            boolean migratedFromLegacy = false;
             if (file.exists()) {
                 try {
                     root = NBTUtils.readCompressed(file);
@@ -259,9 +305,14 @@ public final class PlayerDataManager {
                     root = new CompoundNBT();
                 }
             } else {
-                root = new CompoundNBT();
+                RootLoadFromLegacy legacy = tryLoadRootFromLegacy(playerUuid);
+                root = legacy.root;
+                migratedFromLegacy = legacy.fromLegacy;
             }
             CachedPlayerData cached = new CachedPlayerData(root);
+            if (migratedFromLegacy) {
+                cached.dirty = true;
+            }
             playerCache.put(playerUuid, cached);
             return cached;
         } finally {
@@ -279,6 +330,7 @@ public final class PlayerDataManager {
         lock.lock();
         try {
             CompoundNBT root;
+            boolean migratedFromLegacy = false;
             if (file.exists()) {
                 try {
                     root = NBTUtils.readCompressed(file);
@@ -288,9 +340,14 @@ public final class PlayerDataManager {
                     root = new CompoundNBT();
                 }
             } else {
-                root = new CompoundNBT();
+                RootLoadFromLegacy legacy = tryLoadRootFromLegacy(playerUuid);
+                root = legacy.root;
+                migratedFromLegacy = legacy.fromLegacy;
             }
             CachedPlayerData cached = new CachedPlayerData(root);
+            if (migratedFromLegacy) {
+                cached.dirty = true;
+            }
             playerCache.put(playerUuid, cached);
             return cached;
         } finally {
@@ -300,13 +357,57 @@ public final class PlayerDataManager {
 
     private File getPlayerDataFile(UUID uuid) {
         Path base = playerDataDirSupplier.get();
-        File dir = base.resolve(suffix).toFile();
+        Path dirPath = suffix.isEmpty() ? base : base.resolve(suffix);
+        File dir = dirPath.toFile();
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
-                LOGGER.debug("PlayerDataManager[{}] could not create dir: {}", suffix, dir.getAbsolutePath());
+                LOGGER.debug("PlayerDataManager[{}] could not create dir: {}", suffix.isEmpty() ? "(root)" : suffix, dir.getAbsolutePath());
             }
         }
         return new File(dir, uuid + ".nbt");
+    }
+
+    private String effectiveLegacySubdir() {
+        return legacyMigrationSubdir != null ? legacyMigrationSubdir : suffix;
+    }
+
+    private static final class RootLoadFromLegacy {
+        final CompoundNBT root;
+        final boolean fromLegacy;
+
+        RootLoadFromLegacy(CompoundNBT root, boolean fromLegacy) {
+            this.root = root;
+            this.fromLegacy = fromLegacy;
+        }
+    }
+
+    private RootLoadFromLegacy tryLoadRootFromLegacy(UUID uuid) {
+        File legacyFile = getLegacyPlayerDataFile(uuid);
+        if (legacyFile != null && legacyFile.exists()) {
+            try {
+                CompoundNBT root = NBTUtils.readCompressed(legacyFile);
+                LOGGER.info("PlayerDataManager[{}] loaded player {} from legacy path (will save to new location on next save)",
+                        suffix.isEmpty() ? "(root)" : suffix, uuid);
+                return new RootLoadFromLegacy(root, true);
+            } catch (Exception e) {
+                LOGGER.warn("PlayerDataManager[{}] failed to read legacy {}: {}",
+                        suffix.isEmpty() ? "(root)" : suffix, legacyFile.getAbsolutePath(), e.getMessage());
+            }
+        }
+        return new RootLoadFromLegacy(new CompoundNBT(), false);
+    }
+
+    private @Nullable File getLegacyPlayerDataFile(UUID uuid) {
+        if (legacyPlayerDataBaseSupplier == null) {
+            return null;
+        }
+        Path base = legacyPlayerDataBaseSupplier.get();
+        if (base == null) {
+            return null;
+        }
+        String leg = effectiveLegacySubdir();
+        Path legacyDir = leg.isEmpty() ? base : base.resolve(leg);
+        return legacyDir.resolve(uuid + ".nbt").toFile();
     }
 
     private void atomicWrite(CompoundNBT root, File target) throws IOException {

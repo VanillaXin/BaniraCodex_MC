@@ -15,6 +15,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
@@ -34,7 +35,9 @@ import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
+import java.nio.file.Path;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Mod(BaniraCodex.MODID)
 @Accessors(fluent = true)
@@ -43,7 +46,30 @@ public class BaniraCodex {
     private static final Logger LOGGER = LogManager.getLogger();
 
     public static final String MODID = "banira_codex";
+    @Deprecated
     public static final String ARTIFACT_ID = "xin.vanilla";
+
+    /**
+     * 数据与配置使用的根目录名
+     */
+    public static final String VANILLA_XIN = "vanilla.xin";
+
+    public static final FolderName BANIRA_DIR = new FolderName(VANILLA_XIN);
+
+    /**
+     * Banira世界数据路径
+     */
+    public static final Supplier<Path> BANIRA_WORLD_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR);
+
+    /**
+     * 玩家数据目录路径
+     */
+    public static final Supplier<Path> BANIRA_PLAYER_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR).resolve("playerdata");
+
+    /**
+     * Banira配置目录路径
+     */
+    public static final Supplier<Path> BANIRA_CONFIG_PATH = () -> FMLPaths.CONFIGDIR.get().resolve(VANILLA_XIN);
 
     /**
      * 服务端实例
@@ -54,10 +80,12 @@ public class BaniraCodex {
     /**
      * 玩家数据管理器
      */
-    public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(() ->
-                    serverInstance().key().getWorldPath(FolderName.PLAYER_DATA_DIR)
-            , MODID
-            , StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
+    public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
+            BANIRA_PLAYER_DATA_PATH,
+            () -> serverInstance().key().getWorldPath(FolderName.PLAYER_DATA_DIR),
+            MODID,
+            "",
+            StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
     );
 
     public BaniraCodex() {

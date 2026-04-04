@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -11,18 +10,18 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 
 import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;

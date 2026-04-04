@@ -1,12 +1,12 @@
 package xin.vanilla.banira.client.gui.component;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;

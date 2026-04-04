@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.config;
 
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 

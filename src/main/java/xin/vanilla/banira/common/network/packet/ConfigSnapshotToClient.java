@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import xin.vanilla.banira.BaniraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.network.PacketBuffer;
@@ -9,13 +8,12 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import java.util.HashMap;

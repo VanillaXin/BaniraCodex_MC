@@ -1,9 +1,11 @@
-package xin.vanilla.banira.common.util;
+package xin.vanilla.banira.client.util;
 
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.util.FieldUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,7 +128,7 @@ public final class LogoModifier {
                 FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to modify mod logos", e);
+            LOGGER.debug("Failed to modify mod logos", e);
         }
     }
 

@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 /**
  * 椭圆Widget

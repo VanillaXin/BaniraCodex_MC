@@ -404,14 +404,13 @@ public final class CommandUtils {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static int executeModifyConfig(Class<?> configClazz, CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
-        String lang = getLanguage(source);
         String configKey = StringArgumentType.getString(context, "configKey");
         String configValue = StringArgumentType.getString(context, "configValue");
 
         ForgeConfigSpec.ConfigValue<?> cv = findConfigValueByKey(configClazz, configKey);
         if (cv == null) {
             Component component = BaniraComponent.get().transAuto("config_key_absent", configKey);
-            source.sendFailure(component.toChat(lang));
+            MessageUtils.sendMessage(source, false, component);
             return 0;
         }
 
@@ -422,7 +421,7 @@ public final class CommandUtils {
         } catch (Exception e) {
             LOGGER.error(e);
             Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_parse_error", configValue, e.getMessage());
-            source.sendFailure(component.toChat(lang));
+            MessageUtils.sendMessage(source, false, component);
             return 0;
         }
 
@@ -430,14 +429,14 @@ public final class CommandUtils {
             ((ForgeConfigSpec.ConfigValue) cv).set(parsed);
         } else {
             Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_error", configKey, configValue);
-            source.sendFailure(component.toChat(lang));
+            MessageUtils.sendMessage(source, false, component);
             return 0;
         }
 
         tryApplyServerConfigBake(configClazz);
 
         Component component = BaniraComponent.get().trans(EnumI18nType.FORMAT, "config_value_set_success", configKey, parsed);
-        source.sendSuccess(component.toChat(lang), true);
+        MessageUtils.sendMessageWithAdmin(source, true, component);
 
         return 1;
     }
@@ -679,13 +678,12 @@ public final class CommandUtils {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static int executeModifyConfig(ConfigHolder holder, CommandContext<CommandSource> context) {
         CommandSource source = context.getSource();
-        String lang = CommandUtils.getLanguage(source);
         String configKey = StringArgumentType.getString(context, "configKey");
         String configValue = StringArgumentType.getString(context, "configValue");
 
         ForgeConfigSpec.ConfigValue<?> cv = findConfigValue(holder, configKey);
         if (cv == null) {
-            source.sendFailure(BaniraComponent.get().transAuto("config_key_absent", configKey).toChat(lang));
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_key_absent", configKey));
             return 0;
         }
 
@@ -694,19 +692,19 @@ public final class CommandUtils {
         try {
             parsed = parseStringToType(configValue, type);
         } catch (Exception e) {
-            source.sendFailure(BaniraComponent.get().transAuto("config_value_parse_error", configValue, e.getMessage()).toChat(lang));
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_value_parse_error", configValue, e.getMessage()));
             return 0;
         }
 
         if (CommandUtils.validateConfigValueWithSpec(cv, parsed)) {
             ((ForgeConfigSpec.ConfigValue) cv).set(parsed);
         } else {
-            source.sendFailure(BaniraComponent.get().transAuto("config_value_set_error", configKey, configValue).toChat(lang));
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_value_set_error", configKey, configValue));
             return 0;
         }
 
         holder.save();
-        source.sendSuccess(BaniraComponent.get().transAuto("config_value_set_success", configKey, parsed).toChat(lang), true);
+        MessageUtils.sendMessageWithAdmin(source, true, BaniraComponent.get().transAuto("config_value_set_success", configKey, parsed));
         return 1;
     }
 

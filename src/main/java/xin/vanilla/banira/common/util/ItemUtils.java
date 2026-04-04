@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
+import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.command.arguments.ItemInput;
@@ -15,6 +16,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.IFormattableTextComponent;
@@ -180,6 +182,88 @@ public final class ItemUtils {
     }
 
     // endregion
+
+    // region Tag操作
+
+    /**
+     * 判断物品是否拥有模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static boolean hasCustomTag(String modId, ItemStack item) {
+        if (item == null) return false;
+        CompoundNBT tag = item.getTag();
+        return tag != null && tag.contains(modId);
+    }
+
+    /**
+     * 获取物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static CompoundNBT getCustomTag(String modId, @NonNull ItemStack item) {
+        CompoundNBT tag = item.getTag();
+        if (tag == null) {
+            tag = new CompoundNBT();
+            item.setTag(tag);
+        }
+        if (!tag.contains(modId)) {
+            tag.put(modId, new CompoundNBT());
+        }
+        return tag.getCompound(modId);
+    }
+
+    /**
+     * 设置物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundNBT CustomTag) {
+        CompoundNBT tag = item.getTag();
+        if (tag == null) {
+            tag = new CompoundNBT();
+            item.setTag(tag);
+        }
+        tag.put(modId, CustomTag);
+    }
+
+    /**
+     * 清除物品的模组CustomTag
+     *
+     * @param modId 模组ID
+     */
+    public static CompoundNBT clearCustomTag(String modId, ItemStack item) {
+        if (item == null) return null;
+        CompoundNBT tag = item.getTag();
+        if (tag != null) {
+            tag.remove(modId);
+        }
+        return tag;
+    }
+
+    /**
+     * 删除物品空Tag
+     */
+    public static void trimCustomTag(ItemStack item) {
+        if (item == null) return;
+        CompoundNBT tag = item.getTag();
+        if (tag != null && tag.isEmpty()) {
+            item.setTag(null);
+        }
+    }
+
+    /**
+     * 清除物品的模组CustomTag，并删除空Tag
+     */
+    public static void clearCustomTagEx(String modId, ItemStack item) {
+        if (item == null) return;
+        CompoundNBT tag = clearCustomTag(modId, item);
+        if (tag != null && tag.isEmpty()) {
+            item.setTag(null);
+        }
+    }
+
+    // endregion Tag操作
 
     // region 物品比较
 
@@ -1105,7 +1189,7 @@ public final class ItemUtils {
 
                 return result;
             } catch (Exception e) {
-                LOGGER.error("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
+                LOGGER.debug("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
                 if (result.isEmpty()) {
                     ITextComponent hoverName = itemStack.getHoverName();
                     if (hoverName instanceof IFormattableTextComponent) {

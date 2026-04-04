@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.BaniraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;

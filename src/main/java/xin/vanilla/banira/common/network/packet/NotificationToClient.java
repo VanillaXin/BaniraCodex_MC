@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.PacketBuffer;
@@ -9,6 +8,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.AbstractComponent;

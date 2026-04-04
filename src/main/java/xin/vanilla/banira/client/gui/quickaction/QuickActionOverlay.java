@@ -82,7 +82,7 @@ public final class QuickActionOverlay {
      * 托盘根菜单中某注册项的「扩展右键菜单」子页
      */
     private static final int CTX_PAGE_ENTRY_CONTEXT = 4;
-    private static final String BANIRA_TEXTURE_NAME = "logo.png";
+    private static final String BANIRA_TEXTURE_NAME = "gui/quick_icon.png";
     private static ResourceLocation BANIRA_TEXTURE = null;
 
     private static final QuickActionOverlay INSTANCE = new QuickActionOverlay();

@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -20,6 +21,7 @@ import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
+import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
@@ -129,12 +131,15 @@ public class BaniraCodex {
     public static class ClientProxy {
         public static void init() {
             BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
+                LogoModifier.register(MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
+
+                ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
                 Component label = BaniraComponent.get().transClient("key.banira_codex.codex_navigation");
                 Consumer<QuickActionContext> action = ctx ->
                         Minecraft.getInstance().setScreen(
                                 new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
                         );
-                QuickActionRegistry.get().registerListOnly(MODID + ":quick_codex_navigation", label, action);
+                QuickActionRegistry.get().registerListOnly(MODID + ":quick_codex_navigation", texture, label, action);
             });
         }
     }

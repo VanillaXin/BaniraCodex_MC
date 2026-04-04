@@ -26,7 +26,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/banira/themes/&lt;season&gt;.json），
+ * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/themes/&lt;season&gt;.json），
  * 根对象为日间配色；可选 {@code night} 子对象为夜间配色。
  * 资源缺失或解析失败时回退 {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
  * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}；当前是否用夜间由 {@link BaniraGuiNightMode} 与客户端配置决定。
@@ -131,7 +131,7 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
 
     static ResourceLocation themeJsonLocation(EnumSeason season) {
         String name = season.name().toLowerCase() + ".json";
-        return Identifier.id().create(BaniraCodex.MODID, "banira/themes/" + name);
+        return Identifier.id().create(BaniraCodex.MODID, "themes/" + name);
     }
 
     static void applyThemeJsonOverlay(BaniraColorConfig c, JsonObject o) {

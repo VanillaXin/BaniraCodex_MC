@@ -163,13 +163,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         season = BaniraColorConfig.resolveEffectiveSeason(season);
         switch (season) {
             case SUMMER:
-                return "textures/gui/aotake_cat.png";
+                return "gui/aotake_cat.png";
             case AUTUMN:
-                return "textures/gui/narcissus_cat.png";
+                return "gui/narcissus_cat.png";
             case WINTER:
-                return "textures/gui/snowflake_cat.png";
+                return "gui/snowflake_cat.png";
             default:
-                return "textures/gui/sakura_cat.png";
+                return "gui/sakura_cat.png";
         }
     }
 

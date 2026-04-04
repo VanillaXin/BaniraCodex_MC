@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.data;
 
-import xin.vanilla.banira.BaniraComponent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;

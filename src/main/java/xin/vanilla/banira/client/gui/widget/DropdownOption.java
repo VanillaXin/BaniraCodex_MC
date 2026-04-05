@@ -11,13 +11,18 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
- * 下拉选项：显示值、可选左侧图标（物品或纹理）、可选悬浮提示。
+ * 下拉选项：内部值 {@link #value}、可选展示文案 {@link #displayLabel}、可选左侧图标、可选悬浮提示。
  */
 @Getter
 @Accessors(chain = true, fluent = true)
 public class DropdownOption {
 
     private final String value;
+    /**
+     * 非空时在下拉列表与折叠输入框中优先显示，选中与回调仍使用 {@link #value}
+     */
+    @Nullable
+    private final String label;
     private final ItemStack icon;
     /**
      * 非空时优先于 {@link #icon} 绘制（适用于 ResourceLocation 纹理或图集子区域）
@@ -27,12 +32,26 @@ public class DropdownOption {
     @Nullable
     private final Component tooltip;
 
+    /**
+     * 展示用文案；无单独标签时返回 {@link #value}
+     */
+    public String displayLabel() {
+        return (label != null && !label.isEmpty()) ? label : value;
+    }
+
     public DropdownOption(String value) {
-        this(value, ItemStack.EMPTY, null, null);
+        this(value, null, ItemStack.EMPTY, null, null);
+    }
+
+    /**
+     * @param displayLabel 列表与输入框显示；{@code null} 或空则显示 {@code value}
+     */
+    public DropdownOption(String value, @Nullable String displayLabel) {
+        this(value, displayLabel, ItemStack.EMPTY, null, null);
     }
 
     public DropdownOption(String value, ItemStack icon, @Nullable Component tooltip) {
-        this(value, icon, null, tooltip);
+        this(value, null, icon, null, tooltip);
     }
 
     /**
@@ -64,7 +83,12 @@ public class DropdownOption {
     }
 
     public DropdownOption(String value, ItemStack icon, @Nullable Texture[] texture, @Nullable Component tooltip) {
+        this(value, null, icon, texture, tooltip);
+    }
+
+    public DropdownOption(String value, @Nullable String displayLabel, ItemStack icon, @Nullable Texture[] texture, @Nullable Component tooltip) {
         this.value = value;
+        this.label = displayLabel;
         this.icon = icon != null && !icon.isEmpty() ? icon : ItemStack.EMPTY;
         this.texture = texture;
         this.tooltip = tooltip;

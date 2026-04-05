@@ -650,7 +650,11 @@ public final class Component implements Cloneable, Serializable {
                         i++;
                     }
                 } else {
-                    this.args.forEach(arg -> arg.languageCodeIfEmpty(languageCode));
+                    for (Component arg : this.getArgs()) {
+                        if (arg != null) {
+                            arg.languageCodeIfEmpty(languageCode);
+                        }
+                    }
                     components.add(new TextComponent(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
                 }
             }

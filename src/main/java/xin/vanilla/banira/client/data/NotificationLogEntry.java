@@ -9,6 +9,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 
 /**
@@ -27,6 +28,7 @@ public class NotificationLogEntry {
     private String animationName;
     private long durationTime;
     private String styleName = "NORMAL";
+    private String notificationType = NotificationTypeKeys.DEFAULT;
     private String source; // "network" | "local"
 
     public Component component() {

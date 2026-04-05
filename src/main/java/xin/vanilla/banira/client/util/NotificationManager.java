@@ -3,18 +3,27 @@ package xin.vanilla.banira.client.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Style;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
+import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
+import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
+import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.data.AbstractComponent;
+import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -36,52 +45,71 @@ public final class NotificationManager {
     private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
     private static final NotificationManager instance = new NotificationManager();
 
-    /**
-     * 获取通知管理器实例
-     */
+    private final List<Notification> frameDrawOrder = new ArrayList<>();
+    private Style frameHoverStyle;
+
+    private static boolean prevLeftDown;
+
     public static NotificationManager get() {
         return instance;
     }
 
-    /**
-     * 添加通知
-     */
     public void addNotification(Notification notification) {
         addNotification(notification, false);
     }
 
-    /**
-     * 添加通知
-     *
-     * @param notification 通知
-     * @param fromNetwork  是否来自服务端推送
-     */
     public void addNotification(Notification notification, boolean fromNetwork) {
-        this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
+        NotificationTypeRegistry.ensureKnown(notification.notificationType());
+        applyTypeSettings(notification);
+        long logId = System.currentTimeMillis() ^ (long) System.nanoTime();
+        if (logId == 0) {
+            logId = System.currentTimeMillis();
+        }
+        notification.logEntryId(logId);
+        if (!isTypeHidden(notification.notificationType())) {
+            this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
+        }
         appendLog(notification, fromNetwork);
     }
 
-    /**
-     * 获取持久化的通知日志
-     */
+    private static void applyTypeSettings(Notification n) {
+        NotificationTypeSettingsStore.TypeSettings s = NotificationTypeSettingsStore.get().getOrCreate(n.notificationType());
+        if (s.durationMs() > 0) {
+            n.durationTime(s.durationMs());
+        }
+        if (s.positionName() != null && !s.positionName().isEmpty()) {
+            EnumPosition p = EnumPosition.valueOfEx(s.positionName());
+            if (p != null) {
+                n.position(p);
+            }
+        }
+        if (s.animationName() != null && !s.animationName().isEmpty()) {
+            try {
+                n.animation(EnumMoveType.valueOf(s.animationName()));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private static boolean isTypeHidden(String typeId) {
+        return NotificationTypeSettingsStore.get().getOrCreate(typeId).hidden();
+    }
+
     public List<NotificationLogEntry> getLog() {
         return List.copyOf(log);
     }
 
-    /**
-     * 追加日志并持久化
-     */
     private void appendLog(Notification notification, boolean fromNetwork) {
-        long id = System.currentTimeMillis();
         String componentJson = JsonUtils.toString(AbstractComponent.serialize(notification.component()));
         NotificationLogEntry entry = new NotificationLogEntry()
-                .id(id)
-                .timestamp(id)
+                .id(notification.logEntryId())
+                .timestamp(System.currentTimeMillis())
                 .componentJson(componentJson)
                 .positionName(notification.position().name())
                 .animationName(notification.animation().name())
                 .durationTime(notification.durationTime())
                 .styleName(notification.style() != null ? notification.style().name() : "NORMAL")
+                .notificationType(notification.notificationType() != null ? notification.notificationType() : NotificationTypeKeys.DEFAULT)
                 .source(fromNetwork ? "network" : "local");
         synchronized (log) {
             log.add(0, entry);
@@ -93,9 +121,6 @@ public final class NotificationManager {
         saveLogAsync();
     }
 
-    /**
-     * 从文件加载日志
-     */
     public void loadLog() {
         Path path = CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME);
         File file = path.toFile();
@@ -118,6 +143,7 @@ public final class NotificationManager {
                             .animationName(JsonUtils.getString(obj, "animationName", "AUTO"))
                             .durationTime(JsonUtils.getLong(obj, "durationTime", 5000))
                             .styleName(JsonUtils.getString(obj, "styleName", "NORMAL"))
+                            .notificationType(JsonUtils.getString(obj, "notificationType", NotificationTypeKeys.DEFAULT))
                             .source(JsonUtils.getString(obj, "source", "local"));
                     log.add(entry);
                 }
@@ -131,9 +157,6 @@ public final class NotificationManager {
         }
     }
 
-    /**
-     * 异步保存日志到文件
-     */
     private static int notificationLogMaxEntries() {
         return Math.max(1, ClientConfig.get().notificationLogMaxEntries());
     }
@@ -159,6 +182,7 @@ public final class NotificationManager {
                     obj.addProperty("animationName", e.animationName());
                     obj.addProperty("durationTime", e.durationTime());
                     obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
                     obj.addProperty("source", e.source());
                     arr.add(obj);
                 }
@@ -178,13 +202,19 @@ public final class NotificationManager {
                 .height(mc.getWindow().getGuiScaledHeight());
         long currentTime = System.currentTimeMillis();
 
+        frameDrawOrder.clear();
+        frameHoverStyle = null;
+
+        double[] mouse = scaledMouse(mc);
+        double mx = mouse[0];
+        double my = mouse[1];
+
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
             entry.getValue().removeIf(Notification::finished);
 
             EnumPosition pos = entry.getKey();
             List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
 
-            // 初始化布局上下文
             boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
                     || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
             ScreenCoordinate preInfo = new ScreenCoordinate()
@@ -196,43 +226,114 @@ public final class NotificationManager {
             while (iter.hasNext()) {
                 Notification n = iter.next();
 
-                // 状态过滤
                 if (n.finished()) {
                     iter.remove();
                     continue;
                 }
 
-                // 第一项且为居中位置时，设置 preInfo 使首项垂直居中
                 if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
                     preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
                 }
 
-                // 位置预计算
                 ScreenCoordinate lastInfo = n.calculatePosition(screenInfo, preInfo);
 
-                // 是否可见
                 if (this.shouldSkipRendering(pos, lastInfo, screenInfo)) {
                     break;
                 }
 
-                // 执行渲染
+                frameDrawOrder.add(n);
                 n.index(i++).render(stack, preInfo, screenInfo, currentTime);
 
-                // 更新布局上下文
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());
                 preInfo.height(n.cachedHeight());
             }
         }
+
+        for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
+            Notification n = frameDrawOrder.get(idx);
+            if (n.finished()) {
+                continue;
+            }
+            if (!n.containsPoint(mx, my)) {
+                continue;
+            }
+            Style st = n.styleAtTextPoint(mx, my);
+            if (st != null && st.getHoverEvent() != null) {
+                frameHoverStyle = st;
+                break;
+            }
+        }
+
+        if (frameHoverStyle != null) {
+            NotificationStyleInteractionHelper.renderHoverTooltip(stack, (int) mx, (int) my,
+                    (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle);
+        }
+    }
+
+    private static double[] scaledMouse(Minecraft mc) {
+        Window win = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
+        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
+        return new double[]{mx, my};
     }
 
     /**
-     * 判断是否需要跳过渲染
+     * 处理叠加层上的通知点击
      *
-     * @param pos        位置
-     * @param coordinate 布局信息
-     * @param screenInfo 屏幕信息
+     * @return 是否已消费
      */
+    @OnlyIn(Dist.CLIENT)
+    public boolean tryHandleHudClick(double guiMouseX, double guiMouseY, int button) {
+        if (button != 0) {
+            return false;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        long currentTime = System.currentTimeMillis();
+        for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
+            Notification n = frameDrawOrder.get(idx);
+            if (n.finished() || n.scheduledTime() > currentTime) {
+                continue;
+            }
+            if (!n.containsPoint(guiMouseX, guiMouseY)) {
+                continue;
+            }
+            if (n.isCloseHit(guiMouseX, guiMouseY)) {
+                n.dismiss();
+                return true;
+            }
+            Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);
+            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(mc, st)) {
+                return true;
+            }
+            if (n.isBodyHit(guiMouseX, guiMouseY)) {
+                mc.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
+                        .parentScreen(mc.screen)
+                        .selectLogEntryId(n.logEntryId())));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public void tickOutOfScreenClick() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
+            return;
+        }
+        Window win = mc.getWindow();
+        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        if (down && !prevLeftDown) {
+            double[] m = scaledMouse(mc);
+            tryHandleHudClick(m[0], m[1], 0);
+        }
+        prevLeftDown = down;
+    }
+
     private boolean shouldSkipRendering(EnumPosition pos, ScreenCoordinate coordinate, ScreenCoordinate screenInfo) {
         switch (pos) {
             case TOP_LEFT:

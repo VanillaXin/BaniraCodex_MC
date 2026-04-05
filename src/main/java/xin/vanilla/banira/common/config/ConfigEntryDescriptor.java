@@ -108,7 +108,36 @@ public class ConfigEntryDescriptor {
         LONG,
         DOUBLE,
         ENUM,
-        STRING_LIST
+        STRING_LIST,
+        INTEGER_LIST,
+        LONG_LIST,
+        DOUBLE_LIST,
+        BOOLEAN_LIST,
+        ENUM_LIST
+    }
+
+    /**
+     * 是否为「列表」类配置（多元素 TOML 数组 / 逗号分隔网络编码）。
+     */
+    public static boolean isListValueType(ConfigValueType t) {
+        if (t == null) {
+            return false;
+        }
+        switch (t) {
+            case STRING_LIST:
+            case INTEGER_LIST:
+            case LONG_LIST:
+            case DOUBLE_LIST:
+            case BOOLEAN_LIST:
+            case ENUM_LIST:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public boolean isListType() {
+        return isListValueType(valueType);
     }
 
     /**

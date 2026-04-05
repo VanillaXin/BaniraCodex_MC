@@ -21,6 +21,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.enums.IEnumDropdownIcon;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -280,7 +281,8 @@ public class DropdownSelectWidget extends InputWidget {
 
     /**
      * 从枚举构建选项：{@code name()} 为值；若实现 {@link IEnumDropdownIcon} 则绘制左侧图标；
-     * 若实现 {@link IEnumDescribable} 则使用其描述作为悬浮提示。
+     * 若实现 {@link IEnumDescribable} 则列表与输入框显示其描述文案，且仍设置 {@link DropdownOption#tooltip()}，
+     * 下拉浮层悬停时会显示与原先一致的悬浮提示。
      */
     public DropdownSelectWidget optionsEnum(Class<? extends Enum<?>> clazz) {
         Enum<?>[] constants = clazz.getEnumConstants();
@@ -299,11 +301,17 @@ public class DropdownSelectWidget extends InputWidget {
                 }
                 icon = id.dropdownIcon();
             }
-            Component tooltip = null;
+            Texture[] textures = tex != null ? new Texture[]{tex} : null;
+            Component dEnum = null;
             if (e instanceof IEnumDescribable id) {
-                tooltip = id.enumDescription();
+                dEnum = id.enumDescription();
             }
-            list.add(new DropdownOption(e.name(), icon, new Texture[]{tex}, tooltip));
+            String dispLabel = null;
+            if (dEnum != null && !dEnum.isEmpty()) {
+                dispLabel = dEnum.getString(Translator.getClientLanguage());
+            }
+            Component tooltip = (dEnum != null && !dEnum.isEmpty()) ? dEnum : null;
+            list.add(new DropdownOption(e.name(), dispLabel, icon, textures, tooltip));
         }
         this.optionEntries = list;
         return this;
@@ -353,8 +361,18 @@ public class DropdownSelectWidget extends InputWidget {
             return new ArrayList<>(optionEntries);
         }
         return optionEntries.stream()
-                .filter(opt -> opt.value().toLowerCase().contains(filter))
+                .filter(opt -> opt.displayLabel().toLowerCase().contains(filter)
+                        || opt.value().toLowerCase().contains(filter))
                 .collect(Collectors.toList());
+    }
+
+    private String displayLabelForValue(String storedValue) {
+        for (DropdownOption o : optionEntries) {
+            if (o.value().equals(storedValue)) {
+                return o.displayLabel();
+            }
+        }
+        return storedValue;
     }
 
     private static final int DROPDOWN_GAP = 2;
@@ -558,7 +576,15 @@ public class DropdownSelectWidget extends InputWidget {
 
     private void updateDisplayValue() {
         clampTagScrollOffset();
-        value(selectedValues.isEmpty() ? "" : String.join(MULTI_SEPARATOR, selectedValues));
+        if (selectedValues.isEmpty()) {
+            value("");
+            return;
+        }
+        List<String> labels = new ArrayList<>();
+        for (String v : selectedValues) {
+            labels.add(displayLabelForValue(v));
+        }
+        value(String.join(MULTI_SEPARATOR, labels));
     }
 
     @Override
@@ -616,7 +642,11 @@ public class DropdownSelectWidget extends InputWidget {
 
         if (screen != null && !isMouseOverClearButton() && !isMouseOverArrow()) {
             if (tagMode && isMouseOverInputArea()) {
-                drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", selectedValues)));
+                List<String> tipLabels = new ArrayList<>();
+                for (String v : selectedValues) {
+                    tipLabels.add(displayLabelForValue(v));
+                }
+                drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", tipLabels)));
             } else if (!value().isEmpty() && !dropdownOpen && isMouseOverInputArea()) {
                 String fullContent = value();
                 if (!fullContent.isEmpty()) {
@@ -684,7 +714,8 @@ public class DropdownSelectWidget extends InputWidget {
 
         int totalWidth = 0;
         for (String item : selectedValues) {
-            int textW = font.width(item);
+            String show = displayLabelForValue(item);
+            int textW = font.width(show);
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
             totalWidth += tagW + TAG_GAP;
         }
@@ -703,7 +734,8 @@ public class DropdownSelectWidget extends InputWidget {
 
         try {
             for (String item : selectedValues) {
-                int textW = font.width(item);
+                String show = displayLabelForValue(item);
+                int textW = font.width(show);
                 int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
 
                 if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
@@ -717,7 +749,7 @@ public class DropdownSelectWidget extends InputWidget {
 
                 AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
                 AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-                font.draw(stack, font.plainSubstrByWidth(item, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
+                font.draw(stack, font.plainSubstrByWidth(show, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
 
                 int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
                 AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);

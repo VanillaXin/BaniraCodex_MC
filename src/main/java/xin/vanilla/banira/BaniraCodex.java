@@ -91,7 +91,7 @@ public class BaniraCodex {
         // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
         ForgeConfigAdapter.register(ClientConfig.class, MODID);
-        // ForgeConfigAdapter.register(TestConfig.class, MODID);
+        // ForgeConfigAdapter.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
 
         context.getModEventBus().addListener(BaniraEventBus::dispatchModCommonSetup);
 

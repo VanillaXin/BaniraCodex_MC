@@ -6,6 +6,7 @@ import net.minecraftforge.event.network.CustomPayloadEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
@@ -14,7 +15,9 @@ import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -113,9 +116,19 @@ public class ConfigSyncToServer {
      */
     public static String encodeConfigValue(Object value) {
         if (value instanceof List<?> list) {
-            return list.stream().map(String::valueOf).collect(Collectors.joining(","));
+            return list.stream().map(ConfigSyncToServer::encodeListElement).collect(Collectors.joining(","));
+        }
+        if (value instanceof Enum) {
+            return ((Enum<?>) value).name();
         }
         return String.valueOf(value);
+    }
+
+    private static String encodeListElement(Object o) {
+        if (o instanceof Enum) {
+            return ((Enum<?>) o).name();
+        }
+        return String.valueOf(o);
     }
 
     /**
@@ -141,11 +154,12 @@ public class ConfigSyncToServer {
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);
                     return e;
                 case STRING_LIST:
-                    if (value == null || value.isEmpty()) {
-                        return Collections.emptyList();
-                    }
-                    return Arrays.stream(value.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                            .collect(Collectors.toList());
+                case INTEGER_LIST:
+                case LONG_LIST:
+                case DOUBLE_LIST:
+                case BOOLEAN_LIST:
+                case ENUM_LIST:
+                    return ConfigListSpecHelper.parseNetworkCsv(value, desc);
                 default:
                     return value;
             }

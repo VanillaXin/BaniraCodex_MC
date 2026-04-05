@@ -127,7 +127,7 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.id("test_config_editor");
         longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         longPressBtn.text("按钮长按测试");
-        // longPressBtn.onClick(b -> ConfigEditorScreen.open(TestConfig.get().holder(), this));
+        // longPressBtn.onClick(b -> ConfigEditorScreen.open(xin.vanilla.banira.internal.config.TestConfig.get().holder(), this));
         longPressBtn.onLongPress(1000L, b -> {
             Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);

@@ -45,6 +45,14 @@ public final class AbstractGuiUtils {
 
     public static final int ITEM_ICON_SIZE = 16;
 
+    /**
+     * 相对图标中心的格点坐标
+     */
+    private static final int[][] NINE_DOT_CLOSE_ICON_GRID = {
+            {-2, -2}, {-1, -1}, {0, 0}, {1, 1}, {2, 2},
+            {2, -2}, {1, -1}, {-1, 1}, {-2, 2}
+    };
+
     private static final Random random = new Random();
 
 
@@ -833,6 +841,44 @@ public final class AbstractGuiUtils {
         addVertexWithColor(builder, m4, x, y + height, 0, color);
         addVertexWithColor(builder, m4, x + width, y + height, 0, color);
 
+        finishBlendRender(builder);
+    }
+
+    /**
+     * 在正方形区域内用9个实心方点绘制「×」
+     */
+    public static void drawNineDotCloseIcon(PoseStack stack, float boxX, float boxY, float boxSize, int argb) {
+        drawNineDotCloseIcon(stack, boxX, boxY, boxSize, argb, 0.056f, 1f);
+    }
+
+    /**
+     * @param dotSizeRatio 单点边长相对 {@code boxSize}，实际边长至少约 1 逻辑像素
+     * @param stepScale    网格步长 = {@code dotS * stepScale}。轴对齐方块沿 45° 排列时，取 {@code 1} 则相邻块中心距为
+     *                     {@code dotS * sqrt(2)}，外角刚好相接不重叠；略大于 1 则块之间留出缝隙
+     */
+    public static void drawNineDotCloseIcon(PoseStack stack, float boxX, float boxY, float boxSize, int argb,
+                                            float dotSizeRatio, float stepScale) {
+        if (boxSize <= 0f) {
+            return;
+        }
+        float dotS = Math.max(1f, boxSize * dotSizeRatio);
+        float step = dotS * stepScale;
+        float centerX = boxX + boxSize * 0.5f;
+        float centerY = boxY + boxSize * 0.5f;
+        float half = dotS * 0.5f;
+        setupBlendRender();
+        Matrix4f m4 = stack.last().pose();
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        for (int[] g : NINE_DOT_CLOSE_ICON_GRID) {
+            float cx = centerX + g[0] * step;
+            float cy = centerY + g[1] * step;
+            float x0 = cx - half;
+            float y0 = cy - half;
+            addVertexWithColor(builder, m4, x0 + dotS, y0, 0, argb);
+            addVertexWithColor(builder, m4, x0, y0, 0, argb);
+            addVertexWithColor(builder, m4, x0, y0 + dotS, 0, argb);
+            addVertexWithColor(builder, m4, x0 + dotS, y0 + dotS, 0, argb);
+        }
         finishBlendRender(builder);
     }
 

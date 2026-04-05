@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.NotificationManager;
 
@@ -36,6 +37,7 @@ public final class BaniraClientModSetup {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         NotificationManager.get().loadLog();
+        NotificationTypeSettingsStore.get().load();
 
         BaniraClientEventHub.registerCodexDefaults();
         BaniraClientEventHub.dispatchModClientSetup(event);

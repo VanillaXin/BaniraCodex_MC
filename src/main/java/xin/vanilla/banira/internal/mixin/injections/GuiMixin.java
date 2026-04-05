@@ -19,6 +19,6 @@ public abstract class GuiMixin {
         if (Minecraft.getInstance().screen != null) {
             return;
         }
-        NotificationManager.get().render(guiGraphics.pose());
+        NotificationManager.get().render(guiGraphics);
     }
 }

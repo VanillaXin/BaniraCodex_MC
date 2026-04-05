@@ -33,6 +33,11 @@ public class ConfigHolder {
      */
     private final Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs;
 
+    /**
+     * 配置路径 -> 描述符（与 {@link #descriptors} 一致，用于 {@link #get} 对列表做运行时类型归一化）
+     */
+    private final Map<String, ConfigEntryDescriptor> descriptorByPath;
+
     @Nullable
     private ModConfig modConfig;
 
@@ -50,6 +55,11 @@ public class ConfigHolder {
         this.categoryTitleSpecs = categoryTitleSpecs != null
                 ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTitleSpecs))
                 : Collections.emptyMap();
+        Map<String, ConfigEntryDescriptor> byPath = new LinkedHashMap<>();
+        for (ConfigEntryDescriptor d : descriptors) {
+            byPath.put(d.getPath(), d);
+        }
+        this.descriptorByPath = Collections.unmodifiableMap(byPath);
     }
 
     /**
@@ -79,7 +89,15 @@ public class ConfigHolder {
     @SuppressWarnings("unchecked")
     public <T> T get(String path) {
         ModConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        return cv != null ? (T) cv.get() : null;
+        if (cv == null) {
+            return null;
+        }
+        Object v = cv.get();
+        ConfigEntryDescriptor desc = descriptorByPath.get(path);
+        if (desc != null && desc.isListType() && v instanceof List) {
+            v = ConfigListSpecHelper.normalizeListForRuntime((List<?>) v, desc);
+        }
+        return (T) v;
     }
 
     /**
@@ -97,10 +115,7 @@ public class ConfigHolder {
      * 获取配置项描述符
      */
     public ConfigEntryDescriptor getDescriptor(String path) {
-        return descriptors.stream()
-                .filter(d -> d.getPath().equals(path))
-                .findFirst()
-                .orElse(null);
+        return descriptorByPath.get(path);
     }
 
     /**

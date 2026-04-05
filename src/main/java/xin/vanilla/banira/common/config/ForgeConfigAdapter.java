@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * 从注解配置类构建 ModConfigSpec。
@@ -164,11 +165,20 @@ public final class ForgeConfigAdapter {
                     ModConfigSpec.DoubleValue cv = applyFileComments(builder, comments).defineInRange(key, (Double) defaultValue, min, max);
                     addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.DOUBLE, defaultValue, min, max, null, tr, decimalPlaces);
                 } else if (List.class.isAssignableFrom(type)) {
-                    @SuppressWarnings("unchecked")
-                    List<String> defList = (List<String>) defaultValue;
-                    ModConfigSpec.ConfigValue<List<? extends String>> cv = applyFileComments(builder, comments)
-                            .defineList(key, defList != null ? defList : new ArrayList<>(), o -> o instanceof String);
-                    addDescriptor(field, path, cv, descriptors, valueMap, ConfigEntryDescriptor.ConfigValueType.STRING_LIST, defList, null, null, null, tr, 2);
+                    Class<?> elemClass = ConfigListSpecHelper.resolveListElementClass(field);
+                    ConfigEntryDescriptor.ConfigValueType listType = ConfigListSpecHelper.listValueTypeForElement(elemClass);
+                    Number[] bounds = ConfigListSpecHelper.listBoundsForValueType(field, listType);
+                    Number min = bounds[0];
+                    Number max = bounds[1];
+                    int decPlaces = ConfigListSpecHelper.decimalPlacesForList(field, listType);
+                    Class<? extends Enum<?>> enumClass = ConfigListSpecHelper.enumClassForList(elemClass);
+                    List<?> rawDef = (List<?>) defaultValue;
+                    List<Object> normDef = ConfigListSpecHelper.normalizeDefaultList(rawDef, listType, enumClass, min, max, decPlaces);
+                    Predicate<Object> pred = ConfigListSpecHelper.listValidator(listType, enumClass, min, max, decPlaces);
+                    @SuppressWarnings({"rawtypes"})
+                    ModConfigSpec.ConfigValue<?> cv = applyFileComments(builder, comments)
+                            .defineList(key, (List) normDef, pred);
+                    addDescriptor(field, path, cv, descriptors, valueMap, listType, new ArrayList<>(normDef), min, max, enumClass, tr, decPlaces);
                 } else if (type.isEnum()) {
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     ModConfigSpec.EnumValue cv = applyFileComments(builder, comments).defineEnum(key, (Enum) defaultValue);

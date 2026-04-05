@@ -15,6 +15,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 public final class MessageUtils {
@@ -202,7 +203,22 @@ public final class MessageUtils {
      * 向指定玩家发送 Notification
      */
     public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback);
+        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback, NotificationTypeKeys.DEFAULT);
+    }
+
+    /**
+     * 发送通知并指定类型
+     */
+    public static void sendNotification(ServerPlayer player, Component component, String notificationType) {
+        sendNotification(player, component, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, String notificationType) {
+        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
+        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback, notificationType);
     }
 
     /**
@@ -236,6 +252,10 @@ public final class MessageUtils {
      * 向指定玩家发送 Notification
      */
     public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        sendNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback, NotificationTypeKeys.DEFAULT);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
         Component payload = literalComponent(player, component);
         if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
@@ -254,8 +274,16 @@ public final class MessageUtils {
             }
             return;
         }
-        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style);
+        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, notificationType);
         PacketUtils.sendPacketToPlayer(player, new NotificationToClient(data));
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, String notificationType) {
+        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, String notificationType) {
+        sendNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT, notificationType);
     }
 
     /**
@@ -297,6 +325,18 @@ public final class MessageUtils {
     public static void broadcastNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
         for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
             sendNotification(player, component, style, vanillaFallback);
+        }
+    }
+
+    public static void broadcastNotification(Component component, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumNotificationStyle style, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, style, notificationType);
         }
     }
 

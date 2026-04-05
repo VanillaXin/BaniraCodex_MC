@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.util.NotificationManager;
 
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：将事件转发至 {@link BaniraClientEventHub}，并处理本 Mod 的 GUI 逻辑（如 {@link QuickActionOverlay}）
@@ -37,6 +38,7 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         BaniraClientEventHub.dispatchClientTick(event);
+        NotificationManager.get().tickOutOfScreenClick();
     }
 
     @SubscribeEvent
@@ -89,6 +91,10 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseClickedPre(ScreenEvent.MouseButtonPressed.Pre event) {
         if (QuickActionOverlay.get().handleMouseClicked(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (NotificationManager.get().tryHandleHudClick(event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
         }
         BaniraClientEventHub.dispatchGuiScreen(event);

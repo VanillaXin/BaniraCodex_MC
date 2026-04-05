@@ -7,6 +7,11 @@ import java.lang.annotation.Target;
 
 /**
  * 配置项注解，类似 Fabric Cloth Config 的 @ConfigEntry
+ * <p>
+ * {@link java.util.List} 字段须带元素泛型，以便生成 Forge 列表校验与 GUI：
+ * {@code List<String>}、{@code List<Integer>}、{@code List<Long>}、{@code List<Double>}、
+ * {@code List<Boolean>}、{@code List<枚举类型>}；原始 {@code List} 视为字符串列表。
+ * </p>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
@@ -65,7 +70,7 @@ public @interface ConfigEntry {
     }
 
     /**
-     * 整数/长整数范围
+     * 整数范围。若字段类型为 {@link java.util.List}{@code <Integer>}，则约束列表<strong>每个元素</strong>的取值。
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
@@ -76,7 +81,7 @@ public @interface ConfigEntry {
     }
 
     /**
-     * 长整数范围
+     * 长整数范围。若字段类型为 {@link java.util.List}{@code <Long>}，则约束列表每个元素。
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
@@ -87,7 +92,7 @@ public @interface ConfigEntry {
     }
 
     /**
-     * 双精度浮点数范围
+     * 双精度浮点数范围。若字段类型为 {@link java.util.List}{@code <Double>}，则约束列表每个元素；{@link #decimalPlaces()} 同时用于列表元素精度。
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)

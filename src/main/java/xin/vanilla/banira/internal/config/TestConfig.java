@@ -103,6 +103,16 @@ public class TestConfig implements ConfigData {
 
         @ConfigEntry.Gui.Tooltip(value = "根级字符串列表")
         private List<String> rootList = Arrays.asList("a", "b", "c");
+
+        @ConfigEntry.Gui.Tooltip(value = "根级整数列表（元素范围 0–100）")
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 100)
+        private List<Integer> rootIntList = Arrays.asList(1, 2, 3);
+
+        @ConfigEntry.Gui.Tooltip(value = "根级枚举列表")
+        private List<TestEnum> rootEnumList = Arrays.asList(TestEnum.OPTION_A, TestEnum.OPTION_C);
+
+        @ConfigEntry.Gui.Tooltip(value = "根级布尔列表")
+        private List<Boolean> rootBoolList = Arrays.asList(true, false);
     }
 
     @Getter

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 /**
  * 富文本数据模型。构造方法与静态工厂仅同包可见；外部 Mod 须通过 {@link AbstractComponent}
- *（本 Mod 使用 {@link xin.vanilla.banira.BaniraComponent}，或 {@link ScopedComponent}）创建实例。
+ * （本 Mod 使用 {@link xin.vanilla.banira.BaniraComponent}，或 {@link ScopedComponent}）创建实例。
  */
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Accessors(chain = true, fluent = true)
@@ -653,7 +653,11 @@ public final class Component implements Cloneable, Serializable {
                         i++;
                     }
                 } else {
-                    this.args.forEach(arg -> arg.languageCodeIfEmpty(languageCode));
+                    for (Component arg : this.getArgs()) {
+                        if (arg != null) {
+                            arg.languageCodeIfEmpty(languageCode);
+                        }
+                    }
                     components.add(new StringTextComponent(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
                 }
             }

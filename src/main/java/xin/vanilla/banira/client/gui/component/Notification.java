@@ -4,14 +4,20 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.data.*;
-import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
-import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.data.Color;
@@ -20,7 +26,13 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.common.util.Translator;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @OnlyIn(Dist.CLIENT)
@@ -28,6 +40,9 @@ import xin.vanilla.banira.common.util.ColorUtils;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true, fluent = true)
 public class Notification extends NotificationData {
+
+    private static final float CLOSE_BTN = 11f;
+    private static final float CLOSE_GAP = 4f;
 
     // 实际开始渲染时间
     private long startTime = -1;
@@ -43,14 +58,40 @@ public class Notification extends NotificationData {
     private double lastY = 0;
     private long lastRenderTime = 0;
 
+    /**
+     * 与 {@link xin.vanilla.banira.client.util.NotificationManager} 日志条目对应
+     */
+    private long logEntryId;
+
     // 缓存字段
     private transient double cachedWidth = -1;
     private transient double cachedHeight = -1;
-    private transient Text cachedText;
+    private transient ITextComponent vanillaDrawText;
+    private transient List<IReorderingProcessor> richDrawLines = new ArrayList<>();
+    private transient int richTextMaxLineW;
+    /**
+     * 最近一次绘制在 GUI 坐标下的外接矩形（用于点击检测）
+     */
+    private transient double hitX;
+    private transient double hitY;
+    private transient double hitW;
+    private transient double hitH;
+    private transient double closeBtnLeft;
+    private transient double closeBtnTop;
+    private transient double closeBtnSize = CLOSE_BTN;
+    private transient double bodyLeft;
+    private transient double bodyTop;
+    private transient double bodyW;
+    private transient double bodyH;
+    /**
+     * 首行文字顶部 GUI Y，用于 {@link #styleAtTextPoint}（文字相对通知垂直居中时与 {@link #bodyTop} 不同）
+     */
+    private transient double bodyTextTop;
 
     private Notification(Component component) {
         super(component);
-        this.updateCachedText();
+        this.notificationType(NotificationTypeKeys.DEFAULT);
+        this.updateRichLayout();
     }
 
     public static Notification ofComponentWithBlack(Component component) {
@@ -68,9 +109,6 @@ public class Notification extends NotificationData {
         return n;
     }
 
-    /**
-     * 从共用数据创建
-     */
     public static Notification fromData(NotificationData data) {
         return fromData(data, false);
     }
@@ -94,6 +132,7 @@ public class Notification extends NotificationData {
         n.maxSpeed(data.maxSpeed());
         n.acceleration(data.acceleration());
         n.decelerationDistance(data.decelerationDistance());
+        n.notificationType(data.notificationType() != null ? data.notificationType() : NotificationTypeKeys.DEFAULT);
         if (fromNetwork) {
             n.applyClientNotificationStyle(n.style());
         } else {
@@ -136,16 +175,29 @@ public class Notification extends NotificationData {
         Component c = this.component().clone();
         c.color(Color.argb(textArgb));
         this.component(c);
-        this.updateCachedText();
+        this.updateRichLayout();
     }
 
-    /**
-     * 更新缓存字段
-     */
-    private void updateCachedText() {
-        this.cachedText = new Text(this.component());
-        this.cachedWidth = AbstractGuiUtils.getTextWidth(this.cachedText()) + this.padding() * 2;
-        this.cachedHeight = AbstractGuiUtils.getTextHeight(this.cachedText()) + this.padding() * 2;
+    private void updateRichLayout() {
+        FontRenderer font = AbstractGuiUtils.getFont();
+        Minecraft mc = Minecraft.getInstance();
+        int sw = 320;
+        if (mc != null && mc.getWindow() != null) {
+            sw = mc.getWindow().getGuiScaledWidth();
+        }
+        int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
+        int maxTextW = Math.max(40, sw - reserve);
+        String lang = Translator.getClientLanguage();
+        this.vanillaDrawText = this.component().toVanilla(lang);
+        this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
+        this.richTextMaxLineW = 0;
+        for (IReorderingProcessor line : this.richDrawLines) {
+            this.richTextMaxLineW = Math.max(this.richTextMaxLineW, font.width(line));
+        }
+        float lineH = font.lineHeight;
+        double textH = this.richDrawLines.size() * lineH;
+        this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
+        this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -364,7 +416,12 @@ public class Notification extends NotificationData {
                 int drawAlpha = drawArgs.alpha();
                 int bgArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.bgColor().argb(), drawAlpha) : this.bgColor().argb();
                 int borderArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.borderColor().argb(), drawAlpha) : this.borderColor().argb();
-                int textArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.cachedText().colorArgb(), drawAlpha) : this.cachedText().colorArgb();
+                int textArgb;
+                if (this.component().color().isEmpty()) {
+                    textArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(0xFFFFFFFF, drawAlpha) : 0xFFFFFFFF;
+                } else {
+                    textArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.component().color().argb(), drawAlpha) : this.component().color().argb();
+                }
 
                 ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
                 rect.rect().radius(this.radius());
@@ -374,12 +431,91 @@ public class Notification extends NotificationData {
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
 
-                FontDrawArgs fontArgs = FontDrawArgs.of(cachedText.clone().stack(drawArgs.stack()).color(Color.argb(textArgb)))
-                        .x(x + this.padding()).y(y + this.padding())
-                        .position(EnumEllipsisPosition.MIDDLE);
-                LabelWidget.drawLimitedText(fontArgs);
+                FontRenderer font = Minecraft.getInstance().font;
+                float pad = (float) this.padding();
+                float lineH = font.lineHeight;
+                float textBlockH = this.richDrawLines.size() * lineH;
+                float innerH = h - 2f * pad;
+                float textTopLocal = y + pad + Math.max(0f, (innerH - textBlockH) * 0.5f);
+                float textX = x + pad;
+                float textY = textTopLocal;
+                for (IReorderingProcessor line : this.richDrawLines) {
+                    font.draw(drawArgs.stack(), line, textX, textY, textArgb);
+                    textY += lineH;
+                }
+
+                float cbSize = CLOSE_BTN;
+                float closeX = x + w - pad - cbSize;
+                float closeY = y + pad + Math.max(0f, (innerH - cbSize) * 0.5f);
+                BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
+                int borderRgb = this.borderColor().argb() & 0xFFFFFF;
+                int closeBg = (56 << 24) | borderRgb;
+                if (drawAlpha < 0xFF) {
+                    closeBg = ColorUtils.applyAlphaToArgb(closeBg, drawAlpha);
+                }
+                int closeIconArgb = theme.textSecondary();
+                if (drawAlpha < 0xFF) {
+                    closeIconArgb = ColorUtils.applyAlphaToArgb(closeIconArgb, drawAlpha);
+                }
+                ShapeDrawArgs closeBgShape = ShapeDrawArgs.rect(drawArgs.stack(), closeX, closeY, cbSize, cbSize, closeBg);
+                closeBgShape.rect().radius(2);
+                BaseShapeWidget.drawShape(closeBgShape);
+                AbstractGuiUtils.drawNineDotCloseIcon(drawArgs.stack(), closeX, closeY, cbSize, closeIconArgb);
+
+                double ox = coordinate.x();
+                double oy = coordinate.y();
+                this.hitX = ox;
+                this.hitY = oy;
+                this.hitW = w;
+                this.hitH = h;
+                this.closeBtnLeft = ox + w - pad - cbSize;
+                this.closeBtnTop = oy + closeY - y;
+                this.closeBtnSize = cbSize;
+                this.bodyLeft = ox + pad;
+                this.bodyTop = oy + pad;
+                this.bodyW = w - pad * 2 - CLOSE_GAP - cbSize;
+                this.bodyH = innerH;
+                this.bodyTextTop = oy + textTopLocal - y;
             });
         });
+    }
+
+    public boolean containsPoint(double guiMouseX, double guiMouseY) {
+        return guiMouseX >= this.hitX && guiMouseY >= this.hitY
+                && guiMouseX < this.hitX + this.hitW && guiMouseY < this.hitY + this.hitH;
+    }
+
+    public boolean isCloseHit(double guiMouseX, double guiMouseY) {
+        return guiMouseX >= this.closeBtnLeft && guiMouseY >= this.closeBtnTop
+                && guiMouseX < this.closeBtnLeft + this.closeBtnSize && guiMouseY < this.closeBtnTop + this.closeBtnSize;
+    }
+
+    public boolean isBodyHit(double guiMouseX, double guiMouseY) {
+        return guiMouseX >= this.bodyLeft && guiMouseY >= this.bodyTop
+                && guiMouseX < this.bodyLeft + this.bodyW && guiMouseY < this.bodyTop + this.bodyH;
+    }
+
+    public void dismiss() {
+        this.finished = true;
+    }
+
+    @Nullable
+    public Style styleAtTextPoint(double guiMouseX, double guiMouseY) {
+        if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
+            return null;
+        }
+        FontRenderer font = Minecraft.getInstance().font;
+        double rx = guiMouseX - this.bodyLeft;
+        double ry = guiMouseY - this.bodyTextTop;
+        if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {
+            return null;
+        }
+        int lineIndex = (int) (ry / font.lineHeight);
+        if (lineIndex < 0 || lineIndex >= richDrawLines.size()) {
+            return null;
+        }
+        IReorderingProcessor proc = richDrawLines.get(lineIndex);
+        return font.getSplitter().componentStyleAtWidth(proc, (int) rx);
     }
 
     private void updateLayoutContext(ScreenCoordinate coordinate, ScreenCoordinate preLayout, long currentTime) {

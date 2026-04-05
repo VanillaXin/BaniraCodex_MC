@@ -108,6 +108,36 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private ItemType itemType = ItemType.TEXT;
 
     /**
+     * {@link ItemType#NUMBER} 时：是否仅允许整数（用于 {@code List<Integer>} / {@code List<Long>} 等）。
+     */
+    @Getter
+    @Setter
+    private boolean listNumberIntegerOnly = false;
+
+    /**
+     * {@link ItemType#NUMBER} 且非整数模式时的小数位，与 {@link NumericInputWidget#decimalPlaces()} 一致。
+     */
+    @Getter
+    @Setter
+    private int listNumberDecimalPlaces = 2;
+
+    /**
+     * {@link ItemType#NUMBER} 时可选的最小值，null 表示不限制。
+     */
+    @Getter
+    @Setter
+    @Nullable
+    private Double listNumberMin;
+
+    /**
+     * {@link ItemType#NUMBER} 时可选的最大值，null 表示不限制。
+     */
+    @Getter
+    @Setter
+    @Nullable
+    private Double listNumberMax;
+
+    /**
      * 枚举类型的选项列表，itemType 为 ENUM 时生效
      */
     private List<String> enumOptions = new ArrayList<>();
@@ -379,6 +409,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             case NUMBER:
                 NumericInputWidget numInput = new NumericInputWidget(screen);
                 numInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
+                numInput.integerOnly(listNumberIntegerOnly);
+                numInput.decimalPlaces(listNumberIntegerOnly ? 0 : listNumberDecimalPlaces);
+                if (listNumberMin != null) {
+                    numInput.minValue(listNumberMin);
+                }
+                if (listNumberMax != null) {
+                    numInput.maxValue(listNumberMax);
+                }
                 numInput.value("0");
                 addInputWidget = numInput;
                 break;
@@ -538,6 +576,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             case NUMBER: {
                 NumericInputWidget num = new NumericInputWidget(screen);
                 num.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
+                num.integerOnly(listNumberIntegerOnly);
+                num.decimalPlaces(listNumberIntegerOnly ? 0 : listNumberDecimalPlaces);
+                if (listNumberMin != null) {
+                    num.minValue(listNumberMin);
+                }
+                if (listNumberMax != null) {
+                    num.maxValue(listNumberMax);
+                }
                 num.value(label.isEmpty() ? "0" : label);
                 editWidget = num;
                 break;

@@ -107,8 +107,8 @@ class DropdownOverlayWidget extends BaseWidget {
                 if (itemY + ITEM_HEIGHT < db.y() || itemY >= db.y() + db.height()) continue;
 
                 DropdownOption optEntry = options.get(i);
-                String opt = optEntry.value();
-                boolean selected = parent.isOptionSelected(opt);
+                String opt = optEntry.displayLabel();
+                boolean selected = parent.isOptionSelected(optEntry.value());
                 boolean hovered = hoveredIndex == i;
                 int itemBg = hovered ? popupSelected : (selected ? popupSelected : 0);
                 if (itemBg != 0) {

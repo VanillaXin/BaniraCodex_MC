@@ -17,10 +17,7 @@ import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
-import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
-import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
@@ -349,9 +346,55 @@ public class ConfigEditorScreen extends BaniraScreen {
             case ENUM:
                 return createEnumRow(desc, w, rowH);
             case STRING_LIST:
-                return createStringListRow(desc, w, rowH);
+            case INTEGER_LIST:
+            case LONG_LIST:
+            case DOUBLE_LIST:
+            case BOOLEAN_LIST:
+            case ENUM_LIST:
+                return createListRow(desc, w, rowH);
             default:
                 return null;
+        }
+    }
+
+    private static TagListEditorWidget.ItemType tagListItemType(ConfigEntryDescriptor desc) {
+        switch (desc.getValueType()) {
+            case STRING_LIST:
+                return TagListEditorWidget.ItemType.TEXT;
+            case INTEGER_LIST:
+            case LONG_LIST:
+            case DOUBLE_LIST:
+                return TagListEditorWidget.ItemType.NUMBER;
+            case BOOLEAN_LIST:
+                return TagListEditorWidget.ItemType.BOOLEAN;
+            case ENUM_LIST:
+                return TagListEditorWidget.ItemType.ENUM;
+            default:
+                return TagListEditorWidget.ItemType.TEXT;
+        }
+    }
+
+    private static void applyListTagNumericOptions(TagListEditorWidget tagList, ConfigEntryDescriptor desc) {
+        switch (desc.getValueType()) {
+            case INTEGER_LIST:
+            case LONG_LIST:
+                tagList.listNumberIntegerOnly(true);
+                tagList.listNumberDecimalPlaces(0);
+                tagList.listNumberMin(desc.getMinValue() != null ? desc.getMinValue().doubleValue() : null);
+                tagList.listNumberMax(desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : null);
+                break;
+            case DOUBLE_LIST:
+                tagList.listNumberIntegerOnly(false);
+                tagList.listNumberDecimalPlaces(desc.getDecimalPlaces());
+                tagList.listNumberMin(desc.getMinValue() != null ? desc.getMinValue().doubleValue() : null);
+                tagList.listNumberMax(desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : null);
+                break;
+            default:
+                tagList.listNumberIntegerOnly(false);
+                tagList.listNumberDecimalPlaces(2);
+                tagList.listNumberMin(null);
+                tagList.listNumberMax(null);
+                break;
         }
     }
 
@@ -628,7 +671,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         }, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
     }
 
-    private IConfigEntryWidget createStringListRow(ConfigEntryDescriptor desc, double w, int rowH) {
+    private IConfigEntryWidget createListRow(ConfigEntryDescriptor desc, double w, int rowH) {
         EntryRowWidget row = new EntryRowWidget(this);
 
         LabelWidget label = new LabelWidget(this);
@@ -639,14 +682,19 @@ public class ConfigEditorScreen extends BaniraScreen {
         label.textVerticalAlign(EnumAlignment.CENTER);
 
         Object raw = holder.get(desc.getPath());
-        @SuppressWarnings("unchecked")
-        List<String> list = (raw instanceof List) ? (List<String>) raw : null;
-        List<Object> items = list != null ? new ArrayList<>(list) : new ArrayList<>();
+        List<?> list = raw instanceof List ? (List<?>) raw : null;
+        List<Object> items = ConfigListSpecHelper.normalizeListForGui(list, desc);
 
         TagListEditorWidget tagList = new TagListEditorWidget(this);
         tagList.id("cfg_" + desc.getPath().replace(".", "_"));
         tagList.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
-        tagList.itemType(TagListEditorWidget.ItemType.TEXT);
+        tagList.itemType(tagListItemType(desc));
+        applyListTagNumericOptions(tagList, desc);
+        if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.ENUM_LIST && desc.getEnumClass() != null) {
+            tagList.enumOptionsList(Arrays.stream(desc.getEnumClass().getEnumConstants())
+                    .map(Enum::name)
+                    .collect(Collectors.toList()));
+        }
         tagList.items(items);
         tagList.expanded(false);
         tagList.refreshBounds();
@@ -667,7 +715,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             syncContentHeight();
         });
         tagList.onListChanged(v -> {
-            modifiedValues.put(desc.getPath(), v.stream().map(String::valueOf).collect(Collectors.toList()));
+            modifiedValues.put(desc.getPath(), ConfigListSpecHelper.listFromGuiItems(v, desc));
             markConfigTouched(desc.getPath());
         });
 
@@ -675,17 +723,17 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.addChild(label);
         row.addChild(tagList);
         addResetButton(row, desc, w, tagRowH, v -> {
-            if (v instanceof List<?> vList) {
-                tagList.items(vList.stream().map(String::valueOf).collect(Collectors.toList()));
+            if (v instanceof List) {
+                tagList.items(ConfigListSpecHelper.normalizeListForGui((List<?>) v, desc));
             }
         });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
         return new ConfigEntryWidgetAdapter(desc, row, label, tagList, tooltip,
-                () -> tagList.items().stream().map(String::valueOf).collect(Collectors.toList()),
+                () -> ConfigListSpecHelper.listFromGuiItems(new ArrayList<>(tagList.items()), desc),
                 v -> {
-                    if (v instanceof List<?> vList) {
-                        tagList.items(vList.stream().map(String::valueOf).collect(Collectors.toList()));
+                    if (v instanceof List) {
+                        tagList.items(ConfigListSpecHelper.normalizeListForGui((List<?>) v, desc));
                     }
                 });
     }

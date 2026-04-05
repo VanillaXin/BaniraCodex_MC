@@ -46,6 +46,8 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final int SCROLL_W = 6;
     private static final int SCROLL_GAP = 2;
     private static final float CLOSE_BTN_SIZE = 10f;
+    private static final int TYPE_CFG_BTN_H = 22;
+    private static final int TYPE_CFG_BTN_GAP = 6;
     private static final double LEFT_RATIO = 0.38;
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
@@ -61,10 +63,12 @@ public class NotificationLogScreen extends BaniraScreen {
     private List<NotificationLogEntry> allLogEntries = new ArrayList<>();
     private List<NotificationLogEntry> filteredEntries = new ArrayList<>();
     private int selectedIndex = -1;
+    private long pendingSelectLogEntryId;
 
     public NotificationLogScreen(Args args) {
         super(BaniraComponent.get().transClientAuto("notification_log_title").toVanilla());
         this.args = args != null ? args : new Args();
+        this.pendingSelectLogEntryId = this.args.selectLogEntryId();
         BaniraScreen.inheritThemeAndSeason(this, this.args.parentScreen(), this.args.theme(), this.args.season());
     }
 
@@ -77,6 +81,10 @@ public class NotificationLogScreen extends BaniraScreen {
         private BaniraColorConfig theme;
         @Nullable
         private EnumSeason season;
+        /**
+         * 打开时自动选中指定日志 id
+         */
+        private long selectLogEntryId;
     }
 
     @Override
@@ -84,6 +92,26 @@ public class NotificationLogScreen extends BaniraScreen {
         allLogEntries = new ArrayList<>(NotificationManager.get().getLog());
         applyFilter();
         if (selectedIndex >= filteredEntries.size()) selectedIndex = -1;
+    }
+
+    private void applyPendingLogSelection() {
+        if (pendingSelectLogEntryId == 0L) {
+            return;
+        }
+        long selectId = pendingSelectLogEntryId;
+        pendingSelectLogEntryId = 0L;
+        for (int i = 0; i < filteredEntries.size(); i++) {
+            if (filteredEntries.get(i).id() == selectId) {
+                selectedIndex = i;
+                int row = Math.max(0, i - visibleRows + 1);
+                scrollValue = row;
+                if (scrollbarWidget != null) {
+                    scrollbarWidget.value(row);
+                    scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
+                }
+                break;
+            }
+        }
     }
 
     private void applyFilter() {
@@ -121,7 +149,7 @@ public class NotificationLogScreen extends BaniraScreen {
         listX = leftX + PANEL_MARGIN;
         listY = leftY + PANEL_MARGIN + FILTER_H + 6;
         listW = leftW - PANEL_MARGIN * 2 - SCROLL_W - SCROLL_GAP;
-        int listAreaH = leftH - PANEL_MARGIN - FILTER_H - 6 - PANEL_MARGIN;
+        int listAreaH = leftH - PANEL_MARGIN - FILTER_H - 6 - PANEL_MARGIN - TYPE_CFG_BTN_H - TYPE_CFG_BTN_GAP;
         visibleRows = Math.max(1, listAreaH / LIST_ROW_HEIGHT);
         listH = visibleRows * LIST_ROW_HEIGHT;
 
@@ -164,6 +192,16 @@ public class NotificationLogScreen extends BaniraScreen {
         closeBtn.padding(1);
         closeBtn.onClick(b -> onClose());
         addWidget(closeBtn);
+
+        ButtonWidget typeCfgBtn = new ButtonWidget(this);
+        typeCfgBtn.id("type_cfg");
+        typeCfgBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
+        typeCfgBtn.bounds(new ScreenCoordinate(listX, leftY + leftH - PANEL_MARGIN - TYPE_CFG_BTN_H, Math.min(listW, 180), TYPE_CFG_BTN_H));
+        typeCfgBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(
+                new NotificationTypeConfigScreen.Args().parentScreen(this))));
+        addWidget(typeCfgBtn);
+
+        applyPendingLogSelection();
     }
 
     @Override
@@ -299,8 +337,10 @@ public class NotificationLogScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(graphics, timeArgs);
         curY += lineH;
 
-        String metaStr = String.format("[%s] %s | %s | %s | %dms",
-                sourceDisplay, entry.style().name(), entry.positionName(), entry.animationName(), entry.durationTime());
+        String metaStr = String.format("[%s] %s | %s | %s | %s | %dms",
+                sourceDisplay,
+                entry.notificationType() != null ? entry.notificationType() : "default",
+                entry.style().name(), entry.positionName(), entry.animationName(), entry.durationTime());
         FontDrawArgs metaArgs = FontDrawArgs.ofPopo(Text.literal(metaStr).color(theme.textSecondary()).stack(stack).font(font))
                 .x(x).y(curY).fontSize(10).maxWidth(w).wrap(true)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);

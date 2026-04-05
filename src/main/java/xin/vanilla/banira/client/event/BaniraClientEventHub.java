@@ -89,10 +89,10 @@ public final class BaniraClientEventHub {
                 QuickActionOverlay.resetSystemIconTextureCache();
             }
         });
-        Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getGuiGraphics().pose()));
+        Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getGuiGraphics()));
         Client.onRenderOverlayPost(event -> {
             if (VanillaGuiOverlay.PLAYER_LIST.id().equals(event.getOverlay().id()) && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.getGuiGraphics().pose());
+                NotificationManager.get().render(event.getGuiGraphics());
             }
         });
     }

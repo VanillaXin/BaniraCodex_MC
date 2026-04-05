@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
 
 @Data
@@ -40,6 +41,10 @@ public class NotificationData {
      * 语义样式
      */
     private EnumNotificationStyle style = EnumNotificationStyle.NORMAL;
+    /**
+     * 通知类型
+     */
+    private String notificationType = NotificationTypeKeys.DEFAULT;
     // endregion
 
     protected NotificationData() {
@@ -54,11 +59,16 @@ public class NotificationData {
     }
 
     public static NotificationData of(Component component, EnumPosition position, EnumMoveType animation, long durationTime, EnumNotificationStyle style) {
+        return of(component, position, animation, durationTime, style, NotificationTypeKeys.DEFAULT);
+    }
+
+    public static NotificationData of(Component component, EnumPosition position, EnumMoveType animation, long durationTime, EnumNotificationStyle style, String notificationType) {
         NotificationData d = new NotificationData(component);
         d.position(position != null ? position : EnumPosition.TOP_RIGHT);
         d.animation(animation != null ? animation : EnumMoveType.AUTO);
         d.durationTime(durationTime > 0 ? durationTime : 5000L);
         d.style(style != null ? style : EnumNotificationStyle.NORMAL);
+        d.notificationType(NotificationTypeKeys.normalizeOrDefault(notificationType));
         return d;
     }
 }

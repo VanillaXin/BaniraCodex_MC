@@ -131,13 +131,37 @@ public final class TextureUtils {
         if (MissingTextureAtlasSprite.getLocation().equals(location)) {
             return false;
         }
-        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        DynamicTexture miss = MissingTextureAtlasSprite.getTexture();
-        AbstractTexture texture = textureManager.getTexture(location, miss);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) {
+            return false;
+        }
+        TextureManager textureManager = mc.getTextureManager();
+        AbstractTexture miss = MissingTextureAtlasSprite.getTexture();
+
+        if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(location)) {
+            AbstractTexture t = textureManager.getTexture(location);
+            if (t == miss) {
+                return false;
+            }
+            if (!RenderSystem.isOnRenderThreadOrInit()) {
+                return true;
+            }
+            return t.getId() != -1;
+        }
+
+        ResourceManager resourceManager = mc.getResourceManager();
+        if (resourceManager.getResource(location).isEmpty()) {
+            return false;
+        }
+
+        if (!RenderSystem.isOnRenderThreadOrInit()) {
+            return true;
+        }
+
+        AbstractTexture texture = textureManager.getTexture(location);
         if (texture == miss) {
             return false;
         }
-        // 确保纹理已经加载
         return texture.getId() != -1;
     }
 

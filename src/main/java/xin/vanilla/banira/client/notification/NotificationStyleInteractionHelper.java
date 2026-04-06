@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.notification;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
@@ -12,7 +11,6 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fmlclient.gui.GuiUtils;
 
 import java.net.URI;
 import java.util.Collections;
@@ -89,8 +87,11 @@ public final class NotificationStyleInteractionHelper {
         if (tip == null) {
             return;
         }
-        Font font = Minecraft.getInstance().font;
-        GuiUtils.drawHoveringText(stack, Collections.singletonList(tip), mouseX, mouseY, screenW, screenH, -1, font);
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        if (screen != null) {
+            screen.renderComponentTooltip(stack, Collections.singletonList(tip), mouseX, mouseY);
+        }
     }
 
     /**

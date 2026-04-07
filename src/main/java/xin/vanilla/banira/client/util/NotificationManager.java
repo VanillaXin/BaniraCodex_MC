@@ -17,10 +17,12 @@ import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
+import xin.vanilla.banira.client.notification.NotificationClientDisplay;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.data.AbstractComponent;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -67,9 +69,105 @@ public final class NotificationManager {
         }
         notification.logEntryId(logId);
         if (!isTypeHidden(notification.notificationType())) {
-            this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
+            if (NotificationClientDisplay.deliverVanillaIfConfigured(notification.component(), notification.notificationType())) {
+                // 已由原版聊天/操作栏展示，不加入浮层
+            } else {
+                long nowMs = System.currentTimeMillis();
+                ensureCoalesceFields(notification);
+                if (tryMergeOverlayDuplicate(notification, nowMs)) {
+                    appendLog(notification, fromNetwork);
+                    return;
+                }
+                applyBurstStagger(notification, nowMs);
+                notification.coalesceLastActivityMs(nowMs);
+                this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
+            }
         }
         appendLog(notification, fromNetwork);
+    }
+
+    private static void ensureCoalesceFields(Notification n) {
+        if (n.mergeBaseComponent() == null) {
+            n.mergeBaseComponent(n.component() != null ? n.component().clone() : null);
+        }
+        if (n.coalesceKey() == null) {
+            n.coalesceKey(buildCoalesceKey(n));
+        }
+    }
+
+    private static String buildCoalesceKey(Notification n) {
+        String type = n.notificationType() != null ? n.notificationType() : NotificationTypeKeys.DEFAULT;
+        Component base = n.mergeBaseComponent() != null ? n.mergeBaseComponent() : n.component();
+        if (base == null) {
+            return type + '\0' + "{}";
+        }
+        return type + '\0' + JsonUtils.toString(AbstractComponent.serialize(base));
+    }
+
+    private Notification findCoalesceTarget(Notification incoming, long nowMs, int windowMs) {
+        String key = incoming.coalesceKey();
+        if (key == null) {
+            return null;
+        }
+        for (List<Notification> list : notifications.values()) {
+            for (Notification n : list) {
+                if (n.finished()) {
+                    continue;
+                }
+                if (!key.equals(n.coalesceKey())) {
+                    continue;
+                }
+                if (nowMs - n.coalesceLastActivityMs() <= windowMs) {
+                    return n;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean tryMergeOverlayDuplicate(Notification incoming, long nowMs) {
+        int windowMs = ClientConfig.get().notificationMergeWindowMs();
+        if (windowMs <= 0) {
+            return false;
+        }
+        Notification target = findCoalesceTarget(incoming, nowMs, windowMs);
+        if (target == null) {
+            return false;
+        }
+        target.absorbDuplicateFrom(incoming);
+        target.coalesceLastActivityMs(nowMs);
+        return true;
+    }
+
+    private void applyBurstStagger(Notification n, long nowMs) {
+        ClientConfig.RootView cfg = ClientConfig.get();
+        int stagger = cfg.notificationBurstStaggerMs();
+        if (stagger <= 0) {
+            return;
+        }
+        int th = Math.max(1, cfg.notificationBurstThreshold());
+        int pending = countActiveNotifications();
+        if (pending < th) {
+            return;
+        }
+        long extra = (long) (pending - th + 1) * stagger;
+        int cap = cfg.notificationBurstMaxExtraDelayMs();
+        if (cap > 0) {
+            extra = Math.min(extra, cap);
+        }
+        n.scheduledTime(Math.max(n.scheduledTime(), nowMs + extra));
+    }
+
+    private int countActiveNotifications() {
+        int c = 0;
+        for (List<Notification> list : notifications.values()) {
+            for (Notification n : list) {
+                if (!n.finished()) {
+                    c++;
+                }
+            }
+        }
+        return c;
     }
 
     private static void applyTypeSettings(Notification n) {

@@ -55,6 +55,34 @@ public class ClientConfig implements ConfigData {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：相同类型且内容一致时，在此时间窗（毫秒）内到达的重复项合并为一条并显示次数；0 关闭合并。",
+            en_us = "HUD notifications: duplicate same type + content within this window (ms) merge into one with a count; 0 disables.")
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 60000)
+    private int notificationMergeWindowMs = 2500;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：屏幕上未结束的通知达到此数量后，新通知按条递增延后显示（毫秒间隔见下一项）；至少为 1。",
+            en_us = "HUD notifications: when this many are still active, newer ones are staggered (see next option). Minimum 1.")
+    @ConfigEntry.BoundedDiscrete(min = 1, max = 50)
+    private int notificationBurstThreshold = 5;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：超过阈值后，每条多出的通知在「上一条」基础上再延后显示的毫秒数；0 关闭延后。",
+            en_us = "HUD notifications: extra delay per notification beyond the burst threshold; 0 disables staggering.")
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 10000)
+    private int notificationBurstStaggerMs = 400;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：单条通知因突发队列产生的最大额外延后（毫秒），避免过久不显示；0 表示不限制。",
+            en_us = "HUD notifications: cap on extra delay from burst queue; 0 means no cap.")
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 120000)
+    private int notificationBurstMaxExtraDelayMs = 20000;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.Tooltip(zh_cn = "是否在 Banira GUI 中使用本 Mod 绘制的自定义鼠标指针；关闭则使用系统默认光标。",
             en_us = "Use this mod's drawn cursor in Banira GUIs; when off, the system default cursor is shown.")
     private boolean useCustomCursor = true;
@@ -88,6 +116,22 @@ public class ClientConfig implements ConfigData {
         int notificationLogMaxEntries();
 
         RootView notificationLogMaxEntries(int value);
+
+        int notificationMergeWindowMs();
+
+        RootView notificationMergeWindowMs(int value);
+
+        int notificationBurstThreshold();
+
+        RootView notificationBurstThreshold(int value);
+
+        int notificationBurstStaggerMs();
+
+        RootView notificationBurstStaggerMs(int value);
+
+        int notificationBurstMaxExtraDelayMs();
+
+        RootView notificationBurstMaxExtraDelayMs(int value);
 
         boolean useCustomCursor();
 

@@ -28,6 +28,7 @@ public final class NetworkInit {
         HANDLER.register(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle);
         HANDLER.register(ModLoadedToBoth.class, ModLoadedToBoth::toBytes, ModLoadedToBoth::new, ModLoadedToBoth::handle);
         HANDLER.register(NotificationToClient.class, NotificationToClient::toBytes, NotificationToClient::new, NotificationToClient::handle);
+        HANDLER.register(NotificationTypesSyncToClient.class, NotificationTypesSyncToClient::toBytes, NotificationTypesSyncToClient::new, NotificationTypesSyncToClient::handle);
         HANDLER.register(ConfigSyncToServer.class, ConfigSyncToServer::toBytes, ConfigSyncToServer::new, ConfigSyncToServer::handle);
         HANDLER.register(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new,
                 (msg, ctx) -> ConfigFetchRequestToServer.handle(msg, ctx, HANDLER.getChannel()));

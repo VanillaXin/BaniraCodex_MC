@@ -28,6 +28,8 @@ import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
+import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -147,6 +149,12 @@ public class BaniraCodex {
         BaniraEventBus.Player.onLoggedOut(player -> {
             if (player instanceof ServerPlayer) {
                 PlayerUtils.removeRemoteClientDataStatus(player);
+            }
+        });
+        BaniraEventBus.Player.onLoggedIn(player -> {
+            if (player instanceof ServerPlayer sp) {
+                PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(),
+                        new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.sortedSnapshot()), sp);
             }
         });
 

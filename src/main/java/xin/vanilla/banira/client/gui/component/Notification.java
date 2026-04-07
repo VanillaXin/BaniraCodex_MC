@@ -63,6 +63,24 @@ public class Notification extends NotificationData {
      */
     private long logEntryId;
 
+    /**
+     * 合并去重：与 {@link #mergeBaseComponent} 序列化一致时的键（类型 + 内容 JSON）
+     */
+    private String coalesceKey;
+    /**
+     * 合并前原始文案（不含 “×N” 后缀），用于重复到达时重建展示
+     */
+    private Component mergeBaseComponent;
+    private int coalesceCount = 1;
+    /**
+     * 最近一次本条作为合并目标被刷新或入队的时间（毫秒）
+     */
+    private long coalesceLastActivityMs;
+    /**
+     * 是否由网络包经 {@link #fromData} 应用了客户端主题色
+     */
+    private boolean themedFromNetwork;
+
     // 缓存字段
     private transient double cachedWidth = -1;
     private transient double cachedHeight = -1;
@@ -139,7 +157,29 @@ public class Notification extends NotificationData {
             n.bgColor(data.bgColor());
             n.borderColor(data.borderColor());
         }
+        n.themedFromNetwork(fromNetwork);
         return n;
+    }
+
+    /**
+     * 将另一条相同键的通知合并进本条：增加次数、刷新文案与停留时间。
+     */
+    public void absorbDuplicateFrom(Notification incoming) {
+        this.coalesceCount(this.coalesceCount() + 1);
+        Component rebuilt = this.mergeBaseComponent().clone();
+        if (this.coalesceCount() > 1) {
+            rebuilt.append(BaniraComponent.get().literal(" ×" + this.coalesceCount()));
+        }
+        if (this.themedFromNetwork()) {
+            this.component(rebuilt);
+            this.applyClientNotificationStyle(this.style());
+        } else {
+            this.component(rebuilt);
+            this.updateRichLayout();
+        }
+        this.startTime(-1);
+        this.scheduledTime(Math.min(this.scheduledTime(), incoming.scheduledTime()));
+        this.durationTime(Math.max(this.durationTime(), incoming.durationTime()));
     }
 
     private void applyClientNotificationStyle(EnumNotificationStyle style) {

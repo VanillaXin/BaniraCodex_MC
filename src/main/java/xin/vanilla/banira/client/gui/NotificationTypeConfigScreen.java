@@ -22,10 +22,7 @@ import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.enums.EnumMoveType;
-import xin.vanilla.banira.common.enums.EnumPosition;
-import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
 
@@ -156,6 +153,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             addDurationRow(child, cw, typeId, st);
             addAnimationRow(child, cw, typeId, st);
             addPositionRow(child, cw, typeId, st);
+            addDisplayModeRow(child, cw, typeId, st);
 
             child.refreshLayout();
             root.addCollapsibleChild(child);
@@ -235,6 +233,25 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
 
+    private void addDisplayModeRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {
+        TypeRow row = new TypeRow(this, cw, ROW_HEIGHT);
+        row.label(BaniraComponent.get().transClientAuto("notification_type_config_display").toString());
+        List<DropdownOption> entries = new ArrayList<>();
+        for (EnumNotificationTypeDisplayMode m : EnumNotificationTypeDisplayMode.values()) {
+            entries.add(enumAsDropdownOption(m));
+        }
+        String sel = st.displayMode() != null ? st.displayMode().name() : EnumNotificationTypeDisplayMode.OVERLAY.name();
+        DropdownSelectWidget dd = row.dropdownEntries(cw, entries, sel);
+        dd.onSelectionChanged(vals -> {
+            if (vals.isEmpty()) {
+                return;
+            }
+            EnumNotificationTypeDisplayMode m = EnumNotificationTypeDisplayMode.parseOrDefault(vals.get(0));
+            NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).displayMode(m));
+        });
+        panel.addChildAuto(row, ROW_HEIGHT + 4);
+    }
+
     /**
      * 与 {@link DropdownSelectWidget#optionsEnum} 一致：有描述时列表显示译文，并带 {@link IEnumDescribable} 悬浮提示。
      */
@@ -255,7 +272,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 .hidden(s.hidden())
                 .durationMs(s.durationMs())
                 .positionName(s.positionName() != null ? s.positionName() : "")
-                .animationName(s.animationName() != null ? s.animationName() : "");
+                .animationName(s.animationName() != null ? s.animationName() : "")
+                .displayMode(s.displayMode() != null ? s.displayMode() : EnumNotificationTypeDisplayMode.OVERLAY);
     }
 
     private List<String> durationLabels() {

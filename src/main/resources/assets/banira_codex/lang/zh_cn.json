@@ -1,6 +1,6 @@
 {
   "key.banira_codex.categories": "香草志",
-  "key.banira_codex.codex_navigation": "打开Hub",
+  "key.banira_codex.codex_navigation": "打开香草志设置",
   "key.banira_codex.notification_log": "打开通知日志",
   "word.banira_codex.advancement_select_advancement": "点击设置进度",
   "word.banira_codex.banira_codex": "香草志",
@@ -11,7 +11,7 @@
   "word.banira_codex.click_to_suggest": "点击以填充",
   "word.banira_codex.click_to_toggle_display_states": "点击切换显示状态",
   "word.banira_codex.close": "关闭",
-  "word.banira_codex.codex_navigation_title": "香草志Hub",
+  "word.banira_codex.codex_navigation_title": "香草志设置",
   "word.banira_codex.codex_navigation_notification_log": "通知日志",
   "word.banira_codex.codex_navigation_client_config": "客户端配置",
   "word.banira_codex.codex_navigation_common_config": "服务端配置",

@@ -54,6 +54,7 @@ public final class NetworkInit {
         reg.playToServer(CustomPlayerConfigSyncToServer.TYPE, CustomPlayerConfigSyncToServer.STREAM_CODEC, CustomPlayerConfigSyncToServer::handle);
 
         reg.playToClient(NotificationToClient.TYPE, NotificationToClient.STREAM_CODEC, NotificationToClient::handle);
+        reg.playToClient(NotificationTypesSyncToClient.TYPE, NotificationTypesSyncToClient.STREAM_CODEC, NotificationTypesSyncToClient::handle);
         reg.playToClient(ConfigSnapshotToClient.TYPE, ConfigSnapshotToClient.STREAM_CODEC, ConfigSnapshotToClient::handle);
 
         reg.playToClient(AdvancementToClient.TYPE, AdvancementToClient.STREAM_CODEC, NetworkInit::onAdvancementSplitFragment);

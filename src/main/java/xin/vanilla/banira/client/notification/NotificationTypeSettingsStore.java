@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -64,7 +65,8 @@ public final class NotificationTypeSettingsStore {
                             .hidden(JsonUtils.getBoolean(o, "hidden", false))
                             .durationMs(JsonUtils.getLong(o, "durationMs", 0))
                             .positionName(JsonUtils.getString(o, "positionName", ""))
-                            .animationName(JsonUtils.getString(o, "animationName", ""));
+                            .animationName(JsonUtils.getString(o, "animationName", ""))
+                            .displayMode(EnumNotificationTypeDisplayMode.parseOrDefault(JsonUtils.getString(o, "displayMode", "")));
                     byType.put(NotificationTypeKeys.normalizeOrDefault(e.getKey()), s);
                 }
             }
@@ -92,6 +94,7 @@ public final class NotificationTypeSettingsStore {
                     o.addProperty("durationMs", s.durationMs());
                     o.addProperty("positionName", s.positionName() != null ? s.positionName() : "");
                     o.addProperty("animationName", s.animationName() != null ? s.animationName() : "");
+                    o.addProperty("displayMode", s.displayMode() != null ? s.displayMode().name() : EnumNotificationTypeDisplayMode.OVERLAY.name());
                     types.add(e.getKey(), o);
                 }
                 root.add("types", types);
@@ -134,5 +137,9 @@ public final class NotificationTypeSettingsStore {
          * 空串表示使用本次通知携带的动画
          */
         private String animationName = "";
+        /**
+         * 收到网络通知时的客户端展示方式
+         */
+        private EnumNotificationTypeDisplayMode displayMode = EnumNotificationTypeDisplayMode.OVERLAY;
     }
 }

@@ -17,6 +17,10 @@ final class ClientConfigAccess {
     private static final int DEFAULT_NIGHT_START_MINUTE = 22 * 60;
     private static final int DEFAULT_NIGHT_END_MINUTE = 6 * 60;
     private static final int DEFAULT_NOTIFICATION_LOG_MAX_ENTRIES = 500;
+    private static final int DEFAULT_NOTIFICATION_MERGE_WINDOW_MS = 2500;
+    private static final int DEFAULT_NOTIFICATION_BURST_THRESHOLD = 5;
+    private static final int DEFAULT_NOTIFICATION_BURST_STAGGER_MS = 400;
+    private static final int DEFAULT_NOTIFICATION_BURST_MAX_EXTRA_DELAY_MS = 20000;
     private static final boolean DEFAULT_USE_CUSTOM_CURSOR = true;
 
     private ClientConfigAccess() {
@@ -97,6 +101,50 @@ final class ClientConfigAccess {
                 }
                 if (holder != null) {
                     holder.set("notificationLogMaxEntries", args[0]);
+                }
+                return proxy;
+            case "notificationMergeWindowMs":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NOTIFICATION_MERGE_WINDOW_MS;
+                    }
+                    return intConfig(holder, "notificationMergeWindowMs", DEFAULT_NOTIFICATION_MERGE_WINDOW_MS);
+                }
+                if (holder != null) {
+                    holder.set("notificationMergeWindowMs", args[0]);
+                }
+                return proxy;
+            case "notificationBurstThreshold":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NOTIFICATION_BURST_THRESHOLD;
+                    }
+                    return intConfig(holder, "notificationBurstThreshold", DEFAULT_NOTIFICATION_BURST_THRESHOLD);
+                }
+                if (holder != null) {
+                    holder.set("notificationBurstThreshold", args[0]);
+                }
+                return proxy;
+            case "notificationBurstStaggerMs":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NOTIFICATION_BURST_STAGGER_MS;
+                    }
+                    return intConfig(holder, "notificationBurstStaggerMs", DEFAULT_NOTIFICATION_BURST_STAGGER_MS);
+                }
+                if (holder != null) {
+                    holder.set("notificationBurstStaggerMs", args[0]);
+                }
+                return proxy;
+            case "notificationBurstMaxExtraDelayMs":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_NOTIFICATION_BURST_MAX_EXTRA_DELAY_MS;
+                    }
+                    return intConfig(holder, "notificationBurstMaxExtraDelayMs", DEFAULT_NOTIFICATION_BURST_MAX_EXTRA_DELAY_MS);
+                }
+                if (holder != null) {
+                    holder.set("notificationBurstMaxExtraDelayMs", args[0]);
                 }
                 return proxy;
             case "useCustomCursor":

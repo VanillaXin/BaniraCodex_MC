@@ -36,6 +36,20 @@ public final class NotificationTypeRegistry {
         KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
     }
 
+    /**
+     * 合并服务端在玩家登录时同步的类型 id
+     */
+    public static void registerAllFromServer(Iterable<String> typeIds) {
+        if (typeIds == null) {
+            return;
+        }
+        for (String id : typeIds) {
+            if (id != null) {
+                KNOWN.add(NotificationTypeKeys.normalizeOrDefault(id));
+            }
+        }
+    }
+
     public static List<String> knownTypesSorted() {
         Set<String> fromSettings = NotificationTypeSettingsStore.get().typeIdsFromStored();
         List<String> all = new ArrayList<>(KNOWN);

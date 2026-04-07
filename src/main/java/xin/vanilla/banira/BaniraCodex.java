@@ -171,7 +171,7 @@ public class BaniraCodex {
                 LogoModifier.register(MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
                 ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
-                Component label = BaniraComponent.get().transClient("key.banira_codex.codex_navigation");
+                Component label = BaniraComponent.get().transClient("key.banira_codex.categories");
                 Consumer<QuickActionContext> action = ctx ->
                         Minecraft.getInstance().setScreen(
                                 new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))

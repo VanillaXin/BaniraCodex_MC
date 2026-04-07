@@ -19,6 +19,8 @@ public final class BaniraClientModSetup {
 
     public static final KeyBinding NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
 
+    public static final KeyBinding BANIRA_HUB_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
+
     private BaniraClientModSetup() {
     }
 

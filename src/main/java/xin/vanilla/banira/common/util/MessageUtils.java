@@ -19,6 +19,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
+import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
@@ -245,6 +246,7 @@ public final class MessageUtils {
     }
 
     public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
+        ServerNotificationTypeRegistry.ensureKnown(notificationType);
         Component payload = literalComponent(player, component);
         if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {

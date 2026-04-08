@@ -120,7 +120,7 @@ public class ConfigSyncToServer implements CustomPacketPayload {
         Component text = args.length > 0
                 ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
                 : BaniraComponent.get().transAuto(langKey).languageCode(lang);
-        MessageUtils.sendNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
+        MessageUtils.sendDefaultNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
     }
 
     /**

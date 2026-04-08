@@ -59,7 +59,7 @@ public class CustomPlayerConfigSyncToServer implements CustomPacketPayload {
             boolean langOk = "client".equalsIgnoreCase(lang) || "server".equalsIgnoreCase(lang)
                     || translator.getI18nFiles().contains(lang);
             if (!langOk) {
-                MessageUtils.sendNotification(player,
+                MessageUtils.sendDefaultNotification(player,
                         BaniraComponent.get().transAuto("custom_player_config_sync_invalid_language").languageCode(Translator.getPlayerLanguage(player)),
                         EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
                 return;
@@ -68,7 +68,7 @@ public class CustomPlayerConfigSyncToServer implements CustomPacketPayload {
             CustomConfig.setPlayerLanguage(uuid, lang);
             CustomConfig.setPlayerNotificationReceiveMode(uuid, packet.notificationReceiveMode);
             CustomConfig.saveCustomConfig();
-            MessageUtils.sendNotification(player,
+            MessageUtils.sendDefaultNotification(player,
                     BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(Translator.getPlayerLanguage(player)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);
         });

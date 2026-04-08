@@ -83,6 +83,6 @@ public class ConfigFetchRequestToServer {
         Component text = args.length > 0
                 ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
                 : BaniraComponent.get().transAuto(langKey).languageCode(lang);
-        MessageUtils.sendNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
+        MessageUtils.sendDefaultNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
     }
 }

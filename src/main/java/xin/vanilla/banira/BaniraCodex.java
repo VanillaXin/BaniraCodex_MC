@@ -155,7 +155,7 @@ public class BaniraCodex {
             if (player instanceof ServerPlayerEntity) {
                 ServerPlayerEntity sp = (ServerPlayerEntity) player;
                 PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(),
-                        new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.sortedSnapshot()), sp);
+                        new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), sp);
             }
         });
 

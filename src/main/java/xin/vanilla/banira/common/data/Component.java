@@ -15,6 +15,7 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -857,6 +858,19 @@ public final class Component implements Cloneable, Serializable {
     }
 
 
+    private static ClickEvent.Action parseClickEventAction(String raw) {
+        try {
+            return ClickEvent.Action.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            for (ClickEvent.Action action : ClickEvent.Action.values()) {
+                if (raw.equalsIgnoreCase(action.getName())) {
+                    return action;
+                }
+            }
+            throw new IllegalArgumentException("Unknown ClickEvent.Action: " + raw);
+        }
+    }
+
     static Component deserialize(JsonObject jsonObject) {
         Component result = new Component();
         result.text(JsonUtils.getString(jsonObject, "text"));
@@ -878,7 +892,7 @@ public final class Component implements Cloneable, Serializable {
         String clickAction = JsonUtils.getString(jsonObject, "clickEvent.action", "");
         String clickValue = JsonUtils.getString(jsonObject, "clickEvent.value", "");
         if (StringUtils.isNotNullOrEmpty(clickAction) && StringUtils.isNotNullOrEmpty(clickValue)) {
-            result.clickEvent(new ClickEvent(ClickEvent.Action.valueOf(clickAction), clickValue));
+            result.clickEvent(new ClickEvent(parseClickEventAction(clickAction), clickValue));
         }
         JsonObject hover = JsonUtils.getJsonObject(jsonObject, "hoverEvent", null);
         if (hover != null) {

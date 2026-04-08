@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -53,6 +54,13 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     @Getter
     @Setter
     private EnumAlignment textVerticalAlign = EnumAlignment.START;
+
+    /**
+     * 为 true 时，若文本因 maxWidth 被截断/省略，悬停显示完整内容。
+     */
+    @Getter
+    @Setter
+    private boolean showFullTextTooltipWhenTruncated = false;
 
     public LabelWidget(BaniraScreen screen) {
         super(screen);
@@ -97,7 +105,57 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
         drawLimitedText(args);
 
+        maybeDeferTruncationTooltip(stack);
+
         renderChildren(stack, partialTicks);
+    }
+
+    /**
+     * 当前标签在给定宽度与换行/省略设置下是否发生了可见截断。
+     */
+    private boolean isLabelTextTruncated(MatrixStack stack) {
+        int mw = (int) width();
+        if (mw <= 0 || StringUtils.isNullOrEmpty(text.content())) {
+            return false;
+        }
+        FontDrawArgs fitted = FontDrawArgs.of(text.stack(stack)).x(0).y(0).maxWidth(mw)
+                .wrap(textWrap).position(textEllipsisPosition);
+        FontDrawArgs natural = fitted.clone().maxWidth(20000).position(EnumEllipsisPosition.NONE);
+        int wNatural = calculateLimitedTextSize(natural).key();
+        int wFitted = calculateLimitedTextSize(fitted).key();
+        return wNatural > wFitted;
+    }
+
+    private void maybeDeferTruncationTooltip(MatrixStack stack) {
+        if (!showFullTextTooltipWhenTruncated || screen == null || !enabled) {
+            return;
+        }
+        if (!isLabelTextTruncated(stack)) {
+            return;
+        }
+        double mx = screen.inputState().mouseX();
+        double my = screen.inputState().mouseY();
+        if (!isMouseInside(mx, my)) {
+            return;
+        }
+        if (screen.isAnyDropdownSelectOpen()) {
+            return;
+        }
+        BaniraColorConfig theme = screen.getEffectiveTheme();
+        EnumSeason tipSeason = screen.season();
+        boolean useTexture = theme.tooltipUseTexture();
+        FontRenderer fontForTip = text.font() != null ? text.font() : screen.getFont();
+        Text tipText = text.clone();
+        int mouseX = (int) mx;
+        int mouseY = (int) my;
+        screen.addDeferredTooltipRender(s -> {
+            s.pushPose();
+            s.last().pose().setIdentity();
+            TooltipWidget.drawPopupMessage(s,
+                    FontDrawArgs.ofPopo(tipText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    theme, tipSeason);
+            s.popPose();
+        });
     }
 
     /**

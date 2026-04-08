@@ -152,7 +152,7 @@ public class BaniraCodex {
         });
         BaniraEventBus.Player.onLoggedIn(player -> {
             if (player instanceof ServerPlayer sp) {
-                PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.sortedSnapshot()), sp);
+                PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), sp);
             }
         });
 

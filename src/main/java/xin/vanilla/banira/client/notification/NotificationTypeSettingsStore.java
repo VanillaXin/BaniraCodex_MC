@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.notification;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -36,6 +37,12 @@ public final class NotificationTypeSettingsStore {
 
     private final Map<String, TypeSettings> byType = new ConcurrentHashMap<>();
 
+    /**
+     * 是否已完成至少一次磁盘加载尝试
+     */
+    @Getter
+    private volatile boolean settingsLoadedFromDisk;
+
     public static NotificationTypeSettingsStore get() {
         return INSTANCE;
     }
@@ -44,6 +51,7 @@ public final class NotificationTypeSettingsStore {
         Path path = CustomConfig.getConfigDirectory().resolve(FILE_NAME);
         File file = path.toFile();
         if (!file.exists()) {
+            markSettingsLoadedAndApplyRegistryDefaults();
             return;
         }
         try {
@@ -51,6 +59,7 @@ public final class NotificationTypeSettingsStore {
             JsonObject root = JsonUtils.parseObject(content);
             JsonElement typesEl = root.get("types");
             if (typesEl == null || !typesEl.isJsonObject()) {
+                markSettingsLoadedAndApplyRegistryDefaults();
                 return;
             }
             JsonObject types = typesEl.getAsJsonObject();
@@ -70,9 +79,34 @@ public final class NotificationTypeSettingsStore {
                     byType.put(NotificationTypeKeys.normalizeOrDefault(e.getKey()), s);
                 }
             }
+            markSettingsLoadedAndApplyRegistryDefaults();
         } catch (Exception e) {
             LOGGER.warn("Failed to load notification type settings: {}", e.getMessage());
+            markSettingsLoadedAndApplyRegistryDefaults();
         }
+    }
+
+    private void markSettingsLoadedAndApplyRegistryDefaults() {
+        settingsLoadedFromDisk = true;
+        NotificationTypeRegistry.applyAllResolvedDefaultsAfterStoreLoad();
+    }
+
+    /**
+     * 若已加载的 JSON 中不存在该类型条目，则按 {@link NotificationTypeRegistry#resolvedDisplayDefault(String)} 写入 {@code displayMode} 并保存。
+     */
+    public void applyResolvedDisplayDefaultIfNoSavedEntry(String typeId) {
+        String t = NotificationTypeKeys.normalizeOrDefault(typeId);
+        EnumNotificationTypeDisplayMode mode = NotificationTypeRegistry.resolvedDisplayDefault(t);
+        if (mode == null) {
+            return;
+        }
+        synchronized (byType) {
+            if (byType.containsKey(t)) {
+                return;
+            }
+            byType.put(t, new TypeSettings().displayMode(mode));
+        }
+        saveAsync();
     }
 
     public void saveAsync() {

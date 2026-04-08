@@ -163,91 +163,48 @@ public final class MessageUtils {
         player.displayClientMessage(message.toChat(Translator.getPlayerLanguage(player)), true);
     }
 
-    /**
-     * 向指定玩家发送 Notification
-     *
-     * @param player    目标玩家
-     * @param component 通知内容
-     */
-    public static void sendNotification(ServerPlayer player, Component component) {
-        sendNotification(player, component, EnumNotificationStyle.NORMAL);
-    }
+    // region 指定通知类型 — sendNotification / broadcastNotification
 
     /**
-     * 向指定玩家发送 Notification
-     *
-     * @param vanillaFallback 对端无 Banira 客户端时的回退展示（默认聊天栏）
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationVanillaFallback vanillaFallback) {
-        sendNotification(player, component, EnumNotificationStyle.NORMAL, vanillaFallback);
-    }
-
-    /**
-     * 向指定玩家发送 Notification
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style) {
-        sendNotification(player, component, style, EnumNotificationVanillaFallback.CHAT);
-    }
-
-    /**
-     * 向指定玩家发送 Notification
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback, NotificationTypeKeys.DEFAULT);
-    }
-
-    /**
-     * 发送通知并指定类型
+     * 向指定玩家发送通知（指定 {@code notificationType}，位置与动画取服务端该类型登记默认值，5s、NORMAL、聊天栏回退）
      */
     public static void sendNotification(ServerPlayer player, Component component, String notificationType) {
         sendNotification(player, component, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
     }
 
     public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, String notificationType) {
-        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, EnumNotificationVanillaFallback.CHAT, notificationType);
+        String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
+        sendNotification(player, component, ServerNotificationTypeRegistry.defaultPosition(tid), ServerNotificationTypeRegistry.defaultAnimation(tid), 5000L, style, EnumNotificationVanillaFallback.CHAT, tid);
     }
 
     public static void sendNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
-        sendNotification(player, component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L, style, vanillaFallback, notificationType);
+        String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
+        sendNotification(player, component, ServerNotificationTypeRegistry.defaultPosition(tid), ServerNotificationTypeRegistry.defaultAnimation(tid), 5000L, style, vanillaFallback, tid);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, String notificationType) {
+        sendNotification(player, component, position, EnumMoveType.AUTO, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, String notificationType) {
+        sendNotification(player, component, position, animation, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, String notificationType) {
+        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
+    }
+
+    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, String notificationType) {
+        sendNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT, notificationType);
     }
 
     /**
-     * 向指定玩家发送 Notification
-     *
-     * @param player         目标玩家
-     * @param component      通知内容
-     * @param position       位置
-     * @param animation      动画
-     * @param durationTimeMs 持续时间（毫秒）
+     * 向指定玩家发送通知（完整参数，含 {@code notificationType}）
      */
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs) {
-        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL);
-    }
-
-    /**
-     * 向指定玩家发送 Notification
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationVanillaFallback vanillaFallback) {
-        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, vanillaFallback);
-    }
-
-    /**
-     * 向指定玩家发送 Notification
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
-        sendNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT);
-    }
-
-    /**
-     * 向指定玩家发送 Notification
-     */
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        sendNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback, NotificationTypeKeys.DEFAULT);
-    }
-
     public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
-        ServerNotificationTypeRegistry.ensureKnown(notificationType);
-        Component payload = literalComponent(player, component);
+        String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
+        ServerNotificationTypeRegistry.ensureKnown(tid);
+        Component payload = notificationPayloadForPlayer(player, component);
         if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
                 sendActionBarMessage(player, payload);
@@ -265,60 +222,13 @@ public final class MessageUtils {
             }
             return;
         }
-        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, notificationType);
+        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, tid);
         PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
     }
 
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, String notificationType) {
-        sendNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT, notificationType);
-    }
-
-    public static void sendNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, String notificationType) {
-        sendNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT, notificationType);
-    }
-
     /**
-     * 将通知内容按目标玩家语言解析为纯文本 {@link AbstractComponent#literal}
+     * 广播通知（指定类型，位置与动画取服务端默认值，5s、NORMAL、聊天栏回退）
      */
-    public static Component literalComponent(ServerPlayer player, Component component) {
-        if (component == null || component.isEmpty()) {
-            return BaniraComponent.get().literal("");
-        }
-        String lang = Translator.getPlayerLanguage(player);
-        String resolved = component.getString(lang, true, true);
-        return BaniraComponent.get().literal(resolved != null ? resolved : "");
-    }
-
-    /**
-     * 向所有在线玩家广播 Notification
-     */
-    public static void broadcastNotification(Component component) {
-        broadcastNotification(component, EnumNotificationStyle.NORMAL);
-    }
-
-    /**
-     * 向所有在线玩家广播 Notification
-     */
-    public static void broadcastNotification(Component component, EnumNotificationVanillaFallback vanillaFallback) {
-        broadcastNotification(component, EnumNotificationStyle.NORMAL, vanillaFallback);
-    }
-
-    /**
-     * 向所有在线玩家广播 Notification
-     */
-    public static void broadcastNotification(Component component, EnumNotificationStyle style) {
-        broadcastNotification(component, style, EnumNotificationVanillaFallback.CHAT);
-    }
-
-    /**
-     * 向所有在线玩家广播 Notification
-     */
-    public static void broadcastNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
-            sendNotification(player, component, style, vanillaFallback);
-        }
-    }
-
     public static void broadcastNotification(Component component, String notificationType) {
         for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
             sendNotification(player, component, notificationType);
@@ -329,6 +239,152 @@ public final class MessageUtils {
         for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
             sendNotification(player, component, style, notificationType);
         }
+    }
+
+    public static void broadcastNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, style, vanillaFallback, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumPosition position, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, position, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, position, animation, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, position, animation, durationTimeMs, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, position, animation, durationTimeMs, style, notificationType);
+        }
+    }
+
+    public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback, notificationType);
+        }
+    }
+
+    // endregion
+
+    // region 默认类型 {@link NotificationTypeKeys#DEFAULT} — sendDefaultNotification / broadcastDefaultNotification
+
+    /**
+     * 向指定玩家发送默认类型通知（位置与动画取服务端对 {@link NotificationTypeKeys#DEFAULT} 的登记，5s、NORMAL、聊天栏回退）
+     */
+    public static void sendDefaultNotification(ServerPlayer player, Component component) {
+        sendDefaultNotification(player, component, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumNotificationVanillaFallback vanillaFallback) {
+        sendDefaultNotification(player, component, EnumNotificationStyle.NORMAL, vanillaFallback);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumNotificationStyle style) {
+        sendDefaultNotification(player, component, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        String tid = NotificationTypeKeys.DEFAULT;
+        sendNotification(player, component, ServerNotificationTypeRegistry.defaultPosition(tid), ServerNotificationTypeRegistry.defaultAnimation(tid), 5000L, style, vanillaFallback, tid);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumPosition position) {
+        sendDefaultNotification(player, component, position, EnumMoveType.AUTO, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation) {
+        sendDefaultNotification(player, component, position, animation, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs) {
+        sendDefaultNotification(player, component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
+        sendDefaultNotification(player, component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void sendDefaultNotification(ServerPlayer player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        sendNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback, NotificationTypeKeys.DEFAULT);
+    }
+
+    public static void broadcastDefaultNotification(Component component) {
+        broadcastDefaultNotification(component, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumNotificationVanillaFallback vanillaFallback) {
+        broadcastDefaultNotification(component, EnumNotificationStyle.NORMAL, vanillaFallback);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumNotificationStyle style) {
+        broadcastDefaultNotification(component, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendDefaultNotification(player, component, style, vanillaFallback);
+        }
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumPosition position) {
+        broadcastDefaultNotification(component, position, EnumMoveType.AUTO, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumPosition position, EnumMoveType animation) {
+        broadcastDefaultNotification(component, position, animation, 5000L, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs) {
+        broadcastDefaultNotification(component, position, animation, durationTimeMs, EnumNotificationStyle.NORMAL, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style) {
+        broadcastDefaultNotification(component, position, animation, durationTimeMs, style, EnumNotificationVanillaFallback.CHAT);
+    }
+
+    public static void broadcastDefaultNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
+        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+            sendDefaultNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback);
+        }
+    }
+
+    // endregion
+
+    /**
+     * 为发往指定玩家的通知克隆组件并绑定语言，保留子节点、换行与点击/悬停等结构（经 {@link AbstractComponent#serialize} 网络传输）
+     */
+    public static Component notificationPayloadForPlayer(ServerPlayer player, Component component) {
+        if (component == null || component.isEmpty()) {
+            return BaniraComponent.get().literal("");
+        }
+        Component copy = component.clone();
+        copy.languageCodeIfEmpty(Translator.getPlayerLanguage(player));
+        return copy;
+    }
+
+    /**
+     * 将通知内容按目标玩家语言解析为纯文本 {@link AbstractComponent#literal}（会丢失换行结构、点击与悬停事件等）
+     */
+    public static Component literalComponent(ServerPlayer player, Component component) {
+        if (component == null || component.isEmpty()) {
+            return BaniraComponent.get().literal("");
+        }
+        String lang = Translator.getPlayerLanguage(player);
+        String resolved = component.getString(lang, true, true);
+        return BaniraComponent.get().literal(resolved != null ? resolved : "");
     }
 
 }

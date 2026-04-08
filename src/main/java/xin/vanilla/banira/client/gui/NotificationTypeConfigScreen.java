@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -27,9 +28,7 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
@@ -138,29 +137,115 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         root.headerHeight(ROW_HEIGHT);
         root.onExpandChanged(p -> syncContentHeight());
 
-        List<String> types = NotificationTypeRegistry.knownTypesSorted();
-        for (String typeId : types) {
-            CollapsiblePanelWidget child = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-            child.text(Text.literal(typeId)).expanded(false);
-            child.contentGap(ROW_GAP);
-            child.headerHeight(ROW_HEIGHT);
-            child.onExpandChanged(p -> syncContentHeight());
-
-            NotificationTypeSettingsStore.TypeSettings st = NotificationTypeSettingsStore.get().getOrCreate(typeId);
-            double cw = child.getContentWidth();
-
-            addTypeToggleRow(child, cw, typeId, st);
-            addDurationRow(child, cw, typeId, st);
-            addAnimationRow(child, cw, typeId, st);
-            addPositionRow(child, cw, typeId, st);
-            addDisplayModeRow(child, cw, typeId, st);
-
-            child.refreshLayout();
-            root.addCollapsibleChild(child);
-        }
+        TypeTreeNode tree = buildTypeTree(NotificationTypeRegistry.knownTypesSorted());
+        appendTypeTreeNodes(root, tree, "");
 
         root.refreshLayout();
         return root;
+    }
+
+    /**
+     * 按 {@code .} 分段的前缀树节点；{@link #typesEndingHere} 为恰好在该路径结束的完整类型 id。
+     */
+    private static final class TypeTreeNode {
+        private final Map<String, TypeTreeNode> children = new TreeMap<>();
+        private final List<String> typesEndingHere = new ArrayList<>();
+    }
+
+    private static TypeTreeNode buildTypeTree(List<String> sortedTypeIds) {
+        TypeTreeNode root = new TypeTreeNode();
+        for (String typeId : sortedTypeIds) {
+            if (typeId == null || typeId.isEmpty()) {
+                continue;
+            }
+            String[] parts = typeId.split("\\.", -1);
+            TypeTreeNode cur = root;
+            boolean any = false;
+            for (String part : parts) {
+                if (part.isEmpty()) {
+                    continue;
+                }
+                any = true;
+                cur = cur.children.computeIfAbsent(part, k -> new TypeTreeNode());
+            }
+            if (any) {
+                cur.typesEndingHere.add(typeId);
+            }
+        }
+        return root;
+    }
+
+    /**
+     * 将树挂到父折叠面板下：先本层完整类型（排序），再各段名子树（排序）。
+     * 若某段下仅有一个类型且无更深层级，则不额外嵌套一层标题，直接挂该类型的配置面板。
+     *
+     * @param pathFromRoot 从根到<strong>当前 trie 节点</strong>的 {@code .} 连接路径（与 {@link TypeTreeNode} 深度一致），用于从叶子标题中剔除已由父级分组表达的前缀
+     */
+    private void appendTypeTreeNodes(CollapsiblePanelWidget parent, TypeTreeNode node, String pathFromRoot) {
+        List<String> terminals = new ArrayList<>(node.typesEndingHere);
+        Collections.sort(terminals);
+        for (String typeId : terminals) {
+            parent.addCollapsibleChild(createTypeLeafPanel(parent, typeId, pathFromRoot));
+        }
+        for (Map.Entry<String, TypeTreeNode> e : node.children.entrySet()) {
+            String segment = e.getKey();
+            TypeTreeNode childNode = e.getValue();
+            String childPath = pathFromRoot.isEmpty() ? segment : pathFromRoot + "." + segment;
+            if (childNode.typesEndingHere.size() == 1 && childNode.children.isEmpty()) {
+                parent.addCollapsibleChild(createTypeLeafPanel(parent, childNode.typesEndingHere.get(0), childPath));
+                continue;
+            }
+            CollapsiblePanelWidget group = parent.createChildPanel();
+            group.text(Text.literal(segment)).expanded(false);
+            group.contentGap(ROW_GAP);
+            group.headerHeight(ROW_HEIGHT);
+            group.onExpandChanged(p -> syncContentHeight());
+            appendTypeTreeNodes(group, childNode, childPath);
+            group.refreshLayout();
+            parent.addCollapsibleChild(group);
+        }
+    }
+
+    /**
+     * 叶子标题：去掉与当前 trie 路径重合的前缀，仅保留父级折叠组未展示的后缀（最末一段与路径完全一致时只显示该段）。
+     */
+    private static String leafTitleStripPrefix(String fullTypeId, String trieNodePath) {
+        if (trieNodePath == null || trieNodePath.isEmpty()) {
+            return fullTypeId;
+        }
+        if (fullTypeId.equals(trieNodePath)) {
+            return lastPathSegment(fullTypeId);
+        }
+        String prefix = trieNodePath + ".";
+        if (fullTypeId.startsWith(prefix)) {
+            return fullTypeId.substring(prefix.length());
+        }
+        return fullTypeId;
+    }
+
+    private static String lastPathSegment(String dotted) {
+        int i = dotted.lastIndexOf('.');
+        return i < 0 ? dotted : dotted.substring(i + 1);
+    }
+
+    private CollapsiblePanelWidget createTypeLeafPanel(CollapsiblePanelWidget parent, String typeId, String trieNodePathForTitle) {
+        CollapsiblePanelWidget child = parent.createChildPanel();
+        child.text(Text.literal(leafTitleStripPrefix(typeId, trieNodePathForTitle))).expanded(false);
+        child.contentGap(ROW_GAP);
+        child.headerHeight(ROW_HEIGHT);
+        child.onExpandChanged(p -> syncContentHeight());
+
+        NotificationTypeSettingsStore.TypeSettings st = NotificationTypeSettingsStore.get().getOrCreate(typeId);
+        double cw = child.getContentWidth();
+
+        addTypeToggleRow(child, cw, typeId, st);
+        addDurationRow(child, cw, typeId, st);
+        addAnimationRow(child, cw, typeId, st);
+        addPositionRow(child, cw, typeId, st);
+        addDisplayModeRow(child, cw, typeId, st);
+
+        child.refreshLayout();
+        return child;
     }
 
     private void addTypeToggleRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {
@@ -489,7 +574,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             LabelWidget l = new LabelWidget(screen, new ScreenCoordinate(0, 0, lw, rowHeight()));
             l.text(Text.literal(text));
             l.textWrap(false);
+            l.textEllipsisPosition(EnumEllipsisPosition.END);
             l.textVerticalAlign(EnumAlignment.CENTER);
+            l.showFullTextTooltipWhenTruncated(true);
             addChild(l);
             return l;
         }

@@ -150,7 +150,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         int mouseY = (int) my;
         screen.addDeferredTooltipRender(s -> {
             s.pushPose();
-            s.last().pose().setIdentity();
+            s.last().pose().identity();
             TooltipWidget.drawPopupMessage(s,
                     FontDrawArgs.ofPopo(tipText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, tipSeason);

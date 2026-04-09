@@ -507,7 +507,7 @@ public class NotificationLogScreen extends BaniraScreen {
                 final Text tipText = Text.literal(tipLine);
                 addDeferredTooltipRender(s -> {
                     s.pushPose();
-                    s.last().pose().setIdentity();
+                    s.last().pose().identity();
                     TooltipWidget.drawPopupMessage(s,
                             FontDrawArgs.ofPopo(tipText.stack(s).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
                             tipTheme, tipSeason);

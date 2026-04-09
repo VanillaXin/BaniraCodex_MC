@@ -863,7 +863,7 @@ public final class Component implements Cloneable, Serializable {
             return ClickEvent.Action.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             for (ClickEvent.Action action : ClickEvent.Action.values()) {
-                if (raw.equalsIgnoreCase(action.getName())) {
+                if (raw.equalsIgnoreCase(action.getSerializedName())) {
                     return action;
                 }
             }

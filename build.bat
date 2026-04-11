@@ -3,7 +3,7 @@ chcp 65001 > nul
 setlocal enabledelayedexpansion
 
 :: 配置常量
-set EXCLUDED_BRANCHES=main
+set EXCLUDED_BRANCHES=HEAD
 set JDK_PROPERTIES_FILE=jdks.properties
 set GRADLE_USER_HOME=D:\Data\Gradle
 
@@ -13,7 +13,7 @@ for /f "tokens=*" %%b in ('git branch -r ^| findstr /v "%EXCLUDED_BRANCHES%"') d
     set "branch=!branch:origin/=!"
     call :build_branch !branch!
 )
-git checkout main > nul 2>&1
+git checkout forge/16.5 > nul 2>&1
 
 
 goto :eof

@@ -15,7 +15,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
@@ -34,6 +33,7 @@ import static java.util.Collections.emptyList;
  *     new QuickActionContextMenuItem(BaniraComponent.get().literal("子命令"), subCtx -> { }));
  * reg.menuAnchorEntryId("home");
  * }</pre>
+ * <p>多 mod 注册时，展示顺序按条目 id 稳定排序：先按命名空间（首个 {@code ':'} 之前，无则视为空）、再按路径（之后子串），均按 {@link Locale#ROOT} 不区分大小写，与各 mod 客户端初始化回调的执行先后无关。</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class QuickActionRegistry {
@@ -41,13 +41,36 @@ public final class QuickActionRegistry {
 
     private static final QuickActionRegistry INSTANCE = new QuickActionRegistry();
 
+    /**
+     * 先按 {@link #namespaceKey}、再按 {@link #pathKey}（ROOT 小写）比较条目 id。
+     */
+    private static final Comparator<String> ENTRY_ID_COMPARATOR =
+            Comparator.comparing(QuickActionRegistry::namespaceKey).thenComparing(QuickActionRegistry::pathKey);
+
     private final Map<String, QuickActionEntry> entries = new ConcurrentHashMap<>();
-    private final List<String> registrationOrder = new ArrayList<>();
+
+    private final Object registryLock = new Object();
 
     @Nullable
     private volatile String menuAnchorEntryId;
 
     private QuickActionRegistry() {
+    }
+
+    private static String namespaceKey(String id) {
+        int i = id.indexOf(':');
+        return i >= 0 ? id.substring(0, i).toLowerCase(Locale.ROOT) : "";
+    }
+
+    private static String pathKey(String id) {
+        int i = id.indexOf(':');
+        return (i >= 0 ? id.substring(i + 1) : id).toLowerCase(Locale.ROOT);
+    }
+
+    private List<String> sortedEntryIdsSnapshot() {
+        List<String> ids = new ArrayList<>(entries.keySet());
+        ids.sort(ENTRY_ID_COMPARATOR);
+        return ids;
     }
 
     public static QuickActionRegistry get() {
@@ -295,15 +318,14 @@ public final class QuickActionRegistry {
                 .onActivate(action);
         e.contextMenuItems.clear();
         e.contextMenuItems.addAll(contextMenuItems);
-        entries.put(id, e);
-        if (!registrationOrder.contains(id)) {
-            registrationOrder.add(id);
+        synchronized (registryLock) {
+            entries.put(id, e);
         }
         QuickActionOverlay.get().onRegistryChanged();
     }
 
     /**
-     * 当前所有展示类型为 {@link EnumQuickActionDisplay#ICON} 的已注册 id（顺序与注册顺序一致）。
+     * 当前所有展示类型为 {@link EnumQuickActionDisplay#ICON} 的已注册 id
      */
     @Nonnull
     public LinkedHashSet<String> registeredIconEntryIds() {
@@ -317,18 +339,20 @@ public final class QuickActionRegistry {
     }
 
     public void unregister(@Nonnull String id) {
-        entries.remove(id);
-        registrationOrder.remove(id);
-        if (id.equals(menuAnchorEntryId)) {
-            menuAnchorEntryId = null;
+        synchronized (registryLock) {
+            entries.remove(id);
+            if (id.equals(menuAnchorEntryId)) {
+                menuAnchorEntryId = null;
+            }
         }
         QuickActionOverlay.get().onRegistryChanged();
     }
 
     public void clear() {
-        entries.clear();
-        registrationOrder.clear();
-        menuAnchorEntryId = null;
+        synchronized (registryLock) {
+            entries.clear();
+            menuAnchorEntryId = null;
+        }
         QuickActionOverlay.get().onRegistryChanged();
     }
 
@@ -339,19 +363,23 @@ public final class QuickActionRegistry {
 
     @Nonnull
     public List<QuickActionEntry> allEntriesInOrder() {
-        List<QuickActionEntry> list = new ArrayList<>();
-        for (String id : registrationOrder) {
-            QuickActionEntry e = entries.get(id);
-            if (e != null) {
-                list.add(e);
+        synchronized (registryLock) {
+            List<QuickActionEntry> list = new ArrayList<>(entries.size());
+            for (String id : sortedEntryIdsSnapshot()) {
+                QuickActionEntry e = entries.get(id);
+                if (e != null) {
+                    list.add(e);
+                }
             }
+            return Collections.unmodifiableList(list);
         }
-        return Collections.unmodifiableList(list);
     }
 
     @Nonnull
     public List<String> registeredIds() {
-        return registrationOrder.stream().filter(entries::containsKey).collect(Collectors.toList());
+        synchronized (registryLock) {
+            return Collections.unmodifiableList(sortedEntryIdsSnapshot());
+        }
     }
 
     /**

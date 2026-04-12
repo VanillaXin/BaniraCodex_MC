@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.Util;
@@ -12,10 +11,17 @@ import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.client.gui.GuiUtils;
+import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.net.URI;
-import java.util.Collections;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -89,8 +95,23 @@ public final class NotificationStyleInteractionHelper {
         if (tip == null) {
             return;
         }
-        FontRenderer font = Minecraft.getInstance().font;
-        GuiUtils.drawHoveringText(stack, Collections.singletonList(tip), mouseX, mouseY, screenW, screenH, -1, font);
+        Minecraft mc = Minecraft.getInstance();
+        BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
+        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
+        boolean useTexture = theme.tooltipUseTexture();
+
+        Component wrapped = BaniraComponent.get().object(tip);
+        Text tipText = new Text(wrapped);
+
+        stack.pushPose();
+        stack.last().pose().setIdentity();
+        try {
+            TooltipWidget.drawPopupMessage(stack,
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    theme, season);
+        } finally {
+            stack.popPose();
+        }
     }
 
     /**

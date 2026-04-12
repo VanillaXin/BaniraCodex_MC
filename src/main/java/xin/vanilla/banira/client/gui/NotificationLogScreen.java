@@ -498,8 +498,11 @@ public class NotificationLogScreen extends BaniraScreen {
             if (!isAnyDropdownSelectOpen()) {
                 Style hoverSt = styleAtDetailContentPoint(inputState.mouseX(), inputState.mouseY());
                 if (hoverSt != null && hoverSt.getHoverEvent() != null) {
-                    addDeferredTooltipRender(s -> NotificationStyleInteractionHelper.renderHoverTooltip(
-                            s, (int) inputState.mouseX(), (int) inputState.mouseY(), width, height, hoverSt));
+                    ITextComponent tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
+                    if (tipVanilla != null) {
+                        deferThemedTooltipWidget(theme, (int) inputState.mouseX(), (int) inputState.mouseY(),
+                                new Text(BaniraComponent.get().object(tipVanilla)));
+                    }
                 }
             }
         }
@@ -509,26 +512,32 @@ public class NotificationLogScreen extends BaniraScreen {
         }
     }
 
+    /**
+     * 延迟绘制 {@link TooltipWidget}（屏幕坐标、当前界面主题/季节），避免 scissor 与矩阵层级导致错位或被挡。
+     */
+    private void deferThemedTooltipWidget(BaniraColorConfig theme, int tipX, int tipY, Text tipText) {
+        if (isAnyDropdownSelectOpen()) {
+            return;
+        }
+        final BaniraColorConfig tipTheme = theme != null ? theme : getEffectiveTheme();
+        final EnumSeason tipSeason = season();
+        final boolean useTexture = tipTheme.tooltipUseTexture();
+        addDeferredTooltipRender(s -> {
+            s.pushPose();
+            s.last().pose().setIdentity();
+            TooltipWidget.drawPopupMessage(s,
+                    FontDrawArgs.ofPopo(tipText.stack(s).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
+                    tipTheme, tipSeason);
+            s.popPose();
+        });
+    }
+
     private void maybeRenderMetaHoverTooltip(BaniraColorConfig theme) {
         double mx = inputState.mouseX();
         double my = inputState.mouseY();
         for (MetaHoverRegion r : metaHoverRegions) {
             if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
-                final int tipX = (int) mx;
-                final int tipY = (int) my;
-                final String tipLine = r.fullText;
-                final BaniraColorConfig tipTheme = theme != null ? theme : getEffectiveTheme();
-                final EnumSeason tipSeason = season();
-                final boolean useTexture = tipTheme.tooltipUseTexture();
-                final Text tipText = Text.literal(tipLine);
-                addDeferredTooltipRender(s -> {
-                    s.pushPose();
-                    s.last().pose().setIdentity();
-                    TooltipWidget.drawPopupMessage(s,
-                            FontDrawArgs.ofPopo(tipText.stack(s).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
-                            tipTheme, tipSeason);
-                    s.popPose();
-                });
+                deferThemedTooltipWidget(theme, (int) mx, (int) my, Text.literal(r.fullText));
                 break;
             }
         }

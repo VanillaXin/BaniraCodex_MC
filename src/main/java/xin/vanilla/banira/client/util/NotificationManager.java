@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.experimental.Accessors;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
@@ -13,9 +14,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.notification.NotificationClientDisplay;
@@ -366,9 +367,18 @@ public final class NotificationManager {
         }
 
         if (frameHoverStyle != null) {
-            AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.TOOLTIP, s ->
-                    NotificationStyleInteractionHelper.renderHoverTooltip(s, (int) mx, (int) my,
-                            (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle));
+            boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+            try {
+                RenderSystem.disableDepthTest();
+                NotificationStyleInteractionHelper.renderHoverTooltip(stack, (int) mx, (int) my,
+                        (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle);
+            } finally {
+                if (depthTest) {
+                    RenderSystem.enableDepthTest();
+                } else {
+                    RenderSystem.disableDepthTest();
+                }
+            }
         }
     }
 

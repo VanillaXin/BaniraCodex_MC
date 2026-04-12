@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -203,8 +204,9 @@ public final class QuickActionOverlay {
     }
 
     private void syncLayoutWithRegistry() {
-        layout.syncIconBarWithRegistry(QuickActionRegistry.get().registeredIconEntryIds());
-        layout.hiddenIconIds().removeIf(id -> !QuickActionRegistry.get().registeredIconEntryIds().contains(id));
+        LinkedHashSet<String> iconIds = QuickActionRegistry.get().registeredIconEntryIds();
+        layout.syncIconBarWithRegistry(iconIds);
+        layout.hiddenIconIds().removeIf(id -> !iconIds.contains(id));
     }
 
     private void ensureLoaded() {

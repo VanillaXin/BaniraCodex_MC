@@ -11,9 +11,16 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.net.URI;
-import java.util.Collections;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -89,9 +96,21 @@ public final class NotificationStyleInteractionHelper {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        Screen screen = mc.screen;
-        if (screen != null) {
-            screen.renderComponentTooltip(stack, Collections.singletonList(tip), mouseX, mouseY);
+        BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
+        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
+        boolean useTexture = theme.tooltipUseTexture();
+
+        xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
+        Text tipText = new Text(wrapped);
+
+        stack.pushPose();
+        stack.last().pose().setIdentity();
+        try {
+            TooltipWidget.drawPopupMessage(stack,
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    theme, season);
+        } finally {
+            stack.popPose();
         }
     }
 

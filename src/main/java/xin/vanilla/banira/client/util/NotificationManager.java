@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.notification.NotificationClientDisplay;
@@ -365,8 +366,9 @@ public final class NotificationManager {
         }
 
         if (frameHoverStyle != null) {
-            NotificationStyleInteractionHelper.renderHoverTooltip(stack, (int) mx, (int) my,
-                    (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle);
+            AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.TOOLTIP, s ->
+                    NotificationStyleInteractionHelper.renderHoverTooltip(s, (int) mx, (int) my,
+                            (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle));
         }
     }
 

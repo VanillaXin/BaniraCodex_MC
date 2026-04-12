@@ -24,6 +24,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
@@ -182,9 +183,20 @@ public class NotificationLogScreen extends BaniraScreen {
         return buildSearchHaystack(e).toLowerCase(Locale.ROOT).contains(q);
     }
 
+    private static String componentPlainSingleLineForLog(@Nullable Component c) {
+        if (c == null) {
+            return "";
+        }
+        String s = c.toString();
+        if (s == null) {
+            return "";
+        }
+        return s.replace('\r', ' ').replace('\n', ' ');
+    }
+
     private String buildSearchHaystack(NotificationLogEntry e) {
         StringBuilder sb = new StringBuilder();
-        sb.append(e.component().toString()).append('\n');
+        sb.append(componentPlainSingleLineForLog(e.component())).append('\n');
         sb.append(e.source()).append('\n');
         sb.append(e.notificationType() != null ? e.notificationType() : "").append('\n');
         sb.append(e.style().name()).append('\n');
@@ -426,8 +438,10 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
-        String contentStr = entry.component().toString();
-        if (StringUtils.isNullOrEmptyEx(contentStr)) contentStr = "-";
+        String contentStr = componentPlainSingleLineForLog(entry.component());
+        if (StringUtils.isNullOrEmptyEx(contentStr)) {
+            contentStr = "-";
+        }
 
         FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(selected ? theme.textPrimary() : theme.textSecondary()).stack(stack).font(font))
                 .x(textX).y(y + (h - 9) / 2).fontSize(9).maxWidth(textW)

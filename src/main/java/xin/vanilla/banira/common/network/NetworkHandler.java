@@ -5,7 +5,6 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
-import xin.vanilla.banira.common.network.packet.SplitPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.List;
@@ -53,10 +52,10 @@ public class NetworkHandler {
      * @param handler     处理器
      * @param <MSG>       包类型
      */
-    public <MSG> void register(Class<MSG> packetClass,
-                               BiConsumer<MSG, PacketBuffer> encoder,
-                               Function<PacketBuffer, MSG> decoder,
-                               BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
+    public <MSG extends NetworkPacket> void register(Class<MSG> packetClass,
+                                                     BiConsumer<MSG, PacketBuffer> encoder,
+                                                     Function<PacketBuffer, MSG> decoder,
+                                                     BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
         channel.registerMessage(
                 nextPacketId++,
                 packetClass,

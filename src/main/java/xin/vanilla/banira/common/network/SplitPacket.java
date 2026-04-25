@@ -1,4 +1,4 @@
-package xin.vanilla.banira.common.network.packet;
+package xin.vanilla.banira.common.network;
 
 import lombok.Data;
 import net.minecraft.network.PacketBuffer;
@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * 分包数据包
  */
 @Data
-public abstract class SplitPacket {
+public abstract class SplitPacket implements NetworkPacket {
     private static final Random random = new Random();
 
     /**

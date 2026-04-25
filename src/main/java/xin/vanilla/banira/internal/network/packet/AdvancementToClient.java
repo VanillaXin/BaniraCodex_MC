@@ -4,7 +4,7 @@ import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.data.ArraySet;
-import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 

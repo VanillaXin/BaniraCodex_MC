@@ -12,8 +12,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.common.network.packet.SplitPacket;
 
 import java.util.List;
 import java.util.Map;
@@ -46,9 +47,20 @@ public final class PacketUtils {
     /**
      * 广播自定义载荷至所有玩家
      */
-    public static void broadcastPayload(CustomPacketPayload payload) {
+    public static <MSG extends NetworkPacket> void broadcastPayload(MSG msg) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPayloadToPlayer(player, payload)
+                sendPayloadToPlayer(player, msg)
+        );
+    }
+
+    /**
+     * 广播分包数据包至所有玩家
+     *
+     * @param packet 要发送的数据包
+     */
+    public static <T extends SplitPacket> void broadcastSplitPacket(T packet) {
+        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                sendSplitPacketToPlayer(packet, player)
         );
     }
 
@@ -56,7 +68,7 @@ public final class PacketUtils {
      * 发送载荷至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    public static void sendPacketToServer(CustomPacketPayload msg) {
+    public static <MSG extends NetworkPacket> void sendPacketToServer(MSG msg) {
         if (!hasChannel(msg.type().id())) {
             return;
         }
@@ -72,18 +84,18 @@ public final class PacketUtils {
     /**
      * 发送载荷至玩家
      */
-    public static void sendPacketToPlayer(CustomPacketPayload msg, ServerPlayer player) {
+    public static <MSG extends NetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
         sendPayloadToPlayer(player, msg);
     }
 
     /**
      * 发送载荷至玩家
      */
-    public static void sendPacketToPlayer(ServerPlayer player, CustomPacketPayload msg) {
+    public static <MSG extends NetworkPacket> void sendPacketToPlayer(ServerPlayer player, MSG msg) {
         sendPayloadToPlayer(player, msg);
     }
 
-    private static void sendPayloadToPlayer(ServerPlayer player, CustomPacketPayload msg) {
+    private static <MSG extends NetworkPacket> void sendPayloadToPlayer(ServerPlayer player, MSG msg) {
         if (!hasChannel(player, msg.type().id())) {
             return;
         }
@@ -94,14 +106,14 @@ public final class PacketUtils {
     /**
      * 发送分包载荷至玩家
      */
-    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
+    public static <T extends SplitPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
         sendSplitPacketToPlayer(player, packet);
     }
 
     /**
      * 发送分包载荷至玩家
      */
-    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
+    public static <T extends SplitPacket> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(player, splitPacket);
@@ -112,7 +124,7 @@ public final class PacketUtils {
      * 发送分包载荷至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    public static <T extends SplitPacket & CustomPacketPayload> void sendSplitPacketToServer(T packet) {
+    public static <T extends SplitPacket> void sendSplitPacketToServer(T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToServer(splitPacket);

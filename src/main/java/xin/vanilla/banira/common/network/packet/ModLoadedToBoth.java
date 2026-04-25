@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -28,7 +29,7 @@ import java.util.function.Consumer;
  */
 @Getter
 @Accessors(chain = true, fluent = true)
-public class ModLoadedToBoth implements CustomPacketPayload {
+public class ModLoadedToBoth implements NetworkPacket {
 
     public static final CustomPacketPayload.Type<ModLoadedToBoth> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("mod_loaded"));

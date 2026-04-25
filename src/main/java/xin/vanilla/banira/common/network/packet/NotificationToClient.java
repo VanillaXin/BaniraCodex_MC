@@ -22,13 +22,14 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 
 @Getter
 @Accessors(fluent = true)
-public class NotificationToClient implements CustomPacketPayload {
+public class NotificationToClient implements NetworkPacket {
 
     public static final CustomPacketPayload.Type<NotificationToClient> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("notification"));

@@ -124,8 +124,7 @@ public final class DimensionUtils {
     public static void requestDataFromServer() {
         if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
             requestedData = true;
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new RequestToBoth(NetworkInit.REQUEST_DIMENSION_DATA));
+            PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_DIMENSION_DATA));
             LOGGER.debug("Request dimension data from server.");
         }
     }

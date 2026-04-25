@@ -121,8 +121,7 @@ public final class BiomeUtils {
     public static void requestDataFromServer() {
         if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
             requestedData = true;
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
+            PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
             LOGGER.debug("Request biome data from server.");
         }
     }

@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +23,7 @@ import java.util.Map;
 /**
  * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
  */
-public class ConfigSnapshotToClient {
+public class ConfigSnapshotToClient implements NetworkPacket {
 
     private static final Logger LOGGER = LogManager.getLogger();
 

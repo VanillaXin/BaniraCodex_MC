@@ -24,6 +24,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 数值滑块 Widget。用于在 min～max 范围内选择数值。
@@ -164,6 +165,11 @@ public class SliderWidget extends BaseWidget {
     @Getter
     @Setter
     private Consumer<Double> onValueChanged;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Function<Double, String> valueFormatter;
 
     @Getter
     @Setter
@@ -454,6 +460,12 @@ public class SliderWidget extends BaseWidget {
     }
 
     private String formatDisplayValue(double v) {
+        if (valueFormatter != null) {
+            String formatted = valueFormatter.apply(v);
+            if (StringUtils.isNotNullOrEmpty(formatted)) {
+                return formatted;
+            }
+        }
         if (decimalPlaces >= 0) {
             return NumberUtils.toFixedEx(v, decimalPlaces);
         }

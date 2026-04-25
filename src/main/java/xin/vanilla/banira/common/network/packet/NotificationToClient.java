@@ -17,12 +17,13 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 
 @Getter
 @Accessors(fluent = true)
-public class NotificationToClient {
+public class NotificationToClient implements NetworkPacket {
 
     private static final int MAX_COMPONENT_JSON_LENGTH = 16384;
     private static final String DEFAULT_POSITION = "TOP_RIGHT";

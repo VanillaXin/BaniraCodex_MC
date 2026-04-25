@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
  */
-public class ConfigSyncToServer {
+public class ConfigSyncToServer implements NetworkPacket {
 
     private static final long NOTIFY_OK_MS = 3000L;
     private static final long NOTIFY_ERR_MS = 4500L;

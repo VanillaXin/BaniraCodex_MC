@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.network.packet;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -11,8 +10,10 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
+import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import java.util.LinkedHashMap;
@@ -21,7 +22,7 @@ import java.util.Map;
 /**
  * 客户端请求服务端返回指定配置的全量快照
  */
-public class ConfigFetchRequestToServer {
+public class ConfigFetchRequestToServer implements NetworkPacket {
 
     private static final long NOTIFY_ERR_MS = 4500L;
 
@@ -43,7 +44,7 @@ public class ConfigFetchRequestToServer {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, CustomPayloadEvent.Context ctx, SimpleChannel replyChannel) {
+    public static void handle(ConfigFetchRequestToServer packet, CustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             if (!ctx.isServerSide()) {
                 return;
@@ -71,7 +72,7 @@ public class ConfigFetchRequestToServer {
                 Object v = holder.get(path);
                 snapshot.put(path, v != null ? ConfigSyncToServer.encodeConfigValue(v) : "");
             }
-            replyChannel.reply(new ConfigSnapshotToClient(packet.configName, snapshot), ctx);
+            PacketUtils.sendPacketToPlayer(new ConfigSnapshotToClient(packet.configName, snapshot), player);
         });
         ctx.setPacketHandled(true);
     }

@@ -60,8 +60,7 @@ public final class AdvancementUtils {
         if (FMLEnvironment.dist.isClient() && !requestedAdvancementData) {
             requestedAdvancementData = true;
             dataLoaded = false;
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
+            PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
             LOGGER.debug("Request advancement data from server.");
         }
     }

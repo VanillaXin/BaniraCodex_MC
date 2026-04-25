@@ -6,10 +6,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  */
 @Getter
 @Accessors(chain = true, fluent = true)
-public class ModLoadedToBoth {
+public class ModLoadedToBoth implements NetworkPacket {
 
     /**
      * 物理客户端收到服务端回包时的处理（由客户端初始化注册，避免 common 类引用 {@code Minecraft}）。
@@ -119,7 +119,7 @@ public class ModLoadedToBoth {
                 }
                 List<String> serverIds = ModLoadedPresence.announcedModIds();
                 if (!serverIds.isEmpty()) {
-                    PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new ModLoadedToBoth(serverIds), player);
+                    PacketUtils.sendPacketToPlayer(new ModLoadedToBoth(serverIds), player);
                 }
             } else {
                 if (!packet.modids().isEmpty()) {

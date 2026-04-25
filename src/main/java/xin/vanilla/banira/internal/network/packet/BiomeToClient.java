@@ -3,7 +3,7 @@ package xin.vanilla.banira.internal.network.packet;
 import lombok.Getter;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
-import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
 
 import java.util.ArrayList;

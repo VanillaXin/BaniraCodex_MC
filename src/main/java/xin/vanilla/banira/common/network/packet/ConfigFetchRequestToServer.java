@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.network.packet;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -11,6 +10,7 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 /**
  * 客户端请求服务端返回指定配置的全量快照
  */
-public class ConfigFetchRequestToServer {
+public class ConfigFetchRequestToServer implements NetworkPacket {
 
     private static final long NOTIFY_ERR_MS = 4500L;
 
@@ -45,7 +45,7 @@ public class ConfigFetchRequestToServer {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, Supplier<NetworkEvent.Context> ctx, SimpleChannel replyChannel) {
+    public static void handle(ConfigFetchRequestToServer packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if (!ctx.get().getDirection().getReceptionSide().isServer()) {
                 return;
@@ -73,7 +73,7 @@ public class ConfigFetchRequestToServer {
                 Object v = holder.get(path);
                 snapshot.put(path, v != null ? ConfigSyncToServer.encodeConfigValue(v) : "");
             }
-            PacketUtils.sendPacketToPlayer(replyChannel, new ConfigSnapshotToClient(packet.configName, snapshot), player);
+            PacketUtils.sendPacketToPlayer(new ConfigSnapshotToClient(packet.configName, snapshot), player);
         });
         ctx.get().setPacketHandled(true);
     }

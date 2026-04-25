@@ -30,19 +30,18 @@ public final class NetworkInit {
         HANDLER.register(NotificationToClient.class, NotificationToClient::toBytes, NotificationToClient::new, NotificationToClient::handle);
         HANDLER.register(NotificationTypesSyncToClient.class, NotificationTypesSyncToClient::toBytes, NotificationTypesSyncToClient::new, NotificationTypesSyncToClient::handle);
         HANDLER.register(ConfigSyncToServer.class, ConfigSyncToServer::toBytes, ConfigSyncToServer::new, ConfigSyncToServer::handle);
-        HANDLER.register(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new,
-                (msg, ctx) -> ConfigFetchRequestToServer.handle(msg, ctx, HANDLER.getChannel()));
+        HANDLER.register(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new, ConfigFetchRequestToServer::handle);
         HANDLER.register(ConfigSnapshotToClient.class, ConfigSnapshotToClient::toBytes, ConfigSnapshotToClient::new, ConfigSnapshotToClient::handle);
         HANDLER.register(CustomPlayerConfigSyncToServer.class, CustomPlayerConfigSyncToServer::toBytes, CustomPlayerConfigSyncToServer::new, CustomPlayerConfigSyncToServer::handle);
 
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) -> {
-            PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new AdvancementToClient(AdvancementUtils.advancementData()), player);
+            PacketUtils.sendSplitPacketToPlayer(new AdvancementToClient(AdvancementUtils.advancementData()), player);
         });
         RequestToBoth.registerHandler(REQUEST_DIMENSION_DATA, (packet, player) -> {
-            PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new DimensionToClient(DimensionUtils.getClientDimensionIds()), player);
+            PacketUtils.sendSplitPacketToPlayer(new DimensionToClient(DimensionUtils.getClientDimensionIds()), player);
         });
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
-            PacketUtils.sendSplitPacketToPlayer(HANDLER.getChannel(), new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
+            PacketUtils.sendSplitPacketToPlayer(new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
     }
 }

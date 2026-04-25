@@ -12,6 +12,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
@@ -22,7 +23,7 @@ import java.util.List;
 /**
  * 将服务端当前已知的通知类型列表（及可选的「配置文件无条目时」展示方式建议）同步给刚登录的玩家客户端
  */
-public class NotificationTypesSyncToClient implements CustomPacketPayload {
+public class NotificationTypesSyncToClient implements NetworkPacket {
 
     public static final CustomPacketPayload.Type<NotificationTypesSyncToClient> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("notification_types"));

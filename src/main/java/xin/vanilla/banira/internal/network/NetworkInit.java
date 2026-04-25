@@ -1,12 +1,12 @@
 package xin.vanilla.banira.internal.network;
 
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -74,7 +74,7 @@ public final class NetworkInit {
         dispatchSplitClientPayload(payload, ctx, BiomeToClient::handle);
     }
 
-    private static <T extends SplitPacket & CustomPacketPayload> void dispatchSplitClientPayload(
+    private static <T extends SplitPacket> void dispatchSplitClientPayload(
             T payload,
             IPayloadContext ctx,
             BiConsumer<T, IPayloadContext> onMerged) {

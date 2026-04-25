@@ -12,6 +12,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -21,7 +22,7 @@ import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
  */
-public class CustomPlayerConfigSyncToServer implements CustomPacketPayload {
+public class CustomPlayerConfigSyncToServer implements NetworkPacket {
 
     public static final CustomPacketPayload.Type<CustomPlayerConfigSyncToServer> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("custom_player_config"));

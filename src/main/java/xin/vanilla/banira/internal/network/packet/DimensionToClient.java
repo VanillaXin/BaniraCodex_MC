@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.packet.SplitPacket;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
 

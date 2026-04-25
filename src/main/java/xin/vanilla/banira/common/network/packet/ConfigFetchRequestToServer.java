@@ -15,6 +15,7 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -26,7 +27,7 @@ import java.util.Map;
 /**
  * 客户端请求服务端返回指定配置的全量快照
  */
-public class ConfigFetchRequestToServer implements CustomPacketPayload {
+public class ConfigFetchRequestToServer implements NetworkPacket {
 
     public static final CustomPacketPayload.Type<ConfigFetchRequestToServer> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("config_fetch"));

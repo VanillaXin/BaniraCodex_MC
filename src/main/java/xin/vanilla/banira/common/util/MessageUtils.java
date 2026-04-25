@@ -234,7 +234,7 @@ public final class MessageUtils {
             return;
         }
         NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, tid);
-        PacketUtils.sendPacketToPlayer(player, new NotificationToClient(data));
+        PacketUtils.sendPacketToPlayer(new NotificationToClient(data), player);
     }
 
     /**

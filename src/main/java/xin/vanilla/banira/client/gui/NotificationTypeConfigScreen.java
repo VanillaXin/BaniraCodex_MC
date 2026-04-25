@@ -50,6 +50,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private static final int BUTTON_PADDING = 12;
     private static final int BUTTON_GAP = 8;
     private static final int CARD_GAP = 1;
+    private static final long DURATION_SLIDER_MIN_MS = 0L;
+    private static final long DURATION_SLIDER_MAX_MS = 20000L;
+    private static final long DURATION_SLIDER_STEP_MS = 500L;
 
     private final Args args;
 
@@ -264,11 +267,16 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private void addDurationRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {
         TypeRow row = new TypeRow(this, cw, ROW_HEIGHT);
         row.label(BaniraComponent.get().transClientAuto("notification_type_config_duration").toString());
-        List<String> labels = durationLabels();
-        DropdownSelectWidget dd = row.dropdown(cw, labels, durationLabelFor(st.durationMs()));
-        dd.onSelectionChanged(vals -> {
-            if (vals.isEmpty()) return;
-            long ms = parseDurationLabel(vals.get(0));
+        long current = Math.max(DURATION_SLIDER_MIN_MS, st.durationMs());
+        SliderWidget slider = row.slider(cw);
+        slider.minValue(DURATION_SLIDER_MIN_MS)
+                .maxValue(Math.max(DURATION_SLIDER_MAX_MS, current))
+                .step(DURATION_SLIDER_STEP_MS)
+                .decimalPlaces(0)
+                .value(current)
+                .valueFormatter(v -> durationLabelForSlider(Math.round(v)));
+        slider.onValueChanged(v -> {
+            long ms = Math.round(v);
             NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).durationMs(ms));
         });
         panel.addChildAuto(row, ROW_HEIGHT + 4);
@@ -361,40 +369,11 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 .displayMode(s.displayMode() != null ? s.displayMode() : EnumNotificationTypeDisplayMode.OVERLAY);
     }
 
-    private List<String> durationLabels() {
-        List<String> list = new ArrayList<>();
-        list.add(BaniraComponent.get().transClientAuto("notification_type_config_inherit").toString());
-        list.add(msLabel(2000));
-        list.add(msLabel(3000));
-        list.add(msLabel(5000));
-        list.add(msLabel(8000));
-        list.add(msLabel(10000));
-        list.add(msLabel(15000));
-        list.add(msLabel(20000));
-        return list;
-    }
-
-    private String msLabel(long ms) {
-        return ms + " ms";
-    }
-
-    private String durationLabelFor(long durationMs) {
+    private String durationLabelForSlider(long durationMs) {
         if (durationMs <= 0) {
             return BaniraComponent.get().transClientAuto("notification_type_config_inherit").toString();
         }
-        return msLabel(durationMs);
-    }
-
-    private long parseDurationLabel(String label) {
-        if (BaniraComponent.get().transClientAuto("notification_type_config_inherit").toString().equals(label)) {
-            return 0L;
-        }
-        try {
-            String n = label.replace(" ms", "").trim();
-            return Long.parseLong(n);
-        } catch (Exception e) {
-            return 0L;
-        }
+        return durationMs + " ms";
     }
 
     private String toggleText(boolean hidden) {
@@ -603,6 +582,16 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             d.selectedValues(Collections.singletonList(selected));
             addChild(d);
             return d;
+        }
+
+        SliderWidget slider(double cw) {
+            double lw = Math.max(LABEL_COLUMN_MIN_WIDTH, cw * LABEL_COLUMN_WIDTH_RATIO);
+            double vx = lw + GAP_LABEL_TO_VALUE;
+            double vw = Math.max(VALUE_AREA_MIN_WIDTH, cw - vx);
+            SliderWidget s = new SliderWidget(screen, new ScreenCoordinate(vx, 0, vw, rowHeight()));
+            s.showValue(true);
+            addChild(s);
+            return s;
         }
 
         DropdownSelectWidget dropdownEntries(double cw, List<DropdownOption> entries, String selectedValue) {

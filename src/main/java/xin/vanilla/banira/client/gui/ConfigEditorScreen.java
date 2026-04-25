@@ -24,7 +24,6 @@ import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -784,7 +783,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             toSync.put(e.getKey(), serializeValue(e.getValue()));
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
             modifiedValues.clear();
             syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
@@ -826,7 +825,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             toSync.put(e.getKey(), serializeValue(e.getValue()));
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigSyncToServer(holder.getConfigName(), toSync));
+            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
             modifiedValues.clear();
             syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
@@ -854,7 +853,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(), new ConfigFetchRequestToServer(holder.getConfigName()));
+            PacketUtils.sendPacketToServer(new ConfigFetchRequestToServer(holder.getConfigName()));
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));

@@ -18,7 +18,6 @@ import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -235,7 +234,7 @@ public final class MessageUtils {
             return;
         }
         NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, tid);
-        PacketUtils.sendPacketToPlayer(NetworkInit.HANDLER.getChannel(), new NotificationToClient(data), player);
+        PacketUtils.sendPacketToPlayer(new NotificationToClient(data), player);
     }
 
     /**

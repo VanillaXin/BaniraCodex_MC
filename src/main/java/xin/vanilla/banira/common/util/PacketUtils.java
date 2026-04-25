@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -37,6 +38,17 @@ public final class PacketUtils {
 
     /**
      * 广播数据包至所有玩家
+     *
+     * @param packet 数据包
+     */
+    public static void broadcastPacket(IPacket<?> packet) {
+        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                player.connection.send(packet)
+        );
+    }
+
+    /**
+     * 广播数据包至所有玩家
      */
     public static <MSG extends NetworkPacket> void broadcastPacket(MSG msg) {
         SimpleChannel channel = msg.channel().get();
@@ -48,7 +60,7 @@ public final class PacketUtils {
     /**
      * 广播分包数据包至所有玩家
      *
-     * @param packet  要发送的数据包
+     * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket> void broadcastSplitPacket(T packet) {
         SimpleChannel channel = packet.channel().get();
@@ -75,9 +87,9 @@ public final class PacketUtils {
     /**
      * 发送分包数据包至玩家
      *
-     * @param packet  要发送的数据包
-     * @param player  目标玩家
-     * @param <T>     分包类型
+     * @param packet 要发送的数据包
+     * @param player 目标玩家
+     * @param <T>    分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToPlayer(T packet, ServerPlayerEntity player) {
         sendSplitPacketToPlayer(packet.channel().get(), packet, player);
@@ -86,8 +98,8 @@ public final class PacketUtils {
     /**
      * 发送分包数据包至服务器
      *
-     * @param packet  要发送的数据包
-     * @param <T>     分包类型
+     * @param packet 要发送的数据包
+     * @param <T>    分包类型
      */
     public static <T extends SplitPacket> void sendSplitPacketToServer(T packet) {
         sendSplitPacketToServer(packet.channel().get(), packet);

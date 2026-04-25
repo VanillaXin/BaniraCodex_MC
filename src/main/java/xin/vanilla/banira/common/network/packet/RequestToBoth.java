@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.function.Supplier;
  * 请求数据同步包
  */
 @Getter
-public class RequestToBoth {
+public class RequestToBoth implements NetworkPacket {
     /**
      * 请求类型ID到处理器的映射
      */

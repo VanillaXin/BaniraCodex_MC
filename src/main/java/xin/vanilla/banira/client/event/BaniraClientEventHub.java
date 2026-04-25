@@ -18,7 +18,6 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -73,7 +72,7 @@ public final class BaniraClientEventHub {
         Player.onClientLoggedIn(player -> {
             List<String> ids = ModLoadedPresence.announcedModIds();
             if (!ids.isEmpty()) {
-                PacketUtils.sendPacketToServer(NetworkInit.HANDLER::getChannel, new ModLoadedToBoth(ids));
+                PacketUtils.sendPacketToServer(new ModLoadedToBoth(ids));
             }
         });
         Player.onClientLoggedOut(player -> {

@@ -6,6 +6,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -16,7 +17,7 @@ import java.util.function.Supplier;
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
  */
-public class CustomPlayerConfigSyncToServer {
+public class CustomPlayerConfigSyncToServer implements NetworkPacket {
 
     private static final long NOTIFY_OK_MS = 3000L;
     private static final long NOTIFY_ERR_MS = 4500L;

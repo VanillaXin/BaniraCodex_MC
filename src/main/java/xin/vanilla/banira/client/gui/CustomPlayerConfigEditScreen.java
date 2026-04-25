@@ -24,7 +24,6 @@ import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -181,8 +180,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
                 : CustomConfig.notificationReceiveModeNotification;
 
         try {
-            PacketUtils.sendPacketToServer(NetworkInit.HANDLER.getChannel(),
-                    new CustomPlayerConfigSyncToServer(lang, modeValue));
+            PacketUtils.sendPacketToServer(new CustomPlayerConfigSyncToServer(lang, modeValue));
             CustomConfig.setPlayerLanguageClient(uuid, lang);
             CustomConfig.setPlayerNotificationReceiveModeClient(uuid, modeValue);
         } catch (Exception ex) {

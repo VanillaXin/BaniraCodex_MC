@@ -12,7 +12,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -48,7 +48,7 @@ public final class PacketUtils {
     /**
      * 广播数据包至所有玩家
      */
-    public static <MSG extends NetworkPacket> void broadcastPacket(MSG msg) {
+    public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
         SimpleChannel channel = msg.channel().get();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendPacketToPlayer(channel, msg, player)
@@ -71,14 +71,14 @@ public final class PacketUtils {
     /**
      * 发送数据包至服务器
      */
-    public static <MSG extends NetworkPacket> void sendPacketToServer(MSG msg) {
+    public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
         sendPacketToServer(msg.channel().get(), msg);
     }
 
     /**
      * 发送数据包至玩家
      */
-    public static <MSG extends NetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
         sendPacketToPlayer(msg.channel().get(), msg, player);
     }
 
@@ -108,7 +108,7 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    private static <MSG extends NetworkPacket> void sendPacketToServer(SimpleChannel channel, MSG msg) {
+    private static <MSG extends INetworkPacket> void sendPacketToServer(SimpleChannel channel, MSG msg) {
         if (!hasChannel(channel)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -123,7 +123,7 @@ public final class PacketUtils {
     /**
      * 发送数据包至玩家
      */
-    private static <MSG extends NetworkPacket> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
+    private static <MSG extends INetworkPacket> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
         if (!hasChannel(player, channel.getName())) return;
         if (!PlayerUtils.isRemoteClientModInstalled(player, channel.getName().getNamespace())) return;
         channel.send(msg, PacketDistributor.PLAYER.with(player));

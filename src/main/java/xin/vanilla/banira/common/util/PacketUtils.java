@@ -12,7 +12,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 
@@ -47,7 +47,7 @@ public final class PacketUtils {
     /**
      * 广播自定义载荷至所有玩家
      */
-    public static <MSG extends NetworkPacket> void broadcastPayload(MSG msg) {
+    public static <MSG extends INetworkPacket> void broadcastPayload(MSG msg) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendPayloadToPlayer(player, msg)
         );
@@ -68,7 +68,7 @@ public final class PacketUtils {
      * 发送载荷至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    public static <MSG extends NetworkPacket> void sendPacketToServer(MSG msg) {
+    public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
         if (!hasChannel(msg.type().id())) {
             return;
         }
@@ -84,18 +84,18 @@ public final class PacketUtils {
     /**
      * 发送载荷至玩家
      */
-    public static <MSG extends NetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
         sendPayloadToPlayer(player, msg);
     }
 
     /**
      * 发送载荷至玩家
      */
-    public static <MSG extends NetworkPacket> void sendPacketToPlayer(ServerPlayer player, MSG msg) {
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(ServerPlayer player, MSG msg) {
         sendPayloadToPlayer(player, msg);
     }
 
-    private static <MSG extends NetworkPacket> void sendPayloadToPlayer(ServerPlayer player, MSG msg) {
+    private static <MSG extends INetworkPacket> void sendPayloadToPlayer(ServerPlayer player, MSG msg) {
         if (!hasChannel(player, msg.type().id())) {
             return;
         }

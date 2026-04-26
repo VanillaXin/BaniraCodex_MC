@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
@@ -21,7 +22,8 @@ import java.util.stream.Collectors;
 @Getter
 public class BiomeToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<BiomeToClient>,
-        SplitPacket.SplittableSplitPacket<BiomeToClient>, CustomPacketPayload {
+        SplitPacket.SplittableSplitPacket<BiomeToClient>,
+        NetworkPacket {
 
     public static final CustomPacketPayload.Type<BiomeToClient> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("biome_sync"));

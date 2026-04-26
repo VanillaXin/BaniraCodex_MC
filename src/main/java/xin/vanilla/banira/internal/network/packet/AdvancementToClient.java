@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.ArraySet;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
@@ -20,7 +21,8 @@ import java.util.List;
 @Getter
 public class AdvancementToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<AdvancementToClient>,
-        SplitPacket.SplittableSplitPacket<AdvancementToClient>, CustomPacketPayload {
+        SplitPacket.SplittableSplitPacket<AdvancementToClient>,
+        NetworkPacket {
 
     public static final CustomPacketPayload.Type<AdvancementToClient> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("advancement_sync"));

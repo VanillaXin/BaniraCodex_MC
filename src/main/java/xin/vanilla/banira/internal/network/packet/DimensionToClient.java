@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.network.packet;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
 
@@ -15,7 +16,8 @@ import java.util.stream.Collectors;
 @Getter
 public class DimensionToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<DimensionToClient>,
-        SplitPacket.SplittableSplitPacket<DimensionToClient> {
+        SplitPacket.SplittableSplitPacket<DimensionToClient>,
+        NetworkPacket {
 
     private final List<String> dimensionIds;
 

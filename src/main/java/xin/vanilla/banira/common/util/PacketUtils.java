@@ -62,7 +62,7 @@ public final class PacketUtils {
      *
      * @param packet 要发送的数据包
      */
-    public static <T extends SplitPacket> void broadcastSplitPacket(T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
         SimpleChannel channel = packet.channel().get();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendSplitPacketToPlayer(channel, packet, player)
@@ -91,7 +91,7 @@ public final class PacketUtils {
      * @param player 目标玩家
      * @param <T>    分包类型
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
         sendSplitPacketToPlayer(packet.channel().get(), packet, player);
     }
 
@@ -101,7 +101,7 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      * @param <T>    分包类型
      */
-    public static <T extends SplitPacket> void sendSplitPacketToServer(T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
         sendSplitPacketToServer(packet.channel().get(), packet);
     }
 
@@ -139,7 +139,7 @@ public final class PacketUtils {
      * @param player  目标玩家
      * @param <T>     分包类型
      */
-    private static <T extends SplitPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(channel, splitPacket, player);
@@ -153,7 +153,7 @@ public final class PacketUtils {
      * @param packet  要发送的数据包
      * @param <T>     分包类型
      */
-    private static <T extends SplitPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToServer(channel, splitPacket);

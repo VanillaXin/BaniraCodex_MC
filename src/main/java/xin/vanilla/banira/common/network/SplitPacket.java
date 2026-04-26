@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * 分包数据包
  */
 @Data
-public abstract class SplitPacket implements NetworkPacket {
+public abstract class SplitPacket {
     private static final Random random = new Random();
 
     /**

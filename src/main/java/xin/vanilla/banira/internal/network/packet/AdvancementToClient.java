@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 import xin.vanilla.banira.common.data.ArraySet;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
@@ -15,7 +16,8 @@ import java.util.List;
 @Getter
 public class AdvancementToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<AdvancementToClient>,
-        SplitPacket.SplittableSplitPacket<AdvancementToClient> {
+        SplitPacket.SplittableSplitPacket<AdvancementToClient>,
+        NetworkPacket {
     private final ArraySet<AdvancementData> advancements;
 
     public AdvancementToClient(ArraySet<AdvancementData> advancements) {

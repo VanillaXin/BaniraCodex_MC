@@ -75,7 +75,7 @@ public class NetworkHandler {
      * @param handler     处理器
      * @param <MSG>       包类型
      */
-    public <MSG extends SplitPacket> void registerSplit(
+    public <MSG extends SplitPacket & INetworkPacket> void registerSplit(
             Class<MSG> packetClass,
             BiConsumer<MSG, FriendlyByteBuf> encoder,
             Function<FriendlyByteBuf, MSG> decoder,

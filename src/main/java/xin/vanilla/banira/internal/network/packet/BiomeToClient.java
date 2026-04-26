@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.network.packet;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
 
@@ -16,7 +17,8 @@ import java.util.stream.Collectors;
 @Getter
 public class BiomeToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<BiomeToClient>,
-        SplitPacket.SplittableSplitPacket<BiomeToClient> {
+        SplitPacket.SplittableSplitPacket<BiomeToClient>,
+        NetworkPacket {
 
     private final List<String> biomeIds;
 

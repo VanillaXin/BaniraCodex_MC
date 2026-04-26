@@ -58,7 +58,7 @@ public final class PacketUtils {
      *
      * @param packet 要发送的数据包
      */
-    public static <T extends SplitPacket> void broadcastSplitPacket(T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendSplitPacketToPlayer(packet, player)
         );
@@ -106,14 +106,14 @@ public final class PacketUtils {
     /**
      * 发送分包载荷至玩家
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
         sendSplitPacketToPlayer(player, packet);
     }
 
     /**
      * 发送分包载荷至玩家
      */
-    public static <T extends SplitPacket> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(player, splitPacket);
@@ -124,7 +124,7 @@ public final class PacketUtils {
      * 发送分包载荷至服务器
      */
     @OnlyIn(Dist.CLIENT)
-    public static <T extends SplitPacket> void sendSplitPacketToServer(T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToServer(splitPacket);

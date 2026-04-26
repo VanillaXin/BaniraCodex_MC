@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
@@ -20,7 +21,8 @@ import java.util.stream.Collectors;
 @Getter
 public class DimensionToClient extends SplitPacket
         implements SplitPacket.MergeableSplitPacket<DimensionToClient>,
-        SplitPacket.SplittableSplitPacket<DimensionToClient>, CustomPacketPayload {
+        SplitPacket.SplittableSplitPacket<DimensionToClient>,
+        NetworkPacket {
 
     public static final CustomPacketPayload.Type<DimensionToClient> TYPE =
             new CustomPacketPayload.Type<>(Identifier.id().create("dimension_sync"));

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import xin.vanilla.banira.common.api.INetworkPacket;
 
-public interface NetworkPacket extends CustomPacketPayload {
+public interface NetworkPacket extends INetworkPacket {
 
 }

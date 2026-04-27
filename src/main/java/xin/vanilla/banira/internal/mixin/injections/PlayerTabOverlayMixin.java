@@ -14,6 +14,15 @@ import xin.vanilla.banira.client.event.BaniraGuiOverlayEvent;
 
 @Mixin(PlayerTabOverlay.class)
 public abstract class PlayerTabOverlayMixin {
+
+    @Inject(method = "render", at = @At("HEAD"))
+    private void banira$beforeTabListRender(GuiGraphics guiGraphics, int width, Scoreboard scoreboard, Objective objective, CallbackInfo ci) {
+        Minecraft mc = Minecraft.getInstance();
+        BaniraClientEventHub.Client.fireRenderOverlayPre(
+                new BaniraGuiOverlayEvent.Pre(guiGraphics, mc.getTimer().getGameTimeDeltaPartialTick(false), BaniraGuiOverlayEvent.PLAYER_LIST)
+        );
+    }
+
     @Inject(method = "render", at = @At("RETURN"))
     private void banira$afterTabListRender(GuiGraphics guiGraphics, int width, Scoreboard scoreboard, Objective objective, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();

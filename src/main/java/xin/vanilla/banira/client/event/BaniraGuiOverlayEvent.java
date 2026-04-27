@@ -10,8 +10,16 @@ public final class BaniraGuiOverlayEvent {
     private BaniraGuiOverlayEvent() {
     }
 
-    /** 与原 Forge {@code VanillaGuiOverlay.PLAYER_LIST} 一致的层 id（用于回调判断）。 */
+    /**
+     * 与原 Forge {@code VanillaGuiOverlay.PLAYER_LIST} 一致的层 id（用于回调判断）。
+     */
     public static final ResourceLocation PLAYER_LIST = ResourceLocation.fromNamespaceAndPath("minecraft", "player_list");
+
+    /**
+     * 对应原 {@code RenderGuiOverlayEvent.Pre}。
+     */
+    public record Pre(GuiGraphics guiGraphics, float partialTick, ResourceLocation overlayId) {
+    }
 
     /**
      * 对应原 {@code RenderGuiOverlayEvent.Post}。

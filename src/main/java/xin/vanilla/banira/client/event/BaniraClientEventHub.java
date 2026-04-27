@@ -40,6 +40,7 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<ScreenEvent.Opening>> clientGuiChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<TextureAtlasStitchedEvent>> clientTextureReloadCallbacks = new ArrayList<>();
     private static final List<Consumer<ScreenEvent.Render.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraGuiOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraGuiOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
 
     private static final List<Consumer<ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
@@ -156,6 +157,10 @@ public final class BaniraClientEventHub {
             clientDrawScreenPostCallbacks.add(callback);
         }
 
+        public static void onRenderOverlayPre(@Nonnull Consumer<BaniraGuiOverlayEvent.Pre> callback) {
+            clientRenderOverlayPreCallbacks.add(callback);
+        }
+
         public static void onRenderOverlayPost(@Nonnull Consumer<BaniraGuiOverlayEvent.Post> callback) {
             clientRenderOverlayPostCallbacks.add(callback);
         }
@@ -183,6 +188,10 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPost(ScreenEvent.Render.Post event) {
             fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
+        }
+
+        public static void fireRenderOverlayPre(BaniraGuiOverlayEvent.Pre event) {
+            fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
         }
 
         public static void fireRenderOverlayPost(BaniraGuiOverlayEvent.Post event) {

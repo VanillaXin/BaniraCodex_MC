@@ -17,6 +17,12 @@ public final class BaniraGuiOverlayEvent {
     public static final ResourceLocation PLAYER_LIST = Identifier.id().create("minecraft", "player_list");
 
     /**
+     * 对应原 {@code RenderGuiOverlayEvent.Pre}。
+     */
+    public record Pre(GuiGraphics guiGraphics, float partialTick, ResourceLocation overlayId) {
+    }
+
+    /**
      * 对应原 {@code RenderGuiOverlayEvent.Post}。
      */
     public record Post(GuiGraphics guiGraphics, float partialTick, ResourceLocation overlayId) {

@@ -67,6 +67,16 @@ public final class BaniraClientForgeEventHandler {
     }
 
     @SubscribeEvent
+    public static void onInitScreenPre(ScreenEvent.Init.Pre event) {
+        BaniraClientEventHub.dispatchGuiScreen(event);
+    }
+
+    @SubscribeEvent
+    public static void onInitScreenPost(ScreenEvent.Init.Post event) {
+        BaniraClientEventHub.dispatchGuiScreen(event);
+    }
+
+    @SubscribeEvent
     public static void onDrawScreenPre(ScreenEvent.Render.Pre event) {
         if (QuickActionOverlay.isSupportedInventoryScreen(event.getScreen())) {
             QuickActionOverlay.get().tickInteraction(event.getScreen(), event.getMouseX(), event.getMouseY());

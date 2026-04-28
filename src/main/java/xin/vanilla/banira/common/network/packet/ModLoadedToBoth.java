@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.NetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * 双向握手：客户端向服务端上报本端已安装且已注册的 mod；服务端处理后向客户端回传本端（服务端）已注册的 mod，
@@ -105,11 +104,11 @@ public class ModLoadedToBoth implements NetworkPacket {
         }
     }
 
-    public static void handle(ModLoadedToBoth packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            NetworkEvent.Context context = ctx.get();
-            if (context.getDirection().getReceptionSide().isServer()) {
-                ServerPlayer player = context.getSender();
+    public static void handle(ModLoadedToBoth packet, NetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            NetworkContext context = ctx;
+            if (context.isServerSide()) {
+                ServerPlayer player = context.sender();
                 if (player == null || packet.modids().isEmpty()) {
                     return;
                 }
@@ -127,6 +126,5 @@ public class ModLoadedToBoth implements NetworkPacket {
                 }
             }
         });
-        ctx.get().setPacketHandled(true);
-    }
+            }
 }

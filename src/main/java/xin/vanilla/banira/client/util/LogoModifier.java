@@ -1,11 +1,7 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.common.util.FieldUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayList;
@@ -87,50 +83,8 @@ public final class LogoModifier {
     }
 
     public static void modifyLogo() {
-        if (SUPPLIER_REGISTRY.isEmpty() && FUNCTION_REGISTRY.isEmpty()) {
-            return;
-        }
-
-        try {
-            if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                List<? extends IModInfo> mods = ModList.get().getMods();
-                if (mods.isEmpty()) {
-                    return;
-                }
-                IModInfo sample = mods.get(0);
-                for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
-                    try {
-                        @SuppressWarnings("unchecked")
-                        Optional<String> logo = (Optional<String>) FieldUtils.getPrivateFieldValue(ModInfo.class, sample, name);
-                        if (logo != null && logo.isPresent()
-                                && StringUtils.isNotNullOrEmpty(logo.get())
-                                && logo.get().matches(".*\\.png$")) {
-                            FIELD_NAME = name;
-                            break;
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
-                if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                    FIELD_NAME = "logoFile";
-                }
-            }
-
-            for (IModInfo info : ModList.get().getMods()) {
-                if (!(info instanceof ModInfo)) {
-                    continue;
-                }
-
-                Optional<String> customLogo = getLogoFile(info.getModId());
-                if (customLogo.isEmpty()) {
-                    continue;
-                }
-
-                FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to modify mod logos", e);
-        }
+        // Fabric 的 mod 元数据在运行时不可按 Forge ModInfo 的方式安全改写。
+        // 保留注册 API，避免外部调用失效；实际图标由 fabric.mod.json 控制。
     }
 
     /**

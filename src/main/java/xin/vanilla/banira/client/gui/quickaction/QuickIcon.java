@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
@@ -13,13 +15,13 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,7 +29,7 @@ import javax.annotation.Nullable;
 /**
  * 快捷项在托盘上显示的图标来源：物品、药水效果或纹理资源。
  */
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 @Accessors(chain = true, fluent = true)
 public class QuickIcon {
 
@@ -58,6 +60,12 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Texture texture;
+
+    /**
+     * 由 {@link #resource(ResourceLocation)} 设置；绘制前再 {@link Texture#of}，避免注册阶段（资源未就绪）得到 uv 为 0 的 {@link Texture}。
+     */
+    @Nullable
+    private ResourceLocation deferredResourceTexture;
 
     @Nonnull
     public static QuickIcon none() {
@@ -98,7 +106,7 @@ public class QuickIcon {
     public static QuickIcon resource(@Nonnull ResourceLocation textureLocation) {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
-        q.texture(Texture.of(textureLocation));
+        q.deferredResourceTexture = textureLocation;
         return q;
     }
 
@@ -107,6 +115,7 @@ public class QuickIcon {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
         q.texture(texture);
+        q.deferredResourceTexture = texture.location();
         return q;
     }
 
@@ -117,6 +126,9 @@ public class QuickIcon {
         if (size <= 0) {
             return;
         }
+        // region 菜单行图标绘制前恢复 GUI 状态
+        AbstractGuiUtils.restoreGuiRenderState();
+        // endregion 菜单行图标绘制前恢复 GUI 状态
         if (kind == Kind.ITEM) {
             ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
             return;
@@ -144,7 +156,8 @@ public class QuickIcon {
                 break;
             }
             case RESOURCE: {
-                if (texture == null) {
+                ensureResourceDrawableTexture();
+                if (texture == null || texture.uvWidth() <= 0 || texture.uvHeight() <= 0) {
                     item(new ItemStack(Items.PAPER)).render(stack, mc, x, y, size);
                     return;
                 }
@@ -162,5 +175,29 @@ public class QuickIcon {
                 break;
         }
     }
+
+    // region RESOURCE 纹理延迟解析
+
+    private void ensureResourceDrawableTexture() {
+        if (kind != Kind.RESOURCE) {
+            return;
+        }
+        ResourceLocation rl = deferredResourceTexture != null ? deferredResourceTexture : (texture != null ? texture.location() : null);
+        if (rl == null) {
+            return;
+        }
+        Texture t = texture;
+        if (t != null && t.uvWidth() > 0 && t.uvHeight() > 0) {
+            return;
+        }
+        KeyValue<Integer, Integer> wh = TextureUtils.resolveTextureSizeForDraw(rl);
+        if (wh.key() > 0 && wh.val() > 0) {
+            texture = Texture.of(rl, wh.key(), wh.val());
+            return;
+        }
+        texture = Texture.of(rl);
+    }
+
+    // endregion RESOURCE 纹理延迟解析
 
 }

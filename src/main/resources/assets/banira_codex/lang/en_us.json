@@ -299,5 +299,23 @@
   "word.banira_codex.enum_string_input_regex_positive_decimal": "Non-negative decimal",
   "word.banira_codex.enum_string_input_regex_positive_decimal_5": "Non-negative decimal (up to 5 fractional digits)",
   "word.banira_codex.enum_string_input_regex_positive_integer": "Non-negative integer",
-  "word.banira_codex.enum_string_input_regex_word": "Word characters \\w"
+  "word.banira_codex.enum_string_input_regex_word": "Word characters \\w",
+
+  "title.banira_codex.config": "Banira Codex Config",
+  "word.banira_codex.client_config": "Client config",
+  "word.banira_codex.common_config": "Common config",
+  "word.banira_codex.gui_theme_style": "GUI theme season",
+  "word.banira_codex.gui_night_mode": "GUI night palette",
+  "word.banira_codex.gui_night_mode_start_minute": "Night mode start minute",
+  "word.banira_codex.gui_night_mode_end_minute": "Night mode end minute",
+  "word.banira_codex.notification_log_max_entries": "Max notification log entries",
+  "word.banira_codex.notification_merge_window_ms": "Notification merge window (ms)",
+  "word.banira_codex.notification_burst_threshold": "Notification burst threshold",
+  "word.banira_codex.notification_burst_stagger_ms": "Notification burst stagger interval (ms)",
+  "word.banira_codex.notification_burst_max_extra_delay_ms": "Notification burst max extra delay (ms)",
+  "word.banira_codex.use_custom_cursor": "Use custom cursor",
+  "word.banira_codex.help_header": "Help page header format",
+  "word.banira_codex.help_info_num_per_page": "Help entries per page",
+  "word.banira_codex.default_language": "Default language",
+  "word.banira_codex.command_prefix": "Command prefix"
 }

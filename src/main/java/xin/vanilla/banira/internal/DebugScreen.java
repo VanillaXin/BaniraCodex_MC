@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.client.config.BaniraConfigScreenFactory;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -28,8 +29,6 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.CommonConfig;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -126,7 +125,6 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.id("test_config_editor");
         longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         longPressBtn.text("按钮长按测试");
-        // longPressBtn.onClick(b -> ConfigEditorScreen.open(xin.vanilla.banira.internal.config.TestConfig.get().holder(), this));
         longPressBtn.onLongPress(1000L, b -> {
             Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);
@@ -141,8 +139,8 @@ public class DebugScreen extends BaniraScreen {
         configBtn.id("config_editor");
         configBtn.bounds(new ScreenCoordinate(190, 140, 75, 24));
         configBtn.text("配置编辑");
-        configBtn.onClick(b -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
-        configBtn.onLongPress(1000L, b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
+        configBtn.onClick(b -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
+        configBtn.onLongPress(1000L, b -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
         addWidget(configBtn);
 
         ButtonWidget quickActionPlusBtn = new ButtonWidget(this);

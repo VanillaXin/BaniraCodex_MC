@@ -3,25 +3,23 @@ package xin.vanilla.banira.client.util;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.Options;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.GLFWKey;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * 便捷注册 {@link KeyMapping}：静态字段初始化阶段入队，在客户端 {@link RegisterKeyMappingsEvent} 中
- * {@link #flushPendingRegistrations(RegisterKeyMappingsEvent)} 一次性提交；若在 flush 之后调用 {@link #register}，会尝试写入 {@link Options#keyMappings}。
+ * 便捷注册 {@link KeyMapping}：静态字段初始化阶段入队，在客户端初始化中一次性提交。
  *
- * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
+ * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 fabric.mod.json 及语言文件前缀一致，便于子 Mod 复用。</p>
  *
  * <pre>{@code
  * public static final KeyMapping MY_KEY = BaniraKeyBindings.register(MyMod.MODID, "my_action", GLFWKey.GLFW_KEY_K);
@@ -31,8 +29,10 @@ import java.util.List;
  *         .register();
  * }</pre>
  */
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public final class BaniraKeyBindings {
+    private static final Logger LOGGER = LogManager.getLogger();
+
 
     private static final List<KeyMapping> PENDING = new ArrayList<>();
     private static boolean flushCompleted;
@@ -68,7 +68,7 @@ public final class BaniraKeyBindings {
     // region 注册
 
     /**
-     * 使用 {@link #defaultCategory(String)} 注册；若在首次 {@link #flushPendingRegistrations(RegisterKeyMappingsEvent)} 之前调用，仅入队。
+     * 使用 {@link #defaultCategory(String)} 注册；若在首次 {@link #flushPendingRegistrations(Consumer)} 之前调用，仅入队。
      */
     @Nonnull
     public static KeyMapping register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode) {
@@ -102,11 +102,11 @@ public final class BaniraKeyBindings {
     }
 
     /**
-     * 应在客户端 {@link RegisterKeyMappingsEvent} 中调用（本模组由 {@link xin.vanilla.banira.client.event.BaniraClientModSetup} 订阅）。
+     * 应在客户端初始化中调用。
      */
-    public static void flushPendingRegistrations(@Nonnull RegisterKeyMappingsEvent event) {
+    public static void flushPendingRegistrations(@Nonnull Consumer<KeyMapping> registrar) {
         for (KeyMapping binding : PENDING) {
-            event.register(binding);
+            registrar.accept(binding);
         }
         PENDING.clear();
         flushCompleted = true;
@@ -154,11 +154,7 @@ public final class BaniraKeyBindings {
 
     private static void enqueueOrRegister(@Nonnull KeyMapping binding) {
         if (flushCompleted) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc != null && mc.options != null) {
-                Options options = mc.options;
-                options.keyMappings = ArrayUtils.add(options.keyMappings, binding);
-            }
+            LOGGER.warn("Key mapping registered after Fabric key binding initialization: {}", binding.getName());
         } else {
             PENDING.add(binding);
         }

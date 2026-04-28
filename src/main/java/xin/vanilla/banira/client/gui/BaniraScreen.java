@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -142,7 +143,11 @@ public abstract class BaniraScreen extends Screen {
     }
 
     public void renderButtons(PoseStack stack, double mouseX, double mouseY, float partialTicks) {
-        this.renderables.forEach(button -> button.render(stack, (int) mouseX, (int) mouseY, partialTicks));
+        this.children().forEach(child -> {
+            if (child instanceof AbstractWidget widget) {
+                widget.render(stack, (int) mouseX, (int) mouseY, partialTicks);
+            }
+        });
     }
 
     @Override
@@ -228,6 +233,7 @@ public abstract class BaniraScreen extends Screen {
     @Override
     @ParametersAreNonnullByDefault
     public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
+        InputStateManager.dispatchDrawScreenPre(mouseX, mouseY);
         if (LOGGER.isDebugEnabled()) {
             totalRenderCount++;
             this.renderCount++;
@@ -272,6 +278,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        InputStateManager.dispatchMouseClicked(mouseX, mouseY, button);
         MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button);
         this.cursor.mouseClicked(clickEvent);
 
@@ -280,10 +287,8 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionPress(clickEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionPress(clickEvent)) {
+            args.consumed(true);
         } else {
             this.popupOption.clear();
             unfocusAllExcept(null);
@@ -328,6 +333,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        InputStateManager.dispatchMouseReleased(mouseX, mouseY, button);
         MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
         this.cursor.mouseReleased(releaseEvent);
 
@@ -336,12 +342,10 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
+            args.consumed(true);
         }
-        if (!this.popupOption.isHovered()) {
+        if (!args.consumed() && this.popupOption.getHoveredIndexAt(mouseX, mouseY) < 0) {
             this.popupOption.clear();
 
             if (findFirstHandlingWidget(w -> w.handleMouseRelease(MouseEvent.of(mouseX, mouseY, button))) != null) {
@@ -359,6 +363,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        InputStateManager.dispatchMouseScrolled(mouseX, mouseY, delta);
         MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
         this.cursor.mouseScrolled(scrollEvent);
 

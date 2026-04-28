@@ -2,8 +2,8 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.data.ArraySet;
+import xin.vanilla.banira.common.network.NetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -11,7 +11,6 @@ import xin.vanilla.banira.internal.network.data.AdvancementData;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 
 @Getter
@@ -45,14 +44,13 @@ public class AdvancementToClient extends SplitPacket
     /**
      * 处理数据包
      */
-    public static void handle(AdvancementToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(AdvancementToClient packet, NetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
                 AdvancementUtils.advancementData(packet.getAdvancements());
             }
         });
-        ctx.get().setPacketHandled(true);
-    }
+            }
 
     @Override
     public int getChunkSize() {

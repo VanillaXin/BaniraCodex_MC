@@ -2,7 +2,7 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import xin.vanilla.banira.common.network.NetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.util.BiomeUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -36,14 +35,13 @@ public class BiomeToClient extends SplitPacket
         }
     }
 
-    public static void handle(BiomeToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(BiomeToClient packet, NetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
                 BiomeUtils.setClientBiomeIds(packet.getBiomeIds());
             }
         });
-        ctx.get().setPacketHandled(true);
-    }
+            }
 
     @Override
     public int getChunkSize() {

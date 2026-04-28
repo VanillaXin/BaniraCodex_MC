@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 /**
  * 客户端向服务端声明「已安装某 mod」时的注册表。
  * <p>
- * 在通用初始化（如 {@code FMLCommonSetupEvent}）中调用 {@link #register}，客户端进入世界时会自动将已注册的 modid 打包上报；
+ * 在通用初始化中调用 {@link #register}，客户端进入世界时会自动将已注册的 modid 打包上报；
  * 服务端收到后为每个 modid 更新 {@link xin.vanilla.banira.common.util.PlayerUtils} 中「远程客户端」安装状态，并执行对应的数据同步回调；
  * 随后服务端会向客户端回传本端 mod 列表，由客户端写入「远程服务端」状态。
  */

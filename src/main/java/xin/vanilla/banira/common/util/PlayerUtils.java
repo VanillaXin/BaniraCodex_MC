@@ -2,6 +2,8 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -9,9 +11,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
@@ -19,7 +18,6 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,10 +60,7 @@ public final class PlayerUtils {
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
-
-        target.banira$language(original.banira$language());
+        PlayerLanguageManager.set(targetPlayer, PlayerLanguageManager.get(originalPlayer));
     }
 
     // region 玩家信息
@@ -97,7 +92,7 @@ public final class PlayerUtils {
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     public static UUID getPlayerUUID() {
         if (net.minecraft.client.Minecraft.getInstance().player == null) {
             return null;
@@ -154,9 +149,6 @@ public final class PlayerUtils {
             }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
-            nameString = UsernameCache.getLastKnownUsername(uuid);
-        }
-        if (StringUtils.isNullOrEmpty(nameString)) {
             nameString = uuid.toString();
         }
         return nameString;
@@ -200,7 +192,7 @@ public final class PlayerUtils {
         return entity;
     }
 
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
         try {
@@ -220,7 +212,7 @@ public final class PlayerUtils {
      * @param skin {@link #getPlayerSkin(UUID)} 等资源定位，为 null 时返回 null
      * @return 长度为 2 的数组，无法解析尺寸时退回 64×64 假定布局
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     @Nullable
     public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable ResourceLocation skin) {
         if (skin == null) {
@@ -245,7 +237,7 @@ public final class PlayerUtils {
     /**
      * @see #getPlayerSkinHeadFaceTextures(ResourceLocation)
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     @Nullable
     public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable UUID uuid) {
         return getPlayerSkinHeadFaceTextures(getPlayerSkin(uuid));

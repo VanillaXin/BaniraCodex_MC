@@ -1,14 +1,14 @@
 package xin.vanilla.banira.common.util;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
@@ -44,7 +44,7 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return ForgeRegistries.MOB_EFFECTS.getKey(effect);
+        return Registry.MOB_EFFECT.getKey(effect);
     }
 
     /**
@@ -218,7 +218,7 @@ public final class EffectUtils {
     public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.MOB_EFFECTS.getValue(location);
+            return Registry.MOB_EFFECT.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -254,7 +254,7 @@ public final class EffectUtils {
     /**
      * 获取玩家当前拥有的效果列表
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     public static List<MobEffect> getPlayerEffects() {
         List<MobEffect> result = new ArrayList<>();
         try {
@@ -279,7 +279,7 @@ public final class EffectUtils {
      */
     private static List<MobEffect> buildUniqueEffectsList() {
         Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-        for (MobEffect effect : ForgeRegistries.MOB_EFFECTS) {
+        for (MobEffect effect : Registry.MOB_EFFECT) {
             if (effect == null) continue;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;

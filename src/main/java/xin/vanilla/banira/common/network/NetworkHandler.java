@@ -1,27 +1,31 @@
 package xin.vanilla.banira.common.network;
 
-import lombok.Getter;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * 网络处理器
  */
 public class NetworkHandler {
-    private static final String PROTOCOL_VERSION = "1";
     private static int nextPacketId = 0;
 
-    @Getter
-    private final SimpleChannel channel;
+    private final ResourceLocation channel;
+    private final Map<Integer, PacketRegistration<? extends INetworkPacket>> byId = new HashMap<>();
+    private final Map<Class<? extends INetworkPacket>, Integer> byClass = new HashMap<>();
+    private boolean serverReceiverRegistered;
 
     /**
      * 创建网络处理器实例
@@ -31,17 +35,15 @@ public class NetworkHandler {
      * @return NetworkHandler 实例
      */
     public static NetworkHandler create(String channelName, IIdentifier IIdentifier) {
-        SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                IIdentifier.create(channelName),
-                () -> PROTOCOL_VERSION,
-                clientVersion -> true,      // 客户端版本始终有效
-                serverVersion -> true       // 服务端版本始终有效
-        );
-        return new NetworkHandler(channel);
+        return new NetworkHandler(IIdentifier.create(channelName));
     }
 
-    private NetworkHandler(SimpleChannel channel) {
+    private NetworkHandler(ResourceLocation channel) {
         this.channel = channel;
+    }
+
+    public ResourceLocation channel() {
+        return channel;
     }
 
     /**
@@ -56,14 +58,10 @@ public class NetworkHandler {
     public <MSG extends INetworkPacket> void register(Class<MSG> packetClass,
                                                       BiConsumer<MSG, FriendlyByteBuf> encoder,
                                                       Function<FriendlyByteBuf, MSG> decoder,
-                                                      BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
-        channel.registerMessage(
-                nextPacketId++,
-                packetClass,
-                encoder,
-                decoder,
-                handler
-        );
+                                                      BiConsumer<MSG, NetworkContext> handler) {
+        int id = nextPacketId++;
+        byId.put(id, new PacketRegistration<>(encoder, decoder, handler));
+        byClass.put(packetClass, id);
     }
 
     /**
@@ -79,21 +77,73 @@ public class NetworkHandler {
             Class<MSG> packetClass,
             BiConsumer<MSG, FriendlyByteBuf> encoder,
             Function<FriendlyByteBuf, MSG> decoder,
-            BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
-        BiConsumer<MSG, Supplier<NetworkEvent.Context>> wrappedHandler = (packet, ctx) -> {
-            // 保存原始上下文
-            final Supplier<NetworkEvent.Context> contextSupplier = ctx;
+            BiConsumer<MSG, NetworkContext> handler) {
+        BiConsumer<MSG, NetworkContext> wrappedHandler = (packet, ctx) -> {
             // 处理分包逻辑
             List<MSG> completePackets = SplitPacket.handle(packet);
             if (completePackets != null && !completePackets.isEmpty()) {
                 // 所有分包已接收完成，合并并调用处理器
                 MSG mergedPacket = SplitPacket.merge(completePackets);
                 if (mergedPacket != null) {
-                    ctx.get().enqueueWork(() -> handler.accept(mergedPacket, contextSupplier));
+                    ctx.enqueueWork(() -> handler.accept(mergedPacket, ctx));
                 }
             }
-            ctx.get().setPacketHandled(true);
         };
         register(packetClass, encoder, decoder, wrappedHandler);
+    }
+
+    public void registerServerReceiver() {
+        if (serverReceiverRegistered) {
+            return;
+        }
+        serverReceiverRegistered = true;
+        ServerPlayNetworking.registerGlobalReceiver(channel, (server, player, handler, buf, responseSender) -> {
+            receive(buf, new NetworkContext(true, player, server::execute));
+        });
+    }
+
+    @Environment(EnvType.CLIENT)
+    public void registerClientReceiver() {
+        ClientPlayNetworking.registerGlobalReceiver(channel, (client, handler, buf, responseSender) -> {
+            receive(buf, new NetworkContext(false, null, client::execute));
+        });
+    }
+
+    public <MSG extends INetworkPacket> FriendlyByteBuf encode(MSG msg) {
+        Integer id = byClass.get(msg.getClass());
+        if (id == null) {
+            throw new IllegalArgumentException("Unregistered packet: " + msg.getClass().getName());
+        }
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeVarInt(id);
+        @SuppressWarnings("unchecked")
+        PacketRegistration<MSG> registration = (PacketRegistration<MSG>) byId.get(id);
+        registration.encoder.accept(msg, buf);
+        return buf;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void receive(FriendlyByteBuf buf, NetworkContext context) {
+        int id = buf.readVarInt();
+        PacketRegistration<INetworkPacket> registration = (PacketRegistration<INetworkPacket>) byId.get(id);
+        if (registration == null) {
+            return;
+        }
+        INetworkPacket packet = registration.decoder.apply(buf);
+        registration.handler.accept(packet, context);
+    }
+
+    private static final class PacketRegistration<MSG extends INetworkPacket> {
+        private final BiConsumer<MSG, FriendlyByteBuf> encoder;
+        private final Function<FriendlyByteBuf, MSG> decoder;
+        private final BiConsumer<MSG, NetworkContext> handler;
+
+        private PacketRegistration(BiConsumer<MSG, FriendlyByteBuf> encoder,
+                                   Function<FriendlyByteBuf, MSG> decoder,
+                                   BiConsumer<MSG, NetworkContext> handler) {
+            this.encoder = encoder;
+            this.decoder = decoder;
+            this.handler = handler;
+        }
     }
 }

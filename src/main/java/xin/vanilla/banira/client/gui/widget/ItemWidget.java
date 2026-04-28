@@ -180,7 +180,7 @@ public class ItemWidget extends BaseWidget {
         ItemRenderer itemRenderer = mc.getItemRenderer();
         BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
         TextureAtlasSprite sprite = model.getParticleIcon();
-        int tint = mc.getItemColors().getColor(stack, 0);
+        int tint = -1;
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;
             float cg = (float) (tint >> 8 & 255) / 255.0F;

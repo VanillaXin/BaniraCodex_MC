@@ -2,19 +2,17 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
@@ -23,7 +21,6 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.command.BaniraCommand;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
@@ -31,8 +28,6 @@ import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
@@ -40,9 +35,8 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-@Mod(BaniraCodex.MODID)
 @Accessors(fluent = true)
-public class BaniraCodex {
+public class BaniraCodex implements ModInitializer {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -55,22 +49,20 @@ public class BaniraCodex {
      */
     public static final String VANILLA_XIN = "vanilla.xin";
 
-    public static final LevelResource BANIRA_DIR = new LevelResource(VANILLA_XIN);
-
     /**
      * Banira世界数据路径
      */
-    public static final Supplier<Path> BANIRA_WORLD_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR);
+    public static final Supplier<Path> BANIRA_WORLD_DATA_PATH = () -> serverInstance().key().getWorldPath(LevelResource.ROOT).resolve(VANILLA_XIN);
 
     /**
      * 玩家数据目录路径
      */
-    public static final Supplier<Path> BANIRA_PLAYER_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR).resolve("playerdata");
+    public static final Supplier<Path> BANIRA_PLAYER_DATA_PATH = () -> serverInstance().key().getWorldPath(LevelResource.ROOT).resolve(VANILLA_XIN).resolve("playerdata");
 
     /**
      * Banira配置目录路径
      */
-    public static final Supplier<Path> BANIRA_CONFIG_PATH = () -> FMLPaths.CONFIGDIR.get().resolve(VANILLA_XIN);
+    public static final Supplier<Path> BANIRA_CONFIG_PATH = () -> FabricLoader.getInstance().getConfigDir().resolve(VANILLA_XIN);
 
     /**
      * 服务端实例
@@ -89,38 +81,31 @@ public class BaniraCodex {
             StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
     );
 
-    public BaniraCodex(FMLJavaModLoadingContext context) {
-        // 配置必须在 CONFIG 加载阶段之前注册
-        ForgeConfigAdapter.register(CommonConfig.class, MODID);
-        ForgeConfigAdapter.register(ClientConfig.class, MODID);
-        // ForgeConfigAdapter.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
-
-        context.getModEventBus().addListener(BaniraEventBus::dispatchModCommonSetup);
-
-        // 注册游戏事件总线
-        MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
-        MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
+    @Override
+    public void onInitialize() {
+        registerFabricEvents();
         // 注册网络通道
         NetworkInit.register();
-
         registerBaniraEvent();
     }
 
-    /**
-     * 注册指令
-     */
-    @SubscribeEvent
-    public void onRegisterCommands(final RegisterCommandsEvent event) {
-        BaniraCommand.register(event.getDispatcher());
+    private void registerFabricEvents() {
+        ServerLifecycleEvents.SERVER_STARTING.register(BaniraEventBus::dispatchServerStarting);
+        ServerLifecycleEvents.SERVER_STARTED.register(BaniraEventBus::dispatchServerStarted);
+        ServerLifecycleEvents.SERVER_STOPPING.register(BaniraEventBus::dispatchServerStopping);
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            BaniraScheduler.onServerTick(server);
+            BaniraEventBus.dispatchServerTick(server);
+        });
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> BaniraEventBus.dispatchPlayerLoggedIn(handler.player));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> BaniraEventBus.dispatchPlayerLoggedOut(handler.player));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> BaniraCommand.register(dispatcher));
     }
 
     private void registerBaniraEvent() {
         // 通用事件
-        BaniraEventBus.ModLifecycle.onCommonSetup(event -> {
-            CustomConfig.loadCustomConfig(false);
-            ModLoadedPresence.register(MODID);
-        });
+        CustomConfig.loadCustomConfig(false);
+        ModLoadedPresence.register(MODID);
 
         // 服务器事件
         BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
@@ -129,7 +114,7 @@ public class BaniraCodex {
         BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
-        BaniraEventBus.Server.onTick(event -> {
+        BaniraEventBus.Server.onTick(tickServer -> {
             MinecraftServer server = serverInstance().key();
             if (server == null) return;
             if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
@@ -160,10 +145,9 @@ public class BaniraCodex {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static class ClientProxy {
         public static void init() {
-            BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
+            BaniraClientEventHub.ModLifecycle.onClientSetup(() -> {
                 LogoModifier.register(MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
                 ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");

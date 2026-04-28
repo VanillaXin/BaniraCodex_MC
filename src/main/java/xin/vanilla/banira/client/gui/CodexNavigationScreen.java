@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.client.config.BaniraConfigScreenFactory;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
@@ -13,8 +14,6 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.DebugScreen;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.CommonConfig;
 
 import javax.annotation.Nullable;
 
@@ -63,11 +62,11 @@ public class CodexNavigationScreen extends BaniraScreen {
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "codex_navigation_client_config",
-                () -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
+                () -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "codex_navigation_common_config",
-                () -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
+                () -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",

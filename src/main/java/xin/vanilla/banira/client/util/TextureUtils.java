@@ -2,18 +2,18 @@ package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public final class TextureUtils {
     private TextureUtils() {
     }
@@ -171,7 +171,7 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(effectInstance.getEffect());
+        ResourceLocation registryName = Registry.MOB_EFFECT.getKey(effectInstance.getEffect());
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
@@ -288,15 +288,23 @@ public final class TextureUtils {
             if (mc == null) {
                 return null;
             }
-            AbstractTexture gpuTexture = mc.getTextureManager().getTexture(texture);
+            TextureManager tm = mc.getTextureManager();
+            if (tm == null) {
+                return null;
+            }
+            AbstractTexture gpuTexture = tm.getTexture(texture);
             if (gpuTexture instanceof DynamicTexture dt) {
                 return dt.getPixels();
             }
             return null;
         }
         try {
-            ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
-            if (resourceManager.getResource(texture).isEmpty()) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc == null) {
+                return null;
+            }
+            ResourceManager resourceManager = mc.getResourceManager();
+            if (resourceManager == null || resourceManager.getResource(texture).isEmpty()) {
                 return null;
             }
             Resource resource = resourceManager.getResource(texture).get();
@@ -315,17 +323,25 @@ public final class TextureUtils {
      * 获取纹理的宽高
      */
     public static KeyValue<Integer, Integer> getTextureSize(ResourceLocation texture) {
-        KeyValue<Integer, Integer> size = new KeyValue<>(0, 0);
-        if (TEXTURE_SIZE_CACHE.containsKey(texture)) {
-            size = TEXTURE_SIZE_CACHE.get(texture);
-        } else {
-            NativeImage textureImage = getTextureImage(texture);
-            if (textureImage != null) {
-                size.key(textureImage.getWidth()).value(textureImage.getHeight());
-            }
-            TEXTURE_SIZE_CACHE.put(texture, size);
+        KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
+        if (cached != null && cached.key() > 0 && cached.val() > 0) {
+            return cached;
         }
-        return size;
+
+        NativeImage textureImage = getTextureImage(texture);
+        if (textureImage != null) {
+            KeyValue<Integer, Integer> size = new KeyValue<>(textureImage.getWidth(), textureImage.getHeight());
+            TEXTURE_SIZE_CACHE.put(texture, size);
+            return size;
+        }
+
+        KeyValue<Integer, Integer> gpu = tryGetGpuTextureSize(texture);
+        if (gpu != null && gpu.key() > 0 && gpu.val() > 0) {
+            TEXTURE_SIZE_CACHE.put(texture, gpu);
+            return gpu;
+        }
+
+        return cached != null ? cached : new KeyValue<>(0, 0);
     }
 
     /**
@@ -357,30 +373,38 @@ public final class TextureUtils {
 
     @Nullable
     private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return null;
-        }
-        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = mc.getTextureManager().getTexture(location);
-        if (gpuTexture == null) {
-            return null;
-        }
-        int tid = gpuTexture.getId();
-        if (tid == -1) {
-            return null;
-        }
-        int[] prev = new int[1];
-        GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
         try {
-            RenderSystem.bindTexture(tid);
-            int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-            int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-            if (w <= 0 || h <= 0) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc == null) {
                 return null;
             }
-            return new KeyValue<>(w, h);
-        } finally {
-            RenderSystem.bindTexture(prev[0]);
+            TextureManager textureManager = mc.getTextureManager();
+            if (textureManager == null) {
+                return null;
+            }
+            net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = textureManager.getTexture(location);
+            if (gpuTexture == null) {
+                return null;
+            }
+            int tid = gpuTexture.getId();
+            if (tid == -1) {
+                return null;
+            }
+            int[] prev = new int[1];
+            GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
+            try {
+                RenderSystem.bindTexture(tid);
+                int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+                int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+                if (w <= 0 || h <= 0) {
+                    return null;
+                }
+                return new KeyValue<>(w, h);
+            } finally {
+                RenderSystem.bindTexture(prev[0]);
+            }
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 

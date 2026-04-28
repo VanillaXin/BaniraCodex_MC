@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -49,7 +48,7 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return ForgeRegistries.BLOCKS.getKey(block);
+        return Registry.BLOCK.getKey(block);
     }
 
     /**
@@ -264,7 +263,7 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return ForgeRegistries.BLOCKS.getValue(location);
+            return Registry.BLOCK.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -316,7 +315,7 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : ForgeRegistries.BLOCKS) {
+                    for (Block block : Registry.BLOCK) {
                         if (block == null) continue;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;

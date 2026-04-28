@@ -7,17 +7,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.*;
@@ -39,7 +34,6 @@ import java.util.stream.Collectors;
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class NotificationLogScreen extends BaniraScreen {
 
     private static final int LIST_ROW_HEIGHT = 24;
@@ -314,17 +308,6 @@ public class NotificationLogScreen extends BaniraScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null) {
-            if (BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
-            } else if (BaniraClientModSetup.BANIRA_HUB_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new CodexNavigationScreen(null));
-            }
-        }
     }
 
     @Override

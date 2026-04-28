@@ -2,21 +2,18 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
-import xin.vanilla.banira.internal.mixin.accessors.SimpleChannelAccessor;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.List;
@@ -51,7 +48,7 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        SimpleChannel channel = msg.channel().get();
+        ResourceLocation channel = msg.channel();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendPacketToPlayer(channel, msg, player)
         );
@@ -63,7 +60,7 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        SimpleChannel channel = packet.channel().get();
+        ResourceLocation channel = packet.channel();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
                 sendSplitPacketToPlayer(channel, packet, player)
         );
@@ -74,14 +71,14 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        sendPacketToServer(msg.channel().get(), msg);
+        sendPacketToServer(msg.channel(), msg);
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
-        sendPacketToPlayer(msg.channel().get(), msg, player);
+        sendPacketToPlayer(msg.channel(), msg, player);
     }
 
     /**
@@ -92,7 +89,7 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
-        sendSplitPacketToPlayer(packet.channel().get(), packet, player);
+        sendSplitPacketToPlayer(packet.channel(), packet, player);
     }
 
     /**
@@ -102,15 +99,15 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
-        sendSplitPacketToServer(packet.channel().get(), packet);
+        sendSplitPacketToServer(packet.channel(), packet);
     }
 
 
     /**
      * 发送数据包至服务器
      */
-    @OnlyIn(Dist.CLIENT)
-    private static <MSG extends INetworkPacket> void sendPacketToServer(SimpleChannel channel, MSG msg) {
+    @Environment(EnvType.CLIENT)
+    private static <MSG extends INetworkPacket> void sendPacketToServer(ResourceLocation channel, MSG msg) {
         if (!hasChannel(channel)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -119,16 +116,16 @@ public final class PacketUtils {
             return;
         }
 
-        channel.sendToServer(msg);
+        ClientPlayNetworking.send(channel, NetworkInit.HANDLER.encode(msg));
     }
 
     /**
      * 发送数据包至玩家
      */
-    private static <MSG extends INetworkPacket> void sendPacketToPlayer(SimpleChannel channel, MSG msg, ServerPlayer player) {
+    private static <MSG extends INetworkPacket> void sendPacketToPlayer(ResourceLocation channel, MSG msg, ServerPlayer player) {
         if (!hasChannel(player, channel)) return;
         if (!PlayerUtils.isRemoteClientModInstalled(player, getModId(channel))) return;
-        channel.send(PacketDistributor.PLAYER.with(() -> player), msg);
+        ServerPlayNetworking.send(player, channel, NetworkInit.HANDLER.encode(msg));
     }
 
     /**
@@ -139,7 +136,7 @@ public final class PacketUtils {
      * @param player  目标玩家
      * @param <T>     分包类型
      */
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(SimpleChannel channel, T packet, ServerPlayer player) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(ResourceLocation channel, T packet, ServerPlayer player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(channel, splitPacket, player);
@@ -153,7 +150,7 @@ public final class PacketUtils {
      * @param packet  要发送的数据包
      * @param <T>     分包类型
      */
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(SimpleChannel channel, T packet) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(ResourceLocation channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToServer(channel, splitPacket);
@@ -161,44 +158,21 @@ public final class PacketUtils {
     }
 
 
-    private static NetworkRegistryAccessor NETWORK_REGISTRY = null;
-
-    private static void init() {
-        if (NETWORK_REGISTRY == null) {
-            NETWORK_REGISTRY = (NetworkRegistryAccessor) new NetworkRegistry();
-        }
-    }
-
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     public static boolean hasBaniraServer() {
-        return hasChannel(NetworkInit.HANDLER.getChannel());
+        return hasChannel(NetworkInit.HANDLER.channel());
     }
 
-    @OnlyIn(Dist.CLIENT)
-    public static boolean hasChannel(SimpleChannel channel) {
-        return hasChannel(getChannelName(channel));
-    }
-
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     public static boolean hasChannel(ResourceLocation channel) {
-        init();
-        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
-    }
-
-    public static boolean hasChannel(ServerPlayer player, SimpleChannel channel) {
-        return hasChannel(player, getChannelName(channel));
+        return ClientPlayNetworking.canSend(channel);
     }
 
     public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
-        init();
-        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
+        return ServerPlayNetworking.canSend(player, channel);
     }
 
-    public static ResourceLocation getChannelName(SimpleChannel channel) {
-        return ((SimpleChannelAccessor) channel).banira$instance().getChannelName();
-    }
-
-    public static String getModId(SimpleChannel channel) {
-        return getChannelName(channel).getNamespace();
+    public static String getModId(ResourceLocation channel) {
+        return channel.getNamespace();
     }
 }

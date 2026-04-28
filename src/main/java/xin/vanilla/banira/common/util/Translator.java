@@ -5,14 +5,9 @@ import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -21,7 +16,6 @@ import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -33,14 +27,14 @@ import java.util.stream.Collectors;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入带 {@link Mod} 的主类（与入口 {@code @Mod("modid")} 为同一类），modId 从注解读取，语言文件从该类所在 JAR 加载：
+ * 构造时传入主类，语言文件从当前 Fabric 资源管理器加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
  *     private MyModLang() { super(MyMod.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时通过 {@link ModList} 解析该 mod 的主类。
+ * 仅使用 {@link #of(String)} 时直接按 modId 创建实例。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -68,44 +62,30 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
+     * @param modMainClass mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
         this.modId = modIdFromModMainClass(modMainClass);
         getI18nFiles();
     }
 
-    // region mod 主类与 modId（@Mod）
+    protected Translator(@NonNull String modId) {
+        this.modId = modId;
+        getI18nFiles();
+    }
+
+    // region mod 主类与 modId
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
-        Mod mod = modMainClass.getAnnotation(Mod.class);
-        if (mod == null) {
-            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
+        if (modMainClass == BaniraCodex.class) {
+            return BaniraCodex.MODID;
         }
-        String id = mod.value();
-        if (StringUtils.isNullOrEmptyEx(id)) {
-            throw new IllegalArgumentException("@Mod value is empty on: " + modMainClass.getName());
-        }
-        return id;
+        String simple = modMainClass.getSimpleName();
+        return StringUtils.isNullOrEmptyEx(simple) ? BaniraCodex.MODID : simple.toLowerCase(Locale.ROOT);
     }
 
-    @NonNull
-    private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
-        try {
-            return ModList.get().getModContainerById(modId)
-                    .map(ModContainer::getMod)
-                    .filter(Objects::nonNull)
-                    .map(Object::getClass)
-                    .orElseThrow(() -> new IllegalStateException("No loaded @Mod main class for mod id: " + modId));
-        } catch (IllegalStateException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IllegalStateException("Failed to resolve @Mod main class for mod id: " + modId, t);
-        }
-    }
-
-    // endregion mod 主类与 modId（@Mod）
+    // endregion mod 主类与 modId
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -123,7 +103,7 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(resolveModMainClassFromModList(modId));
+        return new Translator(modId);
     }
 
     @Override
@@ -198,8 +178,8 @@ public class Translator implements ITranslator {
      * 指定语言的 JSON 中是否存在该翻译键路径
      */
     public boolean hasTranslation(@NonNull EnumI18nType type, @NonNull String key, @NonNull String languageCode) {
+        languageCode = normalizeLanguageCode(languageCode);
         String fullKey = getKey(type, key);
-        languageCode = languageCode.toLowerCase(Locale.ROOT);
         JsonObject lang = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(DEFAULT_LANGUAGE));
         if (lang == null) {
             return false;
@@ -239,13 +219,7 @@ public class Translator implements ITranslator {
 
     private void loadFromResourceManager() {
         try {
-            ResourceManager manager;
-            if (BaniraCodex.serverInstance().val()) {
-                manager = BaniraCodex.serverInstance().key().getResourceManager();
-            } else {
-                manager = net.minecraft.client.Minecraft.getInstance().getResourceManager();
-            }
-            Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
+            Collection<ResourceLocation> resources = collectModLangJsonLocations();
             languages.addAll(resources.stream()
                     .filter(loc -> modId.equals(loc.getNamespace()))
                     .map(loc -> {
@@ -257,35 +231,44 @@ public class Translator implements ITranslator {
                     .collect(Collectors.toSet()));
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
-            languages.add(DEFAULT_LANGUAGE);
         }
     }
 
-    private Collection<ResourceLocation> collectModLangJsonLocations(ResourceManager manager) {
+    private Collection<ResourceLocation> collectModLangJsonLocations() {
         Set<ResourceLocation> result = new HashSet<>();
         Predicate<ResourceLocation> predicate = rl ->
                 modId.equals(rl.getNamespace()) && rl.getPath().endsWith(".json");
-        try {
-            manager.listPacks().forEach(pack -> {
-                try {
-                    Collection<ResourceLocation> locs = pack.getResources(PackType.CLIENT_RESOURCES, modId, "lang", predicate);
-                    result.addAll(locs);
-                    for (ResourceLocation loc : locs) {
-                        loadAllLanguages(PackType.CLIENT_RESOURCES, pack, loc);
-                        loadAllLanguages(PackType.SERVER_DATA, pack, loc);
-                    }
-                } catch (Exception e) {
-                    LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from resource packs:", e);
+        ResourceManager manager = getClientResourceManager();
+        if (manager == null && BaniraCodex.serverInstance().val()) {
+            manager = BaniraCodex.serverInstance().key().getResourceManager();
         }
+        collectModLangJsonLocations(manager, predicate, result);
         return result;
     }
 
-    private static void loadAllLanguages(PackType packType, PackResources pack, ResourceLocation location) {
-        try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, location), StandardCharsets.UTF_8)) {
+    @Nullable
+    private static ResourceManager getClientResourceManager() {
+        try {
+            return net.minecraft.client.Minecraft.getInstance().getResourceManager();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static void collectModLangJsonLocations(ResourceManager manager, Predicate<ResourceLocation> predicate, Set<ResourceLocation> result) {
+        try {
+            Map<ResourceLocation, Resource> resources = manager.listResources("lang", predicate);
+            result.addAll(resources.keySet());
+            for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+                loadLanguageResource(entry.getKey(), entry.getValue());
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to list lang from resource packs:", e);
+        }
+    }
+
+    private static void loadLanguageResource(ResourceLocation location, Resource resource) {
+        try (InputStreamReader reader = new InputStreamReader(resource.open(), StandardCharsets.UTF_8)) {
             String path = location.getPath();
             int slash = path.lastIndexOf('/');
             String name = slash >= 0 ? path.substring(slash + 1) : path;
@@ -303,40 +286,13 @@ public class Translator implements ITranslator {
         }
     }
 
-    private static void loadModLanguage(@Nonnull Class<?> clazz, @Nonnull String modId, @NonNull String languageCode) {
-        try {
-            String path = String.format("/assets/%s/lang/%s.json", modId, languageCode);
-            try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(clazz.getResourceAsStream(path)), StandardCharsets.UTF_8)) {
-
-                JsonObject json = JsonUtils.parseObject(reader);
-                JsonObject object = LANGUAGES.get(languageCode);
-                if (object == null) {
-                    LANGUAGES.put(languageCode, json);
-                } else {
-                    JsonUtils.mergeInPlace(object, json);
-                }
-            }
-            LOGGER.debug("Loaded language file for mod {}: {}", modId, path);
-        } catch (Exception e) {
-            LOGGER.debug("Failed to load language file for mod {}: {}", modId, e.getMessage());
-        }
-    }
-
-    private String getLangPath() {
-        return String.format("/assets/%s/lang/", modId);
-    }
-
-    private String getLangFilePath() {
-        return getLangPath() + "%s.json";
-    }
-
     // region 语言上下文（静态方法）
 
     /**
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (FMLEnvironment.dist.isClient()) {
+        if (EnvironmentUtils.isClient()) {
             return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().getCode());
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());

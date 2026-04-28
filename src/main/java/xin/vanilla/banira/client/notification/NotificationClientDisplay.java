@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.notification;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -12,7 +12,7 @@ import xin.vanilla.banira.common.util.Translator;
 /**
  * 按玩家在「通知类型配置」中的选择，将网络通知改道至原版聊天或操作栏
  */
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public final class NotificationClientDisplay {
 
     private NotificationClientDisplay() {

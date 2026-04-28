@@ -1,13 +1,11 @@
 package xin.vanilla.banira.common.api;
 
 
-import net.minecraftforge.network.simple.SimpleChannel;
-
-import java.util.function.Supplier;
+import net.minecraft.resources.ResourceLocation;
 
 public interface INetworkPacket {
     /**
-     * 获取当前网络包使用的通道供应器
+     * 获取当前网络包使用的通道。
      */
-    Supplier<SimpleChannel> channel();
+    ResourceLocation channel();
 }

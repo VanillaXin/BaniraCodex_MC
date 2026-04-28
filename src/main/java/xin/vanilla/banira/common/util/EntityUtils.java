@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -49,7 +49,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+        return Registry.ENTITY_TYPE.getKey(entityType);
     }
 
     /**
@@ -242,7 +242,7 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return ForgeRegistries.ENTITY_TYPES.getValue(location);
+            return Registry.ENTITY_TYPE.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -258,7 +258,7 @@ public final class EntityUtils {
         KeyValue<MinecraftServer, Boolean> serverInstance = BaniraCodex.serverInstance();
         if (serverInstance.val()) {
             serverInstance.key().getAllLevels().forEach(level ->
-                    level.getEntities().getAll().forEach(entities::add)
+                    level.getAllEntities().forEach(entities::add)
             );
         }
         return entities;
@@ -286,7 +286,7 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : ForgeRegistries.ENTITY_TYPES) {
+                    for (EntityType<?> entityType : Registry.ENTITY_TYPE) {
                         if (entityType == null) continue;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;

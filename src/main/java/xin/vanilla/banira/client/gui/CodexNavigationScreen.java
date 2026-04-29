@@ -6,7 +6,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.config.BaniraConfigScreenFactory;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
@@ -14,6 +13,8 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.DebugScreen;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.CommonConfig;
 
 import javax.annotation.Nullable;
 
@@ -61,12 +62,12 @@ public class CodexNavigationScreen extends BaniraScreen {
                 () -> Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
         y += BTN_H + BTN_GAP;
 
-        addNavButton(cx, y, btnW, "codex_navigation_client_config",
-                () -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
+        addNavButton(cx, y, btnW, "text.autoconfig.banira_codex.navigation.client_config",
+                () -> ConfigEditorScreen.open(ClientConfig.class, this));
         y += BTN_H + BTN_GAP;
 
-        addNavButton(cx, y, btnW, "codex_navigation_common_config",
-                () -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
+        addNavButton(cx, y, btnW, "text.autoconfig.banira_codex.navigation.common_config",
+                () -> ConfigEditorScreen.open(CommonConfig.class, this));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",
@@ -87,7 +88,10 @@ public class CodexNavigationScreen extends BaniraScreen {
         ButtonWidget btn = new ButtonWidget(this);
         btn.id(langKey);
         btn.bounds(new ScreenCoordinate(x, y, w, BTN_H));
-        btn.text(BaniraComponent.get().transClientAuto(langKey).toString());
+        var label = langKey.startsWith("text.autoconfig.")
+                ? BaniraComponent.get().transClient(langKey)
+                : BaniraComponent.get().transClientAuto(langKey);
+        btn.text(label.toString());
         btn.onClick(b -> action.run());
         addWidget(btn);
     }

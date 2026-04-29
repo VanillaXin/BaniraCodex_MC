@@ -140,7 +140,7 @@ public final class NotificationManager {
     }
 
     private void applyBurstStagger(Notification n, long nowMs) {
-        ClientConfig.RootView cfg = ClientConfig.get();
+        ClientConfig cfg = ClientConfig.get();
         int stagger = cfg.notificationBurstStaggerMs();
         if (stagger <= 0) {
             return;

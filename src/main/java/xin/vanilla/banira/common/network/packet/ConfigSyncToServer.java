@@ -1,0 +1,168 @@
+package xin.vanilla.banira.common.network.packet;
+
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.NetworkContext;
+import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.util.ConfigEditPermission;
+import xin.vanilla.banira.common.util.MessageUtils;
+import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.editable.ConfigEntryDescriptor;
+import xin.vanilla.banira.editable.ConfigListSpecHelper;
+import xin.vanilla.banira.editable.EditableConfigHolder;
+import xin.vanilla.banira.editable.EditableConfigRegistry;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 配置同步包：客户端将修改的配置项同步至服务端
+ */
+public class ConfigSyncToServer implements NetworkPacket {
+
+    private static final long NOTIFY_OK_MS = 3000L;
+    private static final long NOTIFY_ERR_MS = 4500L;
+
+    private final String configName;
+    private final Map<String, String> changes;
+
+    public ConfigSyncToServer(String configName, Map<String, String> changes) {
+        this.configName = configName != null ? configName : "";
+        this.changes = changes != null ? new HashMap<>(changes) : new HashMap<>();
+    }
+
+    public ConfigSyncToServer(FriendlyByteBuf buf) {
+        this.configName = buf.readUtf(256);
+        int size = buf.readVarInt();
+        this.changes = new HashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            String key = buf.readUtf(256);
+            String value = buf.readUtf(32767);
+            changes.put(key, value);
+        }
+    }
+
+    public void toBytes(FriendlyByteBuf buf) {
+        buf.writeUtf(configName, 256);
+        buf.writeVarInt(changes.size());
+        for (Map.Entry<String, String> e : changes.entrySet()) {
+            buf.writeUtf(e.getKey(), 256);
+            buf.writeUtf(e.getValue() != null ? e.getValue() : "", 32767);
+        }
+    }
+
+    public static void handle(ConfigSyncToServer packet, NetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerSide()) {
+                return;
+            }
+            ServerPlayer player = ctx.sender();
+            if (player == null) {
+                return;
+            }
+            if (packet.changes.isEmpty()) {
+                sendNotify(player, "text.autoconfig.banira_codex.editor.sync_server_empty", NOTIFY_ERR_MS);
+                return;
+            }
+            EditableConfigHolder holder = EditableConfigRegistry.get(packet.configName);
+            if (holder == null) {
+                sendNotify(player, "text.autoconfig.banira_codex.editor.message.sync_server_unknown_config", NOTIFY_ERR_MS, packet.configName);
+                return;
+            }
+            if (!holder.canSyncToServer()) {
+                sendNotify(player, "text.autoconfig.banira_codex.editor.sync_server_not_applicable", NOTIFY_ERR_MS);
+                return;
+            }
+            try {
+                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
+                    ConfigEntryDescriptor pathDesc = holder.getDescriptor(e.getKey());
+                    if (!ConfigEditPermission.canModifyEntry(player, pathDesc)) {
+                        sendNotify(player, "text.autoconfig.banira_codex.editor.sync_server_no_permission", NOTIFY_ERR_MS);
+                        return;
+                    }
+                }
+                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
+                    Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
+                    if (parsed != null) {
+                        holder.set(e.getKey(), parsed);
+                    }
+                }
+                holder.validateAfterChanges();
+                holder.save();
+                sendNotify(player, "text.autoconfig.banira_codex.editor.message.sync_server_ok", NOTIFY_OK_MS,
+                        String.valueOf(packet.changes.size()));
+            } catch (Exception ex) {
+                String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                sendNotify(player, "text.autoconfig.banira_codex.editor.message.sync_server_save_failed", NOTIFY_ERR_MS, msg);
+            }
+        });
+    }
+
+    private static void sendNotify(ServerPlayer player, String translationKey, long durationMs, Object... args) {
+        String lang = Translator.getPlayerLanguage(player);
+        Component text = args.length > 0
+                ? BaniraComponent.get().transLang(lang, translationKey, args)
+                : BaniraComponent.get().transLang(lang, translationKey);
+        MessageUtils.sendDefaultNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, durationMs);
+    }
+
+    public static String encodeConfigValue(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(ConfigSyncToServer::encodeListElement).collect(Collectors.joining(","));
+        }
+        if (value instanceof Enum) {
+            return ((Enum<?>) value).name();
+        }
+        return String.valueOf(value);
+    }
+
+    private static String encodeListElement(Object o) {
+        if (o instanceof Enum) {
+            return ((Enum<?>) o).name();
+        }
+        return String.valueOf(o);
+    }
+
+    /**
+     * 将网络字符串解析为可写入 {@link EditableConfigHolder} 的对象；无法解析时回退为原始字符串。
+     */
+    public static Object decodeNetworkValue(EditableConfigHolder holder, String path, String value) {
+        ConfigEntryDescriptor desc = holder.getDescriptor(path);
+        if (desc == null) {
+            return value;
+        }
+        try {
+            switch (desc.getValueType()) {
+                case BOOLEAN:
+                    return Boolean.parseBoolean(value);
+                case INTEGER:
+                    return Integer.parseInt(value);
+                case LONG:
+                    return Long.parseLong(value);
+                case DOUBLE:
+                    return Double.parseDouble(value);
+                case ENUM:
+                    @SuppressWarnings({"unchecked", "rawtypes"})
+                    Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), value);
+                    return e;
+                case STRING_LIST:
+                case INTEGER_LIST:
+                case LONG_LIST:
+                case DOUBLE_LIST:
+                case BOOLEAN_LIST:
+                case ENUM_LIST:
+                    return ConfigListSpecHelper.parseNetworkCsv(value, desc);
+                default:
+                    return value;
+            }
+        } catch (Exception e) {
+            return value;
+        }
+    }
+}

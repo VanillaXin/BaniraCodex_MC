@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.client.config.BaniraConfigScreenFactory;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -29,6 +28,8 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.CommonConfig;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -139,8 +140,8 @@ public class DebugScreen extends BaniraScreen {
         configBtn.id("config_editor");
         configBtn.bounds(new ScreenCoordinate(190, 140, 75, 24));
         configBtn.text("配置编辑");
-        configBtn.onClick(b -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
-        configBtn.onLongPress(1000L, b -> Minecraft.getInstance().setScreen(BaniraConfigScreenFactory.create(this)));
+        configBtn.onClick(b -> ConfigEditorScreen.open(ClientConfig.class, this));
+        configBtn.onLongPress(1000L, b -> ConfigEditorScreen.open(CommonConfig.class, this));
         addWidget(configBtn);
 
         ButtonWidget quickActionPlusBtn = new ButtonWidget(this);

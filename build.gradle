@@ -5,6 +5,8 @@ plugins {
 
 def javaVer = 17
 
+group = 'xin.vanilla.banira'
+
 version = project.mod_version
 mod_id = project.mod_id
 mod_name = project.mod_name

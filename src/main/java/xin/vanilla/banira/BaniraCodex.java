@@ -28,6 +28,7 @@ import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
@@ -83,6 +84,7 @@ public class BaniraCodex implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        CommonConfig.init();
         registerFabricEvents();
         // 注册网络通道
         NetworkInit.register();

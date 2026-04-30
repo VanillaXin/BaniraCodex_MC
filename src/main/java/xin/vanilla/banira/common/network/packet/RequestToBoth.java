@@ -68,5 +68,5 @@ public class RequestToBoth implements NetworkPacket {
                 }
             }
         });
-            }
+    }
 }

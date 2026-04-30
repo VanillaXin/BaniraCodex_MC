@@ -58,6 +58,9 @@ public class ClientConfig implements ConfigData {
 
     private boolean useCustomCursor = true;
 
+    public static void init() {
+    }
+
     public static ClientConfig get() {
         return HOLDER.getConfig();
     }

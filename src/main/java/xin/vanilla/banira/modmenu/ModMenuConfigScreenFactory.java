@@ -1,21 +1,26 @@
 package xin.vanilla.banira.modmenu;
 
 import me.shedaniel.autoconfig.ConfigData;
+import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import xin.vanilla.banira.editable.ConfigEntryDescriptor;
-import xin.vanilla.banira.editable.ConfigListSpecHelper;
-import xin.vanilla.banira.editable.EditableConfigHolder;
-import xin.vanilla.banira.editable.EditableConfigRegistry;
+import xin.vanilla.banira.editable.*;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Mod Menu（Cloth）配置页：对已注册 {@link EditableConfigRegistry} 的配置类自动生成条目，用法与 {@link xin.vanilla.banira.client.gui.ConfigEditorScreen#open(Class, net.minecraft.client.gui.screens.Screen)} 类似，
- * 通过配置类列表描述要并排展示的几份配置文件。
+ * Mod Menu（Cloth）配置页。
+ * <ul>
+ *   <li>多份配置（如 client / common）对应 Cloth 左侧<strong>分类 Tab</strong>。
+ *     {@link me.shedaniel.autoconfig.AutoConfig#getConfigScreen(Class, Screen)} 仅针对单个 {@link ConfigData}；
+ *     原生无法在一条 API 下把多份配置做成多 Tab，多配置仍由此工厂处理。</li>
+ *   <li>每份配置内按 {@link EditableConfigHolder#getCategoryTree()} 使用 {@code startSubCategory}，
+ *     与 AutoConfig 默认界面中嵌套分组（如 {@code @Gui.CollapsibleObject}）的层级一致。</li>
+ * </ul>
  */
 public final class ModMenuConfigScreenFactory {
     private ModMenuConfigScreenFactory() {
@@ -50,10 +55,6 @@ public final class ModMenuConfigScreenFactory {
         return builder.build();
     }
 
-    /**
-     * 分类折叠标题：{@code text.autoconfig.<modId>.navigation.<后缀>_config}，
-     * 其中后缀为 {@link EditableConfigHolder#getConfigName()} 最后一个 {@code '-'} 之后一段（本项目：{@code banira_codex-client} → {@code client_config}）。
-     */
     private static Component deriveCategoryTitle(EditableConfigHolder holder) {
         String name = holder.getConfigName();
         String modId = holder.getModId();
@@ -62,44 +63,106 @@ public final class ModMenuConfigScreenFactory {
         return Component.translatable("text.autoconfig." + modId + ".navigation." + tail + "_config");
     }
 
-    // region 从 EditableConfigHolder 动态生成 Cloth 条目
-
     private static void appendHolderCategory(ConfigBuilder builder, ConfigEntryBuilder entries, EditableConfigHolder holder,
                                              Component categoryTitle) {
         ConfigCategory category = builder.getOrCreateCategory(categoryTitle);
-        for (ConfigEntryDescriptor desc : holder.getDescriptors()) {
-            addDescriptorEntry(category, entries, holder, desc);
+        List<EditableConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
+        if (roots.isEmpty()) {
+            for (ConfigEntryDescriptor desc : holder.getDescriptors()) {
+                AbstractConfigListEntry e = buildDescriptorEntry(entries, holder, desc);
+                if (e != null) {
+                    category.addEntry(e);
+                }
+            }
+            return;
+        }
+        EditableConfigHolder.CategoryTreeNode root = roots.get(0);
+        for (ConfigEntryDescriptor desc : root.getEntries()) {
+            AbstractConfigListEntry e = buildDescriptorEntry(entries, holder, desc);
+            if (e != null) {
+                category.addEntry(e);
+            }
+        }
+        for (EditableConfigHolder.CategoryTreeNode child : root.getChildren()) {
+            category.addEntry(buildSubCategoryTree(entries, holder, child));
         }
     }
 
+    private static Component resolveCategoryNodeTitle(EditableConfigHolder holder, EditableConfigHolder.CategoryTreeNode node) {
+        String catPath = node.getCategoryPath();
+        if (catPath == null || catPath.isEmpty()) {
+            return Component.literal(holder.getConfigName());
+        }
+        ConfigCategoryTitleSpec spec = holder.getCategoryTitleSpec(catPath);
+        if (spec != null) {
+            switch (spec.getKind()) {
+                case TRANSLATION_KEY -> {
+                    String k = spec.getTranslationKey();
+                    if (k != null && !k.isEmpty()) {
+                        return Component.translatable(k);
+                    }
+                }
+                case LITERAL -> {
+                    if (!spec.getLiteral().isEmpty()) {
+                        return Component.literal(spec.getLiteral());
+                    }
+                }
+                case LOCALIZED_STATIC -> {
+                    for (String v : spec.getLocalizedByLang().values()) {
+                        if (v != null && !v.trim().isEmpty()) {
+                            return Component.literal(v);
+                        }
+                    }
+                }
+            }
+        }
+        return Component.translatable("text.autoconfig." + holder.getConfigName() + ".option." + catPath);
+    }
+
+    private static AbstractConfigListEntry buildSubCategoryTree(ConfigEntryBuilder entries, EditableConfigHolder holder,
+                                                                EditableConfigHolder.CategoryTreeNode node) {
+        var sub = entries.startSubCategory(resolveCategoryNodeTitle(holder, node));
+        sub.setExpanded(false);
+        for (ConfigEntryDescriptor desc : node.getEntries()) {
+            AbstractConfigListEntry e = buildDescriptorEntry(entries, holder, desc);
+            if (e != null) {
+                sub.add(e);
+            }
+        }
+        for (EditableConfigHolder.CategoryTreeNode child : node.getChildren()) {
+            sub.add(buildSubCategoryTree(entries, holder, child));
+        }
+        return sub.build();
+    }
+
+    @Nullable
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addDescriptorEntry(ConfigCategory category, ConfigEntryBuilder entries, EditableConfigHolder holder,
-                                           ConfigEntryDescriptor desc) {
+    private static AbstractConfigListEntry buildDescriptorEntry(ConfigEntryBuilder entries, EditableConfigHolder holder,
+                                                                ConfigEntryDescriptor desc) {
         String path = desc.getPath();
         String configName = holder.getConfigName();
         Component label = Component.translatable("text.autoconfig." + configName + ".option." + path);
 
         if (ConfigEntryDescriptor.isListValueType(desc.getValueType())) {
-            addListDescriptorEntry(category, entries, holder, desc, label);
-            return;
+            return buildListDescriptorEntry(entries, holder, desc, label);
         }
 
         switch (desc.getValueType()) {
             case STRING -> {
                 String cur = (String) nonNullCurrent(holder, path, desc);
                 String def = (String) desc.getDefaultValue();
-                category.addEntry(entries.startStrField(label, cur)
+                return entries.startStrField(label, cur)
                         .setDefaultValue(def != null ? def : "")
                         .setSaveConsumer(v -> holder.set(path, v))
-                        .build());
+                        .build();
             }
             case BOOLEAN -> {
                 boolean cur = (Boolean) nonNullCurrent(holder, path, desc);
                 boolean def = desc.getDefaultValue() instanceof Boolean b ? b : false;
-                category.addEntry(entries.startBooleanToggle(label, cur)
+                return entries.startBooleanToggle(label, cur)
                         .setDefaultValue(def)
                         .setSaveConsumer(v -> holder.set(path, v))
-                        .build());
+                        .build();
             }
             case INTEGER -> {
                 int cur = numberToInt(nonNullCurrent(holder, path, desc));
@@ -110,7 +173,7 @@ public final class ModMenuConfigScreenFactory {
                         && !isUnboundedIntPair(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().intValue()).setMax(desc.getMaxValue().intValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> holder.set(path, v)).build());
+                return b.setSaveConsumer(v -> holder.set(path, v)).build();
             }
             case LONG -> {
                 long cur = numberToLong(nonNullCurrent(holder, path, desc));
@@ -121,7 +184,7 @@ public final class ModMenuConfigScreenFactory {
                         && !isUnboundedLongPair(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().longValue()).setMax(desc.getMaxValue().longValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> holder.set(path, v)).build());
+                return b.setSaveConsumer(v -> holder.set(path, v)).build();
             }
             case DOUBLE -> {
                 double cur = numberToDouble(nonNullCurrent(holder, path, desc));
@@ -132,35 +195,37 @@ public final class ModMenuConfigScreenFactory {
                         && !isPlaceholderUnboundedDoubleBounds(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().doubleValue()).setMax(desc.getMaxValue().doubleValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> holder.set(path, v)).build());
+                return b.setSaveConsumer(v -> holder.set(path, v)).build();
             }
             case ENUM -> {
                 Class enumClass = desc.getEnumClass();
                 if (enumClass == null) {
-                    return;
+                    return null;
                 }
                 Object[] constants = enumClass.getEnumConstants();
                 if (constants == null || constants.length == 0) {
-                    return;
+                    return null;
                 }
                 Object raw = nonNullCurrent(holder, path, desc);
                 Enum<?> cur = raw instanceof Enum<?> e ? e : (Enum<?>) constants[0];
                 Object defObj = desc.getDefaultValue();
                 Enum<?> def = defObj instanceof Enum<?> ev ? ev : (Enum<?>) constants[0];
-                category.addEntry(entries.startEnumSelector(label, enumClass, cur)
+                return entries.startEnumSelector(label, enumClass, cur)
                         .setDefaultValue(def)
                         .setSaveConsumer(v -> holder.set(path, v))
-                        .build());
+                        .build();
             }
             default -> {
+                return null;
             }
         }
     }
 
-    // region 列表（Cloth List + ConfigListSpecHelper，与 Banira 配置编辑器语义一致）
+    // region 列表
 
-    private static void addListDescriptorEntry(ConfigCategory category, ConfigEntryBuilder entries, EditableConfigHolder holder,
-                                               ConfigEntryDescriptor desc, Component label) {
+    @Nullable
+    private static AbstractConfigListEntry buildListDescriptorEntry(ConfigEntryBuilder entries, EditableConfigHolder holder,
+                                                                    ConfigEntryDescriptor desc, Component label) {
         String path = desc.getPath();
         List<?> curNorm = normalizedRuntimeList(holder, path, desc);
         List<?> defNorm = normalizedDefaultList(desc);
@@ -175,10 +240,10 @@ public final class ModMenuConfigScreenFactory {
                 for (Object o : defNorm) {
                     def.add(o != null ? String.valueOf(o) : "");
                 }
-                category.addEntry(entries.startStrList(label, cur)
+                return entries.startStrList(label, cur)
                         .setDefaultValue(def)
                         .setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                        .build();
             }
             case INTEGER_LIST -> {
                 List<Integer> cur = toMutableIntegerList(curNorm);
@@ -189,8 +254,8 @@ public final class ModMenuConfigScreenFactory {
                         && !isUnboundedIntPair(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().intValue()).setMax(desc.getMaxValue().intValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                return b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
+                        .build();
             }
             case LONG_LIST -> {
                 List<Long> cur = toMutableLongList(curNorm);
@@ -201,8 +266,8 @@ public final class ModMenuConfigScreenFactory {
                         && !isUnboundedLongPair(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().longValue()).setMax(desc.getMaxValue().longValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                return b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
+                        .build();
             }
             case DOUBLE_LIST -> {
                 List<Double> cur = toMutableDoubleList(curNorm);
@@ -213,8 +278,8 @@ public final class ModMenuConfigScreenFactory {
                         && !isPlaceholderUnboundedDoubleBounds(desc.getMinValue(), desc.getMaxValue())) {
                     b.setMin(desc.getMinValue().doubleValue()).setMax(desc.getMaxValue().doubleValue());
                 }
-                category.addEntry(b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                return b.setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
+                        .build();
             }
             case BOOLEAN_LIST -> {
                 List<String> cur = new ArrayList<>(curNorm.size());
@@ -225,24 +290,25 @@ public final class ModMenuConfigScreenFactory {
                 for (Object o : defNorm) {
                     def.add(coerceBoolListCell(o));
                 }
-                category.addEntry(entries.startStrList(label, cur)
+                return entries.startStrList(label, cur)
                         .setDefaultValue(def)
                         .setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                        .build();
             }
             case ENUM_LIST -> {
                 Class<? extends Enum<?>> ec = desc.getEnumClass();
                 if (ec == null) {
-                    return;
+                    return null;
                 }
                 List<String> cur = enumNameStrings(curNorm);
                 List<String> def = enumNameStrings(defNorm);
-                category.addEntry(entries.startStrList(label, cur)
+                return entries.startStrList(label, cur)
                         .setDefaultValue(def)
                         .setSaveConsumer(v -> saveListFromGuiObjects(holder, path, desc, asObjectList(v)))
-                        .build());
+                        .build();
             }
             default -> {
+                return null;
             }
         }
     }
@@ -329,9 +395,6 @@ public final class ModMenuConfigScreenFactory {
         return out;
     }
 
-    /**
-     * Cloth 无相邻布尔列表控件，沿用文本格并在保存时经由 {@link ConfigListSpecHelper#listFromGuiItems} 解析。
-     */
     private static String coerceBoolListCell(Object o) {
         if (o instanceof Boolean b) {
             return b ? "true" : "false";
@@ -348,7 +411,7 @@ public final class ModMenuConfigScreenFactory {
         return "false";
     }
 
-    // endregion 列表（Cloth List + ConfigListSpecHelper，与 Banira 配置编辑器语义一致）
+    // endregion 列表
 
     private static Object nonNullCurrent(EditableConfigHolder holder, String path, ConfigEntryDescriptor desc) {
         Object v = holder.get(path);
@@ -387,16 +450,10 @@ public final class ModMenuConfigScreenFactory {
         return min.longValue() == Long.MIN_VALUE && max.longValue() == Long.MAX_VALUE;
     }
 
-    /**
-     * {@link xin.vanilla.banira.editable.ConfigFieldStructure} 对未标注 {@code @BoundedDouble} 的 double 使用
-     * {@code Double.MIN_VALUE} / {@code Double.MAX_VALUE} 作为占位，不宜交给 Cloth 作为实际范围。
-     */
     private static boolean isPlaceholderUnboundedDoubleBounds(Number min, Number max) {
         if (min == null || max == null) {
             return false;
         }
         return min.doubleValue() == Double.MIN_VALUE && max.doubleValue() == Double.MAX_VALUE;
     }
-
-    // endregion 从 EditableConfigHolder 动态生成 Cloth 条目
 }

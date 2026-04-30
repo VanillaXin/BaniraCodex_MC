@@ -39,7 +39,7 @@ public class CommonConfig implements ConfigData {
     @ConfigEntry.Gui.CollapsibleObject
     private PermissionCategory permission = new PermissionCategory();
 
-    public CommonConfig() {
+    public static void init() {
     }
 
     public static CommonConfig get() {

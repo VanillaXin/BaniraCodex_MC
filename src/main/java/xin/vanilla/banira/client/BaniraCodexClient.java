@@ -24,6 +24,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 public final class BaniraCodexClient implements ClientModInitializer {
@@ -32,6 +33,7 @@ public final class BaniraCodexClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientConfig.init();
         NetworkInit.registerClientReceivers();
         BaniraKeyBindings.flushPendingRegistrations(KeyBindingHelper::registerKeyBinding);
         NotificationManager.get().loadLog();

@@ -33,6 +33,7 @@ public final class BaniraCodexClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // 初始化配置
         ClientConfig.init();
         NetworkInit.registerClientReceivers();
         BaniraKeyBindings.flushPendingRegistrations(KeyBindingHelper::registerKeyBinding);

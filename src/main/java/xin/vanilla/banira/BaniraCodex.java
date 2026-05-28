@@ -84,10 +84,12 @@ public class BaniraCodex implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        // 初始化配置
         CommonConfig.init();
-        registerFabricEvents();
+        CustomConfig.loadCustomConfig(false);
         // 注册网络通道
         NetworkInit.register();
+        registerFabricEvents();
         registerBaniraEvent();
     }
 
@@ -106,7 +108,6 @@ public class BaniraCodex implements ModInitializer {
 
     private void registerBaniraEvent() {
         // 通用事件
-        CustomConfig.loadCustomConfig(false);
         ModLoadedPresence.register(MODID);
 
         // 服务器事件

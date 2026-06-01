@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client;
+package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.screen.Screen;

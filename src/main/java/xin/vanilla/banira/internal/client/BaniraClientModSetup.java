@@ -1,8 +1,9 @@
-package xin.vanilla.banira.client.event;
+package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.settings.KeyBinding;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.NotificationManager;

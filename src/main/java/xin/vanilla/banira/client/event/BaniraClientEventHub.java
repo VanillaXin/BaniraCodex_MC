@@ -1,18 +1,9 @@
 package xin.vanilla.banira.client.event;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.client.BaniraClientResourceService;
-import xin.vanilla.banira.client.util.LogoModifier;
-import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.network.ModLoadedPresence;
-import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.common.util.AdvancementUtils;
-import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientDefaults;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -51,39 +42,7 @@ public final class BaniraClientEventHub {
             return;
         }
         codexDefaultsRegistered = true;
-        ModLoadedToBoth.registerClientHandler(packet -> {
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null) {
-                return;
-            }
-            for (String modid : packet.modids()) {
-                PlayerUtils.setRemoteServerModInstalled(minecraft.player, modid, false);
-            }
-        });
-        Player.onClientLoggedIn(player -> {
-            List<String> ids = ModLoadedPresence.announcedModIds();
-            if (!ids.isEmpty()) {
-                PacketUtils.sendPacketToServer(new ModLoadedToBoth(ids));
-            }
-        });
-        Player.onClientLoggedOut(player -> {
-            if (player == null) return;
-            AdvancementUtils.clearAdvancementData();
-            PlayerUtils.removeRemoteServerDataStatus(player);
-        });
-        Client.onScreenChanged(event -> LogoModifier.modifyLogo());
-        Client.onTextureReload(BaniraClientResourceService::handleTextureReload);
-        Client.onScreenPostRender(event -> {
-            MatrixStack stack = event.draw() == null ? null : event.draw().nativeContext(MatrixStack.class);
-            if (stack != null) {
-                NotificationManager.get().render(stack);
-            }
-        });
-        Hud.onPostRender(event -> {
-            if (event.element() == BaniraHudOverlayElement.ALL && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.draw().nativeContext(MatrixStack.class));
-            }
-        });
+        BaniraClientDefaults.register();
     }
 
     public static void dispatchModClientSetup() {

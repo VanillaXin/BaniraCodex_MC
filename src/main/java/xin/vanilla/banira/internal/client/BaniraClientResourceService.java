@@ -1,7 +1,8 @@
-package xin.vanilla.banira.client;
+package xin.vanilla.banira.internal.client;
 
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.event.BaniraTextureReloadEvent;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.TextureUtils;
@@ -17,6 +18,10 @@ public final class BaniraClientResourceService {
 
     public static BaniraColorThemeLoader colorThemeLoader() {
         return BaniraColorThemeLoader.get();
+    }
+
+    public static void registerDefaults() {
+        BaniraClientEventHub.Client.onTextureReload(BaniraClientResourceService::handleTextureReload);
     }
 
     public static void handleTextureReload(BaniraTextureReloadEvent event) {

@@ -10,9 +10,9 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.BaniraClientGuiService;
-import xin.vanilla.banira.client.BaniraClientResourceService;
 import xin.vanilla.banira.client.event.*;
+import xin.vanilla.banira.internal.client.BaniraClientGuiService;
+import xin.vanilla.banira.internal.client.BaniraClientResourceService;
 
 import java.util.Objects;
 

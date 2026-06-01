@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client;
+package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;

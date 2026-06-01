@@ -5,7 +5,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.event.BaniraClientModSetup;
+import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ForgeBaniraClientModSetup {

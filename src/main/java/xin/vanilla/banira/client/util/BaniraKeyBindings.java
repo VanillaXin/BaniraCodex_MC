@@ -99,7 +99,7 @@ public final class BaniraKeyBindings {
     }
 
     /**
-     * 应在客户端 {@code FMLClientSetupEvent} 中尽早调用（本模组由 {@link xin.vanilla.banira.client.event.BaniraClientModSetup} 调用）。
+     * 应在客户端 {@code FMLClientSetupEvent} 中尽早调用（本模组由 {@link xin.vanilla.banira.internal.client.BaniraClientModSetup} 调用）。
      */
     public static void flushPendingRegistrations() {
         for (KeyBinding binding : PENDING) {

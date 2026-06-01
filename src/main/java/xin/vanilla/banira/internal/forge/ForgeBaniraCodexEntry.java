@@ -35,6 +35,6 @@ public final class ForgeBaniraCodexEntry {
         BaniraCodex.bootstrapCommon();
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT,
-                () -> xin.vanilla.banira.client.BaniraCodexClientBootstrap::init);
+                () -> xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap::init);
     }
 }

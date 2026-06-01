@@ -1,7 +1,10 @@
-package xin.vanilla.banira.common.config;
+package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -24,7 +27,7 @@ import java.util.function.Predicate;
  *   .build(modId);
  * }</pre>
  */
-public final class ConfigSpecBuilder {
+public final class ForgeConfigSpecBuilder {
 
     private final String configName;
     private final ModConfig.Type configType;
@@ -35,7 +38,7 @@ public final class ConfigSpecBuilder {
 
     private Deque<String> pathStack = new ArrayDeque<>();
 
-    private ConfigSpecBuilder(String configName, ModConfig.Type configType) {
+    private ForgeConfigSpecBuilder(String configName, ModConfig.Type configType) {
         this.configName = configName;
         this.configType = configType;
         this.builder = new ForgeConfigSpec.Builder();
@@ -44,8 +47,8 @@ public final class ConfigSpecBuilder {
     /**
      * 创建构建器
      */
-    public static ConfigSpecBuilder create(String configName, ConfigScope scope) {
-        return new ConfigSpecBuilder(configName, toForgeType(scope));
+    public static ForgeConfigSpecBuilder create(String configName, ConfigScope scope) {
+        return new ForgeConfigSpecBuilder(configName, toForgeType(scope));
     }
 
     private static ModConfig.Type toForgeType(ConfigScope scope) {
@@ -66,7 +69,7 @@ public final class ConfigSpecBuilder {
     /**
      * 开始一个配置分类（可折叠块）
      */
-    public ConfigSpecBuilder category(String path, String... comments) {
+    public ForgeConfigSpecBuilder category(String path, String... comments) {
         if (pathStack.isEmpty()) {
             builder.comment(comments);
             builder.push(path);
@@ -82,7 +85,7 @@ public final class ConfigSpecBuilder {
     /**
      * 结束当前分类
      */
-    public ConfigSpecBuilder endCategory() {
+    public ForgeConfigSpecBuilder endCategory() {
         if (!pathStack.isEmpty()) {
             builder.pop();
             pathStack.pop();
@@ -93,7 +96,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义字符串配置项
      */
-    public ConfigSpecBuilder define(String key, String defaultValue, String... comments) {
+    public ForgeConfigSpecBuilder define(String key, String defaultValue, String... comments) {
         ForgeConfigSpec.ConfigValue<String> cv = builder
                 .comment(comments)
                 .define(key, defaultValue);
@@ -112,7 +115,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义布尔配置项
      */
-    public ConfigSpecBuilder define(String key, boolean defaultValue, String... comments) {
+    public ForgeConfigSpecBuilder define(String key, boolean defaultValue, String... comments) {
         ForgeConfigSpec.ConfigValue<Boolean> cv = builder
                 .comment(comments)
                 .define(key, defaultValue);
@@ -131,7 +134,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义整数配置项（带范围）
      */
-    public ConfigSpecBuilder defineInRange(String key, int defaultValue, int min, int max, String... comments) {
+    public ForgeConfigSpecBuilder defineInRange(String key, int defaultValue, int min, int max, String... comments) {
         ForgeConfigSpec.IntValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
@@ -152,7 +155,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义长整数配置项（带范围）
      */
-    public ConfigSpecBuilder defineInRange(String key, long defaultValue, long min, long max, String... comments) {
+    public ForgeConfigSpecBuilder defineInRange(String key, long defaultValue, long min, long max, String... comments) {
         ForgeConfigSpec.LongValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
@@ -173,7 +176,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义双精度浮点数配置项（带范围）
      */
-    public ConfigSpecBuilder defineInRange(String key, double defaultValue, double min, double max, String... comments) {
+    public ForgeConfigSpecBuilder defineInRange(String key, double defaultValue, double min, double max, String... comments) {
         ForgeConfigSpec.DoubleValue cv = builder
                 .comment(comments)
                 .defineInRange(key, defaultValue, min, max);
@@ -194,7 +197,7 @@ public final class ConfigSpecBuilder {
     /**
      * 定义字符串列表配置项
      */
-    public ConfigSpecBuilder defineList(String key, List<String> defaultValue, Predicate<Object> elementValidator, String... comments) {
+    public ForgeConfigSpecBuilder defineList(String key, List<String> defaultValue, Predicate<Object> elementValidator, String... comments) {
         ForgeConfigSpec.ConfigValue<List<? extends String>> cv = builder
                 .comment(comments)
                 .defineList(key, defaultValue, elementValidator != null ? elementValidator : o -> o instanceof String);
@@ -214,7 +217,7 @@ public final class ConfigSpecBuilder {
      * 定义枚举配置项
      */
     @SuppressWarnings({"unchecked"})
-    public <E extends Enum<E>> ConfigSpecBuilder defineEnum(String key, E defaultValue, String... comments) {
+    public <E extends Enum<E>> ForgeConfigSpecBuilder defineEnum(String key, E defaultValue, String... comments) {
         ForgeConfigSpec.EnumValue<E> cv = builder
                 .comment(comments)
                 .defineEnum(key, defaultValue);
@@ -252,7 +255,18 @@ public final class ConfigSpecBuilder {
             pathStack.pop();
         }
         ForgeConfigSpec spec = builder.build();
-        return new ConfigHolder(modId, configName, configType, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap),
+        ForgeConfigBackend backend = new ForgeConfigBackend(new LinkedHashMap<>(valueMap));
+        return new ConfigHolder(modId, configName, toScope(configType), backend, new ArrayList<>(descriptors),
                 Collections.emptyMap(), Collections.emptyMap());
+    }
+
+    private static ConfigScope toScope(ModConfig.Type type) {
+        if (type == ModConfig.Type.CLIENT) {
+            return ConfigScope.CLIENT;
+        }
+        if (type == ModConfig.Type.SERVER) {
+            return ConfigScope.SERVER;
+        }
+        return ConfigScope.COMMON;
     }
 }

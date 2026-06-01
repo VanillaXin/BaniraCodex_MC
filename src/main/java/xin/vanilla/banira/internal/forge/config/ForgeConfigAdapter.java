@@ -1,8 +1,9 @@
-package xin.vanilla.banira.common.config;
+package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -66,14 +67,15 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
+        ForgeConfigBackend backend = new ForgeConfigBackend(valueMap);
+        ConfigHolder holder = new ConfigHolder(modId, configName, configAnn.type(), backend, descriptors, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
             ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
             container.addConfig(modConfig);
-            holder.setModConfig(modConfig);
+            backend.setModConfig(modConfig);
         });
 
         HOLDER_MAP.put(configClass, holder);

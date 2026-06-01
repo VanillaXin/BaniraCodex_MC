@@ -89,7 +89,7 @@ public class BaniraCodex {
         // 配置必须在 CONFIG 加载阶段之前注册
         BaniraPlatforms.get().config().register(CommonConfig.class, MODID);
         BaniraPlatforms.get().config().register(ClientConfig.class, MODID);
-        // ForgeConfigAdapter.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
+        // BaniraPlatforms.get().config().register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener((FMLCommonSetupEvent event) -> BaniraEventBus.dispatchModCommonSetup());

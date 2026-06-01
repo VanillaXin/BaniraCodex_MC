@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.forge.platform;
 
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
+import xin.vanilla.banira.internal.forge.config.ForgeConfigAdapter;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 
 import javax.annotation.Nullable;

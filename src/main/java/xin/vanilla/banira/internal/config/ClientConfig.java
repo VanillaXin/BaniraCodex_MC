@@ -6,11 +6,11 @@ import lombok.Setter;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
  * 客户端专用配置（Forge CLIENT）
@@ -91,7 +91,7 @@ public class ClientConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return ClientConfigAccess.root(ForgeConfigAdapter.getHolder(ClientConfig.class));
+        return ClientConfigAccess.root(BaniraPlatforms.get().config().getHolder(ClientConfig.class));
     }
 
     // region 运行时视图接口

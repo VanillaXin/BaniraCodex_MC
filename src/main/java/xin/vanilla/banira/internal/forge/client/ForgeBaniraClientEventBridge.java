@@ -10,12 +10,9 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.client.BaniraClientGuiService;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.event.*;
-import xin.vanilla.banira.client.gui.NotificationLogScreen;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
-import xin.vanilla.banira.client.util.InputStateManager;
-import xin.vanilla.banira.client.util.NotificationManager;
 
 import java.util.Objects;
 
@@ -48,9 +45,7 @@ public final class ForgeBaniraClientEventBridge {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         BaniraClientEventHub.dispatchClientTick(new BaniraClientTickEvent(toBaniraTickPhase(event.phase)));
         if (event.phase == TickEvent.Phase.END) {
-            NotificationManager.get().tickOutOfScreenClick();
-            InputStateManager.handleClientTickEnd(Minecraft.getInstance().screen == null);
-            NotificationLogScreen.openHotkeyScreenIfPressed();
+            BaniraClientGuiService.handleClientTickEnd(Minecraft.getInstance().screen == null);
         }
     }
 
@@ -100,13 +95,14 @@ public final class ForgeBaniraClientEventBridge {
 
     // endregion Resource reload
 
-    // region Banira-owned GUI behavior
+    // region Screen and input translation
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiOpen(GuiOpenEvent event) {
-        QuickActionOverlay.get().resetInteractionState();
-        BaniraClientEventHub.dispatchClientScreenChanged(toBaniraScreenEvent(BaniraClientScreenEventType.OPEN, event.getGui(), null, 0, 0, 0));
+        BaniraClientScreenEvent baniraEvent = toBaniraScreenEvent(BaniraClientScreenEventType.OPEN, event.getGui(), null, 0, 0, 0);
+        BaniraClientEventHub.dispatchClientScreenChanged(baniraEvent);
+        BaniraClientGuiService.handleScreenOpened(baniraEvent);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -118,18 +114,16 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
-        BaniraClientEventHub.dispatchClientScreenPreRender(toBaniraScreenEvent(
+        BaniraClientScreenEvent baniraEvent = toBaniraScreenEvent(
                 BaniraClientScreenEventType.DRAW_PRE,
                 event.getGui(),
                 event.getMatrixStack(),
                 event.getMouseX(),
                 event.getMouseY(),
                 event.getRenderPartialTicks()
-        ));
-        InputStateManager.handleDrawScreenPre(event.getMouseX(), event.getMouseY());
-        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            QuickActionOverlay.get().tickInteraction(event.getGui(), event.getMouseX(), event.getMouseY());
-        }
+        );
+        BaniraClientEventHub.dispatchClientScreenPreRender(baniraEvent);
+        BaniraClientGuiService.handleScreenPreRender(baniraEvent);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -148,10 +142,14 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPostInventoryQuickAction(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
-            QuickActionOverlay.get().render(event.getMatrixStack(), event.getGui(), event.getMouseX(), event.getMouseY(), event.getRenderPartialTicks());
-            QuickActionOverlay.get().flushSaveIfNeeded();
-        }
+        BaniraClientGuiService.handleScreenPostRenderLowest(toBaniraScreenEvent(
+                BaniraClientScreenEventType.DRAW_POST,
+                event.getGui(),
+                event.getMatrixStack(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getRenderPartialTicks()
+        ));
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -170,12 +168,7 @@ public final class ForgeBaniraClientEventBridge {
             event.setCanceled(true);
             return;
         }
-        InputStateManager.handleMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
-        if (QuickActionOverlay.get().handleMouseClicked(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
-            event.setCanceled(true);
-            return;
-        }
-        if (NotificationManager.get().tryHandleHudClick(event.getMouseX(), event.getMouseY(), event.getButton())) {
+        if (BaniraClientGuiService.handleInput(baniraEvent)) {
             event.setCanceled(true);
         }
     }
@@ -196,8 +189,7 @@ public final class ForgeBaniraClientEventBridge {
             event.setCanceled(true);
             return;
         }
-        InputStateManager.handleMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
-        if (QuickActionOverlay.get().handleMouseReleased(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
+        if (BaniraClientGuiService.handleInput(baniraEvent)) {
             event.setCanceled(true);
         }
     }
@@ -218,8 +210,7 @@ public final class ForgeBaniraClientEventBridge {
             event.setCanceled(true);
             return;
         }
-        InputStateManager.handleMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
-        if (QuickActionOverlay.get().handleMouseScroll(event.getGui(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
+        if (BaniraClientGuiService.handleInput(baniraEvent)) {
             event.setCanceled(true);
         }
     }
@@ -239,7 +230,7 @@ public final class ForgeBaniraClientEventBridge {
             event.setCanceled(true);
             return;
         }
-        InputStateManager.handleKeyPressed(event.getKeyCode());
+        BaniraClientGuiService.handleInput(baniraEvent);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -253,7 +244,7 @@ public final class ForgeBaniraClientEventBridge {
                 event.getModifiers()
         );
         BaniraClientEventHub.dispatchClientInput(baniraEvent);
-        InputStateManager.handleKeyReleased(event.getKeyCode());
+        BaniraClientGuiService.handleInput(baniraEvent);
     }
 
     private static BaniraHudRenderEvent toBaniraHudEvent(RenderGameOverlayEvent event, boolean beforeVanilla) {
@@ -364,6 +355,6 @@ public final class ForgeBaniraClientEventBridge {
         }
     }
 
-    // endregion Banira-owned GUI behavior
+    // endregion Screen and input translation
 
 }

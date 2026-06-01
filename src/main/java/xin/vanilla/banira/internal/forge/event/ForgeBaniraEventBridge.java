@@ -41,6 +41,13 @@ public final class ForgeBaniraEventBridge {
     }
 
     @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            BaniraEventBus.dispatchClientTickEnd();
+        }
+    }
+
+    @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         BaniraEventBus.dispatchPlayerLoggedIn(event.getPlayer());
     }

@@ -6,12 +6,10 @@ import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -204,7 +202,7 @@ public final class EffectUtils {
     public static Effect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.POTIONS.getValue(location);
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().effect(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -240,9 +238,9 @@ public final class EffectUtils {
     /**
      * 获取玩家当前拥有的效果列表
      */
-    @OnlyIn(Dist.CLIENT)
     public static List<Effect> getPlayerEffects() {
         List<Effect> result = new ArrayList<>();
+        if (!EnvironmentUtils.isClient()) return result;
         try {
             PlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
@@ -265,7 +263,10 @@ public final class EffectUtils {
      */
     private static List<Effect> buildUniqueEffectsList() {
         Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
-        for (Effect effect : ForgeRegistries.POTIONS) {
+        List<Effect> effects = BaniraPlatforms.isInstalled()
+                ? BaniraPlatforms.get().registry().effects()
+                : new ArrayList<>();
+        for (Effect effect : effects) {
             if (effect == null) continue;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;

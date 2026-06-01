@@ -6,7 +6,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -14,6 +13,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -244,7 +244,7 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return ForgeRegistries.ENTITIES.getValue(location);
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().entityType(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -289,7 +289,10 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : ForgeRegistries.ENTITIES) {
+                    List<EntityType<?>> entityTypes = BaniraPlatforms.isInstalled()
+                            ? BaniraPlatforms.get().registry().entityTypes()
+                            : Collections.emptyList();
+                    for (EntityType<?> entityType : entityTypes) {
                         if (entityType == null) continue;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;

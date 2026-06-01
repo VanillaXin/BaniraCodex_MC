@@ -26,6 +26,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
     private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
+    private static final List<Runnable> clientTickEndCallbacks = new ArrayList<>();
 
     private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
@@ -77,6 +78,15 @@ public final class BaniraEventBus {
         public static Registration onStoppingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
+        }
+    }
+
+    public static final class Client {
+        private Client() {
+        }
+
+        public static void onTickEnd(@Nonnull Runnable callback) {
+            clientTickEndCallbacks.add(callback);
         }
     }
 
@@ -154,6 +164,10 @@ public final class BaniraEventBus {
 
     public static void dispatchServerTickEnd() {
         fire(serverTickEndCallbacks, "server tick end");
+    }
+
+    public static void dispatchClientTickEnd() {
+        fire(clientTickEndCallbacks, "client tick end");
     }
 
     public static void dispatchPlayerLoggedIn(PlayerEntity player) {

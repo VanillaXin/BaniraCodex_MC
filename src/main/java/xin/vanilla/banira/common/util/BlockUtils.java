@@ -7,12 +7,12 @@ import net.minecraft.block.Blocks;
 import net.minecraft.command.arguments.BlockStateParser;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -265,7 +265,7 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return ForgeRegistries.BLOCKS.getValue(location);
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().block(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -317,7 +317,10 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : ForgeRegistries.BLOCKS) {
+                    List<Block> blocks = BaniraPlatforms.isInstalled()
+                            ? BaniraPlatforms.get().registry().blocks()
+                            : Collections.emptyList();
+                    for (Block block : blocks) {
                         if (block == null) continue;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;

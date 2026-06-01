@@ -4,6 +4,7 @@ import org.junit.Test;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
+import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,16 @@ public class BaniraPlatformsTest {
         }
 
         @Override
+        public boolean isModLoaded(String modId) {
+            return false;
+        }
+
+        @Override
+        public String modDisplayName(String modId) {
+            return modId;
+        }
+
+        @Override
         public Path configDir() {
             return Paths.get("config");
         }
@@ -60,6 +71,11 @@ public class BaniraPlatformsTest {
 
         @Override
         public BaniraNetworkService network() {
+            return null;
+        }
+
+        @Override
+        public BaniraRegistryService registry() {
             return null;
         }
     }

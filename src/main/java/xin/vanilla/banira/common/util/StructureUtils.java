@@ -4,12 +4,12 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
+import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 结构相关工具类
@@ -23,13 +23,11 @@ public final class StructureUtils {
     }
 
     public static Structure<?> getStructure(ResourceLocation id) {
-        return id != null ? ForgeRegistries.STRUCTURE_FEATURES.getValue(id) : null;
+        return id != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().structure(id) : null;
     }
 
     public static Set<String> getAllIds() {
-        return ForgeRegistries.STRUCTURE_FEATURES.getKeys().stream()
-                .map(ResourceLocation::toString)
-                .collect(Collectors.toSet());
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().structureIds() : Collections.emptySet();
     }
 
     /**

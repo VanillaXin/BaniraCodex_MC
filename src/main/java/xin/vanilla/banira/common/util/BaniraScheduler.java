@@ -1,10 +1,6 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -31,13 +27,20 @@ public final class BaniraScheduler {
     private static final AtomicLong clientExecutedCount = new AtomicLong(0);
     private static final AtomicLong clientTicks = new AtomicLong(0);
 
+    private static volatile boolean initialized = false;
+
+    public static void init() {
+        if (initialized) return;
+        initialized = true;
+        BaniraEventBus.Server.onTickEnd(BaniraScheduler::onServerTickEnd);
+        BaniraEventBus.Client.onTickEnd(BaniraScheduler::onClientTickEnd);
+    }
 
     public static void schedule(@Nonnull MinecraftServer server, int delayTicks, @Nonnull Runnable action) {
         long executeAt = server.getTickCount() + Math.max(0, delayTicks);
         serverTasks.add(ScheduledTask.server(executeAt, action));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void schedule(int delayTicks, @Nonnull Runnable action) {
         long executeAt = clientTicks.get() + Math.max(0, delayTicks);
         clientTasks.add(ScheduledTask.client(executeAt, action));
@@ -57,15 +60,11 @@ public final class BaniraScheduler {
     /**
      * 客户端：墙钟延迟 {@code delayMillis} 毫秒
      */
-    @OnlyIn(Dist.CLIENT)
     public static void scheduleAfterMillis(double delayMillis, @Nonnull Runnable action) {
         clientWallClockTasks.add(WallClockScheduledTask.client(delayMillis, action));
     }
 
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    private static void onServerTickEnd() {
         MinecraftServer server = BaniraCodex.serverInstance().key();
         if (server == null) return;
 
@@ -73,11 +72,7 @@ public final class BaniraScheduler {
         runWallClockTask(serverWallClockTasks, serverExecutedCount);
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
+    private static void onClientTickEnd() {
         long tick = clientTicks.incrementAndGet();
         runTask(tick, clientTasks, clientExecutedCount);
         runWallClockTask(clientWallClockTasks, clientExecutedCount);

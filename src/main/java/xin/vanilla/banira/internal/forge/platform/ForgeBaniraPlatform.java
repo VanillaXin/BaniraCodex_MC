@@ -1,12 +1,14 @@
 package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
+import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
 
@@ -14,6 +16,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraLifecycle lifecycle = new ForgeBaniraLifecycle();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
+    private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
 
     @Override
     public String loaderType() {
@@ -36,6 +39,18 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     @Override
+    public boolean isModLoaded(String modId) {
+        return modId != null && ModList.get().isLoaded(modId);
+    }
+
+    @Override
+    public String modDisplayName(String modId) {
+        return ModList.get().getModContainerById(modId)
+                .map(container -> container.getModInfo().getDisplayName())
+                .orElse(modId);
+    }
+
+    @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
     }
@@ -53,5 +68,10 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNetworkService network() {
         return network;
+    }
+
+    @Override
+    public BaniraRegistryService registry() {
+        return registry;
     }
 }

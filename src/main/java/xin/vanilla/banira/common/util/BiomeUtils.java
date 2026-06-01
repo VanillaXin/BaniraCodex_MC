@@ -6,9 +6,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -16,8 +13,10 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -54,7 +53,7 @@ public final class BiomeUtils {
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
         }
-        return ForgeRegistries.BIOMES.getValue(id);
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().biome(id) : null;
     }
 
     public static Biome getBiome(ServerWorld world, ResourceLocation id) {
@@ -72,9 +71,7 @@ public final class BiomeUtils {
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
-        return ForgeRegistries.BIOMES.getKeys().stream()
-                .map(ResourceLocation::toString)
-                .collect(Collectors.toSet());
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().biomeIds() : Collections.emptySet();
     }
 
     /**
@@ -104,13 +101,13 @@ public final class BiomeUtils {
     }
 
     public static void ensureData() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
             requestDataFromServer();
         }
     }
 
     public static void requestDataFromServer() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
+        if (EnvironmentUtils.isClient() && !requestedData) {
             requestedData = true;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
             LOGGER.debug("Request biome data from server.");

@@ -22,16 +22,13 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -61,7 +58,6 @@ public final class ItemUtils {
     /**
      * Tooltip缓存
      */
-    @OnlyIn(Dist.CLIENT)
     private static final Map<String, List<Component>> tooltipCache = new ConcurrentHashMap<>();
 
     /**
@@ -448,7 +444,7 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.ITEMS.getValue(location);
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().item(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -563,7 +559,10 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : ForgeRegistries.ITEMS) {
+            List<Item> registryItems = BaniraPlatforms.isInstalled()
+                    ? BaniraPlatforms.get().registry().items()
+                    : Collections.emptyList();
+            for (Item item : registryItems) {
                 if (item == null) continue;
                 if (!addedItems.contains(item)) {
                     try {
@@ -631,7 +630,8 @@ public final class ItemUtils {
 
             // 获取描述, 仅客户端
             try {
-                if (Minecraft.getInstance().player != null) {
+                // Tooltip description can only be read safely on a physical client.
+                if (EnvironmentUtils.isClient() && Minecraft.getInstance().player != null) {
                     List<ITextComponent> tooltip = stack.getTooltipLines(
                             Minecraft.getInstance().player,
                             ITooltipFlag.TooltipFlags.NORMAL
@@ -855,9 +855,9 @@ public final class ItemUtils {
      *
      * @return 玩家身上的所有物品列表副本
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
+        if (!EnvironmentUtils.isClient()) return new ArrayList<>();
         try {
             PlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
@@ -1043,9 +1043,7 @@ public final class ItemUtils {
         }
         return modNameCache.computeIfAbsent(modId, id -> {
             try {
-                return ModList.get().getModContainerById(id)
-                        .map(container -> container.getModInfo().getDisplayName())
-                        .orElse(id);
+                return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().modDisplayName(id) : id;
             } catch (Exception e) {
                 LOGGER.debug("Failed to get mod name for: {}", id, e);
                 return id;
@@ -1061,7 +1059,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable PlayerEntity player, boolean advanced) {
         if (isItemNull(itemStack)) {
@@ -1247,9 +1244,9 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
+        if (!EnvironmentUtils.isClient()) return getItemTooltip(itemStack, null, advanced);
         try {
             PlayerEntity player = Minecraft.getInstance().player;
             return getItemTooltip(itemStack, player, advanced);

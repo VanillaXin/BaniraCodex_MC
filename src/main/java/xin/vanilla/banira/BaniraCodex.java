@@ -97,8 +97,8 @@ public class BaniraCodex {
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
         MinecraftForge.EVENT_BUS.register(ForgeBaniraEventBridge.class);
+        BaniraScheduler.init();
         // 注册网络通道
         NetworkInit.register();
 

@@ -3,6 +3,7 @@ package xin.vanilla.banira.platform;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
+import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
 
@@ -18,6 +19,10 @@ public interface BaniraPlatform {
 
     boolean isDevelopment();
 
+    boolean isModLoaded(String modId);
+
+    String modDisplayName(String modId);
+
     Path configDir();
 
     BaniraLifecycle lifecycle();
@@ -25,4 +30,6 @@ public interface BaniraPlatform {
     BaniraConfigService config();
 
     BaniraNetworkService network();
+
+    BaniraRegistryService registry();
 }

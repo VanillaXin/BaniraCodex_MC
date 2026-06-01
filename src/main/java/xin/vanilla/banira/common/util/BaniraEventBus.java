@@ -6,20 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.EntityTeleportEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.world.ChunkEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,73 +17,30 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * 事件总线工具类
- * <p>
- * 用于统一管理游戏事件的监听和回调，提供清晰的模块化 API。
- * 客户端专用类型（{@code GuiScreenEvent} 等）见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}，不得写入本类，否则专用服无法 {@code register}。
- * </p>
- * <h3>使用示例</h3>
- * <pre>{@code
- * BaniraEventBus.Server.onStarting(server -> ...);
- * BaniraEventBus.Player.onLoggedOut(player -> ...);
- * BaniraClientEventHub.Client.onGuiChanged(e -> ...); // 客户端见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}
- * BaniraEventBus.WorldEvents.onUnload(e -> ...);
- * BaniraEventBus.EntityEvents.onJoinWorld(e -> ...);
- * BaniraEventBus.Commands.onRegister(e -> ...);
- * BaniraEventBus.ModLifecycle.onCommonSetup(e -> ...);
- *
- * // 支持取消注册
- * Registration reg = BaniraEventBus.registerServerStarting(server -> ...);
- * reg.unregister();  // 需要时取消
- * }</pre>
+ * Loader-neutral event hub. Loader adapters dispatch platform events into this class.
  */
 public final class BaniraEventBus {
-    private BaniraEventBus() {
-    }
-
     private static final Logger LOGGER = LogManager.getLogger();
-
-    // region 回调存储
 
     private static final List<Consumer<MinecraftServer>> serverStartingCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
+    private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
 
     private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEvent.PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
+    private static final List<Consumer<ServerPlayerEntity>> playerEnteredDimensionCallbacks = new ArrayList<>();
+    private static final List<BiConsumer<ServerPlayerEntity, RegistryKey<World>>> playerExitedDimensionCallbacks = new ArrayList<>();
+    private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
-    private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
-    private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<WorldEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<PlayerEvent.Clone>> playerCloneCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEvent>> playerEventCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<PlayerInteractEvent.RightClickItem>> playerRightClickItemCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerInteractEvent.RightClickBlock>> playerRightClickBlockCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerInteractEvent.EntityInteractSpecific>> playerEntityInteractCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<EntityJoinWorldEvent>> entityJoinWorldCallbacks = new ArrayList<>();
-    private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
-
-    private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
     private static final List<Consumer<CommandDispatcher<CommandSource>>> commandDispatcherCallbacks = new ArrayList<>();
     private static final List<Runnable> modCommonSetupRunnables = new ArrayList<>();
 
-    // endregion
+    private BaniraEventBus() {
+    }
 
-    // region 公共 API：Registration
-
-    /**
-     * 事件注册句柄，用于取消已注册的回调
-     */
     public interface Registration {
         void unregister();
     }
@@ -105,13 +49,6 @@ public final class BaniraEventBus {
         return unregister::run;
     }
 
-    // endregion
-
-    // region 分类 API：Server
-
-    /**
-     * 服务器相关事件
-     */
     public static final class Server {
         private Server() {
         }
@@ -128,6 +65,10 @@ public final class BaniraEventBus {
             serverStoppingCallbacks.add(callback);
         }
 
+        public static void onTickEnd(@Nonnull Runnable callback) {
+            serverTickEndCallbacks.add(callback);
+        }
+
         public static Registration onStartingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
             serverStartingCallbacks.add(callback);
             return createRegistration(() -> serverStartingCallbacks.remove(callback));
@@ -137,29 +78,8 @@ public final class BaniraEventBus {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
-
-        /**
-         * 注册服务器每 tick 回调（Phase.END 阶段）
-         */
-        public static void onTick(@Nonnull Consumer<TickEvent.ServerTickEvent> callback) {
-            serverTickCallbacks.add(callback);
-        }
-
-        /**
-         * Loader-neutral server tick callback fired at the end phase.
-         */
-        public static void onTickEnd(@Nonnull Runnable callback) {
-            serverTickEndCallbacks.add(callback);
-        }
     }
 
-    // endregion
-
-    // region 分类 API：Player
-
-    /**
-     * 玩家相关事件
-     */
     public static final class Player {
         private Player() {
         }
@@ -172,55 +92,19 @@ public final class BaniraEventBus {
             playerLoggedOutCallbacks.add(callback);
         }
 
-        public static void onChangedDimension(@Nonnull Consumer<PlayerEvent.PlayerChangedDimensionEvent> callback) {
-            playerChangedDimensionCallbacks.add(callback);
-        }
-
-        /**
-         * 仅当玩家进入新维度时触发
-         */
         public static void onEnterDimension(@Nonnull Consumer<ServerPlayerEntity> callback) {
-            playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayerEntity) {
-                    callback.accept((ServerPlayerEntity) event.getPlayer());
-                }
-            });
+            playerEnteredDimensionCallbacks.add(callback);
         }
 
-        /**
-         * 仅当玩家退出维度时触发
-         */
         public static void onExitDimension(@Nonnull BiConsumer<ServerPlayerEntity, RegistryKey<World>> callback) {
-            playerChangedDimensionCallbacks.add(event -> {
-                if (event.getPlayer() instanceof ServerPlayerEntity) {
-                    callback.accept((ServerPlayerEntity) event.getPlayer(), event.getFrom());
-                }
-            });
+            playerExitedDimensionCallbacks.add(callback);
         }
 
         public static void onSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
             playerSaveCallbacks.add(callback);
         }
-
-        public static void onClone(@Nonnull Consumer<PlayerEvent.Clone> callback) {
-            playerCloneCallbacks.add(callback);
-        }
-
-        /**
-         * 任意 {@link PlayerEvent}（含登录、克隆等所有子类；若只需克隆请用 {@link #onClone}）
-         */
-        public static void onPlayerEvent(@Nonnull Consumer<PlayerEvent> callback) {
-            playerEventCallbacks.add(callback);
-        }
     }
 
-    // endregion
-
-    // region 分类 API：Save
-
-    /**
-     * 保存相关事件
-     */
     public static final class Save {
         private Save() {
         }
@@ -238,243 +122,87 @@ public final class BaniraEventBus {
         }
     }
 
-    // endregion
-
-    // region 分类 API：WorldEvents
-
-    /**
-     * 世界加载/卸载与世界级 Tick（与 {@link net.minecraft.world.World} 区分命名）
-     */
-    public static final class WorldEvents {
-        private WorldEvents() {
-        }
-
-        public static void onUnload(@Nonnull Consumer<WorldEvent.Unload> callback) {
-            worldUnloadCallbacks.add(callback);
-        }
-
-        public static void onTick(@Nonnull Consumer<TickEvent.WorldTickEvent> callback) {
-            worldTickCallbacks.add(callback);
-        }
-    }
-
-    // endregion
-
-    // region 分类 API：EntityEvents
-
-    /**
-     * 实体进入世界、传送等
-     */
-    public static final class EntityEvents {
-        private EntityEvents() {
-        }
-
-        public static void onJoinWorld(@Nonnull Consumer<EntityJoinWorldEvent> callback) {
-            entityJoinWorldCallbacks.add(callback);
-        }
-
-        public static void onTeleport(@Nonnull Consumer<EntityTeleportEvent> callback) {
-            entityTeleportCallbacks.add(callback);
-        }
-    }
-
-    // endregion
-
-    // region 分类 API：Interaction
-
-    /**
-     * 玩家交互（右键物品/方块/实体）
-     */
-    public static final class Interaction {
-        private Interaction() {
-        }
-
-        public static void onRightClickItem(@Nonnull Consumer<PlayerInteractEvent.RightClickItem> callback) {
-            playerRightClickItemCallbacks.add(callback);
-        }
-
-        public static void onRightClickBlock(@Nonnull Consumer<PlayerInteractEvent.RightClickBlock> callback) {
-            playerRightClickBlockCallbacks.add(callback);
-        }
-
-        public static void onEntityInteractSpecific(@Nonnull Consumer<PlayerInteractEvent.EntityInteractSpecific> callback) {
-            playerEntityInteractCallbacks.add(callback);
-        }
-    }
-
-    // endregion
-
-    // region 分类 API：Commands
-
-    /**
-     * 指令注册（Forge 游戏总线 {@link RegisterCommandsEvent}）
-     */
     public static final class Commands {
         private Commands() {
         }
 
-        public static void onRegister(@Nonnull Consumer<RegisterCommandsEvent> callback) {
-            registerCommandsCallbacks.add(callback);
-        }
-
-        /**
-         * Loader-neutral command registration callback.
-         */
         public static void onRegisterDispatcher(@Nonnull Consumer<CommandDispatcher<CommandSource>> callback) {
             commandDispatcherCallbacks.add(callback);
         }
     }
 
-    // endregion
-
-    // region 分类 API：ModLifecycle
-
-    /**
-     * Mod 公共加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}）；客户端 {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent} 见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.ModLifecycle}
-     */
     public static final class ModLifecycle {
         private ModLifecycle() {
         }
 
-        /**
-         * Loader-neutral common setup callback.
-         */
         public static void onCommonSetup(@Nonnull Runnable callback) {
             modCommonSetupRunnables.add(callback);
         }
     }
 
-    // endregion
-
-    // region Forge 事件订阅
-
-    @SubscribeEvent
-    public static void onServerStarting(FMLServerStartingEvent event) {
-        fire(serverStartingCallbacks, event.getServer(), "server starting");
+    public static void dispatchServerStarting(MinecraftServer server) {
+        fire(serverStartingCallbacks, server, "server starting");
     }
 
-    @SubscribeEvent
-    public static void onServerStarted(FMLServerStartedEvent event) {
-        fire(serverStartedCallbacks, event.getServer(), "server started");
+    public static void dispatchServerStarted(MinecraftServer server) {
+        fire(serverStartedCallbacks, server, "server started");
     }
 
-    @SubscribeEvent
-    public static void onServerStopping(FMLServerStoppingEvent event) {
-        fire(serverStoppingCallbacks, event.getServer(), "server stopping");
+    public static void dispatchServerStopping(MinecraftServer server) {
+        fire(serverStoppingCallbacks, server, "server stopping");
     }
 
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        fire(serverTickCallbacks, event, "server tick");
+    public static void dispatchServerTickEnd() {
         fire(serverTickEndCallbacks, "server tick end");
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        fire(playerLoggedInCallbacks, event.getPlayer(), "player logged in");
+    public static void dispatchPlayerLoggedIn(PlayerEntity player) {
+        fire(playerLoggedInCallbacks, player, "player logged in");
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        fire(playerLoggedOutCallbacks, event.getPlayer(), "player logged out");
+    public static void dispatchPlayerLoggedOut(PlayerEntity player) {
+        fire(playerLoggedOutCallbacks, player, "player logged out");
     }
 
-    @SubscribeEvent
-    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        fire(playerChangedDimensionCallbacks, event, "player changed dimension");
+    public static void dispatchPlayerChangedDimension(ServerPlayerEntity player, RegistryKey<World> from) {
+        fire(playerEnteredDimensionCallbacks, player, "player enter dimension");
+        fire(playerExitedDimensionCallbacks, player, from, "player exit dimension");
     }
 
-    @SubscribeEvent
-    public static void onWorldSave(WorldEvent.Save event) {
-        IWorld world = event.getWorld();
-        if (!world.isClientSide()) {
-            fire(worldSaveCallbacks, "world save");
-        }
+    public static void dispatchWorldSave() {
+        fire(worldSaveCallbacks, "world save");
     }
 
-    @SubscribeEvent
-    public static void onChunkSave(ChunkEvent.Save event) {
-        IWorld world = event.getWorld();
-        if (world != null && !world.isClientSide()) {
-            fire(chunkSaveCallbacks, "chunk save");
-        }
+    public static void dispatchChunkSave() {
+        fire(chunkSaveCallbacks, "chunk save");
     }
 
-    @SubscribeEvent
-    public static void onPlayerSaveToFile(PlayerEvent.SaveToFile event) {
-        PlayerEntity player = event.getPlayer();
-        if (player instanceof ServerPlayerEntity) {
-            fire(playerSaveCallbacks, (ServerPlayerEntity) player, "player save");
-        }
+    public static void dispatchPlayerSave(ServerPlayerEntity player) {
+        fire(playerSaveCallbacks, player, "player save");
     }
 
-    @SubscribeEvent
-    public static void onWorldUnload(WorldEvent.Unload event) {
-        fire(worldUnloadCallbacks, event, "world unload");
+    public static void dispatchCommandRegistration(CommandDispatcher<CommandSource> dispatcher) {
+        fire(commandDispatcherCallbacks, dispatcher, "register command dispatcher");
     }
 
-    @SubscribeEvent
-    public static void onWorldTick(TickEvent.WorldTickEvent event) {
-        fire(worldTickCallbacks, event, "world tick");
-    }
-
-    @SubscribeEvent
-    public static void onPlayerClone(PlayerEvent.Clone event) {
-        fire(playerCloneCallbacks, event, "player clone");
-    }
-
-    @SubscribeEvent
-    public static void onAnyPlayerEvent(PlayerEvent event) {
-        fire(playerEventCallbacks, event, "player event");
-    }
-
-    @SubscribeEvent
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        fire(playerRightClickItemCallbacks, event, "player right click item");
-    }
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        fire(playerRightClickBlockCallbacks, event, "player right click block");
-    }
-
-    @SubscribeEvent
-    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
-        fire(playerEntityInteractCallbacks, event, "player entity interact");
-    }
-
-    @SubscribeEvent
-    public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
-        fire(entityJoinWorldCallbacks, event, "entity join world");
-    }
-
-    @SubscribeEvent
-    public static void onEntityTeleport(EntityTeleportEvent event) {
-        fire(entityTeleportCallbacks, event, "entity teleport");
-    }
-
-    @SubscribeEvent
-    public static void onRegisterCommands(RegisterCommandsEvent event) {
-        fire(registerCommandsCallbacks, event, "register commands");
-        fire(commandDispatcherCallbacks, event.getDispatcher(), "register command dispatcher");
-    }
-
-    /**
-     * 由 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()} {@code addListener} 注册
-     */
     public static void dispatchModCommonSetup() {
         fire(modCommonSetupRunnables, "mod common setup");
     }
-
-    // endregion Forge 事件订阅
-
-    // region 内部回调执行
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {
         for (Consumer<T> callback : callbacks) {
             try {
                 callback.accept(parameter);
+            } catch (Throwable t) {
+                LOGGER.warn("Error executing callback for {} event", eventName, t);
+            }
+        }
+    }
+
+    private static <A, B> void fire(List<BiConsumer<A, B>> callbacks, A first, B second, String eventName) {
+        for (BiConsumer<A, B> callback : callbacks) {
+            try {
+                callback.accept(first, second);
             } catch (Throwable t) {
                 LOGGER.warn("Error executing callback for {} event", eventName, t);
             }
@@ -490,7 +218,4 @@ public final class BaniraEventBus {
             }
         }
     }
-
-    // endregion
-
 }

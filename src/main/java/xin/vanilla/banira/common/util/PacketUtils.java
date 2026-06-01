@@ -5,15 +5,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
 
 import java.util.List;
@@ -59,7 +56,6 @@ public final class PacketUtils {
         sendSplitPacketToServer(packet.networkChannel(), packet);
     }
 
-    @OnlyIn(Dist.CLIENT)
     private static <MSG extends INetworkPacket> void sendPacketToServer(BaniraNetworkChannel channel, MSG msg) {
         if (!hasChannel(channel)) {
             return;
@@ -91,7 +87,6 @@ public final class PacketUtils {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(BaniraNetworkChannel channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
@@ -99,36 +94,23 @@ public final class PacketUtils {
         }
     }
 
-    private static NetworkRegistryAccessor NETWORK_REGISTRY = null;
-
-    private static void init() {
-        if (NETWORK_REGISTRY == null) {
-            NETWORK_REGISTRY = (NetworkRegistryAccessor) new NetworkRegistry();
-        }
-    }
-
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasBaniraServer() {
         return hasChannel(NetworkInit.HANDLER);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasChannel(BaniraNetworkChannel channel) {
-        return hasChannel(channel.channelName());
+        return BaniraPlatforms.get().network().hasChannel(channel);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasChannel(ResourceLocation channel) {
-        init();
-        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
+        return BaniraPlatforms.get().network().hasChannel(channel);
     }
 
     public static boolean hasChannel(ServerPlayerEntity player, BaniraNetworkChannel channel) {
-        return hasChannel(player, channel.channelName());
+        return BaniraPlatforms.get().network().hasChannel(player, channel);
     }
 
     public static boolean hasChannel(ServerPlayerEntity player, ResourceLocation channel) {
-        init();
-        return NETWORK_REGISTRY.banira$instances().containsKey(channel);
+        return BaniraPlatforms.get().network().hasChannel(player, channel);
     }
 }

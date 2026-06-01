@@ -27,6 +27,7 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.forge.event.ForgeBaniraEventBridge;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -97,7 +98,7 @@ public class BaniraCodex {
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
-        MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
+        MinecraftForge.EVENT_BUS.register(ForgeBaniraEventBridge.class);
         // 注册网络通道
         NetworkInit.register();
 
@@ -126,7 +127,7 @@ public class BaniraCodex {
         BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
-        BaniraEventBus.Server.onTick(event -> {
+        BaniraEventBus.Server.onTickEnd(() -> {
             MinecraftServer server = serverInstance().key();
             if (server == null) return;
             if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {

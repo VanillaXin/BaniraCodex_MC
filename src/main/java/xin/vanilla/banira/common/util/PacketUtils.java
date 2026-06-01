@@ -10,11 +10,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
 
 import java.util.List;
 
@@ -30,72 +30,72 @@ public final class PacketUtils {
     }
 
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        NetworkHandler handler = msg.networkHandler();
+        BaniraNetworkChannel channel = msg.networkChannel();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPacketToPlayer(handler, msg, player)
+                sendPacketToPlayer(channel, msg, player)
         );
     }
 
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        NetworkHandler handler = packet.networkHandler();
+        BaniraNetworkChannel channel = packet.networkChannel();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacketToPlayer(handler, packet, player)
+                sendSplitPacketToPlayer(channel, packet, player)
         );
     }
 
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        sendPacketToServer(msg.networkHandler(), msg);
+        sendPacketToServer(msg.networkChannel(), msg);
     }
 
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayerEntity player) {
-        sendPacketToPlayer(msg.networkHandler(), msg, player);
+        sendPacketToPlayer(msg.networkChannel(), msg, player);
     }
 
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayerEntity player) {
-        sendSplitPacketToPlayer(packet.networkHandler(), packet, player);
+        sendSplitPacketToPlayer(packet.networkChannel(), packet, player);
     }
 
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
-        sendSplitPacketToServer(packet.networkHandler(), packet);
+        sendSplitPacketToServer(packet.networkChannel(), packet);
     }
 
     @OnlyIn(Dist.CLIENT)
-    private static <MSG extends INetworkPacket> void sendPacketToServer(NetworkHandler handler, MSG msg) {
-        if (!hasChannel(handler)) {
+    private static <MSG extends INetworkPacket> void sendPacketToServer(BaniraNetworkChannel channel, MSG msg) {
+        if (!hasChannel(channel)) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
         }
-        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, handler.getModId())) {
+        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, channel.modId())) {
             return;
         }
-        handler.sendToServer(msg);
+        channel.sendToServer(msg);
     }
 
-    private static <MSG extends INetworkPacket> void sendPacketToPlayer(NetworkHandler handler, MSG msg, ServerPlayerEntity player) {
-        if (!hasChannel(player, handler)) {
+    private static <MSG extends INetworkPacket> void sendPacketToPlayer(BaniraNetworkChannel channel, MSG msg, ServerPlayerEntity player) {
+        if (!hasChannel(player, channel)) {
             return;
         }
-        if (!PlayerUtils.isRemoteClientModInstalled(player, handler.getModId())) {
+        if (!PlayerUtils.isRemoteClientModInstalled(player, channel.modId())) {
             return;
         }
-        handler.sendToPlayer(player, msg);
+        channel.sendToPlayer(player, msg);
     }
 
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(NetworkHandler handler, T packet, ServerPlayerEntity player) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(BaniraNetworkChannel channel, T packet, ServerPlayerEntity player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            sendPacketToPlayer(handler, splitPacket, player);
+            sendPacketToPlayer(channel, splitPacket, player);
         }
     }
 
     @OnlyIn(Dist.CLIENT)
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(NetworkHandler handler, T packet) {
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(BaniraNetworkChannel channel, T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            sendPacketToServer(handler, splitPacket);
+            sendPacketToServer(channel, splitPacket);
         }
     }
 
@@ -113,8 +113,8 @@ public final class PacketUtils {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public static boolean hasChannel(NetworkHandler handler) {
-        return hasChannel(handler.getChannelName());
+    public static boolean hasChannel(BaniraNetworkChannel channel) {
+        return hasChannel(channel.channelName());
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -123,8 +123,8 @@ public final class PacketUtils {
         return NETWORK_REGISTRY.banira$instances().containsKey(channel);
     }
 
-    public static boolean hasChannel(ServerPlayerEntity player, NetworkHandler handler) {
-        return hasChannel(player, handler.getChannelName());
+    public static boolean hasChannel(ServerPlayerEntity player, BaniraNetworkChannel channel) {
+        return hasChannel(player, channel.channelName());
     }
 
     public static boolean hasChannel(ServerPlayerEntity player, ResourceLocation channel) {

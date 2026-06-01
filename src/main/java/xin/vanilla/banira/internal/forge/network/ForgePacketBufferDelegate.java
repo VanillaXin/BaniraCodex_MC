@@ -1,0 +1,94 @@
+package xin.vanilla.banira.internal.forge.network;
+
+import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.common.network.BaniraPacketBufferDelegate;
+
+final class ForgePacketBufferDelegate implements BaniraPacketBufferDelegate {
+    private final PacketBuffer buffer;
+
+    ForgePacketBufferDelegate(PacketBuffer buffer) {
+        this.buffer = buffer;
+    }
+
+    @Override
+    public int readVarInt() {
+        return buffer.readVarInt();
+    }
+
+    @Override
+    public void writeVarInt(int value) {
+        buffer.writeVarInt(value);
+    }
+
+    @Override
+    public String readUtf() {
+        return buffer.readUtf();
+    }
+
+    @Override
+    public String readUtf(int maxLength) {
+        return buffer.readUtf(maxLength);
+    }
+
+    @Override
+    public void writeUtf(String value) {
+        buffer.writeUtf(value);
+    }
+
+    @Override
+    public void writeUtf(String value, int maxLength) {
+        buffer.writeUtf(value, maxLength);
+    }
+
+    @Override
+    public int readInt() {
+        return buffer.readInt();
+    }
+
+    @Override
+    public void writeInt(int value) {
+        buffer.writeInt(value);
+    }
+
+    @Override
+    public long readLong() {
+        return buffer.readLong();
+    }
+
+    @Override
+    public void writeLong(long value) {
+        buffer.writeLong(value);
+    }
+
+    @Override
+    public boolean readBoolean() {
+        return buffer.readBoolean();
+    }
+
+    @Override
+    public void writeBoolean(boolean value) {
+        buffer.writeBoolean(value);
+    }
+
+    @Override
+    public ResourceLocation readResourceLocation() {
+        return buffer.readResourceLocation();
+    }
+
+    @Override
+    public void writeResourceLocation(ResourceLocation value) {
+        buffer.writeResourceLocation(value);
+    }
+
+    @Override
+    public DisplayInfo readDisplayInfo() {
+        return DisplayInfo.fromNetwork(buffer);
+    }
+
+    @Override
+    public void writeDisplayInfo(DisplayInfo value) {
+        value.serializeToNetwork(buffer);
+    }
+}

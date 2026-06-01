@@ -1,7 +1,10 @@
 package xin.vanilla.banira.internal.network;
 
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.*;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -10,13 +13,15 @@ import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
 
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public final class NetworkInit {
-    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
+    public static final BaniraNetworkChannel HANDLER = BaniraPlatforms.get().network().create("main_network", Identifier.id());
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;
@@ -52,7 +57,7 @@ public final class NetworkInit {
             BiConsumer<MSG, BaniraPacketBuffer> encoder,
             Function<BaniraPacketBuffer, MSG> decoder,
             BiConsumer<MSG, BaniraNetworkContext> handler) {
-        HANDLER.registerNeutral(packetClass, encoder, decoder, handler);
+        HANDLER.register(packetClass, encoder, decoder, handler);
     }
 
     private static <MSG extends SplitPacket & NetworkPacket> void registerSplitPacket(
@@ -60,6 +65,6 @@ public final class NetworkInit {
             BiConsumer<MSG, BaniraPacketBuffer> encoder,
             Function<BaniraPacketBuffer, MSG> decoder,
             BiConsumer<MSG, BaniraNetworkContext> handler) {
-        HANDLER.registerSplitNeutral(packetClass, encoder, decoder, handler);
+        HANDLER.registerSplit(packetClass, encoder, decoder, handler);
     }
 }

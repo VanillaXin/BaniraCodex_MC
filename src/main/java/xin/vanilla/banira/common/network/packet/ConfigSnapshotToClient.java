@@ -2,8 +2,6 @@ package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -73,7 +71,6 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         ctx.markHandled();
     }
 
-    @OnlyIn(Dist.CLIENT)
     private static final class ClientSide {
 
         private ClientSide() {

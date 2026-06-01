@@ -9,10 +9,6 @@ import net.minecraft.resources.IResourceManager;
 import net.minecraft.resources.IResourcePack;
 import net.minecraft.resources.ResourcePackType;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -21,6 +17,7 @@ import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,14 +31,14 @@ import java.util.stream.Collectors;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入带 {@link Mod} 的主类（与入口 {@code @Mod("modid")} 为同一类），modId 从注解读取，语言文件从该类所在 JAR 加载：
+ * 构造时传入 loader mod 主类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
  *     private MyModLang() { super(MyMod.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时通过 {@link ModList} 解析该 mod 的主类。
+ * 仅使用 {@link #of(String)} 时通过 Banira 平台适配层解析该 mod 的主类。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -69,7 +66,7 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
+     * @param modMainClass loader mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
         this.modId = modIdFromModMainClass(modMainClass);
@@ -80,29 +77,21 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
-        Mod mod = modMainClass.getAnnotation(Mod.class);
-        if (mod == null) {
-            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
-        }
-        String id = mod.value();
+        String id = BaniraPlatforms.get().modIdFromMainClass(modMainClass);
         if (StringUtils.isNullOrEmptyEx(id)) {
-            throw new IllegalArgumentException("@Mod value is empty on: " + modMainClass.getName());
+            throw new IllegalArgumentException("Mod id is empty on: " + modMainClass.getName());
         }
         return id;
     }
 
     @NonNull
-    private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
+    private static Class<?> resolveModMainClass(@NonNull String modId) {
         try {
-            return ModList.get().getModContainerById(modId)
-                    .map(ModContainer::getMod)
-                    .filter(Objects::nonNull)
-                    .map(Object::getClass)
-                    .orElseThrow(() -> new IllegalStateException("No loaded @Mod main class for mod id: " + modId));
+            return BaniraPlatforms.get().modMainClass(modId);
         } catch (IllegalStateException e) {
             throw e;
         } catch (Throwable t) {
-            throw new IllegalStateException("Failed to resolve @Mod main class for mod id: " + modId, t);
+            throw new IllegalStateException("Failed to resolve mod main class for mod id: " + modId, t);
         }
     }
 
@@ -124,7 +113,7 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(resolveModMainClassFromModList(modId));
+        return new Translator(resolveModMainClass(modId));
     }
 
     @Override
@@ -336,7 +325,7 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (FMLEnvironment.dist.isClient()) {
+        if (EnvironmentUtils.isClient()) {
             return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().getCode());
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());

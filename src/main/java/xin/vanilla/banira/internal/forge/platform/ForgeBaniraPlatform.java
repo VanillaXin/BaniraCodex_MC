@@ -1,7 +1,9 @@
 package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.UsernameCache;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraPlatform;
@@ -11,6 +13,8 @@ import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.UUID;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraLifecycle lifecycle = new ForgeBaniraLifecycle();
@@ -48,6 +52,29 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         return ModList.get().getModContainerById(modId)
                 .map(container -> container.getModInfo().getDisplayName())
                 .orElse(modId);
+    }
+
+    @Override
+    public String modIdFromMainClass(Class<?> modMainClass) {
+        Mod mod = modMainClass != null ? modMainClass.getAnnotation(Mod.class) : null;
+        if (mod == null || mod.value() == null || mod.value().trim().isEmpty()) {
+            throw new IllegalArgumentException("Class must be annotated with a loader mod entry annotation: " + modMainClass);
+        }
+        return mod.value();
+    }
+
+    @Override
+    public Class<?> modMainClass(String modId) {
+        return ModList.get().getModContainerById(modId)
+                .map(container -> container.getMod())
+                .filter(Objects::nonNull)
+                .map(Object::getClass)
+                .orElseThrow(() -> new IllegalStateException("No loaded mod main class for mod id: " + modId));
+    }
+
+    @Override
+    public String lastKnownUsername(UUID uuid) {
+        return uuid != null ? UsernameCache.getLastKnownUsername(uuid) : null;
     }
 
     @Override

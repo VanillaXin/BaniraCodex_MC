@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
@@ -78,7 +76,6 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         ctx.markHandled();
     }
 
-    @OnlyIn(Dist.CLIENT)
     private static final class ClientSide {
         private static void handle(NotificationTypesSyncToClient packet) {
             for (NotificationTypeSyncEntry e : packet.entries()) {

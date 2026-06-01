@@ -8,6 +8,7 @@ import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -52,6 +53,21 @@ public class BaniraPlatformsTest {
         @Override
         public String modDisplayName(String modId) {
             return modId;
+        }
+
+        @Override
+        public String modIdFromMainClass(Class<?> modMainClass) {
+            return "test";
+        }
+
+        @Override
+        public Class<?> modMainClass(String modId) {
+            return FakePlatform.class;
+        }
+
+        @Override
+        public String lastKnownUsername(UUID uuid) {
+            return null;
         }
 
         @Override

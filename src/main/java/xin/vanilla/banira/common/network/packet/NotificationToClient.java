@@ -2,8 +2,6 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -92,7 +90,6 @@ public class NotificationToClient implements NetworkPacket {
     }
 
 
-    @OnlyIn(Dist.CLIENT)
     private static final class ClientSide {
         private static final Logger LOGGER = LogManager.getLogger();
 

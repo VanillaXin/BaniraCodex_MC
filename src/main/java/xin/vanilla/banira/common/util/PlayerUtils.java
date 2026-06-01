@@ -10,9 +10,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
@@ -21,6 +18,7 @@ import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -98,8 +96,10 @@ public final class PlayerUtils {
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static UUID getPlayerUUID() {
+        if (!EnvironmentUtils.isClient()) {
+            return null;
+        }
         if (net.minecraft.client.Minecraft.getInstance().player == null) {
             return null;
         }
@@ -155,7 +155,7 @@ public final class PlayerUtils {
             }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
-            nameString = UsernameCache.getLastKnownUsername(uuid);
+            nameString = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().lastKnownUsername(uuid) : null;
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
             nameString = uuid.toString();
@@ -201,9 +201,11 @@ public final class PlayerUtils {
         return entity;
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
+        if (!EnvironmentUtils.isClient()) {
+            return Identifier.id().create("minecraft", "textures/entity/steve.png");
+        }
         try {
             if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
                 return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
@@ -221,9 +223,11 @@ public final class PlayerUtils {
      * @param skin {@link #getPlayerSkin(UUID)} 等资源定位，为 null 时返回 null
      * @return 长度为 2 的数组，无法解析尺寸时退回 64×64 假定布局
      */
-    @OnlyIn(Dist.CLIENT)
     @Nullable
     public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable ResourceLocation skin) {
+        if (!EnvironmentUtils.isClient()) {
+            return null;
+        }
         if (skin == null) {
             return null;
         }
@@ -246,7 +250,6 @@ public final class PlayerUtils {
     /**
      * @see #getPlayerSkinHeadFaceTextures(ResourceLocation)
      */
-    @OnlyIn(Dist.CLIENT)
     @Nullable
     public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable UUID uuid) {
         return getPlayerSkinHeadFaceTextures(getPlayerSkin(uuid));

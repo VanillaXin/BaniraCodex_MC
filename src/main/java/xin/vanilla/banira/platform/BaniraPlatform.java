@@ -6,6 +6,7 @@ import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 
 import java.nio.file.Path;
+import java.util.UUID;
 
 /**
  * Loader-neutral platform surface exposed to dependent mods.
@@ -22,6 +23,12 @@ public interface BaniraPlatform {
     boolean isModLoaded(String modId);
 
     String modDisplayName(String modId);
+
+    String modIdFromMainClass(Class<?> modMainClass);
+
+    Class<?> modMainClass(String modId);
+
+    String lastKnownUsername(UUID uuid);
 
     Path configDir();
 

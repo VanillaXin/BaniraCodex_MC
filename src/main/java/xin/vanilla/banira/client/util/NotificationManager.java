@@ -1,15 +1,10 @@
 package xin.vanilla.banira.client.util;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.Style;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -25,23 +20,15 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.CustomConfig;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    private static final String LOG_FILE_NAME = "notification_log.json";
-
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
     private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
     private static final NotificationManager instance = new NotificationManager();
@@ -210,47 +197,16 @@ public final class NotificationManager {
                 .source(fromNetwork ? "network" : "local");
         synchronized (log) {
             log.add(0, entry);
-            int max = notificationLogMaxEntries();
-            while (log.size() > max) {
-                log.remove(log.size() - 1);
-            }
+            NotificationLogStore.trimToMax(log, notificationLogMaxEntries());
         }
         saveLogAsync();
     }
 
     public void loadLog() {
-        Path path = CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME);
-        File file = path.toFile();
-        if (!file.exists()) return;
-        try {
-            String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-            JsonObject root = JsonUtils.parseObject(content);
-            JsonElement entriesEl = root.get("entries");
-            if (entriesEl == null || !entriesEl.isJsonArray()) return;
-            JsonArray arr = entriesEl.getAsJsonArray();
-            synchronized (log) {
-                log.clear();
-                for (JsonElement el : arr) {
-                    JsonObject obj = el.getAsJsonObject();
-                    NotificationLogEntry entry = new NotificationLogEntry()
-                            .id(JsonUtils.getLong(obj, "id", 0))
-                            .timestamp(JsonUtils.getLong(obj, "timestamp", 0))
-                            .componentJson(JsonUtils.getString(obj, "componentJson", "{}"))
-                            .positionName(JsonUtils.getString(obj, "positionName", "TOP_RIGHT"))
-                            .animationName(JsonUtils.getString(obj, "animationName", "AUTO"))
-                            .durationTime(JsonUtils.getLong(obj, "durationTime", 5000))
-                            .styleName(JsonUtils.getString(obj, "styleName", "NORMAL"))
-                            .notificationType(JsonUtils.getString(obj, "notificationType", NotificationTypeKeys.DEFAULT))
-                            .source(JsonUtils.getString(obj, "source", "local"));
-                    log.add(entry);
-                }
-                int max = notificationLogMaxEntries();
-                while (log.size() > max) {
-                    log.remove(log.size() - 1);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to load notification log: {}", e.getMessage());
+        List<NotificationLogEntry> loaded = NotificationLogStore.load(notificationLogMaxEntries());
+        synchronized (log) {
+            log.clear();
+            log.addAll(loaded);
         }
     }
 
@@ -259,36 +215,11 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LOG_FILE_NAME);
-                JsonObject root = new JsonObject();
-                JsonArray arr = new JsonArray();
-                List<NotificationLogEntry> snapshot;
-                synchronized (log) {
-                    snapshot = new ArrayList<>(log);
-                }
-                for (NotificationLogEntry e : snapshot) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("id", e.id());
-                    obj.addProperty("timestamp", e.timestamp());
-                    obj.addProperty("componentJson", e.componentJson());
-                    obj.addProperty("positionName", e.positionName());
-                    obj.addProperty("animationName", e.animationName());
-                    obj.addProperty("durationTime", e.durationTime());
-                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-                    obj.addProperty("source", e.source());
-                    arr.add(obj);
-                }
-                root.add("entries", arr);
-                Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
-            }
-        }).start();
+        List<NotificationLogEntry> snapshot;
+        synchronized (log) {
+            snapshot = new ArrayList<>(log);
+        }
+        NotificationLogStore.saveAsync(snapshot);
     }
 
     public void render(MatrixStack stack) {

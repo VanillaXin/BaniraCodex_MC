@@ -30,6 +30,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.GuiScissorStack;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -1932,76 +1933,29 @@ public final class AbstractGuiUtils {
      * 使用 GUI 坐标（左上角为原点）。
      */
     public static void enableScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        MainWindow window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
-        int x = guiX * scale;
-        int y = window.getHeight() - (guiY + guiHeight) * scale;
-        int w = Math.max(0, guiWidth * scale);
-        int h = Math.max(0, guiHeight * scale);
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x, y, w, h);
+        GuiScissorStack.enable(guiX, guiY, guiWidth, guiHeight);
     }
 
     /**
      * 禁用裁剪
      */
     public static void disableScissor() {
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        GuiScissorStack.disable();
     }
-
-    private static final Deque<int[]> scissorStack = new ArrayDeque<>();
 
     /**
      * 压入裁剪区域：与当前裁剪取交集，用于嵌套裁剪。
      * 使用后必须调用 {@link #popScissor()} 恢复。
      */
     public static void pushScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        MainWindow window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
-        int winW = window.getWidth() / scale;
-        int winH = window.getHeight() / scale;
-        int[] prev = new int[5];
-        prev[0] = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST) ? 1 : 0;
-        if (prev[0] == 1) {
-            int[] box = new int[4];
-            GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
-            prev[1] = box[0] / scale;
-            prev[2] = (window.getHeight() - box[1] - box[3]) / scale;
-            prev[3] = box[2] / scale;
-            prev[4] = box[3] / scale;
-        } else {
-            prev[1] = 0;
-            prev[2] = 0;
-            prev[3] = winW;
-            prev[4] = winH;
-        }
-        scissorStack.push(prev);
-
-        int left = Math.max(guiX, prev[1]);
-        int top = Math.max(guiY, prev[2]);
-        int right = Math.min(guiX + guiWidth, prev[1] + prev[3]);
-        int bottom = Math.min(guiY + guiHeight, prev[2] + prev[4]);
-        int w = Math.max(0, right - left);
-        int h = Math.max(0, bottom - top);
-        enableScissor(left, top, w, h);
+        GuiScissorStack.push(guiX, guiY, guiWidth, guiHeight);
     }
 
     /**
      * 弹出裁剪区域，恢复之前的状态。
      */
     public static void popScissor() {
-        int[] prev = scissorStack.poll();
-        if (prev == null) {
-            disableScissor();
-            return;
-        }
-        if (prev[0] == 1) {
-            enableScissor(prev[1], prev[2], prev[3], prev[4]);
-        } else {
-            disableScissor();
-        }
+        GuiScissorStack.pop();
     }
 
     // endregion 杂项

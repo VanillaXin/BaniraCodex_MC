@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -18,16 +17,11 @@ import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Accessors(fluent = true)
 public final class PacketUtils {
     private PacketUtils() {
     }
-
-    @Getter
-    private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
 
     public static void broadcastPacket(IPacket<?> packet) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.network.data;
 
-import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
@@ -18,7 +18,7 @@ import java.util.Objects;
 /**
  * 进度信息
  */
-@Data
+@ToString
 @Accessors(chain = true, fluent = true)
 public class AdvancementData {
     private final ResourceLocation id;

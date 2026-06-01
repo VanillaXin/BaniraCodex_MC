@@ -1,10 +1,7 @@
 package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonObject;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
@@ -24,7 +21,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true, fluent = true)

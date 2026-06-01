@@ -1,6 +1,9 @@
 package xin.vanilla.banira.common.data;
 
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
@@ -8,7 +11,10 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
 
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
 @Accessors(chain = true, fluent = true)
 public class NotificationData {
 

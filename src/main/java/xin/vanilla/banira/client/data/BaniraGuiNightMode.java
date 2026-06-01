@@ -1,8 +1,6 @@
 package xin.vanilla.banira.client.data;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
@@ -11,7 +9,6 @@ import java.time.LocalTime;
 /**
  * 根据 {@link ClientConfig} 判定是否使用 GUI 夜间配色（仅客户端）
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraGuiNightMode {
 
     private BaniraGuiNightMode() {

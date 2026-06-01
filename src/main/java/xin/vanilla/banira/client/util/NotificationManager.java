@@ -8,8 +8,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.Style;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -293,7 +291,6 @@ public final class NotificationManager {
         }).start();
     }
 
-    @OnlyIn(Dist.CLIENT)
     public void render(MatrixStack stack) {
         Minecraft mc = Minecraft.getInstance();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
@@ -382,7 +379,6 @@ public final class NotificationManager {
      *
      * @return 是否已消费
      */
-    @OnlyIn(Dist.CLIENT)
     public boolean tryHandleHudClick(double guiMouseX, double guiMouseY, int button) {
         if (button != 0) {
             return false;
@@ -418,7 +414,6 @@ public final class NotificationManager {
     /**
      * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
      */
-    @OnlyIn(Dist.CLIENT)
     public void tickOutOfScreenClick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) {

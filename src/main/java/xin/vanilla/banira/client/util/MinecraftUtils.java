@@ -2,13 +2,10 @@ package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Minecraft客户端工具类
  */
-@OnlyIn(Dist.CLIENT)
 public final class MinecraftUtils {
     private MinecraftUtils() {
     }

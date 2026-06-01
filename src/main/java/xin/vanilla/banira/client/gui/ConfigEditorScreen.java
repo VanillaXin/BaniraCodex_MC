@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -23,6 +22,7 @@ import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
+ * 配置编辑界面，支持可视化编辑 Banira 配置描述符。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
@@ -103,7 +103,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
-        if (FMLEnvironment.dist.isClient()) {
+        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
             Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
     }

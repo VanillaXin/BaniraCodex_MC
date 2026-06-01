@@ -1,8 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -17,7 +14,6 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-@OnlyIn(Dist.CLIENT)
 public final class PNGUtils {
     private PNGUtils() {
     }

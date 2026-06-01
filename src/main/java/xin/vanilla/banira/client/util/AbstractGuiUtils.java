@@ -13,8 +13,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3f;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
@@ -42,7 +40,6 @@ import java.util.stream.Collectors;
 /**
  * AbstractGui工具类
  */
-@OnlyIn(Dist.CLIENT)
 public final class AbstractGuiUtils {
     private AbstractGuiUtils() {
     }

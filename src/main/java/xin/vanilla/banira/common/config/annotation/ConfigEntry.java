@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * 配置项注解，类似 Fabric Cloth Config 的 @ConfigEntry
  * <p>
- * {@link java.util.List} 字段须带元素泛型，以便生成 Forge 列表校验与 GUI：
+ * {@link java.util.List} 字段须带元素泛型，以便生成配置后端列表校验与 GUI：
  * {@code List<String>}、{@code List<Integer>}、{@code List<Long>}、{@code List<Double>}、
  * {@code List<Boolean>}、{@code List<枚举类型>}；原始 {@code List} 视为字符串列表。
  * </p>

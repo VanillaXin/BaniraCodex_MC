@@ -1,11 +1,7 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.common.util.FieldUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraLogoPatchService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +15,6 @@ public final class LogoModifier {
     private LogoModifier() {
     }
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     /**
      * modId -> Supplier
      */
@@ -30,7 +24,6 @@ public final class LogoModifier {
      * Function列表, 按注册顺序执行
      */
     private static final List<Function<String, String>> FUNCTION_REGISTRY = new ArrayList<>();
-    private static String FIELD_NAME = null;
 
 
     /**
@@ -89,47 +82,7 @@ public final class LogoModifier {
         if (SUPPLIER_REGISTRY.isEmpty() && FUNCTION_REGISTRY.isEmpty()) {
             return;
         }
-
-        try {
-            if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                List<? extends ModInfo> mods = ModList.get().getMods();
-                if (mods.isEmpty()) {
-                    return;
-                }
-                ModInfo sample = mods.get(0);
-                for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
-                    try {
-                        @SuppressWarnings("unchecked")
-                        Optional<String> logo = (Optional<String>) FieldUtils.getPrivateFieldValue(ModInfo.class, sample, name);
-                        if (logo != null && logo.isPresent()
-                                && StringUtils.isNotNullOrEmpty(logo.get())
-                                && logo.get().matches(".*\\.png$")) {
-                            FIELD_NAME = name;
-                            break;
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
-                if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
-                    FIELD_NAME = "logoFile";
-                }
-            }
-
-            for (ModInfo info : ModList.get().getMods()) {
-                if (!(info instanceof ModInfo)) {
-                    continue;
-                }
-
-                Optional<String> customLogo = getLogoFile(info.getModId());
-                if (!customLogo.isPresent()) {
-                    continue;
-                }
-
-                FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to modify mod logos", e);
-        }
+        BaniraLogoPatchService.apply(LogoModifier::getLogoFile);
     }
 
     /**

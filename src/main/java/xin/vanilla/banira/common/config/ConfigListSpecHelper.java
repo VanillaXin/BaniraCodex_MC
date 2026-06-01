@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * 根据 {@code List<T>} 泛型与注解解析列表配置项类型，并生成 Forge 列表校验器与规范化默认值。
+ * 根据 {@code List<T>} 泛型与注解解析列表配置项类型，并生成加载器配置后端可用的列表校验器与规范化默认值。
  */
 public final class ConfigListSpecHelper {
 
@@ -324,7 +324,7 @@ public final class ConfigListSpecHelper {
     }
 
     /**
-     * 将 Forge/TOML 读出的列表（元素常为字符串或宽松数值类型）规范为描述符声明的元素类型，供业务代码通过 {@link ConfigHolder#get} 读取。
+     * 将配置后端读出的列表（元素常为字符串或宽松数值类型）规范为描述符声明的元素类型，供业务代码通过 {@link ConfigHolder#get} 读取。
      * <p>
      * 与 {@link #normalizeListForGui} 不同：枚举保持为 {@link Enum} 实例，而非名称字符串。
      */

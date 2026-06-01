@@ -5,8 +5,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -16,7 +14,6 @@ import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Translator;
 
-@OnlyIn(Dist.CLIENT)
 @Setter
 @Accessors(chain = true, fluent = true)
 public class Text implements Cloneable {

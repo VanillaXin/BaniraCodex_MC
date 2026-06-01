@@ -9,8 +9,6 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -35,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@OnlyIn(Dist.CLIENT)
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true, fluent = true)
@@ -240,7 +237,6 @@ public class Notification extends NotificationData {
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;

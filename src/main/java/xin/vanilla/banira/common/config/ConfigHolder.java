@@ -14,6 +14,7 @@ public class ConfigHolder {
     @Getter
     private final String configName;
 
+    @Getter
     private final ConfigScope scope;
     private final ConfigValueBackend backend;
 
@@ -88,10 +89,6 @@ public class ConfigHolder {
 
     public boolean canSyncToServer() {
         return scope == ConfigScope.SERVER || scope == ConfigScope.COMMON;
-    }
-
-    public ConfigScope getScope() {
-        return scope;
     }
 
     public List<CategoryGroup> getDescriptorsGroupedByCategory() {

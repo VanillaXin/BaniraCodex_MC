@@ -2,11 +2,10 @@ package xin.vanilla.banira.client.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -537,7 +536,7 @@ public final class BaniraColorConfig {
      */
     @Nonnull
     public static BaniraColorConfig themeForConcreteSeason(@Nonnull EnumSeason concreteSeason) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
             return BaniraColorThemeLoader.get().resolve(concreteSeason);
         }
         return builtinForConcreteSeason(concreteSeason);

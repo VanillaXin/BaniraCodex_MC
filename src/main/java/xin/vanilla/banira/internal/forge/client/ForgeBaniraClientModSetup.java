@@ -17,6 +17,7 @@ public final class ForgeBaniraClientModSetup {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         BaniraKeyBindingService.installRegistrar(ClientRegistry::registerKeyBinding);
+        ForgeBaniraLogoPatchService.install();
         BaniraClientModSetup.initOnClientSetup();
     }
 }

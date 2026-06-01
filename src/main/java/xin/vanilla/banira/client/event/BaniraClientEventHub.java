@@ -33,7 +33,9 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<PlayerEntity>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraClientScreenEvent>> clientScreenChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraTextureReloadEvent>> clientTextureReloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraClientScreenEvent>> clientScreenPreRenderCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraClientScreenEvent>> clientScreenPostRenderCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraClientInputEvent>> clientInputCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraHudRenderEvent>> hudPreRenderCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraHudRenderEvent>> hudPostRenderCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraClientTickEvent>> clientTickCallbacks = new ArrayList<>();
@@ -119,12 +121,20 @@ public final class BaniraClientEventHub {
         fire(clientScreenChangedCallbacks, event, "client screen changed");
     }
 
+    public static void dispatchClientScreenPreRender(BaniraClientScreenEvent event) {
+        fire(clientScreenPreRenderCallbacks, event, "client screen pre render");
+    }
+
     public static void dispatchClientTextureReload(BaniraTextureReloadEvent event) {
         fire(clientTextureReloadCallbacks, event, "client texture reload");
     }
 
     public static void dispatchClientScreenPostRender(BaniraClientScreenEvent event) {
         fire(clientScreenPostRenderCallbacks, event, "client screen post render");
+    }
+
+    public static void dispatchClientInput(BaniraClientInputEvent event) {
+        fire(clientInputCallbacks, event, "client input");
     }
 
     public static void dispatchHudPreRender(BaniraHudRenderEvent event) {
@@ -160,6 +170,10 @@ public final class BaniraClientEventHub {
             clientTextureReloadCallbacks.add(callback);
         }
 
+        public static void onScreenPreRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
+            clientScreenPreRenderCallbacks.add(callback);
+        }
+
         public static void onScreenPostRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
             clientScreenPostRenderCallbacks.add(callback);
         }
@@ -174,6 +188,36 @@ public final class BaniraClientEventHub {
 
         public static void onScreenEvent(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
             clientScreenCallbacks.add(callback);
+        }
+    }
+
+    public static final class Screen {
+        private Screen() {
+        }
+
+        public static void onChanged(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
+            clientScreenChangedCallbacks.add(callback);
+        }
+
+        public static void onEvent(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
+            clientScreenCallbacks.add(callback);
+        }
+
+        public static void onPreRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
+            clientScreenPreRenderCallbacks.add(callback);
+        }
+
+        public static void onPostRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
+            clientScreenPostRenderCallbacks.add(callback);
+        }
+    }
+
+    public static final class Input {
+        private Input() {
+        }
+
+        public static void onInput(@Nonnull Consumer<BaniraClientInputEvent> callback) {
+            clientInputCallbacks.add(callback);
         }
     }
 

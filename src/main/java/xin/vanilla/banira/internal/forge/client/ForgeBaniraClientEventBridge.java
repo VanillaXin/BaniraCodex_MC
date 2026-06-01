@@ -118,6 +118,14 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
+        BaniraClientEventHub.dispatchClientScreenPreRender(toBaniraScreenEvent(
+                BaniraClientScreenEventType.DRAW_PRE,
+                event.getGui(),
+                event.getMatrixStack(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getRenderPartialTicks()
+        ));
         InputStateManager.handleDrawScreenPre(event.getMouseX(), event.getMouseY());
         if (QuickActionOverlay.isSupportedInventoryScreen(event.getGui())) {
             QuickActionOverlay.get().tickInteraction(event.getGui(), event.getMouseX(), event.getMouseY());
@@ -149,6 +157,19 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseClickedPre(GuiScreenEvent.MouseClickedEvent.Pre event) {
+        BaniraClientInputEvent baniraEvent = toBaniraMouseInputEvent(
+                BaniraClientInputEventType.MOUSE_CLICK,
+                event.getGui(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getButton(),
+                0
+        );
+        BaniraClientEventHub.dispatchClientInput(baniraEvent);
+        if (baniraEvent.canceled()) {
+            event.setCanceled(true);
+            return;
+        }
         InputStateManager.handleMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
         if (QuickActionOverlay.get().handleMouseClicked(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
@@ -162,6 +183,19 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseReleasedPre(GuiScreenEvent.MouseReleasedEvent.Pre event) {
+        BaniraClientInputEvent baniraEvent = toBaniraMouseInputEvent(
+                BaniraClientInputEventType.MOUSE_RELEASE,
+                event.getGui(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getButton(),
+                0
+        );
+        BaniraClientEventHub.dispatchClientInput(baniraEvent);
+        if (baniraEvent.canceled()) {
+            event.setCanceled(true);
+            return;
+        }
         InputStateManager.handleMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
         if (QuickActionOverlay.get().handleMouseReleased(event.getGui(), event.getMouseX(), event.getMouseY(), event.getButton())) {
             event.setCanceled(true);
@@ -171,6 +205,19 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseScrollPre(GuiScreenEvent.MouseScrollEvent.Pre event) {
+        BaniraClientInputEvent baniraEvent = toBaniraMouseInputEvent(
+                BaniraClientInputEventType.MOUSE_SCROLL,
+                event.getGui(),
+                event.getMouseX(),
+                event.getMouseY(),
+                -1,
+                event.getScrollDelta()
+        );
+        BaniraClientEventHub.dispatchClientInput(baniraEvent);
+        if (baniraEvent.canceled()) {
+            event.setCanceled(true);
+            return;
+        }
         InputStateManager.handleMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
         if (QuickActionOverlay.get().handleMouseScroll(event.getGui(), event.getMouseX(), event.getMouseY(), event.getScrollDelta())) {
             event.setCanceled(true);
@@ -180,12 +227,32 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onKeyPressed(GuiScreenEvent.KeyboardKeyPressedEvent.Pre event) {
+        BaniraClientInputEvent baniraEvent = toBaniraKeyInputEvent(
+                BaniraClientInputEventType.KEY_PRESS,
+                event.getGui(),
+                event.getKeyCode(),
+                event.getScanCode(),
+                event.getModifiers()
+        );
+        BaniraClientEventHub.dispatchClientInput(baniraEvent);
+        if (baniraEvent.canceled()) {
+            event.setCanceled(true);
+            return;
+        }
         InputStateManager.handleKeyPressed(event.getKeyCode());
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onKeyReleased(GuiScreenEvent.KeyboardKeyReleasedEvent.Post event) {
+        BaniraClientInputEvent baniraEvent = toBaniraKeyInputEvent(
+                BaniraClientInputEventType.KEY_RELEASE,
+                event.getGui(),
+                event.getKeyCode(),
+                event.getScanCode(),
+                event.getModifiers()
+        );
+        BaniraClientEventHub.dispatchClientInput(baniraEvent);
         InputStateManager.handleKeyReleased(event.getKeyCode());
     }
 
@@ -217,6 +284,27 @@ public final class ForgeBaniraClientEventBridge {
 
     private static BaniraTickPhase toBaniraTickPhase(TickEvent.Phase phase) {
         return phase == TickEvent.Phase.START ? BaniraTickPhase.START : BaniraTickPhase.END;
+    }
+
+    private static BaniraClientInputEvent toBaniraMouseInputEvent(BaniraClientInputEventType type, Object screen,
+                                                                  double mouseX, double mouseY, int button, double scrollDelta) {
+        return BaniraClientInputEvent.builder(type)
+                .nativeScreen(screen)
+                .mouseX(mouseX)
+                .mouseY(mouseY)
+                .button(button)
+                .scrollDelta(scrollDelta)
+                .build();
+    }
+
+    private static BaniraClientInputEvent toBaniraKeyInputEvent(BaniraClientInputEventType type, Object screen,
+                                                                int keyCode, int scanCode, int modifiers) {
+        return BaniraClientInputEvent.builder(type)
+                .nativeScreen(screen)
+                .keyCode(keyCode)
+                .scanCode(scanCode)
+                .modifiers(modifiers)
+                .build();
     }
 
     private static BaniraHudOverlayElement toBaniraElement(RenderGameOverlayEvent.ElementType type) {

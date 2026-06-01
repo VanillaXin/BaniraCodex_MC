@@ -11,7 +11,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.BaniraClientGuiService;
-import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
+import xin.vanilla.banira.client.BaniraClientResourceService;
 import xin.vanilla.banira.client.event.*;
 
 import java.util.Objects;
@@ -90,7 +90,7 @@ public final class ForgeBaniraClientEventBridge {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(BaniraColorThemeLoader.INSTANCE);
+        event.addListener(BaniraClientResourceService.colorThemeLoader());
     }
 
     // endregion Resource reload

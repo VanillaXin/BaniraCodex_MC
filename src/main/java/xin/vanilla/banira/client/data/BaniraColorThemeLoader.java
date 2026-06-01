@@ -8,8 +8,6 @@ import net.minecraft.profiler.IProfiler;
 import net.minecraft.resources.IResource;
 import net.minecraft.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -26,14 +24,13 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/themes/&lt;season&gt;.json），
- * 根对象为日间配色；可选 {@code night} 子对象为夜间配色。
- * 资源缺失或解析失败时回退 {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
- * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}；当前是否用夜间由 {@link BaniraGuiNightMode} 与客户端配置决定。
+ * 浠庤祫婧愬寘鍔犺浇 {@link BaniraColorConfig}锛坅ssets/&lt;namespace&gt;/themes/&lt;season&gt;.json锛夛紝
+ * 鏍瑰璞′负鏃ラ棿閰嶈壊锛涘彲閫?{@code night} 瀛愬璞′负澶滈棿閰嶈壊銆?
+ * 璧勬簮缂哄け鎴栬В鏋愬け璐ユ椂鍥為€€ {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
+ * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}锛涘綋鍓嶆槸鍚︾敤澶滈棿鐢?{@link BaniraGuiNightMode} 涓庡鎴风閰嶇疆鍐冲畾銆?
  * <p>
- * 通过 Forge {@link net.minecraftforge.event.AddReloadListenerEvent} 注册。
+ * Registered by the active loader adapter.
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraColorThemeLoader extends ReloadListener<Void> {
 
     public static final BaniraColorThemeLoader INSTANCE = new BaniraColorThemeLoader();
@@ -199,7 +196,7 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
     }
 
     /**
-     * 解析 ARGB：支持十六进制字符串（可选 # / 0x）、十进制整数；0 表示未指定。
+     * 瑙ｆ瀽 ARGB锛氭敮鎸佸崄鍏繘鍒跺瓧绗︿覆锛堝彲閫?# / 0x锛夈€佸崄杩涘埗鏁存暟锛? 琛ㄧず鏈寚瀹氥€?
      */
     public static int parseColorElement(JsonElement el) {
         if (el == null || el.isJsonNull()) {

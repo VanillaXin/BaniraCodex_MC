@@ -5,11 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.BaniraClientResourceService;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -74,12 +72,7 @@ public final class BaniraClientEventHub {
             PlayerUtils.removeRemoteServerDataStatus(player);
         });
         Client.onScreenChanged(event -> LogoModifier.modifyLogo());
-        Client.onTextureReload(event -> {
-            if (event.atlasLocation() != null && BaniraCodex.MODID.equals(event.atlasLocation().getNamespace())) {
-                TextureUtils.resourceReloadEvent();
-                QuickActionOverlay.resetSystemIconTextureCache();
-            }
-        });
+        Client.onTextureReload(BaniraClientResourceService::handleTextureReload);
         Client.onScreenPostRender(event -> {
             MatrixStack stack = event.draw() == null ? null : event.draw().nativeContext(MatrixStack.class);
             if (stack != null) {

@@ -73,6 +73,14 @@ public class Translator implements ITranslator {
         getI18nFiles();
     }
 
+    protected Translator(@NonNull String modId) {
+        if (StringUtils.isNullOrEmptyEx(modId)) {
+            throw new IllegalArgumentException("Mod id is empty");
+        }
+        this.modId = modId;
+        getI18nFiles();
+    }
+
     // region mod 主类与 modId（@Mod）
 
     @NonNull

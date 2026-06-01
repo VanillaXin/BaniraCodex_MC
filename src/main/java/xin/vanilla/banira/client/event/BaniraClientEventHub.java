@@ -6,7 +6,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -49,7 +48,7 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<GuiScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
     private static final List<Consumer<RenderGameOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<FMLClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
+    private static final List<Runnable> modClientSetupCallbacks = new ArrayList<>();
 
     private static volatile boolean codexDefaultsRegistered;
 
@@ -96,8 +95,8 @@ public final class BaniraClientEventHub {
         });
     }
 
-    public static void dispatchModClientSetup(FMLClientSetupEvent event) {
-        fire(modClientSetupCallbacks, event, "mod client setup");
+    public static void dispatchModClientSetup() {
+        fire(modClientSetupCallbacks, "mod client setup");
     }
 
     public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
@@ -205,7 +204,7 @@ public final class BaniraClientEventHub {
         private ModLifecycle() {
         }
 
-        public static void onClientSetup(@Nonnull Consumer<FMLClientSetupEvent> callback) {
+        public static void onClientSetup(@Nonnull Runnable callback) {
             modClientSetupCallbacks.add(callback);
         }
     }
@@ -218,6 +217,16 @@ public final class BaniraClientEventHub {
         for (Consumer<T> callback : callbacks) {
             try {
                 callback.accept(parameter);
+            } catch (Throwable t) {
+                LOGGER.warn("Error executing callback for {} event", eventName, t);
+            }
+        }
+    }
+
+    private static void fire(List<Runnable> callbacks, String eventName) {
+        for (Runnable callback : callbacks) {
+            try {
+                callback.run();
             } catch (Throwable t) {
                 LOGGER.warn("Error executing callback for {} event", eventName, t);
             }

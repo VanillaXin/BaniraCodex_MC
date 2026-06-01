@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.event;
+package xin.vanilla.banira.internal.forge.client;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -10,6 +10,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
 
@@ -17,9 +18,9 @@ import xin.vanilla.banira.client.util.NotificationManager;
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：将事件转发至 {@link BaniraClientEventHub}，并处理本 Mod 的 GUI 逻辑（如 {@link QuickActionOverlay}）
  */
 @Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public final class BaniraClientForgeEventHandler {
+public final class ForgeBaniraClientEventBridge {
 
-    private BaniraClientForgeEventHandler() {
+    private ForgeBaniraClientEventBridge() {
     }
 
     // region BaniraClientEventHub Forge 转发

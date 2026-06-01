@@ -2,8 +2,6 @@ package xin.vanilla.banira.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
@@ -16,13 +14,12 @@ import xin.vanilla.banira.common.data.Component;
 
 import java.util.function.Consumer;
 
-@OnlyIn(Dist.CLIENT)
 public final class BaniraCodexClientBootstrap {
     private BaniraCodexClientBootstrap() {
     }
 
     public static void init() {
-        BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
+        BaniraClientEventHub.ModLifecycle.onClientSetup(() -> {
             LogoModifier.register(BaniraCodex.MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
             ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");

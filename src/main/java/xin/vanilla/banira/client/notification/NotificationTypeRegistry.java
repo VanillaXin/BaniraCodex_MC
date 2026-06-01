@@ -1,8 +1,6 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
@@ -10,15 +8,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 客户端已知的通知类型集合。默认包含 {@link NotificationTypeKeys#DEFAULT}，收到通知或加载配置时会自动登记。
+ * Client-side notification type registry.
  * <p>
- * <b>依赖 Mod 推荐用法</b>：在本 Mod 的 {@link FMLClientSetupEvent}（或同阶段）中一次性调用
- * {@link #register(String)} / {@link #register(String, EnumNotificationTypeDisplayMode)} 登记本 Mod 会收到的全部类型 id。
- * {@link NotificationTypeSettingsStore#load()} 执行完毕后会根据登记项，对「JSON 中尚不存在」的类型写入默认 {@code displayMode}，不会覆盖玩家已有配置。
- * 登录时服务端还会通过 {@link xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient} 下发类型列表及可选展示默认值，
- * 客户端无需再维护与服务端完全一致的硬编码列表；若你在本机 {@code register(id, mode)} 过，则优先于服务端建议。
+ * Dependent mods should register their notification type ids during client setup,
+ * for example from {@link BaniraClientEventHub.ModLifecycle#onClientSetup(Runnable)}.
+ * Local registrations take priority over server-synced display defaults.
  */
-@OnlyIn(Dist.CLIENT)
 public final class NotificationTypeRegistry {
 
     private static final Set<String> KNOWN = ConcurrentHashMap.newKeySet();

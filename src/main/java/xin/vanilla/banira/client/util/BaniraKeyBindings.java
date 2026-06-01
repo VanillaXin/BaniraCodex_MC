@@ -4,10 +4,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -15,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 便捷注册 {@link KeyBinding}：静态字段初始化阶段入队，在客户端 {@code FMLClientSetupEvent} 中
- * {@link #flushPendingRegistrations()} 一次性提交；若在 flush 之后调用 {@link #register}，会立即 {@link ClientRegistry#registerKeyBinding}。
+ * 便捷注册 {@link KeyBinding}：静态字段初始化阶段入队，在 Banira 客户端 setup 阶段
+ * {@link #flushPendingRegistrations()} 一次性提交；若在 flush 之后调用 {@link #register}，会立即交给当前加载器适配层注册。
  *
  * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
  *
@@ -28,7 +27,6 @@ import java.util.List;
  *         .register();
  * }</pre>
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraKeyBindings {
 
     private static final List<KeyBinding> PENDING = new ArrayList<>();
@@ -99,11 +97,12 @@ public final class BaniraKeyBindings {
     }
 
     /**
-     * 应在客户端 {@code FMLClientSetupEvent} 中尽早调用（本模组由 {@link xin.vanilla.banira.internal.client.BaniraClientModSetup} 调用）。
+     * 应在客户端 setup 阶段尽早调用（本模组由 {@link xin.vanilla.banira.internal.client.BaniraClientModSetup} 调用）。
+     * 子 mod 可使用 {@link BaniraClientEventHub.ModLifecycle#onClientSetup(Runnable)} 安排自己的客户端初始化。
      */
     public static void flushPendingRegistrations() {
         for (KeyBinding binding : PENDING) {
-            ClientRegistry.registerKeyBinding(binding);
+            BaniraKeyBindingService.register(binding);
         }
         PENDING.clear();
         flushCompleted = true;
@@ -151,7 +150,7 @@ public final class BaniraKeyBindings {
 
     private static void enqueueOrRegister(@Nonnull KeyBinding binding) {
         if (flushCompleted) {
-            ClientRegistry.registerKeyBinding(binding);
+            BaniraKeyBindingService.register(binding);
         } else {
             PENDING.add(binding);
         }

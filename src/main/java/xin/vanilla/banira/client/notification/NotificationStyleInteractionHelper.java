@@ -9,8 +9,6 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -26,7 +24,6 @@ import java.net.URI;
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
  */
-@OnlyIn(Dist.CLIENT)
 public final class NotificationStyleInteractionHelper {
 
     private NotificationStyleInteractionHelper() {

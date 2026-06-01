@@ -6,8 +6,6 @@ import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -18,7 +16,6 @@ import java.util.UUID;
 /**
  * 按玩家在「通知类型配置」中的选择，将网络通知改道至原版聊天或操作栏
  */
-@OnlyIn(Dist.CLIENT)
 public final class NotificationClientDisplay {
 
     private NotificationClientDisplay() {

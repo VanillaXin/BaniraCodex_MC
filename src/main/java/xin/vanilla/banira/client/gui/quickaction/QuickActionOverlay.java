@@ -13,8 +13,6 @@ import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.item.Items;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -46,7 +44,6 @@ import java.util.List;
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
 public final class QuickActionOverlay {
 

@@ -3,17 +3,10 @@ package xin.vanilla.banira.client.util;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -28,9 +21,7 @@ import java.util.Set;
 /**
  * 统一的输入状态管理器
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class InputStateManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final int KEY_HISTORY_SIZE = 5;
@@ -404,39 +395,32 @@ public final class InputStateManager {
 
     // region 事件监听
 
-    @SubscribeEvent
-    public static void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
-        InputStateManager.instance().onDrawScreenPre(event.getMouseX(), event.getMouseY());
+    public static void handleDrawScreenPre(double mouseX, double mouseY) {
+        InputStateManager.instance().onDrawScreenPre((int) mouseX, (int) mouseY);
     }
 
-    @SubscribeEvent
-    public static void onKeyPressed(GuiScreenEvent.KeyboardKeyPressedEvent.Pre event) {
-        InputStateManager.instance().onKeyPressed(event.getKeyCode());
+    public static void handleKeyPressed(int keyCode) {
+        InputStateManager.instance().onKeyPressed(keyCode);
     }
 
-    @SubscribeEvent
-    public static void onKeyReleased(GuiScreenEvent.KeyboardKeyReleasedEvent.Post event) {
-        InputStateManager.instance().onKeyReleased(event.getKeyCode());
+    public static void handleKeyReleased(int keyCode) {
+        InputStateManager.instance().onKeyReleased(keyCode);
     }
 
-    @SubscribeEvent
-    public static void onMouseClicked(GuiScreenEvent.MouseClickedEvent.Pre event) {
-        InputStateManager.instance().onMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
+    public static void handleMouseClicked(double mouseX, double mouseY, int button) {
+        InputStateManager.instance().onMouseClicked(mouseX, mouseY, button);
     }
 
-    @SubscribeEvent
-    public static void onMouseReleased(GuiScreenEvent.MouseReleasedEvent.Post event) {
-        InputStateManager.instance().onMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
+    public static void handleMouseReleased(double mouseX, double mouseY, int button) {
+        InputStateManager.instance().onMouseReleased(mouseX, mouseY, button);
     }
 
-    @SubscribeEvent
-    public static void onMouseScroll(GuiScreenEvent.MouseScrollEvent.Pre event) {
-        InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
+    public static void handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+        InputStateManager.instance().onMouseScrolled(mouseX, mouseY, scrollDelta);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null) {
+    public static void handleClientTickEnd(boolean noScreenOpen) {
+        if (noScreenOpen) {
             InputStateManager.instance().onScreenClosed();
         }
     }

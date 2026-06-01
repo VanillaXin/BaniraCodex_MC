@@ -2,14 +2,13 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 /**
  * 请求数据同步包
@@ -33,11 +32,11 @@ public class RequestToBoth implements NetworkPacket {
         this.requestType = requestType;
     }
 
-    public RequestToBoth(PacketBuffer buf) {
+    public RequestToBoth(BaniraPacketBuffer buf) {
         this.requestType = buf.readVarInt();
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeVarInt(this.requestType);
     }
 
@@ -57,10 +56,10 @@ public class RequestToBoth implements NetworkPacket {
      * @param packet 请求包
      * @param ctx    网络事件上下文
      */
-    public static void handle(RequestToBoth packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                ServerPlayerEntity player = ctx.get().getSender();
+    public static void handle(RequestToBoth packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isServerReception()) {
+                ServerPlayerEntity player = ctx.sender();
                 if (player != null) {
                     BiConsumer<RequestToBoth, ServerPlayerEntity> handler = handlers.get(packet.getRequestType());
                     if (handler != null) {
@@ -69,6 +68,6 @@ public class RequestToBoth implements NetworkPacket {
                 }
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }

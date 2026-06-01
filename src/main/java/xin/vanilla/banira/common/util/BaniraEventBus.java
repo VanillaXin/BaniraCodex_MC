@@ -17,7 +17,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
@@ -89,7 +88,6 @@ public final class BaniraEventBus {
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
     private static final List<Consumer<CommandDispatcher<CommandSource>>> commandDispatcherCallbacks = new ArrayList<>();
-    private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
     private static final List<Runnable> modCommonSetupRunnables = new ArrayList<>();
 
     // endregion
@@ -338,10 +336,6 @@ public final class BaniraEventBus {
         private ModLifecycle() {
         }
 
-        public static void onCommonSetup(@Nonnull Consumer<FMLCommonSetupEvent> callback) {
-            modCommonSetupCallbacks.add(callback);
-        }
-
         /**
          * Loader-neutral common setup callback.
          */
@@ -469,8 +463,7 @@ public final class BaniraEventBus {
     /**
      * 由 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()} {@code addListener} 注册
      */
-    public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
-        fire(modCommonSetupCallbacks, event, "mod common setup");
+    public static void dispatchModCommonSetup() {
         fire(modCommonSetupRunnables, "mod common setup");
     }
 

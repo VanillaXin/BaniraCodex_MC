@@ -2,10 +2,8 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -17,12 +15,11 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
-
-import java.util.function.Supplier;
-
 
 @Getter
 @Accessors(fluent = true)
@@ -67,7 +64,7 @@ public class NotificationToClient implements NetworkPacket {
         this(component, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, 5000L);
     }
 
-    public NotificationToClient(PacketBuffer buf) {
+    public NotificationToClient(BaniraPacketBuffer buf) {
         this.componentJson = buf.readUtf(MAX_COMPONENT_JSON_LENGTH);
         this.positionName = buf.readUtf(64);
         this.animationName = buf.readUtf(64);
@@ -76,7 +73,7 @@ public class NotificationToClient implements NetworkPacket {
         this.typeId = NotificationTypeKeys.normalizeOrDefault(buf.readUtf(MAX_TYPE_ID_LENGTH));
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(this.componentJson != null ? this.componentJson : "{}", MAX_COMPONENT_JSON_LENGTH);
         buf.writeUtf(this.positionName != null ? this.positionName : DEFAULT_POSITION, 64);
         buf.writeUtf(this.animationName != null ? this.animationName : DEFAULT_ANIMATION, 64);
@@ -85,13 +82,13 @@ public class NotificationToClient implements NetworkPacket {
         buf.writeUtf(this.typeId != null ? this.typeId : NotificationTypeKeys.DEFAULT, MAX_TYPE_ID_LENGTH);
     }
 
-    public static void handle(NotificationToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(NotificationToClient packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientReception()) {
                 ClientSide.handle(packet);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
 

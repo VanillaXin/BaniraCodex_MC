@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.config;
 
-import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 
@@ -12,7 +11,7 @@ import java.util.function.Predicate;
  * <p>
  * 使用示例：
  * <pre>{@code
- * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", ModConfig.Type.SERVER)
+ * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", ConfigScope.SERVER)
  *   .category("base", "基础设置")
  *     .define("helpHeader", "-----==== Help ====-----", "帮助头部")
  *     .defineInRange("helpNumPerPage", 5, 1, 9999, "每页数量")
@@ -27,9 +26,7 @@ import java.util.function.Predicate;
  */
 public final class ConfigSpecBuilder {
 
-    @Getter
     private final String configName;
-    @Getter
     private final ModConfig.Type configType;
 
     private final ForgeConfigSpec.Builder builder;
@@ -49,14 +46,6 @@ public final class ConfigSpecBuilder {
      */
     public static ConfigSpecBuilder create(String configName, ConfigScope scope) {
         return new ConfigSpecBuilder(configName, toForgeType(scope));
-    }
-
-    /**
-     * @deprecated Prefer {@link #create(String, ConfigScope)}.
-     */
-    @Deprecated
-    public static ConfigSpecBuilder create(String configName, ModConfig.Type configType) {
-        return new ConfigSpecBuilder(configName, configType);
     }
 
     private static ModConfig.Type toForgeType(ConfigScope scope) {
@@ -116,7 +105,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.STRING)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -136,7 +124,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.BOOLEAN)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -158,7 +145,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -180,7 +166,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -202,7 +187,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -222,7 +206,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.STRING_LIST)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -244,7 +227,6 @@ public final class ConfigSpecBuilder {
                 .valueType(ConfigEntryDescriptor.ConfigValueType.ENUM)
                 .defaultValue(defaultValue)
                 .enumClass((Class<? extends Enum<?>>) defaultValue.getClass())
-                .configValue(cv)
                 .build());
         return this;
     }

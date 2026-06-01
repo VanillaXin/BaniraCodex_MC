@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.network;
 
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 
@@ -13,7 +14,7 @@ public final class BaniraPacketBuffer {
         this.forgeBuffer = forgeBuffer;
     }
 
-    public static BaniraPacketBuffer forge(PacketBuffer forgeBuffer) {
+    static BaniraPacketBuffer forge(PacketBuffer forgeBuffer) {
         return new BaniraPacketBuffer(forgeBuffer);
     }
 
@@ -30,8 +31,44 @@ public final class BaniraPacketBuffer {
         return forgeBuffer.readUtf();
     }
 
+    public String readUtf(int maxLength) {
+        return forgeBuffer.readUtf(maxLength);
+    }
+
     public BaniraPacketBuffer writeUtf(String value) {
         forgeBuffer.writeUtf(value);
+        return this;
+    }
+
+    public BaniraPacketBuffer writeUtf(String value, int maxLength) {
+        forgeBuffer.writeUtf(value, maxLength);
+        return this;
+    }
+
+    public int readInt() {
+        return forgeBuffer.readInt();
+    }
+
+    public BaniraPacketBuffer writeInt(int value) {
+        forgeBuffer.writeInt(value);
+        return this;
+    }
+
+    public long readLong() {
+        return forgeBuffer.readLong();
+    }
+
+    public BaniraPacketBuffer writeLong(long value) {
+        forgeBuffer.writeLong(value);
+        return this;
+    }
+
+    public boolean readBoolean() {
+        return forgeBuffer.readBoolean();
+    }
+
+    public BaniraPacketBuffer writeBoolean(boolean value) {
+        forgeBuffer.writeBoolean(value);
         return this;
     }
 
@@ -44,11 +81,12 @@ public final class BaniraPacketBuffer {
         return this;
     }
 
-    /**
-     * @deprecated Loader-specific access; avoid in dependent mods.
-     */
-    @Deprecated
-    public PacketBuffer forgeBuffer() {
-        return forgeBuffer;
+    public DisplayInfo readDisplayInfo() {
+        return DisplayInfo.fromNetwork(forgeBuffer);
+    }
+
+    public BaniraPacketBuffer writeDisplayInfo(DisplayInfo value) {
+        value.serializeToNetwork(forgeBuffer);
+        return this;
     }
 }

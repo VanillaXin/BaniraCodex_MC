@@ -21,7 +21,7 @@ public final class ConfigRegistry {
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {
         String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = new ModConfig(holder.getConfigType(), holder.getSpec(), modContainer, fileName);
+        ModConfig modConfig = new ModConfig(holder.forgeConfigType(), holder.forgeSpec(), modContainer, fileName);
         modContainer.addConfig(modConfig);
         holder.setModConfig(modConfig);
         HOLDERS.put(holder.getConfigName(), holder);
@@ -47,15 +47,7 @@ public final class ConfigRegistry {
      * 获取配置持有者（兼容旧 API）
      */
     public static ConfigHolder get(String configName, ConfigScope scope) {
-        return get(configName, toForgeType(scope));
-    }
-
-    /**
-     * @deprecated Prefer {@link #get(String, ConfigScope)}.
-     */
-    @Deprecated
-    public static ConfigHolder get(String configName, ModConfig.Type type) {
-        String key = configName + "-" + type.extension();
+        String key = configName + "-" + toForgeType(scope).extension();
         return HOLDERS.get(key);
     }
 

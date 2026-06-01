@@ -10,17 +10,19 @@ import java.util.*;
 /**
  * 配置持有者，封装 ForgeConfigSpec 与元数据，提供统一访问接口
  */
-@Getter
 public class ConfigHolder {
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
      */
+    @Getter
     private final String modId;
 
+    @Getter
     private final String configName;
     private final ModConfig.Type configType;
     private final ForgeConfigSpec spec;
+    @Getter
     private final List<ConfigEntryDescriptor> descriptors;
     private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap;
     /**
@@ -60,6 +62,22 @@ public class ConfigHolder {
             byPath.put(d.getPath(), d);
         }
         this.descriptorByPath = Collections.unmodifiableMap(byPath);
+    }
+
+    public Set<String> getValuePaths() {
+        return valueMap.keySet();
+    }
+
+    ModConfig.Type forgeConfigType() {
+        return configType;
+    }
+
+    ForgeConfigSpec forgeSpec() {
+        return spec;
+    }
+
+    Map<String, ForgeConfigSpec.ConfigValue<?>> forgeValueMap() {
+        return valueMap;
     }
 
     /**

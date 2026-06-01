@@ -39,11 +39,6 @@ import java.util.function.Predicate;
  * // 或直接 holder：config.holder().set("help.helpHeader", "new");
  * }</pre>
  */
-/**
- * @deprecated Prefer {@code Banira.platform().config()} so dependent mods do not
- * couple their source to Forge-specific APIs.
- */
-@Deprecated
 public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
@@ -412,8 +407,7 @@ public final class ForgeConfigAdapter {
                 .minValue(min)
                 .maxValue(max)
                 .decimalPlaces(decimalPlaces)
-                .enumClass(enumClass)
-                .configValue(cv);
+                .enumClass(enumClass);
         applyRequiresEditPermission(field, b);
         descriptors.add(b.build());
     }
@@ -474,7 +468,7 @@ public final class ForgeConfigAdapter {
     }
 
     private static String resolvePath(ConfigHolder holder, String methodName, String prefix) {
-        for (String path : holder.getValueMap().keySet()) {
+        for (String path : holder.getValuePaths()) {
             String fieldName = path.substring(path.lastIndexOf('.') + 1);
             if (methodName.equals(fieldName)) {
                 if (prefix.isEmpty()) return path;

@@ -2,10 +2,8 @@ package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -15,11 +13,12 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
@@ -36,7 +35,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
     }
 
-    public ConfigSnapshotToClient(PacketBuffer buf) {
+    public ConfigSnapshotToClient(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.snapshot = new HashMap<>(size);
@@ -47,7 +46,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(snapshot.size());
         for (Map.Entry<String, String> e : snapshot.entrySet()) {
@@ -64,14 +63,14 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         return snapshot;
     }
 
-    public static void handle(ConfigSnapshotToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isClientReception()) {
                 return;
             }
             ClientSide.apply(packet);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
     @OnlyIn(Dist.CLIENT)

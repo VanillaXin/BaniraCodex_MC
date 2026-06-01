@@ -1,9 +1,12 @@
 package xin.vanilla.banira.common.network;
 
 import lombok.Getter;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
@@ -19,8 +22,11 @@ import java.util.function.Supplier;
 public class NetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
 
-    @Getter
     private final SimpleChannel channel;
+    @Getter
+    private final ResourceLocation channelName;
+    @Getter
+    private final String modId;
     private int nextPacketId = 0;
 
     /**
@@ -31,17 +37,28 @@ public class NetworkHandler {
      * @return NetworkHandler 实例
      */
     public static NetworkHandler create(String channelName, IIdentifier IIdentifier) {
+        ResourceLocation id = IIdentifier.create(channelName);
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                IIdentifier.create(channelName),
+                id,
                 () -> PROTOCOL_VERSION,
                 clientVersion -> true,      // 客户端版本始终有效
                 serverVersion -> true       // 服务端版本始终有效
         );
-        return new NetworkHandler(channel);
+        return new NetworkHandler(channel, id);
     }
 
-    private NetworkHandler(SimpleChannel channel) {
+    private NetworkHandler(SimpleChannel channel, ResourceLocation channelName) {
         this.channel = channel;
+        this.channelName = channelName;
+        this.modId = channelName.getNamespace();
+    }
+
+    public void sendToServer(INetworkPacket packet) {
+        channel.sendToServer(packet);
+    }
+
+    public void sendToPlayer(ServerPlayerEntity player, INetworkPacket packet) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /**
@@ -53,10 +70,10 @@ public class NetworkHandler {
      * @param handler     处理器
      * @param <MSG>       包类型
      */
-    public <MSG extends INetworkPacket> void register(Class<MSG> packetClass,
-                                                      BiConsumer<MSG, PacketBuffer> encoder,
-                                                      Function<PacketBuffer, MSG> decoder,
-                                                      BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
+    private <MSG extends INetworkPacket> void registerForge(Class<MSG> packetClass,
+                                                            BiConsumer<MSG, PacketBuffer> encoder,
+                                                            Function<PacketBuffer, MSG> decoder,
+                                                            BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
         channel.registerMessage(
                 nextPacketId++,
                 packetClass,
@@ -74,7 +91,7 @@ public class NetworkHandler {
             BiConsumer<MSG, BaniraPacketBuffer> encoder,
             Function<BaniraPacketBuffer, MSG> decoder,
             BiConsumer<MSG, BaniraNetworkContext> handler) {
-        register(packetClass,
+        registerForge(packetClass,
                 (msg, buffer) -> encoder.accept(msg, BaniraPacketBuffer.forge(buffer)),
                 buffer -> decoder.apply(BaniraPacketBuffer.forge(buffer)),
                 (msg, ctx) -> handler.accept(msg, BaniraNetworkContext.forge(ctx)));
@@ -89,7 +106,7 @@ public class NetworkHandler {
      * @param handler     处理器
      * @param <MSG>       包类型
      */
-    public <MSG extends SplitPacket & INetworkPacket> void registerSplit(
+    private <MSG extends SplitPacket & INetworkPacket> void registerSplitForge(
             Class<MSG> packetClass,
             BiConsumer<MSG, PacketBuffer> encoder,
             Function<PacketBuffer, MSG> decoder,
@@ -108,7 +125,7 @@ public class NetworkHandler {
             }
             ctx.get().setPacketHandled(true);
         };
-        register(packetClass, encoder, decoder, wrappedHandler);
+        registerForge(packetClass, encoder, decoder, wrappedHandler);
     }
 
     /**
@@ -119,7 +136,7 @@ public class NetworkHandler {
             BiConsumer<MSG, BaniraPacketBuffer> encoder,
             Function<BaniraPacketBuffer, MSG> decoder,
             BiConsumer<MSG, BaniraNetworkContext> handler) {
-        registerSplit(packetClass,
+        registerSplitForge(packetClass,
                 (msg, buffer) -> encoder.accept(msg, BaniraPacketBuffer.forge(buffer)),
                 buffer -> decoder.apply(BaniraPacketBuffer.forge(buffer)),
                 (msg, ctx) -> handler.accept(msg, BaniraNetworkContext.forge(ctx)));

@@ -1,19 +1,17 @@
 package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
-
-import java.util.function.Supplier;
 
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
@@ -31,22 +29,22 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
         this.notificationReceiveMode = notificationReceiveMode != null ? notificationReceiveMode : "";
     }
 
-    public CustomPlayerConfigSyncToServer(PacketBuffer buf) {
+    public CustomPlayerConfigSyncToServer(BaniraPacketBuffer buf) {
         this.language = buf.readUtf(256);
         this.notificationReceiveMode = buf.readUtf(256);
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(language, 256);
         buf.writeUtf(notificationReceiveMode, 256);
     }
 
-    public static void handle(CustomPlayerConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public static void handle(CustomPlayerConfigSyncToServer packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerReception()) {
                 return;
             }
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayerEntity player = ctx.sender();
             if (player == null) {
                 return;
             }
@@ -68,6 +66,6 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
                     BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(Translator.getPlayerLanguage(player)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }

@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.util.BiomeUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -27,7 +26,7 @@ public class BiomeToClient extends SplitPacket
         this.biomeIds = biomeIds != null ? new ArrayList<>(biomeIds) : new ArrayList<>();
     }
 
-    public BiomeToClient(PacketBuffer buf) {
+    public BiomeToClient(BaniraPacketBuffer buf) {
         super(buf);
         int size = buf.readVarInt();
         this.biomeIds = new ArrayList<>(size);
@@ -36,13 +35,13 @@ public class BiomeToClient extends SplitPacket
         }
     }
 
-    public static void handle(BiomeToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(BiomeToClient packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientReception()) {
                 BiomeUtils.setClientBiomeIds(packet.getBiomeIds());
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
     @Override
@@ -77,7 +76,7 @@ public class BiomeToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         super.toBytes(buf);
         buf.writeVarInt(biomeIds.size());
         for (String id : biomeIds) {

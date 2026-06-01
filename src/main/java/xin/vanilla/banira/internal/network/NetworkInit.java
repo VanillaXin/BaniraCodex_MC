@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.network;
 
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.NetworkHandler;
+import xin.vanilla.banira.common.network.*;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -12,6 +12,8 @@ import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
 
 import java.util.ArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public final class NetworkInit {
     public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
@@ -21,18 +23,18 @@ public final class NetworkInit {
     public static final int REQUEST_BIOME_DATA = 3;
 
     public static void register() {
-        HANDLER.registerSplit(AdvancementToClient.class, AdvancementToClient::toBytes, AdvancementToClient::new, AdvancementToClient::handle);
-        HANDLER.registerSplit(DimensionToClient.class, DimensionToClient::toBytes, DimensionToClient::new, DimensionToClient::handle);
-        HANDLER.registerSplit(BiomeToClient.class, BiomeToClient::toBytes, BiomeToClient::new, BiomeToClient::handle);
+        registerSplitPacket(AdvancementToClient.class, AdvancementToClient::toBytes, AdvancementToClient::new, AdvancementToClient::handle);
+        registerSplitPacket(DimensionToClient.class, DimensionToClient::toBytes, DimensionToClient::new, DimensionToClient::handle);
+        registerSplitPacket(BiomeToClient.class, BiomeToClient::toBytes, BiomeToClient::new, BiomeToClient::handle);
 
-        HANDLER.register(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle);
-        HANDLER.register(ModLoadedToBoth.class, ModLoadedToBoth::toBytes, ModLoadedToBoth::new, ModLoadedToBoth::handle);
-        HANDLER.register(NotificationToClient.class, NotificationToClient::toBytes, NotificationToClient::new, NotificationToClient::handle);
-        HANDLER.register(NotificationTypesSyncToClient.class, NotificationTypesSyncToClient::toBytes, NotificationTypesSyncToClient::new, NotificationTypesSyncToClient::handle);
-        HANDLER.register(ConfigSyncToServer.class, ConfigSyncToServer::toBytes, ConfigSyncToServer::new, ConfigSyncToServer::handle);
-        HANDLER.register(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new, ConfigFetchRequestToServer::handle);
-        HANDLER.register(ConfigSnapshotToClient.class, ConfigSnapshotToClient::toBytes, ConfigSnapshotToClient::new, ConfigSnapshotToClient::handle);
-        HANDLER.register(CustomPlayerConfigSyncToServer.class, CustomPlayerConfigSyncToServer::toBytes, CustomPlayerConfigSyncToServer::new, CustomPlayerConfigSyncToServer::handle);
+        registerPacket(RequestToBoth.class, RequestToBoth::toBytes, RequestToBoth::new, RequestToBoth::handle);
+        registerPacket(ModLoadedToBoth.class, ModLoadedToBoth::toBytes, ModLoadedToBoth::new, ModLoadedToBoth::handle);
+        registerPacket(NotificationToClient.class, NotificationToClient::toBytes, NotificationToClient::new, NotificationToClient::handle);
+        registerPacket(NotificationTypesSyncToClient.class, NotificationTypesSyncToClient::toBytes, NotificationTypesSyncToClient::new, NotificationTypesSyncToClient::handle);
+        registerPacket(ConfigSyncToServer.class, ConfigSyncToServer::toBytes, ConfigSyncToServer::new, ConfigSyncToServer::handle);
+        registerPacket(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new, ConfigFetchRequestToServer::handle);
+        registerPacket(ConfigSnapshotToClient.class, ConfigSnapshotToClient::toBytes, ConfigSnapshotToClient::new, ConfigSnapshotToClient::handle);
+        registerPacket(CustomPlayerConfigSyncToServer.class, CustomPlayerConfigSyncToServer::toBytes, CustomPlayerConfigSyncToServer::new, CustomPlayerConfigSyncToServer::handle);
 
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(new AdvancementToClient(AdvancementUtils.advancementData()), player);
@@ -43,5 +45,21 @@ public final class NetworkInit {
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
+    }
+
+    private static <MSG extends NetworkPacket> void registerPacket(
+            Class<MSG> packetClass,
+            BiConsumer<MSG, BaniraPacketBuffer> encoder,
+            Function<BaniraPacketBuffer, MSG> decoder,
+            BiConsumer<MSG, BaniraNetworkContext> handler) {
+        HANDLER.registerNeutral(packetClass, encoder, decoder, handler);
+    }
+
+    private static <MSG extends SplitPacket & NetworkPacket> void registerSplitPacket(
+            Class<MSG> packetClass,
+            BiConsumer<MSG, BaniraPacketBuffer> encoder,
+            Function<BaniraPacketBuffer, MSG> decoder,
+            BiConsumer<MSG, BaniraNetworkContext> handler) {
+        HANDLER.registerSplitNeutral(packetClass, encoder, decoder, handler);
     }
 }

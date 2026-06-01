@@ -1,8 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -10,6 +8,8 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
@@ -18,7 +18,6 @@ import xin.vanilla.banira.common.util.Translator;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * 客户端请求服务端返回指定配置的全量快照
@@ -33,11 +32,11 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
         this.configName = configName != null ? configName : "";
     }
 
-    public ConfigFetchRequestToServer(PacketBuffer buf) {
+    public ConfigFetchRequestToServer(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
     }
 
@@ -45,12 +44,12 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public static void handle(ConfigFetchRequestToServer packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerReception()) {
                 return;
             }
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayerEntity player = ctx.sender();
             if (player == null) {
                 return;
             }
@@ -75,7 +74,7 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
             }
             PacketUtils.sendPacketToPlayer(new ConfigSnapshotToClient(packet.configName, snapshot), player);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
     private static void sendErr(ServerPlayerEntity player, String langKey, Object... args) {

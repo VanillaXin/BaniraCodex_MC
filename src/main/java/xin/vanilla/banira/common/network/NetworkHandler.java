@@ -18,10 +18,10 @@ import java.util.function.Supplier;
  */
 public class NetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
-    private static int nextPacketId = 0;
 
     @Getter
     private final SimpleChannel channel;
+    private int nextPacketId = 0;
 
     /**
      * 创建网络处理器实例
@@ -67,6 +67,20 @@ public class NetworkHandler {
     }
 
     /**
+     * Loader-neutral registration overload for new public API users.
+     */
+    public <MSG extends INetworkPacket> void registerNeutral(
+            Class<MSG> packetClass,
+            BiConsumer<MSG, BaniraPacketBuffer> encoder,
+            Function<BaniraPacketBuffer, MSG> decoder,
+            BiConsumer<MSG, BaniraNetworkContext> handler) {
+        register(packetClass,
+                (msg, buffer) -> encoder.accept(msg, BaniraPacketBuffer.forge(buffer)),
+                buffer -> decoder.apply(BaniraPacketBuffer.forge(buffer)),
+                (msg, ctx) -> handler.accept(msg, BaniraNetworkContext.forge(ctx)));
+    }
+
+    /**
      * 注册网络包
      *
      * @param packetClass 包类
@@ -95,5 +109,19 @@ public class NetworkHandler {
             ctx.get().setPacketHandled(true);
         };
         register(packetClass, encoder, decoder, wrappedHandler);
+    }
+
+    /**
+     * Loader-neutral split-packet registration overload for new public API users.
+     */
+    public <MSG extends SplitPacket & INetworkPacket> void registerSplitNeutral(
+            Class<MSG> packetClass,
+            BiConsumer<MSG, BaniraPacketBuffer> encoder,
+            Function<BaniraPacketBuffer, MSG> decoder,
+            BiConsumer<MSG, BaniraNetworkContext> handler) {
+        registerSplit(packetClass,
+                (msg, buffer) -> encoder.accept(msg, BaniraPacketBuffer.forge(buffer)),
+                buffer -> decoder.apply(BaniraPacketBuffer.forge(buffer)),
+                (msg, ctx) -> handler.accept(msg, BaniraNetworkContext.forge(ctx)));
     }
 }

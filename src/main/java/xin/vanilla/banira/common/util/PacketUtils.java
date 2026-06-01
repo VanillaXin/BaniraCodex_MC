@@ -13,6 +13,7 @@ import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
@@ -51,9 +52,9 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        SimpleChannel channel = msg.channel().get();
+        NetworkHandler handler = msg.networkHandler();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPacketToPlayer(channel, msg, player)
+                sendPacketToPlayer(handler, msg, player)
         );
     }
 
@@ -63,9 +64,9 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        SimpleChannel channel = packet.channel().get();
+        NetworkHandler handler = packet.networkHandler();
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacketToPlayer(channel, packet, player)
+                sendSplitPacketToPlayer(handler, packet, player)
         );
     }
 
@@ -74,14 +75,14 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        sendPacketToServer(msg.channel().get(), msg);
+        sendPacketToServer(msg.networkHandler(), msg);
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayerEntity player) {
-        sendPacketToPlayer(msg.channel().get(), msg, player);
+        sendPacketToPlayer(msg.networkHandler(), msg, player);
     }
 
     /**
@@ -92,7 +93,7 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayerEntity player) {
-        sendSplitPacketToPlayer(packet.channel().get(), packet, player);
+        sendSplitPacketToPlayer(packet.networkHandler(), packet, player);
     }
 
     /**
@@ -102,7 +103,23 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
-        sendSplitPacketToServer(packet.channel().get(), packet);
+        sendSplitPacketToServer(packet.networkHandler(), packet);
+    }
+
+    private static <MSG extends INetworkPacket> void sendPacketToServer(NetworkHandler handler, MSG msg) {
+        sendPacketToServer(handler.getChannel(), msg);
+    }
+
+    private static <MSG extends INetworkPacket> void sendPacketToPlayer(NetworkHandler handler, MSG msg, ServerPlayerEntity player) {
+        sendPacketToPlayer(handler.getChannel(), msg, player);
+    }
+
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(NetworkHandler handler, T packet, ServerPlayerEntity player) {
+        sendSplitPacketToPlayer(handler.getChannel(), packet, player);
+    }
+
+    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(NetworkHandler handler, T packet) {
+        sendSplitPacketToServer(handler.getChannel(), packet);
     }
 
 

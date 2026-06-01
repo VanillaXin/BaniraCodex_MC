@@ -1,5 +1,7 @@
 package xin.vanilla.banira.common.util;
 
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -70,6 +72,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Consumer<TickEvent.ServerTickEvent>> serverTickCallbacks = new ArrayList<>();
+    private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
     private static final List<Consumer<TickEvent.WorldTickEvent>> worldTickCallbacks = new ArrayList<>();
 
     private static final List<Consumer<WorldEvent.Unload>> worldUnloadCallbacks = new ArrayList<>();
@@ -85,7 +88,9 @@ public final class BaniraEventBus {
     private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
+    private static final List<Consumer<CommandDispatcher<CommandSource>>> commandDispatcherCallbacks = new ArrayList<>();
     private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
+    private static final List<Runnable> modCommonSetupRunnables = new ArrayList<>();
 
     // endregion
 
@@ -140,6 +145,13 @@ public final class BaniraEventBus {
          */
         public static void onTick(@Nonnull Consumer<TickEvent.ServerTickEvent> callback) {
             serverTickCallbacks.add(callback);
+        }
+
+        /**
+         * Loader-neutral server tick callback fired at the end phase.
+         */
+        public static void onTickEnd(@Nonnull Runnable callback) {
+            serverTickEndCallbacks.add(callback);
         }
     }
 
@@ -306,6 +318,13 @@ public final class BaniraEventBus {
         public static void onRegister(@Nonnull Consumer<RegisterCommandsEvent> callback) {
             registerCommandsCallbacks.add(callback);
         }
+
+        /**
+         * Loader-neutral command registration callback.
+         */
+        public static void onRegisterDispatcher(@Nonnull Consumer<CommandDispatcher<CommandSource>> callback) {
+            commandDispatcherCallbacks.add(callback);
+        }
     }
 
     // endregion
@@ -321,6 +340,13 @@ public final class BaniraEventBus {
 
         public static void onCommonSetup(@Nonnull Consumer<FMLCommonSetupEvent> callback) {
             modCommonSetupCallbacks.add(callback);
+        }
+
+        /**
+         * Loader-neutral common setup callback.
+         */
+        public static void onCommonSetup(@Nonnull Runnable callback) {
+            modCommonSetupRunnables.add(callback);
         }
     }
 
@@ -347,6 +373,7 @@ public final class BaniraEventBus {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         fire(serverTickCallbacks, event, "server tick");
+        fire(serverTickEndCallbacks, "server tick end");
     }
 
     @SubscribeEvent
@@ -436,6 +463,7 @@ public final class BaniraEventBus {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         fire(registerCommandsCallbacks, event, "register commands");
+        fire(commandDispatcherCallbacks, event.getDispatcher(), "register command dispatcher");
     }
 
     /**
@@ -443,6 +471,7 @@ public final class BaniraEventBus {
      */
     public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
         fire(modCommonSetupCallbacks, event, "mod common setup");
+        fire(modCommonSetupRunnables, "mod common setup");
     }
 
     // endregion Forge 事件订阅

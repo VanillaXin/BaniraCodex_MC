@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
  * 运行环境判断
@@ -26,6 +27,9 @@ public final class EnvironmentUtils {
      * 是否为客户端分发（{@code runClient}、整合包客户端等）。
      */
     public static boolean isClient() {
+        if (BaniraPlatforms.isInstalled()) {
+            return BaniraPlatforms.get().isClient();
+        }
         return FMLEnvironment.dist.isClient();
     }
 
@@ -33,6 +37,9 @@ public final class EnvironmentUtils {
      * 是否为专用服务端分发（{@code runServer}、无头服务端等）。
      */
     public static boolean isDedicatedServer() {
+        if (BaniraPlatforms.isInstalled()) {
+            return BaniraPlatforms.get().isDedicatedServer();
+        }
         return FMLEnvironment.dist.isDedicatedServer();
     }
 
@@ -44,6 +51,9 @@ public final class EnvironmentUtils {
      * 是否为发布环境（非开发环境；与 Gradle {@code runClient}/{@code runServer} 等开发运行相对）。
      */
     public static boolean isProduction() {
+        if (BaniraPlatforms.isInstalled()) {
+            return !BaniraPlatforms.get().isDevelopment();
+        }
         return FMLEnvironment.production;
     }
 

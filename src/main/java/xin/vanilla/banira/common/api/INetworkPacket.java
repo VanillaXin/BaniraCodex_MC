@@ -1,12 +1,10 @@
 package xin.vanilla.banira.common.api;
 
-import net.minecraftforge.fml.network.simple.SimpleChannel;
-
-import java.util.function.Supplier;
+import xin.vanilla.banira.common.network.NetworkHandler;
 
 public interface INetworkPacket {
     /**
-     * 获取当前网络包使用的通道供应器
+     * Returns the loader-neutral channel handler used by this packet.
      */
-    Supplier<SimpleChannel> channel();
+    NetworkHandler networkHandler();
 }

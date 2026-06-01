@@ -47,8 +47,31 @@ public final class ConfigSpecBuilder {
     /**
      * 创建构建器
      */
+    public static ConfigSpecBuilder create(String configName, ConfigScope scope) {
+        return new ConfigSpecBuilder(configName, toForgeType(scope));
+    }
+
+    /**
+     * @deprecated Prefer {@link #create(String, ConfigScope)}.
+     */
+    @Deprecated
     public static ConfigSpecBuilder create(String configName, ModConfig.Type configType) {
         return new ConfigSpecBuilder(configName, configType);
+    }
+
+    private static ModConfig.Type toForgeType(ConfigScope scope) {
+        if (scope == null) {
+            return ModConfig.Type.COMMON;
+        }
+        switch (scope) {
+            case CLIENT:
+                return ModConfig.Type.CLIENT;
+            case SERVER:
+                return ModConfig.Type.SERVER;
+            case COMMON:
+            default:
+                return ModConfig.Type.COMMON;
+        }
     }
 
     /**

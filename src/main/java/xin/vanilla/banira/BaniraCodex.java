@@ -2,30 +2,21 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
-import xin.vanilla.banira.client.gui.CodexNavigationScreen;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
-import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.command.BaniraCommand;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
@@ -35,10 +26,11 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @Mod(BaniraCodex.MODID)
@@ -91,9 +83,11 @@ public class BaniraCodex {
     );
 
     public BaniraCodex() {
+        BaniraPlatforms.install(new ForgeBaniraPlatform());
+
         // 配置必须在 CONFIG 加载阶段之前注册
-        ForgeConfigAdapter.register(CommonConfig.class, MODID);
-        ForgeConfigAdapter.register(ClientConfig.class, MODID);
+        BaniraPlatforms.get().config().register(CommonConfig.class, MODID);
+        BaniraPlatforms.get().config().register(ClientConfig.class, MODID);
         // ForgeConfigAdapter.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -158,26 +152,8 @@ public class BaniraCodex {
             }
         });
 
-        if (EnvironmentUtils.isClient()) {
-            ClientProxy.init();
-        }
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    public static class ClientProxy {
-        public static void init() {
-            BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
-                LogoModifier.register(MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
-
-                ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
-                Component label = BaniraComponent.get().transClient("key.banira_codex.categories");
-                Consumer<QuickActionContext> action = ctx ->
-                        Minecraft.getInstance().setScreen(
-                                new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
-                        );
-                QuickActionRegistry.get().registerListOnly(MODID + ":quick_codex_navigation", texture, label, action);
-            });
-        }
+        DistExecutor.safeRunWhenOn(Dist.CLIENT,
+                () -> xin.vanilla.banira.client.BaniraCodexClientBootstrap::init);
     }
 
 }

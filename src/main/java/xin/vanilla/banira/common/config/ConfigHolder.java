@@ -132,6 +132,18 @@ public class ConfigHolder {
         return configType == ModConfig.Type.SERVER || configType == ModConfig.Type.COMMON;
     }
 
+    public ConfigScope getScope() {
+        switch (configType) {
+            case CLIENT:
+                return ConfigScope.CLIENT;
+            case SERVER:
+                return ConfigScope.SERVER;
+            case COMMON:
+            default:
+                return ConfigScope.COMMON;
+        }
+    }
+
     /**
      * 按分类分组获取配置项，用于 GUI 层级展示（兼容旧逻辑，仅深度1）。
      * 返回顺序：先按 categoryTooltips 中的分类顺序，再按 descriptors 中的顺序。

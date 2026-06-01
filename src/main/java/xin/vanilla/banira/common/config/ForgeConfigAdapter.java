@@ -39,6 +39,11 @@ import java.util.function.Predicate;
  * // 或直接 holder：config.holder().set("help.helpHeader", "new");
  * }</pre>
  */
+/**
+ * @deprecated Prefer {@code Banira.platform().config()} so dependent mods do not
+ * couple their source to Forge-specific APIs.
+ */
+@Deprecated
 public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
@@ -55,7 +60,7 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ModConfig.Type configType = configAnn.type();
+        ModConfig.Type configType = toForgeType(configAnn.type());
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -78,6 +83,21 @@ public final class ForgeConfigAdapter {
 
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
+    }
+
+    private static ModConfig.Type toForgeType(ConfigScope scope) {
+        if (scope == null) {
+            return ModConfig.Type.COMMON;
+        }
+        switch (scope) {
+            case CLIENT:
+                return ModConfig.Type.CLIENT;
+            case SERVER:
+                return ModConfig.Type.SERVER;
+            case COMMON:
+            default:
+                return ModConfig.Type.COMMON;
+        }
     }
 
     /**

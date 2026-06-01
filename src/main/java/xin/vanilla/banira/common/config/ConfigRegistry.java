@@ -46,9 +46,32 @@ public final class ConfigRegistry {
     /**
      * 获取配置持有者（兼容旧 API）
      */
+    public static ConfigHolder get(String configName, ConfigScope scope) {
+        return get(configName, toForgeType(scope));
+    }
+
+    /**
+     * @deprecated Prefer {@link #get(String, ConfigScope)}.
+     */
+    @Deprecated
     public static ConfigHolder get(String configName, ModConfig.Type type) {
         String key = configName + "-" + type.extension();
         return HOLDERS.get(key);
+    }
+
+    private static ModConfig.Type toForgeType(ConfigScope scope) {
+        if (scope == null) {
+            return ModConfig.Type.COMMON;
+        }
+        switch (scope) {
+            case CLIENT:
+                return ModConfig.Type.CLIENT;
+            case SERVER:
+                return ModConfig.Type.SERVER;
+            case COMMON:
+            default:
+                return ModConfig.Type.COMMON;
+        }
     }
 
     /**

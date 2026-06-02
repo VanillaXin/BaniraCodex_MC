@@ -17,6 +17,8 @@ import java.util.function.Function;
 
 /**
  * Forge 侧 logoFile 补丁；ModInfo 私有字段只在 loader adapter 内部反射。
+ * <p>
+ * 若高版本 ModInfo 改为 record，不能依赖原地改字段，应改为替换元数据持有者或拦截 logo 读取路径。
  */
 public final class ForgeBaniraLogoPatchService {
     private static final Logger LOGGER = LogManager.getLogger();

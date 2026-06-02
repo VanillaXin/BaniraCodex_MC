@@ -4,8 +4,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ForgeInternalFieldAccessTest {
     @Test
@@ -17,6 +16,11 @@ public class ForgeInternalFieldAccessTest {
         Field field = Target.class.getDeclaredField("logoFile");
         field.setAccessible(true);
         assertEquals("patched.png", field.get(target));
+    }
+
+    @Test
+    public void regularClassesAreNotRecordsOnLegacyBranches() {
+        assertFalse(ForgeInternalFieldAccess.isRecordClass(Target.class));
     }
 
     private static final class Target {

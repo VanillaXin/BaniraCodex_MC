@@ -9,6 +9,8 @@ import java.lang.reflect.Modifier;
 
 /**
  * Forge 内部字段访问工具，用于 Mixin 难以覆盖的加载器元数据对象。
+ * <p>
+ * 这不是公共反射 API；record 元数据对象通常不能可靠原地改写，应改为替换持有者中的对象或拦截读取路径。
  */
 public final class ForgeInternalFieldAccess {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -34,6 +36,11 @@ public final class ForgeInternalFieldAccess {
      * 写入普通或 final 对象字段；final fallback 仅用于 loader 元数据等无法 Mixin 的场景。
      */
     public static boolean writeObjectField(Class<?> owner, Object instance, String fieldName, Object value) {
+        if (isRecordClass(owner)) {
+            LOGGER.debug("Skip writing record field {}.{}; replace holder entry or intercept read path instead",
+                    owner.getName(), fieldName);
+            return false;
+        }
         try {
             Field field = owner.getDeclaredField(fieldName);
             field.setAccessible(true);
@@ -51,6 +58,18 @@ public final class ForgeInternalFieldAccess {
             return putObjectWithUnsafe(instance, field, value);
         } catch (ReflectiveOperationException e) {
             LOGGER.debug("Failed to write internal Forge field {}.{}", owner.getName(), fieldName, e);
+            return false;
+        }
+    }
+
+    /**
+     * 运行在 Java 8 的分支不能直接引用 Class#isRecord，用反射兼容高版本分支。
+     */
+    public static boolean isRecordClass(Class<?> owner) {
+        try {
+            Method isRecord = Class.class.getMethod("isRecord");
+            return Boolean.TRUE.equals(isRecord.invoke(owner));
+        } catch (ReflectiveOperationException e) {
             return false;
         }
     }

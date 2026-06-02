@@ -12,15 +12,13 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
-import xin.vanilla.banira.internal.client.ConfigEditorSyncService;
+import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -62,6 +60,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private final ConfigHolder holder;
     private final Args args;
+    private final ConfigEditorState editorState;
 
     private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
@@ -83,20 +82,18 @@ public class ConfigEditorScreen extends BaniraScreen {
     /**
      * 路径 -> 当前编辑值（用于追踪修改）
      */
-    private final Map<String, Object> modifiedValues = new LinkedHashMap<>();
     /**
      * 路径 -> Widget（用于从 Widget 读回值）
      */
-    private final Map<String, IConfigEntryWidget> entryWidgets = new LinkedHashMap<>();
     /**
      * 本会话内用户曾改动过的配置路径（含重置、保存后仍保留），同步至服务端时仅发送这些项。
      */
-    private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
         this.args = args != null ? args : new Args();
+        this.editorState = new ConfigEditorState(holder);
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
@@ -119,8 +116,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         listTop = cardY + CARD_INNER;
-        entryWidgets.clear();
-        syncTouchedPaths.clear();
+        editorState.clearEntries();
         bottomButtons.clear();
 
         contentRootPanel = buildContentPanel();
@@ -209,9 +205,9 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void buildPanelContent(CollapsiblePanelWidget panel, ConfigHolder.CategoryTreeNode node) {
         double cw = panel.getContentWidth();
         for (ConfigEntryDescriptor desc : node.getEntries()) {
-            IConfigEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
+            ConfigEditorEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
             if (adapter != null) {
-                entryWidgets.put(desc.getPath(), adapter);
+                editorState.registerEntry(desc.getPath(), adapter);
                 double rowHeight = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : ROW_HEIGHT;
                 panel.addChildAuto(adapter.getWidget(), rowHeight);
             }
@@ -332,7 +328,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     /**
      * 创建配置项行（Label + 值控件），返回适配器。行作为子组件加入 CollapsiblePanelWidget。
      */
-    private IConfigEntryWidget createEntryRow(ConfigEntryDescriptor desc, double w, int rowH) {
+    private ConfigEditorEntryWidget createEntryRow(ConfigEntryDescriptor desc, double w, int rowH) {
         switch (desc.getValueType()) {
             case STRING:
                 return createStringRow(desc, w, rowH);
@@ -444,7 +440,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     // endregion 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
 
-    private void addResetButton(EntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH, Consumer<Object> setValue) {
+    private void addResetButton(ConfigEditorEntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH, Consumer<Object> setValue) {
         int btnY = (rowH - RESET_BTN_SIZE) / 2;
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("reset_" + desc.getPath().replace(".", "_"));
@@ -454,8 +450,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Object def = desc.getDefaultValue();
             if (def != null) {
                 holder.set(desc.getPath(), def);
-                modifiedValues.put(desc.getPath(), def);
-                markConfigTouched(desc.getPath());
+                editorState.markModified(desc.getPath(), def);
                 setValue.accept(def);
             }
         });
@@ -467,8 +462,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         row.addChild(resetTip);
     }
 
-    private IConfigEntryWidget createStringRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        EntryRowWidget row = new EntryRowWidget(this);
+    private ConfigEditorEntryWidget createStringRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
 
         LabelWidget label = new LabelWidget(this);
@@ -486,8 +481,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         input.value(str);
         input.maxLength(256);
         input.onTextChanged(v -> {
-            modifiedValues.put(desc.getPath(), v);
-            markConfigTouched(desc.getPath());
+            editorState.markModified(desc.getPath(), v);
         });
 
         row.addChild(label);
@@ -496,7 +490,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
 
-        return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
+        return new ConfigEditorEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
     }
 
     private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
@@ -510,8 +504,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         return tooltip;
     }
 
-    private IConfigEntryWidget createBooleanRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        EntryRowWidget row = new EntryRowWidget(this);
+    private ConfigEditorEntryWidget createBooleanRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
 
         LabelWidget label = new LabelWidget(this);
@@ -522,29 +516,35 @@ public class ConfigEditorScreen extends BaniraScreen {
         label.textVerticalAlign(EnumAlignment.CENTER);
 
         boolean val = Boolean.TRUE.equals(holder.get(desc.getPath()));
+        final boolean[] currentValue = {val};
         ButtonWidget btn = new ButtonWidget(this);
         btn.id("cfg_" + desc.getPath().replace(".", "_"));
         btn.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         btn.text(val ? "§aON" : "§cOFF");
         btn.onClick(b -> {
-            boolean newVal = !Boolean.TRUE.equals(holder.get(desc.getPath()));
-            holder.set(desc.getPath(), newVal);
-            modifiedValues.put(desc.getPath(), newVal);
-            markConfigTouched(desc.getPath());
+            boolean newVal = !currentValue[0];
+            currentValue[0] = newVal;
+            editorState.markModified(desc.getPath(), newVal);
             btn.text(newVal ? "§aON" : "§cOFF");
         });
 
         row.addChild(label);
         row.addChild(btn);
-        addResetButton(row, desc, w, rowH, v -> btn.text(Boolean.TRUE.equals(v) ? "§aON" : "§cOFF"));
+        addResetButton(row, desc, w, rowH, v -> {
+            currentValue[0] = Boolean.TRUE.equals(v);
+            btn.text(currentValue[0] ? "§aON" : "§cOFF");
+        });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> Boolean.TRUE.equals(holder.get(desc.getPath())),
-                v -> btn.text(Boolean.TRUE.equals(v) ? "§aON" : "§cOFF"));
+        return new ConfigEditorEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> currentValue[0],
+                v -> {
+                    currentValue[0] = Boolean.TRUE.equals(v);
+                    btn.text(currentValue[0] ? "§aON" : "§cOFF");
+                });
     }
 
-    private IConfigEntryWidget createNumberRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        EntryRowWidget row = new EntryRowWidget(this);
+    private ConfigEditorEntryWidget createNumberRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
 
         LabelWidget label = new LabelWidget(this);
@@ -583,8 +583,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         slider.onValueChanged(v -> {
             Object parsed = convertSliderValue(desc, v);
             if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
-                modifiedValues.put(desc.getPath(), parsed);
-                markConfigTouched(desc.getPath());
+                editorState.markModified(desc.getPath(), parsed);
             }
         });
 
@@ -596,7 +595,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
+        return new ConfigEditorEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
             double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
             slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
         }, () -> true);
@@ -618,8 +617,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
     }
 
-    private IConfigEntryWidget createEnumRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        EntryRowWidget row = new EntryRowWidget(this);
+    private ConfigEditorEntryWidget createEnumRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
 
         LabelWidget label = new LabelWidget(this);
@@ -645,8 +644,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                 try {
                     @SuppressWarnings({"unchecked", "rawtypes"})
                     Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), v.get(0));
-                    modifiedValues.put(desc.getPath(), e);
-                    markConfigTouched(desc.getPath());
+                    editorState.markModified(desc.getPath(), e);
                 } catch (IllegalArgumentException ignored) {
                 }
             }
@@ -657,7 +655,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         addResetButton(row, desc, w, rowH, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, row, label, dropdown, tooltip, () -> {
+        return new ConfigEditorEntryWidgetAdapter(desc, row, label, dropdown, tooltip, () -> {
             List<String> sel = dropdown.getSelectedValues();
             if (sel.isEmpty()) return holder.get(desc.getPath());
             try {
@@ -670,8 +668,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         }, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
     }
 
-    private IConfigEntryWidget createListRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        EntryRowWidget row = new EntryRowWidget(this);
+    private ConfigEditorEntryWidget createListRow(ConfigEntryDescriptor desc, double w, int rowH) {
+        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
 
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
@@ -714,8 +712,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             syncContentHeight();
         });
         tagList.onListChanged(v -> {
-            modifiedValues.put(desc.getPath(), ConfigListSpecHelper.listFromGuiItems(v, desc));
-            markConfigTouched(desc.getPath());
+            editorState.markModified(desc.getPath(), ConfigListSpecHelper.listFromGuiItems(v, desc));
         });
 
         int tagRowH = (int) tagList.effectiveHeight();
@@ -728,7 +725,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
         if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEntryWidgetAdapter(desc, row, label, tagList, tooltip,
+        return new ConfigEditorEntryWidgetAdapter(desc, row, label, tagList, tooltip,
                 () -> ConfigListSpecHelper.listFromGuiItems(new ArrayList<>(tagList.items()), desc),
                 v -> {
                     if (v instanceof List) {
@@ -738,15 +735,13 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void saveConfig() {
-        collectModifiedFromWidgets();
-        if (hasInvalidEntryWidgets()) {
+        editorState.collectModifiedFromWidgets();
+        if (editorState.hasInvalidEntryWidgets()) {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
-        for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
-            holder.set(e.getKey(), e.getValue());
-        }
-        modifiedValues.clear();
+        editorState.applyModifiedToHolder();
+        editorState.clearModifiedValues();
         try {
             holder.save();
             ConfigEditorNotifier.show("config_editor_save_success", 2000);
@@ -759,11 +754,11 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
-        if (hasInvalidEntryWidgets()) {
+        if (editorState.hasInvalidEntryWidgets()) {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
-        Map<String, Object> syncPayload = collectTouchedPathsForSync();
+        Map<String, Object> syncPayload = editorState.collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
             ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
             return;
@@ -771,8 +766,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            modifiedValues.clear();
-            syncTouchedPaths.clear();
+            editorState.clearPendingChanges();
             ConfigEditorSyncService.applyEncodedValues(holder, toSync);
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
@@ -783,7 +777,7 @@ public class ConfigEditorScreen extends BaniraScreen {
      * 长按「同步至服务端」：上传当前界面中全部配置项（全量）。
      */
     private void syncToServerFull() {
-        if (hasInvalidEntryWidgets()) {
+        if (editorState.hasInvalidEntryWidgets()) {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
@@ -791,7 +785,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             ConfigEditorNotifier.show("config_editor_sync_not_connected", 3500);
             return;
         }
-        Map<String, Object> syncPayload = collectAllEntryValuesForSync();
+        Map<String, Object> syncPayload = editorState.collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
             ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
             return;
@@ -799,8 +793,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            modifiedValues.clear();
-            syncTouchedPaths.clear();
+            editorState.clearPendingChanges();
             ConfigEditorSyncService.applyEncodedValues(holder, toSync);
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_full_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
@@ -832,86 +825,15 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.getConfigName().equals(configName)) {
             return;
         }
-        modifiedValues.clear();
-        syncTouchedPaths.clear();
-        for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
-            Object v = holder.get(e.getKey());
-            if (v == null) {
-                ConfigEntryDescriptor d = holder.getDescriptor(e.getKey());
-                if (d != null) {
-                    v = d.getDefaultValue();
-                }
-            }
-            if (v != null) {
-                e.getValue().setValue(v);
-            }
-        }
-    }
-
-    private void collectModifiedFromWidgets() {
-        for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
-            if (!e.getValue().isValid()) continue;
-            Object v = e.getValue().getValue();
-            if (v != null && !Objects.equals(v, holder.get(e.getKey()))) {
-                modifiedValues.put(e.getKey(), v);
-            }
-        }
-    }
-
-    private void markConfigTouched(String path) {
-        if (path != null) {
-            syncTouchedPaths.add(path);
-        }
+        editorState.refreshEntriesFromHolder(configName);
     }
 
     /**
      * 仅收集 {@link #syncTouchedPaths} 中路径的当前控件值，用于同步至服务端（增量）。
      */
-    private Map<String, Object> collectTouchedPathsForSync() {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (String path : syncTouchedPaths) {
-            IConfigEntryWidget w = entryWidgets.get(path);
-            if (w == null || !w.isValid()) {
-                continue;
-            }
-            Object v = w.getValue();
-            if (v != null) {
-                map.put(path, v);
-            }
-        }
-        return map;
-    }
-
     /**
      * 收集所有已注册配置项的当前值（用于全量同步至服务端）。
      */
-    private Map<String, Object> collectAllEntryValuesForSync() {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (ConfigEntryDescriptor d : holder.getDescriptors()) {
-            String path = d.getPath();
-            IConfigEntryWidget w = entryWidgets.get(path);
-            if (w != null) {
-                if (!w.isValid()) {
-                    continue;
-                }
-                Object v = w.getValue();
-                if (v != null) {
-                    map.put(path, v);
-                }
-            } else {
-                Object v = holder.get(path);
-                if (v != null) {
-                    map.put(path, v);
-                }
-            }
-        }
-        return map;
-    }
-
-    private boolean hasInvalidEntryWidgets() {
-        return entryWidgets.values().stream().anyMatch(w -> !w.isValid());
-    }
-
     private static final int CARD_RADIUS = 8;
     private static final int CARD_ALPHA = 0xFF;
 
@@ -1010,98 +932,5 @@ public class ConfigEditorScreen extends BaniraScreen {
         private Screen parentScreen;
         private BaniraColorConfig theme;
         private EnumSeason season;
-    }
-
-    private interface IConfigEntryWidget {
-        BaseWidget getWidget();
-
-        Object getValue();
-
-        void setValue(Object value);
-
-        default boolean isValid() {
-            return true;
-        }
-    }
-
-    private static class ConfigEntryWidgetAdapter implements IConfigEntryWidget {
-        private final BaseWidget rowWidget;
-        private final java.util.function.Supplier<Object> getter;
-        private final java.util.function.Consumer<Object> setter;
-        private final java.util.function.Supplier<Boolean> isValidSupplier;
-
-        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, BaseWidget rowWidget, LabelWidget label,
-                                 BaseWidget valueWidget, TooltipWidget tooltipWidget,
-                                 java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter) {
-            this.rowWidget = rowWidget;
-            this.getter = getter;
-            this.setter = setter;
-            this.isValidSupplier = null;
-        }
-
-        ConfigEntryWidgetAdapter(ConfigEntryDescriptor desc, BaseWidget rowWidget, LabelWidget label,
-                                 BaseWidget valueWidget, TooltipWidget tooltipWidget,
-                                 java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter,
-                                 java.util.function.Supplier<Boolean> isValidSupplier) {
-            this.rowWidget = rowWidget;
-            this.getter = getter;
-            this.setter = setter;
-            this.isValidSupplier = isValidSupplier;
-        }
-
-        @Override
-        public boolean isValid() {
-            return isValidSupplier == null || isValidSupplier.get();
-        }
-
-        @Override
-        public BaseWidget getWidget() {
-            return rowWidget;
-        }
-
-        @Override
-        public Object getValue() {
-            return getter.get();
-        }
-
-        @Override
-        public void setValue(Object value) {
-            setter.accept(value);
-        }
-    }
-
-    /**
-     * 配置项行容器，仅用于容纳 Label + 值控件 + Tooltip。
-     * 重写 effectiveHeight 以支持子控件动态变化高度。
-     */
-    private static class EntryRowWidget extends BaseWidget {
-        EntryRowWidget(BaniraScreen screen) {
-            super(screen);
-        }
-
-        @Override
-        public double effectiveHeight() {
-            double maxBottom = 0;
-            for (IWidget child : children()) {
-                if (child == null || !child.visible()) continue;
-                ScreenCoordinate b = child.bounds();
-                if (b != null) {
-                    double bottom = b.y() + child.effectiveHeight();
-                    if (bottom > maxBottom) maxBottom = bottom;
-                }
-            }
-            return maxBottom > 0 ? maxBottom : (bounds() != null ? bounds().height() : 0);
-        }
-
-        @Override
-        protected boolean onMouseClick(MouseEvent event) {
-            return true;
-        }
-
-        @Override
-        public void render(MatrixStack stack, float partialTicks) {
-            if (!visible) return;
-            renderChildren(stack, partialTicks);
-        }
     }
 }

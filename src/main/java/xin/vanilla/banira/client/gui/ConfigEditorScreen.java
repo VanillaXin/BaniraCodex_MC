@@ -6,25 +6,27 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
-import xin.vanilla.banira.client.gui.widget.*;
+import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
+import xin.vanilla.banira.client.gui.widget.IWidget;
+import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.config.*;
+import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 配置编辑界面，支持可视化编辑 Banira 配置描述符。
@@ -39,28 +41,14 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_INNER = 10;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 2;
-    /**
-     * 配置项「键名/标签」列占行宽比例（值区与重置按钮另占剩余空间）
-     */
-    private static final double LABEL_COLUMN_WIDTH_RATIO = 0.32;
-    private static final double LABEL_COLUMN_MIN_WIDTH = 64;
-    private static final int GAP_LABEL_TO_VALUE = 4;
-    /**
-     * 值控件区最小宽度（过窄时压缩标签列）
-     */
-    private static final double VALUE_AREA_MIN_WIDTH = 56;
-    private static final int RESET_BTN_SIZE = 18;
-    private static final int RESET_BTN_GAP = 2;
     private static final int SCROLL_WIDTH = 6;
     private static final int SCROLL_GAP = 2;
-    private static final int BUTTON_HEIGHT = 18;
-    private static final int BUTTON_PADDING = 12;
-    private static final int BUTTON_GAP = 8;
-    private static final int CARD_GAP = 1;
 
     private final ConfigHolder holder;
     private final Args args;
     private final ConfigEditorState editorState;
+    private final ConfigEditorRowFactory rowFactory;
+    private final ConfigEditorActionBar actionBar;
 
     private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
@@ -75,25 +63,16 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int maxListHeight;
     private int contentLeft;
     private int contentW;
-    private int btnY;
     private int contentTotalW;
-    private final List<ButtonWidget> bottomButtons = new ArrayList<>();
-
-    /**
-     * 路径 -> 当前编辑值（用于追踪修改）
-     */
-    /**
-     * 路径 -> Widget（用于从 Widget 读回值）
-     */
-    /**
-     * 本会话内用户曾改动过的配置路径（含重置、保存后仍保留），同步至服务端时仅发送这些项。
-     */
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
         this.args = args != null ? args : new Args();
         this.editorState = new ConfigEditorState(holder);
+        this.rowFactory = new ConfigEditorRowFactory(this, holder, editorState, this::syncContentHeight);
+        this.actionBar = new ConfigEditorActionBar(this, holder, this::saveConfig, this::fetchConfigFromServer,
+                this::syncToServer, this::syncToServerFull, this::onClose);
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
@@ -117,7 +96,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         listTop = cardY + CARD_INNER;
         editorState.clearEntries();
-        bottomButtons.clear();
+        actionBar.rebuildButtons();
 
         contentRootPanel = buildContentPanel();
         contentHeight = (int) contentRootPanel.height();
@@ -133,41 +112,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         addWidget(scrollbar);
 
-        ButtonWidget saveBtn = new ButtonWidget(this);
-        saveBtn.id("save");
-        saveBtn.text(BaniraComponent.get().transClientAuto("config_editor_save").toString());
-        saveBtn.onClick(b -> saveConfig());
-        if (holder.canSyncToServer()) {
-            saveBtn.onLongPress(b -> fetchConfigFromServer());
-        }
-        TooltipWidget saveTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
-        saveTip.text(holder.canSyncToServer()
-                ? BaniraComponent.get().transClientAuto("config_editor_save_tooltip_network")
-                : BaniraComponent.get().transClientAuto("config_editor_save_tooltip"));
-        saveTip.popupAtScreenCoords(true);
-        saveBtn.addChild(saveTip);
-        bottomButtons.add(saveBtn);
-
-        if (holder.canSyncToServer()) {
-            ButtonWidget syncBtn = new ButtonWidget(this);
-            syncBtn.id("sync");
-            syncBtn.text(BaniraComponent.get().transClientAuto("config_editor_sync").toString());
-            syncBtn.onClick(b -> syncToServer());
-            syncBtn.onLongPress(b -> syncToServerFull());
-            TooltipWidget syncTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
-            syncTip.text(BaniraComponent.get().transClientAuto("config_editor_sync_tooltip"));
-            syncTip.popupAtScreenCoords(true);
-            syncBtn.addChild(syncTip);
-            bottomButtons.add(syncBtn);
-        }
-
-        ButtonWidget closeBtn = new ButtonWidget(this);
-        closeBtn.id("close");
-        closeBtn.text(BaniraComponent.get().transClientAuto("config_editor_close").toString());
-        closeBtn.onClick(b -> onClose());
-        bottomButtons.add(closeBtn);
-
-        for (ButtonWidget btn : bottomButtons) {
+        for (ButtonWidget btn : actionBar.buttons()) {
             addWidget(btn);
         }
 
@@ -205,7 +150,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void buildPanelContent(CollapsiblePanelWidget panel, ConfigHolder.CategoryTreeNode node) {
         double cw = panel.getContentWidth();
         for (ConfigEntryDescriptor desc : node.getEntries()) {
-            ConfigEditorEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
+            ConfigEditorEntryWidget adapter = rowFactory.createEntryRow(desc, cw, ROW_HEIGHT);
             if (adapter != null) {
                 editorState.registerEntry(desc.getPath(), adapter);
                 double rowHeight = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : ROW_HEIGHT;
@@ -215,7 +160,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
             CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
             childPanel.text(ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
-                    configModId(), child.getDisplayName())).expanded(false);
+                    rowFactory.configModId(), child.getDisplayName())).expanded(false);
             childPanel.contentGap(ROW_GAP);
             childPanel.headerHeight(ROW_HEIGHT);
             childPanel.onExpandChanged(p -> syncContentHeight());
@@ -235,15 +180,10 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
-
-        int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
-        int btnAreaTop = cardY + cardH - btnAreaH;
-        int centeredBtnY = btnAreaTop + (btnAreaH - BUTTON_HEIGHT) / 2;
+        maxListHeight = actionBar.maxScrollableHeight(cardH, CARD_INNER);
 
         if (contentHeight <= maxListHeight) {
             listAreaHeight = Math.max(1, contentHeight);
-            btnY = centeredBtnY;
             scrollOffset = 0;
             scrollbar.maxValue(0);
             scrollbar.value(0);
@@ -251,7 +191,6 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.scrollingCoordinates(new ArrayList<>());
         } else {
             listAreaHeight = maxListHeight;
-            btnY = centeredBtnY;
             scrollbar.visible(true);
             scrollbar.bounds(new ScreenCoordinate(contentLeft + contentW + SCROLL_GAP, listTop, SCROLL_WIDTH, listAreaHeight));
             scrollbar.maxValue(Math.max(0, contentHeight - listAreaHeight));
@@ -262,476 +201,13 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
-        int n = bottomButtons.size();
-        int[] btnWidths = new int[n];
-        for (int i = 0; i < n; i++) {
-            btnWidths[i] = font.width(bottomButtons.get(i).text().toString()) + BUTTON_PADDING * 2;
-        }
-
-        if (n == 3) {
-            int btnTotal = cardW - 2 * CARD_GAP;
-            int segW = btnTotal / 3;
-            int seg3W = segW + btnTotal % 3;
-            int contentW0 = segW - CARD_INNER * 2;
-            int contentW2 = seg3W - CARD_INNER * 2;
-            for (int i = 0; i < n; i++) {
-                ButtonWidget btn = bottomButtons.get(i);
-                int contentW = i == 2 ? contentW2 : contentW0;
-                int bw = Math.min(btnWidths[i], Math.max(20, contentW));
-                int segX = cardX + (i == 0 ? 0 : i == 1 ? segW + CARD_GAP : 2 * (segW + CARD_GAP));
-                int cx = segX + CARD_INNER + Math.max(0, (contentW - bw) / 2);
-                btn.bounds(new ScreenCoordinate(cx, btnY, bw, BUTTON_HEIGHT));
-            }
-        } else {
-            int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
-            int zoneW = contentTotal / 2;
-            int leftRectW = CARD_INNER + zoneW;
-            int rightRectW = cardW - leftRectW - CARD_GAP;
-            int rightRectX = cardX + leftRectW + CARD_GAP;
-            int lastIdx = n - 1;
-            int leftTotalW = 0;
-            for (int i = 0; i < lastIdx; i++) {
-                leftTotalW += btnWidths[i] + (i > 0 ? BUTTON_GAP : 0);
-            }
-            int rightTotalW = btnWidths[lastIdx];
-            double leftScale = leftTotalW > zoneW ? (double) zoneW / leftTotalW : 1.0;
-            double rightScale = rightTotalW > zoneW ? (double) zoneW / rightTotalW : 1.0;
-            int leftTotalScaled = (int) (leftTotalW * leftScale);
-            int curX = cardX + (leftRectW - leftTotalScaled) / 2;
-            for (int i = 0; i < n; i++) {
-                ButtonWidget btn = bottomButtons.get(i);
-                double scale = i < lastIdx ? leftScale : rightScale;
-                int bw = Math.max(20, (int) (btnWidths[i] * scale));
-                if (i == lastIdx) {
-                    curX = rightRectX + (rightRectW - bw) / 2;
-                }
-                btn.bounds(new ScreenCoordinate(curX, btnY, bw, BUTTON_HEIGHT));
-                curX += bw + BUTTON_GAP;
-            }
-        }
-
-        for (ButtonWidget btn : bottomButtons) {
-            TooltipWidget tip = btn.findChildByType(TooltipWidget.class);
-            if (tip != null && btn.bounds() != null) {
-                ScreenCoordinate bc = btn.bounds();
-                tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
-            }
-        }
+        actionBar.layout(cardX, cardY, cardW, cardH, CARD_INNER, b -> font.width(b.text().toString()));
     }
 
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
         }
-    }
-
-    /**
-     * 创建配置项行（Label + 值控件），返回适配器。行作为子组件加入 CollapsiblePanelWidget。
-     */
-    private ConfigEditorEntryWidget createEntryRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        switch (desc.getValueType()) {
-            case STRING:
-                return createStringRow(desc, w, rowH);
-            case BOOLEAN:
-                return createBooleanRow(desc, w, rowH);
-            case INTEGER:
-            case LONG:
-            case DOUBLE:
-                return createNumberRow(desc, w, rowH);
-            case ENUM:
-                return createEnumRow(desc, w, rowH);
-            case STRING_LIST:
-            case INTEGER_LIST:
-            case LONG_LIST:
-            case DOUBLE_LIST:
-            case BOOLEAN_LIST:
-            case ENUM_LIST:
-                return createListRow(desc, w, rowH);
-            default:
-                return null;
-        }
-    }
-
-    private static TagListEditorWidget.ItemType tagListItemType(ConfigEntryDescriptor desc) {
-        switch (desc.getValueType()) {
-            case STRING_LIST:
-                return TagListEditorWidget.ItemType.TEXT;
-            case INTEGER_LIST:
-            case LONG_LIST:
-            case DOUBLE_LIST:
-                return TagListEditorWidget.ItemType.NUMBER;
-            case BOOLEAN_LIST:
-                return TagListEditorWidget.ItemType.BOOLEAN;
-            case ENUM_LIST:
-                return TagListEditorWidget.ItemType.ENUM;
-            default:
-                return TagListEditorWidget.ItemType.TEXT;
-        }
-    }
-
-    private static void applyListTagNumericOptions(TagListEditorWidget tagList, ConfigEntryDescriptor desc) {
-        switch (desc.getValueType()) {
-            case INTEGER_LIST:
-            case LONG_LIST:
-                tagList.listNumberIntegerOnly(true);
-                tagList.listNumberDecimalPlaces(0);
-                tagList.listNumberMin(desc.getMinValue() != null ? desc.getMinValue().doubleValue() : null);
-                tagList.listNumberMax(desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : null);
-                break;
-            case DOUBLE_LIST:
-                tagList.listNumberIntegerOnly(false);
-                tagList.listNumberDecimalPlaces(desc.getDecimalPlaces());
-                tagList.listNumberMin(desc.getMinValue() != null ? desc.getMinValue().doubleValue() : null);
-                tagList.listNumberMax(desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : null);
-                break;
-            default:
-                tagList.listNumberIntegerOnly(false);
-                tagList.listNumberDecimalPlaces(2);
-                tagList.listNumberMin(null);
-                tagList.listNumberMax(null);
-                break;
-        }
-    }
-
-    private String configModId() {
-        String id = holder.getModId();
-        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
-    }
-
-    // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
-
-    /**
-     * 标签列右边界 X（值控件从此处开始，左侧留出 {@link #GAP_LABEL_TO_VALUE} 给标签文字）
-     */
-    private double labelColumnEndX(double rowWidth) {
-        if (rowWidth <= 1) {
-            return 1;
-        }
-        double reservedRight = RESET_BTN_GAP + RESET_BTN_SIZE;
-        double maxEnd = rowWidth - reservedRight - VALUE_AREA_MIN_WIDTH;
-        if (maxEnd < 1) {
-            return Math.max(1, rowWidth * 0.2);
-        }
-        double fromRatio = rowWidth * LABEL_COLUMN_WIDTH_RATIO;
-        double inner = Math.min(fromRatio, maxEnd);
-        double end = Math.max(LABEL_COLUMN_MIN_WIDTH, inner);
-        if (end > maxEnd) {
-            end = Math.max(1, maxEnd);
-        }
-        return end;
-    }
-
-    private double labelTextWidth(double rowWidth) {
-        return Math.max(1, labelColumnEndX(rowWidth) - GAP_LABEL_TO_VALUE);
-    }
-
-    private double valueStartX(double rowWidth) {
-        return labelColumnEndX(rowWidth);
-    }
-
-    private double valueWidgetWidth(double rowWidth) {
-        double vw = rowWidth - labelColumnEndX(rowWidth) - RESET_BTN_GAP - RESET_BTN_SIZE;
-        return Math.max(1, vw);
-    }
-
-    private double resetBtnX(double rowWidth) {
-        return rowWidth - RESET_BTN_SIZE;
-    }
-
-    // endregion 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
-
-    private void addResetButton(ConfigEditorEntryRowWidget row, ConfigEntryDescriptor desc, double rowW, int rowH, Consumer<Object> setValue) {
-        int btnY = (rowH - RESET_BTN_SIZE) / 2;
-        ButtonWidget btn = new ButtonWidget(this);
-        btn.id("reset_" + desc.getPath().replace(".", "_"));
-        btn.presetStyle(ButtonWidget.PresetStyle.RESET);
-        btn.bounds(new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
-        btn.onClick(b -> {
-            Object def = desc.getDefaultValue();
-            if (def != null) {
-                holder.set(desc.getPath(), def);
-                editorState.markModified(desc.getPath(), def);
-                setValue.accept(def);
-            }
-        });
-        TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
-        resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
-        resetTip.text(BaniraComponent.get().transClientAuto("config_editor_reset_tooltip"));
-        resetTip.popupAtScreenCoords(true);
-        row.addChild(btn);
-        row.addChild(resetTip);
-    }
-
-    private ConfigEditorEntryWidget createStringRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
-        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        InputWidget input = new InputWidget(this);
-        input.id("cfg_" + desc.getPath().replace(".", "_"));
-        input.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        Object raw = holder.get(desc.getPath());
-        String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
-        input.value(str);
-        input.maxLength(256);
-        input.onTextChanged(v -> {
-            editorState.markModified(desc.getPath(), v);
-        });
-
-        row.addChild(label);
-        row.addChild(input);
-        addResetButton(row, desc, w, rowH, v -> input.value(String.valueOf(v)));
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
-        if (tooltip != null) row.addChild(tooltip);
-
-        return new ConfigEditorEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
-    }
-
-    private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
-        if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
-            return null;
-        }
-        TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, labelTextWidth(w), rowH));
-        tooltip.id("tip_" + desc.getPath().replace(".", "_"));
-        tooltip.text(ConfigEntryTooltipTexts.guiTooltipComponent(desc, configModId()));
-        tooltip.popupAtScreenCoords(true);
-        return tooltip;
-    }
-
-    private ConfigEditorEntryWidget createBooleanRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
-        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        boolean val = Boolean.TRUE.equals(holder.get(desc.getPath()));
-        final boolean[] currentValue = {val};
-        ButtonWidget btn = new ButtonWidget(this);
-        btn.id("cfg_" + desc.getPath().replace(".", "_"));
-        btn.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        btn.text(val ? "§aON" : "§cOFF");
-        btn.onClick(b -> {
-            boolean newVal = !currentValue[0];
-            currentValue[0] = newVal;
-            editorState.markModified(desc.getPath(), newVal);
-            btn.text(newVal ? "§aON" : "§cOFF");
-        });
-
-        row.addChild(label);
-        row.addChild(btn);
-        addResetButton(row, desc, w, rowH, v -> {
-            currentValue[0] = Boolean.TRUE.equals(v);
-            btn.text(currentValue[0] ? "§aON" : "§cOFF");
-        });
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
-        if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEditorEntryWidgetAdapter(desc, row, label, btn, tooltip, () -> currentValue[0],
-                v -> {
-                    currentValue[0] = Boolean.TRUE.equals(v);
-                    btn.text(currentValue[0] ? "§aON" : "§cOFF");
-                });
-    }
-
-    private ConfigEditorEntryWidget createNumberRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
-        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        double min = desc.getMinValue() != null ? desc.getMinValue().doubleValue() : 0;
-        double max = desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : 100;
-        double step = 1.0;
-        if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE) {
-            double minStep = 1.0 / Math.pow(10, desc.getDecimalPlaces());
-            step = Math.max(minStep, (max - min) / 100);
-        }
-
-        Object raw = holder.get(desc.getPath());
-        double initVal = 0;
-        if (raw instanceof Number) {
-            initVal = ((Number) raw).doubleValue();
-        } else if (raw != null) {
-            try {
-                initVal = Double.parseDouble(raw.toString());
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        initVal = Math.max(min, Math.min(max, initVal));
-
-        SliderWidget slider = new SliderWidget(this);
-        slider.id("cfg_" + desc.getPath().replace(".", "_"));
-        slider.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        slider.minValue(min).maxValue(max).step(step).value(initVal);
-        slider.decimalPlaces(desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE
-                ? desc.getDecimalPlaces() : 0);
-        slider.onValueChanged(v -> {
-            Object parsed = convertSliderValue(desc, v);
-            if (parsed != null && !Objects.equals(parsed, holder.get(desc.getPath()))) {
-                editorState.markModified(desc.getPath(), parsed);
-            }
-        });
-
-        row.addChild(label);
-        row.addChild(slider);
-        addResetButton(row, desc, w, rowH, v -> {
-            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
-            slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
-        });
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
-        if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEditorEntryWidgetAdapter(desc, row, label, slider, tooltip, () -> convertSliderValue(desc, slider.value()), v -> {
-            double d = v instanceof Number ? ((Number) v).doubleValue() : 0;
-            slider.setValue(Math.max(slider.minValue(), Math.min(slider.maxValue(), d)));
-        }, () -> true);
-    }
-
-    private Object convertSliderValue(ConfigEntryDescriptor desc, double v) {
-        switch (desc.getValueType()) {
-            case INTEGER:
-                return (int) Math.round(v);
-            case LONG:
-                return (long) Math.round(v);
-            case DOUBLE: {
-                int dp = desc.getDecimalPlaces();
-                double factor = Math.pow(10, dp);
-                return Math.round(v * factor) / factor;
-            }
-            default:
-                return v;
-        }
-    }
-
-    private ConfigEditorEntryWidget createEnumRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
-        row.bounds(new ScreenCoordinate(0, 0, w, rowH));
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        Object current = holder.get(desc.getPath());
-        Class<? extends Enum<?>> enumClass = desc.getEnumClass();
-        List<String> options = Arrays.stream(enumClass.getEnumConstants())
-                .map(Enum::name)
-                .collect(Collectors.toList());
-
-        DropdownSelectWidget dropdown = new DropdownSelectWidget(this);
-        dropdown.id("cfg_" + desc.getPath().replace(".", "_"));
-        dropdown.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
-        dropdown.optionsEnum(enumClass);
-        dropdown.selectedValues(Collections.singletonList(current != null ? current.toString() : options.get(0)));
-        dropdown.onSelectionChanged(v -> {
-            if (!v.isEmpty()) {
-                try {
-                    @SuppressWarnings({"unchecked", "rawtypes"})
-                    Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), v.get(0));
-                    editorState.markModified(desc.getPath(), e);
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
-        });
-
-        row.addChild(label);
-        row.addChild(dropdown);
-        addResetButton(row, desc, w, rowH, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
-        if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEditorEntryWidgetAdapter(desc, row, label, dropdown, tooltip, () -> {
-            List<String> sel = dropdown.getSelectedValues();
-            if (sel.isEmpty()) return holder.get(desc.getPath());
-            try {
-                @SuppressWarnings({"unchecked", "rawtypes"})
-                Enum<?> e = Enum.valueOf((Class) desc.getEnumClass(), sel.get(0));
-                return e;
-            } catch (Exception ex) {
-                return holder.get(desc.getPath());
-            }
-        }, v -> dropdown.selectedValues(Collections.singletonList(v != null ? v.toString() : options.get(0))));
-    }
-
-    private ConfigEditorEntryWidget createListRow(ConfigEntryDescriptor desc, double w, int rowH) {
-        ConfigEditorEntryRowWidget row = new ConfigEditorEntryRowWidget(this);
-
-        LabelWidget label = new LabelWidget(this);
-        label.id("lbl_" + desc.getPath().replace(".", "_"));
-        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(desc.getDisplayName());
-        label.textWrap(false);
-        label.textVerticalAlign(EnumAlignment.CENTER);
-
-        Object raw = holder.get(desc.getPath());
-        List<?> list = raw instanceof List ? (List<?>) raw : null;
-        List<Object> items = ConfigListSpecHelper.normalizeListForGui(list, desc);
-
-        TagListEditorWidget tagList = new TagListEditorWidget(this);
-        tagList.id("cfg_" + desc.getPath().replace(".", "_"));
-        tagList.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), TagListEditorWidget.DEFAULT_EXPANDED_HEIGHT));
-        tagList.itemType(tagListItemType(desc));
-        applyListTagNumericOptions(tagList, desc);
-        if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.ENUM_LIST && desc.getEnumClass() != null) {
-            tagList.enumOptionsList(Arrays.stream(desc.getEnumClass().getEnumConstants())
-                    .map(Enum::name)
-                    .collect(Collectors.toList()));
-        }
-        tagList.items(items);
-        tagList.expanded(false);
-        tagList.refreshBounds();
-        row.bounds(new ScreenCoordinate(0, 0, w, tagList.effectiveHeight()));
-        tagList.onBoundsHeightChanged(t -> {
-            IWidget rowWidget = t.parent();
-            if (rowWidget instanceof BaseWidget) {
-                double newH = t.effectiveHeight();
-                ScreenCoordinate b = rowWidget.bounds();
-                if (b != null) {
-                    ((BaseWidget) rowWidget).bounds(new ScreenCoordinate(b.x(), b.y(), b.width(), newH));
-                }
-                IWidget panel = rowWidget.parent();
-                if (panel instanceof CollapsiblePanelWidget) {
-                    ((CollapsiblePanelWidget) panel).refreshLayoutFromChild(rowWidget);
-                }
-            }
-            syncContentHeight();
-        });
-        tagList.onListChanged(v -> {
-            editorState.markModified(desc.getPath(), ConfigListSpecHelper.listFromGuiItems(v, desc));
-        });
-
-        int tagRowH = (int) tagList.effectiveHeight();
-        row.addChild(label);
-        row.addChild(tagList);
-        addResetButton(row, desc, w, tagRowH, v -> {
-            if (v instanceof List) {
-                tagList.items(ConfigListSpecHelper.normalizeListForGui((List<?>) v, desc));
-            }
-        });
-        TooltipWidget tooltip = createEntryTooltip(desc, 0, 0, w, rowH);
-        if (tooltip != null) row.addChild(tooltip);
-        return new ConfigEditorEntryWidgetAdapter(desc, row, label, tagList, tooltip,
-                () -> ConfigListSpecHelper.listFromGuiItems(new ArrayList<>(tagList.items()), desc),
-                v -> {
-                    if (v instanceof List) {
-                        tagList.items(ConfigListSpecHelper.normalizeListForGui((List<?>) v, desc));
-                    }
-                });
     }
 
     private void saveConfig() {
@@ -828,47 +304,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         editorState.refreshEntriesFromHolder(configName);
     }
 
-    /**
-     * 仅收集 {@link #syncTouchedPaths} 中路径的当前控件值，用于同步至服务端（增量）。
-     */
-    /**
-     * 收集所有已注册配置项的当前值（用于全量同步至服务端）。
-     */
-    private static final int CARD_RADIUS = 8;
-    private static final int CARD_ALPHA = 0xFF;
-
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
-        int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
-        int btnAreaTop = cardY + cardH - btnAreaH;
-        int contentH = btnAreaTop - cardY - CARD_GAP;
-        int n = bottomButtons.size();
-
-        AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, contentH,
-                CARD_RADIUS, CARD_RADIUS, 0, 0, cardBg);
-
-        if (n == 3) {
-            int btnTotal = cardW - 2 * CARD_GAP;
-            int segW = btnTotal / 3;
-            int seg3W = segW + btnTotal % 3;
-            AbstractGuiUtils.drawRoundedRect(stack, cardX, btnAreaTop, segW, btnAreaH,
-                    0, 0, CARD_RADIUS, 0, cardBg);
-            AbstractGuiUtils.drawRoundedRect(stack, cardX + segW + CARD_GAP, btnAreaTop, segW, btnAreaH,
-                    0, 0, 0, 0, cardBg);
-            AbstractGuiUtils.drawRoundedRect(stack, cardX + 2 * (segW + CARD_GAP), btnAreaTop, seg3W, btnAreaH,
-                    0, 0, 0, CARD_RADIUS, cardBg);
-        } else {
-            int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
-            int zoneW = contentTotal / 2;
-            int leftRectW = CARD_INNER + zoneW;
-            int rightRectW = cardW - leftRectW - CARD_GAP;
-            AbstractGuiUtils.drawRoundedRect(stack, cardX, btnAreaTop, leftRectW, btnAreaH,
-                    0, 0, CARD_RADIUS, 0, cardBg);
-            AbstractGuiUtils.drawRoundedRect(stack, cardX + leftRectW + CARD_GAP, btnAreaTop, rightRectW, btnAreaH,
-                    0, 0, 0, CARD_RADIUS, cardBg);
-        }
+        actionBar.renderChrome(stack, theme, cardX, cardY, cardW, cardH, CARD_INNER);
 
         AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
 
@@ -883,16 +322,11 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         AbstractGuiUtils.disableScissor();
 
-        for (ButtonWidget btn : bottomButtons) {
-            if (btn.visible()) {
-                if (btn.enabled() && btn.needsUpdate()) btn.update();
-                btn.render(stack, partialTicks);
-            }
-        }
+        actionBar.renderButtons(stack, partialTicks);
 
         // 渲染 overlay 控件，需在 scissor 关闭后渲染以免被裁剪
         for (IWidget widget : widgets()) {
-            if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) continue;
+            if (widget == contentRootPanel || widget == scrollbar || actionBar.contains(widget)) continue;
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget.enabled() && widget.needsUpdate()) widget.update();
             widget.render(stack, partialTicks);

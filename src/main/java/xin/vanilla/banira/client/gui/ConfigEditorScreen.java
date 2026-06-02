@@ -13,11 +13,7 @@ import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.*;
@@ -25,7 +21,6 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +43,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private final Args args;
     private final ConfigEditorState editorState;
     private final ConfigEditorRowFactory rowFactory;
+    private final ConfigEditorContentTreeBuilder contentTreeBuilder;
     private final ConfigEditorActionBar actionBar;
 
     private CollapsiblePanelWidget contentRootPanel;
@@ -71,6 +67,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         this.args = args != null ? args : new Args();
         this.editorState = new ConfigEditorState(holder);
         this.rowFactory = new ConfigEditorRowFactory(this, holder, editorState, this::syncContentHeight);
+        this.contentTreeBuilder = new ConfigEditorContentTreeBuilder(this, holder, rowFactory, editorState,
+                this::syncContentHeight, ROW_HEIGHT, ROW_GAP);
         this.actionBar = new ConfigEditorActionBar(this, holder, this::saveConfig, this::fetchConfigFromServer,
                 this::syncToServer, this::syncToServerFull, this::onClose);
         previousScreen(args != null ? args.parentScreen() : null);
@@ -98,7 +96,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         editorState.clearEntries();
         actionBar.rebuildButtons();
 
-        contentRootPanel = buildContentPanel();
+        contentRootPanel = contentTreeBuilder.build(contentW);
         contentHeight = (int) contentRootPanel.height();
         addWidget(contentRootPanel);
 
@@ -118,56 +116,6 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         updateLayout();
         updateWidgetPositions();
-    }
-
-    /**
-     * 使用 CollapsiblePanelWidget 构建配置树
-     */
-    private CollapsiblePanelWidget buildContentPanel() {
-        List<ConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
-        String rootTitle = holder.getConfigName();
-        if (rootTitle == null || rootTitle.isEmpty()) {
-            rootTitle = "General";
-        }
-        if (roots.isEmpty()) {
-            CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-            empty.text(rootTitle).expanded(true);
-            empty.onExpandChanged(p -> syncContentHeight());
-            return empty;
-        }
-        ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
-        CollapsiblePanelWidget rootPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-        rootPanel.text(rootTitle).expanded(true);
-        rootPanel.contentGap(ROW_GAP);
-        rootPanel.headerHeight(ROW_HEIGHT);
-        rootPanel.onExpandChanged(p -> syncContentHeight());
-
-        buildPanelContent(rootPanel, rootNode);
-        rootPanel.refreshLayout();
-        return rootPanel;
-    }
-
-    private void buildPanelContent(CollapsiblePanelWidget panel, ConfigHolder.CategoryTreeNode node) {
-        double cw = panel.getContentWidth();
-        for (ConfigEntryDescriptor desc : node.getEntries()) {
-            ConfigEditorEntryWidget adapter = rowFactory.createEntryRow(desc, cw, ROW_HEIGHT);
-            if (adapter != null) {
-                editorState.registerEntry(desc.getPath(), adapter);
-                double rowHeight = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : ROW_HEIGHT;
-                panel.addChildAuto(adapter.getWidget(), rowHeight);
-            }
-        }
-        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
-            CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
-            childPanel.text(ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
-                    rowFactory.configModId(), child.getDisplayName())).expanded(false);
-            childPanel.contentGap(ROW_GAP);
-            childPanel.headerHeight(ROW_HEIGHT);
-            childPanel.onExpandChanged(p -> syncContentHeight());
-            buildPanelContent(childPanel, child);
-            childPanel.refreshLayout();
-            panel.addCollapsibleChild(childPanel);
-        }
     }
 
     private void syncContentHeight() {
@@ -309,28 +257,11 @@ public class ConfigEditorScreen extends BaniraScreen {
         BaniraColorConfig theme = getEffectiveTheme();
         actionBar.renderChrome(stack, theme, cardX, cardY, cardW, cardH, CARD_INNER);
 
-        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
-
-        if (contentRootPanel != null && contentRootPanel.visible()) {
-            if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
-            contentRootPanel.render(stack, partialTicks);
-        }
-        if (scrollbar != null && scrollbar.visible()) {
-            if (scrollbar.enabled() && scrollbar.needsUpdate()) scrollbar.update();
-            scrollbar.render(stack, partialTicks);
-        }
-
-        AbstractGuiUtils.disableScissor();
-
+        ConfigEditorViewportRenderer.renderScrolledContent(stack, partialTicks, contentRootPanel, scrollbar,
+                contentLeft, listTop, contentTotalW, listAreaHeight);
         actionBar.renderButtons(stack, partialTicks);
-
-        // 渲染 overlay 控件，需在 scissor 关闭后渲染以免被裁剪
-        for (IWidget widget : widgets()) {
-            if (widget == contentRootPanel || widget == scrollbar || actionBar.contains(widget)) continue;
-            if (widget.parent() != null || !widget.visible()) continue;
-            if (widget.enabled() && widget.needsUpdate()) widget.update();
-            widget.render(stack, partialTicks);
-        }
+        ConfigEditorViewportRenderer.renderOverlayWidgets(widgets(), stack, partialTicks,
+                widget -> widget == contentRootPanel || widget == scrollbar || actionBar.contains(widget));
     }
 
     @Override

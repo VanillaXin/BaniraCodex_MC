@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
+/**
+ * 配置编辑器底部操作区；按钮布局和背景分片是版本/控件实现相关细节。
+ */
 public final class ConfigEditorActionBar {
     public static final int BUTTON_HEIGHT = 18;
     public static final int CARD_GAP = 1;
@@ -50,6 +53,9 @@ public final class ConfigEditorActionBar {
         this.closeAction = closeAction;
     }
 
+    /**
+     * 按当前配置能力重建按钮；同步型配置会额外显示同步按钮。
+     */
     public void rebuildButtons() {
         buttons.clear();
         buttons.add(saveButton());
@@ -59,10 +65,16 @@ public final class ConfigEditorActionBar {
         buttons.add(closeButton());
     }
 
+    /**
+     * 返回内容区可滚动高度，屏幕布局只需要消费这个结果。
+     */
     public int maxScrollableHeight(int cardHeight, int cardInner) {
         return Math.max(0, cardHeight - cardInner * 2 - BUTTON_HEIGHT - CARD_GAP);
     }
 
+    /**
+     * 根据按钮文案宽度布局操作区；高版本可替换这里的布局策略。
+     */
     public void layout(int cardX, int cardY, int cardW, int cardH, int cardInner,
                        ToIntFunction<ButtonWidget> textWidth) {
         int btnAreaH = BUTTON_HEIGHT + cardInner;
@@ -83,6 +95,9 @@ public final class ConfigEditorActionBar {
         syncTooltipBounds();
     }
 
+    /**
+     * 绘制操作区和内容区背景，实际按钮由 {@link #renderButtons(MatrixStack, float)} 渲染。
+     */
     public void renderChrome(MatrixStack stack, BaniraColorConfig theme, int cardX, int cardY, int cardW, int cardH,
                              int cardInner) {
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
@@ -116,6 +131,9 @@ public final class ConfigEditorActionBar {
         }
     }
 
+    /**
+     * 渲染当前 action bar 管理的按钮。
+     */
     public void renderButtons(MatrixStack stack, float partialTicks) {
         for (ButtonWidget btn : buttons) {
             if (btn.visible()) {
@@ -127,6 +145,9 @@ public final class ConfigEditorActionBar {
         }
     }
 
+    /**
+     * 用于屏幕渲染 overlay 时排除已由 action bar 接管的按钮。
+     */
     public boolean contains(IWidget widget) {
         return buttons.contains(widget);
     }

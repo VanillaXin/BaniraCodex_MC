@@ -15,6 +15,9 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * 根据 Banira 配置描述符创建编辑行，避免 Screen 直接绑定具体控件细节。
+ */
 public final class ConfigEditorRowFactory {
     private static final double LABEL_COLUMN_WIDTH_RATIO = 0.32;
     private static final double LABEL_COLUMN_MIN_WIDTH = 64;
@@ -36,6 +39,9 @@ public final class ConfigEditorRowFactory {
         this.contentHeightChanged = contentHeightChanged;
     }
 
+    /**
+     * 创建一个配置项编辑行；无法识别的值类型会返回 null。
+     */
     public ConfigEditorEntryWidget createEntryRow(ConfigEntryDescriptor desc, double w, int rowH) {
         switch (desc.getValueType()) {
             case STRING:
@@ -196,6 +202,7 @@ public final class ConfigEditorRowFactory {
         tagList.expanded(false);
         tagList.refreshBounds();
         row.bounds(new ScreenCoordinate(0, 0, w, tagList.effectiveHeight()));
+        // 列表展开/收起会改变整棵配置树高度，需要向外通知视口重新布局。
         tagList.onBoundsHeightChanged(t -> {
             IWidget rowWidget = t.parent();
             if (rowWidget instanceof BaseWidget) {

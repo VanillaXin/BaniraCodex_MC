@@ -98,7 +98,7 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return item.getRegistryName();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().itemId(item) : null;
     }
 
     /**
@@ -573,7 +573,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                item.getRegistryName(), e);
+                                getItemRegistryString(item), e);
                     }
                 }
             }
@@ -649,7 +649,7 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                ResourceLocation itemId = item.getRegistryName();
+                ResourceLocation itemId = getItemRegistry(item);
                 if (itemId != null) {
                     // 获取物品的所有标签
                     item.getTags().forEach(tag -> {

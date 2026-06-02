@@ -17,6 +17,8 @@ import java.util.Set;
 public interface BaniraRegistryService {
     Block block(ResourceLocation id);
 
+    ResourceLocation blockId(Block block);
+
     List<Block> blocks();
 
     Biome biome(ResourceLocation id);
@@ -25,13 +27,19 @@ public interface BaniraRegistryService {
 
     EntityType<?> entityType(ResourceLocation id);
 
+    ResourceLocation entityTypeId(EntityType<?> entityType);
+
     List<EntityType<?>> entityTypes();
 
     Effect effect(ResourceLocation id);
 
+    ResourceLocation effectId(Effect effect);
+
     List<Effect> effects();
 
     Item item(ResourceLocation id);
+
+    ResourceLocation itemId(Item item);
 
     List<Item> items();
 

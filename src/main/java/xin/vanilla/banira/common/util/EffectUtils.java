@@ -42,7 +42,7 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(Effect effect) {
         if (effect == null) return null;
-        return effect.getRegistryName();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().effectId(effect) : null;
     }
 
     /**

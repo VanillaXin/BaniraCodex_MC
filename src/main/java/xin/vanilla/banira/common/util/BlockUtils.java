@@ -49,7 +49,7 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return block.getRegistryName();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().blockId(block) : null;
     }
 
     /**

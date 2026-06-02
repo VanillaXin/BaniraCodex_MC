@@ -16,6 +16,7 @@ import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.IIdentifier;
 
 import javax.annotation.Nullable;
@@ -141,7 +142,7 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, EffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = effectInstance.getEffect().getRegistryName();
+        ResourceLocation registryName = EffectUtils.getEffectRegistry(effectInstance);
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

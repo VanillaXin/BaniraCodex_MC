@@ -23,6 +23,11 @@ public final class ForgeBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
+    public ResourceLocation blockId(Block block) {
+        return block != null && ForgeRegistries.BLOCKS != null ? ForgeRegistries.BLOCKS.getKey(block) : null;
+    }
+
+    @Override
     public List<Block> blocks() {
         if (ForgeRegistries.BLOCKS == null) return Collections.emptyList();
         List<Block> blocks = new ArrayList<>();
@@ -49,6 +54,11 @@ public final class ForgeBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
+    public ResourceLocation entityTypeId(EntityType<?> entityType) {
+        return entityType != null && ForgeRegistries.ENTITIES != null ? ForgeRegistries.ENTITIES.getKey(entityType) : null;
+    }
+
+    @Override
     public List<EntityType<?>> entityTypes() {
         if (ForgeRegistries.ENTITIES == null) return Collections.emptyList();
         List<EntityType<?>> entityTypes = new ArrayList<>();
@@ -62,6 +72,11 @@ public final class ForgeBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
+    public ResourceLocation effectId(Effect effect) {
+        return effect != null && ForgeRegistries.POTIONS != null ? ForgeRegistries.POTIONS.getKey(effect) : null;
+    }
+
+    @Override
     public List<Effect> effects() {
         if (ForgeRegistries.POTIONS == null) return Collections.emptyList();
         List<Effect> effects = new ArrayList<>();
@@ -72,6 +87,11 @@ public final class ForgeBaniraRegistryService implements BaniraRegistryService {
     @Override
     public Item item(ResourceLocation id) {
         return id != null ? ForgeRegistries.ITEMS.getValue(id) : null;
+    }
+
+    @Override
+    public ResourceLocation itemId(Item item) {
+        return item != null && ForgeRegistries.ITEMS != null ? ForgeRegistries.ITEMS.getKey(item) : null;
     }
 
     @Override

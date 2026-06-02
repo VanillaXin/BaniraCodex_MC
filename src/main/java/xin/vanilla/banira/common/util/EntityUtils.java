@@ -51,7 +51,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return entityType.getRegistryName();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().entityTypeId(entityType) : null;
     }
 
     /**

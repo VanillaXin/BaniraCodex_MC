@@ -1,18 +1,16 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,16 +42,15 @@ public final class DimensionUtils {
 
 
     public static RegistryKey<World> parse(String dimension) {
-        return RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimension));
+        return parse(Identifier.id().parse(dimension));
     }
 
     public static RegistryKey<World> parse(ResourceLocation dimension) {
-        return RegistryKey.create(Registry.DIMENSION_REGISTRY, dimension);
+        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().dimensionKey(dimension) : World.OVERWORLD;
     }
 
     public static ServerWorld getLevel(RegistryKey<World> dimension) {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
-        return server != null ? server.getLevel(dimension) : null;
+        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().level(dimension) : null;
     }
 
     public static ServerWorld getLevel(ResourceLocation dimension) {
@@ -65,21 +62,15 @@ public final class DimensionUtils {
     }
 
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
-        if (server == null) return Collections.emptySet();
-        Set<String> ids = new HashSet<>();
-        server.levelKeys().forEach(key -> ids.add(key.location().toString()));
-        return ids;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().dimensionIds() : Collections.emptySet();
     }
 
     public static int getWorldMinY(World world) {
-        if (world == null) return 0;
-        return 0;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().minBuildHeight(world) : 0;
     }
 
     public static int getWorldMaxY(World world) {
-        if (world == null) return 0;
-        return world.getMaxBuildHeight();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().maxBuildHeight(world) : 0;
     }
 
     public static String getDimensionId(Entity entity) {

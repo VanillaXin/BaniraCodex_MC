@@ -1,10 +1,14 @@
 package xin.vanilla.banira.platform;
 
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 import org.junit.Test;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,6 +97,61 @@ public class BaniraPlatformsTest {
         @Override
         public BaniraRegistryService registry() {
             return null;
+        }
+
+        @Override
+        public BaniraWorldService world() {
+            return new BaniraWorldService() {
+                @Override
+                public net.minecraft.world.biome.Biome biome(ResourceLocation id) {
+                    return null;
+                }
+
+                @Override
+                public net.minecraft.world.biome.Biome biome(net.minecraft.world.server.ServerWorld world, ResourceLocation id) {
+                    return null;
+                }
+
+                @Override
+                public java.util.Set<String> biomeIds() {
+                    return java.util.Collections.emptySet();
+                }
+
+                @Override
+                public xin.vanilla.banira.common.data.WorldCoordinate findNearestBiome(net.minecraft.world.server.ServerWorld world, xin.vanilla.banira.common.data.WorldCoordinate start, net.minecraft.world.biome.Biome biome, int radius, int minDistance) {
+                    return null;
+                }
+
+                @Override
+                public net.minecraft.world.server.ServerWorld level(RegistryKey<World> dimension) {
+                    return null;
+                }
+
+                @Override
+                public RegistryKey<World> dimensionKey(ResourceLocation dimension) {
+                    return World.OVERWORLD;
+                }
+
+                @Override
+                public java.util.Set<String> dimensionIds() {
+                    return java.util.Collections.emptySet();
+                }
+
+                @Override
+                public int minBuildHeight(World world) {
+                    return 0;
+                }
+
+                @Override
+                public int maxBuildHeight(World world) {
+                    return 0;
+                }
+
+                @Override
+                public xin.vanilla.banira.common.data.WorldCoordinate findNearestStructure(net.minecraft.world.server.ServerWorld world, xin.vanilla.banira.common.data.WorldCoordinate start, net.minecraft.world.gen.feature.structure.Structure<?> structure, int radius) {
+                    return null;
+                }
+            };
         }
     }
 }

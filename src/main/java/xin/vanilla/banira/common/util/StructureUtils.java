@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.server.ServerWorld;
 import xin.vanilla.banira.Identifier;
@@ -34,12 +33,7 @@ public final class StructureUtils {
      * 在指定范围内查找最近的结构位置
      */
     public static WorldCoordinate findNearestStructure(ServerWorld world, WorldCoordinate start, Structure<?> structure, int radius) {
-        if (world == null || start == null || structure == null) return null;
-        BlockPos pos = world.findNearestMapFeature(structure, start.toBlockPos(), radius, true);
-        if (pos != null) {
-            return start.clone().x(pos.getX()).z(pos.getZ());
-        }
-        return null;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().findNearestStructure(world, start, structure, radius) : null;
     }
 
 }

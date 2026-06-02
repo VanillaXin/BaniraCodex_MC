@@ -1,14 +1,10 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
@@ -20,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * 生物群系相关工具类
@@ -48,42 +43,22 @@ public final class BiomeUtils {
     }
 
     public static Biome getBiome(ResourceLocation id) {
-        if (id == null) return null;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
-        if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
-        }
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().biome(id) : null;
+        return id != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biome(id) : null;
     }
 
     public static Biome getBiome(ServerWorld world, ResourceLocation id) {
-        if (id == null) return null;
-        if (world != null) {
-            return world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
-        }
-        return getBiome(id);
+        return id != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biome(world, id) : null;
     }
 
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
-        if (server != null) {
-            return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).keySet().stream()
-                    .map(ResourceLocation::toString)
-                    .collect(Collectors.toSet());
-        }
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().biomeIds() : Collections.emptySet();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biomeIds() : Collections.emptySet();
     }
 
     /**
      * 在指定范围内查找最近的生物群系位置
      */
     public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
-        if (world == null || start == null || biome == null) return null;
-        BlockPos pos = world.findNearestBiome(biome, start.toBlockPos(), radius, minDistance);
-        if (pos != null) {
-            return start.clone().x(pos.getX()).z(pos.getZ());
-        }
-        return null;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().findNearestBiome(world, start, biome, radius, minDistance) : null;
     }
 
     /**

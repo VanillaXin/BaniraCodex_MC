@@ -9,9 +9,8 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 
@@ -293,7 +292,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.z = tag.getDouble("z");
         coordinate.yaw = tag.getDouble("yaw");
         coordinate.pitch = tag.getDouble("pitch");
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(tag.getString("dimension")));
+        coordinate.dimension = DimensionUtils.parse(tag.getString("dimension"));
         return coordinate;
     }
 
@@ -337,7 +336,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.yaw = JsonUtils.getDouble(json, "yaw", 0);
         coordinate.pitch = JsonUtils.getDouble(json, "pitch", 0);
         String dimensionStr = JsonUtils.getString(json, "dimension", World.OVERWORLD.location().toString());
-        coordinate.dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(dimensionStr));
+        coordinate.dimension = DimensionUtils.parse(dimensionStr);
         return coordinate;
     }
 
@@ -349,12 +348,12 @@ public class WorldCoordinate implements Serializable, Cloneable {
         try {
             String[] split = str.split(",");
             if (split.length == 5) {
-                RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                RegistryKey<World> dimension = DimensionUtils.parse(split[0].trim());
                 Direction direction = valuOfDirection(split[4].trim());
                 result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension).direction(direction);
             } else if (split.length == 4) {
                 if (split[0].contains(":")) {
-                    RegistryKey<World> dimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, Identifier.id().parse(split[0].trim()));
+                    RegistryKey<World> dimension = DimensionUtils.parse(split[0].trim());
                     result = new WorldCoordinate(NumberUtils.toDouble(split[1]), NumberUtils.toDouble(split[2]), NumberUtils.toDouble(split[3]), dimension);
                 } else if (Arrays.stream(Direction.values()).anyMatch(dir -> dir.getName().equals(split[3].trim()))) {
                     Direction direction = valuOfDirection(split[3].trim());

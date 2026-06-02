@@ -4,6 +4,7 @@ import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
 import java.util.UUID;
@@ -39,4 +40,6 @@ public interface BaniraPlatform {
     BaniraNetworkService network();
 
     BaniraRegistryService registry();
+
+    BaniraWorldService world();
 }

@@ -1,6 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraCodex;
@@ -9,19 +12,15 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.*;
-import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
-import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
+import xin.vanilla.banira.internal.client.ConfigEditorSyncService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -741,9 +740,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void saveConfig() {
         collectModifiedFromWidgets();
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
         for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
@@ -752,49 +749,33 @@ public class ConfigEditorScreen extends BaniraScreen {
         modifiedValues.clear();
         try {
             holder.save();
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_save_success", 2000);
             // if (previousScreen() != null) {
             //     onClose();
             // }
         } catch (Exception ex) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_failed", ex.getMessage()));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_save_failed", 4000, ex.getMessage());
         }
     }
 
     private void syncToServer() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
         Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
             return;
         }
-        Map<String, String> toSync = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> e : syncPayload.entrySet()) {
-            toSync.put(e.getKey(), serializeValue(e.getValue()));
-        }
+        Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
-            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
+            ConfigEditorSyncService.sendSync(holder, toSync);
             modifiedValues.clear();
             syncTouchedPaths.clear();
-            for (Map.Entry<String, String> e : toSync.entrySet()) {
-                holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
-            }
+            ConfigEditorSyncService.applyEncodedValues(holder, toSync);
         } catch (Exception ex) {
-            Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
-            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            ConfigEditorNotifier.show("config_editor_sync_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
         }
     }
 
@@ -803,40 +784,26 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private void syncToServerFull() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+        if (!ConfigEditorSyncService.hasServerConnection()) {
+            ConfigEditorNotifier.show("config_editor_sync_not_connected", 3500);
             return;
         }
         Map<String, Object> syncPayload = collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            NotificationManager.get().addNotification(n);
+            ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
             return;
         }
-        Map<String, String> toSync = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> e : syncPayload.entrySet()) {
-            toSync.put(e.getKey(), serializeValue(e.getValue()));
-        }
+        Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
-            PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
+            ConfigEditorSyncService.sendSync(holder, toSync);
             modifiedValues.clear();
             syncTouchedPaths.clear();
-            for (Map.Entry<String, String> e : toSync.entrySet()) {
-                holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
-            }
+            ConfigEditorSyncService.applyEncodedValues(holder, toSync);
         } catch (Exception ex) {
-            Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
-            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            ConfigEditorNotifier.show("config_editor_sync_full_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
         }
     }
 
@@ -847,19 +814,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.canSyncToServer()) {
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+        if (!ConfigEditorSyncService.hasServerConnection()) {
+            ConfigEditorNotifier.show("config_editor_fetch_not_connected", 3500);
             return;
         }
         try {
-            PacketUtils.sendPacketToServer(new ConfigFetchRequestToServer(holder.getConfigName()));
+            ConfigEditorSyncService.requestSnapshot(holder);
         } catch (Exception ex) {
-            Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
-            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            ConfigEditorNotifier.show("config_editor_fetch_send_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
         }
     }
 
@@ -884,22 +846,6 @@ public class ConfigEditorScreen extends BaniraScreen {
                 e.getValue().setValue(v);
             }
         }
-    }
-
-    private Object parseValue(String path, String value) {
-        Object decoded = ConfigSyncToServer.decodeNetworkValue(holder, path, value);
-        ConfigEntryDescriptor desc = holder.getDescriptor(path);
-        if (desc != null && desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE && decoded instanceof Double) {
-            double d = (Double) decoded;
-            int dp = desc.getDecimalPlaces();
-            double factor = Math.pow(10, dp);
-            return Math.round(d * factor) / factor;
-        }
-        return decoded;
-    }
-
-    private String serializeValue(Object value) {
-        return ConfigSyncToServer.encodeConfigValue(value);
     }
 
     private void collectModifiedFromWidgets() {
@@ -1057,37 +1003,13 @@ public class ConfigEditorScreen extends BaniraScreen {
         return false;
     }
 
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
     public static class Args {
         private Screen parentScreen;
         private BaniraColorConfig theme;
         private EnumSeason season;
-
-        public Args parentScreen(Screen s) {
-            parentScreen = s;
-            return this;
-        }
-
-        public Args theme(BaniraColorConfig t) {
-            theme = t;
-            return this;
-        }
-
-        public Args season(EnumSeason s) {
-            season = s;
-            return this;
-        }
-
-        public Screen parentScreen() {
-            return parentScreen;
-        }
-
-        public BaniraColorConfig theme() {
-            return theme;
-        }
-
-        public EnumSeason season() {
-            return season;
-        }
     }
 
     private interface IConfigEntryWidget {

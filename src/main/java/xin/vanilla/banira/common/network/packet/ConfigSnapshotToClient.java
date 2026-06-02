@@ -1,19 +1,9 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.gui.ConfigEditorScreen;
-import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigRegistry;
-import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.internal.client.ConfigSnapshotClientHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +12,6 @@ import java.util.Map;
  * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
  */
 public class ConfigSnapshotToClient implements NetworkPacket {
-
-    private static final Logger LOGGER = LogManager.getLogger();
 
     private final String configName;
     private final Map<String, String> snapshot;
@@ -66,46 +54,8 @@ public class ConfigSnapshotToClient implements NetworkPacket {
             if (!ctx.isClientReception()) {
                 return;
             }
-            ClientSide.apply(packet);
+            ConfigSnapshotClientHandler.apply(packet);
         });
         ctx.markHandled();
-    }
-
-    private static final class ClientSide {
-
-        private ClientSide() {
-        }
-
-        private static void apply(ConfigSnapshotToClient packet) {
-            ConfigHolder holder = ConfigRegistry.get(packet.configName());
-            if (holder == null) {
-                return;
-            }
-            try {
-                for (Map.Entry<String, String> e : packet.snapshot().entrySet()) {
-                    Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
-                    }
-                }
-                holder.save();
-            } catch (Exception ex) {
-                LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
-                Notification err = Notification.ofComponent(
-                        BaniraComponent.get().transClientAuto("config_editor_fetch_apply_failed",
-                                ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
-                err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-                NotificationManager.get().addNotification(err);
-                return;
-            }
-            Screen open = Minecraft.getInstance().screen;
-            if (open instanceof ConfigEditorScreen) {
-                ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(packet.configName());
-            }
-            Notification ok = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));
-            ok.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(ok);
-        }
     }
 }

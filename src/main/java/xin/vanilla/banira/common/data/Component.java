@@ -386,7 +386,7 @@ public final class Component implements Cloneable, Serializable {
             if (obj instanceof Component) {
                 this.getChildren().add(index + i, ((Component) obj).withStyle(this));
             } else {
-                this.getChildren().add(index + i, new Component(obj.toString()).withStyle(this));
+                this.getChildren().add(index + i, new Component(String.valueOf(obj)).withStyle(this));
             }
         }
         return this;
@@ -402,7 +402,7 @@ public final class Component implements Cloneable, Serializable {
             if (obj instanceof Component) {
                 this.getArgs().add(index + i, ((Component) obj).withStyle(this));
             } else {
-                this.getArgs().add(index + i, new Component(obj.toString()).withStyle(this));
+                this.getArgs().add(index + i, new Component(String.valueOf(obj)).withStyle(this));
             }
         }
         return this;
@@ -801,11 +801,15 @@ public final class Component implements Cloneable, Serializable {
     }
 
     static Component transAuto(String key, Object... args) {
-        return new Component(key, EnumI18nType.FORMAT).appendArg(args);
+        return hasArgs(args)
+                ? new Component(key, EnumI18nType.FORMAT).appendArg(args)
+                : transAuto(key);
     }
 
     static Component transAuto(String modId, String key, Object... args) {
-        return new Component(modId, key, EnumI18nType.FORMAT).appendArg(args);
+        return hasArgs(args)
+                ? new Component(modId, key, EnumI18nType.FORMAT).appendArg(args)
+                : transAuto(modId, key);
     }
 
 
@@ -838,11 +842,19 @@ public final class Component implements Cloneable, Serializable {
     }
 
     static Component transClientAuto(String key, Object... args) {
-        return new Component(key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
+        return hasArgs(args)
+                ? new Component(key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args)
+                : transClientAuto(key);
     }
 
     static Component transClientAuto(String modId, String key, Object... args) {
-        return new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args);
+        return hasArgs(args)
+                ? new Component(modId, key, EnumI18nType.FORMAT).languageCode(Translator::getClientLanguage).appendArg(args)
+                : transClientAuto(modId, key);
+    }
+
+    private static boolean hasArgs(Object... args) {
+        return args != null && args.length > 0;
     }
 
     static Component transLang(String languageCode, String key, Object... args) {

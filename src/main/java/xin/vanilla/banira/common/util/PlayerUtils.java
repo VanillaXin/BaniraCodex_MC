@@ -10,7 +10,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.Texture;
@@ -73,7 +72,7 @@ public final class PlayerUtils {
      * 获取所有玩家
      */
     public static List<ServerPlayerEntity> getAllPlayers() {
-        return BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().players() : java.util.Collections.emptyList();
     }
 
     /**
@@ -180,11 +179,7 @@ public final class PlayerUtils {
      */
     @Nullable
     public static ServerPlayerEntity getServerPlayerByUUID(UUID uuid) {
-        try {
-            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
-        } catch (Throwable ignored) {
-            return null;
-        }
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().player(uuid) : null;
     }
 
     /**

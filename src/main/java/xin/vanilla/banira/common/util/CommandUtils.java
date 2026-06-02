@@ -19,7 +19,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
@@ -29,6 +28,7 @@ import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -137,11 +137,9 @@ public final class CommandUtils {
      * 刷新玩家权限
      */
     public static void refreshPermission(@NonNull ServerPlayerEntity player) {
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            server = BaniraCodex.serverInstance().key();
+        if (BaniraPlatforms.isInstalled()) {
+            BaniraPlatforms.get().server().refreshPlayerPermission(player);
         }
-        server.getPlayerList().sendPlayerPermissionLevel(player);
     }
 
 

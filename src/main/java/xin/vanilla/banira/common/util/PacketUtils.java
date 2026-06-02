@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
@@ -21,21 +20,19 @@ public final class PacketUtils {
     }
 
     public static void broadcastPacket(IPacket<?> packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                player.connection.send(packet)
-        );
+        BaniraPlatforms.get().server().broadcastRawPacket(packet);
     }
 
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
         BaniraNetworkChannel channel = msg.networkChannel();
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        PlayerUtils.getAllPlayers().forEach(player ->
                 sendPacketToPlayer(channel, msg, player)
         );
     }
 
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
         BaniraNetworkChannel channel = packet.networkChannel();
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        PlayerUtils.getAllPlayers().forEach(player ->
                 sendSplitPacketToPlayer(channel, packet, player)
         );
     }

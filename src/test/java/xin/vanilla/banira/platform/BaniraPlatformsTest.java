@@ -8,6 +8,7 @@ import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
@@ -150,6 +151,38 @@ public class BaniraPlatformsTest {
                 @Override
                 public xin.vanilla.banira.common.data.WorldCoordinate findNearestStructure(net.minecraft.world.server.ServerWorld world, xin.vanilla.banira.common.data.WorldCoordinate start, net.minecraft.world.gen.feature.structure.Structure<?> structure, int radius) {
                     return null;
+                }
+            };
+        }
+
+        @Override
+        public BaniraServerService server() {
+            return new BaniraServerService() {
+                @Override
+                public net.minecraft.server.MinecraftServer currentServer() {
+                    return null;
+                }
+
+                @Override
+                public java.util.List<net.minecraft.entity.player.ServerPlayerEntity> players() {
+                    return java.util.Collections.emptyList();
+                }
+
+                @Override
+                public net.minecraft.entity.player.ServerPlayerEntity player(UUID uuid) {
+                    return null;
+                }
+
+                @Override
+                public void broadcastRawPacket(net.minecraft.network.IPacket<?> packet) {
+                }
+
+                @Override
+                public void broadcastSystemMessage(net.minecraft.server.MinecraftServer server, net.minecraft.util.text.ITextComponent message) {
+                }
+
+                @Override
+                public void refreshPlayerPermission(net.minecraft.entity.player.ServerPlayerEntity player) {
                 }
             };
         }

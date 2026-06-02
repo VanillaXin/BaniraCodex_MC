@@ -3,9 +3,9 @@ package xin.vanilla.banira.common.util;
 import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.ScheduledTask;
 import xin.vanilla.banira.common.data.WallClockScheduledTask;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -65,7 +65,7 @@ public final class BaniraScheduler {
     }
 
     private static void onServerTickEnd() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().currentServer() : null;
         if (server == null) return;
 
         runTask(server.getTickCount(), serverTasks, serverExecutedCount);

@@ -8,10 +8,10 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.resources.IResourceManager;
 import net.minecraft.resources.IResourcePack;
 import net.minecraft.resources.ResourcePackType;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -238,8 +238,9 @@ public class Translator implements ITranslator {
     private void loadFromResourceManager() {
         try {
             IResourceManager manager;
-            if (BaniraCodex.serverInstance().val()) {
-                manager = BaniraCodex.serverInstance().key().getDataPackRegistries().getResourceManager();
+            MinecraftServer server = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().currentServer() : null;
+            if (server != null) {
+                manager = server.getDataPackRegistries().getResourceManager();
             } else {
                 manager = net.minecraft.client.Minecraft.getInstance().getResourceManager();
             }

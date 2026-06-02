@@ -11,6 +11,7 @@ import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
@@ -23,6 +24,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraWorldService world = new ForgeBaniraWorldService();
+    private final BaniraServerService server = new ForgeBaniraServerService();
 
     @Override
     public String loaderType() {
@@ -107,5 +109,10 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraWorldService world() {
         return world;
+    }
+
+    @Override
+    public BaniraServerService server() {
+        return server;
     }
 }

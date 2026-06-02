@@ -592,13 +592,4 @@ public final class StringUtils {
         return 2;
     }
 
-
-    public static void main(String[] args) {
-        System.out.println(format("%2$s-%1$s-%1$s", "a", "b"));
-        System.out.println(format("%1$s-%2$s", "hello", "world"));
-        System.out.println(format("%2$s-%1$s-%1$s-%2$s", "apple", "banana"));
-        System.out.println(format("%s-%d-%f", "Test", 5, 3.1415));
-        System.out.println(format("%s-%s-%s-%s", "a", "b", "c"));
-        System.out.println(format("%1$s-%2$s-%3$s-%4$s", "x", "y", "z"));
-    }
 }

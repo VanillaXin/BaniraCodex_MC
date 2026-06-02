@@ -1051,34 +1051,4 @@ public class SafeExpressionEvaluator {
         }
         return null;
     }
-
-    public static void main(String[] args) {
-        Map<String, Object> vars = new HashMap<>();
-        vars.put("team", "Red");
-        vars.put("playerTeam", "Blue");
-        vars.put("name", "Alex");
-        vars.put("playerX", 100.0);
-        vars.put("playerY", null);
-        vars.put("b", true);
-        vars.put("clazz", Number.class);
-        vars.put("clazzString", "java.lang.Double");
-        List<Number> list = new ArrayList<>();
-        list.add(100.0);
-        vars.put("list", list);
-
-        System.out.println("1: " + new SafeExpressionEvaluator("team == 'Red' && playerTeam != 'Red'").evaluateBoolean(vars));
-        System.out.println("2: " + new SafeExpressionEvaluator("team == 'Red' || playerTeam == 'Red'").evaluateBoolean(vars));
-        System.out.println("3: " + new SafeExpressionEvaluator("((name == 'Alex' && team == 'Red') || playerTeam == 'Red')").evaluateBoolean(vars));
-        System.out.println("4: " + new SafeExpressionEvaluator("playerX == null && playerY != null").evaluateBoolean(vars));
-        System.out.println("5: " + new SafeExpressionEvaluator("!(playerX == null && playerY != null)").evaluateBoolean(vars));
-        System.out.println("6: " + new SafeExpressionEvaluator("!b").evaluateBoolean(vars));
-        System.out.println("7: " + new SafeExpressionEvaluator("!false").evaluateBoolean(vars));
-        System.out.println("8: " + new SafeExpressionEvaluator("true").evaluateBoolean(vars));
-        System.out.println("9: " + new SafeExpressionEvaluator("'100' == 100 && '123' > 100").evaluateBoolean(vars));
-        System.out.println("10: " + new SafeExpressionEvaluator("clazzString :> clazz").evaluateBoolean(vars));
-        System.out.println("11: " + new SafeExpressionEvaluator("clazzString <: clazz").evaluateBoolean(vars));
-        System.out.println("12: " + new SafeExpressionEvaluator("list.contains(playerX)").evaluateBoolean(vars));
-        System.out.println("13: " + new SafeExpressionEvaluator("clazzString == 'java.lang.Double'").evaluateBoolean(vars));
-        System.out.println("14: " + new SafeExpressionEvaluator("clazzString == java.lang.Double").evaluateBoolean(vars));
-    }
 }

@@ -209,33 +209,4 @@ public final class RandomStringUtils {
         ANY_CHARACTER
     }
 
-
-    public static void main(String[] args) {
-        // 生成10位数字字符串
-        System.out.println("数字: " + generate(10, CharSource.DIGITS));
-
-        // 生成8位字母字符串
-        System.out.println("字母: " + generate(8, CharSource.LETTERS));
-
-        // 生成12位字母数字混合字符串
-        System.out.println("字母数字: " + generate(12, CharSource.ALPHANUMERIC));
-
-        // 生成包含特殊字符的字符串
-        System.out.println("特殊字符: " + generate(15, CharSource.SPECIAL_CHARACTERS));
-
-        // 生成任意Unicode字符
-        System.out.println("任意字符: " + generateAnyCharacter(5));
-
-        // 使用自定义字符集
-        System.out.println("自定义: " + generateFromCustom(6, "甲乙丙丁戊己庚辛壬癸"));
-
-        // 使用多种选项组合
-        System.out.println("组合: " + generate(10, true, true, true, false));
-
-        // 生成随机中文字符串
-        System.out.println("中文: " + generateChinese(10));
-
-        // 使用CharSource枚举生成中文字符串
-        System.out.println("中文(枚举): " + generate(10, CharSource.CHINESE));
-    }
 }

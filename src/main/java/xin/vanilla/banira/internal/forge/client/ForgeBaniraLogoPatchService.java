@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraLogoPatchService;
+import xin.vanilla.banira.internal.forge.util.ForgeInternalFieldAccess;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -39,7 +40,9 @@ public final class ForgeBaniraLogoPatchService {
                 if (!customLogo.isPresent()) {
                     continue;
                 }
-                writeLogoField(info, fieldName, customLogo);
+                if (!ForgeInternalFieldAccess.writeObjectField(ModInfo.class, info, fieldName, customLogo)) {
+                    LOGGER.debug("Failed to patch Forge mod logo field {}", fieldName);
+                }
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to modify mod logos", e);
@@ -60,7 +63,7 @@ public final class ForgeBaniraLogoPatchService {
         for (String name : findOptionalFieldNames(ModInfo.class)) {
             try {
                 @SuppressWarnings("unchecked")
-                Optional<String> logo = (Optional<String>) readField(ModInfo.class, sample, name);
+                Optional<String> logo = (Optional<String>) ForgeInternalFieldAccess.readField(ModInfo.class, sample, name);
                 if (logo != null && logo.isPresent()
                         && StringUtils.isNotNullOrEmpty(logo.get())
                         && logo.get().matches(".*\\.png$")) {
@@ -85,31 +88,5 @@ public final class ForgeBaniraLogoPatchService {
             }
         }
         return names;
-    }
-
-    private static Object readField(Class<?> clazz, Object instance, String fieldName) throws ReflectiveOperationException {
-        Field field = clazz.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(instance);
-    }
-
-    private static void writeLogoField(ModInfo info, String fieldName, Optional<String> customLogo) {
-        try {
-            Field field = ModInfo.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            if (Modifier.isFinal(field.getModifiers())) {
-                clearFinalModifier(field);
-            }
-            field.set(info, customLogo);
-        } catch (ReflectiveOperationException e) {
-            LOGGER.debug("Failed to patch Forge mod logo field {}", fieldName, e);
-        }
-    }
-
-    private static void clearFinalModifier(Field field) throws ReflectiveOperationException {
-        // Forge 1.16.x 的 ModInfo 元数据字段可能为 final；这里限制在 loader adapter 内处理。
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
     }
 }

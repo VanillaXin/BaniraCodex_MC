@@ -157,7 +157,10 @@ public final class FieldUtils {
     }
 
     /**
-     * 设置 类中声明的私有 target 字段值。
+     * 设置类中声明的非 final 字段值。
+     * <p>
+     * 这里不再使用 Unsafe 绕过 JVM 限制；如果需要改写 Minecraft/加载器的 final 内部字段，
+     * 应放在对应 loader/version 的 internal adapter 或 Mixin accessor 中处理。
      *
      * @param clazz     类
      * @param instance  实例 (若为static字段应传null)
@@ -169,7 +172,7 @@ public final class FieldUtils {
     }
 
     /**
-     * 设置 类中声明的私有 target 字段值，并可选向上查找父类。
+     * 设置类中声明的非 final 字段值，并可选向上查找父类。
      */
     public static void setPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
         Field field = findField(clazz, fieldName, parent);

@@ -1,12 +1,12 @@
-package xin.vanilla.banira.common.util;
+package xin.vanilla.banira.internal.client;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 颜文字（Kaomoji）工具类
+ * 调试界面使用的颜文字文本池。
  */
-public final class KaomojiUtils {
-    private KaomojiUtils() {
+public final class KaomojiTexts {
+    private KaomojiTexts() {
     }
 
     // region 难过

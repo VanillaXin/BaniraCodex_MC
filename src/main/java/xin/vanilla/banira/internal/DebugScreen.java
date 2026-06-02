@@ -28,6 +28,7 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.client.KaomojiTexts;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -128,7 +129,7 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.text("按钮长按测试");
         // longPressBtn.onClick(b -> ConfigEditorScreen.open(xin.vanilla.banira.internal.config.TestConfig.get().holder(), this));
         longPressBtn.onLongPress(1000L, b -> {
-            Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
+            Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiTexts.random()));
             n.durationTime(3000);
             NotificationManager.get().addNotification(n);
             int ordinal = longPressBtn.longPressProgressMode().ordinal();

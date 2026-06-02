@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,35 +13,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-@SuppressWarnings("sunapi")
 public final class FieldUtils {
     private FieldUtils() {
     }
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final String UNSAFE_FIELD_NAME;
-    private static final Unsafe UNSAFE;
-
-
     /**
      * 缓存字段
      */
     private static final Map<Class<?>, Map<String, Field>> FIELD_CACHE = new ConcurrentHashMap<>();
-
-    static {
-        try {
-            List<String> names = getPrivateFieldNames(Unsafe.class, Unsafe.class);
-            if (CollectionUtils.isNotNullOrEmpty(names)) {
-                UNSAFE_FIELD_NAME = names.get(0);
-            } else {
-                UNSAFE_FIELD_NAME = "theUnsafe";
-            }
-            UNSAFE = (Unsafe) getPrivateFieldValue(Unsafe.class, null, UNSAFE_FIELD_NAME);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to access Unsafe instance", e);
-        }
-    }
 
     public static Class<?> getClass(Object o) {
         return o == null ? null : o.getClass();
@@ -177,7 +157,7 @@ public final class FieldUtils {
     }
 
     /**
-     * 设置 类中声明的私有 target 字段值 (支持private+final+static)
+     * 设置 类中声明的私有 target 字段值。
      *
      * @param clazz     类
      * @param instance  实例 (若为static字段应传null)
@@ -189,7 +169,7 @@ public final class FieldUtils {
     }
 
     /**
-     * 设置 类中声明的私有 target 字段值 (支持private+final+static) 并可选向上查找父类
+     * 设置 类中声明的私有 target 字段值，并可选向上查找父类。
      */
     public static void setPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
         Field field = findField(clazz, fieldName, parent);
@@ -199,12 +179,11 @@ public final class FieldUtils {
         }
         try {
             field.setAccessible(true);
-
-            if (Modifier.isStatic(field.getModifiers())) {
-                setStaticFieldByUnsafe(field, value);
-            } else {
-                setInstanceFieldByUnsafe(instance, field, value);
+            if (Modifier.isFinal(field.getModifiers())) {
+                LOGGER.debug("Skip setting final field {} on {} without unsafe access", fieldName, clazz.getName());
+                return;
             }
+            field.set(instance, value);
         } catch (Exception e) {
             LOGGER.error("Failed to set private field {} from {}", fieldName, clazz.getName(), e);
         }
@@ -239,17 +218,6 @@ public final class FieldUtils {
             cur = cur.getSuperclass();
         }
         return null;
-    }
-
-    private static void setInstanceFieldByUnsafe(Object instance, Field field, Object value) {
-        long offset = UNSAFE.objectFieldOffset(field);
-        UNSAFE.putObject(instance, offset, value);
-    }
-
-    private static void setStaticFieldByUnsafe(Field field, Object value) {
-        Object base = UNSAFE.staticFieldBase(field);
-        long offset = UNSAFE.staticFieldOffset(field);
-        UNSAFE.putObject(base, offset, value);
     }
 
     public static Object newInstanceFromClassName(String className) {

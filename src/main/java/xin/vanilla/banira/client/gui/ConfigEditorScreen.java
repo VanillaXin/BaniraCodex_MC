@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
@@ -20,7 +19,6 @@ import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -45,21 +43,10 @@ public class ConfigEditorScreen extends BaniraScreen {
     private final ConfigEditorRowFactory rowFactory;
     private final ConfigEditorContentTreeBuilder contentTreeBuilder;
     private final ConfigEditorActionBar actionBar;
+    private final ConfigEditorViewportModel viewport;
 
     private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
-    private double scrollOffset = 0;
-    private int contentHeight = 0;
-    private int cardX;
-    private int cardY;
-    private int cardW;
-    private int cardH;
-    private int listTop;
-    private int listAreaHeight;
-    private int maxListHeight;
-    private int contentLeft;
-    private int contentW;
-    private int contentTotalW;
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
@@ -71,6 +58,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                 this::syncContentHeight, ROW_HEIGHT, ROW_GAP);
         this.actionBar = new ConfigEditorActionBar(this, holder, this::saveConfig, this::fetchConfigFromServer,
                 this::syncToServer, this::syncToServerFull, this::onClose);
+        this.viewport = new ConfigEditorViewportModel(CARD_MARGIN, CARD_INNER, SCROLL_WIDTH, SCROLL_GAP);
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
@@ -83,21 +71,11 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     @Override
     protected void initWidgets() {
-        int w = width;
-        int h = height;
-        cardX = CARD_MARGIN;
-        cardY = CARD_MARGIN;
-        cardW = w - CARD_MARGIN * 2;
-        cardH = h - CARD_MARGIN * 2;
-        contentLeft = cardX + CARD_INNER;
-        contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
-        contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        listTop = cardY + CARD_INNER;
+        viewport.resize(width, height);
         editorState.clearEntries();
         actionBar.rebuildButtons();
 
-        contentRootPanel = contentTreeBuilder.build(contentW);
-        contentHeight = (int) contentRootPanel.height();
+        contentRootPanel = contentTreeBuilder.build(viewport.contentW());
         addWidget(contentRootPanel);
 
         scrollbar = new ScrollbarWidget(this);
@@ -105,7 +83,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         scrollbar.orientation(EnumOrientation.VERTICAL);
         scrollbar.minValue(0);
         scrollbar.onValueChanged(v -> {
-            scrollOffset = v;
+            viewport.applyScrollbarValue(v);
             updateWidgetPositions();
         });
         addWidget(scrollbar);
@@ -121,41 +99,21 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void syncContentHeight() {
         if (contentRootPanel != null) {
             contentRootPanel.refreshLayout();
-            contentHeight = (int) contentRootPanel.height();
             updateLayout();
             updateWidgetPositions();
         }
     }
 
     private void updateLayout() {
-        maxListHeight = actionBar.maxScrollableHeight(cardH, CARD_INNER);
-
-        if (contentHeight <= maxListHeight) {
-            listAreaHeight = Math.max(1, contentHeight);
-            scrollOffset = 0;
-            scrollbar.maxValue(0);
-            scrollbar.value(0);
-            scrollbar.visible(false);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
-        } else {
-            listAreaHeight = maxListHeight;
-            scrollbar.visible(true);
-            scrollbar.bounds(new ScreenCoordinate(contentLeft + contentW + SCROLL_GAP, listTop, SCROLL_WIDTH, listAreaHeight));
-            scrollbar.maxValue(Math.max(0, contentHeight - listAreaHeight));
-            scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
-            scrollOffset = scrollbar.value();
-            scrollbar.visibleSize(listAreaHeight);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
-            scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
-        }
-
-        actionBar.layout(cardX, cardY, cardW, cardH, CARD_INNER, b -> font.width(b.text().toString()));
+        int contentHeight = contentRootPanel != null ? (int) contentRootPanel.height() : 0;
+        int maxListHeight = actionBar.maxScrollableHeight(viewport.cardH(), CARD_INNER);
+        viewport.layoutContent(contentHeight, maxListHeight, scrollbar);
+        actionBar.layout(viewport.cardX(), viewport.cardY(), viewport.cardW(), viewport.cardH(), CARD_INNER,
+                b -> font.width(b.text().toString()));
     }
 
     private void updateWidgetPositions() {
-        if (contentRootPanel != null) {
-            contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
-        }
+        viewport.applyContentBounds(contentRootPanel);
     }
 
     private void saveConfig() {
@@ -255,10 +213,11 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(MatrixStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        actionBar.renderChrome(stack, theme, cardX, cardY, cardW, cardH, CARD_INNER);
+        actionBar.renderChrome(stack, theme, viewport.cardX(), viewport.cardY(), viewport.cardW(), viewport.cardH(),
+                CARD_INNER);
 
         ConfigEditorViewportRenderer.renderScrolledContent(stack, partialTicks, contentRootPanel, scrollbar,
-                contentLeft, listTop, contentTotalW, listAreaHeight);
+                viewport.contentLeft(), viewport.listTop(), viewport.contentTotalW(), viewport.listAreaHeight());
         actionBar.renderButtons(stack, partialTicks);
         ConfigEditorViewportRenderer.renderOverlayWidgets(widgets(), stack, partialTicks,
                 widget -> widget == contentRootPanel || widget == scrollbar || actionBar.contains(widget));
@@ -280,10 +239,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             return true;
         }
         if (scrollbar != null && delta != 0) {
-            double newVal = scrollbar.value() - delta * 20;
-            newVal = Math.max(scrollbar.minValue(), Math.min(scrollbar.maxValue(), newVal));
-            scrollbar.value(newVal);
-            scrollOffset = newVal;
+            viewport.scrollBy(delta, scrollbar);
             updateWidgetPositions();
             return true;
         }

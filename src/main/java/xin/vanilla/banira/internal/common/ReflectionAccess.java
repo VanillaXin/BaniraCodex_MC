@@ -1,4 +1,4 @@
-package xin.vanilla.banira.common.util;
+package xin.vanilla.banira.internal.common;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,8 +13,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-public final class FieldUtils {
-    private FieldUtils() {
+/**
+ * Banira 内部普通反射工具；不作为子 mod 公共 API 暴露。
+ */
+public final class ReflectionAccess {
+    private ReflectionAccess() {
     }
 
     private static final Logger LOGGER = LogManager.getLogger();

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import org.junit.Test;
+import xin.vanilla.banira.internal.common.ReflectionAccess;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,14 +52,14 @@ public class CommonUtilContractTest {
     }
 
     @Test
-    public void fieldUtilsSetsNonFinalPrivateFieldsOnly() {
+    public void reflectionAccessSetsNonFinalPrivateFieldsOnly() {
         FieldTarget target = new FieldTarget();
 
-        FieldUtils.setPrivateFieldValue(FieldTarget.class, target, "mutable", "changed");
-        FieldUtils.setPrivateFieldValue(FieldTarget.class, target, "immutable", "changed");
+        ReflectionAccess.setPrivateFieldValue(FieldTarget.class, target, "mutable", "changed");
+        ReflectionAccess.setPrivateFieldValue(FieldTarget.class, target, "immutable", "changed");
 
-        assertEquals("changed", FieldUtils.getPrivateFieldValue(FieldTarget.class, target, "mutable"));
-        assertEquals("initial", FieldUtils.getPrivateFieldValue(FieldTarget.class, target, "immutable"));
+        assertEquals("changed", ReflectionAccess.getPrivateFieldValue(FieldTarget.class, target, "mutable"));
+        assertEquals("initial", ReflectionAccess.getPrivateFieldValue(FieldTarget.class, target, "immutable"));
     }
 
     private static final class FieldTarget {

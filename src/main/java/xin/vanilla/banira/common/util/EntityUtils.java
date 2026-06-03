@@ -2,24 +2,20 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 public final class EntityUtils {
     private EntityUtils() {
@@ -257,12 +253,9 @@ public final class EntityUtils {
 
     public static List<Entity> getAllEntities() {
         List<Entity> entities = new ArrayList<>();
-        KeyValue<MinecraftServer, Boolean> serverInstance = BaniraCodex.serverInstance();
-        if (serverInstance.val()) {
-            serverInstance.key().getAllLevels()
-                    .forEach(level -> entities.addAll(level.getEntities()
-                            .collect(Collectors.toList()))
-                    );
+        if (BaniraPlatforms.isInstalled()) {
+            BaniraPlatforms.get().world().loadedServerWorlds()
+                    .forEach(level -> level.getEntities().forEach(entities::add));
         }
         return entities;
     }

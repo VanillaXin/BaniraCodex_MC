@@ -8,9 +8,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.storage.FolderName;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -69,5 +71,23 @@ public final class ForgeBaniraServerService implements BaniraServerService {
     public IResourceManager serverResourceManager() {
         MinecraftServer server = currentServer();
         return server != null ? server.getDataPackRegistries().getResourceManager() : null;
+    }
+
+    @Override
+    public Path worldDataPath(String directoryName) {
+        MinecraftServer server = currentServer();
+        return server != null && directoryName != null ? server.getWorldPath(new FolderName(directoryName)) : null;
+    }
+
+    @Override
+    public Path worldPlayerDataPath() {
+        MinecraftServer server = currentServer();
+        return server != null ? server.getWorldPath(FolderName.PLAYER_DATA_DIR) : null;
+    }
+
+    @Override
+    public long tickCount() {
+        MinecraftServer server = currentServer();
+        return server != null ? server.getTickCount() : 0;
     }
 }

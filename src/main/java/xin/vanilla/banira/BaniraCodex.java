@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.storage.FolderName;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
@@ -26,10 +25,9 @@ public final class BaniraCodex {
     public static final String ARTIFACT_ID = "xin.vanilla";
 
     public static final String VANILLA_XIN = "vanilla.xin";
-    public static final FolderName BANIRA_DIR = new FolderName(VANILLA_XIN);
 
-    public static final Supplier<Path> BANIRA_WORLD_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR);
-    public static final Supplier<Path> BANIRA_PLAYER_DATA_PATH = () -> serverInstance().key().getWorldPath(BANIRA_DIR).resolve("playerdata");
+    public static final Supplier<Path> BANIRA_WORLD_DATA_PATH = BaniraCodex::baniraWorldDataPath;
+    public static final Supplier<Path> BANIRA_PLAYER_DATA_PATH = BaniraCodex::baniraPlayerDataPath;
     public static final Supplier<Path> BANIRA_CONFIG_PATH = () -> BaniraPlatforms.get().configDir().resolve(VANILLA_XIN);
 
     @Getter
@@ -37,7 +35,7 @@ public final class BaniraCodex {
 
     public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
             BANIRA_PLAYER_DATA_PATH,
-            () -> serverInstance().key().getWorldPath(FolderName.PLAYER_DATA_DIR),
+            () -> BaniraPlatforms.get().server().worldPlayerDataPath(),
             MODID,
             "",
             StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
@@ -46,6 +44,15 @@ public final class BaniraCodex {
     private static volatile boolean commonBootstrapped = false;
 
     private BaniraCodex() {
+    }
+
+    private static Path baniraWorldDataPath() {
+        return BaniraPlatforms.get().server().worldDataPath(VANILLA_XIN);
+    }
+
+    private static Path baniraPlayerDataPath() {
+        Path worldDataPath = baniraWorldDataPath();
+        return worldDataPath != null ? worldDataPath.resolve("playerdata") : null;
     }
 
     /**
@@ -71,9 +78,8 @@ public final class BaniraCodex {
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
         BaniraEventBus.Server.onTickEnd(() -> {
-            MinecraftServer server = serverInstance().key();
-            if (server == null) return;
-            if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
+            long tick = BaniraPlatforms.get().server().tickCount();
+            if (tick > 0 && tick % CONFIG_SAVE_INTERVAL_TICKS == 0) {
                 if (!CustomConfig.loadCustomConfig(true)) {
                     CustomConfig.saveCustomConfig();
                 }

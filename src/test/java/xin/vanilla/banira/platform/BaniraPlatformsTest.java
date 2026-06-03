@@ -214,6 +214,11 @@ public class BaniraPlatformsTest {
                 }
 
                 @Override
+                public java.util.Collection<net.minecraft.world.server.ServerWorld> loadedServerWorlds() {
+                    return java.util.Collections.emptyList();
+                }
+
+                @Override
                 public RegistryKey<World> dimensionKey(ResourceLocation dimension) {
                     return World.OVERWORLD;
                 }
@@ -278,6 +283,21 @@ public class BaniraPlatformsTest {
                 @Override
                 public net.minecraft.resources.IResourceManager serverResourceManager() {
                     return null;
+                }
+
+                @Override
+                public java.nio.file.Path worldDataPath(String directoryName) {
+                    return java.nio.file.Paths.get("world", directoryName == null ? "" : directoryName);
+                }
+
+                @Override
+                public java.nio.file.Path worldPlayerDataPath() {
+                    return java.nio.file.Paths.get("world", "playerdata");
+                }
+
+                @Override
+                public long tickCount() {
+                    return 0;
                 }
             };
         }

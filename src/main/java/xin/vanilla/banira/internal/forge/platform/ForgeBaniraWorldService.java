@@ -14,9 +14,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -68,6 +66,15 @@ public final class ForgeBaniraWorldService implements BaniraWorldService {
         if (dimension == null) return null;
         MinecraftServer server = BaniraCodex.serverInstance().key();
         return server != null ? server.getLevel(dimension) : null;
+    }
+
+    @Override
+    public Collection<ServerWorld> loadedServerWorlds() {
+        MinecraftServer server = BaniraCodex.serverInstance().key();
+        if (server == null) return Collections.emptyList();
+        List<ServerWorld> worlds = new ArrayList<>();
+        server.getAllLevels().forEach(worlds::add);
+        return worlds;
     }
 
     @Override

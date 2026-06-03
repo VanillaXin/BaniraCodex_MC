@@ -8,6 +8,7 @@ import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.server.ServerWorld;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -23,6 +24,11 @@ public interface BaniraWorldService {
     WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance);
 
     ServerWorld level(RegistryKey<World> dimension);
+
+    /**
+     * 当前服务端已加载世界的快照列表；各版本的 server world 遍历差异留在 adapter 内。
+     */
+    Collection<ServerWorld> loadedServerWorlds();
 
     RegistryKey<World> dimensionKey(ResourceLocation dimension);
 

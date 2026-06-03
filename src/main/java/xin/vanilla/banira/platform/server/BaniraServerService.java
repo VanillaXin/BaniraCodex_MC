@@ -7,6 +7,7 @@ import net.minecraft.resources.IResourceManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -30,4 +31,10 @@ public interface BaniraServerService {
     Collection<Advancement> advancements();
 
     IResourceManager serverResourceManager();
+
+    Path worldDataPath(String directoryName);
+
+    Path worldPlayerDataPath();
+
+    long tickCount();
 }

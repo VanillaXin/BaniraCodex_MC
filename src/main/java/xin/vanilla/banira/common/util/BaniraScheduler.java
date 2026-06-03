@@ -36,9 +36,19 @@ public final class BaniraScheduler {
         BaniraEventBus.Client.onTickEnd(BaniraScheduler::onClientTickEnd);
     }
 
-    public static void schedule(@Nonnull MinecraftServer server, int delayTicks, @Nonnull Runnable action) {
-        long executeAt = server.getTickCount() + Math.max(0, delayTicks);
+    /**
+     * 服务端刻延迟任务；服务器刻来源由当前分支的 platform adapter 提供。
+     */
+    public static void scheduleServer(int delayTicks, @Nonnull Runnable action) {
+        long executeAt = currentServerTick() + Math.max(0, delayTicks);
         serverTasks.add(ScheduledTask.server(executeAt, action));
+    }
+
+    /**
+     * 兼容旧调用形状，实际不再读取 MinecraftServer#getTickCount。
+     */
+    public static void schedule(@Nonnull MinecraftServer server, int delayTicks, @Nonnull Runnable action) {
+        scheduleServer(delayTicks, action);
     }
 
     public static void schedule(int delayTicks, @Nonnull Runnable action) {
@@ -65,10 +75,9 @@ public final class BaniraScheduler {
     }
 
     private static void onServerTickEnd() {
-        MinecraftServer server = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().currentServer() : null;
-        if (server == null) return;
-
-        runTask(server.getTickCount(), serverTasks, serverExecutedCount);
+        long tick = currentServerTick();
+        if (tick <= 0) return;
+        runTask(tick, serverTasks, serverExecutedCount);
         runWallClockTask(serverWallClockTasks, serverExecutedCount);
     }
 
@@ -123,6 +132,10 @@ public final class BaniraScheduler {
         } catch (Throwable t) {
             LOGGER.error("Failed while executing wall-clock scheduled tasks", t);
         }
+    }
+
+    private static long currentServerTick() {
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().tickCount() : 0;
     }
 
     public static int getServerPendingTaskCount() {

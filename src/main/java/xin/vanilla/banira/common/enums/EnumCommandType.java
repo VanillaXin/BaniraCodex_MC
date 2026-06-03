@@ -1,9 +1,7 @@
 package xin.vanilla.banira.common.enums;
 
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.command.CommandSource;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.command.impl.HelpCommand;
@@ -41,7 +39,7 @@ public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable 
     private final boolean op;
 
     @Nullable
-    private final Supplier<LiteralArgumentBuilder<CommandSource>> instance;
+    private final Supplier<Object> instance;
 
     EnumCommandType() {
         this.instance = null;
@@ -61,13 +59,13 @@ public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable 
         this.op = !this.concise && op;
     }
 
-    EnumCommandType(@Nullable Supplier<LiteralArgumentBuilder<CommandSource>> instance) {
+    EnumCommandType(@Nullable Supplier<Object> instance) {
         this.instance = instance;
         this.ignore = false;
         this.op = !this.concise;
     }
 
-    EnumCommandType(@Nullable Supplier<LiteralArgumentBuilder<CommandSource>> instance, boolean ig, boolean op) {
+    EnumCommandType(@Nullable Supplier<Object> instance, boolean ig, boolean op) {
         this.instance = instance;
         this.ignore = ig;
         this.op = !this.concise && op;

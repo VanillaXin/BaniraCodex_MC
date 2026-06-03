@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -36,7 +34,6 @@ public final class BaniraEventBus {
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Consumer<CommandDispatcher<CommandSource>>> commandDispatcherCallbacks = new ArrayList<>();
     private static final List<Runnable> modCommonSetupRunnables = new ArrayList<>();
 
     private BaniraEventBus() {
@@ -132,15 +129,6 @@ public final class BaniraEventBus {
         }
     }
 
-    public static final class Commands {
-        private Commands() {
-        }
-
-        public static void onRegisterDispatcher(@Nonnull Consumer<CommandDispatcher<CommandSource>> callback) {
-            commandDispatcherCallbacks.add(callback);
-        }
-    }
-
     public static final class ModLifecycle {
         private ModLifecycle() {
         }
@@ -193,10 +181,6 @@ public final class BaniraEventBus {
 
     public static void dispatchPlayerSave(ServerPlayerEntity player) {
         fire(playerSaveCallbacks, player, "player save");
-    }
-
-    public static void dispatchCommandRegistration(CommandDispatcher<CommandSource> dispatcher) {
-        fire(commandDispatcherCallbacks, dispatcher, "register command dispatcher");
     }
 
     public static void dispatchModCommonSetup() {

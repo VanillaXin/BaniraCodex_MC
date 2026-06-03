@@ -16,13 +16,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Forge 1.16.5 command-source and command-argument adapter.
  */
 public final class ForgeBaniraCommandService implements BaniraCommandService {
     private static final Logger LOGGER = LogManager.getLogger();
+    private final List<Consumer<Object>> dispatcherCallbacks = new ArrayList<>();
 
     @Override
     public boolean executePlayerCommand(ServerPlayerEntity player, String command, int permission, boolean suppressedOutput) {
@@ -107,6 +111,24 @@ public final class ForgeBaniraCommandService implements BaniraCommandService {
     public void sendFailure(Object source, ITextComponent message) {
         if (source instanceof CommandSource && message != null) {
             ((CommandSource) source).sendFailure(message);
+        }
+    }
+
+    @Override
+    public void onRegisterDispatcher(Consumer<Object> callback) {
+        if (callback != null) {
+            dispatcherCallbacks.add(callback);
+        }
+    }
+
+    @Override
+    public void dispatchRegisterDispatcher(Object dispatcher) {
+        for (Consumer<Object> callback : dispatcherCallbacks) {
+            try {
+                callback.accept(dispatcher);
+            } catch (Throwable t) {
+                LOGGER.warn("Error executing command dispatcher registration callback", t);
+            }
         }
     }
 

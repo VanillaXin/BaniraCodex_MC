@@ -10,6 +10,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Loader/version-neutral command helpers for vanilla command source and argument APIs.
@@ -36,4 +37,8 @@ public interface BaniraCommandService {
     void sendSuccess(Object source, ITextComponent message, boolean notifyAdmins);
 
     void sendFailure(Object source, ITextComponent message);
+
+    void onRegisterDispatcher(Consumer<Object> callback);
+
+    void dispatchRegisterDispatcher(Object dispatcher);
 }

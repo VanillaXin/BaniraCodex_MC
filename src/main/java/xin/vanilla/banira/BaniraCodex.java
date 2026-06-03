@@ -62,7 +62,7 @@ public final class BaniraCodex {
             CustomConfig.loadCustomConfig(false);
             ModLoadedPresence.register(MODID);
         });
-        BaniraEventBus.Commands.onRegisterDispatcher(BaniraCommand::register);
+        BaniraPlatforms.get().command().onRegisterDispatcher(BaniraCommand::register);
 
         BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
         BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());

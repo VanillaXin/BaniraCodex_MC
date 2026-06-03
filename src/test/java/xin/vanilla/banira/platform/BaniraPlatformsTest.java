@@ -147,6 +147,14 @@ public class BaniraPlatformsTest {
                 @Override
                 public void sendFailure(Object source, net.minecraft.util.text.ITextComponent message) {
                 }
+
+                @Override
+                public void onRegisterDispatcher(java.util.function.Consumer<Object> callback) {
+                }
+
+                @Override
+                public void dispatchRegisterDispatcher(Object dispatcher) {
+                }
             };
         }
 

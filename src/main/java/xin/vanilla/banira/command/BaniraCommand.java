@@ -5,8 +5,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import xin.vanilla.banira.command.impl.HelpCommand;
-import xin.vanilla.banira.command.impl.LanguageCommand;
-import xin.vanilla.banira.command.impl.VirtualOpCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.internal.config.CommonConfig;
@@ -21,16 +19,6 @@ public class BaniraCommand {
      * 帮助信息列表
      */
     public static List<KeyValue<String, EnumCommandType>> HELP_MESSAGE = new ArrayList<>();
-
-    /**
-     * LANGUAGE 子指令结构
-     */
-    public static final LiteralArgumentBuilder<CommandSource> LANGUAGE = LanguageCommand.create();
-
-    /**
-     * VIRTUAL_OP 子指令结构
-     */
-    public static final LiteralArgumentBuilder<CommandSource> VIRTUAL_OP = VirtualOpCommand.create();
 
     /**
      * 与非精简版完全相同的精简版条目不进入帮助列表，避免同一指令出现两行
@@ -94,6 +82,13 @@ public class BaniraCommand {
      *
      * @param dispatcher 命令调度器
      */
+    @SuppressWarnings("unchecked")
+    public static void register(Object dispatcher) {
+        if (dispatcher instanceof CommandDispatcher) {
+            register((CommandDispatcher<CommandSource>) dispatcher);
+        }
+    }
+
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
         refreshHelpMessage();
 
@@ -103,7 +98,10 @@ public class BaniraCommand {
 
         for (EnumCommandType type : EnumCommandType.values()) {
             if (type.instance() != null) {
-                mainCommand.then(type.instance().get());
+                Object child = type.instance().get();
+                if (child instanceof LiteralArgumentBuilder) {
+                    mainCommand.then((LiteralArgumentBuilder<CommandSource>) child);
+                }
             }
         }
         dispatcher.register(mainCommand);

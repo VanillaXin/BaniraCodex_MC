@@ -26,12 +26,15 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -552,8 +555,7 @@ public final class QuickActionOverlay {
         if (!draggingTray) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        boolean left = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean left = InputStateManager.isMousePressing(GLFW.GLFW_MOUSE_BUTTON_LEFT);
         if (!left) {
             draggingTray = false;
             leftDownOnPanel = false;
@@ -564,31 +566,18 @@ public final class QuickActionOverlay {
     }
 
     private double scaledCursorX() {
-        long win = mc().getWindow().getWindow();
-        double[] cx = new double[1];
-        double[] cy = new double[1];
-        GLFW.glfwGetCursorPos(win, cx, cy);
-        int sw = mc().getWindow().getGuiScaledWidth();
-        int fw = Math.max(1, mc().getWindow().getWidth());
-        return cx[0] * sw / fw;
+        return InputStateManager.getGuiCursorPos().key();
     }
 
     private double scaledCursorY() {
-        long win = mc().getWindow().getWindow();
-        double[] cx = new double[1];
-        double[] cy = new double[1];
-        GLFW.glfwGetCursorPos(win, cx, cy);
-        int sh = mc().getWindow().getGuiScaledHeight();
-        int fh = Math.max(1, mc().getWindow().getHeight());
-        return cy[0] * sh / fh;
+        return InputStateManager.getGuiCursorPos().val();
     }
 
     private void pollEditIconDragEnd() {
         if (!editIconDragging) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!InputStateManager.isMousePressing(GLFW.GLFW_MOUSE_BUTTON_LEFT)) {
             finishEditIconDrag(scaledCursorX(), scaledCursorY());
             leftDownOnPanel = false;
             pressStartedSlot = -1;
@@ -643,8 +632,9 @@ public final class QuickActionOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        lastScreenW = mc.getWindow().getGuiScaledWidth();
-        lastScreenH = mc.getWindow().getGuiScaledHeight();
+        KeyValue<Integer, Integer> screenSize = BaniraPlatforms.get().client().guiScaledSize();
+        lastScreenW = screenSize.key();
+        lastScreenH = screenSize.val();
 
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
@@ -812,8 +802,7 @@ public final class QuickActionOverlay {
         int trayYi = (int) Math.round(tlY);
 
         boolean inPanelGrid = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
-        long win = mc().getWindow().getWindow();
-        boolean leftDown = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean leftDown = InputStateManager.isMousePressing(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 
         if (layout.layoutEditMode() && editIconDragging && slotsTotal > 1) {
             if (inPanelGrid) {
@@ -848,8 +837,7 @@ public final class QuickActionOverlay {
         if (!contextScrollbarDragging || !contextOpen) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!InputStateManager.isMousePressing(GLFW.GLFW_MOUSE_BUTTON_LEFT)) {
             contextScrollbarDragging = false;
             return;
         }

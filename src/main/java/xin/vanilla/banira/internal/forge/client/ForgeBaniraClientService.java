@@ -73,6 +73,16 @@ public final class ForgeBaniraClientService implements BaniraClientService {
     }
 
     @Override
+    public long windowHandle() {
+        return Minecraft.getInstance().getWindow().getWindow();
+    }
+
+    @Override
+    public boolean isWindowActive() {
+        return Minecraft.getInstance().isWindowActive();
+    }
+
+    @Override
     public double guiScale() {
         return Minecraft.getInstance().getWindow().getGuiScale();
     }

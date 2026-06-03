@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -11,6 +10,7 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.DoubleBuffer;
 import java.util.HashMap;
@@ -65,7 +65,7 @@ public final class InputStateManager {
     }
 
     private static long getWindowHandle() {
-        return Minecraft.getInstance().getWindow().getWindow();
+        return BaniraPlatforms.get().client().windowHandle();
     }
 
     // endregion
@@ -115,22 +115,24 @@ public final class InputStateManager {
     }
 
     public static KeyValue<Integer, Integer> rawToGui(double rawX, double rawY) {
-        Minecraft mc = Minecraft.getInstance();
-        int w = mc.getWindow().getWidth();
-        int h = mc.getWindow().getHeight();
-        int sw = mc.getWindow().getGuiScaledWidth();
-        int sh = mc.getWindow().getGuiScaledHeight();
+        KeyValue<Integer, Integer> pixel = BaniraPlatforms.get().client().guiPixelSize();
+        KeyValue<Integer, Integer> scaled = BaniraPlatforms.get().client().guiScaledSize();
+        int w = Math.max(1, pixel.key());
+        int h = Math.max(1, pixel.val());
+        int sw = scaled.key();
+        int sh = scaled.val();
         int gx = (int) Math.round(rawX * (double) sw / w);
         int gy = (int) Math.round(rawY * (double) sh / h);
         return new KeyValue<>(gx, gy);
     }
 
     public static KeyValue<Double, Double> guiToRaw(double guiX, double guiY) {
-        Minecraft mc = Minecraft.getInstance();
-        int w = mc.getWindow().getWidth();
-        int h = mc.getWindow().getHeight();
-        int sw = mc.getWindow().getGuiScaledWidth();
-        int sh = mc.getWindow().getGuiScaledHeight();
+        KeyValue<Integer, Integer> pixel = BaniraPlatforms.get().client().guiPixelSize();
+        KeyValue<Integer, Integer> scaled = BaniraPlatforms.get().client().guiScaledSize();
+        int w = pixel.key();
+        int h = pixel.val();
+        int sw = Math.max(1, scaled.key());
+        int sh = Math.max(1, scaled.val());
         double rx = guiX * (double) w / sw;
         double ry = guiY * (double) h / sh;
         return new KeyValue<>(rx, ry);
@@ -486,7 +488,7 @@ public final class InputStateManager {
     }
 
     private void tick() {
-        if (!Minecraft.getInstance().isWindowActive()) {
+        if (!BaniraPlatforms.get().client().isWindowActive()) {
             if (keyActive) {
                 LOGGER.debug("Window is not active, clear all input state");
             }

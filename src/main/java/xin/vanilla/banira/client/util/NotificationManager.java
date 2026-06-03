@@ -2,10 +2,8 @@ package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.experimental.Accessors;
-import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.Style;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -16,12 +14,14 @@ import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -223,18 +223,18 @@ public final class NotificationManager {
     }
 
     public void render(MatrixStack stack) {
-        Minecraft mc = Minecraft.getInstance();
+        KeyValue<Integer, Integer> scaledSize = BaniraPlatforms.get().client().guiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
-                .width(mc.getWindow().getGuiScaledWidth())
-                .height(mc.getWindow().getGuiScaledHeight());
+                .width(scaledSize.key())
+                .height(scaledSize.val());
         long currentTime = System.currentTimeMillis();
 
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        double[] mouse = scaledMouse(mc);
-        double mx = mouse[0];
-        double my = mouse[1];
+        KeyValue<Integer, Integer> mouse = InputStateManager.getGuiCursorPos();
+        double mx = mouse.key();
+        double my = mouse.val();
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
             entry.getValue().removeIf(Notification::finished);
@@ -298,13 +298,6 @@ public final class NotificationManager {
         }
     }
 
-    private static double[] scaledMouse(Minecraft mc) {
-        MainWindow win = mc.getWindow();
-        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
-        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
-        return new double[]{mx, my};
-    }
-
     /**
      * 处理叠加层上的通知点击
      *
@@ -350,11 +343,10 @@ public final class NotificationManager {
         if (mc.screen != null) {
             return;
         }
-        MainWindow win = mc.getWindow();
-        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean down = InputStateManager.isMousePressing(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
         if (down && !prevLeftDown) {
-            double[] m = scaledMouse(mc);
-            tryHandleHudClick(m[0], m[1], 0);
+            KeyValue<Integer, Integer> mouse = InputStateManager.getGuiCursorPos();
+            tryHandleHudClick(mouse.key(), mouse.val(), 0);
         }
         prevLeftDown = down;
     }

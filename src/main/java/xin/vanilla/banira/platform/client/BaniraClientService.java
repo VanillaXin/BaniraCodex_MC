@@ -26,6 +26,10 @@ public interface BaniraClientService {
 
     void bindTexture(ResourceLocation location);
 
+    long windowHandle();
+
+    boolean isWindowActive();
+
     double guiScale();
 
     KeyValue<Integer, Integer> screenSize();
@@ -84,6 +88,16 @@ public interface BaniraClientService {
 
         @Override
         public void bindTexture(ResourceLocation location) {
+        }
+
+        @Override
+        public long windowHandle() {
+            return 0L;
+        }
+
+        @Override
+        public boolean isWindowActive() {
+            return false;
         }
 
         @Override

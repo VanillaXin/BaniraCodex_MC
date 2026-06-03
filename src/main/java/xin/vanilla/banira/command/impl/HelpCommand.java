@@ -124,6 +124,11 @@ public final class HelpCommand {
         return 1;
     }
 
+    @SuppressWarnings("unchecked")
+    public static int executeRaw(Object context) throws CommandSyntaxException {
+        return execute((CommandContext<CommandSource>) context);
+    }
+
     private static Component commandDetailLine(EnumCommandType baseType, String lang) {
         String prefix = BaniraCommand.getCommandPrefix();
         switch (baseType) {

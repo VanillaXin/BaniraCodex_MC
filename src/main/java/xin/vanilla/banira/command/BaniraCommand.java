@@ -1,13 +1,11 @@
 package xin.vanilla.banira.command;
 
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.command.BaniraCommandService;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -82,28 +80,19 @@ public class BaniraCommand {
      *
      * @param dispatcher 命令调度器
      */
-    @SuppressWarnings("unchecked")
     public static void register(Object dispatcher) {
-        if (dispatcher instanceof CommandDispatcher) {
-            register((CommandDispatcher<CommandSource>) dispatcher);
-        }
-    }
-
-    public static void register(CommandDispatcher<CommandSource> dispatcher) {
         refreshHelpMessage();
 
-        LiteralArgumentBuilder<CommandSource> mainCommand = Commands.literal(getCommandPrefix());
+        BaniraCommandService command = BaniraPlatforms.get().command();
+        Object mainCommand = command.literal(getCommandPrefix());
 
-        mainCommand.executes(HelpCommand::execute);
-
+        command.executes(mainCommand, HelpCommand::executeRaw);
         for (EnumCommandType type : EnumCommandType.values()) {
             if (type.instance() != null) {
                 Object child = type.instance().get();
-                if (child instanceof LiteralArgumentBuilder) {
-                    mainCommand.then((LiteralArgumentBuilder<CommandSource>) child);
-                }
+                command.then(mainCommand, child);
             }
         }
-        dispatcher.register(mainCommand);
+        command.register(dispatcher, mainCommand);
     }
 }

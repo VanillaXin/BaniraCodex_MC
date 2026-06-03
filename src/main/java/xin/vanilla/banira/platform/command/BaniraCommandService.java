@@ -38,6 +38,14 @@ public interface BaniraCommandService {
 
     void sendFailure(Object source, ITextComponent message);
 
+    Object literal(String name);
+
+    void executes(Object commandNode, BaniraCommandExecutor executor);
+
+    void then(Object parentNode, Object childNode);
+
+    void register(Object dispatcher, Object commandNode);
+
     void onRegisterDispatcher(Consumer<Object> callback);
 
     void dispatchRegisterDispatcher(Object dispatcher);

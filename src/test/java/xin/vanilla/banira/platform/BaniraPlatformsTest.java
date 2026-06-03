@@ -149,6 +149,23 @@ public class BaniraPlatformsTest {
                 }
 
                 @Override
+                public Object literal(String name) {
+                    return new Object();
+                }
+
+                @Override
+                public void executes(Object commandNode, xin.vanilla.banira.platform.command.BaniraCommandExecutor executor) {
+                }
+
+                @Override
+                public void then(Object parentNode, Object childNode) {
+                }
+
+                @Override
+                public void register(Object dispatcher, Object commandNode) {
+                }
+
+                @Override
                 public void onRegisterDispatcher(java.util.function.Consumer<Object> callback) {
                 }
 

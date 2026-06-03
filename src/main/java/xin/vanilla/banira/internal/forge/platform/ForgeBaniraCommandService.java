@@ -1,8 +1,11 @@
 package xin.vanilla.banira.internal.forge.platform;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.DimensionArgument;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.Entity;
@@ -14,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.platform.command.BaniraCommandExecutor;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 
 import java.util.ArrayList;
@@ -111,6 +115,32 @@ public final class ForgeBaniraCommandService implements BaniraCommandService {
     public void sendFailure(Object source, ITextComponent message) {
         if (source instanceof CommandSource && message != null) {
             ((CommandSource) source).sendFailure(message);
+        }
+    }
+
+    @Override
+    public Object literal(String name) {
+        return Commands.literal(name);
+    }
+
+    @Override
+    public void executes(Object commandNode, BaniraCommandExecutor executor) {
+        if (commandNode instanceof LiteralArgumentBuilder && executor != null) {
+            ((LiteralArgumentBuilder<CommandSource>) commandNode).executes(context -> executor.run(context));
+        }
+    }
+
+    @Override
+    public void then(Object parentNode, Object childNode) {
+        if (parentNode instanceof LiteralArgumentBuilder && childNode instanceof LiteralArgumentBuilder) {
+            ((LiteralArgumentBuilder<CommandSource>) parentNode).then((LiteralArgumentBuilder<CommandSource>) childNode);
+        }
+    }
+
+    @Override
+    public void register(Object dispatcher, Object commandNode) {
+        if (dispatcher instanceof CommandDispatcher && commandNode instanceof LiteralArgumentBuilder) {
+            ((CommandDispatcher<CommandSource>) dispatcher).register((LiteralArgumentBuilder<CommandSource>) commandNode);
         }
     }
 

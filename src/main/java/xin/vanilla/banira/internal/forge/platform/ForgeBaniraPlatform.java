@@ -7,6 +7,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraLifecycle lifecycle = new ForgeBaniraLifecycle();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
+    private final BaniraCommandService command = new ForgeBaniraCommandService();
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraWorldService world = new ForgeBaniraWorldService();
@@ -96,6 +98,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraConfigService config() {
         return config;
+    }
+
+    @Override
+    public BaniraCommandService command() {
+        return command;
     }
 
     @Override

@@ -38,14 +38,12 @@ public final class VirtualOpCommand {
         CommandSource source = context.getSource();
         EnumOperationType type = EnumOperationType.valueOfEx(StringArgumentType.getString(context, "operation"));
         if (type == null) {
-            String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation"));
             return 0;
         }
-        if (!CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP)
-                && (source.getEntity() == null || !source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))) {
-            String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled").languageCode(lang).toChat(lang));
+        if (!CommandUtils.hasVirtualPermission(source, EnumCommandType.VIRTUAL_OP)
+                && !CommandUtils.hasPermission(source, CommonConfig.get().permission().virtualOpPermission())) {
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled"));
             return 0;
         }
         EnumCommandType[] rules;
@@ -60,13 +58,11 @@ public final class VirtualOpCommand {
             rules = new EnumCommandType[]{};
         }
         List<ServerPlayerEntity> targetList = new ArrayList<>();
-        try {
-            targetList.addAll(EntityArgument.getPlayers(context, "player"));
-        } catch (IllegalArgumentException ignored) {
-        }
+        targetList.addAll(CommandUtils.getPlayersOptional(context, "player", java.util.Collections.emptyList()));
         String language = CommonConfig.get().language().defaultLanguage();
-        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
-            language = Translator.getPlayerLanguage(source.getPlayerOrException());
+        ServerPlayerEntity sourcePlayer = CommandUtils.getSourcePlayer(source);
+        if (sourcePlayer != null) {
+            language = Translator.getPlayerLanguage(sourcePlayer);
         }
         for (ServerPlayerEntity target : targetList) {
             switch (type) {
@@ -92,13 +88,12 @@ public final class VirtualOpCommand {
             Set<EnumCommandType> permissions = VirtualPermissionManager.getVirtualPermission(target);
             String permissionsStr = VirtualPermissionManager.buildPermissionsString(permissions);
             MessageUtils.sendMessage(target, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
-            if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
-                ServerPlayerEntity player = source.getPlayerOrException();
-                if (!target.getStringUUID().equalsIgnoreCase(player.getStringUUID())) {
-                    MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+            if (sourcePlayer != null) {
+                if (!target.getStringUUID().equalsIgnoreCase(sourcePlayer.getStringUUID())) {
+                    MessageUtils.sendMessage(sourcePlayer, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
                 }
             } else {
-                source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
+                MessageUtils.sendMessageWithAdmin(source, true, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language));
             }
             CommandUtils.refreshPermission(target);
         }
@@ -134,8 +129,8 @@ public final class VirtualOpCommand {
 
     public static LiteralArgumentBuilder<CommandSource> create() {
         return Commands.literal(CommonConfig.get().command().commandVirtualOp())
-                .requires(source -> (source.getEntity() != null && CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP))
-                        || source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))
+                .requires(source -> CommandUtils.hasVirtualPermission(source, EnumCommandType.VIRTUAL_OP)
+                        || CommandUtils.hasPermission(source, CommonConfig.get().permission().virtualOpPermission()))
                 .then(Commands.argument("operation", StringArgumentType.word())
                         .suggests(VirtualOpCommand::operationSuggestion)
                         .then(Commands.argument("player", EntityArgument.players())

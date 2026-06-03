@@ -4,6 +4,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import org.junit.Test;
+import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
@@ -89,6 +90,64 @@ public class BaniraPlatformsTest {
         @Override
         public BaniraConfigService config() {
             return null;
+        }
+
+        @Override
+        public BaniraCommandService command() {
+            return new BaniraCommandService() {
+                @Override
+                public boolean executePlayerCommand(net.minecraft.entity.player.ServerPlayerEntity player, String command, int permission, boolean suppressedOutput) {
+                    return false;
+                }
+
+                @Override
+                public boolean hasPermission(Object source, int permission) {
+                    return false;
+                }
+
+                @Override
+                public net.minecraft.entity.Entity sourceEntity(Object source) {
+                    return null;
+                }
+
+                @Override
+                public net.minecraft.entity.player.ServerPlayerEntity sourcePlayer(Object source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
+                }
+
+                @Override
+                public net.minecraft.world.server.ServerWorld dimension(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    return null;
+                }
+
+                @Override
+                public RegistryKey<World> dimensionKey(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    return World.OVERWORLD;
+                }
+
+                @Override
+                public net.minecraft.entity.player.ServerPlayerEntity player(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
+                }
+
+                @Override
+                public net.minecraft.entity.player.ServerPlayerEntity playerOrSelf(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
+                }
+
+                @Override
+                public java.util.Collection<net.minecraft.entity.player.ServerPlayerEntity> players(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+                    return java.util.Collections.emptyList();
+                }
+
+                @Override
+                public void sendSuccess(Object source, net.minecraft.util.text.ITextComponent message, boolean notifyAdmins) {
+                }
+
+                @Override
+                public void sendFailure(Object source, net.minecraft.util.text.ITextComponent message) {
+                }
+            };
         }
 
         @Override

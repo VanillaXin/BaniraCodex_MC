@@ -1,5 +1,6 @@
 package xin.vanilla.banira.platform;
 
+import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
@@ -38,6 +39,8 @@ public interface BaniraPlatform {
     BaniraLifecycle lifecycle();
 
     BaniraConfigService config();
+
+    BaniraCommandService command();
 
     BaniraNetworkService network();
 

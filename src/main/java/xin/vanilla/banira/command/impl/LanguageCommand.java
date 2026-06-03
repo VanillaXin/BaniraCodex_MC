@@ -30,7 +30,7 @@ public final class LanguageCommand {
     }
 
     private static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+        ServerPlayerEntity player = CommandUtils.requireSourcePlayer(context.getSource());
         String language = StringArgumentType.getString(context, "language");
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
         if (translator.getI18nFiles().contains(language)) {

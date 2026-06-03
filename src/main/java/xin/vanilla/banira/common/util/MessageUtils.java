@@ -86,15 +86,15 @@ public final class MessageUtils {
      * @param success 是否成功
      */
     public static void sendMessage(CommandSource source, boolean success, Component message) {
-        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
+        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendMessage(source.getPlayerOrException(), message);
+                sendMessage(BaniraPlatforms.get().command().sourcePlayer(source), message);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(message.languageCode(Translator.getServerLanguage()).toChat(), false);
+            BaniraPlatforms.get().command().sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            source.sendFailure(message.languageCode(Translator.getServerLanguage()).toChat());
+            BaniraPlatforms.get().command().sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -105,15 +105,15 @@ public final class MessageUtils {
      * @param success 是否成功
      */
     public static void sendMessageWithAdmin(CommandSource source, boolean success, Component message) {
-        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
+        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendMessage(source.getPlayerOrException(), message);
+                sendMessage(BaniraPlatforms.get().command().sourcePlayer(source), message);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(message.languageCode(Translator.getServerLanguage()).toChat(), true);
+            BaniraPlatforms.get().command().sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), true);
         } else {
-            source.sendFailure(message.languageCode(Translator.getServerLanguage()).toChat());
+            BaniraPlatforms.get().command().sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -137,15 +137,15 @@ public final class MessageUtils {
      * @param args    参数
      */
     public static void sendTranslatableMessage(CommandSource source, boolean success, String key, Object... args) {
-        if (source.getEntity() != null && source.getEntity() instanceof ServerPlayerEntity) {
+        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendTranslatableMessage(source.getPlayerOrException(), key, args);
+                sendTranslatableMessage(BaniraPlatforms.get().command().sourcePlayer(source), key, args);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            source.sendSuccess(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
+            BaniraPlatforms.get().command().sendSuccess(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            source.sendFailure(BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
+            BaniraPlatforms.get().command().sendFailure(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 

@@ -31,7 +31,7 @@ public final class HelpCommand {
     }
 
     public static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+        ServerPlayerEntity player = CommandUtils.requireSourcePlayer(context.getSource());
         String command;
         int page;
         try {

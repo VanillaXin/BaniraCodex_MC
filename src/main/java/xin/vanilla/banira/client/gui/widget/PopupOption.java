@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -21,6 +20,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -425,7 +425,7 @@ public class PopupOption extends BaseWidget {
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (beforeRender != null) beforeRender.accept(this);
-        if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
+        if (CollectionUtils.isNullOrEmpty(optionList) || !BaniraPlatforms.get().client().hasScreen()) {
             if (afterRender != null) afterRender.accept(this);
             return;
         }
@@ -492,9 +492,8 @@ public class PopupOption extends BaseWidget {
     }
 
     private void layout(int px, int py) {
-        Objects.requireNonNull(Minecraft.getInstance().screen);
-        int screenWidth = Minecraft.getInstance().screen.width;
-        int screenHeight = Minecraft.getInstance().screen.height;
+        int screenWidth = AbstractGuiUtils.getScreenSize().key();
+        int screenHeight = AbstractGuiUtils.getScreenSize().val();
         if (maxWidth <= 0) maxWidth = screenWidth - MARGIN * 2;
         if (maxHeight <= 0) maxHeight = screenHeight - MARGIN * 2;
 

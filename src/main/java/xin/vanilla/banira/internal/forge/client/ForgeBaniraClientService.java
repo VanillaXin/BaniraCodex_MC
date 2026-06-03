@@ -83,6 +83,28 @@ public final class ForgeBaniraClientService implements BaniraClientService {
     }
 
     @Override
+    public boolean hasScreen() {
+        return Minecraft.getInstance().screen != null;
+    }
+
+    @Override
+    public void runOnClientThread(Runnable action) {
+        if (action != null) {
+            Minecraft.getInstance().execute(action);
+        }
+    }
+
+    @Override
+    public String clipboard() {
+        return Minecraft.getInstance().keyboardHandler.getClipboard();
+    }
+
+    @Override
+    public void clipboard(String value) {
+        Minecraft.getInstance().keyboardHandler.setClipboard(value != null ? value : "");
+    }
+
+    @Override
     public double guiScale() {
         return Minecraft.getInstance().getWindow().getGuiScale();
     }

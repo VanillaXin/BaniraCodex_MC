@@ -19,6 +19,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.net.URI;
 
@@ -71,7 +72,7 @@ public final class NotificationStyleInteractionHelper {
                 mc.setScreen(new ChatScreen(event.getValue()));
                 return true;
             case COPY_TO_CLIPBOARD:
-                mc.keyboardHandler.setClipboard(event.getValue());
+                BaniraPlatforms.get().client().clipboard(event.getValue());
                 return true;
             default:
                 return false;

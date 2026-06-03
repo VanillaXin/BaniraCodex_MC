@@ -1,9 +1,7 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -13,6 +11,7 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
 
@@ -38,10 +37,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
-        Screen mcScreen = Minecraft.getInstance().screen;
-        int w = mcScreen != null ? mcScreen.width : 400;
-        int h = mcScreen != null ? mcScreen.height : 300;
-        return new ScreenCoordinate(0, 0, w, h);
+        return new ScreenCoordinate(0, 0, AbstractGuiUtils.getScreenSize().key(), AbstractGuiUtils.getScreenSize().val());
     }
 
     @Override
@@ -53,7 +49,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
 
         List<String> items = parent.getSelectedValues();
         if (items.isEmpty()) {
-            Minecraft.getInstance().execute(parent::closePreview);
+            BaniraPlatforms.get().client().runOnClientThread(parent::closePreview);
             return;
         }
 

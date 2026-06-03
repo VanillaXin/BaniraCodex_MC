@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -41,10 +40,7 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
-        Screen mcScreen = Minecraft.getInstance().screen;
-        int w = mcScreen != null ? mcScreen.width : 400;
-        int h = mcScreen != null ? mcScreen.height : 300;
-        return new ScreenCoordinate(0, 0, w, h);
+        return new ScreenCoordinate(0, 0, AbstractGuiUtils.getScreenSize().key(), AbstractGuiUtils.getScreenSize().val());
     }
 
     @Override

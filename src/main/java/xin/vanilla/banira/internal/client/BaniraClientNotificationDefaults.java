@@ -1,10 +1,10 @@
 package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.event.BaniraHudOverlayElement;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 public final class BaniraClientNotificationDefaults {
 
@@ -19,7 +19,7 @@ public final class BaniraClientNotificationDefaults {
             }
         });
         BaniraClientEventHub.Hud.onPostRender(event -> {
-            if (event.element() == BaniraHudOverlayElement.ALL && Minecraft.getInstance().screen == null) {
+            if (event.element() == BaniraHudOverlayElement.ALL && !BaniraPlatforms.get().client().hasScreen()) {
                 NotificationManager.get().render(event.draw().nativeContext(MatrixStack.class));
             }
         });

@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.IReorderingProcessor;
@@ -22,6 +21,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -837,20 +837,20 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (Screen.isCopy(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+            BaniraPlatforms.get().client().clipboard(getHighlighted());
             return true;
         }
 
         if (Screen.isPaste(keyCode)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
+                insertText(BaniraPlatforms.get().client().clipboard());
             }
             return true;
         }
 
         if (Screen.isCut(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+            BaniraPlatforms.get().client().clipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");

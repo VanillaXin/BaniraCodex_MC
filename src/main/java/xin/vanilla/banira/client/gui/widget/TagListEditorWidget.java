@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -21,6 +20,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -656,7 +656,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private void copyRowToClipboard(int index) {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
-        Minecraft.getInstance().keyboardHandler.setClipboard(s);
+        BaniraPlatforms.get().client().clipboard(s);
         Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
         NotificationManager.get().addNotification(n);
     }

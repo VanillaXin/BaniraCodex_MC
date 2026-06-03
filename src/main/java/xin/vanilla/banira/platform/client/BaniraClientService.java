@@ -30,6 +30,26 @@ public interface BaniraClientService {
 
     boolean isWindowActive();
 
+    /**
+     * Returns whether a client screen is currently open without exposing the screen implementation type.
+     */
+    boolean hasScreen();
+
+    /**
+     * Schedules work on the client thread when the loader requires it.
+     */
+    void runOnClientThread(Runnable action);
+
+    /**
+     * Reads the operating-system clipboard through the active client adapter.
+     */
+    String clipboard();
+
+    /**
+     * Writes clipboard text through the active client adapter.
+     */
+    void clipboard(String value);
+
     double guiScale();
 
     KeyValue<Integer, Integer> screenSize();
@@ -98,6 +118,27 @@ public interface BaniraClientService {
         @Override
         public boolean isWindowActive() {
             return false;
+        }
+
+        @Override
+        public boolean hasScreen() {
+            return false;
+        }
+
+        @Override
+        public void runOnClientThread(Runnable action) {
+            if (action != null) {
+                action.run();
+            }
+        }
+
+        @Override
+        public String clipboard() {
+            return "";
+        }
+
+        @Override
+        public void clipboard(String value) {
         }
 
         @Override

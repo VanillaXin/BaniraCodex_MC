@@ -1,13 +1,12 @@
 package xin.vanilla.banira.common.network.packet;
 
-import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
-import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
+import xin.vanilla.banira.internal.network.BaniraClientPacketDispatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,22 +69,9 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
     public static void handle(NotificationTypesSyncToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isClientReception()) {
-                ClientSide.handle(packet);
+                BaniraClientPacketDispatch.handle(packet);
             }
         });
         ctx.markHandled();
-    }
-
-    private static final class ClientSide {
-        private static void handle(NotificationTypesSyncToClient packet) {
-            for (NotificationTypeSyncEntry e : packet.entries()) {
-                if (e == null) {
-                    continue;
-                }
-                NotificationTypeRegistry.ensureKnown(e.typeId());
-                NotificationTypeRegistry.acceptServerSyncedDisplayDefault(e.typeId(), e.defaultDisplayIfAbsent());
-                NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(e.typeId());
-            }
-        }
     }
 }

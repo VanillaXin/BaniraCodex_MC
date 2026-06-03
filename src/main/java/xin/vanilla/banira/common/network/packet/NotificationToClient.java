@@ -2,11 +2,6 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
@@ -18,6 +13,7 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.network.BaniraClientPacketDispatch;
 
 @Getter
 @Accessors(fluent = true)
@@ -83,34 +79,9 @@ public class NotificationToClient implements NetworkPacket {
     public static void handle(NotificationToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isClientReception()) {
-                ClientSide.handle(packet);
+                BaniraClientPacketDispatch.handle(packet);
             }
         });
         ctx.markHandled();
-    }
-
-
-    private static final class ClientSide {
-        private static final Logger LOGGER = LogManager.getLogger();
-
-        private static void handle(NotificationToClient packet) {
-            try {
-                Component component = BaniraComponent.get().deserialize(JsonUtils.parseObject(packet.componentJson()));
-                EnumPosition position = EnumPosition.valueOfEx(packet.positionName());
-                if (position == null) position = EnumPosition.TOP_RIGHT;
-                EnumMoveType animation;
-                try {
-                    animation = EnumMoveType.valueOf(packet.animationName());
-                } catch (Exception ignored) {
-                    animation = EnumMoveType.AUTO;
-                }
-                EnumNotificationStyle style = EnumNotificationStyle.valueOfEx(packet.styleName());
-                NotificationData data = NotificationData.of(component, position, animation, packet.durationTime(), style, packet.typeId());
-                Notification n = Notification.fromData(data, true);
-                NotificationManager.get().addNotification(n, true);
-            } catch (Exception e) {
-                LOGGER.error("Failed to handle notification packet", e);
-            }
-        }
     }
 }

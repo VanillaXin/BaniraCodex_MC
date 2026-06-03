@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -16,7 +15,6 @@ import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.*;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -64,9 +62,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
-        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
-        }
+        BaniraClientScreenService.openConfigEditor(holder, parent);
     }
 
     @Override

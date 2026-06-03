@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.network.BaniraClientPacketDispatch;
 
 import java.util.List;
 
@@ -16,6 +17,9 @@ public final class BaniraClientNetworkDefaults {
     }
 
     public static void register() {
+        BaniraClientPacketDispatch.registerConfigSnapshotHandler(ConfigSnapshotClientHandler::apply);
+        BaniraClientPacketDispatch.registerNotificationHandler(ClientNotificationPacketHandler::handle);
+        BaniraClientPacketDispatch.registerNotificationTypesHandler(ClientNotificationPacketHandler::handleTypes);
         ModLoadedToBoth.registerClientHandler(packet -> {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null) {

@@ -1,10 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
@@ -37,10 +34,7 @@ public final class ConfigSnapshotClientHandler {
                     ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
             return;
         }
-        Screen open = Minecraft.getInstance().screen;
-        if (open instanceof ConfigEditorScreen) {
-            ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(packet.configName());
-        }
+        BaniraClientScreenService.refreshOpenConfigEditor(packet.configName());
         ConfigEditorNotifier.show("config_editor_fetch_applied", 3000, String.valueOf(packet.snapshot().size()));
     }
 }

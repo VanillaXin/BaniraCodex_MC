@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.network.packet;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.internal.client.ConfigSnapshotClientHandler;
+import xin.vanilla.banira.internal.network.BaniraClientPacketDispatch;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
             if (!ctx.isClientReception()) {
                 return;
             }
-            ConfigSnapshotClientHandler.apply(packet);
+            BaniraClientPacketDispatch.handle(packet);
         });
         ctx.markHandled();
     }

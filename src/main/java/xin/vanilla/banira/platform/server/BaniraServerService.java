@@ -1,6 +1,7 @@
 package xin.vanilla.banira.platform.server;
 
 import net.minecraft.advancements.Advancement;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.resources.IResourceManager;
@@ -25,6 +26,16 @@ public interface BaniraServerService {
     void broadcastRawPacket(IPacket<?> packet);
 
     void broadcastSystemMessage(MinecraftServer server, ITextComponent message);
+
+    /**
+     * 向玩家发送普通系统/聊天消息；各版本的 sendMessage/sendSystemMessage 差异由 adapter 处理。
+     */
+    void sendPlayerMessage(PlayerEntity player, ITextComponent message);
+
+    /**
+     * 向服务端玩家发送 actionbar 消息；packet 类型和 ChatType 差异由 adapter 处理。
+     */
+    void sendActionBarMessage(ServerPlayerEntity player, ITextComponent message);
 
     void refreshPlayerPermission(ServerPlayerEntity player);
 

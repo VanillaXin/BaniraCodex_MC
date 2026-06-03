@@ -1,8 +1,10 @@
 package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraft.advancements.Advancement;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.resources.IResourceManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
@@ -50,6 +52,20 @@ public final class ForgeBaniraServerService implements BaniraServerService {
         MinecraftServer target = server != null ? server : currentServer();
         if (target != null && message != null) {
             target.getPlayerList().broadcastMessage(message, ChatType.SYSTEM, Util.NIL_UUID);
+        }
+    }
+
+    @Override
+    public void sendPlayerMessage(PlayerEntity player, ITextComponent message) {
+        if (player != null && message != null) {
+            player.sendMessage(message, player.getUUID());
+        }
+    }
+
+    @Override
+    public void sendActionBarMessage(ServerPlayerEntity player, ITextComponent message) {
+        if (player != null && message != null) {
+            player.connection.send(new SChatPacket(message, ChatType.GAME_INFO, player.getUUID()));
         }
     }
 

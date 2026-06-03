@@ -4,9 +4,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
@@ -66,7 +64,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, Component message) {
-        player.sendMessage(message.toChat(Translator.getPlayerLanguage(player)), player.getUUID());
+        BaniraPlatforms.get().server().sendPlayerMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
     }
 
     /**
@@ -76,7 +74,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, String message) {
-        player.sendMessage(BaniraComponent.get().literal(message).toChat(), player.getUUID());
+        BaniraPlatforms.get().server().sendPlayerMessage(player, BaniraComponent.get().literal(message).toChat());
     }
 
     /**
@@ -125,7 +123,8 @@ public final class MessageUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(PlayerEntity player, String key, Object... args) {
-        player.sendMessage(BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat(), player.getUUID());
+        BaniraPlatforms.get().server().sendPlayerMessage(player,
+                BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat());
     }
 
     /**
@@ -162,7 +161,7 @@ public final class MessageUtils {
      * 发送操作栏消息
      */
     public static void sendActionBarMessage(ServerPlayerEntity player, Component message) {
-        player.connection.send(new SChatPacket(message.toChat(Translator.getPlayerLanguage(player)), ChatType.GAME_INFO, player.getUUID()));
+        BaniraPlatforms.get().server().sendActionBarMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
     }
 
     // region 指定通知类型 — sendNotification / broadcastNotification

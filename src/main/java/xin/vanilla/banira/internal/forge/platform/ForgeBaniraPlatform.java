@@ -2,11 +2,13 @@ package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.UsernameCache;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
@@ -24,6 +26,9 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraLifecycle lifecycle = new ForgeBaniraLifecycle();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraCommandService command = new ForgeBaniraCommandService();
+    private final BaniraClientService client = DistExecutor.safeRunForDist(
+            () -> xin.vanilla.banira.internal.forge.client.ForgeBaniraClientService::new,
+            () -> BaniraClientService::noop);
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraWorldService world = new ForgeBaniraWorldService();
@@ -103,6 +108,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraCommandService command() {
         return command;
+    }
+
+    @Override
+    public BaniraClientService client() {
+        return client;
     }
 
     @Override

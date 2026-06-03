@@ -4,6 +4,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import org.junit.Test;
+import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
@@ -176,6 +177,11 @@ public class BaniraPlatformsTest {
         }
 
         @Override
+        public BaniraClientService client() {
+            return BaniraClientService.noop();
+        }
+
+        @Override
         public BaniraNetworkService network() {
             return null;
         }
@@ -269,6 +275,14 @@ public class BaniraPlatformsTest {
 
                 @Override
                 public void broadcastSystemMessage(net.minecraft.server.MinecraftServer server, net.minecraft.util.text.ITextComponent message) {
+                }
+
+                @Override
+                public void sendPlayerMessage(net.minecraft.entity.player.PlayerEntity player, net.minecraft.util.text.ITextComponent message) {
+                }
+
+                @Override
+                public void sendActionBarMessage(net.minecraft.entity.player.ServerPlayerEntity player, net.minecraft.util.text.ITextComponent message) {
                 }
 
                 @Override

@@ -96,13 +96,10 @@ public final class PlayerUtils {
     }
 
     public static UUID getPlayerUUID() {
-        if (!EnvironmentUtils.isClient()) {
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) {
             return null;
         }
-        if (net.minecraft.client.Minecraft.getInstance().player == null) {
-            return null;
-        }
-        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
+        return BaniraPlatforms.get().client().localPlayerUuid();
     }
 
     public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
@@ -144,13 +141,8 @@ public final class PlayerUtils {
     public static String getPlayerNameString(UUID uuid) {
         String nameString = getPlayerNameString(getPlayerByUUID(uuid));
         if (StringUtils.isNullOrEmpty(nameString)) {
-            try {
-                if (EnvironmentUtils.isClient()) {
-                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                            .filter(info -> info.getProfile().getId().equals(uuid))
-                            .findFirst().orElse(null).getProfile().getName();
-                }
-            } catch (Throwable ignored) {
+            if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
+                nameString = BaniraPlatforms.get().client().onlinePlayerName(uuid);
             }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
@@ -189,27 +181,19 @@ public final class PlayerUtils {
     public static PlayerEntity getPlayerByUUID(UUID uuid) {
         PlayerEntity entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
-        try {
-            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
-        } catch (Throwable ignored) {
+        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
+            entity = BaniraPlatforms.get().client().playerByUuid(uuid);
         }
         return entity;
     }
 
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
-        if (!EnvironmentUtils.isClient()) {
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) {
             return Identifier.id().create("minecraft", "textures/entity/steve.png");
         }
-        try {
-            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
-                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                        .filter(info -> info.getProfile().getId().equals(uuid))
-                        .findFirst().orElse(null).getSkinLocation();
-            }
-        } catch (Throwable ignored) {
-        }
-        return Identifier.id().create("minecraft", "textures/entity/steve.png");
+        ResourceLocation skin = BaniraPlatforms.get().client().playerSkin(uuid);
+        return skin != null ? skin : Identifier.id().create("minecraft", "textures/entity/steve.png");
     }
 
     /**

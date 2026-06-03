@@ -1,10 +1,13 @@
 package xin.vanilla.banira.platform.server;
 
+import net.minecraft.advancements.Advancement;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.resources.IResourceManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,4 +26,8 @@ public interface BaniraServerService {
     void broadcastSystemMessage(MinecraftServer server, ITextComponent message);
 
     void refreshPlayerPermission(ServerPlayerEntity player);
+
+    Collection<Advancement> advancements();
+
+    IResourceManager serverResourceManager();
 }

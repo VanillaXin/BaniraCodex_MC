@@ -4,6 +4,7 @@ import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -45,4 +46,6 @@ public interface BaniraPlatform {
     BaniraWorldService world();
 
     BaniraServerService server();
+
+    BaniraResourceService resources();
 }

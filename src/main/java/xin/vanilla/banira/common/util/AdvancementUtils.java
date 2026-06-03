@@ -3,8 +3,8 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.item.Items;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,14 +116,16 @@ public final class AdvancementUtils {
      */
     public static ArraySet<AdvancementData> advancementData() {
         // 服务端
-        MinecraftServer server = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().currentServer() : null;
-        if (advancementData.isEmpty() && server != null) {
-            advancementData(server.getAdvancements().getAllAdvancements().stream()
-                    .map(AdvancementData::fromAdvancement).collect(Collectors.toList())
-            );
+        if (advancementData.isEmpty() && BaniraPlatforms.isInstalled()) {
+            Collection<Advancement> serverAdvancements = BaniraPlatforms.get().server().advancements();
+            if (CollectionUtils.isNotNullOrEmpty(serverAdvancements)) {
+                advancementData(serverAdvancements.stream()
+                        .map(AdvancementData::fromAdvancement).collect(Collectors.toList())
+                );
+            }
         }
         // 客户端
-        else if (EnvironmentUtils.isClient()) {
+        if (advancementData.isEmpty() && EnvironmentUtils.isClient()) {
             ensureAdvancementData();
         }
         return advancementData;

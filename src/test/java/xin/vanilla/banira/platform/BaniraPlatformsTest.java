@@ -8,6 +8,7 @@ import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
+import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -184,7 +185,22 @@ public class BaniraPlatformsTest {
                 @Override
                 public void refreshPlayerPermission(net.minecraft.entity.player.ServerPlayerEntity player) {
                 }
+
+                @Override
+                public java.util.Collection<net.minecraft.advancements.Advancement> advancements() {
+                    return java.util.Collections.emptyList();
+                }
+
+                @Override
+                public net.minecraft.resources.IResourceManager serverResourceManager() {
+                    return null;
+                }
             };
+        }
+
+        @Override
+        public BaniraResourceService resources() {
+            return modId -> java.util.Collections.emptyMap();
         }
     }
 }

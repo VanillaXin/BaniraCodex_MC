@@ -1,7 +1,9 @@
 package xin.vanilla.banira.internal.forge.platform;
 
+import net.minecraft.advancements.Advancement;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.resources.IResourceManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
@@ -9,6 +11,7 @@ import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -54,5 +57,17 @@ public final class ForgeBaniraServerService implements BaniraServerService {
         if (server != null && player != null) {
             server.getPlayerList().sendPlayerPermissionLevel(player);
         }
+    }
+
+    @Override
+    public Collection<Advancement> advancements() {
+        MinecraftServer server = currentServer();
+        return server != null ? server.getAdvancements().getAllAdvancements() : Collections.emptyList();
+    }
+
+    @Override
+    public IResourceManager serverResourceManager() {
+        MinecraftServer server = currentServer();
+        return server != null ? server.getDataPackRegistries().getResourceManager() : null;
     }
 }

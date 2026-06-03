@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -162,7 +161,7 @@ public class DropdownSelectWidget extends InputWidget {
             tagScrollOffset = 0;
             return;
         }
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         int totalWidth = 0;
         for (String item : selectedValues) {
             totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;
@@ -187,8 +186,8 @@ public class DropdownSelectWidget extends InputWidget {
      */
     ScreenCoordinate getPreviewBounds() {
         if (renderCoordinate == null || screen == null) return null;
-        int sw = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.width : 400;
-        int sh = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.height : 300;
+        int sw = AbstractGuiUtils.getScreenSize().key();
+        int sh = AbstractGuiUtils.getScreenSize().val();
 
         double absX = absoluteX();
         double absY = absoluteY();
@@ -385,8 +384,8 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public ScreenCoordinate getDropdownBounds() {
         if (renderCoordinate == null || screen == null) return null;
-        int sw = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.width : 400;
-        int sh = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.height : 300;
+        int sw = AbstractGuiUtils.getScreenSize().key();
+        int sh = AbstractGuiUtils.getScreenSize().val();
 
         double absX = absoluteX();
         double absY = absoluteY();
@@ -704,7 +703,7 @@ public class DropdownSelectWidget extends InputWidget {
         if (selectedValues.isEmpty()) return;
         if (screen == null) return;
 
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         BaniraColorConfig theme = screen.getEffectiveTheme();
         int tagBg = theme.popupItemSelected();
         int tagBorder = theme.popupItemSelectedBorder();
@@ -896,7 +895,7 @@ public class DropdownSelectWidget extends InputWidget {
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         if (mouseY < tagY || mouseY >= tagY + TAG_MIN_HEIGHT) return -1;
         int currentX = contentLeft - tagScrollOffset;
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
             int textW = font.width(selectedValues.get(i));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
@@ -916,7 +915,7 @@ public class DropdownSelectWidget extends InputWidget {
         int drawHeight = (int) height() - marginTop() - marginBottom();
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
             int textW = font.width(selectedValues.get(i));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
@@ -944,7 +943,7 @@ public class DropdownSelectWidget extends InputWidget {
             }
         }
         if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
-            FontRenderer font = Minecraft.getInstance().font;
+            FontRenderer font = AbstractGuiUtils.getFont();
             int totalWidth = 0;
             for (String item : selectedValues) {
                 totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;

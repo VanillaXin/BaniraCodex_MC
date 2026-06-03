@@ -350,7 +350,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);
@@ -358,7 +358,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     public InputWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);

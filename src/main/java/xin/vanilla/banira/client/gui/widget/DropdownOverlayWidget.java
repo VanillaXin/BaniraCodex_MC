@@ -57,7 +57,7 @@ class DropdownOverlayWidget extends BaseWidget {
         List<DropdownOption> options = parent.getFilteredOptionEntries();
         if (options.isEmpty()) return;
 
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();

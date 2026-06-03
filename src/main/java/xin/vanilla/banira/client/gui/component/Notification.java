@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.text.ITextComponent;
@@ -464,7 +463,7 @@ public class Notification extends NotificationData {
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
 
-                FontRenderer font = Minecraft.getInstance().font;
+                FontRenderer font = AbstractGuiUtils.getFont();
                 float pad = (float) this.padding();
                 float lineH = font.lineHeight;
                 float textBlockH = this.richDrawLines.size() * lineH;
@@ -537,7 +536,7 @@ public class Notification extends NotificationData {
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         double rx = guiMouseX - this.bodyLeft;
         double ry = guiMouseY - this.bodyTextTop;
         if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {

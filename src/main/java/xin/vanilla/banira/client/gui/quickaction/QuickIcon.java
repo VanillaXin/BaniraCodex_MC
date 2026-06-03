@@ -17,6 +17,7 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -135,7 +136,7 @@ public class QuickIcon {
             case EFFECT: {
                 Effect e = mobEffect != null ? mobEffect : Effects.LUCK;
                 EffectInstance inst = new EffectInstance(e, 1, 0);
-                EffectIconWidget.drawEffectIcon(stack, mc.font, inst, x, y, size, size, false);
+                EffectIconWidget.drawEffectIcon(stack, AbstractGuiUtils.getFont(), inst, x, y, size, size, false);
                 break;
             }
             case RESOURCE: {

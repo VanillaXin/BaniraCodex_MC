@@ -848,7 +848,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
 
-        FontRenderer font = Minecraft.getInstance().font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;

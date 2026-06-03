@@ -763,7 +763,7 @@ public final class QuickActionOverlay {
             return;
         }
         boolean useTexture = theme != null && theme.tooltipUseTexture();
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(mc.font))
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(AbstractGuiUtils.getFont()))
                 .x(mouseX)
                 .y(mouseY)
                 .popupUseTexture(useTexture);
@@ -1318,7 +1318,7 @@ public final class QuickActionOverlay {
         int innerPad = 3;
         int maxTextInner = 0;
         for (CtxRow r : rows) {
-            int tw = mc.font.width(new StringTextComponent(r.text));
+            int tw = AbstractGuiUtils.getFont().width(new StringTextComponent(r.text));
             int rowW = r.menuIcon != null
                     ? MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP + tw + MENU_TEXT_PAD_X
                     : MENU_TEXT_PAD_X + tw + MENU_TEXT_PAD_X;
@@ -1376,7 +1376,7 @@ public final class QuickActionOverlay {
             AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
-        FontRenderer font = mc.font;
+        FontRenderer font = AbstractGuiUtils.getFont();
         for (int i = 0; i < rows.size(); i++) {
             int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
             int rh = MENU_ROW_H;

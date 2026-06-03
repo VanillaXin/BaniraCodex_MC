@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.event;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
@@ -33,9 +32,9 @@ public final class BaniraDrawContext {
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
         if (text == null) return x;
         if (shadow) {
-            return Minecraft.getInstance().font.drawShadow(stack(), text, x, y, argb);
+            return AbstractGuiUtils.getFont().drawShadow(stack(), text, x, y, argb);
         }
-        return Minecraft.getInstance().font.draw(stack(), text, x, y, argb);
+        return AbstractGuiUtils.getFont().draw(stack(), text, x, y, argb);
     }
 
     public void blit(ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {

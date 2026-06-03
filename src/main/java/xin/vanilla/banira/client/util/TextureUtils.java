@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +17,7 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -68,16 +68,15 @@ public final class TextureUtils {
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
         ResourceLocation rl = factory.create(safePath);
-        IResourceManager resourceManager = mc.getResourceManager();
         TextureManager textureManager = mc.getTextureManager();
 
         // region 资源包纹理
-        if (resourceManager.hasResource(rl)) {
+        if (BaniraPlatforms.get().client().hasResource(rl)) {
             return rl;
         }
         if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
             ResourceLocation parsed = ResourceLocation.tryParse(normalized);
-            if (parsed != null && resourceManager.hasResource(parsed)) {
+            if (parsed != null && BaniraPlatforms.get().client().hasResource(parsed)) {
                 return parsed;
             }
         }
@@ -132,7 +131,7 @@ public final class TextureUtils {
         TextureManager textureManager = mc.getTextureManager();
         net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
         if (texture == null) {
-            return mc.getResourceManager().hasResource(location);
+            return BaniraPlatforms.get().client().hasResource(location);
         }
         return texture.getId() != -1;
     }

@@ -2,6 +2,7 @@ package xin.vanilla.banira.platform.client;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.common.data.KeyValue;
 
 import java.util.UUID;
 
@@ -20,6 +21,18 @@ public interface BaniraClientService {
     ResourceLocation playerSkin(UUID uuid);
 
     String selectedLanguageCode();
+
+    boolean hasResource(ResourceLocation location);
+
+    void bindTexture(ResourceLocation location);
+
+    double guiScale();
+
+    KeyValue<Integer, Integer> screenSize();
+
+    KeyValue<Integer, Integer> guiScaledSize();
+
+    KeyValue<Integer, Integer> guiPixelSize();
 
     static BaniraClientService noop() {
         return Noop.INSTANCE;
@@ -62,6 +75,35 @@ public interface BaniraClientService {
         @Override
         public String selectedLanguageCode() {
             return null;
+        }
+
+        @Override
+        public boolean hasResource(ResourceLocation location) {
+            return false;
+        }
+
+        @Override
+        public void bindTexture(ResourceLocation location) {
+        }
+
+        @Override
+        public double guiScale() {
+            return 1.0D;
+        }
+
+        @Override
+        public KeyValue<Integer, Integer> screenSize() {
+            return new KeyValue<>(0, 0);
+        }
+
+        @Override
+        public KeyValue<Integer, Integer> guiScaledSize() {
+            return new KeyValue<>(0, 0);
+        }
+
+        @Override
+        public KeyValue<Integer, Integer> guiPixelSize() {
+            return new KeyValue<>(0, 0);
         }
     }
 }

@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.forge.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 
 import java.util.UUID;
@@ -57,5 +58,46 @@ public final class ForgeBaniraClientService implements BaniraClientService {
     @Override
     public String selectedLanguageCode() {
         return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+    }
+
+    @Override
+    public boolean hasResource(ResourceLocation location) {
+        return location != null && Minecraft.getInstance().getResourceManager().hasResource(location);
+    }
+
+    @Override
+    public void bindTexture(ResourceLocation location) {
+        if (location != null) {
+            Minecraft.getInstance().getTextureManager().bind(location);
+        }
+    }
+
+    @Override
+    public double guiScale() {
+        return Minecraft.getInstance().getWindow().getGuiScale();
+    }
+
+    @Override
+    public KeyValue<Integer, Integer> screenSize() {
+        if (Minecraft.getInstance().screen != null) {
+            return new KeyValue<>(Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+        }
+        return guiScaledSize();
+    }
+
+    @Override
+    public KeyValue<Integer, Integer> guiScaledSize() {
+        return new KeyValue<>(
+                Minecraft.getInstance().getWindow().getGuiScaledWidth(),
+                Minecraft.getInstance().getWindow().getGuiScaledHeight()
+        );
+    }
+
+    @Override
+    public KeyValue<Integer, Integer> guiPixelSize() {
+        return new KeyValue<>(
+                Minecraft.getInstance().getWindow().getWidth(),
+                Minecraft.getInstance().getWindow().getHeight()
+        );
     }
 }

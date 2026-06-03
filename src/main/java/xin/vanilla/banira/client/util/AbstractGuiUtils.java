@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
@@ -31,6 +30,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.GuiScissorStack;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -99,7 +99,7 @@ public final class AbstractGuiUtils {
 
     @Deprecated
     public static void bindTexture(ResourceLocation location) {
-        Minecraft.getInstance().getTextureManager().bind(location);
+        BaniraPlatforms.get().client().bindTexture(location);
     }
 
     public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
@@ -1888,13 +1888,13 @@ public final class AbstractGuiUtils {
      * 获取指定坐标点像素颜色
      */
     public static int getPixelArgb(double guiX, double guiY) {
-        Minecraft mc = Minecraft.getInstance();
-        MainWindow window = mc.getWindow();
+        double guiScale = BaniraPlatforms.get().client().guiScale();
+        int windowHeight = BaniraPlatforms.get().client().guiPixelSize().val();
 
         // 将 GUI 坐标（左上为原点）转换为物理屏幕坐标（左下为原点）
-        int pixelX = (int) (guiX * window.getGuiScale());
-        int pixelY = (int) (guiY * window.getGuiScale());
-        int glY = window.getHeight() - pixelY - 1;
+        int pixelX = (int) (guiX * guiScale);
+        int pixelY = (int) (guiY * guiScale);
+        int glY = windowHeight - pixelY - 1;
 
         // 创建 ByteBuffer 存储像素数据（RGBA）
         ByteBuffer buffer = BufferUtils.createByteBuffer(4);
@@ -1913,19 +1913,15 @@ public final class AbstractGuiUtils {
     }
 
     public static KeyValue<Integer, Integer> getScreenSize() {
-        if (Minecraft.getInstance().screen != null) {
-            return new KeyValue<>(Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
-        } else {
-            return getGuiScaledSize();
-        }
+        return BaniraPlatforms.get().client().screenSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiScaledSize() {
-        return new KeyValue<>(Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight());
+        return BaniraPlatforms.get().client().guiScaledSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiSize() {
-        return new KeyValue<>(Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight());
+        return BaniraPlatforms.get().client().guiPixelSize();
     }
 
     /**

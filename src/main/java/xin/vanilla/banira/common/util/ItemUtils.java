@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import lombok.NonNull;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.command.arguments.ItemInput;
 import net.minecraft.command.arguments.ItemParser;
@@ -631,9 +630,12 @@ public final class ItemUtils {
             // 获取描述, 仅客户端
             try {
                 // Tooltip description can only be read safely on a physical client.
-                if (EnvironmentUtils.isClient() && Minecraft.getInstance().player != null) {
+                PlayerEntity clientPlayer = BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
+                        ? BaniraPlatforms.get().client().localPlayer()
+                        : null;
+                if (clientPlayer != null) {
                     List<ITextComponent> tooltip = stack.getTooltipLines(
-                            Minecraft.getInstance().player,
+                            clientPlayer,
                             ITooltipFlag.TooltipFlags.NORMAL
                     );
                     if (CollectionUtils.isNotNullOrEmpty(tooltip)) {
@@ -857,9 +859,9 @@ public final class ItemUtils {
      */
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
-        if (!EnvironmentUtils.isClient()) return new ArrayList<>();
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return new ArrayList<>();
         try {
-            PlayerEntity player = Minecraft.getInstance().player;
+            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
             if (player != null) {
                 return getAllPlayerItems(player);
             }
@@ -1246,9 +1248,9 @@ public final class ItemUtils {
      */
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
-        if (!EnvironmentUtils.isClient()) return getItemTooltip(itemStack, null, advanced);
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return getItemTooltip(itemStack, null, advanced);
         try {
-            PlayerEntity player = Minecraft.getInstance().player;
+            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
             return getItemTooltip(itemStack, player, advanced);
         } catch (Exception e) {
             LOGGER.debug("Failed to get client player for tooltip", e);

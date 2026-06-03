@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
@@ -240,9 +239,9 @@ public final class EffectUtils {
      */
     public static List<Effect> getPlayerEffects() {
         List<Effect> result = new ArrayList<>();
-        if (!EnvironmentUtils.isClient()) return result;
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return result;
         try {
-            PlayerEntity player = Minecraft.getInstance().player;
+            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
             if (player != null) {
                 Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
                 for (Effect e : player.getActiveEffectsMap().keySet()) {

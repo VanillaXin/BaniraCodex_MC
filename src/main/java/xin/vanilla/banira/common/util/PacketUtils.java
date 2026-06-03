@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
@@ -57,11 +57,11 @@ public final class PacketUtils {
         if (!hasChannel(channel)) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
+        PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
+        if (player == null) {
             return;
         }
-        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, channel.modId())) {
+        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(player, channel.modId())) {
             return;
         }
         channel.sendToServer(msg);

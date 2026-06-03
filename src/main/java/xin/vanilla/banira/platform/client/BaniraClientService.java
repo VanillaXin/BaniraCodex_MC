@@ -9,6 +9,8 @@ import java.util.UUID;
  * Loader/version-neutral access to client-only player state.
  */
 public interface BaniraClientService {
+    PlayerEntity localPlayer();
+
     UUID localPlayerUuid();
 
     String onlinePlayerName(UUID uuid);
@@ -30,6 +32,11 @@ public interface BaniraClientService {
         private static final Noop INSTANCE = new Noop();
 
         private Noop() {
+        }
+
+        @Override
+        public PlayerEntity localPlayer() {
+            return null;
         }
 
         @Override

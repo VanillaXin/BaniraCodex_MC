@@ -12,8 +12,14 @@ import java.util.UUID;
  */
 public final class ForgeBaniraClientService implements BaniraClientService {
     @Override
+    public PlayerEntity localPlayer() {
+        return Minecraft.getInstance().player;
+    }
+
+    @Override
     public UUID localPlayerUuid() {
-        return Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getUUID() : null;
+        PlayerEntity player = localPlayer();
+        return player != null ? player.getUUID() : null;
     }
 
     @Override

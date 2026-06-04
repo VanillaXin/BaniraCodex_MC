@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.event.*;
 import xin.vanilla.banira.internal.client.BaniraClientGuiService;
 import xin.vanilla.banira.internal.client.BaniraClientResourceService;
+import xin.vanilla.banira.internal.client.BaniraHudGeometry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.Objects;
@@ -250,16 +251,32 @@ public final class ForgeBaniraClientEventBridge {
 
     private static BaniraHudRenderEvent toBaniraHudEvent(RenderGameOverlayEvent event, boolean beforeVanilla) {
         Minecraft minecraft = Minecraft.getInstance();
-        return new BaniraHudRenderEvent(
-                toBaniraElement(event.getType()),
-                new BaniraDrawContext(
-                        event.getMatrixStack(),
-                        minecraft.getWindow().getGuiScaledWidth(),
-                        minecraft.getWindow().getGuiScaledHeight(),
-                        event.getPartialTicks()
-                ),
-                beforeVanilla
+        BaniraHudOverlayElement element = toBaniraElement(event.getType());
+        BaniraDrawContext draw = new BaniraDrawContext(
+                event.getMatrixStack(),
+                minecraft.getWindow().getGuiScaledWidth(),
+                minecraft.getWindow().getGuiScaledHeight(),
+                event.getPartialTicks()
         );
+        return new BaniraHudRenderEvent(
+                element,
+                draw,
+                beforeVanilla,
+                defaultHudBounds(element, draw)
+        );
+    }
+
+    private static BaniraHudBounds defaultHudBounds(BaniraHudOverlayElement element, BaniraDrawContext draw) {
+        if (draw == null) {
+            return BaniraHudBounds.empty();
+        }
+        if (element == BaniraHudOverlayElement.EXPERIENCE_BAR) {
+            return BaniraHudGeometry.experienceBarBounds((draw.width() - 182) / 2, draw.height());
+        }
+        if (element == BaniraHudOverlayElement.EXPERIENCE_TEXT) {
+            return BaniraHudGeometry.experienceTextBounds((draw.width() - 182) / 2, draw.height());
+        }
+        return BaniraHudBounds.empty();
     }
 
     private static BaniraClientScreenEvent toBaniraScreenEvent(BaniraClientScreenEventType type, Object screen, Object nativeDrawContext,

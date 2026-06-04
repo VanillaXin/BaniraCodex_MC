@@ -1,8 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import xin.vanilla.banira.client.event.BaniraDrawContext;
-import xin.vanilla.banira.client.event.BaniraHudLayers;
-import xin.vanilla.banira.client.event.BaniraHudOverlayElement;
+import xin.vanilla.banira.client.event.*;
 
 /**
  * Disabled-by-default HUD smoke diagnostics for loader/version adapter work.
@@ -20,34 +18,42 @@ public final class BaniraHudLayerDiagnostics {
         }
         registered = true;
         // Keep the smoke hook interception-oriented; child mods usually only need to observe/cancel these layers.
-        BaniraHudLayers.interceptExperienceBar(event -> drawInterceptMark(event.draw(), 0x8848D46A));
-        BaniraHudLayers.interceptExperienceText(event -> drawInterceptMark(event.draw(), 0x8855FF77));
-        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_BAR, event -> drawDiagnosticBar(event.draw()));
-        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_TEXT, event -> drawDiagnosticText(event.draw()));
+        BaniraHudLayers.interceptExperienceBar(event -> drawInterceptMark(event, 0x8848D46A));
+        BaniraHudLayers.interceptExperienceText(event -> drawInterceptMark(event, 0x8855FF77));
+        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_BAR, BaniraHudLayerDiagnostics::drawDiagnosticBar);
+        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_TEXT, BaniraHudLayerDiagnostics::drawDiagnosticText);
     }
 
-    private static void drawInterceptMark(BaniraDrawContext draw, int color) {
+    private static void drawInterceptMark(BaniraHudRenderEvent event, int color) {
+        BaniraDrawContext draw = event.draw();
         if (draw == null) {
             return;
         }
-        draw.fill(draw.width() - 10, draw.height() - 10, 4, 4, color);
+        BaniraHudBounds bounds = event.bounds().isKnown()
+                ? BaniraHudBounds.of(event.bounds().right() - 4, event.bounds().y() - 2, 4, 4)
+                : BaniraHudBounds.of(draw.width() - 10, draw.height() - 10, 4, 4);
+        draw.fill(bounds, color);
     }
 
-    private static void drawDiagnosticBar(BaniraDrawContext draw) {
+    private static void drawDiagnosticBar(BaniraHudRenderEvent event) {
+        BaniraDrawContext draw = event.draw();
         if (draw == null) {
             return;
         }
-        int width = 91;
-        int x = (draw.width() - width) / 2;
-        int y = draw.height() - 32;
-        draw.fill(x, y, width, 5, 0xAA111111);
-        draw.fill(x, y, width / 2, 5, 0xFF48D46A);
+        BaniraHudBounds bounds = event.bounds().isKnown()
+                ? event.bounds().inflate(1)
+                : BaniraHudBounds.of((draw.width() - 91) / 2, draw.height() - 32, 91, 5);
+        draw.fillHorizontalProgress(bounds, 0.5F, 0xAA111111, 0xFF48D46A);
     }
 
-    private static void drawDiagnosticText(BaniraDrawContext draw) {
+    private static void drawDiagnosticText(BaniraHudRenderEvent event) {
+        BaniraDrawContext draw = event.draw();
         if (draw == null) {
             return;
         }
-        draw.drawCenteredText("Banira HUD", draw.width() / 2, draw.height() - 39, 0xFF55FF77, true);
+        BaniraHudBounds bounds = event.bounds().isKnown()
+                ? event.bounds()
+                : BaniraHudBounds.of(0, draw.height() - 39, draw.width(), 9);
+        draw.drawCenteredText("Banira HUD", bounds.centerX(), bounds.y(), 0xFF55FF77, true);
     }
 }

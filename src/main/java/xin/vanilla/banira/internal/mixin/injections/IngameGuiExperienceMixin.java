@@ -22,13 +22,13 @@ public class IngameGuiExperienceMixin {
             cancellable = true
     )
     private void banira$beforeExperienceText(MatrixStack stack, int x, CallbackInfo ci) {
-        if (BaniraHudSyntheticEvents.beforeExperienceText(stack)) {
+        if (BaniraHudSyntheticEvents.beforeExperienceText(stack, x)) {
             ci.cancel();
         }
     }
 
     @Inject(method = "renderExperienceBar", at = @At("RETURN"))
     private void banira$afterExperienceText(MatrixStack stack, int x, CallbackInfo ci) {
-        BaniraHudSyntheticEvents.afterExperienceText(stack);
+        BaniraHudSyntheticEvents.afterExperienceText(stack, x);
     }
 }

@@ -60,6 +60,13 @@ public final class BaniraHudLayers {
     }
 
     /**
+     * Draws after the vanilla experience bar; useful for markers that sit on top of vanilla progress.
+     */
+    public static Registration afterExperienceBar(@Nonnull Consumer<BaniraHudRenderEvent> renderer) {
+        return after(BaniraHudOverlayElement.EXPERIENCE_BAR, renderer);
+    }
+
+    /**
      * Replaces the experience level text when the current loader/version exposes it separately.
      */
     public static Registration replaceExperienceText(@Nonnull Consumer<BaniraHudRenderEvent> renderer) {
@@ -68,6 +75,10 @@ public final class BaniraHudLayers {
 
     public static Registration interceptExperienceText(@Nonnull Consumer<BaniraHudRenderEvent> interceptor) {
         return intercept(BaniraHudOverlayElement.EXPERIENCE_TEXT, interceptor);
+    }
+
+    public static Registration afterExperienceText(@Nonnull Consumer<BaniraHudRenderEvent> renderer) {
+        return after(BaniraHudOverlayElement.EXPERIENCE_TEXT, renderer);
     }
 
     public static Registration hide(@Nonnull BaniraHudOverlayElement element) {

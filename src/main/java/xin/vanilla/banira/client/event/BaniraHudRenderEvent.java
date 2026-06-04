@@ -11,12 +11,18 @@ public final class BaniraHudRenderEvent {
     private final BaniraHudOverlayElement element;
     private final BaniraDrawContext draw;
     private final boolean beforeVanilla;
+    private final BaniraHudBounds bounds;
     private boolean canceled;
 
     public BaniraHudRenderEvent(BaniraHudOverlayElement element, BaniraDrawContext draw, boolean beforeVanilla) {
+        this(element, draw, beforeVanilla, BaniraHudBounds.empty());
+    }
+
+    public BaniraHudRenderEvent(BaniraHudOverlayElement element, BaniraDrawContext draw, boolean beforeVanilla, BaniraHudBounds bounds) {
         this.element = element != null ? element : BaniraHudOverlayElement.UNKNOWN;
         this.draw = draw;
         this.beforeVanilla = beforeVanilla;
+        this.bounds = bounds != null ? bounds : BaniraHudBounds.empty();
     }
 
     public boolean isBeforeVanilla() {

@@ -16,19 +16,34 @@ public final class BaniraHudSyntheticEvents {
     private BaniraHudSyntheticEvents() {
     }
 
-    public static boolean beforeExperienceText(MatrixStack stack) {
+    public static boolean beforeExperienceText(MatrixStack stack, int x) {
         BaniraDrawContext draw = new BaniraDrawContext(stack, screenWidth(), screenHeight(), 0.0F);
-        BaniraHudRenderEvent event = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, draw, true);
+        BaniraHudRenderEvent event = new BaniraHudRenderEvent(
+                BaniraHudOverlayElement.EXPERIENCE_TEXT,
+                draw,
+                true,
+                BaniraHudGeometry.experienceTextBounds(x, draw.height())
+        );
         BaniraClientEventHub.dispatchHudPreRender(event);
         if (event.canceled()) {
-            BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, draw, false));
+            BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(
+                    BaniraHudOverlayElement.EXPERIENCE_TEXT,
+                    draw,
+                    false,
+                    BaniraHudGeometry.experienceTextBounds(x, draw.height())
+            ));
         }
         return event.canceled();
     }
 
-    public static void afterExperienceText(MatrixStack stack) {
+    public static void afterExperienceText(MatrixStack stack, int x) {
         BaniraDrawContext draw = new BaniraDrawContext(stack, screenWidth(), screenHeight(), 0.0F);
-        BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, draw, false));
+        BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(
+                BaniraHudOverlayElement.EXPERIENCE_TEXT,
+                draw,
+                false,
+                BaniraHudGeometry.experienceTextBounds(x, draw.height())
+        ));
     }
 
     private static int screenWidth() {

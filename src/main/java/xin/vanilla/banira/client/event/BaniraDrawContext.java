@@ -34,6 +34,26 @@ public final class BaniraDrawContext {
         client().fill(nativeContext, x, y, width, height, argb);
     }
 
+    public void fill(BaniraHudBounds bounds, int argb) {
+        if (bounds != null && bounds.isKnown()) {
+            fill(bounds.x(), bounds.y(), bounds.width(), bounds.height(), argb);
+        }
+    }
+
+    /**
+     * Draws a left-to-right progress fill inside a HUD element rectangle.
+     */
+    public void fillHorizontalProgress(BaniraHudBounds bounds, float progress, int backgroundArgb, int foregroundArgb) {
+        if (bounds == null || !bounds.isKnown()) {
+            return;
+        }
+        fill(bounds, backgroundArgb);
+        int filledWidth = Math.max(0, Math.min(bounds.width(), bounds.progressX(progress) - bounds.x()));
+        if (filledWidth > 0) {
+            fill(bounds.x(), bounds.y(), filledWidth, bounds.height(), foregroundArgb);
+        }
+    }
+
     public void horizontalLine(int x, int y, int width, int argb) {
         fill(x, y, width, 1, argb);
     }
@@ -54,6 +74,12 @@ public final class BaniraDrawContext {
         fill(x, y + height - line, width, line, argb);
         fill(x, y + line, line, Math.max(0, height - line * 2), argb);
         fill(x + width - line, y + line, line, Math.max(0, height - line * 2), argb);
+    }
+
+    public void outline(BaniraHudBounds bounds, int thickness, int argb) {
+        if (bounds != null && bounds.isKnown()) {
+            outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), thickness, argb);
+        }
     }
 
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
@@ -93,6 +119,12 @@ public final class BaniraDrawContext {
 
     public void drawTexture(ResourceLocation texture, int x, int y, int width, int height, int textureWidth, int textureHeight) {
         blit(texture, x, y, 0, 0, width, height, textureWidth, textureHeight);
+    }
+
+    public void drawTexture(ResourceLocation texture, BaniraHudBounds bounds) {
+        if (bounds != null && bounds.isKnown()) {
+            drawTexture(texture, bounds.x(), bounds.y(), bounds.width(), bounds.height());
+        }
     }
 
     public void push() {

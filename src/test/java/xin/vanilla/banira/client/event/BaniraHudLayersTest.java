@@ -32,6 +32,38 @@ public class BaniraHudLayersTest {
     }
 
     @Test
+    public void interceptCanCancelWithoutReplacementDrawing() {
+        AtomicInteger calls = new AtomicInteger();
+        BaniraHudLayers.Registration registration = BaniraHudLayers.interceptExperienceText(event -> {
+            calls.incrementAndGet();
+            event.cancel();
+        });
+
+        BaniraHudRenderEvent event = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, null, true);
+        BaniraClientEventHub.dispatchHudPreRender(event);
+
+        assertEquals(1, calls.get());
+        assertTrue(event.canceled());
+
+        registration.unregister();
+    }
+
+    @Test
+    public void hideExperienceBarOnlyCancelsMatchingElement() {
+        BaniraHudLayers.Registration registration = BaniraHudLayers.hideExperienceBar();
+
+        BaniraHudRenderEvent bar = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_BAR, null, true);
+        BaniraClientEventHub.dispatchHudPreRender(bar);
+        assertTrue(bar.canceled());
+
+        BaniraHudRenderEvent text = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, null, true);
+        BaniraClientEventHub.dispatchHudPreRender(text);
+        assertFalse(text.canceled());
+
+        registration.unregister();
+    }
+
+    @Test
     public void drawContextUsesNoopClientFallbackSafely() {
         BaniraDrawContext draw = new BaniraDrawContext(null, 200, 100, 0.5F);
 

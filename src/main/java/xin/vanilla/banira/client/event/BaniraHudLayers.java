@@ -28,6 +28,13 @@ public final class BaniraHudLayers {
     }
 
     /**
+     * Intercepts an element before vanilla rendering; the callback may observe, cancel, or draw extra content.
+     */
+    public static Registration intercept(@Nonnull BaniraHudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> interceptor) {
+        return before(element, interceptor);
+    }
+
+    /**
      * Runs after vanilla draws the element.
      */
     public static Registration after(@Nonnull BaniraHudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> renderer) {
@@ -48,6 +55,10 @@ public final class BaniraHudLayers {
         return replace(BaniraHudOverlayElement.EXPERIENCE_BAR, renderer);
     }
 
+    public static Registration interceptExperienceBar(@Nonnull Consumer<BaniraHudRenderEvent> interceptor) {
+        return intercept(BaniraHudOverlayElement.EXPERIENCE_BAR, interceptor);
+    }
+
     /**
      * Replaces the experience level text when the current loader/version exposes it separately.
      */
@@ -55,8 +66,20 @@ public final class BaniraHudLayers {
         return replace(BaniraHudOverlayElement.EXPERIENCE_TEXT, renderer);
     }
 
+    public static Registration interceptExperienceText(@Nonnull Consumer<BaniraHudRenderEvent> interceptor) {
+        return intercept(BaniraHudOverlayElement.EXPERIENCE_TEXT, interceptor);
+    }
+
     public static Registration hide(@Nonnull BaniraHudOverlayElement element) {
         return before(element, BaniraHudRenderEvent::cancel);
+    }
+
+    public static Registration hideExperienceBar() {
+        return hide(BaniraHudOverlayElement.EXPERIENCE_BAR);
+    }
+
+    public static Registration hideExperienceText() {
+        return hide(BaniraHudOverlayElement.EXPERIENCE_TEXT);
     }
 
     public interface Registration {

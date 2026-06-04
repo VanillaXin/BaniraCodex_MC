@@ -12,10 +12,7 @@ import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.gui.event.MouseClickTracker;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
@@ -69,6 +66,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Getter
     protected final InputStateManager inputState = InputStateManager.instance();
+    private final KeyClickTracker keyClickTracker = new KeyClickTracker();
     private final MouseClickTracker mouseClickTracker = new MouseClickTracker();
 
     public FontRenderer getFont() {
@@ -423,6 +421,10 @@ public abstract class BaniraScreen extends Screen {
         private int keyCode;
         private int scanCode;
         private int modifiers;
+        private int pressCount = 1;
+        private boolean doublePress;
+        private boolean repeatedPress;
+        private boolean heldRepeat;
 
         /**
          * 等同于 keyCode，便于语义化调用
@@ -430,10 +432,20 @@ public abstract class BaniraScreen extends Screen {
         public int key() {
             return keyCode;
         }
+
+        public KeyEvent toEvent() {
+            return KeyEvent.of(keyCode, scanCode, modifiers)
+                    .pressCount(pressCount)
+                    .doublePress(doublePress)
+                    .repeatedPress(repeatedPress)
+                    .heldRepeat(heldRepeat)
+                    .pressTracked(true);
+        }
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        KeyClickTracker.Result press = keyClickTracker.recordPress(keyCode, scanCode, modifiers);
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
                 && focusedWidget.handleKeyPress(keyCode, scanCode, modifiers)) {
             return true;
@@ -445,7 +457,11 @@ public abstract class BaniraScreen extends Screen {
         KeyPressedHandleArgs args = new KeyPressedHandleArgs()
                 .keyCode(keyCode)
                 .scanCode(scanCode)
-                .modifiers(modifiers);
+                .modifiers(modifiers)
+                .pressCount(press.pressCount())
+                .doublePress(press.doublePress())
+                .repeatedPress(press.repeatedPress())
+                .heldRepeat(press.heldRepeat());
 
         onKeyPressed(args);
 
@@ -469,6 +485,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        keyClickTracker.recordRelease(keyCode, scanCode, modifiers);
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
                 && focusedWidget.handleKeyRelease(keyCode, scanCode, modifiers)) {
             return true;

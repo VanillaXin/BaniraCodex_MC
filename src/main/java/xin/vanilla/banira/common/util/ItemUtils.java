@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import lombok.NonNull;
-import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.command.arguments.ItemInput;
 import net.minecraft.command.arguments.ItemParser;
 import net.minecraft.enchantment.Enchantment;
@@ -634,10 +633,7 @@ public final class ItemUtils {
                         ? BaniraPlatforms.get().client().localPlayer()
                         : null;
                 if (clientPlayer != null) {
-                    List<ITextComponent> tooltip = stack.getTooltipLines(
-                            clientPlayer,
-                            ITooltipFlag.TooltipFlags.NORMAL
-                    );
+                    List<ITextComponent> tooltip = BaniraPlatforms.get().client().itemTooltip(stack, clientPlayer, false);
                     if (CollectionUtils.isNotNullOrEmpty(tooltip)) {
                         description = tooltip.stream()
                                 .skip(1)
@@ -1091,13 +1087,10 @@ public final class ItemUtils {
             List<Component> result = new ArrayList<>();
 
             try {
-                // 获取基础tooltip
+                // 获取基础 tooltip；具体版本的 tooltip flag 由 client adapter 处理。
                 List<ITextComponent> baseTooltip = new ArrayList<>();
-                if (player != null) {
-                    baseTooltip.addAll(itemStack.getTooltipLines(
-                            player,
-                            advanced ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL
-                    ));
+                if (player != null && BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
+                    baseTooltip.addAll(BaniraPlatforms.get().client().itemTooltip(itemStack, player, advanced));
                 } else {
                     baseTooltip.add(itemStack.getHoverName());
                 }

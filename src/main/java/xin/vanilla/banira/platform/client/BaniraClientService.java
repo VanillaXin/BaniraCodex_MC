@@ -1,9 +1,13 @@
 package xin.vanilla.banira.platform.client;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.common.data.KeyValue;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -19,6 +23,11 @@ public interface BaniraClientService {
     PlayerEntity playerByUuid(UUID uuid);
 
     ResourceLocation playerSkin(UUID uuid);
+
+    /**
+     * Builds vanilla item tooltip lines using the active client version's tooltip flag API.
+     */
+    List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced);
 
     String selectedLanguageCode();
 
@@ -94,6 +103,11 @@ public interface BaniraClientService {
         @Override
         public ResourceLocation playerSkin(UUID uuid) {
             return null;
+        }
+
+        @Override
+        public List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced) {
+            return stack != null ? Collections.singletonList(stack.getHoverName()) : Collections.emptyList();
         }
 
         @Override

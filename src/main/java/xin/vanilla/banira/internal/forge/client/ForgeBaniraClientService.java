@@ -1,11 +1,16 @@
 package xin.vanilla.banira.internal.forge.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -53,6 +58,17 @@ public final class ForgeBaniraClientService implements BaniraClientService {
                 .findFirst()
                 .map(info -> info.getSkinLocation())
                 .orElse(null);
+    }
+
+    @Override
+    public List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced) {
+        if (stack == null) {
+            return Collections.emptyList();
+        }
+        return stack.getTooltipLines(
+                player,
+                advanced ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL
+        );
     }
 
     @Override

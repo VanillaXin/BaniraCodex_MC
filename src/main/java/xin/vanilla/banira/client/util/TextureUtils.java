@@ -1,22 +1,16 @@
 package xin.vanilla.banira.client.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.renderer.texture.MissingTextureSprite;
 import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.potion.EffectInstance;
-import net.minecraft.resources.IResource;
 import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.BaniraClientTextureService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -44,7 +38,7 @@ public final class TextureUtils {
     private static final Map<Texture, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
 
     /**
-     * 由 {@link #loadCustomTexture} 注册到 {@link TextureManager} 的外部文件动态纹理；{@link #clearAll()} 时 {@link TextureManager#release}，{@link #getTextureImage} 据此读取像素。
+     * 由 {@link #loadCustomTexture} 注册的外部文件动态纹理；清理时通过内部客户端服务释放。
      */
     private static final Set<ResourceLocation> REGISTERED_DYNAMIC_TEXTURE_LOCATIONS = ConcurrentHashMap.newKeySet();
 
@@ -60,23 +54,27 @@ public final class TextureUtils {
         return normalized.length() >= 2 && normalized.charAt(1) == ':' && Character.isLetter(normalized.charAt(0));
     }
 
+    private static boolean hasClientResource(ResourceLocation location) {
+        return BaniraPlatforms.isInstalled()
+                && BaniraPlatforms.get().isClient()
+                && BaniraPlatforms.get().client().hasResource(location);
+    }
+
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
+        if (!BaniraClientTextureService.isClientReady()) {
             return factory.empty();
         }
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
         ResourceLocation rl = factory.create(safePath);
-        TextureManager textureManager = mc.getTextureManager();
 
         // region 资源包纹理
-        if (BaniraPlatforms.get().client().hasResource(rl)) {
+        if (hasClientResource(rl)) {
             return rl;
         }
         if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
             ResourceLocation parsed = ResourceLocation.tryParse(normalized);
-            if (parsed != null && BaniraPlatforms.get().client().hasResource(parsed)) {
+            if (parsed != null && hasClientResource(parsed)) {
                 return parsed;
             }
         }
@@ -96,8 +94,7 @@ public final class TextureUtils {
                 }
                 try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
                     NativeImage nativeImage = NativeImage.read(inputStream);
-                    DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
-                    textureManager.register(externalRl, dynamicTexture);
+                    BaniraClientTextureService.registerDynamicTexture(externalRl, nativeImage);
                     REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.add(externalRl);
                     return externalRl;
                 } catch (IOException e) {
@@ -121,19 +118,7 @@ public final class TextureUtils {
         if (location == null) {
             return false;
         }
-        if (MissingTextureSprite.getLocation().equals(location)) {
-            return false;
-        }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return false;
-        }
-        TextureManager textureManager = mc.getTextureManager();
-        net.minecraft.client.renderer.texture.Texture texture = textureManager.getTexture(location);
-        if (texture == null) {
-            return BaniraPlatforms.get().client().hasResource(location);
-        }
-        return texture.getId() != -1;
+        return BaniraClientTextureService.isTextureAvailable(location, hasClientResource(location));
     }
 
     /**
@@ -224,12 +209,8 @@ public final class TextureUtils {
     }
 
     public static void clearAll() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null) {
-            TextureManager tm = mc.getTextureManager();
-            for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
-                tm.release(loc);
-            }
+        for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
+            BaniraClientTextureService.releaseTexture(loc);
         }
         REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.clear();
         for (NativeImage img : CACHE.values()) {
@@ -254,26 +235,13 @@ public final class TextureUtils {
             return CACHE.get(texture);
         }
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(texture)) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc == null) {
-                return null;
-            }
-            net.minecraft.client.renderer.texture.Texture gpuTexture = mc.getTextureManager().getTexture(texture);
-            if (gpuTexture instanceof DynamicTexture) {
-                return ((DynamicTexture) gpuTexture).getPixels();
-            }
-            return null;
+            return BaniraClientTextureService.dynamicTextureImage(texture);
         }
-        try {
-            // 获取资源管理器
-            IResource resource = Minecraft.getInstance().getResourceManager().getResource(texture);
-            // 打开资源输入流并加载为 NativeImage
-            try (InputStream inputStream = resource.getInputStream()) {
-                NativeImage nativeImage = NativeImage.read(inputStream);
-                CACHE.put(texture, nativeImage);
-                return nativeImage;
-            }
-        } catch (Exception e) {
+        NativeImage nativeImage = BaniraClientTextureService.resourceTextureImage(texture);
+        if (nativeImage != null) {
+            CACHE.put(texture, nativeImage);
+            return nativeImage;
+        } else {
             LOGGER.debug("Failed to load texture: {}", texture);
             return null;
         }
@@ -325,31 +293,7 @@ public final class TextureUtils {
 
     @Nullable
     private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return null;
-        }
-        net.minecraft.client.renderer.texture.Texture gpuTexture = mc.getTextureManager().getTexture(location);
-        if (gpuTexture == null) {
-            return null;
-        }
-        int tid = gpuTexture.getId();
-        if (tid == -1) {
-            return null;
-        }
-        int[] prev = new int[1];
-        GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
-        try {
-            RenderSystem.bindTexture(tid);
-            int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-            int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-            if (w <= 0 || h <= 0) {
-                return null;
-            }
-            return new KeyValue<>(w, h);
-        } finally {
-            RenderSystem.bindTexture(prev[0]);
-        }
+        return BaniraClientTextureService.gpuTextureSize(location);
     }
 
     /**

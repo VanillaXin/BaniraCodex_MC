@@ -19,7 +19,26 @@ public final class BaniraHudRenderEvent {
         this.beforeVanilla = beforeVanilla;
     }
 
+    public boolean isBeforeVanilla() {
+        return beforeVanilla;
+    }
+
+    public boolean isAfterVanilla() {
+        return !beforeVanilla;
+    }
+
     public void cancel() {
+        cancelVanilla();
+    }
+
+    /**
+     * Suppresses vanilla rendering for this HUD element when the current phase is cancelable.
+     */
+    public void cancelVanilla() {
         this.canceled = true;
+    }
+
+    public boolean isVanillaCanceled() {
+        return canceled;
     }
 }

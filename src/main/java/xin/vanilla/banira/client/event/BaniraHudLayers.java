@@ -21,7 +21,7 @@ public final class BaniraHudLayers {
     }
 
     /**
-     * Runs before vanilla draws the element. Call {@link BaniraHudRenderEvent#cancel()} to hide vanilla rendering.
+     * Runs before vanilla draws the element. Call {@link BaniraHudRenderEvent#cancelVanilla()} to hide vanilla rendering.
      */
     public static Registration before(@Nonnull BaniraHudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> renderer) {
         return register(beforeVanilla, element, renderer);
@@ -46,7 +46,7 @@ public final class BaniraHudLayers {
      */
     public static Registration replace(@Nonnull BaniraHudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> renderer) {
         return before(element, event -> {
-            event.cancel();
+            event.cancelVanilla();
             renderer.accept(event);
         });
     }
@@ -71,7 +71,7 @@ public final class BaniraHudLayers {
     }
 
     public static Registration hide(@Nonnull BaniraHudOverlayElement element) {
-        return before(element, BaniraHudRenderEvent::cancel);
+        return before(element, BaniraHudRenderEvent::cancelVanilla);
     }
 
     public static Registration hideExperienceBar() {

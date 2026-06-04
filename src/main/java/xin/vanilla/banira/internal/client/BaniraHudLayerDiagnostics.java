@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.client;
 
 import xin.vanilla.banira.client.event.BaniraDrawContext;
 import xin.vanilla.banira.client.event.BaniraHudLayers;
+import xin.vanilla.banira.client.event.BaniraHudOverlayElement;
 
 /**
  * Disabled-by-default HUD smoke diagnostics for loader/version adapter work.
@@ -18,8 +19,18 @@ public final class BaniraHudLayerDiagnostics {
             return;
         }
         registered = true;
-        BaniraHudLayers.replaceExperienceBar(event -> drawDiagnosticBar(event.draw()));
-        BaniraHudLayers.replaceExperienceText(event -> drawDiagnosticText(event.draw()));
+        // Keep the smoke hook interception-oriented; child mods usually only need to observe/cancel these layers.
+        BaniraHudLayers.interceptExperienceBar(event -> drawInterceptMark(event.draw(), 0x8848D46A));
+        BaniraHudLayers.interceptExperienceText(event -> drawInterceptMark(event.draw(), 0x8855FF77));
+        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_BAR, event -> drawDiagnosticBar(event.draw()));
+        BaniraHudLayers.after(BaniraHudOverlayElement.EXPERIENCE_TEXT, event -> drawDiagnosticText(event.draw()));
+    }
+
+    private static void drawInterceptMark(BaniraDrawContext draw, int color) {
+        if (draw == null) {
+            return;
+        }
+        draw.fill(draw.width() - 10, draw.height() - 10, 4, 4, color);
     }
 
     private static void drawDiagnosticBar(BaniraDrawContext draw) {

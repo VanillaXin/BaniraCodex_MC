@@ -22,6 +22,9 @@ public class BaniraHudLayersTest {
 
         assertEquals(1, calls.get());
         assertTrue(first.canceled());
+        assertTrue(first.isVanillaCanceled());
+        assertTrue(first.isBeforeVanilla());
+        assertFalse(first.isAfterVanilla());
 
         registration.unregister();
         BaniraHudRenderEvent second = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_BAR, null, true);
@@ -36,14 +39,14 @@ public class BaniraHudLayersTest {
         AtomicInteger calls = new AtomicInteger();
         BaniraHudLayers.Registration registration = BaniraHudLayers.interceptExperienceText(event -> {
             calls.incrementAndGet();
-            event.cancel();
+            event.cancelVanilla();
         });
 
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, null, true);
         BaniraClientEventHub.dispatchHudPreRender(event);
 
         assertEquals(1, calls.get());
-        assertTrue(event.canceled());
+        assertTrue(event.isVanillaCanceled());
 
         registration.unregister();
     }
@@ -59,6 +62,27 @@ public class BaniraHudLayersTest {
         BaniraHudRenderEvent text = new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_TEXT, null, true);
         BaniraClientEventHub.dispatchHudPreRender(text);
         assertFalse(text.canceled());
+
+        registration.unregister();
+    }
+
+    @Test
+    public void afterRunsOnlyForPostRenderPhase() {
+        AtomicInteger calls = new AtomicInteger();
+        BaniraHudLayers.Registration registration = BaniraHudLayers.after(
+                BaniraHudOverlayElement.EXPERIENCE_BAR,
+                event -> {
+                    calls.incrementAndGet();
+                    assertFalse(event.isBeforeVanilla());
+                    assertTrue(event.isAfterVanilla());
+                }
+        );
+
+        BaniraClientEventHub.dispatchHudPreRender(new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_BAR, null, true));
+        assertEquals(0, calls.get());
+
+        BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(BaniraHudOverlayElement.EXPERIENCE_BAR, null, false));
+        assertEquals(1, calls.get());
 
         registration.unregister();
     }

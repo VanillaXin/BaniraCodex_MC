@@ -7,6 +7,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 
@@ -170,6 +171,16 @@ public final class ForgeBaniraClientService implements BaniraClientService {
     @Override
     public int lineHeight() {
         return Minecraft.getInstance().font.lineHeight;
+    }
+
+    @Override
+    public void fill(Object nativeContext, int x, int y, int width, int height, int argb) {
+        AbstractGuiUtils.fill(matrixStack(nativeContext), x, y, width, height, argb);
+    }
+
+    @Override
+    public void blit(Object nativeContext, ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
+        AbstractGuiUtils.blit(matrixStack(nativeContext), texture, x, y, u, v, width, height, textureWidth, textureHeight);
     }
 
     private static MatrixStack matrixStack(Object nativeContext) {

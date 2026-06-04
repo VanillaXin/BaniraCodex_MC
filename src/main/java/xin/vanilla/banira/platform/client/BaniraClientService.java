@@ -76,6 +76,10 @@ public interface BaniraClientService {
 
     int lineHeight();
 
+    void fill(Object nativeContext, int x, int y, int width, int height, int argb);
+
+    void blit(Object nativeContext, ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight);
+
     static BaniraClientService noop() {
         return Noop.INSTANCE;
     }
@@ -197,6 +201,14 @@ public interface BaniraClientService {
         @Override
         public int lineHeight() {
             return 9;
+        }
+
+        @Override
+        public void fill(Object nativeContext, int x, int y, int width, int height, int argb) {
+        }
+
+        @Override
+        public void blit(Object nativeContext, ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
         }
     }
 }

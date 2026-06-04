@@ -1,10 +1,8 @@
 package xin.vanilla.banira.client.event;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 
@@ -28,7 +26,7 @@ public final class BaniraDrawContext {
     }
 
     public void fill(int x, int y, int width, int height, int argb) {
-        AbstractGuiUtils.fill(stack(), x, y, width, height, argb);
+        client().fill(nativeContext, x, y, width, height, argb);
     }
 
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
@@ -59,14 +57,7 @@ public final class BaniraDrawContext {
     }
 
     public void blit(ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
-        AbstractGuiUtils.blit(stack(), texture, x, y, u, v, width, height, textureWidth, textureHeight);
-    }
-
-    private MatrixStack stack() {
-        if (nativeContext instanceof MatrixStack) {
-            return (MatrixStack) nativeContext;
-        }
-        throw new IllegalStateException("Unsupported draw context: " + nativeContext);
+        client().blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
     }
 
     private static BaniraClientService client() {

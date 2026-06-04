@@ -67,6 +67,15 @@ public interface BaniraClientService {
 
     KeyValue<Integer, Integer> guiPixelSize();
 
+    /**
+     * Draws text through the active client version's font/render-context API.
+     */
+    int drawText(Object nativeContext, String text, int x, int y, int argb, boolean shadow);
+
+    int textWidth(String text);
+
+    int lineHeight();
+
     static BaniraClientService noop() {
         return Noop.INSTANCE;
     }
@@ -173,6 +182,21 @@ public interface BaniraClientService {
         @Override
         public KeyValue<Integer, Integer> guiPixelSize() {
             return new KeyValue<>(0, 0);
+        }
+
+        @Override
+        public int drawText(Object nativeContext, String text, int x, int y, int argb, boolean shadow) {
+            return x + textWidth(text);
+        }
+
+        @Override
+        public int textWidth(String text) {
+            return text != null ? text.length() * 6 : 0;
+        }
+
+        @Override
+        public int lineHeight() {
+            return 9;
         }
     }
 }

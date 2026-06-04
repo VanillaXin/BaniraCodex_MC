@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.client.BaniraClientService;
 
 @Getter
 @Accessors(fluent = true)
@@ -30,11 +32,7 @@ public final class BaniraDrawContext {
     }
 
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
-        if (text == null) return x;
-        if (shadow) {
-            return AbstractGuiUtils.getFont().drawShadow(stack(), text, x, y, argb);
-        }
-        return AbstractGuiUtils.getFont().draw(stack(), text, x, y, argb);
+        return client().drawText(nativeContext, text, x, y, argb, shadow);
     }
 
     /**
@@ -49,11 +47,11 @@ public final class BaniraDrawContext {
     }
 
     public int textWidth(String text) {
-        return text == null ? 0 : AbstractGuiUtils.getFont().width(text);
+        return client().textWidth(text);
     }
 
     public int lineHeight() {
-        return AbstractGuiUtils.getFont().lineHeight;
+        return client().lineHeight();
     }
 
     public void fillScreen(int argb) {
@@ -69,5 +67,11 @@ public final class BaniraDrawContext {
             return (MatrixStack) nativeContext;
         }
         throw new IllegalStateException("Unsupported draw context: " + nativeContext);
+    }
+
+    private static BaniraClientService client() {
+        return BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
+                ? BaniraPlatforms.get().client()
+                : BaniraClientService.noop();
     }
 }

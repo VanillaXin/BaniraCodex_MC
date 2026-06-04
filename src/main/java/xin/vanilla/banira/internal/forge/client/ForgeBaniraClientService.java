@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.forge.client;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
@@ -147,5 +148,34 @@ public final class ForgeBaniraClientService implements BaniraClientService {
                 Minecraft.getInstance().getWindow().getWidth(),
                 Minecraft.getInstance().getWindow().getHeight()
         );
+    }
+
+    @Override
+    public int drawText(Object nativeContext, String text, int x, int y, int argb, boolean shadow) {
+        if (text == null) {
+            return x;
+        }
+        MatrixStack stack = matrixStack(nativeContext);
+        if (shadow) {
+            return Minecraft.getInstance().font.drawShadow(stack, text, x, y, argb);
+        }
+        return Minecraft.getInstance().font.draw(stack, text, x, y, argb);
+    }
+
+    @Override
+    public int textWidth(String text) {
+        return text != null ? Minecraft.getInstance().font.width(text) : 0;
+    }
+
+    @Override
+    public int lineHeight() {
+        return Minecraft.getInstance().font.lineHeight;
+    }
+
+    private static MatrixStack matrixStack(Object nativeContext) {
+        if (nativeContext instanceof MatrixStack) {
+            return (MatrixStack) nativeContext;
+        }
+        throw new IllegalStateException("Unsupported draw context: " + nativeContext);
     }
 }

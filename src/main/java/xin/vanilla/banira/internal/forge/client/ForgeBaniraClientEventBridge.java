@@ -333,6 +333,8 @@ public final class ForgeBaniraClientEventBridge {
             case "EXPERIENCE_BAR":
             case "JUMPBAR":
                 return BaniraHudOverlayElement.EXPERIENCE_BAR;
+            case "TEXT":
+                return BaniraHudOverlayElement.HUD_TEXT;
             case "EXPERIENCE_LEVEL":
             case "EXPERIENCE_TEXT":
                 return BaniraHudOverlayElement.EXPERIENCE_TEXT;

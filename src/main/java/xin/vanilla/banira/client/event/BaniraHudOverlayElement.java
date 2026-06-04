@@ -13,6 +13,7 @@ public enum BaniraHudOverlayElement {
     HOTBAR,
     EXPERIENCE_BAR,
     EXPERIENCE_TEXT,
+    HUD_TEXT,
     CHAT,
     PLAYER_LIST,
     DEBUG,

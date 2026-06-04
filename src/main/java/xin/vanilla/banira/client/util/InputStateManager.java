@@ -4,15 +4,12 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.MemoryStack;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientInputService;
 
-import java.nio.DoubleBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -64,32 +61,28 @@ public final class InputStateManager {
     private InputStateManager() {
     }
 
-    private static long getWindowHandle() {
-        return BaniraPlatforms.get().client().windowHandle();
-    }
-
     // endregion
 
     // region 按键/鼠标状态
 
     public static boolean isKeyPressing(int key) {
-        return GLFW.glfwGetKey(getWindowHandle(), key) == GLFW.GLFW_PRESS;
+        return BaniraClientInputService.isKeyDown(key);
     }
 
     public static boolean isShiftPressingStatic() {
-        return isKeyPressing(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyPressing(GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return isKeyPressing(GLFWKey.GLFW_KEY_LEFT_SHIFT) || isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_SHIFT);
     }
 
     public static boolean isCtrlPressingStatic() {
-        return isKeyPressing(GLFW.GLFW_KEY_LEFT_CONTROL) || isKeyPressing(GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return isKeyPressing(GLFWKey.GLFW_KEY_LEFT_CONTROL) || isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_CONTROL);
     }
 
     public static boolean isAltPressingStatic() {
-        return isKeyPressing(GLFW.GLFW_KEY_LEFT_ALT) || isKeyPressing(GLFW.GLFW_KEY_RIGHT_ALT);
+        return isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT) || isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT);
     }
 
     public static boolean isMousePressing(int mouseButton) {
-        return GLFW.glfwGetMouseButton(getWindowHandle(), mouseButton) == GLFW.GLFW_PRESS;
+        return BaniraClientInputService.isMouseDown(mouseButton);
     }
 
     // endregion
@@ -97,45 +90,23 @@ public final class InputStateManager {
     // region 光标坐标
 
     public static KeyValue<Double, Double> getRawCursorPos() {
-        long window = getWindowHandle();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            DoubleBuffer xb = stack.mallocDouble(1);
-            DoubleBuffer yb = stack.mallocDouble(1);
-            GLFW.glfwGetCursorPos(window, xb, yb);
-            return new KeyValue<>(xb.get(0), yb.get(0));
-        }
+        return BaniraClientInputService.rawCursorPos();
     }
 
     public static KeyValue<Integer, Integer> getGuiCursorPos() {
-        return rawToGui(getRawCursorPos());
+        return BaniraClientInputService.guiCursorPos();
     }
 
     public static KeyValue<Integer, Integer> rawToGui(KeyValue<Double, Double> raw) {
-        return rawToGui(raw.key(), raw.val());
+        return BaniraClientInputService.rawToGui(raw);
     }
 
     public static KeyValue<Integer, Integer> rawToGui(double rawX, double rawY) {
-        KeyValue<Integer, Integer> pixel = BaniraPlatforms.get().client().guiPixelSize();
-        KeyValue<Integer, Integer> scaled = BaniraPlatforms.get().client().guiScaledSize();
-        int w = Math.max(1, pixel.key());
-        int h = Math.max(1, pixel.val());
-        int sw = scaled.key();
-        int sh = scaled.val();
-        int gx = (int) Math.round(rawX * (double) sw / w);
-        int gy = (int) Math.round(rawY * (double) sh / h);
-        return new KeyValue<>(gx, gy);
+        return BaniraClientInputService.rawToGui(rawX, rawY);
     }
 
     public static KeyValue<Double, Double> guiToRaw(double guiX, double guiY) {
-        KeyValue<Integer, Integer> pixel = BaniraPlatforms.get().client().guiPixelSize();
-        KeyValue<Integer, Integer> scaled = BaniraPlatforms.get().client().guiScaledSize();
-        int w = pixel.key();
-        int h = pixel.val();
-        int sw = Math.max(1, scaled.key());
-        int sh = Math.max(1, scaled.val());
-        double rx = guiX * (double) w / sw;
-        double ry = guiY * (double) h / sh;
-        return new KeyValue<>(rx, ry);
+        return BaniraClientInputService.guiToRaw(guiX, guiY);
     }
 
     public static void setMouseGuiPos(KeyValue<Integer, Integer> pos) {
@@ -143,9 +114,7 @@ public final class InputStateManager {
     }
 
     public static void setMouseGuiPos(double guiX, double guiY) {
-        long window = getWindowHandle();
-        KeyValue<Double, Double> raw = guiToRaw(guiX, guiY);
-        GLFW.glfwSetCursorPos(window, raw.key(), raw.value());
+        BaniraClientInputService.setGuiCursorPos(guiX, guiY);
     }
 
     public static void setMouseRawPos(KeyValue<Double, Double> pos) {
@@ -153,8 +122,7 @@ public final class InputStateManager {
     }
 
     public static void setMouseRawPos(double rawX, double rawY) {
-        long window = getWindowHandle();
-        GLFW.glfwSetCursorPos(window, rawX, rawY);
+        BaniraClientInputService.setRawCursorPos(rawX, rawY);
     }
 
     // endregion
@@ -215,15 +183,15 @@ public final class InputStateManager {
     }
 
     public boolean isShiftPressing() {
-        return isPressing(GLFW.GLFW_KEY_LEFT_SHIFT) || isPressing(GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return isPressing(GLFWKey.GLFW_KEY_LEFT_SHIFT) || isPressing(GLFWKey.GLFW_KEY_RIGHT_SHIFT);
     }
 
     public boolean isCtrlPressing() {
-        return isPressing(GLFW.GLFW_KEY_LEFT_CONTROL) || isPressing(GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return isPressing(GLFWKey.GLFW_KEY_LEFT_CONTROL) || isPressing(GLFWKey.GLFW_KEY_RIGHT_CONTROL);
     }
 
     public boolean isAltPressing() {
-        return isPressing(GLFW.GLFW_KEY_LEFT_ALT) || isPressing(GLFW.GLFW_KEY_RIGHT_ALT);
+        return isPressing(GLFWKey.GLFW_KEY_LEFT_ALT) || isPressing(GLFWKey.GLFW_KEY_RIGHT_ALT);
     }
 
     public boolean isEscapePressed() {
@@ -488,7 +456,7 @@ public final class InputStateManager {
     }
 
     private void tick() {
-        if (!BaniraPlatforms.get().client().isWindowActive()) {
+        if (!BaniraClientInputService.isWindowActive()) {
             if (keyActive) {
                 LOGGER.debug("Window is not active, clear all input state");
             }
@@ -501,14 +469,14 @@ public final class InputStateManager {
     }
 
     private void syncMouseButtonState() {
-        boolean left = GLFW.glfwGetMouseButton(getWindowHandle(), GLFWKey.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean left = BaniraClientInputService.isMouseDown(GLFWKey.GLFW_MOUSE_BUTTON_LEFT);
         if (left && !Boolean.TRUE.equals(mouseLeftPressedRecord.getLast())) {
             mouseLeftPressedX = mouseX;
             mouseLeftPressedY = mouseY;
         }
         mouseLeftPressedRecord.add(left);
 
-        boolean right = GLFW.glfwGetMouseButton(getWindowHandle(), GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+        boolean right = BaniraClientInputService.isMouseDown(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
         if (right && !Boolean.TRUE.equals(mouseRightPressedRecord.getLast())) {
             mouseRightPressedX = mouseX;
             mouseRightPressedY = mouseY;
@@ -517,12 +485,10 @@ public final class InputStateManager {
     }
 
     private void syncRegisteredKeys() {
-        long windowHandle = getWindowHandle();
         for (Map.Entry<Integer, FixedList<Boolean>> entry : keyHistoryRecords.entrySet()) {
             int key = entry.getKey();
             FixedList<Boolean> record = entry.getValue();
-            boolean pressing = GLFW.glfwGetKey(windowHandle, key) == GLFW.GLFW_PRESS;
-            record.add(pressing);
+            record.add(BaniraClientInputService.isKeyDown(key));
         }
     }
 

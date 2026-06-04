@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.event;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.util.ResourceLocation;
@@ -9,6 +10,7 @@ import xin.vanilla.banira.platform.client.BaniraClientService;
 @Getter
 @Accessors(fluent = true)
 public final class BaniraDrawContext {
+    @Getter(AccessLevel.NONE)
     private final Object nativeContext;
     private final int width;
     private final int height;
@@ -21,6 +23,9 @@ public final class BaniraDrawContext {
         this.partialTicks = partialTicks;
     }
 
+    /**
+     * Advanced escape hatch for internal/version-local rendering integrations.
+     */
     public <T> T nativeContext(Class<T> type) {
         return type.isInstance(nativeContext) ? type.cast(nativeContext) : null;
     }
@@ -58,6 +63,36 @@ public final class BaniraDrawContext {
 
     public void blit(ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
         client().blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+    }
+
+    public void push() {
+        client().pushTransform(nativeContext);
+    }
+
+    public void pop() {
+        client().popTransform(nativeContext);
+    }
+
+    public void translate(double x, double y, double z) {
+        client().translate(nativeContext, x, y, z);
+    }
+
+    public void scale(float x, float y, float z) {
+        client().scale(nativeContext, x, y, z);
+    }
+
+    /**
+     * Runs drawing with an isolated transform scope.
+     */
+    public void withTransform(Runnable renderer) {
+        push();
+        try {
+            if (renderer != null) {
+                renderer.run();
+            }
+        } finally {
+            pop();
+        }
     }
 
     private static BaniraClientService client() {

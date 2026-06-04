@@ -183,6 +183,26 @@ public final class ForgeBaniraClientService implements BaniraClientService {
         AbstractGuiUtils.blit(matrixStack(nativeContext), texture, x, y, u, v, width, height, textureWidth, textureHeight);
     }
 
+    @Override
+    public void pushTransform(Object nativeContext) {
+        matrixStack(nativeContext).pushPose();
+    }
+
+    @Override
+    public void popTransform(Object nativeContext) {
+        matrixStack(nativeContext).popPose();
+    }
+
+    @Override
+    public void translate(Object nativeContext, double x, double y, double z) {
+        matrixStack(nativeContext).translate(x, y, z);
+    }
+
+    @Override
+    public void scale(Object nativeContext, float x, float y, float z) {
+        matrixStack(nativeContext).scale(x, y, z);
+    }
+
     private static MatrixStack matrixStack(Object nativeContext) {
         if (nativeContext instanceof MatrixStack) {
             return (MatrixStack) nativeContext;

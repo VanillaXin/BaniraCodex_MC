@@ -80,6 +80,17 @@ public interface BaniraClientService {
 
     void blit(Object nativeContext, ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight);
 
+    /**
+     * Applies draw-context transforms through the active client render stack.
+     */
+    void pushTransform(Object nativeContext);
+
+    void popTransform(Object nativeContext);
+
+    void translate(Object nativeContext, double x, double y, double z);
+
+    void scale(Object nativeContext, float x, float y, float z);
+
     static BaniraClientService noop() {
         return Noop.INSTANCE;
     }
@@ -209,6 +220,22 @@ public interface BaniraClientService {
 
         @Override
         public void blit(Object nativeContext, ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
+        }
+
+        @Override
+        public void pushTransform(Object nativeContext) {
+        }
+
+        @Override
+        public void popTransform(Object nativeContext) {
+        }
+
+        @Override
+        public void translate(Object nativeContext, double x, double y, double z) {
+        }
+
+        @Override
+        public void scale(Object nativeContext, float x, float y, float z) {
         }
     }
 }

@@ -42,5 +42,10 @@ public class BaniraHudLayersTest {
         draw.fill(0, 0, 10, 10, 0xAA000000);
         draw.fillScreen(0x33000000);
         draw.blit(new ResourceLocation("banira_codex", "textures/gui/missing.png"), 0, 0, 0, 0, 8, 8, 8, 8);
+        draw.push();
+        draw.translate(1, 2, 3);
+        draw.scale(1.0F, 1.0F, 1.0F);
+        draw.pop();
+        draw.withTransform(() -> draw.translate(4, 5, 6));
     }
 }

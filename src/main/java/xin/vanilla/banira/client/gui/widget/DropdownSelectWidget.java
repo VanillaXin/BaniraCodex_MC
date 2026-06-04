@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -968,7 +969,8 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
+        int keyCode = event.keyCode();
         if (dropdownOpen && keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
             closeDropdown();
             return true;
@@ -984,6 +986,6 @@ public class DropdownSelectWidget extends InputWidget {
                 return true;
             }
         }
-        return super.onKeyPress(keyCode, scanCode, modifiers);
+        return super.onKeyPress(event);
     }
 }

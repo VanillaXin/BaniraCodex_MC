@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -811,11 +812,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!canConsumeInput()) {
             return false;
         }
 
+        int keyCode = event.keyCode();
         this.shiftPressed = Screen.hasShiftDown();
 
         if (Screen.isSelectAll(keyCode)) {
@@ -911,7 +913,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onKeyRelease(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyRelease(KeyEvent event) {
+        int keyCode = event.keyCode();
         if (keyCode == heldArrowKey) {
             heldArrowKey = -1;
         }

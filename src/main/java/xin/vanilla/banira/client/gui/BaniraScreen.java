@@ -446,11 +446,12 @@ public abstract class BaniraScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         KeyClickTracker.Result press = keyClickTracker.recordPress(keyCode, scanCode, modifiers);
+        KeyEvent keyEvent = KeyEvent.of(keyCode, scanCode, modifiers, press);
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
-                && focusedWidget.handleKeyPress(keyCode, scanCode, modifiers)) {
+                && focusedWidget.handleKeyPress(keyEvent)) {
             return true;
         }
-        if (anyWidgetExcludingFocused(w -> w.handleKeyPress(keyCode, scanCode, modifiers))) {
+        if (anyWidgetExcludingFocused(w -> w.handleKeyPress(keyEvent))) {
             return true;
         }
 
@@ -458,10 +459,10 @@ public abstract class BaniraScreen extends Screen {
                 .keyCode(keyCode)
                 .scanCode(scanCode)
                 .modifiers(modifiers)
-                .pressCount(press.pressCount())
-                .doublePress(press.doublePress())
-                .repeatedPress(press.repeatedPress())
-                .heldRepeat(press.heldRepeat());
+                .pressCount(keyEvent.pressCount())
+                .doublePress(keyEvent.doublePress())
+                .repeatedPress(keyEvent.repeatedPress())
+                .heldRepeat(keyEvent.heldRepeat());
 
         onKeyPressed(args);
 
@@ -486,11 +487,12 @@ public abstract class BaniraScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         keyClickTracker.recordRelease(keyCode, scanCode, modifiers);
+        KeyEvent keyEvent = KeyEvent.of(keyCode, scanCode, modifiers);
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
-                && focusedWidget.handleKeyRelease(keyCode, scanCode, modifiers)) {
+                && focusedWidget.handleKeyRelease(keyEvent)) {
             return true;
         }
-        if (anyWidgetExcludingFocused(w -> w.handleKeyRelease(keyCode, scanCode, modifiers))) {
+        if (anyWidgetExcludingFocused(w -> w.handleKeyRelease(keyEvent))) {
             return true;
         }
 

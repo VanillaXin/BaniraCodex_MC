@@ -1,21 +1,21 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.settings.KeyBinding;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
+import xin.vanilla.banira.client.util.BaniraKeyHandle;
 import xin.vanilla.banira.client.util.NotificationManager;
 
 /**
  * Banira-owned client setup tasks invoked by the active loader adapter.
  */
 public final class BaniraClientModSetup {
-    public static final KeyBinding NOTIFICATION_LOG_KEY =
+    public static final BaniraKeyHandle NOTIFICATION_LOG_KEY =
             BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
 
-    public static final KeyBinding BANIRA_HUB_KEY =
+    public static final BaniraKeyHandle BANIRA_HUB_KEY =
             BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
 
     private BaniraClientModSetup() {

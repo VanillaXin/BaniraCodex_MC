@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.util;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.settings.KeyBinding;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
@@ -14,22 +13,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 便捷注册 {@link KeyBinding}：静态字段初始化阶段入队，在 Banira 客户端 setup 阶段
+ * 便捷注册客户端键位：静态字段初始化阶段入队，在 Banira 客户端 setup 阶段
  * {@link #flushPendingRegistrations()} 一次性提交；若在 flush 之后调用 {@link #register}，会立即交给当前加载器适配层注册。
  *
  * <p>翻译键格式：{@code key.<modId>.<suffix>}，分类默认 {@code key.<modId>.categories}。{@code modId} 须与 {@code mods.toml} 及语言文件前缀一致，便于子 Mod 复用。</p>
  *
  * <pre>{@code
- * public static final KeyBinding MY_KEY = BaniraKeyBindings.register(MyMod.MODID, "my_action", GLFWKey.GLFW_KEY_K);
+ * public static final BaniraKeyHandle MY_KEY = BaniraKeyBindings.register(MyMod.MODID, "my_action", GLFWKey.GLFW_KEY_K);
  *
- * public static final KeyBinding OTHER = BaniraKeyBindings.spec(MyMod.MODID, "other")
+ * public static final BaniraKeyHandle OTHER = BaniraKeyBindings.spec(MyMod.MODID, "other")
  *         .defaultKey(GLFWKey.GLFW_KEY_J)
  *         .register();
  * }</pre>
  */
 public final class BaniraKeyBindings {
 
-    private static final List<KeyBinding> PENDING = new ArrayList<>();
+    private static final List<BaniraKeyHandle> PENDING = new ArrayList<>();
     private static boolean flushCompleted;
 
     private BaniraKeyBindings() {
@@ -66,7 +65,7 @@ public final class BaniraKeyBindings {
      * 使用 {@link #defaultCategory(String)} 注册；若在首次 {@link #flushPendingRegistrations()} 之前调用，仅入队。
      */
     @Nonnull
-    public static KeyBinding register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode) {
+    public static BaniraKeyHandle register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode) {
         return register(modId, suffix, defaultKeyScanCode, defaultCategory(modId));
     }
 
@@ -74,14 +73,14 @@ public final class BaniraKeyBindings {
      * 指定分类翻译键注册。
      */
     @Nonnull
-    public static KeyBinding register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode, @Nonnull String categoryTranslationKey) {
+    public static BaniraKeyHandle register(@Nonnull String modId, @Nonnull String suffix, int defaultKeyScanCode, @Nonnull String categoryTranslationKey) {
         requireModId(modId);
         if (suffix.isEmpty()) {
             throw new IllegalArgumentException("suffix must be non-empty");
         }
-        KeyBinding binding = new KeyBinding(descriptionId(modId, suffix), defaultKeyScanCode, categoryTranslationKey);
-        enqueueOrRegister(binding);
-        return binding;
+        BaniraKeyHandle handle = BaniraKeyBindingService.create(descriptionId(modId, suffix), defaultKeyScanCode, categoryTranslationKey);
+        enqueueOrRegister(handle);
+        return handle;
     }
 
     /**
@@ -101,8 +100,8 @@ public final class BaniraKeyBindings {
      * 子 mod 可使用 {@link BaniraClientEventHub.ModLifecycle#onClientSetup(Runnable)} 安排自己的客户端初始化。
      */
     public static void flushPendingRegistrations() {
-        for (KeyBinding binding : PENDING) {
-            BaniraKeyBindingService.register(binding);
+        for (BaniraKeyHandle handle : PENDING) {
+            BaniraKeyBindingService.register(handle);
         }
         PENDING.clear();
         flushCompleted = true;
@@ -125,18 +124,18 @@ public final class BaniraKeyBindings {
         private @Nullable String category;
 
         /**
-         * 创建 {@link KeyBinding} 并完成入队或立即注册。
+         * 创建 Banira 键位句柄并完成入队或立即注册。
          */
         @Nonnull
-        public KeyBinding register() {
+        public BaniraKeyHandle register() {
             requireModId(modId);
             if (suffix.isEmpty()) {
                 throw new IllegalStateException("modId/suffix must be set (use BaniraKeyBindings.spec(modId, suffix))");
             }
             String cat = category != null ? category : defaultCategory(modId);
-            KeyBinding binding = new KeyBinding(descriptionId(modId, suffix), defaultKey, cat);
-            enqueueOrRegister(binding);
-            return binding;
+            BaniraKeyHandle handle = BaniraKeyBindingService.create(descriptionId(modId, suffix), defaultKey, cat);
+            enqueueOrRegister(handle);
+            return handle;
         }
     }
 
@@ -148,11 +147,11 @@ public final class BaniraKeyBindings {
         }
     }
 
-    private static void enqueueOrRegister(@Nonnull KeyBinding binding) {
+    private static void enqueueOrRegister(@Nonnull BaniraKeyHandle handle) {
         if (flushCompleted) {
-            BaniraKeyBindingService.register(binding);
+            BaniraKeyBindingService.register(handle);
         } else {
-            PENDING.add(binding);
+            PENDING.add(handle);
         }
     }
 }

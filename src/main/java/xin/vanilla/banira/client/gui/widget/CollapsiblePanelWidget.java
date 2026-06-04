@@ -9,9 +9,7 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -392,57 +390,57 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyPress(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
                 if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyPress(keyCode, scanCode, modifiers)) {
+                    if (child.handleKeyPress(event)) {
                         return true;
                     }
                 }
             }
         }
-        return onKeyPress(keyCode, scanCode, modifiers);
+        return onKeyPress(event);
     }
 
     @Override
-    public boolean handleKeyRelease(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyRelease(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
                 if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyRelease(keyCode, scanCode, modifiers)) {
+                    if (child.handleKeyRelease(event)) {
                         return true;
                     }
                 }
             }
         }
-        return onKeyRelease(keyCode, scanCode, modifiers);
+        return onKeyRelease(event);
     }
 
     @Override
-    public boolean handleCharTyped(char codePoint, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleCharTyped(CharInputEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
                 if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleCharTyped(codePoint, modifiers)) {
+                    if (child.handleCharTyped(event)) {
                         return true;
                     }
                 }
             }
         }
-        return onCharTyped(codePoint, modifiers);
+        return onCharTyped(event);
     }
 
     @Override

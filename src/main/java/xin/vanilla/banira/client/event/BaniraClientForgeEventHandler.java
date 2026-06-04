@@ -12,6 +12,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.internal.forge.client.ForgeHudOverlayAdapter;
 
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：将事件转发至 {@link BaniraClientEventHub}，并处理本 Mod 的 GUI 逻辑（如 {@link QuickActionOverlay}）
@@ -60,6 +61,7 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+        ForgeHudOverlayAdapter.dispatchPre(event);
         BaniraClientEventHub.dispatchRenderOverlayPre(event);
     }
 
@@ -144,6 +146,7 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
+        ForgeHudOverlayAdapter.dispatchPost(event);
         BaniraClientEventHub.Client.fireRenderOverlayPost(event);
     }
 

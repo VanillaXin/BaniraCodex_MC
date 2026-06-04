@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -1141,8 +1142,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) return false;
+    public boolean handleKeyPress(KeyEvent event) {
+        if (!visible || !enabled || event == null) return false;
+        int keyCode = event.keyCode();
         if (editingIndex >= 0 && editWidget != null && editWidget instanceof BaseWidget baseWidget && baseWidget.focused()) {
             if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
                 cancelInlineEdit();
@@ -1168,7 +1170,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
                 if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyPress(keyCode, scanCode, modifiers)) return true;
+                    if (child.handleKeyPress(event)) return true;
                 }
             }
         }

@@ -14,6 +14,7 @@ import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -669,7 +670,7 @@ public class SliderWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
@@ -681,6 +682,7 @@ public class SliderWidget extends BaseWidget {
 
         double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
         boolean handled = false;
+        int keyCode = event.keyCode();
 
         if (orientation == EnumOrientation.VERTICAL) {
             if (keyCode == xin.vanilla.banira.client.data.GLFWKey.GLFW_KEY_UP) {

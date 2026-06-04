@@ -1,0 +1,33 @@
+package xin.vanilla.banira.api.client.hud;
+
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
+import javax.annotation.Nonnull;
+
+/**
+ * HUD 元素渲染事件；Pre 阶段可取消原版绘制。
+ */
+@Getter
+@Accessors(fluent = true)
+public final class BaniraHudRenderEvent {
+    private final @Nonnull HudRenderPhase phase;
+    private final @Nonnull HudOverlayElement element;
+    private final @Nonnull BaniraHudRenderContext context;
+    private final boolean cancellable;
+    private boolean canceled;
+
+    public BaniraHudRenderEvent(@Nonnull HudRenderPhase phase, @Nonnull HudOverlayElement element,
+                                @Nonnull BaniraHudRenderContext context, boolean cancellable) {
+        this.phase = phase;
+        this.element = element;
+        this.context = context;
+        this.cancellable = cancellable;
+    }
+
+    public void cancel() {
+        if (cancellable) {
+            canceled = true;
+        }
+    }
+}

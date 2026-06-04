@@ -10,6 +10,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -358,7 +359,7 @@ public class ScrollbarWidget extends BaseWidget {
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
@@ -375,6 +376,7 @@ public class ScrollbarWidget extends BaseWidget {
             step = Math.max(1.0, visibleSize * 0.33);
         }
 
+        int keyCode = event.keyCode();
         boolean handled = false;
         if (orientation == EnumOrientation.VERTICAL) {
             if (keyCode == GLFWKey.GLFW_KEY_UP) {

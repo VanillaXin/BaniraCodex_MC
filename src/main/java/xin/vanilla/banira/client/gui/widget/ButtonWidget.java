@@ -11,6 +11,7 @@ import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
@@ -1071,11 +1072,12 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
 
+        int keyCode = event.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER || keyCode == GLFWKey.GLFW_KEY_SPACE) {
             if (onClick != null) {
                 onClick.accept(this);

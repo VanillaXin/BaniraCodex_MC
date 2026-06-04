@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.Style;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -343,7 +344,7 @@ public final class NotificationManager {
         if (mc.screen != null) {
             return;
         }
-        boolean down = InputStateManager.isMousePressing(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+        boolean down = InputStateManager.isMousePressing(GLFWKey.GLFW_MOUSE_BUTTON_LEFT);
         if (down && !prevLeftDown) {
             KeyValue<Integer, Integer> mouse = InputStateManager.getGuiCursorPos();
             tryHandleHudClick(mouse.key(), mouse.val(), 0);

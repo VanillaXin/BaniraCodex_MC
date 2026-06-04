@@ -461,7 +461,12 @@ public abstract class BaseWidget implements IWidget {
      * 判断本次点击是否为双击（事件对象重载）。
      */
     protected boolean isDoubleClick(MouseEvent event) {
-        return event != null && isDoubleClick(event.mouseX(), event.mouseY(), event.button());
+        if (event == null) {
+            return false;
+        }
+        return event.clickTracked()
+                ? event.doubleClick()
+                : isDoubleClick(event.mouseX(), event.mouseY(), event.button());
     }
 
     /**

@@ -12,6 +12,7 @@ import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.gui.event.MouseClickTracker;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -68,6 +69,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Getter
     protected final InputStateManager inputState = InputStateManager.instance();
+    private final MouseClickTracker mouseClickTracker = new MouseClickTracker();
 
     public FontRenderer getFont() {
         return font;
@@ -269,17 +271,22 @@ public abstract class BaniraScreen extends Screen {
         private double mouseX;
         private double mouseY;
         private int button;
+        private int clickCount = 1;
+        private boolean doubleClick;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button);
+        MouseClickTracker.Result click = mouseClickTracker.record(mouseX, mouseY, button);
+        MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button, click);
         this.cursor.mouseClicked(clickEvent);
 
         MouseClickedHandleArgs args = new MouseClickedHandleArgs()
                 .mouseX(mouseX)
                 .mouseY(mouseY)
-                .button(button);
+                .button(button)
+                .clickCount(click.clickCount())
+                .doubleClick(click.doubleClick());
 
         if (this.popupOption.isHovered()) {
             if (this.popupOption.tryHandleOptionPress(clickEvent)) {

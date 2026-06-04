@@ -34,6 +34,28 @@ public final class BaniraDrawContext {
         client().fill(nativeContext, x, y, width, height, argb);
     }
 
+    public void horizontalLine(int x, int y, int width, int argb) {
+        fill(x, y, width, 1, argb);
+    }
+
+    public void verticalLine(int x, int y, int height, int argb) {
+        fill(x, y, 1, height, argb);
+    }
+
+    /**
+     * Draws a rectangular border using the current branch's fill implementation.
+     */
+    public void outline(int x, int y, int width, int height, int thickness, int argb) {
+        if (width <= 0 || height <= 0 || thickness <= 0) {
+            return;
+        }
+        int line = Math.min(thickness, Math.min(width, height));
+        fill(x, y, width, line, argb);
+        fill(x, y + height - line, width, line, argb);
+        fill(x, y + line, line, Math.max(0, height - line * 2), argb);
+        fill(x + width - line, y + line, line, Math.max(0, height - line * 2), argb);
+    }
+
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
         return client().drawText(nativeContext, text, x, y, argb, shadow);
     }
@@ -63,6 +85,14 @@ public final class BaniraDrawContext {
 
     public void blit(ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
         client().blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+    }
+
+    public void drawTexture(ResourceLocation texture, int x, int y, int width, int height) {
+        blit(texture, x, y, 0, 0, width, height, width, height);
+    }
+
+    public void drawTexture(ResourceLocation texture, int x, int y, int width, int height, int textureWidth, int textureHeight) {
+        blit(texture, x, y, 0, 0, width, height, textureWidth, textureHeight);
     }
 
     public void push() {

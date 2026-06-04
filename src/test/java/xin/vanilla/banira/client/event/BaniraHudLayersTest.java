@@ -42,6 +42,11 @@ public class BaniraHudLayersTest {
         draw.fill(0, 0, 10, 10, 0xAA000000);
         draw.fillScreen(0x33000000);
         draw.blit(new ResourceLocation("banira_codex", "textures/gui/missing.png"), 0, 0, 0, 0, 8, 8, 8, 8);
+        draw.drawTexture(new ResourceLocation("banira_codex", "textures/gui/missing.png"), 0, 0, 8, 8);
+        draw.drawTexture(new ResourceLocation("banira_codex", "textures/gui/missing.png"), 0, 0, 8, 8, 16, 16);
+        draw.horizontalLine(1, 2, 3, 0xFFFFFFFF);
+        draw.verticalLine(1, 2, 3, 0xFFFFFFFF);
+        draw.outline(0, 0, 10, 10, 1, 0xFFFFFFFF);
         draw.push();
         draw.translate(1, 2, 3);
         draw.scale(1.0F, 1.0F, 1.0F);

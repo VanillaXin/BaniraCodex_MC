@@ -3,10 +3,7 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -80,7 +77,7 @@ public interface IWidget {
     /**
      * 处理字符输入（用于文本输入框）。
      */
-    boolean handleCharTyped(char codePoint, int modifiers);
+    boolean handleCharTyped(CharInputEvent event);
 
     /**
      * 处理鼠标拖拽事件。

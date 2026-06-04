@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.CharInputEvent;
 import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -922,7 +923,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onCharTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(CharInputEvent event) {
         if (!focused() || !enabled || !editable) {
             return false;
         }
@@ -931,7 +932,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        insertText(String.valueOf(codePoint));
+        insertText(event.text());
         return true;
     }
 

@@ -9,10 +9,7 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -429,21 +426,21 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public boolean handleCharTyped(char codePoint, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleCharTyped(CharInputEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
                 IWidget child = children.get(i);
                 if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleCharTyped(codePoint, modifiers)) {
+                    if (child.handleCharTyped(event)) {
                         return true;
                     }
                 }
             }
         }
-        return onCharTyped(codePoint, modifiers);
+        return onCharTyped(event);
     }
 
     @Override

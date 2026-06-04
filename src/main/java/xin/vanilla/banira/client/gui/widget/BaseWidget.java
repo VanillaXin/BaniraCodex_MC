@@ -8,10 +8,7 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
@@ -284,21 +281,21 @@ public abstract class BaseWidget implements IWidget {
     }
 
     @Override
-    public boolean handleCharTyped(char codePoint, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleCharTyped(CharInputEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
 
         for (int i = children.size() - 1; i >= 0; i--) {
             IWidget child = children.get(i);
             if (child != null && child.visible() && child.enabled()) {
-                if (child.handleCharTyped(codePoint, modifiers)) {
+                if (child.handleCharTyped(event)) {
                     return true;
                 }
             }
         }
 
-        return onCharTyped(codePoint, modifiers);
+        return onCharTyped(event);
     }
 
     @Override
@@ -586,7 +583,7 @@ public abstract class BaseWidget implements IWidget {
     /**
      * 字符输入回调
      */
-    protected boolean onCharTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(CharInputEvent event) {
         return false;
     }
 

@@ -719,11 +719,12 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        CharInputEvent event = CharInputEvent.of(codePoint, modifiers);
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
-                && focusedWidget.handleCharTyped(codePoint, modifiers)) {
+                && focusedWidget.handleCharTyped(event)) {
             return true;
         }
-        if (anyWidgetExcludingFocused(w -> w.handleCharTyped(codePoint, modifiers))) {
+        if (anyWidgetExcludingFocused(w -> w.handleCharTyped(event))) {
             return true;
         }
         return super.charTyped(codePoint, modifiers);

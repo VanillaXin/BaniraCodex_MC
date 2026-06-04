@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.CharInputEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -63,11 +64,12 @@ public class NumericInputWidget extends InputWidget {
     }
 
     @Override
-    protected boolean onCharTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(CharInputEvent event) {
         if (!focused() || !enabled || !editable()) {
             return false;
         }
 
+        char codePoint = event.codePoint();
         String currentValue = value();
         int cursorPos = cursorPosition();
         int highlightStart = Math.min(cursorPos, highlightPos());
@@ -75,16 +77,16 @@ public class NumericInputWidget extends InputWidget {
         boolean hasSelection = highlightStart != highlightEnd;
 
         if (Character.isDigit(codePoint)) {
-            return super.onCharTyped(codePoint, modifiers);
+            return super.onCharTyped(event);
         }
 
         if (codePoint == '-') {
             if (!allowNegative) return true;
             if (currentValue.isEmpty() && cursorPos == 0) {
-                return super.onCharTyped(codePoint, modifiers);
+                return super.onCharTyped(event);
             }
             if (hasSelection && highlightStart == 0) {
-                return super.onCharTyped(codePoint, modifiers);
+                return super.onCharTyped(event);
             }
             return true;
         }
@@ -93,7 +95,7 @@ public class NumericInputWidget extends InputWidget {
             if (integerOnly) return true;
             String effective = hasSelection ? currentValue.substring(0, highlightStart) + currentValue.substring(highlightEnd) : currentValue;
             if (effective.contains(".")) return true;
-            return super.onCharTyped('.', modifiers);
+            return super.onCharTyped(CharInputEvent.of('.', event.modifiers()));
         }
 
         return true;

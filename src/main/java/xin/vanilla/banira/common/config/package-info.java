@@ -19,9 +19,8 @@
  *   .endCategory()
  *   .build();
  *
- * // 2. 注册配置
- * ModList.get().getModContainerById("mymod").ifPresent(c ->
- *   ConfigRegistry.register(holder, c));
+ * // 2. 推荐通过注解配置和 BaniraConfig 注册；流式 holder 仅保留给内部/过渡场景。
+ * BaniraConfig.register(MyConfig.class, "mymod");
  *
  * // 3. 读取配置
  * int num = holder.get("base.helpNumPerPage");

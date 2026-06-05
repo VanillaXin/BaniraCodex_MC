@@ -73,7 +73,7 @@ public final class ForgeConfigAdapter {
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = new ModConfig(ConfigRegistry.toForgeType(configScope), spec, container, fileName);
+            ModConfig modConfig = new ModConfig(toForgeType(configScope), spec, container, fileName);
             container.addConfig(modConfig);
             valueStore.bindModConfig(modConfig);
         });
@@ -463,5 +463,13 @@ public final class ForgeConfigAdapter {
             }
         }
         return null;
+    }
+
+    private static ModConfig.Type toForgeType(ConfigScope scope) {
+        return switch (scope) {
+            case CLIENT -> ModConfig.Type.CLIENT;
+            case SERVER -> ModConfig.Type.SERVER;
+            case COMMON -> ModConfig.Type.COMMON;
+        };
     }
 }

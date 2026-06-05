@@ -1,18 +1,16 @@
 package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
-
-import java.util.function.Supplier;
 
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
@@ -40,12 +38,12 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
         buf.writeUtf(notificationReceiveMode, 256);
     }
 
-    public static void handle(CustomPlayerConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public static void handle(CustomPlayerConfigSyncToServer packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerSide()) {
                 return;
             }
-            var player = ctx.get().getSender();
+            var player = ctx.sender();
             if (player == null) {
                 return;
             }
@@ -67,6 +65,6 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
                     BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(Translator.getPlayerLanguage(player)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }

@@ -1,13 +1,7 @@
 package xin.vanilla.banira.common.api;
 
-
-import net.minecraftforge.network.simple.SimpleChannel;
-
-import java.util.function.Supplier;
-
+/**
+ * Banira 网络包标记接口；不暴露具体加载器的 channel/context 类型。
+ */
 public interface INetworkPacket {
-    /**
-     * 获取当前网络包使用的通道供应器
-     */
-    Supplier<SimpleChannel> channel();
 }

@@ -2,14 +2,13 @@ package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -35,13 +34,13 @@ public class DimensionToClient extends SplitPacket
         }
     }
 
-    public static void handle(DimensionToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+    public static void handle(DimensionToClient packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
                 DimensionUtils.setClientDimensionIds(packet.getDimensionIds());
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
     @Override

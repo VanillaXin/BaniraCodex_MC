@@ -227,34 +227,157 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
      * 计算文字绘制后的最终宽高
      */
     public static KeyValue<Integer, Integer> calculateLimitedTextSize(@Nonnull FontDrawArgs args) {
-        Text text = args.text();
-        if (StringUtils.isNullOrEmpty(text.content())) {
+        TextLayout layout = prepareTextLayout(args, false);
+        if (layout == null) {
             return new KeyValue<>(0, 0);
         }
+        return new KeyValue<>(layout.finalWidth, layout.finalHeight);
+    }
 
-        String ellipsis = "...";
+    /**
+     * 绘制限制长度的文本，超出部分以省略号表示
+     */
+    public static void drawLimitedText(@Nonnull FontDrawArgs args) {
+        Text text = args.text();
+        TextLayout layout = prepareTextLayout(args, true);
+        if (layout == null) {
+            return;
+        }
+
+        PoseStack stack = text.stack();
+        if (args.bgArgb() != 0) {
+            int bgX = (int) args.x();
+            int bgY = (int) args.y();
+
+            AbstractGuiUtils.drawRoundedRect(stack, bgX, bgY, layout.finalWidth, layout.finalHeight, args.bgArgb(), args.bgBorderRadius());
+
+            if (args.bgBorderThickness() > 0) {
+                int borderArgb = ColorUtils.softenArgb(args.bgArgb());
+                AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, layout.finalWidth, layout.finalHeight,
+                        args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
+            }
+        }
+
+        double drawX = layout.drawX;
+        double drawY = layout.drawY;
+        boolean needsScale = Math.abs(layout.scale - 1.0f) > 0.001f;
+        if (needsScale) {
+            stack.pushPose();
+            stack.translate(drawX, drawY, 0);
+            stack.scale(layout.scale, layout.scale, 1.0f);
+            drawX = 0;
+            drawY = 0;
+        }
+
+        Text textTemplate = text.copyWithoutChildren();
+        EnumAlignment alignment = args.align() != null ? args.align() : text.align();
+        float alignWidth = layout.availableWidth > 0 ? layout.availableWidth : layout.maxLineWidth;
+        boolean hasShadow = text.shadow();
+        int textColor = text.colorArgb();
+        boolean hasBgColor = !text.bgColorEmpty();
+        int bgColor = hasBgColor ? text.bgColorArgb() : 0;
+
+        for (int index = 0; index < layout.lines.length; index++) {
+            String line = layout.lines[index];
+            int lineWidth = layout.lineWidths[index];
+
+            float xOffset;
+            switch (alignment) {
+                case CENTER:
+                    xOffset = (alignWidth - lineWidth) / 2.0f;
+                    break;
+                case END:
+                    xOffset = alignWidth - lineWidth;
+                    break;
+                default:
+                    xOffset = 0;
+                    break;
+            }
+
+            float yPos = needsScale
+                    ? (float) drawY + index * layout.font.lineHeight
+                    : (float) drawY + index * layout.lineHeight;
+
+            if (hasBgColor) {
+                if (needsScale) {
+                    AbstractGuiUtils.fill(stack, (int) xOffset, (int) yPos, lineWidth, layout.font.lineHeight, bgColor);
+                } else {
+                    AbstractGuiUtils.fill(stack, (int) (drawX + xOffset), (int) yPos, lineWidth, layout.font.lineHeight, bgColor);
+                }
+            }
+
+            Text lineText = textTemplate.text(line);
+            if (hasShadow) {
+                layout.font.drawShadow(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
+            } else {
+                layout.font.draw(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
+            }
+        }
+
+        if (needsScale) {
+            stack.popPose();
+        }
+    }
+
+    private static TextLayout prepareTextLayout(@Nonnull FontDrawArgs args, boolean forDraw) {
+        Text text = args.text();
+        String content = text.content();
+        if (StringUtils.isNullOrEmpty(content)) {
+            return null;
+        }
+
         Font font = text.font();
-        int ellipsisWidth = font.width(ellipsis);
-
         float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
-
         double drawX = args.x() + args.paddingLeft();
+        double drawY = args.y() + args.paddingTop();
         int availableWidth = args.maxWidth() > 0 ? (int) ((args.maxWidth() - args.paddingLeft() - args.paddingRight()) / scale) : 0;
 
-        if (args.inScreen() && availableWidth > 0 && !args.wrap()) {
-            KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
-            int screenWidth = screenSize.key();
+        if (args.inScreen() && availableWidth > 0 && (forDraw || !args.wrap())) {
+            int screenWidth = AbstractGuiUtils.getScreenSize().key();
 
             if (drawX + availableWidth > screenWidth - args.marginRight()) {
                 availableWidth = Math.max(0, screenWidth - (int) drawX - args.marginRight());
             }
             if (drawX < args.marginLeft()) {
+                if (forDraw) {
+                    drawX = args.marginLeft();
+                }
                 availableWidth = Math.max(0, availableWidth - args.marginLeft() + (int) args.x());
             }
         }
 
+        List<String> outputLines = collectOutputLines(args, font, content, availableWidth);
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        String[] processedLines = new String[outputLines.size()];
+        int[] lineWidths = new int[outputLines.size()];
+        int maxLineWidth = 0;
+
+        for (int i = 0; i < outputLines.size(); i++) {
+            String line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, outputLines.get(i));
+            processedLines[i] = line;
+            int width = font.width(line);
+            lineWidths[i] = width;
+            if (width > maxLineWidth) {
+                maxLineWidth = width;
+            }
+        }
+
+        if (availableWidth > 0) {
+            maxLineWidth = Math.min(maxLineWidth, availableWidth);
+        }
+
+        float actualLineHeight = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
+        float totalHeight = processedLines.length * actualLineHeight;
+        int finalWidth = (int) Math.ceil(maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
+        int finalHeight = (int) totalHeight + args.paddingTop() + args.paddingBottom();
+        return new TextLayout(font, scale, drawX, drawY, availableWidth, processedLines, lineWidths,
+                maxLineWidth, actualLineHeight, finalWidth, finalHeight);
+    }
+
+    private static List<String> collectOutputLines(FontDrawArgs args, Font font, String content, int availableWidth) {
         List<String> lines = new ArrayList<>();
-        String[] originalLines = StringUtils.replaceLineBreak(text.content()).split("\n");
+        String[] originalLines = StringUtils.replaceLineBreak(content).split("\n");
 
         if (args.wrap() && availableWidth > 0) {
             for (String originalLine : originalLines) {
@@ -273,223 +396,59 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         if (actualMaxLine > 1 && lines.size() > actualMaxLine) {
             switch (args.position()) {
                 case START:
-                    outputLines.add(ellipsis);
+                    outputLines.add("...");
                     outputLines.addAll(lines.subList(lines.size() - actualMaxLine + 1, lines.size()));
                     break;
                 case MIDDLE:
                     int midStart = actualMaxLine / 2;
                     int midEnd = lines.size() - (actualMaxLine - midStart) + 1;
                     outputLines.addAll(lines.subList(0, midStart));
-                    outputLines.add(ellipsis);
+                    outputLines.add("...");
                     outputLines.addAll(lines.subList(midEnd, lines.size()));
                     break;
                 case END:
                     outputLines.addAll(lines.subList(0, actualMaxLine - 1));
-                    outputLines.add(ellipsis);
+                    outputLines.add("...");
                     break;
                 default:
                     outputLines.addAll(lines);
                     break;
             }
+        } else if (actualMaxLine == 1) {
+            outputLines.add(lines.get(0));
         } else {
-            if (actualMaxLine == 1) {
-                outputLines.add(lines.get(0));
-            } else {
-                outputLines.addAll(lines);
-            }
+            outputLines.addAll(lines);
         }
-
-        List<String> finalLines = new ArrayList<>();
-        for (String line : outputLines) {
-            line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, line);
-            finalLines.add(line);
-        }
-
-        int maxLineWidth = AbstractGuiUtils.getStringWidth(font, finalLines);
-        if (availableWidth > 0) {
-            maxLineWidth = Math.min(maxLineWidth, availableWidth);
-        }
-        float actualLineHeight = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
-        int totalHeight = (int) (finalLines.size() * actualLineHeight);
-
-        int finalWidth = (int) Math.ceil(maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
-        int finalHeight = totalHeight + args.paddingTop() + args.paddingBottom();
-
-        return new KeyValue<>(finalWidth, finalHeight);
+        return outputLines;
     }
 
-    /**
-     * 绘制限制长度的文本，超出部分以省略号表示
-     */
-    public static void drawLimitedText(@Nonnull FontDrawArgs args) {
-        Text text = args.text();
-        if (StringUtils.isNotNullOrEmpty(text.content())) {
-            String ellipsis = "...";
-            Font font = text.font();
-            int ellipsisWidth = font.width(ellipsis);
+    private static final class TextLayout {
+        private final Font font;
+        private final float scale;
+        private final double drawX;
+        private final double drawY;
+        private final int availableWidth;
+        private final String[] lines;
+        private final int[] lineWidths;
+        private final int maxLineWidth;
+        private final float lineHeight;
+        private final int finalWidth;
+        private final int finalHeight;
 
-            float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
-
-            double drawX = args.x() + args.paddingLeft();
-            double drawY = args.y() + args.paddingTop();
-            int availableWidth = args.maxWidth() > 0 ? (int) ((args.maxWidth() - args.paddingLeft() - args.paddingRight()) / scale) : 0;
-
-            if (args.inScreen() && availableWidth > 0) {
-                KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
-                int screenWidth = screenSize.key();
-
-                if (drawX + availableWidth > screenWidth - args.marginRight()) {
-                    availableWidth = Math.max(0, screenWidth - (int) drawX - args.marginRight());
-                }
-                if (drawX < args.marginLeft()) {
-                    drawX = args.marginLeft();
-                    availableWidth = Math.max(0, availableWidth - args.marginLeft() + (int) args.x());
-                }
-            }
-
-            List<String> lines = new ArrayList<>();
-            String[] originalLines = StringUtils.replaceLineBreak(text.content()).split("\n");
-
-            if (args.wrap() && availableWidth > 0) {
-                for (String originalLine : originalLines) {
-                    lines.addAll(wrapText(font, originalLine, availableWidth));
-                }
-            } else {
-                lines.addAll(Arrays.asList(originalLines));
-            }
-
-            int actualMaxLine = args.maxLine();
-            if (actualMaxLine <= 0 || actualMaxLine >= lines.size()) {
-                actualMaxLine = lines.size();
-            }
-
-            List<String> outputLines = new ArrayList<>();
-            if (actualMaxLine > 1 && lines.size() > actualMaxLine) {
-                switch (args.position()) {
-                    case START:
-                        outputLines.add(ellipsis);
-                        outputLines.addAll(lines.subList(lines.size() - actualMaxLine + 1, lines.size()));
-                        break;
-                    case MIDDLE:
-                        int midStart = actualMaxLine / 2;
-                        int midEnd = lines.size() - (actualMaxLine - midStart) + 1;
-                        outputLines.addAll(lines.subList(0, midStart));
-                        outputLines.add(ellipsis);
-                        outputLines.addAll(lines.subList(midEnd, lines.size()));
-                        break;
-                    case END:
-                        outputLines.addAll(lines.subList(0, actualMaxLine - 1));
-                        outputLines.add(ellipsis);
-                        break;
-                    default:
-                        outputLines.addAll(lines);
-                        break;
-                }
-            } else {
-                if (actualMaxLine == 1) {
-                    outputLines.add(lines.get(0));
-                } else {
-                    outputLines.addAll(lines);
-                }
-            }
-
-            final float actualLineHeight = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
-            float totalHeight = outputLines.size() * actualLineHeight;
-
-            String[] processedLines = new String[outputLines.size()];
-            int[] lineWidths = new int[outputLines.size()];
-            int maxLineWidth = 0;
-
-            for (int i = 0; i < outputLines.size(); i++) {
-                String line = outputLines.get(i);
-                line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, line);
-                processedLines[i] = line;
-                int width = font.width(line);
-                lineWidths[i] = width;
-                if (width > maxLineWidth) {
-                    maxLineWidth = width;
-                }
-            }
-
-            if (availableWidth > 0) {
-                maxLineWidth = Math.min(maxLineWidth, availableWidth);
-            }
-
-            PoseStack stack = text.stack();
-            if (args.bgArgb() != 0) {
-                int bgX = (int) args.x();
-                int bgY = (int) args.y();
-                int bgWidth = (int) (maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
-                int bgHeight = (int) (totalHeight + args.paddingTop() + args.paddingBottom());
-
-                AbstractGuiUtils.drawRoundedRect(stack, bgX, bgY, bgWidth, bgHeight, args.bgArgb(), args.bgBorderRadius());
-
-                if (args.bgBorderThickness() > 0) {
-                    int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-                    AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
-                }
-            }
-
-            boolean needsScale = Math.abs(scale - 1.0f) > 0.001f;
-            if (needsScale) {
-                stack.pushPose();
-                stack.translate(drawX, drawY, 0);
-                stack.scale(scale, scale, 1.0f);
-                drawX = 0;
-                drawY = 0;
-            }
-
-            Text textTemplate = text.copyWithoutChildren();
-            EnumAlignment alignment = args.align() != null ? args.align() : text.align();
-            float alignWidth = availableWidth > 0 ? availableWidth : maxLineWidth;
-            boolean hasShadow = text.shadow();
-            int textColor = text.colorArgb();
-            boolean hasBgColor = !text.bgColorEmpty();
-            int bgColor = hasBgColor ? text.bgColorArgb() : 0;
-
-            for (int index = 0; index < processedLines.length; index++) {
-                String line = processedLines[index];
-                int lineWidth = lineWidths[index];
-
-                float xOffset;
-                switch (alignment) {
-                    case CENTER:
-                        xOffset = (alignWidth - lineWidth) / 2.0f;
-                        break;
-                    case END:
-                        xOffset = alignWidth - lineWidth;
-                        break;
-                    default:
-                        xOffset = 0;
-                        break;
-                }
-
-                float yPos;
-                if (needsScale) {
-                    yPos = (float) drawY + index * font.lineHeight;
-                } else {
-                    yPos = (float) drawY + index * actualLineHeight;
-                }
-
-                if (hasBgColor) {
-                    if (needsScale) {
-                        AbstractGuiUtils.fill(stack, (int) (xOffset), (int) (yPos), lineWidth, font.lineHeight, bgColor);
-                    } else {
-                        AbstractGuiUtils.fill(stack, (int) (drawX + xOffset), (int) (yPos), lineWidth, font.lineHeight, bgColor);
-                    }
-                }
-
-                Text lineText = textTemplate.text(line);
-                if (hasShadow) {
-                    font.drawShadow(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
-                } else {
-                    font.draw(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
-                }
-            }
-
-            if (needsScale) {
-                stack.popPose();
-            }
+        private TextLayout(Font font, float scale, double drawX, double drawY, int availableWidth,
+                           String[] lines, int[] lineWidths, int maxLineWidth, float lineHeight,
+                           int finalWidth, int finalHeight) {
+            this.font = font;
+            this.scale = scale;
+            this.drawX = drawX;
+            this.drawY = drawY;
+            this.availableWidth = availableWidth;
+            this.lines = lines;
+            this.lineWidths = lineWidths;
+            this.maxLineWidth = maxLineWidth;
+            this.lineHeight = lineHeight;
+            this.finalWidth = finalWidth;
+            this.finalHeight = finalHeight;
         }
     }
 

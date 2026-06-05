@@ -130,6 +130,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Getter
     private Text text = Text.empty();
 
+    private Font cachedTextWidthFont;
+    private String cachedTextWidthContent;
+    private int cachedTextWidth;
+
     @Getter
     @Setter
     private Consumer<ButtonWidget> onClick;
@@ -590,14 +594,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 stack.translate(contentX, contentY, 0);
                 float scale = fontSize / 9.0f;
                 stack.scale(scale, scale, 1.0f);
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
                 int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
                 LabelWidget.drawLimitedText(drawArgs.x(scaledTextX).y(scaledTextY));
                 stack.popPose();
             } else {
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int centeredTextX = contentX + (availableWidth - textWidth) / 2;
                 int centeredTextY = contentY + (availableHeight - textHeight) / 2;
@@ -610,6 +614,22 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
 
         renderChildren(stack, partialTicks);
+    }
+
+    private int cachedTextWidth(Font font) {
+        String content = text.content();
+        if (cachedTextWidthFont != font || !content.equals(cachedTextWidthContent)) {
+            cachedTextWidthFont = font;
+            cachedTextWidthContent = content;
+            cachedTextWidth = AbstractGuiUtils.getTextWidth(font, this.text);
+        }
+        return cachedTextWidth;
+    }
+
+    private void invalidateTextWidthCache() {
+        cachedTextWidthFont = null;
+        cachedTextWidthContent = null;
+        cachedTextWidth = 0;
     }
 
     private void renderLongPressPressedFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
@@ -1058,16 +1078,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     public ButtonWidget text(String text) {
         this.text = Text.literal(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Component text) {
         this.text = Text.from(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Text text) {
         this.text = text;
+        invalidateTextWidthCache();
         return this;
     }
 

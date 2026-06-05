@@ -500,22 +500,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            if (this.hint != null && value.isEmpty() && !this.focused()) {
-                float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
-                float hintFontScale = actualHintFontSize / font.lineHeight;
-                if (hintFontScale != 1.0f) {
-                    stack.pushPose();
-                    stack.translate(textX, textY, 0);
-                    stack.scale(hintFontScale, hintFontScale, 1.0f);
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale))
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
-                    stack.popPose();
-                } else {
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth)
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
-                }
+            if (shouldRenderHint()) {
+                renderHint(stack, textX, textY, innerWidth);
             }
 
             if (highlightPos != cursorPos) {
@@ -567,6 +553,31 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
         }
+    }
+
+    private boolean shouldRenderHint() {
+        return this.hint != null && !this.hint.isEmpty() && value.isEmpty() && !this.focused();
+    }
+
+    private void renderHint(PoseStack stack, int textX, int textY, int innerWidth) {
+        float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
+        float hintFontScale = actualHintFontSize / font.lineHeight;
+        if (hintFontScale != 1.0f) {
+            stack.pushPose();
+            stack.translate(textX, textY, 0);
+            stack.scale(hintFontScale, hintFontScale, 1.0f);
+            drawHintText(stack, 0, 0, (int) (innerWidth / hintFontScale));
+            stack.popPose();
+        } else {
+            drawHintText(stack, textX, textY, innerWidth);
+        }
+    }
+
+    private void drawHintText(PoseStack stack, int x, int y, int maxWidth) {
+        FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor))
+                .x(x).y(y).maxWidth(maxWidth)
+                .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
+        LabelWidget.drawLimitedText(args);
     }
 
     /**

@@ -3,12 +3,14 @@ package xin.vanilla.banira.internal.forge.platform;
 import net.minecraft.SharedConstants;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraPlatform;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Forge 1.18.2 的基础 platform 实现。
@@ -53,6 +55,26 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         return ModList.get().getModContainerById(modId)
                 .map(container -> container.getModInfo().getDisplayName())
                 .orElse(modId);
+    }
+
+    @Nonnull
+    @Override
+    public String modIdFromMainClass(@Nonnull Class<?> modMainClass) {
+        Mod mod = modMainClass.getAnnotation(Mod.class);
+        if (mod == null || mod.value() == null || mod.value().trim().isEmpty()) {
+            throw new IllegalArgumentException("Class must be annotated with a loader mod entry annotation: " + modMainClass.getName());
+        }
+        return mod.value();
+    }
+
+    @Nonnull
+    @Override
+    public Class<?> modMainClass(@Nonnull String modId) {
+        return ModList.get().getModContainerById(modId)
+                .map(container -> container.getMod())
+                .filter(Objects::nonNull)
+                .map(Object::getClass)
+                .orElseThrow(() -> new IllegalStateException("No loaded mod main class for mod id: " + modId));
     }
 
     @Nonnull

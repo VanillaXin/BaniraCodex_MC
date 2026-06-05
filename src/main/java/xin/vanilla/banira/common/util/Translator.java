@@ -12,14 +12,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -79,6 +80,9 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
+        if (BaniraPlatforms.isInstalled()) {
+            return Banira.platform().modIdFromMainClass(modMainClass);
+        }
         Mod mod = modMainClass.getAnnotation(Mod.class);
         if (mod == null) {
             throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
@@ -92,6 +96,9 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
+        if (BaniraPlatforms.isInstalled()) {
+            return Banira.platform().modMainClass(modId);
+        }
         try {
             return ModList.get().getModContainerById(modId)
                     .map(ModContainer::getMod)
@@ -335,7 +342,7 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (FMLEnvironment.dist.isClient()) {
+        if (EnvironmentUtils.isClient()) {
             return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().getCode());
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());

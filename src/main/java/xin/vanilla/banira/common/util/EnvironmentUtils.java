@@ -2,6 +2,8 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
  * 运行环境判断
@@ -18,6 +20,7 @@ public final class EnvironmentUtils {
     /**
      * 当前 JVM 对应的 Forge 物理分发（客户端或专用服务端）。
      */
+    @Deprecated
     public static Dist dist() {
         return FMLEnvironment.dist;
     }
@@ -26,14 +29,14 @@ public final class EnvironmentUtils {
      * 是否为客户端分发（{@code runClient}、整合包客户端等）。
      */
     public static boolean isClient() {
-        return FMLEnvironment.dist.isClient();
+        return BaniraPlatforms.isInstalled() ? Banira.platform().isClient() : FMLEnvironment.dist.isClient();
     }
 
     /**
      * 是否为专用服务端分发（{@code runServer}、无头服务端等）。
      */
     public static boolean isDedicatedServer() {
-        return FMLEnvironment.dist.isDedicatedServer();
+        return BaniraPlatforms.isInstalled() ? Banira.platform().isDedicatedServer() : FMLEnvironment.dist.isDedicatedServer();
     }
 
     // endregion 物理分发（Dist）
@@ -44,14 +47,14 @@ public final class EnvironmentUtils {
      * 是否为发布环境（非开发环境；与 Gradle {@code runClient}/{@code runServer} 等开发运行相对）。
      */
     public static boolean isProduction() {
-        return FMLEnvironment.production;
+        return !isDevelopment();
     }
 
     /**
      * 是否为开发环境（{@link #isProduction()} 的否定）。
      */
     public static boolean isDevelopment() {
-        return !FMLEnvironment.production;
+        return BaniraPlatforms.isInstalled() ? Banira.platform().isDevelopment() : !FMLEnvironment.production;
     }
 
     // endregion 发布 / 开发

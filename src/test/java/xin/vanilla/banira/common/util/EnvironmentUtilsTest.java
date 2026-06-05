@@ -1,27 +1,27 @@
-package xin.vanilla.banira.platform;
+package xin.vanilla.banira.common.util;
 
 import org.junit.Test;
-import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class BaniraPlatformsTest {
+public class EnvironmentUtilsTest {
 
     @Test
-    public void installsAndReadsPlatformThroughFacade() {
-        BaniraPlatform platform = new TestPlatform();
+    public void readsInstalledPlatform() {
+        BaniraPlatforms.install(new ServerLikePlatform());
 
-        BaniraPlatforms.install(platform);
-
-        assertTrue(BaniraPlatforms.isInstalled());
-        assertSame(platform, BaniraPlatforms.get());
-        assertSame(platform, Banira.platform());
-        assertEquals("test", Banira.platform().loaderType());
+        assertFalse(EnvironmentUtils.isClient());
+        assertTrue(EnvironmentUtils.isDedicatedServer());
+        assertFalse(EnvironmentUtils.isProduction());
+        assertTrue(EnvironmentUtils.isDevelopment());
     }
 
-    private static final class TestPlatform implements BaniraPlatform {
+    private static final class ServerLikePlatform implements BaniraPlatform {
         @Override
         public String loaderType() {
             return "test";
@@ -34,12 +34,12 @@ public class BaniraPlatformsTest {
 
         @Override
         public boolean isClient() {
-            return true;
+            return false;
         }
 
         @Override
         public boolean isDedicatedServer() {
-            return false;
+            return true;
         }
 
         @Override
@@ -49,7 +49,7 @@ public class BaniraPlatformsTest {
 
         @Override
         public boolean isModLoaded(String modId) {
-            return "testmod".equals(modId);
+            return false;
         }
 
         @Override
@@ -59,12 +59,12 @@ public class BaniraPlatformsTest {
 
         @Override
         public String modIdFromMainClass(Class<?> modMainClass) {
-            return "testmod";
+            return "test";
         }
 
         @Override
         public Class<?> modMainClass(String modId) {
-            return TestPlatform.class;
+            return ServerLikePlatform.class;
         }
 
         @Override

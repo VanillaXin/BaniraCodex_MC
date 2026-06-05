@@ -26,5 +26,11 @@ public interface BaniraPlatform {
     String modDisplayName(@Nonnull String modId);
 
     @Nonnull
+    String modIdFromMainClass(@Nonnull Class<?> modMainClass);
+
+    @Nonnull
+    Class<?> modMainClass(@Nonnull String modId);
+
+    @Nonnull
     Path configDir();
 }

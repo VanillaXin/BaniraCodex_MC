@@ -18,6 +18,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
@@ -35,6 +36,7 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.forge.event.ForgeBaniraLifecycleAdapter;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -101,7 +103,7 @@ public class BaniraCodex {
         // BaniraConfig.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.addListener(BaniraEventBus::dispatchModCommonSetup);
+        modBus.addListener(ForgeBaniraLifecycleAdapter::dispatchCommonSetup);
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
@@ -123,7 +125,7 @@ public class BaniraCodex {
 
     private void registerBaniraEvent() {
         // 通用事件
-        BaniraEventBus.ModLifecycle.onCommonSetup(event -> {
+        BaniraLifecycle.onCommonSetup(event -> {
             CustomConfig.loadCustomConfig(false);
             ModLoadedPresence.register(MODID);
         });

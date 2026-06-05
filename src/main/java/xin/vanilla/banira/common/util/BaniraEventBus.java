@@ -17,9 +17,9 @@ import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  * BaniraEventBus.WorldEvents.onUnload(e -> ...);
  * BaniraEventBus.EntityEvents.onJoinWorld(e -> ...);
  * BaniraEventBus.Commands.onRegister(e -> ...);
- * BaniraEventBus.ModLifecycle.onCommonSetup(e -> ...);
+ * BaniraEventBus.ModLifecycle.onCommonSetup(e -> e.enqueueWork(...));
  *
  * // 支持取消注册
  * Registration reg = BaniraEventBus.registerServerStarting(server -> ...);
@@ -84,7 +84,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<EntityTeleportEvent>> entityTeleportCallbacks = new ArrayList<>();
 
     private static final List<Consumer<RegisterCommandsEvent>> registerCommandsCallbacks = new ArrayList<>();
-    private static final List<Consumer<FMLCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
 
     // endregion
 
@@ -312,14 +312,15 @@ public final class BaniraEventBus {
     // region 分类 API：ModLifecycle
 
     /**
-     * Mod 公共加载阶段（由 {@link xin.vanilla.banira.BaniraCodex} 对 Mod 总线 {@code addListener}）；客户端 {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent} 见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub.ModLifecycle}
+     * Mod 公共加载阶段；子 mod 更推荐使用 {@link xin.vanilla.banira.api.event.BaniraLifecycle}。
      */
     public static final class ModLifecycle {
         private ModLifecycle() {
         }
 
-        public static void onCommonSetup(@Nonnull Consumer<FMLCommonSetupEvent> callback) {
+        public static Registration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
             modCommonSetupCallbacks.add(callback);
+            return createRegistration(() -> modCommonSetupCallbacks.remove(callback));
         }
     }
 
@@ -437,10 +438,7 @@ public final class BaniraEventBus {
         fire(registerCommandsCallbacks, event, "register commands");
     }
 
-    /**
-     * 由 {@link net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext#getModEventBus()} {@code addListener} 注册
-     */
-    public static void dispatchModCommonSetup(FMLCommonSetupEvent event) {
+    public static void dispatchCommonSetup(BaniraCommonSetupEvent event) {
         fire(modCommonSetupCallbacks, event, "mod common setup");
     }
 

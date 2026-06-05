@@ -1,5 +1,7 @@
 package xin.vanilla.banira.common.config;
 
+import xin.vanilla.banira.api.Banira;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -11,16 +13,16 @@ public final class BaniraConfig {
     }
 
     public static <T> void register(@Nonnull Class<T> configClass, @Nonnull String modId) {
-        ForgeConfigAdapter.register(configClass, modId);
+        Banira.platform().configService().register(configClass, modId);
     }
 
     @Nonnull
     public static <T> T get(@Nonnull Class<T> configClass) {
-        return ForgeConfigAdapter.get(configClass);
+        return Banira.platform().configService().get(configClass);
     }
 
     @Nullable
     public static ConfigHolder holder(@Nonnull Class<?> configClass) {
-        return ForgeConfigAdapter.getHolder(configClass);
+        return Banira.platform().configService().holder(configClass);
     }
 }

@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.util;
 
 import org.junit.Test;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -70,6 +72,29 @@ public class EnvironmentUtilsTest {
         @Override
         public Path configDir() {
             return Path.of("config");
+        }
+
+        @Override
+        public BaniraConfigService configService() {
+            return NoopConfigService.INSTANCE;
+        }
+    }
+
+    private enum NoopConfigService implements BaniraConfigService {
+        INSTANCE;
+
+        @Override
+        public <T> void register(Class<T> configClass, String modId) {
+        }
+
+        @Override
+        public <T> T get(Class<T> configClass) {
+            throw new IllegalStateException("No config registered");
+        }
+
+        @Override
+        public ConfigHolder holder(Class<?> configClass) {
+            return null;
         }
     }
 }

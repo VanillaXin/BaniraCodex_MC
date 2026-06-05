@@ -33,4 +33,7 @@ public interface BaniraPlatform {
 
     @Nonnull
     Path configDir();
+
+    @Nonnull
+    BaniraConfigService configService();
 }

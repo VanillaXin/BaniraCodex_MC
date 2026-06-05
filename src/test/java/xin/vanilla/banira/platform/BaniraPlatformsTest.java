@@ -2,6 +2,7 @@ package xin.vanilla.banira.platform;
 
 import org.junit.Test;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.common.config.ConfigHolder;
 
 import java.nio.file.Path;
 
@@ -19,6 +20,7 @@ public class BaniraPlatformsTest {
         assertSame(platform, BaniraPlatforms.get());
         assertSame(platform, Banira.platform());
         assertEquals("test", Banira.platform().loaderType());
+        assertNotNull(Banira.platform().configService());
     }
 
     private static final class TestPlatform implements BaniraPlatform {
@@ -70,6 +72,29 @@ public class BaniraPlatformsTest {
         @Override
         public Path configDir() {
             return Path.of("config");
+        }
+
+        @Override
+        public BaniraConfigService configService() {
+            return NoopConfigService.INSTANCE;
+        }
+    }
+
+    private enum NoopConfigService implements BaniraConfigService {
+        INSTANCE;
+
+        @Override
+        public <T> void register(Class<T> configClass, String modId) {
+        }
+
+        @Override
+        public <T> T get(Class<T> configClass) {
+            throw new IllegalStateException("No config registered");
+        }
+
+        @Override
+        public ConfigHolder holder(Class<?> configClass) {
+            return null;
         }
     }
 }

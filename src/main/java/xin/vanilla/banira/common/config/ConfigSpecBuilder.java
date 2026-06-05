@@ -239,7 +239,7 @@ public final class ConfigSpecBuilder {
             pathStack.pop();
         }
         ForgeConfigSpec spec = builder.build();
-        return new ConfigHolder(modId, configName, configScope, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap),
+        return new ConfigHolder(modId, configName, configScope, new ForgeConfigValueStore(spec, valueMap), new ArrayList<>(descriptors),
                 Collections.emptyMap(), Collections.emptyMap());
     }
 }

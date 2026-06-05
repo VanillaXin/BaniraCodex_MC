@@ -1,15 +1,12 @@
 package xin.vanilla.banira.common.config;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * 配置持有者，封装 ForgeConfigSpec 与元数据，提供统一访问接口
+ * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
 public class ConfigHolder {
 
@@ -23,12 +20,9 @@ public class ConfigHolder {
     private final String configName;
     @Getter
     private final ConfigScope configScope;
-    @Getter(AccessLevel.PACKAGE)
-    private final ForgeConfigSpec spec;
     @Getter
     private final List<ConfigEntryDescriptor> descriptors;
-    @Getter(AccessLevel.PACKAGE)
-    private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap;
+    private final ConfigValueStore valueStore;
     /**
      * 分类路径 -> 显示名（用于 GUI 层级展示，兼容旧逻辑；配置编辑器折叠标题优先 {@link #categoryTitleSpecs}）
      */
@@ -44,20 +38,15 @@ public class ConfigHolder {
      */
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
 
-    @Nullable
-    @Getter(AccessLevel.PACKAGE)
-    private ModConfig modConfig;
-
-    ConfigHolder(String modId, String configName, ConfigScope configScope, ForgeConfigSpec spec,
-                 List<ConfigEntryDescriptor> descriptors, Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap,
+    ConfigHolder(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                 List<ConfigEntryDescriptor> descriptors,
                  Map<String, String> categoryTooltips,
                  Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
         this.configName = configName;
         this.configScope = configScope;
-        this.spec = spec;
+        this.valueStore = valueStore;
         this.descriptors = Collections.unmodifiableList(descriptors);
-        this.valueMap = Collections.unmodifiableMap(valueMap);
         this.categoryTooltips = categoryTooltips != null ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTooltips)) : Collections.emptyMap();
         this.categoryTitleSpecs = categoryTitleSpecs != null
                 ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTitleSpecs))
@@ -77,17 +66,15 @@ public class ConfigHolder {
         return categoryTitleSpecs.get(categoryPath);
     }
 
-    void setModConfig(@Nullable ModConfig modConfig) {
-        this.modConfig = modConfig;
+    ConfigValueStore valueStore() {
+        return valueStore;
     }
 
     /**
      * 保存配置到文件
      */
     public void save() {
-        if (modConfig != null) {
-            modConfig.save();
-        }
+        valueStore.save();
     }
 
     /**
@@ -95,11 +82,10 @@ public class ConfigHolder {
      */
     @SuppressWarnings("unchecked")
     public <T> T get(String path) {
-        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        if (cv == null) {
+        if (!valueStore.paths().contains(path)) {
             return null;
         }
-        Object v = cv.get();
+        Object v = valueStore.get(path);
         ConfigEntryDescriptor desc = descriptorByPath.get(path);
         if (desc != null && desc.isListType() && v instanceof List) {
             v = ConfigListSpecHelper.normalizeListForRuntime((List<?>) v, desc);
@@ -110,11 +96,9 @@ public class ConfigHolder {
     /**
      * 设置配置值（仅内存，需调用 save 持久化）
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void set(String path, Object value) {
-        ForgeConfigSpec.ConfigValue cv = valueMap.get(path);
-        if (cv != null) {
-            cv.set(value);
+        if (valueStore.paths().contains(path)) {
+            valueStore.set(path, value);
         }
     }
 
@@ -129,11 +113,11 @@ public class ConfigHolder {
      * 返回所有配置路径；用于指令补全和代理方法解析。
      */
     public Set<String> valuePaths() {
-        return valueMap.keySet();
+        return valueStore.paths();
     }
 
     public boolean hasValue(String path) {
-        return valueMap.containsKey(path);
+        return valueStore.paths().contains(path);
     }
 
     /**
@@ -144,38 +128,27 @@ public class ConfigHolder {
         if (key == null) {
             return null;
         }
-        if (valueMap.containsKey(key)) {
+        if (valueStore.paths().contains(key)) {
             return key;
         }
         String lowerKey = key.toLowerCase(Locale.ROOT);
-        List<String> matches = valueMap.keySet().stream()
+        List<String> matches = valueStore.paths().stream()
                 .filter(s -> s.toLowerCase(Locale.ROOT).contains(lowerKey))
                 .toList();
         return matches.size() == 1 ? matches.get(0) : null;
     }
 
     public Class<?> valueClass(String path) {
-        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        if (cv == null) {
-            return Object.class;
-        }
-        try {
-            Object current = cv.get();
-            return current != null ? current.getClass() : Object.class;
-        } catch (Throwable ignored) {
-            return Object.class;
-        }
+        return valueStore.valueClass(path);
     }
 
     @Nullable
     public Object defaultValue(String path) {
-        ForgeConfigSpec.ValueSpec valueSpec = valueSpec(path);
-        return valueSpec != null ? valueSpec.getDefault() : null;
+        return valueStore.defaultValue(path);
     }
 
     public boolean validate(String path, Object value) {
-        ForgeConfigSpec.ValueSpec valueSpec = valueSpec(path);
-        return valueSpec != null && valueSpec.test(value);
+        return valueStore.validate(path, value);
     }
 
     public boolean setIfValid(String path, Object value) {
@@ -184,15 +157,6 @@ public class ConfigHolder {
         }
         set(path, value);
         return true;
-    }
-
-    @Nullable
-    private ForgeConfigSpec.ValueSpec valueSpec(String path) {
-        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        if (cv == null) {
-            return null;
-        }
-        return spec.getSpec().get(cv.getPath());
     }
 
     /**

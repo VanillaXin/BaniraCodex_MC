@@ -20,15 +20,18 @@ public final class ConfigRegistry {
      * @param modContainer Mod 容器
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {
+        if (!(holder.valueStore() instanceof ForgeConfigValueStore valueStore)) {
+            throw new IllegalArgumentException("ConfigHolder is not backed by ForgeConfigSpec: " + holder.getConfigName());
+        }
         String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = new ModConfig(toForgeType(holder.getConfigScope()), holder.getSpec(), modContainer, fileName);
+        ModConfig modConfig = new ModConfig(toForgeType(holder.getConfigScope()), valueStore.spec(), modContainer, fileName);
         modContainer.addConfig(modConfig);
-        holder.setModConfig(modConfig);
+        valueStore.bindModConfig(modConfig);
         HOLDERS.put(holder.getConfigName(), holder);
     }
 
     /**
-     * 注册 ConfigHolder（供 ForgeConfigAdapter 等调用）
+     * 注册 ConfigHolder（供加载器配置服务调用）。
      */
     public static void registerHolder(ConfigHolder holder) {
         HOLDERS.put(holder.getConfigName(), holder);

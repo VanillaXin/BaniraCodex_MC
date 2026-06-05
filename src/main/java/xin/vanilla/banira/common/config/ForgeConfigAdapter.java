@@ -67,14 +67,15 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configScope, spec, descriptors, valueMap, categoryTooltips,
+        ForgeConfigValueStore valueStore = new ForgeConfigValueStore(spec, valueMap);
+        ConfigHolder holder = new ConfigHolder(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
             ModConfig modConfig = new ModConfig(ConfigRegistry.toForgeType(configScope), spec, container, fileName);
             container.addConfig(modConfig);
-            holder.setModConfig(modConfig);
+            valueStore.bindModConfig(modConfig);
         });
 
         HOLDER_MAP.put(configClass, holder);

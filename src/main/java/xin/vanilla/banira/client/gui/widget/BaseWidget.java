@@ -65,6 +65,8 @@ public abstract class BaseWidget implements IWidget {
 
     protected final List<IWidget> children = new ArrayList<>();
 
+    private final List<IWidget> readonlyChildren = Collections.unmodifiableList(children);
+
     /**
      * absoluteX/absoluteY 缓存，parent 或 bounds 变更时失效
      */
@@ -676,7 +678,7 @@ public abstract class BaseWidget implements IWidget {
      */
     @Override
     public List<IWidget> children() {
-        return Collections.unmodifiableList(children);
+        return readonlyChildren;
     }
 
     @Override
@@ -696,6 +698,7 @@ public abstract class BaseWidget implements IWidget {
                 baseWidget.children.remove(child);
             }
             childWidget.parent = this;
+            childWidget.invalidateAbsCache();
         }
     }
 
@@ -707,6 +710,7 @@ public abstract class BaseWidget implements IWidget {
         boolean removed = children.remove(child);
         if (removed && child instanceof BaseWidget baseWidget) {
             baseWidget.parent = null;
+            baseWidget.invalidateAbsCache();
         }
         return removed;
     }
@@ -752,6 +756,7 @@ public abstract class BaseWidget implements IWidget {
         for (IWidget child : children) {
             if (child instanceof BaseWidget baseWidget) {
                 baseWidget.parent = null;
+                baseWidget.invalidateAbsCache();
             }
         }
         children.clear();

@@ -187,6 +187,11 @@ public abstract class BaniraScreen extends Screen {
     private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
 
     /**
+     * 每帧复用的根组件快照，避免 renderWidgets 高频创建临时 ArrayList。
+     */
+    private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
+
+    /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
      */
     public void addDeferredTooltipRender(Consumer<PoseStack> render) {
@@ -564,14 +569,19 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void renderWidgets(PoseStack stack, float partialTicks) {
-        List<IWidget> snapshot = new ArrayList<>(widgets);
-        for (IWidget widget : snapshot) {
-            if (widget.visible() && widget.parent() == null) {
-                if (widget.enabled() && widget.needsUpdate()) {
-                    widget.update();
+        renderWidgetSnapshot.clear();
+        renderWidgetSnapshot.addAll(widgets);
+        try {
+            for (IWidget widget : renderWidgetSnapshot) {
+                if (widget.visible() && widget.parent() == null) {
+                    if (widget.enabled() && widget.needsUpdate()) {
+                        widget.update();
+                    }
+                    widget.render(stack, partialTicks);
                 }
-                widget.render(stack, partialTicks);
             }
+        } finally {
+            renderWidgetSnapshot.clear();
         }
     }
 

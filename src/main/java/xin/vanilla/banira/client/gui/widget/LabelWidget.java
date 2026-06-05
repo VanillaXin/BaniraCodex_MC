@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -31,6 +32,8 @@ import java.util.regex.Pattern;
  */
 @Accessors(chain = true, fluent = true)
 public class LabelWidget extends BaseWidget implements ITextWidget {
+    private static final Pattern WRAP_SEPARATOR_PATTERN = Pattern.compile("[\\s\\p{Punct}]+");
+
     @Getter
     private Text text = Text.empty();
 
@@ -97,7 +100,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         FontDrawArgs args = FontDrawArgs.of(text.stack(stack)).x(x()).y(y()).maxWidth((int) width())
                 .wrap(textWrap).position(textEllipsisPosition);
         if (textVerticalAlign == EnumAlignment.CENTER && height() > 0) {
-            KeyValue<Integer, Integer> size = calculateLimitedTextSize(args);
+            KeyValue<Integer, Integer> size = calculateCachedTextSize(args);
             int textHeight = size.val();
             if (textHeight > 0) {
                 args.y(y() + Math.max(0, (height() - textHeight) / 2.0));
@@ -121,16 +124,13 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         FontDrawArgs fitted = FontDrawArgs.of(text.stack(stack)).x(0).y(0).maxWidth(mw)
                 .wrap(textWrap).position(textEllipsisPosition);
         FontDrawArgs natural = fitted.clone().maxWidth(20000).position(EnumEllipsisPosition.NONE);
-        int wNatural = calculateLimitedTextSize(natural).key();
-        int wFitted = calculateLimitedTextSize(fitted).key();
+        int wNatural = calculateCachedTextSize(natural).key();
+        int wFitted = calculateCachedTextSize(fitted).key();
         return wNatural > wFitted;
     }
 
     private void maybeDeferTruncationTooltip(PoseStack stack) {
         if (!showFullTextTooltipWhenTruncated || screen == null || !enabled) {
-            return;
-        }
-        if (!isLabelTextTruncated(stack)) {
             return;
         }
         double mx = screen.inputState().mouseX();
@@ -139,6 +139,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             return;
         }
         if (screen.isAnyDropdownSelectOpen()) {
+            return;
+        }
+        if (!isLabelTextTruncated(stack)) {
             return;
         }
         BaniraColorConfig theme = screen.getEffectiveTheme();
@@ -156,6 +159,68 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                     theme, tipSeason);
             s.popPose();
         });
+    }
+
+    private Font cachedTextSizeFont;
+    private String cachedTextSizeContent;
+    private int cachedTextSizeMaxWidth;
+    private int cachedTextSizeMaxLine;
+    private boolean cachedTextSizeWrap;
+    private EnumEllipsisPosition cachedTextSizePosition;
+    private float cachedTextSizeFontSize;
+    private int cachedTextSizePaddingTop;
+    private int cachedTextSizePaddingBottom;
+    private int cachedTextSizePaddingLeft;
+    private int cachedTextSizePaddingRight;
+    private boolean cachedTextSizeInScreen;
+    private int cachedTextSizeMarginLeft;
+    private int cachedTextSizeMarginRight;
+    private int cachedTextSizeX;
+    private KeyValue<Integer, Integer> cachedTextSize = new KeyValue<>(0, 0);
+
+    private KeyValue<Integer, Integer> calculateCachedTextSize(@Nonnull FontDrawArgs args) {
+        Text text = args.text();
+        Font font = text.font();
+        String content = text.content();
+        int maxWidth = args.maxWidth();
+        int x = (int) args.x();
+        if (isTextSizeCacheMiss(args, font, content, maxWidth, x)) {
+            cachedTextSize = calculateLimitedTextSize(args);
+            cachedTextSizeFont = font;
+            cachedTextSizeContent = content;
+            cachedTextSizeMaxWidth = maxWidth;
+            cachedTextSizeMaxLine = args.maxLine();
+            cachedTextSizeWrap = args.wrap();
+            cachedTextSizePosition = args.position();
+            cachedTextSizeFontSize = args.fontSize();
+            cachedTextSizePaddingTop = args.paddingTop();
+            cachedTextSizePaddingBottom = args.paddingBottom();
+            cachedTextSizePaddingLeft = args.paddingLeft();
+            cachedTextSizePaddingRight = args.paddingRight();
+            cachedTextSizeInScreen = args.inScreen();
+            cachedTextSizeMarginLeft = args.marginLeft();
+            cachedTextSizeMarginRight = args.marginRight();
+            cachedTextSizeX = x;
+        }
+        return cachedTextSize;
+    }
+
+    private boolean isTextSizeCacheMiss(FontDrawArgs args, Font font, String content, int maxWidth, int x) {
+        return cachedTextSizeFont != font
+                || !Objects.equals(cachedTextSizeContent, content)
+                || cachedTextSizeMaxWidth != maxWidth
+                || cachedTextSizeMaxLine != args.maxLine()
+                || cachedTextSizeWrap != args.wrap()
+                || cachedTextSizePosition != args.position()
+                || Float.compare(cachedTextSizeFontSize, args.fontSize()) != 0
+                || cachedTextSizePaddingTop != args.paddingTop()
+                || cachedTextSizePaddingBottom != args.paddingBottom()
+                || cachedTextSizePaddingLeft != args.paddingLeft()
+                || cachedTextSizePaddingRight != args.paddingRight()
+                || cachedTextSizeInScreen != args.inScreen()
+                || cachedTextSizeMarginLeft != args.marginLeft()
+                || cachedTextSizeMarginRight != args.marginRight()
+                || cachedTextSizeX != x;
     }
 
     /**
@@ -437,8 +502,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             return wrappedLines;
         }
 
-        String separatorPattern = "[\\s\\p{Punct}]+";
-        Pattern pattern = Pattern.compile(separatorPattern);
+        Pattern pattern = WRAP_SEPARATOR_PATTERN;
         List<String> segments = StringUtils.splitStrings(text, pattern);
 
         if (segments.isEmpty()) {

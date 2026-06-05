@@ -78,6 +78,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int contentW;
     private int btnY;
     private int contentTotalW;
+    private final ScreenCoordinate contentViewport = new ScreenCoordinate();
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
 
     /**
@@ -251,7 +252,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.maxValue(0);
             scrollbar.value(0);
             scrollbar.visible(false);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
         } else {
             listAreaHeight = maxListHeight;
             btnY = centeredBtnY;
@@ -261,7 +262,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
             scrollOffset = scrollbar.value();
             scrollbar.visibleSize(listAreaHeight);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
@@ -320,11 +321,23 @@ public class ConfigEditorScreen extends BaniraScreen {
                 tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
             }
         }
+        refreshContentViewport();
     }
 
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
+            contentRootPanel.renderViewport(contentViewport);
+        }
+    }
+
+    private void refreshContentViewport() {
+        contentViewport.x(contentLeft)
+                .y(listTop)
+                .width(contentTotalW)
+                .height(Math.max(1, listAreaHeight));
+        if (contentRootPanel != null) {
+            contentRootPanel.renderViewport(contentViewport);
         }
     }
 
@@ -999,7 +1012,8 @@ public class ConfigEditorScreen extends BaniraScreen {
                     0, 0, 0, CARD_RADIUS, cardBg);
         }
 
-        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
+        refreshContentViewport();
+        AbstractGuiUtils.enableScissor(contentViewport.xInt(), contentViewport.yInt(), contentViewport.widthInt(), contentViewport.heightInt());
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();

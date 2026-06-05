@@ -111,6 +111,13 @@ public class ScrollbarWidget extends BaseWidget {
         return this;
     }
 
+    public ScrollbarWidget clearScrollHoverAreas() {
+        if (scrollingCoordinates != null) {
+            scrollingCoordinates.clear();
+        }
+        return this;
+    }
+
     @Override
     public void render(PoseStack stack, float partialTicks) {
         if (!visible) {

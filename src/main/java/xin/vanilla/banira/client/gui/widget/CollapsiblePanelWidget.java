@@ -153,6 +153,12 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     @Nullable
     private IWidget lastClickFocusTarget;
 
+    /**
+     * 绝对屏幕坐标裁剪区；仅跳过不可见子树的渲染/鼠标/update，不参与布局计算。
+     */
+    @Nullable
+    private ScreenCoordinate renderViewport;
+
     public CollapsiblePanelWidget(BaniraScreen screen) {
         super(screen);
     }
@@ -228,7 +234,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
         // region 绘制内容区（仅展开时）
         if (isExpanded && !children.isEmpty()) {
-            renderChildren(stack, partialTicks);
+            renderVisibleChildren(stack, partialTicks);
         }
         // endregion 绘制内容区
 
@@ -265,6 +271,58 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 0, color);
     }
 
+    public CollapsiblePanelWidget renderViewport(@Nullable ScreenCoordinate viewport) {
+        this.renderViewport = viewport;
+        return this;
+    }
+
+    private void renderVisibleChildren(PoseStack stack, float partialTicks) {
+        if (!visible || children.isEmpty()) {
+            return;
+        }
+
+        stack.pushPose();
+        stack.translate(x(), y(), 0);
+
+        for (IWidget child : children) {
+            if (child != null && child.visible() && shouldProcessChildInViewport(child)) {
+                if (child instanceof CollapsiblePanelWidget panelWidget) {
+                    panelWidget.renderViewport(renderViewport);
+                }
+                child.render(stack, partialTicks);
+            }
+        }
+
+        stack.popPose();
+    }
+
+    private boolean shouldProcessChildInViewport(IWidget child) {
+        if (renderViewport == null || child == null) {
+            return true;
+        }
+        double vx = renderViewport.x();
+        double vy = renderViewport.y();
+        double vw = renderViewport.width();
+        double vh = renderViewport.height();
+        double x1 = child.absoluteX();
+        double y1 = child.absoluteY();
+        ScreenCoordinate bounds = child.bounds();
+        double childWidth = bounds != null ? bounds.width() : 1;
+        double x2 = x1 + Math.max(1, childWidth);
+        double y2 = y1 + Math.max(1, child.effectiveHeight());
+        return x2 >= vx && x1 <= vx + vw && y2 >= vy && y1 <= vy + vh;
+    }
+
+    private boolean isMouseInsideRenderViewport(double mouseX, double mouseY) {
+        if (renderViewport == null) {
+            return true;
+        }
+        return mouseX >= renderViewport.x()
+                && mouseX < renderViewport.x() + renderViewport.width()
+                && mouseY >= renderViewport.y()
+                && mouseY < renderViewport.y() + renderViewport.height();
+    }
+
     @Override
     public void update() {
         if (!visible || !enabled) {
@@ -275,7 +333,11 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
         if (expanded) {
             for (IWidget child : children) {
-                if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
+                if (child != null && child.visible() && child.enabled() && child.needsUpdate()
+                        && shouldProcessChildInViewport(child)) {
+                    if (child instanceof CollapsiblePanelWidget panelWidget) {
+                        panelWidget.renderViewport(renderViewport);
+                    }
                     child.update();
                 }
             }
@@ -293,7 +355,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         double absY = absoluteY();
         double relY = mouseY - absY;
 
-        if (isMouseInside(mouseX, mouseY, absX, absY)) {
+        if (isMouseInsideRenderViewport(mouseX, mouseY) && isMouseInside(mouseX, mouseY, absX, absY)) {
             lastClickFocusTarget = null;
             if (relY < headerHeight && event.button() == 0) {
                 toggleExpanded();
@@ -318,6 +380,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     @Override
     public boolean handleMouseRelease(MouseEvent event) {
         if (!visible || !enabled || event == null) {
+            return false;
+        }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !mousePressed) {
             return false;
         }
 
@@ -348,6 +413,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !focused) {
+            return false;
+        }
 
         if (expanded) {
             for (int i = children.size() - 1; i >= 0; i--) {
@@ -369,6 +437,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     @Override
     public boolean handleMouseDrag(MouseDragEvent event) {
         if (!visible || !enabled || event == null) {
+            return false;
+        }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !mousePressed) {
             return false;
         }
 

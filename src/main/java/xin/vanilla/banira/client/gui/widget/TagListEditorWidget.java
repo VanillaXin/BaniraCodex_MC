@@ -239,6 +239,21 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         return tagsContentHeight() > maxListViewportHeight() + 1e-6 && maxListViewportHeight() > 1e-6;
     }
 
+    private int firstVisibleTagIndex(double viewportHeight) {
+        if (items.isEmpty()) {
+            return 0;
+        }
+        return Math.max(0, (int) Math.floor(listScrollOffset / tagRowStride()));
+    }
+
+    private int lastVisibleTagIndex(double viewportHeight) {
+        if (items.isEmpty()) {
+            return -1;
+        }
+        double bottom = listScrollOffset + Math.max(0, viewportHeight);
+        return Math.min(items.size() - 1, (int) Math.ceil(bottom / tagRowStride()));
+    }
+
     private double listInnerWidth(double widgetWidth) {
         return listShowsScrollbar() ? widgetWidth - SCROLLBAR_WIDTH - SCROLL_GAP : widgetWidth;
     }
@@ -827,7 +842,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         double listAbsX = absX;
         double listAbsY = absY + listContentTop;
-        scrollbar.scrollingCoordinates(new ArrayList<>());
+        scrollbar.clearScrollHoverAreas();
         if (showScrollbar) {
             scrollbar.addScrollHoverArea(new ScreenCoordinate(listAbsX, listAbsY, listW, listAreaHeight));
         }
@@ -850,7 +865,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
-        for (int i = 0; i < items.size(); i++) {
+        int firstVisible = firstVisibleTagIndex(listAreaHeight);
+        int lastVisible = lastVisibleTagIndex(listAreaHeight);
+        for (int i = firstVisible; i <= lastVisible; i++) {
             Object item = items.get(i);
             String label = formatItemLabel(item);
             String display = font.plainSubstrByWidth(label, textMaxW);
@@ -953,6 +970,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double absY = absoluteY();
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
         int closeX = getDeleteButtonX();
+        double listAreaHeight = visibleListViewportHeight();
         hoveredDeleteIndex = -1;
         hoveredTagBodyIndex = -1;
         if (expanded && editingIndex < 0 && screen != null) {
@@ -963,7 +981,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 hoveredTagBodyIndex = bodyIdx;
             }
         }
-        for (int i = 0; i < items.size(); i++) {
+        int firstVisible = firstVisibleTagIndex(listAreaHeight);
+        int lastVisible = lastVisibleTagIndex(listAreaHeight);
+        for (int i = firstVisible; i <= lastVisible; i++) {
             double tagY = listContentTop - listScrollOffset + i * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
@@ -1072,7 +1092,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
-            for (int i = 0; i < items.size(); i++) {
+            int firstVisible = firstVisibleTagIndex(listAreaHeight);
+            int lastVisible = lastVisibleTagIndex(listAreaHeight);
+            for (int i = firstVisible; i <= lastVisible; i++) {
                 int closeX = getDeleteButtonX();
                 double tagY = listContentTop - listScrollOffset + i * tagRowStride();
                 double delX = absX + closeX;

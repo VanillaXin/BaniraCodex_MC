@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.config;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
@@ -10,18 +11,23 @@ import java.util.*;
 /**
  * 配置持有者，封装 ForgeConfigSpec 与元数据，提供统一访问接口
  */
-@Getter
 public class ConfigHolder {
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
      */
+    @Getter
     private final String modId;
 
+    @Getter
     private final String configName;
+    @Getter
     private final ConfigScope configScope;
+    @Getter(AccessLevel.PACKAGE)
     private final ForgeConfigSpec spec;
+    @Getter
     private final List<ConfigEntryDescriptor> descriptors;
+    @Getter(AccessLevel.PACKAGE)
     private final Map<String, ForgeConfigSpec.ConfigValue<?>> valueMap;
     /**
      * 分类路径 -> 显示名（用于 GUI 层级展示，兼容旧逻辑；配置编辑器折叠标题优先 {@link #categoryTitleSpecs}）
@@ -39,6 +45,7 @@ public class ConfigHolder {
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
 
     @Nullable
+    @Getter(AccessLevel.PACKAGE)
     private ModConfig modConfig;
 
     ConfigHolder(String modId, String configName, ConfigScope configScope, ForgeConfigSpec spec,
@@ -116,6 +123,76 @@ public class ConfigHolder {
      */
     public ConfigEntryDescriptor getDescriptor(String path) {
         return descriptorByPath.get(path);
+    }
+
+    /**
+     * 返回所有配置路径；用于指令补全和代理方法解析。
+     */
+    public Set<String> valuePaths() {
+        return valueMap.keySet();
+    }
+
+    public boolean hasValue(String path) {
+        return valueMap.containsKey(path);
+    }
+
+    /**
+     * 精确匹配路径；若没有精确命中且模糊结果唯一，则返回该路径。
+     */
+    @Nullable
+    public String findValuePath(String key) {
+        if (key == null) {
+            return null;
+        }
+        if (valueMap.containsKey(key)) {
+            return key;
+        }
+        String lowerKey = key.toLowerCase(Locale.ROOT);
+        List<String> matches = valueMap.keySet().stream()
+                .filter(s -> s.toLowerCase(Locale.ROOT).contains(lowerKey))
+                .toList();
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    public Class<?> valueClass(String path) {
+        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
+        if (cv == null) {
+            return Object.class;
+        }
+        try {
+            Object current = cv.get();
+            return current != null ? current.getClass() : Object.class;
+        } catch (Throwable ignored) {
+            return Object.class;
+        }
+    }
+
+    @Nullable
+    public Object defaultValue(String path) {
+        ForgeConfigSpec.ValueSpec valueSpec = valueSpec(path);
+        return valueSpec != null ? valueSpec.getDefault() : null;
+    }
+
+    public boolean validate(String path, Object value) {
+        ForgeConfigSpec.ValueSpec valueSpec = valueSpec(path);
+        return valueSpec != null && valueSpec.test(value);
+    }
+
+    public boolean setIfValid(String path, Object value) {
+        if (!validate(path, value)) {
+            return false;
+        }
+        set(path, value);
+        return true;
+    }
+
+    @Nullable
+    private ForgeConfigSpec.ValueSpec valueSpec(String path) {
+        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
+        if (cv == null) {
+            return null;
+        }
+        return spec.getSpec().get(cv.getPath());
     }
 
     /**

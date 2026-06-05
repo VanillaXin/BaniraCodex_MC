@@ -92,7 +92,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.STRING)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -112,7 +111,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.BOOLEAN)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -134,7 +132,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -156,7 +153,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -178,7 +174,6 @@ public final class ConfigSpecBuilder {
                 .defaultValue(defaultValue)
                 .minValue(min)
                 .maxValue(max)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -198,7 +193,6 @@ public final class ConfigSpecBuilder {
                 .tooltip(Arrays.asList(comments))
                 .valueType(ConfigEntryDescriptor.ConfigValueType.STRING_LIST)
                 .defaultValue(defaultValue)
-                .configValue(cv)
                 .build());
         return this;
     }
@@ -220,7 +214,6 @@ public final class ConfigSpecBuilder {
                 .valueType(ConfigEntryDescriptor.ConfigValueType.ENUM)
                 .defaultValue(defaultValue)
                 .enumClass((Class<? extends Enum<?>>) defaultValue.getClass())
-                .configValue(cv)
                 .build());
         return this;
     }

@@ -392,8 +392,7 @@ public final class ForgeConfigAdapter {
                 .minValue(min)
                 .maxValue(max)
                 .decimalPlaces(decimalPlaces)
-                .enumClass(enumClass)
-                .configValue(cv);
+                .enumClass(enumClass);
         applyRequiresEditPermission(field, b);
         descriptors.add(b.build());
     }
@@ -454,7 +453,7 @@ public final class ForgeConfigAdapter {
     }
 
     private static String resolvePath(ConfigHolder holder, String methodName, String prefix) {
-        for (String path : holder.getValueMap().keySet()) {
+        for (String path : holder.valuePaths()) {
             String fieldName = path.substring(path.lastIndexOf('.') + 1);
             if (methodName.equals(fieldName)) {
                 if (prefix.isEmpty()) return path;

@@ -298,13 +298,6 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             calculatedPaddingBottom = args.paddingBottom();
         }
 
-        FontDrawArgs calcArgs = args.clone()
-                .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
-                .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
-        KeyValue<Integer, Integer> textSize = LabelWidget.calculateLimitedTextSize(calcArgs);
-        int textWidth = textSize.key();
-        int textHeight = textSize.val();
-
         final TextureUtils.NinePatchInfo ninePatchInfo = args.texture() != null ? TextureUtils.parseNinePatch(args.texture()) : null;
 
         if (ninePatchInfo != null) {
@@ -323,13 +316,14 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 calculatedPaddingTop += (int) (ninePatchInfo.rightGuideTopPadding * calculatedTextureScale);
             if (ninePatchInfo.rightGuideBottomPadding > 0)
                 calculatedPaddingBottom += (int) (ninePatchInfo.rightGuideBottomPadding * calculatedTextureScale);
-            FontDrawArgs recalcArgs = args.clone()
-                    .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
-                    .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
-            textSize = LabelWidget.calculateLimitedTextSize(recalcArgs);
-            textWidth = textSize.key();
-            textHeight = textSize.val();
         }
+
+        FontDrawArgs calcArgs = args.clone()
+                .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
+                .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
+        KeyValue<Integer, Integer> textSize = LabelWidget.calculateLimitedTextSize(calcArgs);
+        int textWidth = textSize.key();
+        int textHeight = textSize.val();
 
         final int finalCalculatedPaddingLeft = calculatedPaddingLeft;
         final int finalCalculatedPaddingRight = calculatedPaddingRight;

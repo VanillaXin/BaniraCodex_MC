@@ -61,6 +61,7 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final int DETAIL_AFTER_META_GAP = 8;
     private static final int META_COL_GAP = 12;
     private static final int META_ROW_GAP = 4;
+    private static final int META_FONT_SIZE = 10;
 
     private final Args args;
     private int leftX, leftY, leftW, leftH;
@@ -567,19 +568,11 @@ public class NotificationLogScreen extends BaniraScreen {
         return h;
     }
 
-    private boolean metaLineTruncated(PoseStack stack, String line, int colW, BaniraColorConfig theme) {
+    private boolean metaLineTruncated(String line, int colW) {
         if (StringUtils.isNullOrEmptyEx(line)) {
             return false;
         }
-        FontDrawArgs base = FontDrawArgs.ofPopo(Text.literal(line).color(theme.textSecondary()).stack(stack).font(font))
-                .x(0).y(0).fontSize(10).wrap(false)
-                .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0)
-                .inScreen(false);
-        FontDrawArgs natural = base.clone().maxWidth(20000).position(EnumEllipsisPosition.NONE);
-        FontDrawArgs fitted = base.clone().maxWidth(colW).position(EnumEllipsisPosition.END);
-        int wNatural = LabelWidget.calculateLimitedTextSize(natural).key();
-        int wFitted = LabelWidget.calculateLimitedTextSize(fitted).key();
-        return wNatural > wFitted;
+        return font.width(line) > colW;
     }
 
     private int drawMetaPairRow(PoseStack stack, int x, int y, int colW, BaniraColorConfig theme,
@@ -587,20 +580,18 @@ public class NotificationLogScreen extends BaniraScreen {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
         FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x).y(y).fontSize(10).maxWidth(colW).wrap(false)
+                .x(x).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z1 = LabelWidget.calculateLimitedTextSize(a1);
         FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x + colW + META_COL_GAP).y(y).fontSize(10).maxWidth(colW).wrap(false)
+                .x(x + colW + META_COL_GAP).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z2 = LabelWidget.calculateLimitedTextSize(a2);
-        int rowH = Math.max(z1.value(), z2.value());
-        if (metaLineTruncated(stack, s1, colW, theme)) {
+        int rowH = META_FONT_SIZE;
+        if (metaLineTruncated(s1, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x, y, colW, rowH, value1));
         }
-        if (metaLineTruncated(stack, s2, colW, theme)) {
+        if (metaLineTruncated(s2, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x + colW + META_COL_GAP, y, colW, rowH, value2));
         }
         LabelWidget.drawLimitedText(a1);

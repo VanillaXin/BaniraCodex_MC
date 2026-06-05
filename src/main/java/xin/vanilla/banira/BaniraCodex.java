@@ -24,7 +24,7 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.command.BaniraCommand;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
+import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
@@ -96,9 +96,9 @@ public class BaniraCodex {
         BaniraPlatforms.install(new ForgeBaniraPlatform());
 
         // 配置必须在 CONFIG 加载阶段之前注册
-        ForgeConfigAdapter.register(CommonConfig.class, MODID);
-        ForgeConfigAdapter.register(ClientConfig.class, MODID);
-        // ForgeConfigAdapter.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
+        BaniraConfig.register(CommonConfig.class, MODID);
+        BaniraConfig.register(ClientConfig.class, MODID);
+        // BaniraConfig.register(xin.vanilla.banira.internal.config.TestConfig.class, MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener(BaniraEventBus::dispatchModCommonSetup);

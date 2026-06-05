@@ -1,7 +1,7 @@
 /**
  * ForgeConfigSpec 便捷构建与解析系统，提供类似 Fabric Cloth Config 的 POJO + fluent 风格。
  * <p>
- * 推荐使用 {@link xin.vanilla.banira.common.config.ForgeConfigAdapter} 从注解配置类构建，
+ * 推荐使用 {@link xin.vanilla.banira.common.config.BaniraConfig} 从注解配置类构建，
  * 配置类结构与 Fabric 兼容，迁移时仅需修改 get() 与注册逻辑。
  * <p>
  * 备选：使用 {@link xin.vanilla.banira.common.config.ConfigSpecBuilder} 流式 API：

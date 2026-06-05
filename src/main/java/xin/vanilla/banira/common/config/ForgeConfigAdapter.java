@@ -39,6 +39,7 @@ import java.util.function.Predicate;
  * // 或直接 holder：config.holder().set("help.helpHeader", "new");
  * }</pre>
  */
+@Deprecated
 public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();

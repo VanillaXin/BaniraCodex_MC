@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.network;
 
 import lombok.Data;
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.util.PacketUtils;
 
 import java.util.*;
@@ -31,7 +30,7 @@ public abstract class SplitPacket {
         this.id = String.format("%d.%d", System.currentTimeMillis(), random.nextInt(999999999));
     }
 
-    protected SplitPacket(FriendlyByteBuf buf) {
+    protected SplitPacket(BaniraPacketBuffer buf) {
         this.id = buf.readUtf();
         this.total = buf.readInt();
         this.sort = buf.readInt();
@@ -109,7 +108,7 @@ public abstract class SplitPacket {
         return Collections.singletonList((T) this);
     }
 
-    protected void toBytes(FriendlyByteBuf buf) {
+    protected void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(id);
         buf.writeInt(total);
         buf.writeInt(sort);

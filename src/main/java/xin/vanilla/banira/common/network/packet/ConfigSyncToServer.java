@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
@@ -11,6 +10,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
@@ -37,7 +37,7 @@ public class ConfigSyncToServer implements NetworkPacket {
         this.changes = changes != null ? new HashMap<>(changes) : new HashMap<>();
     }
 
-    public ConfigSyncToServer(FriendlyByteBuf buf) {
+    public ConfigSyncToServer(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.changes = new HashMap<>(size);
@@ -48,7 +48,7 @@ public class ConfigSyncToServer implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(changes.size());
         for (Map.Entry<String, String> e : changes.entrySet()) {

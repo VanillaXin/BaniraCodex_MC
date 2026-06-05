@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.network.packet;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
@@ -15,6 +14,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
     }
 
-    public ConfigSnapshotToClient(FriendlyByteBuf buf) {
+    public ConfigSnapshotToClient(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.snapshot = new HashMap<>(size);
@@ -46,7 +46,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(snapshot.size());
         for (Map.Entry<String, String> e : snapshot.entrySet()) {

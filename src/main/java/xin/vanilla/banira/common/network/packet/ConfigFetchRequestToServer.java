@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
@@ -10,6 +9,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
@@ -32,11 +32,11 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
         this.configName = configName != null ? configName : "";
     }
 
-    public ConfigFetchRequestToServer(FriendlyByteBuf buf) {
+    public ConfigFetchRequestToServer(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
     }
 

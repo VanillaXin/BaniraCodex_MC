@@ -1,12 +1,12 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
@@ -28,7 +28,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         this.entries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
     }
 
-    public NotificationTypesSyncToClient(FriendlyByteBuf buf) {
+    public NotificationTypesSyncToClient(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
         if (n < 0) {
             n = 0;
@@ -50,7 +50,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         int n = Math.min(entries.size(), MAX_TYPE_COUNT);
         buf.writeVarInt(n);
         for (int i = 0; i < n; i++) {

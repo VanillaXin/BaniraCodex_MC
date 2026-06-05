@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.api.INetworkPacket;
 
 import java.util.function.BiConsumer;
@@ -12,7 +11,7 @@ import java.util.function.Function;
 public interface NetworkPacketRegistrar {
     <MSG extends INetworkPacket> void register(int packetId,
                                                Class<MSG> packetClass,
-                                               BiConsumer<MSG, FriendlyByteBuf> encoder,
-                                               Function<FriendlyByteBuf, MSG> decoder,
+                                               BiConsumer<MSG, BaniraPacketBuffer> encoder,
+                                               Function<BaniraPacketBuffer, MSG> decoder,
                                                BiConsumer<MSG, BaniraNetworkContext> handler);
 }

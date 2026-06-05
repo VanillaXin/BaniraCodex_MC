@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
@@ -32,11 +32,11 @@ public class RequestToBoth implements NetworkPacket {
         this.requestType = requestType;
     }
 
-    public RequestToBoth(FriendlyByteBuf buf) {
+    public RequestToBoth(BaniraPacketBuffer buf) {
         this.requestType = buf.readVarInt();
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeVarInt(this.requestType);
     }
 

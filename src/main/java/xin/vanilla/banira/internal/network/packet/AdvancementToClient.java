@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -25,7 +25,7 @@ public class AdvancementToClient extends SplitPacket
         this.advancements = advancements;
     }
 
-    public AdvancementToClient(FriendlyByteBuf buf) {
+    public AdvancementToClient(BaniraPacketBuffer buf) {
         super(buf);
         int size = buf.readVarInt();
         ArraySet<AdvancementData> advancements = new ArraySet<>();
@@ -87,7 +87,7 @@ public class AdvancementToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         super.toBytes(buf);
         buf.writeVarInt(this.advancements.size());
         for (AdvancementData data : this.advancements) {

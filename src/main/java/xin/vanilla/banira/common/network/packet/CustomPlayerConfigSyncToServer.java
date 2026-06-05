@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -28,12 +28,12 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
         this.notificationReceiveMode = notificationReceiveMode != null ? notificationReceiveMode : "";
     }
 
-    public CustomPlayerConfigSyncToServer(FriendlyByteBuf buf) {
+    public CustomPlayerConfigSyncToServer(BaniraPacketBuffer buf) {
         this.language = buf.readUtf(256);
         this.notificationReceiveMode = buf.readUtf(256);
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(language, 256);
         buf.writeUtf(notificationReceiveMode, 256);
     }

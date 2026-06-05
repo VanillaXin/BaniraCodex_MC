@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.internal.forge.network.ForgeNetworkHandler;
@@ -41,8 +40,8 @@ public class NetworkHandler {
      * @param <MSG>       包类型
      */
     public <MSG extends INetworkPacket> void register(Class<MSG> packetClass,
-                                                      BiConsumer<MSG, FriendlyByteBuf> encoder,
-                                                      Function<FriendlyByteBuf, MSG> decoder,
+                                                      BiConsumer<MSG, BaniraPacketBuffer> encoder,
+                                                      Function<BaniraPacketBuffer, MSG> decoder,
                                                       BiConsumer<MSG, BaniraNetworkContext> handler) {
         registrar.register(
                 nextPacketId++,
@@ -64,8 +63,8 @@ public class NetworkHandler {
      */
     public <MSG extends SplitPacket & INetworkPacket> void registerSplit(
             Class<MSG> packetClass,
-            BiConsumer<MSG, FriendlyByteBuf> encoder,
-            Function<FriendlyByteBuf, MSG> decoder,
+            BiConsumer<MSG, BaniraPacketBuffer> encoder,
+            Function<BaniraPacketBuffer, MSG> decoder,
             BiConsumer<MSG, BaniraNetworkContext> handler) {
         BiConsumer<MSG, BaniraNetworkContext> wrappedHandler = (packet, ctx) -> {
             // 处理分包逻辑

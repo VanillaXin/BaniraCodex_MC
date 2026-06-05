@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -26,7 +26,7 @@ public class BiomeToClient extends SplitPacket
         this.biomeIds = biomeIds != null ? new ArrayList<>(biomeIds) : new ArrayList<>();
     }
 
-    public BiomeToClient(FriendlyByteBuf buf) {
+    public BiomeToClient(BaniraPacketBuffer buf) {
         super(buf);
         int size = buf.readVarInt();
         this.biomeIds = new ArrayList<>(size);
@@ -76,7 +76,7 @@ public class BiomeToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         super.toBytes(buf);
         buf.writeVarInt(biomeIds.size());
         for (String id : biomeIds) {

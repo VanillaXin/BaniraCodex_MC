@@ -1,8 +1,9 @@
-package xin.vanilla.banira.common.config;
+package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -68,7 +69,7 @@ public final class ForgeConfigAdapter {
 
         ForgeConfigSpec spec = builder.build();
         ForgeConfigValueStore valueStore = new ForgeConfigValueStore(spec, valueMap);
-        ConfigHolder holder = new ConfigHolder(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
+        ConfigHolder holder = ConfigHolder.create(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";

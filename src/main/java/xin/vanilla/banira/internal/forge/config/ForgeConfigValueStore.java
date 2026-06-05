@@ -1,7 +1,8 @@
-package xin.vanilla.banira.common.config;
+package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.common.config.ConfigValueStore;
 
 import javax.annotation.Nullable;
 import java.util.Collections;

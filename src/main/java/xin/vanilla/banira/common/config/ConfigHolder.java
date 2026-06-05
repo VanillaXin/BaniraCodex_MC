@@ -38,6 +38,16 @@ public class ConfigHolder {
      */
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
 
+    /**
+     * 供各加载器配置服务创建统一 holder。
+     */
+    public static ConfigHolder create(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                                      List<ConfigEntryDescriptor> descriptors,
+                                      Map<String, String> categoryTooltips,
+                                      Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
+        return new ConfigHolder(modId, configName, configScope, valueStore, descriptors, categoryTooltips, categoryTitleSpecs);
+    }
+
     ConfigHolder(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
                  List<ConfigEntryDescriptor> descriptors,
                  Map<String, String> categoryTooltips,

@@ -7,8 +7,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -116,13 +114,13 @@ public final class DimensionUtils {
     }
 
     public static void ensureData() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData && CLIENT_DIMENSION_IDS.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedData && CLIENT_DIMENSION_IDS.isEmpty()) {
             requestDataFromServer();
         }
     }
 
     public static void requestDataFromServer() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
+        if (EnvironmentUtils.isClient() && !requestedData) {
             requestedData = true;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_DIMENSION_DATA));
             LOGGER.debug("Request dimension data from server.");

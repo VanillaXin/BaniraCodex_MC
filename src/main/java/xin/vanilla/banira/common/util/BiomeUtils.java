@@ -8,8 +8,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,13 +110,13 @@ public final class BiomeUtils {
     }
 
     public static void ensureData() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
             requestDataFromServer();
         }
     }
 
     public static void requestDataFromServer() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
+        if (EnvironmentUtils.isClient() && !requestedData) {
             requestedData = true;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
             LOGGER.debug("Request biome data from server.");

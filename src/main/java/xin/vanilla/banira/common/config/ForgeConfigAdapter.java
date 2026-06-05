@@ -55,7 +55,7 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ModConfig.Type configType = configAnn.type();
+        ConfigScope configScope = configAnn.type();
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -66,12 +66,12 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
+        ConfigHolder holder = new ConfigHolder(modId, configName, configScope, spec, descriptors, valueMap, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
+            ModConfig modConfig = new ModConfig(ConfigRegistry.toForgeType(configScope), spec, container, fileName);
             container.addConfig(modConfig);
             holder.setModConfig(modConfig);
         });

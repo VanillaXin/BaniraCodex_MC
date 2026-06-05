@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -22,6 +21,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 
 import javax.annotation.Nullable;
@@ -101,7 +101,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
-        if (FMLEnvironment.dist.isClient()) {
+        if (EnvironmentUtils.isClient()) {
             Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
     }

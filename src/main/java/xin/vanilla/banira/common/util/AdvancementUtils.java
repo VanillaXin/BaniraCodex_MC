@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -48,7 +47,7 @@ public final class AdvancementUtils {
      * 确保进度数据已在客户端缓存
      */
     public static void ensureAdvancementData() {
-        if (FMLEnvironment.dist.isClient() && !requestedAdvancementData && advancementData.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedAdvancementData && advancementData.isEmpty()) {
             requestAdvancementDataFromServer();
         }
     }
@@ -57,7 +56,7 @@ public final class AdvancementUtils {
      * 向服务器请求进度数据
      */
     public static void requestAdvancementDataFromServer() {
-        if (FMLEnvironment.dist.isClient() && !requestedAdvancementData) {
+        if (EnvironmentUtils.isClient() && !requestedAdvancementData) {
             requestedAdvancementData = true;
             dataLoaded = false;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
@@ -124,7 +123,7 @@ public final class AdvancementUtils {
             );
         }
         // 客户端
-        else if (FMLEnvironment.dist.isClient()) {
+        else if (EnvironmentUtils.isClient()) {
             ensureAdvancementData();
         }
         return advancementData;

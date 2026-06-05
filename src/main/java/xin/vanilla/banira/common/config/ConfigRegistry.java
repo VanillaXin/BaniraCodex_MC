@@ -21,7 +21,7 @@ public final class ConfigRegistry {
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {
         String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = new ModConfig(holder.getConfigType(), holder.getSpec(), modContainer, fileName);
+        ModConfig modConfig = new ModConfig(toForgeType(holder.getConfigScope()), holder.getSpec(), modContainer, fileName);
         modContainer.addConfig(modConfig);
         holder.setModConfig(modConfig);
         HOLDERS.put(holder.getConfigName(), holder);
@@ -44,11 +44,19 @@ public final class ConfigRegistry {
     }
 
     /**
-     * 获取配置持有者（兼容旧 API）
+     * 获取配置持有者
      */
-    public static ConfigHolder get(String configName, ModConfig.Type type) {
-        String key = configName + "-" + type.extension();
+    public static ConfigHolder get(String configName, ConfigScope scope) {
+        String key = configName + "-" + scope.extension();
         return HOLDERS.get(key);
+    }
+
+    static ModConfig.Type toForgeType(ConfigScope scope) {
+        return switch (scope) {
+            case CLIENT -> ModConfig.Type.CLIENT;
+            case SERVER -> ModConfig.Type.SERVER;
+            case COMMON -> ModConfig.Type.COMMON;
+        };
     }
 
     /**

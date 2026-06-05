@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -12,7 +11,7 @@ import java.util.function.Predicate;
  * <p>
  * 使用示例：
  * <pre>{@code
- * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", ModConfig.Type.SERVER)
+ * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", ConfigScope.SERVER)
  *   .category("base", "基础设置")
  *     .define("helpHeader", "-----==== Help ====-----", "帮助头部")
  *     .defineInRange("helpNumPerPage", 5, 1, 9999, "每页数量")
@@ -30,7 +29,7 @@ public final class ConfigSpecBuilder {
     @Getter
     private final String configName;
     @Getter
-    private final ModConfig.Type configType;
+    private final ConfigScope configScope;
 
     private final ForgeConfigSpec.Builder builder;
     private final List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -38,17 +37,17 @@ public final class ConfigSpecBuilder {
 
     private final Deque<String> pathStack = new ArrayDeque<>();
 
-    private ConfigSpecBuilder(String configName, ModConfig.Type configType) {
+    private ConfigSpecBuilder(String configName, ConfigScope configScope) {
         this.configName = configName;
-        this.configType = configType;
+        this.configScope = configScope;
         this.builder = new ForgeConfigSpec.Builder();
     }
 
     /**
      * 创建构建器
      */
-    public static ConfigSpecBuilder create(String configName, ModConfig.Type configType) {
-        return new ConfigSpecBuilder(configName, configType);
+    public static ConfigSpecBuilder create(String configName, ConfigScope configScope) {
+        return new ConfigSpecBuilder(configName, configScope);
     }
 
     /**
@@ -247,7 +246,7 @@ public final class ConfigSpecBuilder {
             pathStack.pop();
         }
         ForgeConfigSpec spec = builder.build();
-        return new ConfigHolder(modId, configName, configType, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap),
+        return new ConfigHolder(modId, configName, configScope, spec, new ArrayList<>(descriptors), new LinkedHashMap<>(valueMap),
                 Collections.emptyMap(), Collections.emptyMap());
     }
 }

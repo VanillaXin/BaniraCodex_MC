@@ -19,6 +19,7 @@ public class BaniraHudRenderEventTest {
         event.cancel();
 
         assertTrue(event.canceled());
+        assertFalse(event.bounds().isKnown());
     }
 
     @Test

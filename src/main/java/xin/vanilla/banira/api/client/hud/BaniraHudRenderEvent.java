@@ -14,14 +14,22 @@ public final class BaniraHudRenderEvent {
     private final @Nonnull HudRenderPhase phase;
     private final @Nonnull HudOverlayElement element;
     private final @Nonnull BaniraHudRenderContext context;
+    private final @Nonnull BaniraHudBounds bounds;
     private final boolean cancellable;
     private boolean canceled;
 
     public BaniraHudRenderEvent(@Nonnull HudRenderPhase phase, @Nonnull HudOverlayElement element,
                                 @Nonnull BaniraHudRenderContext context, boolean cancellable) {
+        this(phase, element, context, BaniraHudBounds.empty(), cancellable);
+    }
+
+    public BaniraHudRenderEvent(@Nonnull HudRenderPhase phase, @Nonnull HudOverlayElement element,
+                                @Nonnull BaniraHudRenderContext context, @Nonnull BaniraHudBounds bounds,
+                                boolean cancellable) {
         this.phase = phase;
         this.element = element;
         this.context = context;
+        this.bounds = bounds;
         this.cancellable = cancellable;
     }
 

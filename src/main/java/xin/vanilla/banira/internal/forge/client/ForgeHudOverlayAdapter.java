@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.forge.client;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import xin.vanilla.banira.api.client.hud.*;
+import xin.vanilla.banira.internal.client.BaniraHudGeometry;
 
 import javax.annotation.Nonnull;
 
@@ -15,10 +16,13 @@ public final class ForgeHudOverlayAdapter {
     }
 
     public static void dispatchPre(@Nonnull RenderGameOverlayEvent.Pre event) {
+        BaniraHudRenderContext context = context(event);
+        HudOverlayElement element = mapElement(event.getType());
         BaniraHudRenderEvent baniraEvent = new BaniraHudRenderEvent(
                 HudRenderPhase.PRE,
-                mapElement(event.getType()),
-                context(event),
+                element,
+                context,
+                bounds(element, context.screenWidth(), context.screenHeight()),
                 event.isCancelable()
         );
         BaniraHudEvents.dispatchPre(baniraEvent);
@@ -28,10 +32,13 @@ public final class ForgeHudOverlayAdapter {
     }
 
     public static void dispatchPost(@Nonnull RenderGameOverlayEvent.Post event) {
+        BaniraHudRenderContext context = context(event);
+        HudOverlayElement element = mapElement(event.getType());
         BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
                 HudRenderPhase.POST,
-                mapElement(event.getType()),
-                context(event),
+                element,
+                context,
+                bounds(element, context.screenWidth(), context.screenHeight()),
                 false
         ));
     }
@@ -85,6 +92,19 @@ public final class ForgeHudOverlayAdapter {
                 return HudOverlayElement.TEXT;
             default:
                 return HudOverlayElement.UNKNOWN;
+        }
+    }
+
+    private static BaniraHudBounds bounds(HudOverlayElement element, int screenWidth, int screenHeight) {
+        int left = screenWidth / 2 - 91;
+        switch (element) {
+            case EXPERIENCE:
+            case EXPERIENCE_BAR:
+                return BaniraHudGeometry.experienceBarBounds(left, screenHeight);
+            case EXPERIENCE_TEXT:
+                return BaniraHudGeometry.experienceTextBounds(left, screenHeight);
+            default:
+                return BaniraHudBounds.empty();
         }
     }
 }

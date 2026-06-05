@@ -38,4 +38,20 @@ public final class BaniraHudRenderEvent {
             canceled = true;
         }
     }
+
+    public boolean isPre() {
+        return phase == HudRenderPhase.PRE;
+    }
+
+    public boolean isPost() {
+        return phase == HudRenderPhase.POST;
+    }
+
+    public boolean isExperience() {
+        return element.isExperience();
+    }
+
+    public boolean hasKnownBounds() {
+        return bounds.isKnown();
+    }
 }

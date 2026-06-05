@@ -27,6 +27,38 @@ public final class BaniraHudEvents {
         POST_RENDER.add(callback);
     }
 
+    public static void onElementPreRender(@Nonnull HudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> callback) {
+        onPreRender(event -> {
+            if (event.element() == element) {
+                callback.accept(event);
+            }
+        });
+    }
+
+    public static void onElementPostRender(@Nonnull HudOverlayElement element, @Nonnull Consumer<BaniraHudRenderEvent> callback) {
+        onPostRender(event -> {
+            if (event.element() == element) {
+                callback.accept(event);
+            }
+        });
+    }
+
+    public static void onExperiencePreRender(@Nonnull Consumer<BaniraHudRenderEvent> callback) {
+        onPreRender(event -> {
+            if (event.isExperience()) {
+                callback.accept(event);
+            }
+        });
+    }
+
+    public static void onExperiencePostRender(@Nonnull Consumer<BaniraHudRenderEvent> callback) {
+        onPostRender(event -> {
+            if (event.isExperience()) {
+                callback.accept(event);
+            }
+        });
+    }
+
     public static void dispatchPre(@Nonnull BaniraHudRenderEvent event) {
         fire(PRE_RENDER, event, "hud pre render");
     }

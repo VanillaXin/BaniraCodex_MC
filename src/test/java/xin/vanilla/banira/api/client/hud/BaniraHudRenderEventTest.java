@@ -2,8 +2,7 @@ package xin.vanilla.banira.api.client.hud;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BaniraHudRenderEventTest {
 
@@ -20,6 +19,10 @@ public class BaniraHudRenderEventTest {
 
         assertTrue(event.canceled());
         assertFalse(event.bounds().isKnown());
+        assertTrue(event.isPre());
+        assertFalse(event.isPost());
+        assertTrue(event.isExperience());
+        assertFalse(event.hasKnownBounds());
     }
 
     @Test
@@ -34,5 +37,20 @@ public class BaniraHudRenderEventTest {
         event.cancel();
 
         assertFalse(event.canceled());
+    }
+
+    @Test
+    public void reportsKnownBoundsWhenAdapterProvidesThem() {
+        BaniraHudRenderEvent event = new BaniraHudRenderEvent(
+                HudRenderPhase.POST,
+                HudOverlayElement.EXPERIENCE_BAR,
+                new BaniraHudRenderContext(new Object(), 320, 180, 0.5f),
+                BaniraHudBounds.of(69, 151, 182, 5),
+                false
+        );
+
+        assertTrue(event.hasKnownBounds());
+        assertTrue(event.isExperience());
+        assertEquals(69, event.bounds().x());
     }
 }

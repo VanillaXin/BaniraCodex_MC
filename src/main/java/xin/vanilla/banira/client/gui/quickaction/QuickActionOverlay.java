@@ -760,6 +760,17 @@ public final class QuickActionOverlay {
     }
 
     /**
+     * 事件层只传递 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack。
+     */
+    public void renderNative(Object nativeGraphics, Screen screen, double mouseX, double mouseY, float partialTicks) {
+        if (nativeGraphics instanceof PoseStack) {
+            render((PoseStack) nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTicks);
+            return;
+        }
+        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
+    }
+
+    /**
      * 悬停于带 label 的快捷图标时，使用主题 Tooltip 样式绘制说明。
      */
     private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -36,8 +37,12 @@ public final class BaniraClientEventHub {
 
     private static final List<Consumer<BaniraScreenOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraTextureReloadEvent>> clientTextureReloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraDrawScreenEvent>> clientDrawScreenPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraDrawScreenEvent>> clientDrawScreenPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseClickedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseScrolledPreCallbacks = new ArrayList<>();
 
     private static final List<Consumer<BaniraClientTickEvent>> clientTickCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraChatEvent>> clientChatCallbacks = new ArrayList<>();
@@ -76,17 +81,55 @@ public final class BaniraClientEventHub {
             AdvancementUtils.clearAdvancementData();
             PlayerUtils.removeRemoteServerDataStatus(player);
         });
-        Client.onGuiChanged(event -> LogoModifier.modifyLogo());
+        Client.onGuiChanged(event -> {
+            QuickActionOverlay.get().resetInteractionState();
+            LogoModifier.modifyLogo();
+        });
         Client.onTextureReload(event -> {
             if (BaniraCodex.MODID.equals(event.atlasLocation().getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 QuickActionOverlay.resetSystemIconTextureCache();
             }
         });
+        Client.onDrawScreenPre(event -> {
+            Screen screen = screen(event.screen());
+            if (screen != null && QuickActionOverlay.isSupportedInventoryScreen(screen)) {
+                QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(event.mouseX()), (int) Math.round(event.mouseY()));
+            }
+        });
         Client.onDrawScreenPost(event -> NotificationManager.get().renderNative(event.nativeGraphics()));
+        Client.onDrawScreenPost(event -> {
+            Screen screen = screen(event.screen());
+            if (screen != null && QuickActionOverlay.isSupportedInventoryScreen(screen)) {
+                QuickActionOverlay.get().renderNative(event.nativeGraphics(), screen, event.mouseX(), event.mouseY(), event.partialTick());
+                QuickActionOverlay.get().flushSaveIfNeeded();
+            }
+        });
         Client.onRenderOverlayPost(event -> {
             if (event.element() == HudOverlayElement.ALL && !event.screenOpen()) {
                 NotificationManager.get().renderNative(event.nativeGraphics());
+            }
+        });
+        Client.onMouseClickedPre(event -> {
+            Screen screen = screen(event.screen());
+            if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
+                event.cancel();
+                return;
+            }
+            if (NotificationManager.get().tryHandleHudClick(event.mouseX(), event.mouseY(), event.button())) {
+                event.cancel();
+            }
+        });
+        Client.onMouseReleasedPre(event -> {
+            Screen screen = screen(event.screen());
+            if (screen != null && QuickActionOverlay.get().handleMouseReleased(screen, event.mouseX(), event.mouseY(), event.button())) {
+                event.cancel();
+            }
+        });
+        Client.onMouseScrolledPre(event -> {
+            Screen screen = screen(event.screen());
+            if (screen != null && QuickActionOverlay.get().handleMouseScroll(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
+                event.cancel();
             }
         });
     }
@@ -117,6 +160,18 @@ public final class BaniraClientEventHub {
 
     public static void dispatchRenderOverlayPre(BaniraOverlayRenderEvent event) {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
+    }
+
+    public static void dispatchMouseClickedPre(BaniraMouseEvent event) {
+        fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
+    }
+
+    public static void dispatchMouseReleasedPre(BaniraMouseEvent event) {
+        fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
+    }
+
+    public static void dispatchMouseScrolledPre(BaniraMouseEvent event) {
+        fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
     }
 
     // region 分类 API：Player（客户端网络登录/登出）
@@ -154,6 +209,10 @@ public final class BaniraClientEventHub {
             clientTextureReloadCallbacks.add(callback);
         }
 
+        public static void onDrawScreenPre(@Nonnull Consumer<BaniraDrawScreenEvent> callback) {
+            clientDrawScreenPreCallbacks.add(callback);
+        }
+
         public static void onDrawScreenPost(@Nonnull Consumer<BaniraDrawScreenEvent> callback) {
             clientDrawScreenPostCallbacks.add(callback);
         }
@@ -178,8 +237,24 @@ public final class BaniraClientEventHub {
             clientRenderOverlayPreCallbacks.add(callback);
         }
 
+        public static void onMouseClickedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseClickedPreCallbacks.add(callback);
+        }
+
+        public static void onMouseReleasedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseReleasedPreCallbacks.add(callback);
+        }
+
+        public static void onMouseScrolledPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseScrolledPreCallbacks.add(callback);
+        }
+
         public static void fireTextureReload(BaniraTextureReloadEvent event) {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
+        }
+
+        public static void fireDrawScreenPre(BaniraDrawScreenEvent event) {
+            fire(clientDrawScreenPreCallbacks, event, "client draw screen pre");
         }
 
         public static void fireDrawScreenPost(BaniraDrawScreenEvent event) {
@@ -216,6 +291,10 @@ public final class BaniraClientEventHub {
                 LOGGER.warn("Error executing callback for {} event", eventName, t);
             }
         }
+    }
+
+    private static Screen screen(Object value) {
+        return value instanceof Screen ? (Screen) value : null;
     }
 
     // endregion

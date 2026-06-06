@@ -139,6 +139,10 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     private int previewScrollOffset = 0;
+    private final List<TagLayout> cachedTagLayouts = new ArrayList<>();
+    private boolean tagLayoutDirty = true;
+    private Font cachedTagLayoutFont;
+    private int cachedTagTotalWidth;
 
     int getPreviewScrollOffset() {
         return previewScrollOffset;
@@ -151,6 +155,7 @@ public class DropdownSelectWidget extends InputWidget {
     void removeSelectedValueAt(int index) {
         if (index >= 0 && index < selectedValues.size()) {
             selectedValues.remove(index);
+            invalidateTagLayoutCache();
             clampTagScrollOffset();
             updateDisplayValue();
             if (onSelectionChanged != null) {
@@ -169,12 +174,7 @@ public class DropdownSelectWidget extends InputWidget {
             return;
         }
         Font font = Minecraft.getInstance().font;
-        int totalWidth = 0;
-        for (String item : selectedValues) {
-            totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;
-        }
-        totalWidth -= TAG_GAP;
-        int maxScroll = Math.max(0, totalWidth - cw);
+        int maxScroll = Math.max(0, tagTotalWidth(font) - cw);
         tagScrollOffset = Math.max(0, Math.min(maxScroll, tagScrollOffset));
     }
 
@@ -295,6 +295,7 @@ public class DropdownSelectWidget extends InputWidget {
         Enum<?>[] constants = clazz.getEnumConstants();
         if (constants == null) {
             this.optionEntries = new ArrayList<>();
+            rebuildOptionCaches();
             return this;
         }
         List<DropdownOption> list = new ArrayList<>();
@@ -342,6 +343,7 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public DropdownSelectWidget selectedValues(List<String> values) {
         this.selectedValues = values != null ? new ArrayList<>(values) : new ArrayList<>();
+        invalidateTagLayoutCache();
         updateDisplayValue();
         return this;
     }
@@ -395,6 +397,7 @@ public class DropdownSelectWidget extends InputWidget {
         cachedFilterText = null;
         cachedFilteredOptionEntries = new ArrayList<>();
         hasDropdownIconCache = optionEntries.stream().anyMatch(o -> o.hasTexture() || !o.icon().isEmpty());
+        invalidateTagLayoutCache();
         dropdownScrollOffset = Math.min(dropdownScrollOffset, getMaxDropdownScroll());
     }
 
@@ -405,6 +408,52 @@ public class DropdownSelectWidget extends InputWidget {
             }
         }
         return storedValue;
+    }
+
+    private void invalidateTagLayoutCache() {
+        tagLayoutDirty = true;
+    }
+
+    /**
+     * 多选标签布局缓存。统一使用显示文本测宽，避免 render/命中/滚轮各算一遍。
+     */
+    private List<TagLayout> tagLayouts(Font font) {
+        if (!tagLayoutDirty && cachedTagLayoutFont == font) {
+            return cachedTagLayouts;
+        }
+        cachedTagLayouts.clear();
+        cachedTagLayoutFont = font;
+        cachedTagTotalWidth = 0;
+        for (int i = 0; i < selectedValues.size(); i++) {
+            String value = selectedValues.get(i);
+            String label = displayLabelForValue(value);
+            int textWidth = font.width(label);
+            int tagWidth = TAG_PAD + textWidth + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
+            cachedTagLayouts.add(new TagLayout(i, label, tagWidth));
+            cachedTagTotalWidth += tagWidth + TAG_GAP;
+        }
+        if (!cachedTagLayouts.isEmpty()) {
+            cachedTagTotalWidth -= TAG_GAP;
+        }
+        tagLayoutDirty = false;
+        return cachedTagLayouts;
+    }
+
+    private int tagTotalWidth(Font font) {
+        tagLayouts(font);
+        return cachedTagTotalWidth;
+    }
+
+    private static final class TagLayout {
+        final int index;
+        final String label;
+        final int tagWidth;
+
+        private TagLayout(int index, String label, int tagWidth) {
+            this.index = index;
+            this.label = label;
+            this.tagWidth = tagWidth;
+        }
     }
 
     private static final int DROPDOWN_GAP = 2;
@@ -510,6 +559,8 @@ public class DropdownSelectWidget extends InputWidget {
             } else {
                 selectedValues.add(option);
             }
+            invalidateTagLayoutCache();
+            clampTagScrollOffset();
             if (onSelectionChanged != null) {
                 onSelectionChanged.accept(getSelectedValues());
             }
@@ -520,6 +571,7 @@ public class DropdownSelectWidget extends InputWidget {
                 selectedValues.clear();
                 selectedValues.add(option);
             }
+            invalidateTagLayoutCache();
             updateDisplayValue();
             if (onSelectionChanged != null) {
                 onSelectionChanged.accept(getSelectedValues());
@@ -607,16 +659,22 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     private void updateDisplayValue() {
-        clampTagScrollOffset();
+        invalidateTagLayoutCache();
         if (selectedValues.isEmpty()) {
+            tagScrollOffset = 0;
             value("");
             return;
         }
-        List<String> labels = new ArrayList<>();
-        for (String v : selectedValues) {
-            labels.add(displayLabelForValue(v));
+        clampTagScrollOffset();
+        Font font = Minecraft.getInstance().font;
+        StringBuilder builder = new StringBuilder();
+        for (TagLayout layout : tagLayouts(font)) {
+            if (builder.length() > 0) {
+                builder.append(MULTI_SEPARATOR);
+            }
+            builder.append(layout.label);
         }
-        value(String.join(MULTI_SEPARATOR, labels));
+        value(builder.toString());
     }
 
     @Override
@@ -674,11 +732,10 @@ public class DropdownSelectWidget extends InputWidget {
 
         if (screen != null && !isMouseOverClearButton() && !isMouseOverArrow()) {
             if (tagMode && isMouseOverInputArea()) {
-                List<String> tipLabels = new ArrayList<>();
-                for (String v : selectedValues) {
-                    tipLabels.add(displayLabelForValue(v));
+                String fullContent = value();
+                if (!fullContent.isEmpty()) {
+                    drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(fullContent));
                 }
-                drawTooltipAtScreenCoords(stack, screen.inputState().mouseX(), screen.inputState().mouseY(), Text.literal(String.join(", ", tipLabels)));
             } else if (!value().isEmpty() && !dropdownOpen && isMouseOverInputArea()) {
                 String fullContent = value();
                 if (!fullContent.isEmpty()) {
@@ -744,15 +801,8 @@ public class DropdownSelectWidget extends InputWidget {
         int tagY = drawY + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;
 
-        int totalWidth = 0;
-        for (String item : selectedValues) {
-            String show = displayLabelForValue(item);
-            int textW = font.width(show);
-            int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
-            totalWidth += tagW + TAG_GAP;
-        }
-        totalWidth -= TAG_GAP;
-        int maxScroll = Math.max(0, totalWidth - contentWidth);
+        List<TagLayout> layouts = tagLayouts(font);
+        int maxScroll = Math.max(0, cachedTagTotalWidth - contentWidth);
         boolean canScrollRight = maxScroll > 0 && tagScrollOffset < maxScroll;
         boolean canScrollLeft = tagScrollOffset > 0;
 
@@ -765,23 +815,19 @@ public class DropdownSelectWidget extends InputWidget {
         double my = screen.inputState().mouseY();
 
         try {
-            for (String item : selectedValues) {
-                String show = displayLabelForValue(item);
-                int textW = font.width(show);
-                int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
-
-                if (currentX + tagW < contentLeft || currentX > contentLeft + contentWidth) {
-                    currentX += tagW + TAG_GAP;
+            for (TagLayout layout : layouts) {
+                if (currentX + layout.tagWidth < contentLeft || currentX > contentLeft + contentWidth) {
+                    currentX += layout.tagWidth + TAG_GAP;
                     continue;
                 }
 
-                int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
+                int closeX = currentX + layout.tagWidth - TAG_PAD - TAG_CLOSE_SIZE;
                 int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
                 boolean closeHovered = mx >= closeX && mx < closeX + TAG_CLOSE_SIZE && my >= closeY && my < closeY + TAG_CLOSE_SIZE;
 
-                AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
+                AbstractGuiUtils.fill(stack, currentX, tagY, layout.tagWidth, TAG_MIN_HEIGHT, tagBg);
                 AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-                font.draw(stack, font.plainSubstrByWidth(show, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
+                font.draw(stack, layout.label, currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2f, textColor);
 
                 int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
                 AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);
@@ -791,7 +837,7 @@ public class DropdownSelectWidget extends InputWidget {
                 AbstractGuiUtils.drawLine(stack, cx - r, cy - r, cx + r, cy + r, 1f, 0xFFFFFFFF);
                 AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
 
-                currentX += tagW + TAG_GAP;
+                currentX += layout.tagWidth + TAG_GAP;
             }
         } finally {
             AbstractGuiUtils.popScissor();
@@ -865,6 +911,8 @@ public class DropdownSelectWidget extends InputWidget {
 
         if (area == 1) {
             selectedValues.clear();
+            invalidateTagLayoutCache();
+            tagScrollOffset = 0;
             value("");
             if (onSelectionChanged != null) {
                 onSelectionChanged.accept(getSelectedValues());
@@ -928,11 +976,9 @@ public class DropdownSelectWidget extends InputWidget {
         if (mouseY < tagY || mouseY >= tagY + TAG_MIN_HEIGHT) return -1;
         int currentX = contentLeft - tagScrollOffset;
         Font font = Minecraft.getInstance().font;
-        for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
-            int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
-            if (mouseX >= currentX && mouseX < currentX + tagW) return i;
-            currentX += tagW + TAG_GAP;
+        for (TagLayout layout : tagLayouts(font)) {
+            if (mouseX >= currentX && mouseX < currentX + layout.tagWidth) return layout.index;
+            currentX += layout.tagWidth + TAG_GAP;
         }
         return -1;
     }
@@ -948,15 +994,13 @@ public class DropdownSelectWidget extends InputWidget {
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;
         Font font = Minecraft.getInstance().font;
-        for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
-            int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
-            int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
+        for (TagLayout layout : tagLayouts(font)) {
+            int closeX = currentX + layout.tagWidth - TAG_PAD - TAG_CLOSE_SIZE;
             int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
             if (mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE) {
-                return i;
+                return layout.index;
             }
-            currentX += tagW + TAG_GAP;
+            currentX += layout.tagWidth + TAG_GAP;
         }
         return -1;
     }
@@ -976,13 +1020,8 @@ public class DropdownSelectWidget extends InputWidget {
         }
         if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
             Font font = Minecraft.getInstance().font;
-            int totalWidth = 0;
-            for (String item : selectedValues) {
-                totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;
-            }
-            totalWidth -= TAG_GAP;
             int contentWidth = getTagContentWidth();
-            int maxScroll = Math.max(0, totalWidth - contentWidth);
+            int maxScroll = Math.max(0, tagTotalWidth(font) - contentWidth);
             if (maxScroll > 0) {
                 int step = 40;
                 if (event.delta() > 0) {

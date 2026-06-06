@@ -53,7 +53,7 @@ public final class ForgeHudOverlayAdapter {
         );
     }
 
-    private static HudOverlayElement mapElement(RenderGameOverlayEvent.ElementType type) {
+    public static HudOverlayElement mapElement(RenderGameOverlayEvent.ElementType type) {
         if (type == null) {
             return HudOverlayElement.UNKNOWN;
         }

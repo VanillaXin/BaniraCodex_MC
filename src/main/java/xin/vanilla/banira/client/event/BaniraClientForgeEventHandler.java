@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.event;
 
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
@@ -9,6 +10,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -28,20 +30,20 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
-        BaniraClientEventHub.dispatchClientPlayerLoggedIn(event);
+        BaniraClientEventHub.dispatchClientPlayerLoggedIn(event.getPlayer());
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
-        BaniraClientEventHub.dispatchClientPlayerLoggedOut(event);
+        BaniraClientEventHub.dispatchClientPlayerLoggedOut(event.getPlayer());
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        BaniraClientEventHub.dispatchClientTick(event);
         if (event.phase == TickEvent.Phase.END) {
+            BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             NotificationManager.get().tickOutOfScreenClick();
         }
     }
@@ -49,20 +51,26 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientChat(ClientChatEvent event) {
-        BaniraClientEventHub.dispatchClientChat(event);
+        BaniraClientEventHub.dispatchClientChat(new BaniraChatEvent(event.getMessage(), event));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiScreen(ScreenEvent event) {
-        BaniraClientEventHub.dispatchGuiScreen(event);
+        BaniraClientEventHub.dispatchGuiScreen(new BaniraScreenEvent(event.getScreen(), event));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
         ForgeHudOverlayAdapter.dispatchPre(event);
-        BaniraClientEventHub.dispatchRenderOverlayPre(event);
+        BaniraClientEventHub.dispatchRenderOverlayPre(new BaniraOverlayRenderEvent(
+                ForgeHudOverlayAdapter.mapElement(event.getType()),
+                event.getMatrixStack(),
+                event.getPartialTicks(),
+                Minecraft.getInstance().screen != null,
+                event
+        ));
     }
 
     // endregion BaniraClientEventHub Forge 转发
@@ -83,13 +91,13 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onGuiOpen(ScreenOpenEvent event) {
         QuickActionOverlay.get().resetInteractionState();
-        BaniraClientEventHub.Client.fireGuiChanged(event);
+        BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(event.getScreen(), event));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onTextureStitchPost(TextureStitchEvent.Post event) {
-        BaniraClientEventHub.Client.fireTextureReload(event);
+        BaniraClientEventHub.Client.fireTextureReload(new BaniraTextureReloadEvent(event.getAtlas().location(), event));
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -103,7 +111,14 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
-        BaniraClientEventHub.Client.fireDrawScreenPost(event);
+        BaniraClientEventHub.Client.fireDrawScreenPost(new BaniraDrawScreenEvent(
+                event.getPoseStack(),
+                event.getScreen(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getPartialTicks(),
+                event
+        ));
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -147,7 +162,13 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
         ForgeHudOverlayAdapter.dispatchPost(event);
-        BaniraClientEventHub.Client.fireRenderOverlayPost(event);
+        BaniraClientEventHub.Client.fireRenderOverlayPost(new BaniraOverlayRenderEvent(
+                ForgeHudOverlayAdapter.mapElement(event.getType()),
+                event.getMatrixStack(),
+                event.getPartialTicks(),
+                Minecraft.getInstance().screen != null,
+                event
+        ));
     }
 
     // endregion 本 Mod GUI（快捷栏 overlay 等）

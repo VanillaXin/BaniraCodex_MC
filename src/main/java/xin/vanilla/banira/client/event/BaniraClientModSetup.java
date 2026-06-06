@@ -7,6 +7,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
+import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -31,6 +32,6 @@ public final class BaniraClientModSetup {
         NotificationTypeSettingsStore.get().load();
 
         BaniraClientEventHub.registerCodexDefaults();
-        BaniraClientEventHub.dispatchModClientSetup(event);
+        BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent(event));
     }
 }

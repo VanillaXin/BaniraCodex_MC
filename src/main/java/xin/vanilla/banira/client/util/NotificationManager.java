@@ -369,6 +369,18 @@ public final class NotificationManager {
         }
     }
 
+    /**
+     * 事件层只持有 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack 渲染通知。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public void renderNative(Object nativeGraphics) {
+        if (nativeGraphics instanceof PoseStack) {
+            render((PoseStack) nativeGraphics);
+            return;
+        }
+        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
+    }
+
     private static double[] scaledMouse(Minecraft mc) {
         Window win = mc.getWindow();
         double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());

@@ -1,14 +1,11 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.*;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.client.event.*;
+import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -27,7 +24,6 @@ import java.util.function.Consumer;
 /**
  * 客户端专用事件回调与转发
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraClientEventHub {
 
     private BaniraClientEventHub() {
@@ -38,17 +34,17 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<ScreenOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
-    private static final List<Consumer<TextureStitchEvent.Post>> clientTextureReloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<ScreenEvent.DrawScreenEvent.Post>> clientDrawScreenPostCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Post>> clientRenderOverlayPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraScreenOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraTextureReloadEvent>> clientTextureReloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraDrawScreenEvent>> clientDrawScreenPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPostCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<TickEvent.ClientTickEvent>> clientTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<ClientChatEvent>> clientChatCallbacks = new ArrayList<>();
-    private static final List<Consumer<ScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
-    private static final List<Consumer<RenderGameOverlayEvent.Pre>> clientRenderOverlayPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraClientTickEvent>> clientTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraChatEvent>> clientChatCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPreCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<FMLClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
 
     private static volatile boolean codexDefaultsRegistered;
 
@@ -82,45 +78,44 @@ public final class BaniraClientEventHub {
         });
         Client.onGuiChanged(event -> LogoModifier.modifyLogo());
         Client.onTextureReload(event -> {
-            if (BaniraCodex.MODID.equals(event.getAtlas().location().getNamespace())) {
+            if (BaniraCodex.MODID.equals(event.atlasLocation().getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 QuickActionOverlay.resetSystemIconTextureCache();
             }
         });
-        Client.onDrawScreenPost(event -> NotificationManager.get().render(event.getPoseStack()));
+        Client.onDrawScreenPost(event -> NotificationManager.get().renderNative(event.nativeGraphics()));
         Client.onRenderOverlayPost(event -> {
-            if (event.getType() == RenderGameOverlayEvent.ElementType.ALL && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.getMatrixStack());
+            if (event.element() == HudOverlayElement.ALL && !event.screenOpen()) {
+                NotificationManager.get().renderNative(event.nativeGraphics());
             }
         });
     }
 
-    public static void dispatchModClientSetup(FMLClientSetupEvent event) {
+    public static void dispatchModClientSetup(BaniraClientSetupEvent event) {
         fire(modClientSetupCallbacks, event, "mod client setup");
     }
 
-    public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
-        fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
+    public static void dispatchClientPlayerLoggedIn(net.minecraft.world.entity.player.Player player) {
+        fire(clientPlayerLoggedInCallbacks, player, "player logged in");
     }
 
-    public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
-        fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
+    public static void dispatchClientPlayerLoggedOut(net.minecraft.world.entity.player.Player player) {
+        fire(clientPlayerLoggedOutCallbacks, player, "player logged out");
     }
 
-    public static void dispatchClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void dispatchClientTick(BaniraClientTickEvent event) {
         fire(clientTickCallbacks, event, "client tick");
     }
 
-    public static void dispatchClientChat(ClientChatEvent event) {
+    public static void dispatchClientChat(BaniraChatEvent event) {
         fire(clientChatCallbacks, event, "client chat");
     }
 
-    public static void dispatchGuiScreen(ScreenEvent event) {
+    public static void dispatchGuiScreen(BaniraScreenEvent event) {
         fire(clientGuiScreenCallbacks, event, "client gui screen");
     }
 
-    public static void dispatchRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
+    public static void dispatchRenderOverlayPre(BaniraOverlayRenderEvent event) {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
@@ -147,51 +142,51 @@ public final class BaniraClientEventHub {
         private Client() {
         }
 
-        public static void onGuiChanged(@Nonnull Consumer<ScreenOpenEvent> callback) {
+        public static void onGuiChanged(@Nonnull Consumer<BaniraScreenOpenEvent> callback) {
             clientGuiChangedCallbacks.add(callback);
         }
 
-        public static void fireGuiChanged(ScreenOpenEvent event) {
+        public static void fireGuiChanged(BaniraScreenOpenEvent event) {
             fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
 
-        public static void onTextureReload(@Nonnull Consumer<TextureStitchEvent.Post> callback) {
+        public static void onTextureReload(@Nonnull Consumer<BaniraTextureReloadEvent> callback) {
             clientTextureReloadCallbacks.add(callback);
         }
 
-        public static void onDrawScreenPost(@Nonnull Consumer<ScreenEvent.DrawScreenEvent.Post> callback) {
+        public static void onDrawScreenPost(@Nonnull Consumer<BaniraDrawScreenEvent> callback) {
             clientDrawScreenPostCallbacks.add(callback);
         }
 
-        public static void onRenderOverlayPost(@Nonnull Consumer<RenderGameOverlayEvent.Post> callback) {
+        public static void onRenderOverlayPost(@Nonnull Consumer<BaniraOverlayRenderEvent> callback) {
             clientRenderOverlayPostCallbacks.add(callback);
         }
 
-        public static void onClientTick(@Nonnull Consumer<TickEvent.ClientTickEvent> callback) {
+        public static void onClientTick(@Nonnull Consumer<BaniraClientTickEvent> callback) {
             clientTickCallbacks.add(callback);
         }
 
-        public static void onChat(@Nonnull Consumer<ClientChatEvent> callback) {
+        public static void onChat(@Nonnull Consumer<BaniraChatEvent> callback) {
             clientChatCallbacks.add(callback);
         }
 
-        public static void onGuiScreen(@Nonnull Consumer<ScreenEvent> callback) {
+        public static void onGuiScreen(@Nonnull Consumer<BaniraScreenEvent> callback) {
             clientGuiScreenCallbacks.add(callback);
         }
 
-        public static void onRenderOverlayPre(@Nonnull Consumer<RenderGameOverlayEvent.Pre> callback) {
+        public static void onRenderOverlayPre(@Nonnull Consumer<BaniraOverlayRenderEvent> callback) {
             clientRenderOverlayPreCallbacks.add(callback);
         }
 
-        public static void fireTextureReload(TextureStitchEvent.Post event) {
+        public static void fireTextureReload(BaniraTextureReloadEvent event) {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
 
-        public static void fireDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
+        public static void fireDrawScreenPost(BaniraDrawScreenEvent event) {
             fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
         }
 
-        public static void fireRenderOverlayPost(RenderGameOverlayEvent.Post event) {
+        public static void fireRenderOverlayPost(BaniraOverlayRenderEvent event) {
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
     }
@@ -204,7 +199,7 @@ public final class BaniraClientEventHub {
         private ModLifecycle() {
         }
 
-        public static void onClientSetup(@Nonnull Consumer<FMLClientSetupEvent> callback) {
+        public static void onClientSetup(@Nonnull Consumer<BaniraClientSetupEvent> callback) {
             modClientSetupCallbacks.add(callback);
         }
     }

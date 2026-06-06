@@ -304,6 +304,23 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
+     * 鼠标事件只分发给当前裁剪区内的子控件，避免滚动面板扫描大量不可见组件。
+     */
+    @Nullable
+    private IWidget findHandlingViewportChild(ChildEventDispatcher dispatcher) {
+        for (int i = children.size() - 1; i >= 0; i--) {
+            IWidget child = children.get(i);
+            if (child != null && child.visible() && child.enabled() && shouldProcessChildInViewport(child)) {
+                applyRenderViewportToChild(child);
+                if (dispatcher.dispatch(child)) {
+                    return child;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * 嵌套面板继承父级裁剪区，只影响渲染/update 的跳过判断，不改布局。
      */
     private void applyRenderViewportToChild(IWidget child) {
@@ -373,7 +390,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
                 return true;
             }
             if (expanded) {
-                IWidget handlingChild = findHandlingChild(child -> child.handleMouseClick(event));
+                IWidget handlingChild = findHandlingViewportChild(child -> child.handleMouseClick(event));
                 if (handlingChild != null) {
                     lastClickFocusTarget = handlingChild;
                     return true;
@@ -394,7 +411,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            if (findHandlingChild(child -> child.handleMouseRelease(event)) != null) {
+            if (findHandlingViewportChild(child -> child.handleMouseRelease(event)) != null) {
                 return true;
             }
         }
@@ -420,7 +437,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
+            if (findHandlingViewportChild(child -> child.handleMouseScroll(event)) != null) {
                 return true;
             }
         }
@@ -441,7 +458,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            if (findHandlingChild(child -> child.handleMouseDrag(event)) != null) {
+            if (findHandlingViewportChild(child -> child.handleMouseDrag(event)) != null) {
                 return true;
             }
         }

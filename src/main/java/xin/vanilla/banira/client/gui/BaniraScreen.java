@@ -194,9 +194,10 @@ public abstract class BaniraScreen extends Screen {
     private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
 
     /**
-     * 每帧复用的根组件快照，避免 renderWidgets 高频创建临时 ArrayList。
+     * 根组件渲染快照。根列表变化时才重建，避免每帧复制 widgets。
      */
     private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
+    private boolean renderWidgetSnapshotDirty = true;
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
@@ -578,20 +579,24 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void renderWidgets(PoseStack stack, float partialTicks) {
+        rebuildRenderWidgetSnapshotIfNeeded();
+        for (IWidget widget : renderWidgetSnapshot) {
+            if (widget.visible() && widget.parent() == null) {
+                if (widget.enabled() && widget.needsUpdate()) {
+                    widget.update();
+                }
+                widget.render(stack, partialTicks);
+            }
+        }
+    }
+
+    private void rebuildRenderWidgetSnapshotIfNeeded() {
+        if (!renderWidgetSnapshotDirty) {
+            return;
+        }
         renderWidgetSnapshot.clear();
         renderWidgetSnapshot.addAll(widgets);
-        try {
-            for (IWidget widget : renderWidgetSnapshot) {
-                if (widget.visible() && widget.parent() == null) {
-                    if (widget.enabled() && widget.needsUpdate()) {
-                        widget.update();
-                    }
-                    widget.render(stack, partialTicks);
-                }
-            }
-        } finally {
-            renderWidgetSnapshot.clear();
-        }
+        renderWidgetSnapshotDirty = false;
     }
 
     @Nullable
@@ -613,15 +618,17 @@ public abstract class BaniraScreen extends Screen {
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);
             }
+            renderWidgetSnapshotDirty = true;
         }
     }
 
     protected void removeWidget(IWidget widget) {
         if (widget != null) {
-            widgets.remove(widget);
-            if (widget.id() != null) {
+            boolean removed = widgets.remove(widget);
+            if (removed && widget.id() != null) {
                 widgetMap.remove(widget.id());
             }
+            renderWidgetSnapshotDirty |= removed;
         }
     }
 
@@ -647,6 +654,8 @@ public abstract class BaniraScreen extends Screen {
             }
         }
         widgets.clear();
+        renderWidgetSnapshot.clear();
+        renderWidgetSnapshotDirty = true;
         widgetMap.clear();
         focusedWidget = null;
         synchronized (focusableWidgets) {

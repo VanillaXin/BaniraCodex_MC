@@ -354,6 +354,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private int cachedVisibleTextDisplayPos = -1;
     private int cachedVisibleTextWidth = -1;
     private String cachedVisibleText = "";
+    private String cachedPrefixWidthTextA;
+    private int cachedPrefixWidthIndexA = -1;
+    private int cachedPrefixWidthA;
+    private String cachedPrefixWidthTextB;
+    private int cachedPrefixWidthIndexB = -1;
+    private int cachedPrefixWidthB;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -518,8 +524,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
 
                 if (highlightStartInVisible < highlightEndInVisible) {
-                    int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
-                    int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
+                    int highlightX1 = textX + (int) (prefixWidth(visibleText, highlightStartInVisible) * fontScale);
+                    int highlightX2 = textX + (int) (prefixWidth(visibleText, highlightEndInVisible) * fontScale);
                     renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
                 }
             }
@@ -995,6 +1001,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     private void invalidateVisibleTextCache() {
         cachedVisibleTextValue = null;
+        cachedPrefixWidthTextA = null;
+        cachedPrefixWidthTextB = null;
     }
 
     /**
@@ -1010,6 +1018,28 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             cachedVisibleText = font.plainSubstrByWidth(value.substring(displayPos), width);
         }
         return cachedVisibleText;
+    }
+
+    /**
+     * 选区绘制每帧会查询起点和终点两个前缀宽度，保留两槽缓存即可覆盖常见情况。
+     */
+    private int prefixWidth(String text, int index) {
+        int safeIndex = Mth.clamp(index, 0, text.length());
+        if (text.equals(cachedPrefixWidthTextA) && safeIndex == cachedPrefixWidthIndexA) {
+            return cachedPrefixWidthA;
+        }
+        if (text.equals(cachedPrefixWidthTextB) && safeIndex == cachedPrefixWidthIndexB) {
+            return cachedPrefixWidthB;
+        }
+
+        int width = safeIndex <= 0 ? 0 : font.width(text.substring(0, safeIndex));
+        cachedPrefixWidthTextB = cachedPrefixWidthTextA;
+        cachedPrefixWidthIndexB = cachedPrefixWidthIndexA;
+        cachedPrefixWidthB = cachedPrefixWidthA;
+        cachedPrefixWidthTextA = text;
+        cachedPrefixWidthIndexA = safeIndex;
+        cachedPrefixWidthA = width;
+        return width;
     }
 
     /**

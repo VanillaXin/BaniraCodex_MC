@@ -963,9 +963,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled) return;
         ensureChildren();
         updateBoundsHeight();
-        if (screen != null) {
-            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
-        }
+        updateInteractiveState();
         double absX = absoluteX();
         double absY = absoluteY();
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);

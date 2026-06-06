@@ -328,9 +328,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled) {
             return;
         }
-        if (screen != null) {
-            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
-        }
+        updateInteractiveState();
         if (expanded) {
             for (IWidget child : children) {
                 if (child != null && child.visible() && child.enabled() && child.needsUpdate()

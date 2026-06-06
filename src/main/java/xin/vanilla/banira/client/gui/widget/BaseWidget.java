@@ -176,17 +176,25 @@ public abstract class BaseWidget implements IWidget {
         if (!visible || !enabled) {
             return;
         }
-        if (needsSelfUpdate() && screen != null) {
-            InputStateManager input = screen.inputState();
-            double mouseX = input.mouseX();
-            double mouseY = input.mouseY();
-            updateMouseHover(mouseX, mouseY);
-            if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
-                longPressFired = true;
-                onLongPress(MouseEvent.of(mouseX, mouseY, pressedMouseButton));
-            }
-        }
+        updateInteractiveState();
         updateChildren();
+    }
+
+    /**
+     * 更新控件自身的交互状态。自定义子节点遍历顺序的容器也应调用它，避免 hover/长按逻辑分叉。
+     */
+    protected void updateInteractiveState() {
+        if (!needsSelfUpdate() || screen == null) {
+            return;
+        }
+        InputStateManager input = screen.inputState();
+        double mouseX = input.mouseX();
+        double mouseY = input.mouseY();
+        updateMouseHover(mouseX, mouseY);
+        if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
+            longPressFired = true;
+            onLongPress(MouseEvent.of(mouseX, mouseY, pressedMouseButton));
+        }
     }
 
     protected boolean hasChildrenNeedingUpdate() {

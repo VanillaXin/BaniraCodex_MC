@@ -156,6 +156,15 @@ public class SliderWidget extends BaseWidget {
     @Getter
     private double thumbSize;
 
+    private double lastThumbTrackSize = Double.NaN;
+    private double lastThumbMinValue = Double.NaN;
+    private double lastThumbMaxValue = Double.NaN;
+    private double lastThumbValue = Double.NaN;
+    private int lastThumbRadius = Integer.MIN_VALUE;
+    private int lastMinThumbSize = Integer.MIN_VALUE;
+    @Nullable
+    private SliderStyle lastThumbStyle;
+
     @Getter
     private boolean dragging;
 
@@ -650,6 +659,11 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void updateThumb(double effectiveTrackSize) {
+        if (thumbLayoutFresh(effectiveTrackSize)) {
+            return;
+        }
+        rememberThumbLayout(effectiveTrackSize);
+
         double valueRange = maxValue - minValue;
 
         if (style == SliderStyle.ROUND) {
@@ -667,6 +681,29 @@ public class SliderWidget extends BaseWidget {
         double availableTrack = Math.max(0, effectiveTrackSize - thumbSize);
         double ratio = (value - minValue) / valueRange;
         thumbPosition = ratio * availableTrack;
+    }
+
+    /**
+     * render/update 会多次请求 thumb 布局；缓存输入可避免同一帧重复计算。
+     */
+    private boolean thumbLayoutFresh(double effectiveTrackSize) {
+        return Double.compare(lastThumbTrackSize, effectiveTrackSize) == 0
+                && Double.compare(lastThumbMinValue, minValue) == 0
+                && Double.compare(lastThumbMaxValue, maxValue) == 0
+                && Double.compare(lastThumbValue, value) == 0
+                && lastThumbRadius == thumbRadius
+                && lastMinThumbSize == minThumbSize
+                && lastThumbStyle == style;
+    }
+
+    private void rememberThumbLayout(double effectiveTrackSize) {
+        lastThumbTrackSize = effectiveTrackSize;
+        lastThumbMinValue = minValue;
+        lastThumbMaxValue = maxValue;
+        lastThumbValue = value;
+        lastThumbRadius = thumbRadius;
+        lastMinThumbSize = minThumbSize;
+        lastThumbStyle = style;
     }
 
     @Override

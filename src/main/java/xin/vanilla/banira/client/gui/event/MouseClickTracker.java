@@ -2,73 +2,52 @@ package xin.vanilla.banira.client.gui.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 
 import java.util.function.LongSupplier;
 
 /**
- * Tracks repeated mouse clicks without tying widgets to native screen events.
+ * GUI 内部兼容壳；公共语义由 {@link BaniraMouseClickTracker} 提供。
  */
 public final class MouseClickTracker {
-    public static final long DEFAULT_DOUBLE_CLICK_MS = 300L;
-    public static final double DEFAULT_DOUBLE_CLICK_DISTANCE = 5.0D;
+    public static final long DEFAULT_DOUBLE_CLICK_MS = BaniraMouseClickTracker.DEFAULT_DOUBLE_CLICK_MS;
+    public static final double DEFAULT_DOUBLE_CLICK_DISTANCE = BaniraMouseClickTracker.DEFAULT_DOUBLE_CLICK_DISTANCE;
 
-    private final long doubleClickMs;
-    private final double doubleClickDistance;
-    private final LongSupplier clock;
-
-    private long lastClickTime = Long.MIN_VALUE;
-    private double lastClickX;
-    private double lastClickY;
-    private int lastButton = -1;
-    private int clickCount;
+    private final BaniraMouseClickTracker delegate;
 
     public MouseClickTracker() {
         this(DEFAULT_DOUBLE_CLICK_MS, DEFAULT_DOUBLE_CLICK_DISTANCE, System::currentTimeMillis);
     }
 
     public MouseClickTracker(long doubleClickMs, double doubleClickDistance, LongSupplier clock) {
-        this.doubleClickMs = Math.max(1L, doubleClickMs);
-        this.doubleClickDistance = Math.max(0.0D, doubleClickDistance);
-        this.clock = clock != null ? clock : System::currentTimeMillis;
+        this.delegate = new BaniraMouseClickTracker(doubleClickMs, doubleClickDistance, clock);
     }
 
     public Result record(double mouseX, double mouseY, int button) {
-        long now = clock.getAsLong();
-        boolean repeated = lastButton == button
-                && now - lastClickTime <= doubleClickMs
-                && Math.abs(mouseX - lastClickX) <= doubleClickDistance
-                && Math.abs(mouseY - lastClickY) <= doubleClickDistance;
-        clickCount = repeated ? Math.min(clickCount + 1, 3) : 1;
-        lastClickTime = now;
-        lastClickX = mouseX;
-        lastClickY = mouseY;
-        lastButton = button;
-        return new Result(clickCount);
+        return new Result(delegate.record(mouseX, mouseY, button));
     }
 
     public void reset() {
-        lastClickTime = Long.MIN_VALUE;
-        lastClickX = 0.0D;
-        lastClickY = 0.0D;
-        lastButton = -1;
-        clickCount = 0;
+        delegate.reset();
     }
 
     @Getter
     @Accessors(fluent = true)
     public static final class Result {
+        private final BaniraMouseClickTracker.Result delegate;
         private final int clickCount;
 
-        private Result(int clickCount) {
-            this.clickCount = clickCount;
+        private Result(BaniraMouseClickTracker.Result delegate) {
+            this.delegate = delegate;
+            this.clickCount = delegate.clickCount();
         }
 
         public boolean doubleClick() {
-            return clickCount == 2;
+            return delegate.doubleClick();
         }
 
         public boolean repeatedClick() {
-            return clickCount > 1;
+            return delegate.repeatedClick();
         }
     }
 }

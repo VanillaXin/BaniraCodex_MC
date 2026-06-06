@@ -2,65 +2,63 @@ package xin.vanilla.banira.client.gui.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
 
 import java.util.function.LongSupplier;
 
 /**
- * Reusable press/long-press state for widgets that need progress feedback.
+ * GUI 内部兼容壳；公共语义由 {@link BaniraPressGestureState} 提供。
  */
 @Getter
 @Accessors(fluent = true)
 public final class PressGestureState {
-    private final LongSupplier clock;
-    private boolean pressing;
-    private boolean fired;
-    private int button = -1;
-    private long startedAt;
+    private final BaniraPressGestureState delegate;
 
     public PressGestureState() {
         this(System::currentTimeMillis);
     }
 
     public PressGestureState(LongSupplier clock) {
-        this.clock = clock != null ? clock : System::currentTimeMillis;
+        this.delegate = new BaniraPressGestureState(clock);
+    }
+
+    public boolean pressing() {
+        return delegate.pressing();
+    }
+
+    public boolean fired() {
+        return delegate.fired();
+    }
+
+    public int button() {
+        return delegate.button();
     }
 
     public void press(int button) {
-        this.pressing = true;
-        this.fired = false;
-        this.button = button;
-        this.startedAt = clock.getAsLong();
+        delegate.press(button);
     }
 
     public void release() {
-        this.pressing = false;
-        this.button = -1;
-        this.startedAt = 0L;
+        delegate.release();
     }
 
     public boolean pressing(int button) {
-        return pressing && this.button == button;
+        return delegate.pressing(button);
     }
 
     public boolean ready(long durationMs) {
-        return pressing && !fired && elapsedMillis() >= Math.max(1L, durationMs);
+        return delegate.ready(durationMs);
     }
 
     public void fire() {
-        this.fired = true;
+        delegate.fire();
     }
 
     public long elapsedMillis() {
-        return pressing ? Math.max(0L, clock.getAsLong() - startedAt) : 0L;
+        return delegate.elapsedMillis();
     }
 
     public float progress(long durationMs) {
-        if (!pressing) {
-            return 0.0F;
-        }
-        if (fired) {
-            return 1.0F;
-        }
-        return Math.min(1.0F, elapsedMillis() / (float) Math.max(1L, durationMs));
+        return delegate.progress(durationMs);
     }
 }

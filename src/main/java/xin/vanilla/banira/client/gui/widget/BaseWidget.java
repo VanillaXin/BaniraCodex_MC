@@ -161,6 +161,13 @@ public abstract class BaseWidget implements IWidget {
 
     @Override
     public boolean needsUpdate() {
+        return needsSelfUpdate() || hasChildrenNeedingUpdate();
+    }
+
+    /**
+     * 控制本控件自身是否需要每帧轮询 hover/长按等状态；子类可关闭以降低静态控件开销。
+     */
+    protected boolean needsSelfUpdate() {
         return true;
     }
 
@@ -169,7 +176,7 @@ public abstract class BaseWidget implements IWidget {
         if (!visible || !enabled) {
             return;
         }
-        if (screen != null) {
+        if (needsSelfUpdate() && screen != null) {
             InputStateManager input = screen.inputState();
             double mouseX = input.mouseX();
             double mouseY = input.mouseY();
@@ -179,6 +186,19 @@ public abstract class BaseWidget implements IWidget {
                 onLongPress(MouseEvent.of(mouseX, mouseY, pressedMouseButton));
             }
         }
+        updateChildren();
+    }
+
+    protected boolean hasChildrenNeedingUpdate() {
+        for (IWidget child : children) {
+            if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected void updateChildren() {
         for (IWidget child : children) {
             if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
                 child.update();

@@ -87,7 +87,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public boolean needsUpdate() {
+    protected boolean needsSelfUpdate() {
         return false;
     }
 

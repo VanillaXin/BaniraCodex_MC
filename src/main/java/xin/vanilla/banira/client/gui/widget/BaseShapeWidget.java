@@ -37,13 +37,8 @@ public abstract class BaseShapeWidget extends BaseWidget {
     }
 
     @Override
-    public boolean needsUpdate() {
+    protected boolean needsSelfUpdate() {
         return false;
-    }
-
-    @Override
-    public void update() {
-        super.update();
     }
 
     /**

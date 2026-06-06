@@ -295,13 +295,8 @@ public class ScrollbarWidget extends BaseWidget {
         double relativeMouseY = mouseY - absoluteY() + y();
 
         MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, scrollDelta);
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(relEvent)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleMouseScroll(relEvent)) != null) {
+            return true;
         }
 
         return onMouseScroll(event);

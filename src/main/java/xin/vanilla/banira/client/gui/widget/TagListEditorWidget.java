@@ -1009,11 +1009,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            for (IWidget child : children) {
-                if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
-                    child.update();
-                }
-            }
+            updateChildren();
         }
 
         // region 行内编辑失焦则取消（恢复原列表显示，等同 Esc，不提交）
@@ -1059,18 +1055,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double relY = mouseY - absY;
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseClick(event)) {
-                        if (child == addInputWidget || child == addConfirmButton) {
-                            lastClickFocusTarget = child == addConfirmButton ? addConfirmButton : addInputWidget.getFocusTarget();
-                        } else if (child == editWidget) {
-                            lastClickFocusTarget = editWidget.getFocusTarget();
-                        }
-                        return true;
-                    }
+            IWidget handlingChild = findHandlingChild(child -> child.handleMouseClick(event));
+            if (handlingChild != null) {
+                if (handlingChild == addInputWidget || handlingChild == addConfirmButton) {
+                    lastClickFocusTarget = handlingChild == addConfirmButton ? addConfirmButton : addInputWidget.getFocusTarget();
+                } else if (handlingChild == editWidget) {
+                    lastClickFocusTarget = editWidget.getFocusTarget();
                 }
+                return true;
             }
         }
 
@@ -1126,11 +1118,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) return false;
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseRelease(event)) return true;
-                }
+            if (findHandlingChild(child -> child.handleMouseRelease(event)) != null) {
+                return true;
             }
         }
 
@@ -1165,11 +1154,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     public boolean handleMouseScroll(MouseScrollEvent event) {
         if (!visible || !enabled || event == null) return false;
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseScroll(event)) return true;
-                }
+            if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
+                return true;
             }
         }
         return false;
@@ -1201,11 +1187,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyPress(event)) return true;
-                }
+            if (findHandlingChild(child -> child.handleKeyPress(event)) != null) {
+                return true;
             }
         }
         return false;

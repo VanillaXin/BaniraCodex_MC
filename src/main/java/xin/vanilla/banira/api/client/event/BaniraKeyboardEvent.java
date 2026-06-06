@@ -2,6 +2,7 @@ package xin.vanilla.banira.api.client.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 
 import javax.annotation.Nonnull;
 
@@ -18,6 +19,11 @@ public final class BaniraKeyboardEvent {
     private final int modifiers;
     private final int codePoint;
     private final @Nonnull Object nativeEvent;
+    private int pressCount = 1;
+    private boolean doublePress;
+    private boolean repeatedPress;
+    private boolean heldRepeat;
+    private boolean pressTracked;
     private boolean canceled;
 
     private BaniraKeyboardEvent(@Nonnull Action action, @Nonnull Object screen, int keyCode, int scanCode,
@@ -52,6 +58,21 @@ public final class BaniraKeyboardEvent {
 
     public void cancel() {
         canceled = true;
+    }
+
+    /**
+     * 由事件 Hub 写入统一按键语义；adapter 不需要自行处理原生 key-repeat。
+     */
+    public BaniraKeyboardEvent withPressMetadata(BaniraKeyPressTracker.Result press) {
+        if (press == null) {
+            return this;
+        }
+        this.pressCount = press.pressCount();
+        this.doublePress = press.doublePress();
+        this.repeatedPress = press.repeatedPress();
+        this.heldRepeat = press.heldRepeat();
+        this.pressTracked = true;
+        return this;
     }
 
     public enum Action {

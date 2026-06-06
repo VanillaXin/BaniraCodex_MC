@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
+import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
+import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.LogoModifier;
@@ -56,6 +58,9 @@ public final class BaniraClientEventHub {
 
     private static final List<Consumer<BaniraClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
 
+    private static final BaniraMouseClickTracker mouseClickTracker = new BaniraMouseClickTracker();
+    private static final BaniraKeyPressTracker keyPressTracker = new BaniraKeyPressTracker();
+
     private static volatile boolean codexDefaultsRegistered;
 
     /**
@@ -87,6 +92,7 @@ public final class BaniraClientEventHub {
             PlayerUtils.removeRemoteServerDataStatus(player);
         });
         Client.onGuiChanged(event -> {
+            resetInputTrackers();
             QuickActionOverlay.get().resetInteractionState();
             LogoModifier.modifyLogo();
         });
@@ -179,6 +185,7 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchMouseClickedPre(BaniraMouseEvent event) {
+        event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
         fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
     }
 
@@ -195,10 +202,12 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchKeyPressedPre(BaniraKeyboardEvent event) {
+        event.withPressMetadata(keyPressTracker.recordPress(event.keyCode(), event.scanCode(), event.modifiers()));
         fire(clientKeyPressedPreCallbacks, event, "client key pressed pre");
     }
 
     public static void dispatchKeyReleasedPost(BaniraKeyboardEvent event) {
+        keyPressTracker.recordRelease(event.keyCode(), event.scanCode());
         fire(clientKeyReleasedPostCallbacks, event, "client key released post");
     }
 
@@ -343,6 +352,11 @@ public final class BaniraClientEventHub {
 
     private static Screen screen(Object value) {
         return value instanceof Screen ? (Screen) value : null;
+    }
+
+    private static void resetInputTrackers() {
+        mouseClickTracker.reset();
+        keyPressTracker.reset();
     }
 
     // endregion

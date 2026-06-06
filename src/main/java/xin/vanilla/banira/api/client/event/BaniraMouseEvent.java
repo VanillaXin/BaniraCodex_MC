@@ -2,6 +2,7 @@ package xin.vanilla.banira.api.client.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 
 import javax.annotation.Nonnull;
 
@@ -18,6 +19,10 @@ public final class BaniraMouseEvent {
     private final int button;
     private final double scrollDelta;
     private final @Nonnull Object nativeEvent;
+    private int clickCount = 1;
+    private boolean doubleClick;
+    private boolean repeatedClick;
+    private boolean clickTracked;
     private boolean canceled;
 
     private BaniraMouseEvent(@Nonnull Action action, @Nonnull Object screen, double mouseX, double mouseY,
@@ -48,6 +53,20 @@ public final class BaniraMouseEvent {
 
     public void cancel() {
         canceled = true;
+    }
+
+    /**
+     * 由事件 Hub 写入统一点击语义；adapter 不需要自行计算双击。
+     */
+    public BaniraMouseEvent withClickMetadata(BaniraMouseClickTracker.Result click) {
+        if (click == null) {
+            return this;
+        }
+        this.clickCount = click.clickCount();
+        this.doubleClick = click.doubleClick();
+        this.repeatedClick = click.repeatedClick();
+        this.clickTracked = true;
+        return this;
     }
 
     public enum Action {

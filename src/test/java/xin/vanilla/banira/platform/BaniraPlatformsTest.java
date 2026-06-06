@@ -78,6 +78,11 @@ public class BaniraPlatformsTest {
         public BaniraConfigService configService() {
             return NoopConfigService.INSTANCE;
         }
+
+        @Override
+        public BaniraNetworkService networkService() {
+            return NoopNetworkService.INSTANCE;
+        }
     }
 
     private enum NoopConfigService implements BaniraConfigService {

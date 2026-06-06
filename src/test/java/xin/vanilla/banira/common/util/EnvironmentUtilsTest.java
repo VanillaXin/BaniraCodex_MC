@@ -2,9 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import org.junit.Test;
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.platform.BaniraConfigService;
-import xin.vanilla.banira.platform.BaniraPlatform;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.*;
 
 import java.nio.file.Path;
 
@@ -77,6 +75,11 @@ public class EnvironmentUtilsTest {
         @Override
         public BaniraConfigService configService() {
             return NoopConfigService.INSTANCE;
+        }
+
+        @Override
+        public BaniraNetworkService networkService() {
+            return NoopNetworkService.INSTANCE;
         }
     }
 

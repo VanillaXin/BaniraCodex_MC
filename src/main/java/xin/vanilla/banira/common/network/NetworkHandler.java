@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.network;
 
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
-import xin.vanilla.banira.internal.forge.network.ForgeNetworkHandler;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -23,7 +23,7 @@ public class NetworkHandler {
      * @return NetworkHandler 实例
      */
     public static NetworkHandler create(String channelName, IIdentifier identifier) {
-        return new NetworkHandler(ForgeNetworkHandler.create(channelName, identifier));
+        return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(channelName, identifier));
     }
 
     private NetworkHandler(NetworkPacketRegistrar registrar) {

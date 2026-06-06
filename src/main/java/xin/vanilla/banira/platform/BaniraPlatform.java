@@ -36,4 +36,10 @@ public interface BaniraPlatform {
 
     @Nonnull
     BaniraConfigService configService();
+
+    /**
+     * 当前加载器的网络服务。
+     */
+    @Nonnull
+    BaniraNetworkService networkService();
 }

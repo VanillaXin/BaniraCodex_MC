@@ -10,7 +10,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
-import xin.vanilla.banira.internal.forge.network.ForgeNetworkChannels;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,7 @@ public final class PacketUtils {
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
         BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                ForgeNetworkChannels.sendToPlayer(msg, player)
+                BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
         );
     }
 
@@ -65,14 +65,14 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        ForgeNetworkChannels.sendToServer(msg);
+        BaniraPlatforms.get().networkService().sendToServer(msg);
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
-        ForgeNetworkChannels.sendToPlayer(msg, player);
+        BaniraPlatforms.get().networkService().sendToPlayer(msg, player);
     }
 
     /**
@@ -104,15 +104,15 @@ public final class PacketUtils {
 
     @OnlyIn(Dist.CLIENT)
     public static boolean hasBaniraServer() {
-        return ForgeNetworkChannels.hasDefaultChannel();
+        return BaniraPlatforms.get().networkService().hasDefaultChannel();
     }
 
     @OnlyIn(Dist.CLIENT)
     public static boolean hasChannel(ResourceLocation channel) {
-        return ForgeNetworkChannels.hasLocalChannel(channel);
+        return BaniraPlatforms.get().networkService().hasLocalChannel(channel);
     }
 
     public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
-        return ForgeNetworkChannels.hasPlayerChannel(player, channel);
+        return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channel);
     }
 }

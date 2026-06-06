@@ -1,9 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import org.junit.Test;
-import xin.vanilla.banira.platform.BaniraConfigService;
-import xin.vanilla.banira.platform.BaniraPlatform;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.*;
 
 import java.nio.file.Path;
 
@@ -96,6 +94,11 @@ public class BaniraConfigTest {
         @Override
         public Path configDir() {
             return Path.of("config");
+        }
+
+        @Override
+        public BaniraNetworkService networkService() {
+            return NoopNetworkService.INSTANCE;
         }
     }
 }

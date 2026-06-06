@@ -285,15 +285,31 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         stack.translate(x(), y(), 0);
 
         for (IWidget child : children) {
-            if (child != null && child.visible() && shouldProcessChildInViewport(child)) {
-                if (child instanceof CollapsiblePanelWidget panelWidget) {
-                    panelWidget.renderViewport(renderViewport);
-                }
+            if (shouldRenderChild(child)) {
+                applyRenderViewportToChild(child);
                 child.render(stack, partialTicks);
             }
         }
 
         stack.popPose();
+    }
+
+    private boolean shouldRenderChild(@Nullable IWidget child) {
+        return child != null && child.visible() && shouldProcessChildInViewport(child);
+    }
+
+    private boolean shouldUpdateChild(@Nullable IWidget child) {
+        return child != null && child.visible() && child.enabled() && child.needsUpdate()
+                && shouldProcessChildInViewport(child);
+    }
+
+    /**
+     * 嵌套面板继承父级裁剪区，只影响渲染/update 的跳过判断，不改布局。
+     */
+    private void applyRenderViewportToChild(IWidget child) {
+        if (child instanceof CollapsiblePanelWidget panelWidget) {
+            panelWidget.renderViewport(renderViewport);
+        }
     }
 
     private boolean shouldProcessChildInViewport(IWidget child) {
@@ -331,11 +347,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         updateInteractiveState();
         if (expanded) {
             for (IWidget child : children) {
-                if (child != null && child.visible() && child.enabled() && child.needsUpdate()
-                        && shouldProcessChildInViewport(child)) {
-                    if (child instanceof CollapsiblePanelWidget panelWidget) {
-                        panelWidget.renderViewport(renderViewport);
-                    }
+                if (shouldUpdateChild(child)) {
+                    applyRenderViewportToChild(child);
                     child.update();
                 }
             }

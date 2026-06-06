@@ -8,6 +8,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
@@ -42,7 +43,11 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraMouseEvent>> clientMouseClickedPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraMouseEvent>> clientMouseScrolledPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientKeyPressedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientKeyReleasedPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientCharTypedPreCallbacks = new ArrayList<>();
 
     private static final List<Consumer<BaniraClientTickEvent>> clientTickCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraChatEvent>> clientChatCallbacks = new ArrayList<>();
@@ -92,6 +97,7 @@ public final class BaniraClientEventHub {
             }
         });
         Client.onDrawScreenPre(event -> {
+            InputStateManager.instance().handleDrawScreenPre(event.mouseX(), event.mouseY());
             Screen screen = screen(event.screen());
             if (screen != null && QuickActionOverlay.isSupportedInventoryScreen(screen)) {
                 QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(event.mouseX()), (int) Math.round(event.mouseY()));
@@ -111,6 +117,7 @@ public final class BaniraClientEventHub {
             }
         });
         Client.onMouseClickedPre(event -> {
+            InputStateManager.instance().handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
             Screen screen = screen(event.screen());
             if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
                 event.cancel();
@@ -126,10 +133,19 @@ public final class BaniraClientEventHub {
                 event.cancel();
             }
         });
+        Client.onMouseReleasedPost(event -> InputStateManager.instance().handleMouseReleased(event.mouseX(), event.mouseY(), event.button()));
         Client.onMouseScrolledPre(event -> {
+            InputStateManager.instance().handleMouseScrolled(event.mouseX(), event.mouseY(), event.scrollDelta());
             Screen screen = screen(event.screen());
             if (screen != null && QuickActionOverlay.get().handleMouseScroll(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
                 event.cancel();
+            }
+        });
+        Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
+        Client.onKeyReleasedPost(event -> InputStateManager.instance().handleKeyReleased(event.keyCode()));
+        Client.onClientTick(event -> {
+            if (event == BaniraClientTickEvent.END && Minecraft.getInstance().screen == null) {
+                InputStateManager.instance().handleScreenClosed();
             }
         });
     }
@@ -170,8 +186,24 @@ public final class BaniraClientEventHub {
         fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
     }
 
+    public static void dispatchMouseReleasedPost(BaniraMouseEvent event) {
+        fire(clientMouseReleasedPostCallbacks, event, "client mouse released post");
+    }
+
     public static void dispatchMouseScrolledPre(BaniraMouseEvent event) {
         fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
+    }
+
+    public static void dispatchKeyPressedPre(BaniraKeyboardEvent event) {
+        fire(clientKeyPressedPreCallbacks, event, "client key pressed pre");
+    }
+
+    public static void dispatchKeyReleasedPost(BaniraKeyboardEvent event) {
+        fire(clientKeyReleasedPostCallbacks, event, "client key released post");
+    }
+
+    public static void dispatchCharTypedPre(BaniraKeyboardEvent event) {
+        fire(clientCharTypedPreCallbacks, event, "client char typed pre");
     }
 
     // region 分类 API：Player（客户端网络登录/登出）
@@ -245,8 +277,24 @@ public final class BaniraClientEventHub {
             clientMouseReleasedPreCallbacks.add(callback);
         }
 
+        public static void onMouseReleasedPost(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseReleasedPostCallbacks.add(callback);
+        }
+
         public static void onMouseScrolledPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
             clientMouseScrolledPreCallbacks.add(callback);
+        }
+
+        public static void onKeyPressedPre(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientKeyPressedPreCallbacks.add(callback);
+        }
+
+        public static void onKeyReleasedPost(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientKeyReleasedPostCallbacks.add(callback);
+        }
+
+        public static void onCharTypedPre(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientCharTypedPreCallbacks.add(callback);
         }
 
         public static void fireTextureReload(BaniraTextureReloadEvent event) {

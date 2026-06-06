@@ -127,11 +127,62 @@ public final class BaniraClientForgeEventHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGuiMouseReleasedPost(ScreenEvent.MouseReleasedEvent.Post event) {
+        BaniraClientEventHub.dispatchMouseReleasedPost(BaniraMouseEvent.released(
+                event.getScreen(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getButton(),
+                event
+        ));
+    }
+
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseScrollPre(ScreenEvent.MouseScrollEvent.Pre event) {
         BaniraMouseEvent mouseEvent = BaniraMouseEvent.scrolled(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getScrollDelta(), event);
         BaniraClientEventHub.dispatchMouseScrolledPre(mouseEvent);
         event.setCanceled(mouseEvent.canceled());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onGuiKeyPressedPre(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
+        BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.pressed(
+                event.getScreen(),
+                event.getKeyCode(),
+                event.getScanCode(),
+                event.getModifiers(),
+                event
+        );
+        BaniraClientEventHub.dispatchKeyPressedPre(keyboardEvent);
+        event.setCanceled(keyboardEvent.canceled());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGuiKeyReleasedPost(ScreenEvent.KeyboardKeyReleasedEvent.Post event) {
+        BaniraClientEventHub.dispatchKeyReleasedPost(BaniraKeyboardEvent.released(
+                event.getScreen(),
+                event.getKeyCode(),
+                event.getScanCode(),
+                event.getModifiers(),
+                event
+        ));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onGuiCharTypedPre(ScreenEvent.KeyboardCharTypedEvent.Pre event) {
+        BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.charTyped(
+                event.getScreen(),
+                event.getCodePoint(),
+                event.getModifiers(),
+                event
+        );
+        BaniraClientEventHub.dispatchCharTypedPre(keyboardEvent);
+        event.setCanceled(keyboardEvent.canceled());
     }
 
     @OnlyIn(Dist.CLIENT)

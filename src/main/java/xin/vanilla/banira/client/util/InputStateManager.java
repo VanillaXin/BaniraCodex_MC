@@ -3,17 +3,10 @@ package xin.vanilla.banira.client.util;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -28,9 +21,7 @@ import java.util.Set;
 /**
  * 统一的输入状态管理器
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class InputStateManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final int KEY_HISTORY_SIZE = 5;
@@ -402,66 +393,28 @@ public final class InputStateManager {
 
     // endregion
 
-    // region 事件监听
+    // region 事件更新入口
 
-    @SubscribeEvent
-    public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
-        InputStateManager.instance().onDrawScreenPre(event.getMouseX(), event.getMouseY());
-    }
-
-    @SubscribeEvent
-    public static void onKeyPressed(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
-        InputStateManager.instance().onKeyPressed(event.getKeyCode());
-    }
-
-    @SubscribeEvent
-    public static void onKeyReleased(ScreenEvent.KeyboardKeyReleasedEvent.Post event) {
-        InputStateManager.instance().onKeyReleased(event.getKeyCode());
-    }
-
-    @SubscribeEvent
-    public static void onMouseClicked(ScreenEvent.MouseClickedEvent.Pre event) {
-        InputStateManager.instance().onMouseClicked(event.getMouseX(), event.getMouseY(), event.getButton());
-    }
-
-    @SubscribeEvent
-    public static void onMouseReleased(ScreenEvent.MouseReleasedEvent.Post event) {
-        InputStateManager.instance().onMouseReleased(event.getMouseX(), event.getMouseY(), event.getButton());
-    }
-
-    @SubscribeEvent
-    public static void onMouseScroll(ScreenEvent.MouseScrollEvent.Pre event) {
-        InputStateManager.instance().onMouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDelta());
-    }
-
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null) {
-            InputStateManager.instance().onScreenClosed();
-        }
-    }
-
-    // endregion
-
-    // region 内部更新逻辑
-
-    private void onDrawScreenPre(int mouseX, int mouseY) {
+    /**
+     * 由 BaniraClientEventHub 在屏幕绘制前同步鼠标位置与轮询状态。
+     */
+    public void handleDrawScreenPre(double mouseX, double mouseY) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         tick();
     }
 
-    private void onKeyPressed(int keyCode) {
+    public void handleKeyPressed(int keyCode) {
         pressedKeys.add(keyCode);
         updateKeyHistory(keyCode, true);
     }
 
-    private void onKeyReleased(int keyCode) {
+    public void handleKeyReleased(int keyCode) {
         pressedKeys.remove(keyCode);
         updateKeyHistory(keyCode, false);
     }
 
-    private void onMouseClicked(double mouseX, double mouseY, int button) {
+    public void handleMouseClicked(double mouseX, double mouseY, int button) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         pressedMouses.add(button);
@@ -476,7 +429,7 @@ public final class InputStateManager {
         }
     }
 
-    private void onMouseReleased(double mouseX, double mouseY, int button) {
+    public void handleMouseReleased(double mouseX, double mouseY, int button) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         pressedMouses.remove(button);
@@ -491,15 +444,19 @@ public final class InputStateManager {
         }
     }
 
-    private void onMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+    public void handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.mousedScroll = scrollDelta;
     }
 
-    private void onScreenClosed() {
+    public void handleScreenClosed() {
         clear();
     }
+
+    // endregion
+
+    // region 内部更新逻辑
 
     private void tick() {
         if (!Minecraft.getInstance().isWindowActive()) {

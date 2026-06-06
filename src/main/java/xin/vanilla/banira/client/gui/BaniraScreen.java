@@ -10,6 +10,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.gui.widget.*;
@@ -67,6 +68,7 @@ public abstract class BaniraScreen extends Screen {
     protected final InputStateManager inputState = InputStateManager.instance();
     private final KeyClickTracker keyClickTracker = new KeyClickTracker();
     private final MouseClickTracker mouseClickTracker = new MouseClickTracker();
+    private final BaniraDragTracker dragTracker = new BaniraDragTracker();
 
     public Font getFont() {
         return font;
@@ -279,6 +281,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        dragTracker.press(mouseX, mouseY, button);
         MouseClickTracker.Result click = mouseClickTracker.record(mouseX, mouseY, button);
         MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button, click);
         this.cursor.mouseClicked(clickEvent);
@@ -338,6 +341,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        dragTracker.release(mouseX, mouseY, button);
         MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
         this.cursor.mouseReleased(releaseEvent);
 
@@ -741,7 +745,9 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (findFirstHandlingWidget(w -> w.handleMouseDrag(MouseDragEvent.of(mouseX, mouseY, button, dragX, dragY))) != null) {
+        BaniraDragTracker.Result drag = dragTracker.drag(mouseX, mouseY, button, dragX, dragY);
+        MouseDragEvent dragEvent = MouseDragEvent.of(mouseX, mouseY, button, dragX, dragY, drag);
+        if (findFirstHandlingWidget(w -> w.handleMouseDrag(dragEvent)) != null) {
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);

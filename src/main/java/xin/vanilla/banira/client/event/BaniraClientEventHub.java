@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
+import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
@@ -47,6 +48,7 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraMouseEvent>> clientMouseScrolledPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseDraggedPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraKeyboardEvent>> clientKeyPressedPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraKeyboardEvent>> clientKeyReleasedPostCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraKeyboardEvent>> clientCharTypedPreCallbacks = new ArrayList<>();
@@ -59,6 +61,7 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<BaniraClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
 
     private static final BaniraMouseClickTracker mouseClickTracker = new BaniraMouseClickTracker();
+    private static final BaniraDragTracker dragTracker = new BaniraDragTracker();
     private static final BaniraKeyPressTracker keyPressTracker = new BaniraKeyPressTracker();
 
     private static volatile boolean codexDefaultsRegistered;
@@ -185,11 +188,13 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchMouseClickedPre(BaniraMouseEvent event) {
+        dragTracker.press(event.mouseX(), event.mouseY(), event.button());
         event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
         fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
     }
 
     public static void dispatchMouseReleasedPre(BaniraMouseEvent event) {
+        event.withDragMetadata(dragTracker.release(event.mouseX(), event.mouseY(), event.button()));
         fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
     }
 
@@ -199,6 +204,11 @@ public final class BaniraClientEventHub {
 
     public static void dispatchMouseScrolledPre(BaniraMouseEvent event) {
         fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
+    }
+
+    public static void dispatchMouseDraggedPre(BaniraMouseEvent event) {
+        event.withDragMetadata(dragTracker.drag(event.mouseX(), event.mouseY(), event.button(), event.dragX(), event.dragY()));
+        fire(clientMouseDraggedPreCallbacks, event, "client mouse dragged pre");
     }
 
     public static void dispatchKeyPressedPre(BaniraKeyboardEvent event) {
@@ -294,6 +304,10 @@ public final class BaniraClientEventHub {
             clientMouseScrolledPreCallbacks.add(callback);
         }
 
+        public static void onMouseDraggedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseDraggedPreCallbacks.add(callback);
+        }
+
         public static void onKeyPressedPre(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
             clientKeyPressedPreCallbacks.add(callback);
         }
@@ -356,6 +370,7 @@ public final class BaniraClientEventHub {
 
     private static void resetInputTrackers() {
         mouseClickTracker.reset();
+        dragTracker.reset();
         keyPressTracker.reset();
     }
 

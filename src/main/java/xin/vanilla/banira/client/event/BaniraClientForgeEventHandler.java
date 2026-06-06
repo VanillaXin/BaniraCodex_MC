@@ -148,6 +148,22 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onGuiMouseDraggedPre(ScreenEvent.MouseDragEvent.Pre event) {
+        BaniraMouseEvent mouseEvent = BaniraMouseEvent.dragged(
+                event.getScreen(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getMouseButton(),
+                event.getDragX(),
+                event.getDragY(),
+                event
+        );
+        BaniraClientEventHub.dispatchMouseDraggedPre(mouseEvent);
+        event.setCanceled(mouseEvent.canceled());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiKeyPressedPre(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
         BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.pressed(
                 event.getScreen(),

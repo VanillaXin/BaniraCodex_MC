@@ -5,6 +5,7 @@ import net.minecraftforge.client.ClientRegistry;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
+import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -13,15 +14,18 @@ import java.util.List;
 /**
  * Forge 按键注册服务：静态初始化阶段先入队，client setup 时统一提交。
  */
-public final class ForgeKeyBindingService {
-    private static final List<ForgeBaniraKeyHandle> PENDING = new ArrayList<>();
-    private static boolean flushCompleted;
+public final class ForgeKeyBindingService implements BaniraInputService {
+    public static final ForgeKeyBindingService INSTANCE = new ForgeKeyBindingService();
+
+    private final List<ForgeBaniraKeyHandle> pending = new ArrayList<>();
+    private boolean flushCompleted;
 
     private ForgeKeyBindingService() {
     }
 
     @Nonnull
-    public static BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
+    @Override
+    public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
         String category = spec.category() != null ? spec.category() : BaniraInput.defaultCategory(spec.modId());
         KeyMapping binding = new KeyMapping(BaniraInput.descriptionId(spec.modId(), spec.suffix()), spec.defaultKey(), category);
         ForgeBaniraKeyHandle handle = new ForgeBaniraKeyHandle(binding, category, spec.defaultKey());
@@ -29,19 +33,20 @@ public final class ForgeKeyBindingService {
         return handle;
     }
 
-    public static void flushPendingRegistrations() {
-        for (ForgeBaniraKeyHandle handle : PENDING) {
+    @Override
+    public void flushPendingRegistrations() {
+        for (ForgeBaniraKeyHandle handle : pending) {
             ClientRegistry.registerKeyBinding(handle.binding());
         }
-        PENDING.clear();
+        pending.clear();
         flushCompleted = true;
     }
 
-    private static void enqueueOrRegister(@Nonnull ForgeBaniraKeyHandle handle) {
+    private void enqueueOrRegister(@Nonnull ForgeBaniraKeyHandle handle) {
         if (flushCompleted) {
             ClientRegistry.registerKeyBinding(handle.binding());
         } else {
-            PENDING.add(handle);
+            pending.add(handle);
         }
     }
 }

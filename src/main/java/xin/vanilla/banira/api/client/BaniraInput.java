@@ -1,6 +1,6 @@
 package xin.vanilla.banira.api.client;
 
-import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 
@@ -38,7 +38,7 @@ public final class BaniraInput {
     @Nonnull
     public static BaniraKeyHandle registerKey(@Nonnull BaniraKeySpec spec) {
         validate(spec);
-        return ForgeKeyBindingService.register(spec);
+        return BaniraPlatforms.get().inputService().register(spec);
     }
 
     @Nonnull
@@ -63,5 +63,12 @@ public final class BaniraInput {
         if (suffix.isEmpty()) {
             throw new IllegalArgumentException("suffix must be non-empty");
         }
+    }
+
+    /**
+     * 提交静态初始化期间暂存的按键注册。
+     */
+    public static void flushPendingRegistrations() {
+        BaniraPlatforms.get().inputService().flushPendingRegistrations();
     }
 }

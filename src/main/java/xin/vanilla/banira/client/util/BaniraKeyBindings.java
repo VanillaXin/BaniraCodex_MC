@@ -5,7 +5,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
-import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
 
 import javax.annotation.Nonnull;
 
@@ -44,6 +43,6 @@ public final class BaniraKeyBindings {
     }
 
     public static void flushPendingRegistrations() {
-        ForgeKeyBindingService.flushPendingRegistrations();
+        BaniraInput.flushPendingRegistrations();
     }
 }

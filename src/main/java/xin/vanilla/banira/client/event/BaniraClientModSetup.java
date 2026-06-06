@@ -10,7 +10,6 @@ import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
 
 /**
  * 客户端 Mod 总线（{@code Dist.CLIENT}）：键位注册、通知日志加载、{@link BaniraClientEventHub} 默认回调与 {@link FMLClientSetupEvent} 分发。
@@ -27,7 +26,7 @@ public final class BaniraClientModSetup {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        ForgeKeyBindingService.flushPendingRegistrations();
+        BaniraInput.flushPendingRegistrations();
         NotificationManager.get().loadLog();
         NotificationTypeSettingsStore.get().load();
 

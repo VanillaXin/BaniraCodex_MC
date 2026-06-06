@@ -42,4 +42,10 @@ public interface BaniraPlatform {
      */
     @Nonnull
     BaniraNetworkService networkService();
+
+    /**
+     * 当前加载器的客户端输入服务。
+     */
+    @Nonnull
+    BaniraInputService inputService();
 }

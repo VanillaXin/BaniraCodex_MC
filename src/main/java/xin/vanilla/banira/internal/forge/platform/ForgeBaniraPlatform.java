@@ -6,9 +6,11 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
+import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
 import xin.vanilla.banira.internal.forge.config.ForgeBaniraConfigService;
 import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraConfigService;
+import xin.vanilla.banira.platform.BaniraInputService;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 
@@ -97,5 +99,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNetworkService networkService() {
         return ForgeBaniraNetworkService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraInputService inputService() {
+        return ForgeKeyBindingService.INSTANCE;
     }
 }

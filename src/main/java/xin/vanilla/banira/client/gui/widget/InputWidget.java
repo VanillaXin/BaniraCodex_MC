@@ -360,6 +360,10 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private String cachedPrefixWidthTextB;
     private int cachedPrefixWidthIndexB = -1;
     private int cachedPrefixWidthB;
+    private String cachedReverseWindowText;
+    private int cachedReverseWindowEnd = -1;
+    private int cachedReverseWindowWidth = -1;
+    private int cachedReverseWindowLength;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -1003,6 +1007,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         cachedVisibleTextValue = null;
         cachedPrefixWidthTextA = null;
         cachedPrefixWidthTextB = null;
+        cachedReverseWindowText = null;
     }
 
     /**
@@ -1040,6 +1045,23 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         cachedPrefixWidthIndexA = safeIndex;
         cachedPrefixWidthA = width;
         return width;
+    }
+
+    /**
+     * 计算指定位置向左能显示多少字符；光标和选区滚动校正都会反复查询它。
+     */
+    private int reverseWindowLength(int endPos, int width) {
+        int safeEnd = Mth.clamp(endPos, 0, value.length());
+        if (value.equals(cachedReverseWindowText)
+                && cachedReverseWindowEnd == safeEnd
+                && cachedReverseWindowWidth == width) {
+            return cachedReverseWindowLength;
+        }
+        cachedReverseWindowText = value;
+        cachedReverseWindowEnd = safeEnd;
+        cachedReverseWindowWidth = width;
+        cachedReverseWindowLength = font.plainSubstrByWidth(value.substring(0, safeEnd), width, true).length();
+        return cachedReverseWindowLength;
     }
 
     /**
@@ -1184,13 +1206,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int cursorInVisible = cursorPos - this.displayPos;
 
         if (cursorPos < this.displayPos) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else if (cursorPos > visibleEnd) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else {
             int lenVisible = visibleText.length();
             if (movingRight && hasRightHidden && lenVisible > 0) {
@@ -1214,9 +1232,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
             if (cursorVisible) {
                 if (this.highlightPos < this.displayPos) {
-                    String beforeHighlight = value.substring(0, this.highlightPos);
-                    String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
-                    int newDisplayPos = Math.max(0, this.highlightPos - reverseText.length());
+                    int newDisplayPos = Math.max(0, this.highlightPos - reverseWindowLength(this.highlightPos, innerWidth));
                     // 确保光标仍然可见
                     if (cursorPos >= newDisplayPos) {
                         String newVisibleText = this.font.plainSubstrByWidth(value.substring(newDisplayPos), innerWidth);
@@ -1225,9 +1241,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         }
                     }
                 } else if (this.highlightPos > visibleEnd) {
-                    String beforeHighlight = value.substring(0, this.highlightPos);
-                    String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
-                    int newDisplayPos = Math.max(0, this.highlightPos - reverseText.length());
+                    int newDisplayPos = Math.max(0, this.highlightPos - reverseWindowLength(this.highlightPos, innerWidth));
                     // 确保光标仍然可见
                     if (cursorPos >= newDisplayPos) {
                         String newVisibleText = this.font.plainSubstrByWidth(value.substring(newDisplayPos), innerWidth);

@@ -1,17 +1,10 @@
 package xin.vanilla.banira.api.client.render;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
-import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.widget.LabelWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 
@@ -34,7 +27,7 @@ public final class BaniraDrawContext {
     }
 
     public void fill(int x, int y, int width, int height, int argb) {
-        AbstractGuiUtils.fill(poseStack(), x, y, width, height, argb);
+        BaniraPlatforms.get().renderService().fill(nativeGraphics, x, y, width, height, argb);
     }
 
     public void fill(@Nonnull BaniraHudBounds bounds, int argb) {
@@ -44,11 +37,11 @@ public final class BaniraDrawContext {
     }
 
     public void line(float x1, float y1, float x2, float y2, float lineWidth, int argb) {
-        AbstractGuiUtils.drawLine(poseStack(), x1, y1, x2, y2, lineWidth, argb);
+        BaniraPlatforms.get().renderService().line(nativeGraphics, x1, y1, x2, y2, lineWidth, argb);
     }
 
     public void roundedRect(int x, int y, int width, int height, int argb, int radius) {
-        AbstractGuiUtils.drawRoundedRect(poseStack(), x, y, width, height, argb, radius);
+        BaniraPlatforms.get().renderService().roundedRect(nativeGraphics, x, y, width, height, argb, radius);
     }
 
     public void roundedRect(@Nonnull BaniraHudBounds bounds, int argb, int radius) {
@@ -84,19 +77,10 @@ public final class BaniraDrawContext {
     }
 
     public void text(@Nonnull String text, int x, int y, int argb, boolean shadow) {
-        Font font = Minecraft.getInstance().font;
-        Text drawText = Text.literal(text).stack(poseStack()).font(font).color(argb).shadow(shadow);
-        LabelWidget.drawLimitedText(FontDrawArgs.of(drawText).x(x).y(y).position(EnumEllipsisPosition.NONE).wrap(false));
+        BaniraPlatforms.get().renderService().text(nativeGraphics, text, x, y, argb, shadow);
     }
 
     public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height, float u, float v, int textureWidth, int textureHeight) {
-        AbstractGuiUtils.blit(poseStack(), texture, x, y, u, v, width, height, textureWidth, textureHeight);
-    }
-
-    private PoseStack poseStack() {
-        if (nativeGraphics instanceof PoseStack) {
-            return (PoseStack) nativeGraphics;
-        }
-        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
+        BaniraPlatforms.get().renderService().texture(nativeGraphics, texture, x, y, width, height, u, v, textureWidth, textureHeight);
     }
 }

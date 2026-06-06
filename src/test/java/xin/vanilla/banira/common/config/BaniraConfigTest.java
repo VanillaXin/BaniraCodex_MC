@@ -105,5 +105,10 @@ public class BaniraConfigTest {
         public BaniraInputService inputService() {
             return NoopInputService.INSTANCE;
         }
+
+        @Override
+        public BaniraRenderService renderService() {
+            return NoopRenderService.INSTANCE;
+        }
     }
 }

@@ -86,6 +86,11 @@ public class EnvironmentUtilsTest {
         public BaniraInputService inputService() {
             return NoopInputService.INSTANCE;
         }
+
+        @Override
+        public BaniraRenderService renderService() {
+            return NoopRenderService.INSTANCE;
+        }
     }
 
     private enum NoopConfigService implements BaniraConfigService {

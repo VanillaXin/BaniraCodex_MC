@@ -348,6 +348,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 字体渲染
      */
     private final Font font;
+    private String cachedValueWidthText;
+    private int cachedValueWidth;
+    private String cachedVisibleTextValue;
+    private int cachedVisibleTextDisplayPos = -1;
+    private int cachedVisibleTextWidth = -1;
+    private String cachedVisibleText = "";
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -431,7 +437,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int highlightPos = this.highlightPos;
             int displayPos = this.displayPos;
 
-            String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
+            String visibleText = visibleText(scaledInnerWidth);
 
             boolean hasLeftHidden = displayPos > 0;
             boolean hasRightHidden = displayPos + visibleText.length() < value.length();
@@ -800,7 +806,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int clickX = Mth.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
-            String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
+            String visibleText = visibleText(textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
             this.shiftPressed = Screen.hasShiftDown();
             moveCursorTo(textPos);
@@ -816,7 +822,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (renderCoordinate == null) return false;
         int totalWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
         int innerWidth = getTextAreaWidth(totalWidth);
-        if (this.font.width(value) <= innerWidth) return false;
+        if (valueWidth() <= innerWidth) return false;
         int step = event.delta() > 0 ? -SCROLL_STEP : SCROLL_STEP;
         moveCursor(step);
         return true;
@@ -959,6 +965,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         this.value = value;
         if (!value.equals(oldValue)) {
             this.error = false;
+            invalidateValueWidthCache();
         }
         int valueLength = value.length();
         this.displayPos = Mth.clamp(this.displayPos, 0, valueLength);
@@ -968,6 +975,41 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (onTextChanged != null) {
             onTextChanged.accept(value);
         }
+    }
+
+    private void invalidateValueWidthCache() {
+        cachedValueWidthText = null;
+        invalidateVisibleTextCache();
+    }
+
+    /**
+     * 输入框会频繁判断整串是否超出视口，文本未变化时复用测量结果。
+     */
+    private int valueWidth() {
+        if (!value.equals(cachedValueWidthText)) {
+            cachedValueWidthText = value;
+            cachedValueWidth = font.width(value);
+        }
+        return cachedValueWidth;
+    }
+
+    private void invalidateVisibleTextCache() {
+        cachedVisibleTextValue = null;
+    }
+
+    /**
+     * 缓存当前 displayPos 下的可见文本窗口，减少 render/update/click 定位的重复截取。
+     */
+    private String visibleText(int width) {
+        if (!value.equals(cachedVisibleTextValue)
+                || cachedVisibleTextDisplayPos != displayPos
+                || cachedVisibleTextWidth != width) {
+            cachedVisibleTextValue = value;
+            cachedVisibleTextDisplayPos = displayPos;
+            cachedVisibleTextWidth = width;
+            cachedVisibleText = font.plainSubstrByWidth(value.substring(displayPos), width);
+        }
+        return cachedVisibleText;
     }
 
     /**
@@ -1092,7 +1134,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (innerWidth <= 0) {
             return;
         }
-        if (this.font.width(value) <= innerWidth) {
+        if (valueWidth() <= innerWidth) {
             this.displayPos = 0;
             return;
         }
@@ -1103,8 +1145,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.lastCursorPos = cursorPos;
         }
 
-        String remainingText = value.substring(this.displayPos);
-        String visibleText = this.font.plainSubstrByWidth(remainingText, innerWidth);
+        String visibleText = visibleText(innerWidth);
         int visibleEnd = this.displayPos + visibleText.length();
 
         boolean hasLeftHidden = this.displayPos > 0;
@@ -1136,7 +1177,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (this.highlightPos != cursorPos) {
-            visibleText = this.font.plainSubstrByWidth(value.substring(this.displayPos), innerWidth);
+            visibleText = visibleText(innerWidth);
             visibleEnd = visibleText.length() + this.displayPos;
 
             boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();

@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -144,7 +145,11 @@ public abstract class BaniraScreen extends Screen {
     }
 
     public void renderButtons(PoseStack stack, double mouseX, double mouseY, float partialTicks) {
-        this.renderables.forEach(button -> button.render(stack, (int) mouseX, (int) mouseY, partialTicks));
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+        for (Widget button : this.renderables) {
+            button.render(stack, mx, my, partialTicks);
+        }
     }
 
     @Override
@@ -358,7 +363,7 @@ public abstract class BaniraScreen extends Screen {
         if (!this.popupOption.isHovered()) {
             this.popupOption.clear();
 
-            if (findFirstHandlingWidget(w -> w.handleMouseRelease(MouseEvent.of(mouseX, mouseY, button))) != null) {
+            if (findFirstHandlingWidget(w -> w.handleMouseRelease(releaseEvent)) != null) {
                 args.consumed(true);
             }
 

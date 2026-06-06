@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.*;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
@@ -169,10 +170,13 @@ public abstract class BaseWidget implements IWidget {
             return;
         }
         if (screen != null) {
-            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
+            InputStateManager input = screen.inputState();
+            double mouseX = input.mouseX();
+            double mouseY = input.mouseY();
+            updateMouseHover(mouseX, mouseY);
             if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
                 longPressFired = true;
-                onLongPress(MouseEvent.of(screen.inputState().mouseX(), screen.inputState().mouseY(), pressedMouseButton));
+                onLongPress(MouseEvent.of(mouseX, mouseY, pressedMouseButton));
             }
         }
         for (IWidget child : children) {

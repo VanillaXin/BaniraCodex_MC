@@ -156,6 +156,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private final List<Object> items = new ArrayList<>();
 
     private double listScrollOffset = 0;
+    private final VisibleTagRange cachedVisibleTagRange = new VisibleTagRange();
     private boolean addingMode = false;
     private int hoveredDeleteIndex = -1;
     private int pressedDeleteIndex = -1;
@@ -252,6 +253,24 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         double bottom = listScrollOffset + Math.max(0, viewportHeight);
         return Math.min(items.size() - 1, (int) Math.ceil(bottom / tagRowStride()));
+    }
+
+    /**
+     * 当前滚动窗口内的标签行范围。渲染、hover 和删除命中共用，避免一帧内分散计算。
+     */
+    private VisibleTagRange visibleTagRange(double viewportHeight) {
+        cachedVisibleTagRange.set(firstVisibleTagIndex(viewportHeight), lastVisibleTagIndex(viewportHeight));
+        return cachedVisibleTagRange;
+    }
+
+    private static final class VisibleTagRange {
+        int first;
+        int last;
+
+        private void set(int first, int last) {
+            this.first = first;
+            this.last = last;
+        }
     }
 
     private double listInnerWidth(double widgetWidth) {
@@ -865,9 +884,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
-        int firstVisible = firstVisibleTagIndex(listAreaHeight);
-        int lastVisible = lastVisibleTagIndex(listAreaHeight);
-        for (int i = firstVisible; i <= lastVisible; i++) {
+        VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
+        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
             Object item = items.get(i);
             String label = formatItemLabel(item);
             String display = font.plainSubstrByWidth(label, textMaxW);
@@ -971,22 +989,19 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double listAreaHeight = visibleListViewportHeight();
         hoveredDeleteIndex = -1;
         hoveredTagBodyIndex = -1;
+        double mx = screen != null ? screen.inputState().mouseX() : 0;
+        double my = screen != null ? screen.inputState().mouseY() : 0;
         if (expanded && editingIndex < 0 && screen != null) {
-            double mx = screen.inputState().mouseX();
-            double my = screen.inputState().mouseY();
             int bodyIdx = hitTagBodyIndex(mx, my);
             if (bodyIdx >= 0) {
                 hoveredTagBodyIndex = bodyIdx;
             }
         }
-        int firstVisible = firstVisibleTagIndex(listAreaHeight);
-        int lastVisible = lastVisibleTagIndex(listAreaHeight);
-        for (int i = firstVisible; i <= lastVisible; i++) {
+        VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
+        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
             double tagY = listContentTop - listScrollOffset + i * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
-            double mx = screen != null ? screen.inputState().mouseX() : 0;
-            double my = screen != null ? screen.inputState().mouseY() : 0;
             if (mx >= delX && mx < delX + TAG_CLOSE_SIZE && my >= delY && my < delY + TAG_CLOSE_SIZE) {
                 hoveredDeleteIndex = i;
                 break;
@@ -1090,10 +1105,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
-            int firstVisible = firstVisibleTagIndex(listAreaHeight);
-            int lastVisible = lastVisibleTagIndex(listAreaHeight);
-            for (int i = firstVisible; i <= lastVisible; i++) {
-                int closeX = getDeleteButtonX();
+            VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
+            int closeX = getDeleteButtonX();
+            for (int i = visibleRange.first; i <= visibleRange.last; i++) {
                 double tagY = listContentTop - listScrollOffset + i * tagRowStride();
                 double delX = absX + closeX;
                 double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;

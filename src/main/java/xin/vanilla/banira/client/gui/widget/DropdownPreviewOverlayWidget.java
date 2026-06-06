@@ -51,7 +51,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         ScreenCoordinate pb = parent.getPreviewBounds();
         if (pb == null) return;
 
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         if (items.isEmpty()) {
             Minecraft.getInstance().execute(parent::closePreview);
             return;
@@ -93,9 +93,12 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
 
             AbstractGuiUtils.pushScissor((int) pb.x() + 1, (int) pb.y() + 1, contentWidth, (int) pb.height() - 2);
 
+            int visibleCount = visibleHeight / ITEM_HEIGHT;
+            int startIdx = Math.max(0, scrollOffset / ITEM_HEIGHT);
+            int endIdx = Math.min(startIdx + visibleCount + 2, items.size());
             int contentY = (int) pb.y() + PAD - scrollOffset;
             try {
-                for (int i = 0; i < items.size(); i++) {
+                for (int i = startIdx; i < endIdx; i++) {
                     int itemY = contentY + i * ITEM_HEIGHT;
                     if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
 
@@ -162,7 +165,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     private boolean isMouseOverScrollbarThumb(ScreenCoordinate pb, double mouseX, double mouseY) {
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -193,7 +196,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
             return true;
         }
 
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         boolean scrollable = contentHeight > visibleHeight;
@@ -214,17 +217,15 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         }
 
         int itemAreaWidth = scrollable ? (int) pb.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN - 2 : (int) pb.width() - 2;
-        int contentY = (int) pb.y() + PAD - parent.getPreviewScrollOffset();
-        for (int i = 0; i < items.size(); i++) {
-            int itemY = contentY + i * ITEM_HEIGHT;
-            if (mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT) {
-                int closeX = (int) (pb.x() + itemAreaWidth - PAD - TAG_CLOSE_SIZE);
-                int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
-                if (mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE) {
-                    parent.removeSelectedValueAt(i);
-                    return true;
-                }
-                break;
+        int relY = (int) (mouseY - pb.y() - PAD + parent.getPreviewScrollOffset());
+        int index = relY / ITEM_HEIGHT;
+        if (index >= 0 && index < items.size()) {
+            int itemY = (int) pb.y() + PAD + index * ITEM_HEIGHT - parent.getPreviewScrollOffset();
+            int closeX = (int) (pb.x() + itemAreaWidth - PAD - TAG_CLOSE_SIZE);
+            int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
+            if (mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE) {
+                parent.removeSelectedValueAt(index);
+                return true;
             }
         }
         return true;
@@ -247,7 +248,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         if (scrollbarDragging && event.button() == 0) {
             ScreenCoordinate pb = parent.getPreviewBounds();
             if (pb != null) {
-                List<String> items = parent.getSelectedValues();
+                List<String> items = parent.selectedValuesView();
                 int contentHeight = items.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) pb.height() - PAD * 2;
                 int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -279,7 +280,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         if (mouseX < pb.x() || mouseX >= pb.x() + pb.width() || mouseY < pb.y() || mouseY >= pb.y() + pb.height()) {
             return false;
         }
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);

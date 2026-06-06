@@ -54,7 +54,7 @@ class DropdownOverlayWidget extends BaseWidget {
         ScreenCoordinate db = parent.getDropdownBounds();
         if (db == null) return;
 
-        List<DropdownOption> options = parent.getFilteredOptionEntries();
+        List<DropdownOption> options = parent.filteredOptionEntriesView();
         if (options.isEmpty()) return;
 
         Font font = Minecraft.getInstance().font;
@@ -204,7 +204,7 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private boolean isMouseOverScrollbarThumb(ScreenCoordinate db, double mouseX, double mouseY) {
-        List<DropdownOption> options = parent.getFilteredOptionEntries();
+        List<DropdownOption> options = parent.filteredOptionEntriesView();
         int contentHeight = options.size() * ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -240,7 +240,7 @@ class DropdownOverlayWidget extends BaseWidget {
         if (parent.isInDropdownOptions(mouseX, mouseY)) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                List<DropdownOption> options = parent.getFilteredOptionEntries();
+                List<DropdownOption> options = parent.filteredOptionEntriesView();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;
@@ -297,7 +297,7 @@ class DropdownOverlayWidget extends BaseWidget {
         if (event.button() == 0 && pressedOptionIndex >= 0) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                List<DropdownOption> options = parent.getFilteredOptionEntries();
+                List<DropdownOption> options = parent.filteredOptionEntriesView();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;

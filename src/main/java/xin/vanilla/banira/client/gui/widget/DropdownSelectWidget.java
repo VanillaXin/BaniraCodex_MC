@@ -27,6 +27,7 @@ import xin.vanilla.banira.common.util.Translator;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -90,6 +91,10 @@ public class DropdownSelectWidget extends InputWidget {
             DROPDOWN_ICON_INSET + DROPDOWN_ICON_DRAW_SIZE + DROPDOWN_ICON_TEXT_GAP;
 
     private List<DropdownOption> optionEntries = new ArrayList<>();
+    private List<DropdownOption> cachedFilteredOptionEntries = new ArrayList<>();
+    @Nullable
+    private String cachedFilterText;
+    private boolean hasDropdownIconCache;
 
     @Getter
     @Setter
@@ -223,8 +228,7 @@ public class DropdownSelectWidget extends InputWidget {
     int getMaxDropdownScroll() {
         ScreenCoordinate db = getDropdownBounds();
         if (db == null) return 0;
-        List<String> filtered = getFilteredOptions();
-        int contentHeight = filtered.size() * DROPDOWN_ITEM_HEIGHT;
+        int contentHeight = filteredOptionEntriesView().size() * DROPDOWN_ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - DROPDOWN_PAD * 2;
         return Math.max(0, contentHeight - visibleHeight);
     }
@@ -258,6 +262,7 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public DropdownSelectWidget optionEntries(List<DropdownOption> entries) {
         this.optionEntries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
+        rebuildOptionCaches();
         return this;
     }
 
@@ -270,6 +275,7 @@ public class DropdownSelectWidget extends InputWidget {
         } else {
             this.optionEntries = strings.stream().map(DropdownOption::new).collect(Collectors.toList());
         }
+        rebuildOptionCaches();
         return this;
     }
 
@@ -315,6 +321,7 @@ public class DropdownSelectWidget extends InputWidget {
             list.add(new DropdownOption(e.name(), dispLabel, icon, textures, tooltip));
         }
         this.optionEntries = list;
+        rebuildOptionCaches();
         return this;
     }
 
@@ -322,7 +329,7 @@ public class DropdownSelectWidget extends InputWidget {
      * 是否存在任意带图标的选项（用于为整列预留图标宽度）。
      */
     public boolean hasAnyDropdownIcon() {
-        return optionEntries.stream().anyMatch(o -> o.hasTexture() || !o.icon().isEmpty());
+        return hasDropdownIconCache;
     }
 
     @Override
@@ -346,25 +353,49 @@ public class DropdownSelectWidget extends InputWidget {
         return new ArrayList<>(selectedValues);
     }
 
+    List<String> selectedValuesView() {
+        return selectedValues;
+    }
+
     /**
      * 获取过滤后的选项列表（根据当前输入内容）
      */
     public List<String> getFilteredOptions() {
-        return getFilteredOptionEntries().stream().map(DropdownOption::value).collect(Collectors.toList());
+        return filteredOptionEntriesView().stream().map(DropdownOption::value).collect(Collectors.toList());
     }
 
     /**
      * 过滤后的选项条目（与 {@link #getFilteredOptions()} 顺序一致）。
      */
     public List<DropdownOption> getFilteredOptionEntries() {
-        String filter = value().toLowerCase().trim();
-        if (StringUtils.isNullOrEmpty(filter)) {
-            return new ArrayList<>(optionEntries);
+        return new ArrayList<>(filteredOptionEntriesView());
+    }
+
+    /**
+     * 内部浮层只读使用，避免每帧重复分配过滤列表拷贝。
+     */
+    List<DropdownOption> filteredOptionEntriesView() {
+        String filter = value().toLowerCase(Locale.ROOT).trim();
+        if (filter.equals(cachedFilterText)) {
+            return cachedFilteredOptionEntries;
         }
-        return optionEntries.stream()
-                .filter(opt -> opt.displayLabel().toLowerCase().contains(filter)
-                        || opt.value().toLowerCase().contains(filter))
+        cachedFilterText = filter;
+        if (StringUtils.isNullOrEmpty(filter)) {
+            cachedFilteredOptionEntries = new ArrayList<>(optionEntries);
+            return cachedFilteredOptionEntries;
+        }
+        cachedFilteredOptionEntries = optionEntries.stream()
+                .filter(opt -> opt.displayLabel().toLowerCase(Locale.ROOT).contains(filter)
+                        || opt.value().toLowerCase(Locale.ROOT).contains(filter))
                 .collect(Collectors.toList());
+        return cachedFilteredOptionEntries;
+    }
+
+    private void rebuildOptionCaches() {
+        cachedFilterText = null;
+        cachedFilteredOptionEntries = new ArrayList<>();
+        hasDropdownIconCache = optionEntries.stream().anyMatch(o -> o.hasTexture() || !o.icon().isEmpty());
+        dropdownScrollOffset = Math.min(dropdownScrollOffset, getMaxDropdownScroll());
     }
 
     private String displayLabelForValue(String storedValue) {
@@ -392,7 +423,7 @@ public class DropdownSelectWidget extends InputWidget {
         double absY = absoluteY();
         double inputBottom = absY + renderCoordinate.height();
         int w = (int) Math.max(renderCoordinate.width(), 100);
-        int itemCount = Math.min(getFilteredOptions().size(), 10);
+        int itemCount = Math.min(filteredOptionEntriesView().size(), 10);
         int desiredH = Math.min(DROPDOWN_MAX_HEIGHT, itemCount * DROPDOWN_ITEM_HEIGHT + DROPDOWN_PAD * 2);
 
         double spaceAbove = absY - SCREEN_EDGE_MARGIN;

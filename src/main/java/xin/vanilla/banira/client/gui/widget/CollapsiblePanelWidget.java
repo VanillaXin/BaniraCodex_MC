@@ -373,14 +373,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
                 return true;
             }
             if (expanded) {
-                for (int i = children.size() - 1; i >= 0; i--) {
-                    IWidget child = children.get(i);
-                    if (child != null && child.visible() && child.enabled()) {
-                        if (child.handleMouseClick(event)) {
-                            lastClickFocusTarget = child;
-                            return true;
-                        }
-                    }
+                IWidget handlingChild = findHandlingChild(child -> child.handleMouseClick(event));
+                if (handlingChild != null) {
+                    lastClickFocusTarget = handlingChild;
+                    return true;
                 }
             }
             return onMouseClick(event);
@@ -398,13 +394,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseRelease(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleMouseRelease(event)) != null) {
+                return true;
             }
         }
 
@@ -429,13 +420,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseScroll(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
+                return true;
             }
         }
 
@@ -455,13 +441,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseDrag(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleMouseDrag(event)) != null) {
+                return true;
             }
         }
 
@@ -477,13 +458,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyPress(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleKeyPress(event)) != null) {
+                return true;
             }
         }
         return onKeyPress(event);
@@ -495,13 +471,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyRelease(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleKeyRelease(event)) != null) {
+                return true;
             }
         }
         return onKeyRelease(event);
@@ -513,13 +484,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleCharTyped(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleCharTyped(event)) != null) {
+                return true;
             }
         }
         return onCharTyped(event);

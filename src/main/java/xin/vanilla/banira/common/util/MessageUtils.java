@@ -13,10 +13,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
-import xin.vanilla.banira.common.enums.EnumMoveType;
-import xin.vanilla.banira.common.enums.EnumNotificationStyle;
-import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
-import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
@@ -370,8 +367,45 @@ public final class MessageUtils {
             return BaniraComponent.get().literal("");
         }
         Component copy = component.clone();
-        copy.languageCodeIfEmpty(Translator.getPlayerLanguage(player));
+        String lang = Translator.getPlayerLanguage(player);
+        copy.languageCodeIfEmpty(lang);
+        if (requiresServerResolvedNotificationPayload(player, copy)) {
+            return BaniraComponent.get().literal(copy.getString(lang, false, true));
+        }
         return copy;
+    }
+
+    /**
+     * 客户端可选子 Mod 的语言文件可能不存在；此时由服务端先按玩家语言解析为文本。
+     */
+    private static boolean requiresServerResolvedNotificationPayload(ServerPlayer player, Component component) {
+        if (component == null) {
+            return false;
+        }
+        if (component.i18nType() != EnumI18nType.PLAIN
+                && component.i18nType() != EnumI18nType.NONE
+                && component.i18nType() != EnumI18nType.ORIGINAL
+                && !component.isModIdEmpty()
+                && !canClientResolveTranslation(player, component.modId())) {
+            return true;
+        }
+        for (Component child : component.getChildren()) {
+            if (requiresServerResolvedNotificationPayload(player, child)) {
+                return true;
+            }
+        }
+        for (Component arg : component.getArgs()) {
+            if (requiresServerResolvedNotificationPayload(player, arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean canClientResolveTranslation(ServerPlayer player, String modId) {
+        return "minecraft".equals(modId)
+                || BaniraCodex.MODID.equals(modId)
+                || PlayerUtils.isRemoteClientModInstalled(player, modId);
     }
 
     /**

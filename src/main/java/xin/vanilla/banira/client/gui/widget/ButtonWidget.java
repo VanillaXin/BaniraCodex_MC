@@ -106,17 +106,20 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 长按判定完成瞬间的「崩裂」粒子存活时间（毫秒）
      */
-    private static final int LONG_PRESS_BURST_DURATION_MS = 520;
+    private static final int LONG_PRESS_BURST_DURATION_MS = 680;
 
     /**
      * 崩裂粒子数量
      */
-    private static final int LONG_PRESS_BURST_PARTICLE_COUNT = 40;
+    private static final int LONG_PRESS_BURST_PARTICLE_COUNT = 48;
 
     /**
      * 崩裂粒子重力（像素/秒²，屏幕 Y 向下为正）
      */
-    private static final float LONG_PRESS_BURST_GRAVITY = 380f;
+    private static final float LONG_PRESS_BURST_GRAVITY = 340f;
+    private static final int BURST_KIND_SHARD = 0;
+    private static final int BURST_KIND_SPARK = 1;
+    private static final int BURST_KIND_WAVE = 2;
 
     private final List<LongPressBurstParticle> longPressBurstParticles = new ArrayList<>();
 
@@ -739,7 +742,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     private void spawnHorizontalBurstStrip(ThreadLocalRandom r, float hw, float hh, long now, boolean rightToLeft) {
         float sign = rightToLeft ? -1f : 1f;
+        int shardColor = blendArgb(longPressProgressFillColor, hoverBgColor, 0.35f);
+        int sparkColor = brightenArgb(blendArgb(longPressProgressFillColor, 0xFFFFFFFF, 0.42f), 1.08f);
 
+        // 主碎片沿进度前缘喷出，宽扁形更像按钮表面被撕开的碎屑。
         for (int i = 0; i < 26; i++) {
             float x0 = sign * hw * (0.74f + r.nextFloat() * 0.24f);
             float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.99f;
@@ -750,14 +756,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             if (r.nextFloat() < 0.16f) {
                 vx -= sign * (55f + r.nextFloat() * 140f);
             }
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
+            int c = r.nextFloat() < 0.72f ? shardColor : longPressProgressFillColor;
             if (r.nextFloat() < 0.15f) {
                 c = brightenArgb(c, 1.12f + r.nextFloat() * 0.12f);
             }
             float dw = 1.8f + r.nextFloat() * 2.6f;
             float dh = 0.55f + r.nextFloat() * 0.85f;
             float g = 0.58f + r.nextFloat() * 0.22f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, g));
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, g, BURST_KIND_SHARD, LONG_PRESS_BURST_DURATION_MS));
         }
 
         for (int i = 0; i < 20; i++) {
@@ -767,13 +773,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             float speed = 88f + r.nextFloat() * 195f;
             float vx = sign * (float) Math.cos(fan) * speed;
             float vy = (float) Math.sin(fan) * speed * 0.9f + (r.nextFloat() - 0.5f) * 85f;
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
+            int c = r.nextBoolean() ? shardColor : hoverBgColor;
             float dw = 1f + r.nextFloat() * 1.5f;
             float dh = dw;
             float gScale = 0.78f + r.nextFloat() * 0.18f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale, BURST_KIND_SHARD, LONG_PRESS_BURST_DURATION_MS - 80));
         }
 
+        // 细高光负责“完成”的亮点，但寿命短，避免满屏闪烁。
         for (int i = 0; i < 16; i++) {
             float x0 = sign * hw * (0.68f + r.nextFloat() * 0.30f);
             float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.98f;
@@ -781,20 +788,20 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             float speed = 165f + r.nextFloat() * 260f;
             float vx = sign * (float) Math.cos(fan) * speed;
             float vy = (float) Math.sin(fan) * speed * 0.75f + (r.nextFloat() - 0.5f) * 45f;
-            int c = brightenArgb(longPressProgressFillColor, 1.28f + r.nextFloat() * 0.25f);
+            int c = sparkColor;
             if (r.nextFloat() < 0.35f) {
                 c = 0xFFFFE8D0;
             }
             float dw = 0.75f + r.nextFloat() * 1.05f;
             float dh = dw;
             float gScale = 0.45f + r.nextFloat() * 0.2f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale, BURST_KIND_SPARK, 360 + r.nextInt(120)));
         }
     }
 
     private void tickLongPressBurstParticles() {
         long now = System.currentTimeMillis();
-        longPressBurstParticles.removeIf(p -> now - p.spawnTimeMs > LONG_PRESS_BURST_DURATION_MS);
+        longPressBurstParticles.removeIf(p -> now - p.spawnTimeMs > p.lifetimeMs);
     }
 
     private void spawnLongPressBurst(int drawWidth, int drawHeight) {
@@ -806,20 +813,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         long now = System.currentTimeMillis();
         float hw = drawWidth * 0.5f;
         float hh = drawHeight * 0.5f;
+        addImpactWave(now, drawWidth, drawHeight);
         if (longPressProgressMode == LongPressProgressMode.LEFT_TO_RIGHT || longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT) {
             spawnHorizontalBurstStrip(r, hw, hh, now, longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT);
             return;
         }
-        float spreadY = Math.max(2f, hh * 0.5f);
+        int shardColor = blendArgb(longPressProgressFillColor, hoverBgColor, 0.32f);
+        int sparkColor = brightenArgb(blendArgb(longPressProgressFillColor, 0xFFFFFFFF, 0.40f), 1.06f);
         for (int i = 0; i < LONG_PRESS_BURST_PARTICLE_COUNT; i++) {
             float x0 = 0f;
             float y0 = 0f;
             float vx = 0f;
             float vy = 0f;
+            boolean spark = i >= LONG_PRESS_BURST_PARTICLE_COUNT - 14;
             switch (longPressProgressMode) {
                 case INSIDE_OUT: {
                     int edge = r.nextInt(4);
-                    float speed = 75f + r.nextFloat() * 155f;
+                    float speed = (spark ? 145f : 82f) + r.nextFloat() * (spark ? 230f : 155f);
                     if (edge == 0) {
                         x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.96f;
                         y0 = -hh;
@@ -857,22 +867,31 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                     x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.92f;
                     y0 = hh * (0.52f + r.nextFloat() * 0.48f);
                     vx = (r.nextFloat() - 0.5f) * 110f;
-                    vy = 105f + r.nextFloat() * 175f;
+                    vy = (spark ? 165f : 105f) + r.nextFloat() * (spark ? 250f : 175f);
                     break;
                 case BOTTOM_TO_TOP:
                     x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.9f;
                     y0 = -hh * (0.52f + r.nextFloat() * 0.48f);
                     vx = (r.nextFloat() - 0.5f) * 110f;
-                    vy = -(195f + r.nextFloat() * 230f);
+                    vy = -((spark ? 225f : 175f) + r.nextFloat() * (spark ? 260f : 210f));
                     break;
             }
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
-            if (r.nextFloat() < 0.18f) {
+            int c = spark ? sparkColor : (r.nextBoolean() ? shardColor : hoverBgColor);
+            if (!spark && r.nextFloat() < 0.18f) {
                 c = brightenArgb(c, 1.18f + r.nextFloat() * 0.15f);
             }
-            float size = 1f + r.nextFloat() * (r.nextFloat() < 0.12f ? 3.2f : 1.8f);
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, size));
+            float size = spark ? 0.8f + r.nextFloat() * 1.0f : 1.2f + r.nextFloat() * (r.nextFloat() < 0.12f ? 3.0f : 1.9f);
+            float gravity = spark ? 0.42f + r.nextFloat() * 0.22f : 0.72f + r.nextFloat() * 0.24f;
+            int lifetime = spark ? 340 + r.nextInt(130) : LONG_PRESS_BURST_DURATION_MS - r.nextInt(100);
+            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, size, size, gravity,
+                    spark ? BURST_KIND_SPARK : BURST_KIND_SHARD, lifetime));
         }
+    }
+
+    private void addImpactWave(long now, int drawWidth, int drawHeight) {
+        int color = brightenArgb(blendArgb(longPressProgressFillColor, hoverBgColor, 0.18f), 1.16f);
+        longPressBurstParticles.add(new LongPressBurstParticle(0, 0, 0, 0, color, now,
+                Math.max(2, drawWidth), Math.max(2, drawHeight), 0f, BURST_KIND_WAVE, 260));
     }
 
     private static int brightenArgb(int argb, float factor) {
@@ -886,6 +905,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (a << 24) | (cr << 16) | (cg << 8) | cb;
     }
 
+    private static int blendArgb(int from, int to, float t) {
+        float clamped = Math.max(0f, Math.min(1f, t));
+        int a = Math.round(((from >>> 24) & 0xFF) * (1f - clamped) + ((to >>> 24) & 0xFF) * clamped);
+        int r = Math.round(((from >> 16) & 0xFF) * (1f - clamped) + ((to >> 16) & 0xFF) * clamped);
+        int g = Math.round(((from >> 8) & 0xFF) * (1f - clamped) + ((to >> 8) & 0xFF) * clamped);
+        int b = Math.round((from & 0xFF) * (1f - clamped) + (to & 0xFF) * clamped);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
     private void drawLongPressBurstParticles(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
         if (drawWidth < 1 || drawHeight < 1) {
             return;
@@ -893,28 +921,58 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         float cx = drawX + drawWidth * 0.5f;
         float cy = drawY + drawHeight * 0.5f;
         long now = System.currentTimeMillis();
-        float maxAge = LONG_PRESS_BURST_DURATION_MS / 1000f;
         for (LongPressBurstParticle p : longPressBurstParticles) {
-            float t = (now - p.spawnTimeMs) / 1000f;
-            if (t <= 0f || t >= maxAge) {
+            float elapsedMs = now - p.spawnTimeMs;
+            if (elapsedMs <= 0f || elapsedMs >= p.lifetimeMs) {
                 continue;
             }
-            float px = p.x0 + p.vx * t;
-            float py = p.y0 + p.vy * t + LONG_PRESS_BURST_GRAVITY * p.gravityScale * t * t;
-            float life = 1f - t / maxAge;
-            life = Math.max(0f, Math.min(1f, life));
-            int alpha = (int) (255f * life * life);
+            float age = elapsedMs / p.lifetimeMs;
+            if (p.kind == BURST_KIND_WAVE) {
+                drawLongPressImpactWave(stack, cx, cy, p, age);
+                continue;
+            }
+            float t = elapsedMs / 1000f;
+            float ease = 1f - (1f - age) * (1f - age);
+            float motionT = t * (0.72f + 0.28f * ease);
+            float px = p.x0 + p.vx * motionT;
+            float py = p.y0 + p.vy * motionT + LONG_PRESS_BURST_GRAVITY * p.gravityScale * motionT * motionT;
+            float fadeIn = Math.min(1f, age / 0.08f);
+            float fadeOut = 1f - age;
+            fadeOut = fadeOut * fadeOut;
+            int alpha = (int) ((p.kind == BURST_KIND_SPARK ? 230f : 205f) * fadeIn * fadeOut);
             if (alpha < 6) {
                 continue;
             }
             int col = withAlphaArgb(p.baseColor, alpha);
-            float lifeScale = 0.75f + 0.35f * life;
+            float lifeScale = p.kind == BURST_KIND_SPARK ? 0.62f + 0.55f * (1f - age) : 0.72f + 0.34f * (1f - age);
             int wPx = Math.max(1, Math.round(p.drawW * lifeScale));
             int hPx = Math.max(1, Math.round(p.drawH * lifeScale));
+            if (p.kind == BURST_KIND_SPARK && Math.abs(p.vx) > Math.abs(p.vy)) {
+                wPx = Math.max(wPx + 1, Math.round(wPx * 1.8f));
+            } else if (p.kind == BURST_KIND_SPARK) {
+                hPx = Math.max(hPx + 1, Math.round(hPx * 1.8f));
+            }
             int ix = Math.round(cx + px - wPx * 0.5f);
             int iy = Math.round(cy + py - hPx * 0.5f);
             AbstractGuiUtils.fill(stack, ix, iy, wPx, hPx, col);
         }
+    }
+
+    private void drawLongPressImpactWave(PoseStack stack, float cx, float cy, LongPressBurstParticle p, float age) {
+        float ease = 1f - (1f - age) * (1f - age);
+        int alpha = (int) (92f * (1f - age) * (1f - age));
+        if (alpha < 6) {
+            return;
+        }
+        int col = withAlphaArgb(p.baseColor, alpha);
+        int w = Math.max(2, Math.round(p.drawW * (1f + 0.16f * ease)));
+        int h = Math.max(2, Math.round(p.drawH * (1f + 0.20f * ease)));
+        int x = Math.round(cx - w * 0.5f);
+        int y = Math.round(cy - h * 0.5f);
+        AbstractGuiUtils.fill(stack, x, y, w, 1, col);
+        AbstractGuiUtils.fill(stack, x, y + h - 1, w, 1, col);
+        AbstractGuiUtils.fill(stack, x, y, 1, h, col);
+        AbstractGuiUtils.fill(stack, x + w - 1, y, 1, h, col);
     }
 
     private static int withAlphaArgb(int argb, int alpha) {
@@ -931,12 +989,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         final float drawW;
         final float drawH;
         final float gravityScale;
+        final int kind;
+        final int lifetimeMs;
 
         LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float uniformSize) {
             this(x0, y0, vx, vy, baseColor, spawnTimeMs, uniformSize, uniformSize, 1f);
         }
 
         LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float drawW, float drawH, float gravityScale) {
+            this(x0, y0, vx, vy, baseColor, spawnTimeMs, drawW, drawH, gravityScale, BURST_KIND_SHARD, LONG_PRESS_BURST_DURATION_MS);
+        }
+
+        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float drawW, float drawH,
+                               float gravityScale, int kind, int lifetimeMs) {
             this.x0 = x0;
             this.y0 = y0;
             this.vx = vx;
@@ -946,6 +1011,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             this.drawW = drawW;
             this.drawH = drawH;
             this.gravityScale = gravityScale;
+            this.kind = kind;
+            this.lifetimeMs = lifetimeMs;
         }
     }
 

@@ -198,6 +198,7 @@ public abstract class BaniraScreen extends Screen {
      */
     private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
     private boolean renderWidgetSnapshotDirty = true;
+    private boolean renderingWidgets = false;
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
@@ -580,13 +581,18 @@ public abstract class BaniraScreen extends Screen {
 
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         rebuildRenderWidgetSnapshotIfNeeded();
-        for (IWidget widget : renderWidgetSnapshot) {
-            if (widget.visible() && widget.parent() == null) {
-                if (widget.enabled() && widget.needsUpdate()) {
-                    widget.update();
+        renderingWidgets = true;
+        try {
+            for (IWidget widget : renderWidgetSnapshot) {
+                if (widget.visible() && widget.parent() == null) {
+                    if (widget.enabled() && widget.needsUpdate()) {
+                        widget.update();
+                    }
+                    widget.render(stack, partialTicks);
                 }
-                widget.render(stack, partialTicks);
             }
+        } finally {
+            renderingWidgets = false;
         }
     }
 
@@ -618,7 +624,7 @@ public abstract class BaniraScreen extends Screen {
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);
             }
-            renderWidgetSnapshotDirty = true;
+            markRenderWidgetSnapshotDirty(false);
         }
     }
 
@@ -628,7 +634,9 @@ public abstract class BaniraScreen extends Screen {
             if (removed && widget.id() != null) {
                 widgetMap.remove(widget.id());
             }
-            renderWidgetSnapshotDirty |= removed;
+            if (removed) {
+                markRenderWidgetSnapshotDirty(false);
+            }
         }
     }
 
@@ -654,12 +662,21 @@ public abstract class BaniraScreen extends Screen {
             }
         }
         widgets.clear();
-        renderWidgetSnapshot.clear();
-        renderWidgetSnapshotDirty = true;
+        markRenderWidgetSnapshotDirty(true);
         widgetMap.clear();
         focusedWidget = null;
         synchronized (focusableWidgets) {
             focusableWidgets.clear();
+        }
+    }
+
+    /**
+     * 渲染中不能修改 renderWidgetSnapshot 本体，否则 foreach 会触发 ConcurrentModificationException。
+     */
+    private void markRenderWidgetSnapshotDirty(boolean clearWhenIdle) {
+        renderWidgetSnapshotDirty = true;
+        if (clearWhenIdle && !renderingWidgets) {
+            renderWidgetSnapshot.clear();
         }
     }
 

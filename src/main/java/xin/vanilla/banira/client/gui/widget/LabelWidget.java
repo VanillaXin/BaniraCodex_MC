@@ -21,10 +21,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_PRIMARY;
@@ -35,6 +32,18 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_PRIMARY;
 @Accessors(chain = true, fluent = true)
 public class LabelWidget extends BaseWidget implements ITextWidget {
     private static final Pattern WRAP_SEPARATOR_PATTERN = Pattern.compile("[\\s\\p{Punct}]+");
+    private static final int TEXT_LAYOUT_CACHE_LIMIT = 512;
+    private static final Object TEXT_LAYOUT_CACHE_LOCK = new Object();
+
+    /**
+     * 静态绘制路径没有组件实例可复用，使用小型 LRU 缓存减少每帧重复换行和测宽。
+     */
+    private static final Map<TextLayoutCacheKey, TextLayout> TEXT_LAYOUT_CACHE = new LinkedHashMap<>(64, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<TextLayoutCacheKey, TextLayout> eldest) {
+            return size() > TEXT_LAYOUT_CACHE_LIMIT;
+        }
+    };
 
     @Getter
     private Text text = Text.empty();
@@ -348,6 +357,16 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             }
         }
 
+        TextLayoutCacheKey cacheKey = new TextLayoutCacheKey(font, content, scale, drawX, drawY, availableWidth,
+                args.maxLine(), args.wrap(), args.position(), args.paddingLeft(), args.paddingRight(),
+                args.paddingTop(), args.paddingBottom());
+        synchronized (TEXT_LAYOUT_CACHE_LOCK) {
+            TextLayout cached = TEXT_LAYOUT_CACHE.get(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
         List<String> outputLines = collectOutputLines(args, font, content, availableWidth);
         String ellipsis = "...";
         int ellipsisWidth = font.width(ellipsis);
@@ -373,8 +392,12 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         float totalHeight = processedLines.length * actualLineHeight;
         int finalWidth = (int) Math.ceil(maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
         int finalHeight = (int) totalHeight + args.paddingTop() + args.paddingBottom();
-        return new TextLayout(font, scale, drawX, drawY, availableWidth, processedLines, lineWidths,
+        TextLayout layout = new TextLayout(font, scale, drawX, drawY, availableWidth, processedLines, lineWidths,
                 maxLineWidth, actualLineHeight, finalWidth, finalHeight);
+        synchronized (TEXT_LAYOUT_CACHE_LOCK) {
+            TEXT_LAYOUT_CACHE.put(cacheKey, layout);
+        }
+        return layout;
     }
 
     private static List<String> collectOutputLines(FontDrawArgs args, Font font, String content, int availableWidth) {
@@ -451,6 +474,65 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             this.lineHeight = lineHeight;
             this.finalWidth = finalWidth;
             this.finalHeight = finalHeight;
+        }
+    }
+
+    private static final class TextLayoutCacheKey {
+        private final Font font;
+        private final String content;
+        private final float scale;
+        private final double drawX;
+        private final double drawY;
+        private final int availableWidth;
+        private final int maxLine;
+        private final boolean wrap;
+        private final EnumEllipsisPosition position;
+        private final int paddingLeft;
+        private final int paddingRight;
+        private final int paddingTop;
+        private final int paddingBottom;
+
+        private TextLayoutCacheKey(Font font, String content, float scale, double drawX, double drawY, int availableWidth,
+                                   int maxLine, boolean wrap, EnumEllipsisPosition position,
+                                   int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
+            this.font = font;
+            this.content = content;
+            this.scale = scale;
+            this.drawX = drawX;
+            this.drawY = drawY;
+            this.availableWidth = availableWidth;
+            this.maxLine = maxLine;
+            this.wrap = wrap;
+            this.position = position;
+            this.paddingLeft = paddingLeft;
+            this.paddingRight = paddingRight;
+            this.paddingTop = paddingTop;
+            this.paddingBottom = paddingBottom;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof TextLayoutCacheKey that)) return false;
+            return Float.compare(that.scale, scale) == 0
+                    && Double.compare(that.drawX, drawX) == 0
+                    && Double.compare(that.drawY, drawY) == 0
+                    && availableWidth == that.availableWidth
+                    && maxLine == that.maxLine
+                    && wrap == that.wrap
+                    && paddingLeft == that.paddingLeft
+                    && paddingRight == that.paddingRight
+                    && paddingTop == that.paddingTop
+                    && paddingBottom == that.paddingBottom
+                    && font == that.font
+                    && Objects.equals(content, that.content)
+                    && position == that.position;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(System.identityHashCode(font), content, scale, drawX, drawY, availableWidth,
+                    maxLine, wrap, position, paddingLeft, paddingRight, paddingTop, paddingBottom);
         }
     }
 

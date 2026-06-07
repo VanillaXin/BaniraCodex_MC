@@ -28,6 +28,7 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -41,6 +42,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
@@ -175,7 +177,15 @@ public final class QuickActionOverlay {
     private int editDragFromSlot = -1;
     private int editDragHoverSlot = -1;
 
-    private volatile boolean savePending;
+    /**
+     * 保存前先在调用线程生成 JSON 快照，后台线程只负责写盘，避免异步读取可变布局状态。
+     */
+    private final AtomicReference<String> pendingLayoutJson = new AtomicReference<>();
+    private final CoalescingAsyncTask saveTask = new CoalescingAsyncTask(
+            "banira-quick-action-save",
+            this::writePendingLayoutFile,
+            t -> LOGGER.warn("Failed to save inventory quick-action layout: {}", t.getMessage())
+    );
 
     @Nullable
     private QuickIcon cachedSystemIcon;
@@ -244,25 +254,25 @@ public final class QuickActionOverlay {
     }
 
     private void markSave() {
-        savePending = true;
+        pendingLayoutJson.set(JsonUtils.toPrettyString(layout.toJson()));
+        saveTask.request();
     }
 
     public void flushSaveIfNeeded() {
-        if (!savePending) {
+        if (pendingLayoutJson.get() != null) {
+            saveTask.request();
+        }
+    }
+
+    private void writePendingLayoutFile() throws Exception {
+        String json = pendingLayoutJson.getAndSet(null);
+        if (json == null) {
             return;
         }
-        savePending = false;
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LAYOUT_FILE);
-                JsonObject o = layout.toJson();
-                Files.writeString(path, JsonUtils.toPrettyString(o));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save inventory quick-action layout: {}", e.getMessage());
-            }
-        }, "banira-quick-action-save").start();
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(LAYOUT_FILE);
+        Files.writeString(path, json);
     }
 
     public static boolean isSupportedInventoryScreen(@Nullable Screen screen) {

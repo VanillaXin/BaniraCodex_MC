@@ -57,6 +57,14 @@ public class ConfigSyncToServer implements NetworkPacket {
         }
     }
 
+    public String configName() {
+        return configName;
+    }
+
+    public Map<String, String> changes() {
+        return changes;
+    }
+
     public static void handle(ConfigSyncToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (!ctx.isServerSide()) {

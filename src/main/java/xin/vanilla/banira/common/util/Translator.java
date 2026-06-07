@@ -87,18 +87,17 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
+        Mod mod = modMainClass.getAnnotation(Mod.class);
+        if (mod != null) {
+            String id = mod.value();
+            if (!StringUtils.isNullOrEmptyEx(id)) {
+                return id;
+            }
+        }
         if (BaniraPlatforms.isInstalled()) {
             return Banira.platform().modIdFromMainClass(modMainClass);
         }
-        Mod mod = modMainClass.getAnnotation(Mod.class);
-        if (mod == null) {
-            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
-        }
-        String id = mod.value();
-        if (StringUtils.isNullOrEmptyEx(id)) {
-            throw new IllegalArgumentException("@Mod value is empty on: " + modMainClass.getName());
-        }
-        return id;
+        throw new IllegalArgumentException("Class must be annotated with @Mod or resolved by platform: " + modMainClass.getName());
     }
 
     @NonNull

@@ -241,6 +241,14 @@ public class Notification extends NotificationData {
 
     @OnlyIn(Dist.CLIENT)
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+        renderAt(stack, preInfo, screenInfo, currentTime, this.calculatePosition(screenInfo, preInfo));
+    }
+
+    /**
+     * 使用调用方已计算好的基础坐标渲染，避免通知管理器每帧重复计算位置。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
@@ -251,7 +259,6 @@ public class Notification extends NotificationData {
             return;
         }
 
-        ScreenCoordinate coordinate = this.calculatePosition(screenInfo, preInfo);
         this.applyAnimationEffect(coordinate, progress);
         this.handlePositionTransition(coordinate, currentTime);
 

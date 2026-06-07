@@ -35,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
@@ -303,15 +302,13 @@ public final class NotificationManager {
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        double[] mouse = scaledMouse(mc);
-        double mx = mouse[0];
-        double my = mouse[1];
+        Window win = mc.getWindow();
+        double mx = scaledMouseX(mc, win);
+        double my = scaledMouseY(mc, win);
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
-            entry.getValue().removeIf(Notification::finished);
-
             EnumPosition pos = entry.getKey();
-            List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
+            List<Notification> list = entry.getValue();
 
             boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
                     || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
@@ -328,6 +325,9 @@ public final class NotificationManager {
                     iter.remove();
                     continue;
                 }
+                if (n.scheduledTime() > currentTime) {
+                    continue;
+                }
 
                 if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
                     preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
@@ -340,7 +340,7 @@ public final class NotificationManager {
                 }
 
                 frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
+                n.index(i++).renderAt(stack, preInfo, screenInfo, currentTime, lastInfo);
 
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());
@@ -381,11 +381,12 @@ public final class NotificationManager {
         throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
     }
 
-    private static double[] scaledMouse(Minecraft mc) {
-        Window win = mc.getWindow();
-        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
-        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
-        return new double[]{mx, my};
+    private static double scaledMouseX(Minecraft mc, Window win) {
+        return mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
+    }
+
+    private static double scaledMouseY(Minecraft mc, Window win) {
+        return mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
     }
 
     /**
@@ -438,8 +439,7 @@ public final class NotificationManager {
         Window win = mc.getWindow();
         boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (down && !prevLeftDown) {
-            double[] m = scaledMouse(mc);
-            tryHandleHudClick(m[0], m[1], 0);
+            tryHandleHudClick(scaledMouseX(mc, win), scaledMouseY(mc, win), 0);
         }
         prevLeftDown = down;
     }

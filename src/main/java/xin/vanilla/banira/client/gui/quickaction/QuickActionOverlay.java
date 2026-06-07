@@ -151,6 +151,15 @@ public final class QuickActionOverlay {
     private boolean ctxNeedsScrollbar;
     private double contextClickMouseX;
     private double contextClickMouseY;
+    private final List<CtxRow> cachedContextRows = new ArrayList<>();
+    private boolean contextRowsDirty = true;
+    private boolean contextLayoutDirty = true;
+    @Nullable
+    private Font cachedContextLayoutFont;
+    private int cachedContextLayoutScreenW;
+    private int cachedContextLayoutScreenH;
+    private int cachedContextLayoutX;
+    private int cachedContextLayoutY;
 
     private boolean leftDownOnPanel;
     private long leftPressStartMs;
@@ -198,10 +207,12 @@ public final class QuickActionOverlay {
         contextOmitEditToggleRow = false;
         contextScrollPx = 0;
         contextScrollbarDragging = false;
+        invalidateContextMenuCache();
     }
 
     public void onRegistryChanged() {
         syncLayoutWithRegistry();
+        invalidateContextMenuCache();
         markSave();
     }
 
@@ -919,7 +930,8 @@ public final class QuickActionOverlay {
         }
 
         if (contextOpen && button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            layoutContextMenu(buildContextRows(), mc());
+            List<CtxRow> menuRows = contextRows();
+            ensureContextMenuLayout(menuRows, mc());
             boolean inMenu = mouseX >= ctxLayoutX && mouseY >= ctxLayoutY
                     && mouseX < ctxLayoutX + ctxLayoutW && mouseY < ctxLayoutY + ctxLayoutH;
             if (!inMenu) {
@@ -927,6 +939,7 @@ public final class QuickActionOverlay {
                 contextMenuKind = ContextMenuKind.NONE;
                 contextEntrySubmenuId = null;
                 contextPage = CTX_PAGE_ROOT;
+                invalidateContextMenuCache();
             }
             return true;
         }
@@ -1085,6 +1098,7 @@ public final class QuickActionOverlay {
         contextScrollPx = 0;
         contextX = mx;
         contextY = my;
+        invalidateContextMenuCache();
     }
 
     private static String trWord(String key) {
@@ -1302,6 +1316,21 @@ public final class QuickActionOverlay {
         return L;
     }
 
+    private void invalidateContextMenuCache() {
+        contextRowsDirty = true;
+        contextLayoutDirty = true;
+    }
+
+    private List<CtxRow> contextRows() {
+        if (contextRowsDirty) {
+            cachedContextRows.clear();
+            cachedContextRows.addAll(buildContextRows());
+            contextRowsDirty = false;
+            contextLayoutDirty = true;
+        }
+        return cachedContextRows;
+    }
+
     private void resetAnchorPreset() {
         final QuickActionLayout DEFAULT = new QuickActionLayout();
         layout.coordinateModeX(DEFAULT.coordinateModeX());
@@ -1367,9 +1396,28 @@ public final class QuickActionOverlay {
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }
 
-    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
-        List<CtxRow> rows = buildContextRows();
+    private void ensureContextMenuLayout(List<CtxRow> rows, Minecraft mc) {
+        Font font = mc.font;
+        if (!contextLayoutDirty
+                && cachedContextLayoutFont == font
+                && cachedContextLayoutScreenW == lastScreenW
+                && cachedContextLayoutScreenH == lastScreenH
+                && cachedContextLayoutX == contextX
+                && cachedContextLayoutY == contextY) {
+            return;
+        }
         layoutContextMenu(rows, mc);
+        cachedContextLayoutFont = font;
+        cachedContextLayoutScreenW = lastScreenW;
+        cachedContextLayoutScreenH = lastScreenH;
+        cachedContextLayoutX = contextX;
+        cachedContextLayoutY = contextY;
+        contextLayoutDirty = false;
+    }
+
+    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+        List<CtxRow> rows = contextRows();
+        ensureContextMenuLayout(rows, mc);
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1454,8 +1502,8 @@ public final class QuickActionOverlay {
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
 
-        List<CtxRow> rows = buildContextRows();
-        layoutContextMenu(rows, mc());
+        List<CtxRow> rows = contextRows();
+        ensureContextMenuLayout(rows, mc());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1491,6 +1539,7 @@ public final class QuickActionOverlay {
         contextEntrySubmenuId = sec.id();
         contextPage = CTX_PAGE_ENTRY_CONTEXT;
         contextScrollPx = 0;
+        invalidateContextMenuCache();
         return true;
     }
 
@@ -1501,8 +1550,8 @@ public final class QuickActionOverlay {
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
 
-        List<CtxRow> rows = buildContextRows();
-        layoutContextMenu(rows, mc());
+        List<CtxRow> rows = contextRows();
+        ensureContextMenuLayout(rows, mc());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1538,6 +1587,7 @@ public final class QuickActionOverlay {
         }
         CtxRow row = rows.get(idx);
         row.action.run();
+        invalidateContextMenuCache();
         if (!row.keepOpen) {
             contextOpen = false;
             contextMenuKind = ContextMenuKind.NONE;
@@ -1572,5 +1622,6 @@ public final class QuickActionOverlay {
         contextOmitEditToggleRow = false;
         contextEntrySubmenuId = null;
         contextPage = CTX_PAGE_ROOT;
+        invalidateContextMenuCache();
     }
 }

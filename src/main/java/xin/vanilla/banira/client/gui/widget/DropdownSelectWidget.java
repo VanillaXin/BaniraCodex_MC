@@ -389,8 +389,8 @@ public class DropdownSelectWidget extends InputWidget {
             return cachedFilteredOptionEntries;
         }
         cachedFilteredOptionEntries = optionEntries.stream()
-                .filter(opt -> opt.displayLabel().toLowerCase(Locale.ROOT).contains(filter)
-                        || opt.value().toLowerCase(Locale.ROOT).contains(filter))
+                .filter(opt -> opt.displayLabelLowerCase().contains(filter)
+                        || opt.valueLowerCase().contains(filter))
                 .collect(Collectors.toList());
         return cachedFilteredOptionEntries;
     }
@@ -593,8 +593,7 @@ public class DropdownSelectWidget extends InputWidget {
                 mouseY < db.y() || mouseY >= db.y() + db.height()) {
             return false;
         }
-        List<String> filtered = getFilteredOptions();
-        int contentHeight = filtered.size() * DROPDOWN_ITEM_HEIGHT;
+        int contentHeight = filteredOptionEntriesView().size() * DROPDOWN_ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - DROPDOWN_PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
         int step = DROPDOWN_ITEM_HEIGHT;

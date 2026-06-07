@@ -4,7 +4,7 @@ package xin.vanilla.banira.common.network;
 import net.minecraft.server.level.ServerPlayer;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -17,8 +17,7 @@ import java.util.function.Consumer;
  */
 public final class ModLoadedPresence {
 
-    private static final Object LOCK = new Object();
-    private static final Map<String, Consumer<ServerPlayer>> SYNC_BY_MODID = new LinkedHashMap<>();
+    private static final ModLoadedPresenceRegistry REGISTRY = new ModLoadedPresenceRegistry();
 
     private ModLoadedPresence() {
     }
@@ -29,18 +28,29 @@ public final class ModLoadedPresence {
      * @param modid        mod 标识
      * @param onServerSync 服务端收到该玩家已安装此 mod 后的回调（例如在此时下发自定义同步数据）
      */
-    public static void register(@Nonnull String modid, @Nonnull Consumer<ServerPlayer> onServerSync) {
-        synchronized (LOCK) {
-            SYNC_BY_MODID.put(modid, onServerSync);
-        }
+    @Nonnull
+    public static ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<ServerPlayer> onServerSync) {
+        return REGISTRY.register(modid, onServerSync);
     }
 
     /**
      * 仅声明客户端安装了该 mod（服务端仍会更新 {@link xin.vanilla.banira.common.util.PlayerUtils} 中远程客户端状态），无额外同步回调。
      */
-    public static void register(@Nonnull String modid) {
-        register(modid, p -> {
+    @Nonnull
+    public static ModLoadedRegistration register(@Nonnull String modid) {
+        return register(modid, p -> {
         });
+    }
+
+    /**
+     * 注销指定 modid 的声明，主要用于开发环境热重载或临时声明。
+     */
+    public static boolean unregister(@Nonnull String modid) {
+        return REGISTRY.unregister(modid);
+    }
+
+    public static boolean hasRegistration(@Nonnull String modid) {
+        return REGISTRY.hasRegistration(modid);
     }
 
     /**
@@ -48,21 +58,13 @@ public final class ModLoadedPresence {
      */
     @Nonnull
     public static List<String> announcedModIds() {
-        synchronized (LOCK) {
-            return Collections.unmodifiableList(new ArrayList<>(SYNC_BY_MODID.keySet()));
-        }
+        return REGISTRY.announcedModIds();
     }
 
     /**
      * 服务端：在已写入玩家 mod 安装状态后，执行该 mod 注册的同步回调（若存在）。
      */
-    public static void dispatchServerSync(@Nonnull ServerPlayer player, @Nonnull String modid) {
-        Consumer<ServerPlayer> sync;
-        synchronized (LOCK) {
-            sync = SYNC_BY_MODID.get(modid);
-        }
-        if (sync != null) {
-            sync.accept(player);
-        }
+    public static boolean dispatchServerSync(@Nonnull ServerPlayer player, @Nonnull String modid) {
+        return REGISTRY.dispatchServerSync(player, modid);
     }
 }

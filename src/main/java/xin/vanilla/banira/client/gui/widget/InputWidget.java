@@ -728,6 +728,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled) {
             return;
         }
+        if (!focused() && heldArrowKey == -1) {
+            return;
+        }
 
         long currentTime = System.currentTimeMillis();
 

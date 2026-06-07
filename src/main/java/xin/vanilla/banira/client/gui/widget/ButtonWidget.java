@@ -1032,11 +1032,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void update() {
         super.update();
+        boolean hasBurstParticles = !longPressBurstParticles.isEmpty();
         if (!visible || !enabled) {
-            longPressBurstParticles.clear();
+            if (hasBurstParticles) {
+                longPressBurstParticles.clear();
+            }
             return;
         }
-        tickLongPressBurstParticles();
+        if (longPressHandler == null && !hasBurstParticles) {
+            return;
+        }
+        if (hasBurstParticles) {
+            tickLongPressBurstParticles();
+        }
         if (longPressHandler == null) {
             return;
         }

@@ -18,6 +18,7 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -85,11 +86,16 @@ public class ConfigSnapshotToClient implements NetworkPacket {
                 return;
             }
             try {
+                Map<String, Object> parsedSnapshot = new LinkedHashMap<>();
                 for (Map.Entry<String, String> e : packet.snapshot().entrySet()) {
                     Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
+                    if (!holder.validate(e.getKey(), parsed)) {
+                        throw new IllegalArgumentException("Invalid config value: " + e.getKey());
                     }
+                    parsedSnapshot.put(e.getKey(), parsed);
+                }
+                for (Map.Entry<String, Object> e : parsedSnapshot.entrySet()) {
+                    holder.set(e.getKey(), e.getValue());
                 }
                 holder.save();
             } catch (Exception ex) {

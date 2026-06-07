@@ -80,18 +80,21 @@ public class ConfigSyncToServer implements NetworkPacket {
                 return;
             }
             try {
+                Map<String, Object> parsedChanges = new HashMap<>();
                 for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                     ConfigEntryDescriptor pathDesc = holder.getDescriptor(e.getKey());
                     if (!ConfigEditPermission.canModifyEntry(player, pathDesc)) {
                         sendNotify(player, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
                         return;
                     }
-                }
-                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                     Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
+                    if (!holder.validate(e.getKey(), parsed)) {
+                        throw new IllegalArgumentException("Invalid config value: " + e.getKey());
                     }
+                    parsedChanges.put(e.getKey(), parsed);
+                }
+                for (Map.Entry<String, Object> e : parsedChanges.entrySet()) {
+                    holder.set(e.getKey(), e.getValue());
                 }
                 saveConfig(holder);
                 sendNotify(player, "config_editor_sync_server_ok", NOTIFY_OK_MS,
@@ -143,7 +146,13 @@ public class ConfigSyncToServer implements NetworkPacket {
         try {
             switch (desc.getValueType()) {
                 case BOOLEAN:
-                    return Boolean.parseBoolean(value);
+                    if ("true".equalsIgnoreCase(value)) {
+                        return Boolean.TRUE;
+                    }
+                    if ("false".equalsIgnoreCase(value)) {
+                        return Boolean.FALSE;
+                    }
+                    return value;
                 case INTEGER:
                     return Integer.parseInt(value);
                 case LONG:

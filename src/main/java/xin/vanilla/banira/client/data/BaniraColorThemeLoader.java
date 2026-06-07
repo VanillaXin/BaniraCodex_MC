@@ -88,7 +88,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
                 : BaniraColorConfig.builtinForConcreteSeason(concreteSeason);
     }
 
-    private static final class SeasonThemePair {
+    static final class SeasonThemePair {
         final BaniraColorConfig day;
         final BaniraColorConfig night;
 
@@ -114,20 +114,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
                     LOGGER.warn("Theme JSON root must be object: {}", loc);
                     return null;
                 }
-                JsonObject rootObj = root.getAsJsonObject();
-                BaniraColorConfig day = BaniraColorConfig.builtinForConcreteSeason(season);
-                JsonElement dayEl = rootObj.get("day");
-                if (dayEl != null && dayEl.isJsonObject()) {
-                    applyThemeJsonOverlay(day, dayEl.getAsJsonObject());
-                } else {
-                    applyThemeJsonOverlay(day, rootObj);
-                }
-                BaniraColorConfig night = BaniraColorConfig.builtinNightForConcreteSeason(season);
-                JsonElement nightEl = rootObj.get("night");
-                if (nightEl != null && nightEl.isJsonObject()) {
-                    applyThemeJsonOverlay(night, nightEl.getAsJsonObject());
-                }
-                return new SeasonThemePair(day, night);
+                return parseThemeRoot(season, root.getAsJsonObject());
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to load Banira theme {}: {}", loc, e.getMessage());
@@ -138,6 +125,22 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
     static ResourceLocation themeJsonLocation(EnumSeason season) {
         String name = season.name().toLowerCase() + ".json";
         return Identifier.id().create(BaniraCodex.MODID, "themes/" + name);
+    }
+
+    static SeasonThemePair parseThemeRoot(EnumSeason season, JsonObject rootObj) {
+        BaniraColorConfig day = BaniraColorConfig.builtinForConcreteSeason(season);
+        JsonElement dayEl = rootObj.get("day");
+        if (dayEl != null && dayEl.isJsonObject()) {
+            applyThemeJsonOverlay(day, dayEl.getAsJsonObject());
+        } else {
+            applyThemeJsonOverlay(day, rootObj);
+        }
+        BaniraColorConfig night = BaniraColorConfig.builtinNightForConcreteSeason(season);
+        JsonElement nightEl = rootObj.get("night");
+        if (nightEl != null && nightEl.isJsonObject()) {
+            applyThemeJsonOverlay(night, nightEl.getAsJsonObject());
+        }
+        return new SeasonThemePair(day, night);
     }
 
     static void applyThemeJsonOverlay(BaniraColorConfig c, JsonObject o) {

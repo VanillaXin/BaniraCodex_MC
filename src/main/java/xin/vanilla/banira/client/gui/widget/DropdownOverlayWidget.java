@@ -17,6 +17,8 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 下拉选择框的浮层，用于渲染下拉列表并拦截点击/滚动，防止穿透到下方控件。
  */
@@ -61,15 +63,15 @@ class DropdownOverlayWidget extends BaseWidget {
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();
-        int popupBg = theme.popupBg();
-        int popupBorder = theme.popupBorder();
-        int popupSelected = theme.popupItemSelected();
-        int popupSelectedBorder = theme.popupItemSelectedBorder();
-        int textColorUnselected = theme.popupItemText();
-        int textColorSelected = theme.popupItemTextSelected();
-        int scrollbarBg = theme.scrollbarBg();
-        int scrollbarThumb = theme.scrollbarThumb();
-        int scrollbarThumbHover = theme.scrollbarThumbHover();
+        int popupBg = theme.color(POPUP_BG);
+        int popupBorder = theme.color(POPUP_BORDER);
+        int popupSelected = theme.color(POPUP_ITEM_SELECTED);
+        int popupSelectedBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
+        int textColorUnselected = theme.color(POPUP_ITEM_TEXT);
+        int textColorSelected = theme.color(POPUP_ITEM_TEXT_SELECTED);
+        int scrollbarBg = theme.color(SCROLLBAR_BG);
+        int scrollbarThumb = theme.color(SCROLLBAR_THUMB);
+        int scrollbarThumbHover = theme.color(SCROLLBAR_THUMB_HOVER);
 
         double mouseX = scr.inputState().mouseX();
         double mouseY = scr.inputState().mouseY();

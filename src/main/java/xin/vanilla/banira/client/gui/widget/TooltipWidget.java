@@ -30,6 +30,9 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.POPUP_BG;
+import static xin.vanilla.banira.client.data.BaniraColorToken.POPUP_BORDER;
+
 /**
  * 提示Widget。提供 drawPopupMessage 等静态绘制方法。
  * <p>
@@ -403,11 +406,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 int radius = args.bgBorderRadius();
                 int borderThickness = args.bgBorderThickness();
                 ShapeDrawArgs.RoundedCornerMode cornerMode = args.popupCornerMode() != null ? args.popupCornerMode() : ShapeDrawArgs.RoundedCornerMode.FINE;
-                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBg());
+                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.color(POPUP_BG));
                 fillArgs.rect().radius(radius).cornerMode(cornerMode);
                 BaseShapeWidget.drawShape(fillArgs);
                 if (borderThickness > 0) {
-                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBorder());
+                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.color(POPUP_BORDER));
                     borderArgs.rect().radius(radius).border(borderThickness).cornerMode(cornerMode);
                     BaseShapeWidget.drawShape(borderArgs);
                 }

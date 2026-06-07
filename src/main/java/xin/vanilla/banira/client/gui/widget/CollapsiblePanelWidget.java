@@ -16,6 +16,8 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 折叠面板控件。支持展开/折叠，嵌套时保持正确的层级结构显示。
  * <p>
@@ -124,19 +126,19 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int headerBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgSecondary();
+    private int headerBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BG_SECONDARY);
 
     @Getter
     @Setter
-    private int headerHoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgTertiary();
+    private int headerHoverBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BG_TERTIARY);
 
     @Getter
     @Setter
-    private int headerBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textHint();
+    private int headerBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_HINT);
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_PRIMARY);
 
     @Getter
     @Setter
@@ -635,10 +637,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
         if (theme != null) {
-            headerBgColor(theme.bgSecondary());
-            headerHoverBgColor(theme.bgTertiary());
-            headerBorderColor(theme.textHint());
-            textColor(theme.textPrimary());
+            headerBgColor(theme.color(BG_SECONDARY));
+            headerHoverBgColor(theme.color(BG_TERTIARY));
+            headerBorderColor(theme.color(TEXT_HINT));
+            textColor(theme.color(TEXT_PRIMARY));
         }
     }
 

@@ -33,6 +33,8 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_SECONDARY;
+
 
 @OnlyIn(Dist.CLIENT)
 @Data
@@ -499,7 +501,7 @@ public class Notification extends NotificationData {
                 if (drawAlpha < 0xFF) {
                     closeBg = ColorUtils.applyAlphaToArgb(closeBg, drawAlpha);
                 }
-                int closeIconArgb = theme.textSecondary();
+                int closeIconArgb = theme.color(TEXT_SECONDARY);
                 if (drawAlpha < 0xFF) {
                     closeIconArgb = ColorUtils.applyAlphaToArgb(closeIconArgb, drawAlpha);
                 }

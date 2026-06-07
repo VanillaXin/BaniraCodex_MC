@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 可折叠标签列表编辑控件。
  * <p>
@@ -801,10 +803,10 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.translate(ox, oy, 0);
 
         // region 绘制标题栏
-        int headerBg = mouseInside ? theme.bgTertiary() : theme.bgSecondary();
+        int headerBg = mouseInside ? theme.color(BG_TERTIARY) : theme.color(BG_SECONDARY);
         AbstractGuiUtils.fill(stack, 0, 0, (int) w, HEADER_HEIGHT, headerBg);
 
-        int headerTextColor = theme.textPrimary();
+        int headerTextColor = theme.color(TEXT_PRIMARY);
         int arrowX = 4;
         int arrowY = (HEADER_HEIGHT - ARROW_SIZE) / 2;
         if (expanded) {
@@ -867,9 +869,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         // region 绘制标签列表
-        int tagBg = theme.popupItemSelected();
-        int tagBorder = theme.popupItemSelectedBorder();
-        int textColor = theme.listItemText();
+        int tagBg = theme.color(POPUP_ITEM_SELECTED);
+        int tagBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
+        int textColor = theme.color(LIST_ITEM_TEXT);
 
         int listAreaAbsX = (int) listAbsX;
         int listAreaAbsY = (int) listAbsY;

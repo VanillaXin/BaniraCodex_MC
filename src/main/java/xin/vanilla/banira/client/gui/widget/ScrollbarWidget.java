@@ -19,6 +19,8 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 滚动条Widget。
  * 支持通过 {@link #addScrollHoverArea(ScreenCoordinate)} 添加额外悬浮区域，
@@ -53,15 +55,15 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_BG);
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB);
 
     @Getter
     @Setter
-    private int hoverThumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
+    private int hoverThumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB_HOVER);
 
     @Getter
     @Setter
@@ -105,7 +107,7 @@ public class ScrollbarWidget extends BaseWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.scrollbarBg()).thumbColor(theme.scrollbarThumb()).hoverThumbColor(theme.scrollbarThumbHover());
+        bgColor(theme.color(SCROLLBAR_BG)).thumbColor(theme.color(SCROLLBAR_THUMB)).hoverThumbColor(theme.color(SCROLLBAR_THUMB_HOVER));
     }
 
     /**

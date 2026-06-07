@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_PRIMARY;
+
 /**
  * 标签Widget
  */
@@ -82,7 +84,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
         if (text != null && !text.colorEmpty() && (text.color() & 0xFFFFFF) == 0xFFFFFF) {
-            text.color(theme.textPrimary());
+            text.color(theme.color(TEXT_PRIMARY));
         }
     }
 

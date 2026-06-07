@@ -30,6 +30,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 输入框
  */
@@ -84,42 +86,42 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputText();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_TEXT);
 
     /**
      * 背景颜色
      */
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BG);
 
     /**
      * 错误状态时的背景颜色
      */
     @Getter
     @Setter
-    private int errorBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBgError();
+    private int errorBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BG_ERROR);
 
     /**
      * 不可编辑时的文本颜色
      */
     @Getter
     @Setter
-    private int uneditableTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputTextUneditable();
+    private int uneditableTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_TEXT_UNEDITABLE);
 
     /**
      * 提示文本颜色
      */
     @Getter
     @Setter
-    private int hintColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputHint();
+    private int hintColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_HINT);
 
     /**
      * 光标颜色
      */
     @Getter
     @Setter
-    private int cursorColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputCursor();
+    private int cursorColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_CURSOR);
 
     /**
      * 文本字体大小
@@ -140,21 +142,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorder();
+    private int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER);
 
     /**
      * 焦点时的边框颜色
      */
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER_FOCUSED);
 
     /**
      * 禁用时的边框颜色
      */
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER_DISABLED);
 
     /**
      * 边框宽度
@@ -209,11 +211,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        textColor(theme.inputText()).bgColor(theme.inputBg()).errorBgColor(theme.inputBgError())
-                .uneditableTextColor(theme.inputTextUneditable()).hintColor(theme.inputHint())
-                .cursorColor(theme.inputCursor())
-                .borderColor(theme.inputBorder()).focusedBorderColor(theme.inputBorderFocused())
-                .disabledBorderColor(theme.inputBorderDisabled());
+        textColor(theme.color(INPUT_TEXT)).bgColor(theme.color(INPUT_BG)).errorBgColor(theme.color(INPUT_BG_ERROR))
+                .uneditableTextColor(theme.color(INPUT_TEXT_UNEDITABLE)).hintColor(theme.color(INPUT_HINT))
+                .cursorColor(theme.color(INPUT_CURSOR))
+                .borderColor(theme.color(INPUT_BORDER)).focusedBorderColor(theme.color(INPUT_BORDER_FOCUSED))
+                .disabledBorderColor(theme.color(INPUT_BORDER_DISABLED));
     }
 
     /**

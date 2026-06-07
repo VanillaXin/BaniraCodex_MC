@@ -26,6 +26,8 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 数值滑块 Widget。用于在 min～max 范围内选择数值。
  * <ul>
@@ -182,19 +184,19 @@ public class SliderWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int trackColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
+    private int trackColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_BG);
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB);
 
     @Getter
     @Setter
-    private int thumbHoverColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
+    private int thumbHoverColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB_HOVER);
 
     @Getter
     @Setter
-    private int valueTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
+    private int valueTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_PRIMARY);
 
     /**
      * 数值显示区域背景色（半透明，避免与轨道融合）。0 表示根据文字颜色自动选择半透明白/黑
@@ -225,8 +227,8 @@ public class SliderWidget extends BaseWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        trackColor(theme.scrollbarBg()).thumbColor(theme.scrollbarThumb()).thumbHoverColor(theme.scrollbarThumbHover())
-                .valueTextColor(theme.textPrimary());
+        trackColor(theme.color(SCROLLBAR_BG)).thumbColor(theme.color(SCROLLBAR_THUMB)).thumbHoverColor(theme.color(SCROLLBAR_THUMB_HOVER))
+                .valueTextColor(theme.color(TEXT_PRIMARY));
         if (inlineInputWidget != null) {
             inlineInputWidget.applyTheme(theme);
         }

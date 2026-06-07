@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 按钮Widget
  */
@@ -157,43 +159,43 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG);
 
     @Getter
     @Setter
-    private int hoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgHover();
+    private int hoverBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_HOVER);
 
     @Getter
     @Setter
-    private int focusedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgFocused();
+    private int focusedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgPressed();
+    private int pressedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_PRESSED);
 
     @Getter
     @Setter
-    private int disabledBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgDisabled();
+    private int disabledBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_DISABLED);
 
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorder();
+    private int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER);
 
     @Getter
     @Setter
-    private int hoverBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderHover();
+    private int hoverBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_HOVER);
 
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderPressed();
+    private int pressedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_PRESSED);
 
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_DISABLED);
 
     @Getter
     @Setter
@@ -201,30 +203,30 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonText();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT);
 
     @Getter
     @Setter
-    private int hoverTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextHover();
+    private int hoverTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_HOVER);
 
     @Getter
     @Setter
-    private int focusedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextFocused();
+    private int focusedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextPressed();
+    private int pressedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_PRESSED);
 
     @Getter
     @Setter
-    private int disabledTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextDisabled();
+    private int disabledTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_DISABLED);
 
     /**
      * 长按进度填充色（与 hover 轨道区分），由主题 {@link BaniraColorConfig#buttonLongPressProgressFill()} 提供
      */
     @Getter
     @Setter
-    private int longPressProgressFillColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonLongPressProgressFill();
+    private int longPressProgressFillColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_LONG_PRESS_PROGRESS_FILL);
 
     @Getter
     @Setter
@@ -287,23 +289,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int iconColor = 0xFF333333;
+    private int iconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON);
 
     @Getter
     @Setter
-    private int hoverIconColor = 0xFF555555;
+    private int hoverIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_HOVER);
 
     @Getter
     @Setter
-    private int focusedIconColor = 0xFF444444;
+    private int focusedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedIconColor = 0xFF222222;
+    private int pressedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_PRESSED);
 
     @Getter
     @Setter
-    private int disabledIconColor = 0xFFAAAAAA;
+    private int disabledIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_DISABLED);
 
     /**
      * 图标线条宽度
@@ -315,22 +317,22 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.buttonBg()).hoverBgColor(theme.buttonBgHover())
-                .focusedBgColor(theme.buttonBgFocused()).pressedBgColor(theme.buttonBgPressed())
-                .disabledBgColor(theme.buttonBgDisabled())
-                .borderColor(theme.buttonBorder()).hoverBorderColor(theme.buttonBorderHover())
-                .focusedBorderColor(theme.buttonBorderFocused()).pressedBorderColor(theme.buttonBorderPressed())
-                .disabledBorderColor(theme.buttonBorderDisabled())
-                .textColor(theme.buttonText()).hoverTextColor(theme.buttonTextHover())
-                .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
-                .disabledTextColor(theme.buttonTextDisabled())
-                .longPressProgressFillColor(theme.buttonLongPressProgressFill());
+        bgColor(theme.color(BUTTON_BG)).hoverBgColor(theme.color(BUTTON_BG_HOVER))
+                .focusedBgColor(theme.color(BUTTON_BG_FOCUSED)).pressedBgColor(theme.color(BUTTON_BG_PRESSED))
+                .disabledBgColor(theme.color(BUTTON_BG_DISABLED))
+                .borderColor(theme.color(BUTTON_BORDER)).hoverBorderColor(theme.color(BUTTON_BORDER_HOVER))
+                .focusedBorderColor(theme.color(BUTTON_BORDER_FOCUSED)).pressedBorderColor(theme.color(BUTTON_BORDER_PRESSED))
+                .disabledBorderColor(theme.color(BUTTON_BORDER_DISABLED))
+                .textColor(theme.color(BUTTON_TEXT)).hoverTextColor(theme.color(BUTTON_TEXT_HOVER))
+                .focusedTextColor(theme.color(BUTTON_TEXT_FOCUSED)).pressedTextColor(theme.color(BUTTON_TEXT_PRESSED))
+                .disabledTextColor(theme.color(BUTTON_TEXT_DISABLED))
+                .longPressProgressFillColor(theme.color(BUTTON_LONG_PRESS_PROGRESS_FILL));
         if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
-            iconColor(theme.buttonPresetIconColor())
-                    .hoverIconColor(theme.buttonPresetIconHoverColor())
-                    .focusedIconColor(theme.buttonPresetIconFocusedColor())
-                    .pressedIconColor(theme.buttonPresetIconPressedColor())
-                    .disabledIconColor(theme.buttonPresetIconDisabledColor());
+            iconColor(theme.color(BUTTON_ICON))
+                    .hoverIconColor(theme.color(BUTTON_ICON_HOVER))
+                    .focusedIconColor(theme.color(BUTTON_ICON_FOCUSED))
+                    .pressedIconColor(theme.color(BUTTON_ICON_PRESSED))
+                    .disabledIconColor(theme.color(BUTTON_ICON_DISABLED));
         }
     }
 

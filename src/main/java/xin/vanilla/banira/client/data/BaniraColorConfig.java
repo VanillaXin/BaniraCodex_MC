@@ -479,21 +479,44 @@ public final class BaniraColorConfig {
             case STATUS_INFO_BORDER: return statusInfoBorder();
             case STATUS_INFO_TEXT: return statusInfoText();
             case PANEL_BG: return panelBg();
+            case LIST_ITEM_TEXT: return listItemText();
             case BUTTON_BG: return buttonBg();
             case BUTTON_BG_HOVER: return buttonBgHover();
             case BUTTON_BG_FOCUSED: return buttonBgFocused();
             case BUTTON_BG_PRESSED: return buttonBgPressed();
+            case BUTTON_BG_DISABLED: return buttonBgDisabled();
+            case BUTTON_BORDER: return buttonBorder();
+            case BUTTON_BORDER_HOVER: return buttonBorderHover();
+            case BUTTON_BORDER_FOCUSED: return buttonBorderFocused();
+            case BUTTON_BORDER_PRESSED: return buttonBorderPressed();
+            case BUTTON_BORDER_DISABLED: return buttonBorderDisabled();
             case BUTTON_TEXT: return buttonText();
             case BUTTON_TEXT_HOVER: return buttonTextHover();
+            case BUTTON_TEXT_FOCUSED: return buttonTextFocused();
+            case BUTTON_TEXT_PRESSED: return buttonTextPressed();
+            case BUTTON_TEXT_DISABLED: return buttonTextDisabled();
+            case BUTTON_ICON: return buttonPresetIconColor();
+            case BUTTON_ICON_HOVER: return buttonPresetIconHoverColor();
+            case BUTTON_ICON_FOCUSED: return buttonPresetIconFocusedColor();
+            case BUTTON_ICON_PRESSED: return buttonPresetIconPressedColor();
+            case BUTTON_ICON_DISABLED: return buttonPresetIconDisabledColor();
+            case BUTTON_LONG_PRESS_PROGRESS_FILL: return buttonLongPressProgressFill();
             case INPUT_BG: return inputBg();
             case INPUT_BG_ERROR: return inputBgError();
             case INPUT_TEXT: return inputText();
+            case INPUT_TEXT_UNEDITABLE: return inputTextUneditable();
+            case INPUT_HINT: return inputHint();
+            case INPUT_CURSOR: return inputCursor();
+            case INPUT_BORDER: return inputBorder();
+            case INPUT_BORDER_FOCUSED: return inputBorderFocused();
+            case INPUT_BORDER_DISABLED: return inputBorderDisabled();
             case POPUP_BG: return popupBg();
             case POPUP_BORDER: return popupBorder();
             case POPUP_ITEM_TEXT: return popupItemText();
             case POPUP_ITEM_TEXT_SELECTED: return popupItemTextSelected();
             case POPUP_ITEM_HOVER: return popupItemHover();
             case POPUP_ITEM_SELECTED: return popupItemSelected();
+            case POPUP_ITEM_SELECTED_BORDER: return popupItemSelectedBorder();
             case SCROLLBAR_BG: return scrollbarBg();
             case SCROLLBAR_THUMB: return scrollbarThumb();
             case SCROLLBAR_THUMB_HOVER: return scrollbarThumbHover();
@@ -517,6 +540,13 @@ public final class BaniraColorConfig {
             case CURSOR_DARK_PRESSED: return cursorDarkPressed();
             default: return textPrimary();
         }
+    }
+
+    /**
+     * 为组件字段默认值提供语义取色，避免组件直接依赖具体主题字段。
+     */
+    public static int colorForSeason(@Nullable EnumSeason season, @Nonnull BaniraColorToken token) {
+        return forSeason(season).color(token);
     }
 
     // region 通知条（按语义类型，由客户端根据当前主题计算）

@@ -29,6 +29,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 弹出层选项框。支持链式调用，默认 FINE 模式绘制。
  * 推荐用法：
@@ -436,11 +438,11 @@ public class PopupOption extends BaseWidget {
         selectedIndex = findHoveredIndex(inputState.mouseX(), inputState.mouseY());
 
         BaniraColorConfig theme = screen.getEffectiveTheme();
-        int popupBg = theme.popupBg();
-        int popupBorder = theme.popupBorder();
-        int popupItemHover = theme.popupItemHover();
-        int textColorUnselected = theme.popupItemText();
-        int textColorSelected = theme.popupItemTextSelected();
+        int popupBg = theme.color(POPUP_BG);
+        int popupBorder = theme.color(POPUP_BORDER);
+        int popupItemHover = theme.color(POPUP_ITEM_HOVER);
+        int textColorUnselected = theme.color(POPUP_ITEM_TEXT);
+        int textColorSelected = theme.color(POPUP_ITEM_TEXT_SELECTED);
 
         AbstractGuiUtils.renderByDepth(stack, renderDepth(), s -> {
             ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, adjustedX, adjustedY, width, height, popupBg);

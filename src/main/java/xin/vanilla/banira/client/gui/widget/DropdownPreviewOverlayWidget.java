@@ -16,6 +16,8 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 
 class DropdownPreviewOverlayWidget extends BaseWidget {
 
@@ -61,13 +63,13 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();
-        int popupBg = theme.popupBg();
-        int popupBorder = theme.popupBorder();
-        int popupSelected = theme.popupItemSelected();
-        int textColor = theme.listItemText();
-        int scrollbarBg = theme.scrollbarBg();
-        int scrollbarThumb = theme.scrollbarThumb();
-        int scrollbarThumbHover = theme.scrollbarThumbHover();
+        int popupBg = theme.color(POPUP_BG);
+        int popupBorder = theme.color(POPUP_BORDER);
+        int popupSelected = theme.color(POPUP_ITEM_SELECTED);
+        int textColor = theme.color(LIST_ITEM_TEXT);
+        int scrollbarBg = theme.color(SCROLLBAR_BG);
+        int scrollbarThumb = theme.color(SCROLLBAR_THUMB);
+        int scrollbarThumbHover = theme.color(SCROLLBAR_THUMB_HOVER);
 
         double mouseX = scr.inputState().mouseX();
         double mouseY = scr.inputState().mouseY();

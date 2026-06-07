@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 下拉选择 Widget。拥有 InputWidget 的输入特性，支持：
  * <ul>
@@ -794,9 +796,9 @@ public class DropdownSelectWidget extends InputWidget {
 
         Font font = Minecraft.getInstance().font;
         BaniraColorConfig theme = screen.getEffectiveTheme();
-        int tagBg = theme.popupItemSelected();
-        int tagBorder = theme.popupItemSelectedBorder();
-        int textColor = theme.listItemText();
+        int tagBg = theme.color(POPUP_ITEM_SELECTED);
+        int tagBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
+        int textColor = theme.color(LIST_ITEM_TEXT);
 
         int tagY = drawY + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;

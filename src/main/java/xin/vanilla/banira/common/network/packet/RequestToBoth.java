@@ -3,12 +3,8 @@ package xin.vanilla.banira.common.network.packet;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.common.network.BaniraNetworkContext;
-import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.network.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
@@ -18,9 +14,9 @@ import java.util.function.BiConsumer;
 @Accessors(fluent = true)
 public class RequestToBoth implements NetworkPacket {
     /**
-     * 请求类型ID到处理器的映射
+     * 请求类型ID到处理器的注册表。
      */
-    private static final Map<Integer, BiConsumer<RequestToBoth, ServerPlayer>> handlers = new HashMap<>();
+    private static final RequestPacketHandlers HANDLERS = new RequestPacketHandlers();
 
     /**
      * 请求包的类型ID
@@ -48,8 +44,15 @@ public class RequestToBoth implements NetworkPacket {
      * @param requestType 请求类型ID
      * @param handler     处理器
      */
-    public static void registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayer> handler) {
-        handlers.put(requestType, handler);
+    public static RequestHandlerRegistration registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayer> handler) {
+        return HANDLERS.register(requestType, handler);
+    }
+
+    /**
+     * 注销指定请求类型的当前处理器。
+     */
+    public static boolean unregisterHandler(int requestType) {
+        return HANDLERS.unregister(requestType);
     }
 
     /**
@@ -62,14 +65,10 @@ public class RequestToBoth implements NetworkPacket {
         ctx.enqueueWork(() -> {
             if (ctx.isServerSide()) {
                 ServerPlayer player = ctx.sender();
-                if (player != null) {
-                    BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.requestType());
-                    if (handler != null) {
-                        handler.accept(packet, player);
-                    }
-                }
+                HANDLERS.dispatch(packet, player);
             }
         });
         ctx.markHandled();
     }
+
 }

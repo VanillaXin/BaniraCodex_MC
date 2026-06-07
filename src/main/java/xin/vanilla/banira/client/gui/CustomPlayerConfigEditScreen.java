@@ -29,6 +29,8 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
+
 /**
  * 编辑 CustomConfig 中当前玩家的配置
  */
@@ -200,7 +202,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     @Override
     protected void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), 0xFF);
         AbstractGuiUtils.drawRoundedRect(stack, CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
                 CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
         super.renderWidgets(stack, partialTicks);

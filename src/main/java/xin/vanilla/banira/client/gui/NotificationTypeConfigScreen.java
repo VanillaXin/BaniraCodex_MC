@@ -29,6 +29,8 @@ import xin.vanilla.banira.common.util.Translator;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
+
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
  */
@@ -451,7 +453,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;

@@ -36,6 +36,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
@@ -377,11 +379,11 @@ public class NotificationLogScreen extends BaniraScreen {
     public void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
 
-        ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
+        ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.color(PANEL_BG));
         leftBg.rect().radius(8, 0, 8, 0).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(leftBg);
 
-        ShapeDrawArgs rightBg = ShapeDrawArgs.rect(stack, rightX, rightY, rightW, rightH, theme.panelBg());
+        ShapeDrawArgs rightBg = ShapeDrawArgs.rect(stack, rightX, rightY, rightW, rightH, theme.color(PANEL_BG));
         rightBg.rect().radius(0, 8, 0, 8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(rightBg);
 
@@ -423,16 +425,16 @@ public class NotificationLogScreen extends BaniraScreen {
     private void renderListRow(PoseStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
         boolean selected = index == selectedIndex;
         boolean hovered = index == listHoverIndex && !selected;
-        int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x40)
-                : hovered ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x18)
-                : "network".equals(entry.source()) ? ColorUtils.applyAlphaToArgb(theme.bgTertiary(), 0x30)
-                : ColorUtils.applyAlphaToArgb(theme.bgSecondary(), 0x20);
+        int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.color(ACCENT), 0x40)
+                : hovered ? ColorUtils.applyAlphaToArgb(theme.color(ACCENT), 0x18)
+                : "network".equals(entry.source()) ? ColorUtils.applyAlphaToArgb(theme.color(BG_TERTIARY), 0x30)
+                : ColorUtils.applyAlphaToArgb(theme.color(BG_SECONDARY), 0x20);
         ShapeDrawArgs rowRect = ShapeDrawArgs.rect(stack, x, y, w, h, rowBg);
         rowRect.rect().radius(4);
         BaseShapeWidget.drawShape(rowRect);
 
         int accentW = 3;
-        int accentColor = "network".equals(entry.source()) ? theme.accent() : theme.bgTertiary();
+        int accentColor = "network".equals(entry.source()) ? theme.color(ACCENT) : theme.color(BG_TERTIARY);
         ShapeDrawArgs accentRect = ShapeDrawArgs.rect(stack, x, y, accentW, h, accentColor);
         BaseShapeWidget.drawShape(accentRect);
 
@@ -443,7 +445,7 @@ public class NotificationLogScreen extends BaniraScreen {
             contentStr = "-";
         }
 
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(selected ? theme.textPrimary() : theme.textSecondary()).stack(stack).font(font))
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(selected ? theme.color(TEXT_PRIMARY) : theme.color(TEXT_SECONDARY)).stack(stack).font(font))
                 .x(textX).y(y + (h - 9) / 2).fontSize(9).maxWidth(textW)
                 .position(EnumEllipsisPosition.END).wrap(false)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
@@ -472,7 +474,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int curY = y;
 
-        FontDrawArgs timeArgs = FontDrawArgs.ofPopo(Text.literal(timeStr).color(theme.textHint()).stack(stack).font(font))
+        FontDrawArgs timeArgs = FontDrawArgs.ofPopo(Text.literal(timeStr).color(theme.color(TEXT_HINT)).stack(stack).font(font))
                 .x(x).y(curY).fontSize(10).maxWidth(w).wrap(true)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
         KeyValue<Integer, Integer> timeBlock = LabelWidget.calculateLimitedTextSize(timeArgs);
@@ -489,7 +491,7 @@ public class NotificationLogScreen extends BaniraScreen {
             detailContentTop = curY;
             detailContentMaxLineW = w;
             float lineY = curY;
-            int textColor = theme.textPrimary();
+            int textColor = theme.color(TEXT_PRIMARY);
             for (FormattedCharSequence line : detailContentLines) {
                 font.draw(stack, line, x, lineY, textColor);
                 lineY += font.lineHeight;
@@ -579,11 +581,11 @@ public class NotificationLogScreen extends BaniraScreen {
                                 String label1, String value1, String label2, String value2) {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
-        FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.textSecondary()).stack(stack).font(font))
+        FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.color(TEXT_SECONDARY)).stack(stack).font(font))
                 .x(x).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.textSecondary()).stack(stack).font(font))
+        FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.color(TEXT_SECONDARY)).stack(stack).font(font))
                 .x(x + colW + META_COL_GAP).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);

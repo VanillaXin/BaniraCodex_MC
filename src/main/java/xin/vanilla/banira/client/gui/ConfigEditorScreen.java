@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
+
 /**
  * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
  * <ul>
@@ -982,7 +984,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;

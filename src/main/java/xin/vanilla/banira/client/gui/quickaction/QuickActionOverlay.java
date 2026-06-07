@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
+
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
  */
@@ -683,8 +685,8 @@ public final class QuickActionOverlay {
 
         RenderSystem.enableBlend();
 
-        int borderRgb = theme.border() | 0xFF000000;
-        int accentRgb = theme.accentHover();
+        int borderRgb = theme.color(BORDER) | 0xFF000000;
+        int accentRgb = theme.color(ACCENT_HOVER);
         int iconSize = Math.max(8, cell - 2 * ICON_CELL_INSET);
         int iconOff = (cell - iconSize) / 2;
 
@@ -728,7 +730,7 @@ public final class QuickActionOverlay {
             if (layout.layoutEditMode() && s == hoveredSlot && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
             } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
-                int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
+                int hi = (theme.color(ACCENT_HOVER) & 0xFFFFFF) | 0x44000000;
                 AbstractGuiUtils.fill(stack, xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi);
             }
         }
@@ -1373,8 +1375,8 @@ public final class QuickActionOverlay {
         int y = ctxLayoutY;
         int w = ctxLayoutW;
         int h = ctxLayoutH;
-        int bg = theme.bgSurface() | 0xFF000000;
-        int borderArgb = theme.border() | 0xFF000000;
+        int bg = theme.color(BG_SURFACE) | 0xFF000000;
+        int borderArgb = theme.color(BORDER) | 0xFF000000;
         ShapeDrawArgs menuFill = ShapeDrawArgs.rect(stack, x, y, w, h, bg);
         menuFill.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(menuFill);
@@ -1386,17 +1388,17 @@ public final class QuickActionOverlay {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int textColor = theme.textPrimary() | 0xFF000000;
+        int textColor = theme.color(TEXT_PRIMARY) | 0xFF000000;
         int innerTop = ctxInnerTop;
         int innerBottom = innerTop + ctxInnerH;
 
         if (ctxNeedsScrollbar) {
             int sbX = ctxScrollbarLeft;
-            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000);
+            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.color(BORDER) & 0xFFFFFF) | 0x99000000);
             int contentH = rows.size() * MENU_ROW_H;
             int thumbH = Math.max(10, ctxInnerH * ctxInnerH / Math.max(1, contentH));
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
-            int accent = theme.accentHover() | 0xFF000000;
+            int accent = theme.color(ACCENT_HOVER) | 0xFF000000;
             AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
@@ -1414,7 +1416,7 @@ public final class QuickActionOverlay {
                 int rowBot = Math.min(ry + rh, innerBottom);
                 int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
                 AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
-                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                        (theme.color(ACCENT_HOVER) & 0xFFFFFF) | 0x66000000);
             }
             CtxRow row = rows.get(i);
             String full = row.text;

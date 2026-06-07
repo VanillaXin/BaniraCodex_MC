@@ -2,8 +2,11 @@ package xin.vanilla.banira.client.data;
 
 /**
  * 主题颜色语义 token，供组件按用途取色而不是直接依赖具体字段名。
+ * <p>
+ * 组件和页面绘制应优先使用 token；具体字段/派生方法只作为主题内部计算入口。
  */
 public enum BaniraColorToken {
+    // 基础语义
     ACCENT,
     ACCENT_HOVER,
     ACCENT_FOCUSED,
@@ -22,6 +25,8 @@ public enum BaniraColorToken {
     BORDER_HOVER,
     BORDER_FOCUSED,
     BORDER_DISABLED,
+
+    // 状态语义
     STATUS_ERROR,
     STATUS_WARNING,
     STATUS_SUCCESS,
@@ -38,6 +43,8 @@ public enum BaniraColorToken {
     STATUS_INFO_BG,
     STATUS_INFO_BORDER,
     STATUS_INFO_TEXT,
+
+    // 组件语义
     PANEL_BG,
     LIST_ITEM_TEXT,
     BUTTON_BG,

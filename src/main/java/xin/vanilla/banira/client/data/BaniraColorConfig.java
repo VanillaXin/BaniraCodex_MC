@@ -440,7 +440,7 @@ public final class BaniraColorConfig {
     // endregion
 
     /**
-     * 按语义 token 获取颜色，便于通用组件避免直接绑定具体字段。
+     * 按语义 token 获取颜色。组件和页面绘制应走这里，避免绑定具体字段或派生方法。
      */
     public int color(@Nonnull BaniraColorToken token) {
         switch (token) {
@@ -538,7 +538,7 @@ public final class BaniraColorConfig {
             case CURSOR_DARK_MAIN: return cursorDarkMain();
             case CURSOR_DARK_SUB: return cursorDarkSub();
             case CURSOR_DARK_PRESSED: return cursorDarkPressed();
-            default: return textPrimary();
+            default: throw new IllegalArgumentException("Unsupported Banira color token: " + token);
         }
     }
 

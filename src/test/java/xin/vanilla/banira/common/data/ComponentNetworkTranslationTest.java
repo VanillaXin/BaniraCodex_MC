@@ -5,9 +5,8 @@ import org.junit.Test;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.platform.*;
-
-import java.nio.file.Path;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -15,7 +14,8 @@ import static org.junit.Assert.assertFalse;
 public class ComponentNetworkTranslationTest {
 
     static {
-        BaniraPlatforms.install(new TranslationTestPlatform());
+        BaniraPlatforms.install(new TestBaniraPlatform()
+                .mod(BaniraCodex.MODID, BaniraCodex.class));
     }
 
     @Test
@@ -55,77 +55,5 @@ public class ComponentNetworkTranslationTest {
                 .transClientAuto("config_editor_save_success")
                 .getString("zh_cn", true, true);
         assertFalse(clientText.contains("config_editor_save_success"));
-    }
-
-    private static final class TranslationTestPlatform implements BaniraPlatform {
-        @Override
-        public String loaderType() {
-            return "test";
-        }
-
-        @Override
-        public String minecraftVersion() {
-            return "0.0";
-        }
-
-        @Override
-        public boolean isClient() {
-            return false;
-        }
-
-        @Override
-        public boolean isDedicatedServer() {
-            return true;
-        }
-
-        @Override
-        public boolean isDevelopment() {
-            return true;
-        }
-
-        @Override
-        public boolean isModLoaded(String modId) {
-            return BaniraCodex.MODID.equals(modId);
-        }
-
-        @Override
-        public String modDisplayName(String modId) {
-            return modId;
-        }
-
-        @Override
-        public String modIdFromMainClass(Class<?> modMainClass) {
-            return modMainClass == BaniraCodex.class ? BaniraCodex.MODID : "test";
-        }
-
-        @Override
-        public Class<?> modMainClass(String modId) {
-            return BaniraCodex.MODID.equals(modId) ? BaniraCodex.class : TranslationTestPlatform.class;
-        }
-
-        @Override
-        public Path configDir() {
-            return Path.of("config");
-        }
-
-        @Override
-        public BaniraConfigService configService() {
-            return null;
-        }
-
-        @Override
-        public BaniraNetworkService networkService() {
-            return null;
-        }
-
-        @Override
-        public BaniraInputService inputService() {
-            return null;
-        }
-
-        @Override
-        public BaniraRenderService renderService() {
-            return null;
-        }
     }
 }

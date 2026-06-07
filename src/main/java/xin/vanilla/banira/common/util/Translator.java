@@ -25,11 +25,15 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
@@ -66,12 +70,15 @@ public class Translator implements ITranslator {
      */
     private final Set<String> languages = new HashSet<>();
 
+    private final Class<?> modMainClass;
+
     private final String modId;
 
     /**
      * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
      */
     protected Translator(@NonNull Class<?> modMainClass) {
+        this.modMainClass = modMainClass;
         this.modId = modIdFromModMainClass(modMainClass);
         getI18nFiles();
     }
@@ -240,8 +247,36 @@ public class Translator implements ITranslator {
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
+            loadFromClasspath();
         }
         return new ArrayList<>(languages);
+    }
+
+    private void loadFromClasspath() {
+        try {
+            URL url = modMainClass.getResource(getLangPath());
+            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
+                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+                return;
+            }
+            try (Stream<Path> files = Files.list(Path.of(url.toURI()))) {
+                files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
+                        .forEach(this::loadKnownClasspathLanguage);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+            loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+        }
+    }
+
+    private void loadKnownClasspathLanguage(String languageCode) {
+        String normalized = normalizeLanguageCode(languageCode);
+        if (StringUtils.isNullOrEmptyEx(normalized)) {
+            return;
+        }
+        loadModLanguage(modMainClass, modId, normalized);
+        languages.add(normalized);
     }
 
     private void loadFromResourceManager() {
@@ -343,7 +378,16 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (EnvironmentUtils.isClient()) {
-            return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().getCode());
+            try {
+                net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+                if (minecraft != null
+                        && minecraft.getLanguageManager() != null
+                        && minecraft.getLanguageManager().getSelected() != null) {
+                    return normalizeLanguageCode(minecraft.getLanguageManager().getSelected().getCode());
+                }
+            } catch (Throwable ignored) {
+                // 测试环境或客户端早期启动时语言管理器可能尚未就绪。
+            }
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }

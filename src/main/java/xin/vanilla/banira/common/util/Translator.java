@@ -376,7 +376,7 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (EnvironmentUtils.isClient()) {
+        if (BaniraPlatforms.isInstalled() && EnvironmentUtils.isClient()) {
             try {
                 net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
                 if (minecraft != null

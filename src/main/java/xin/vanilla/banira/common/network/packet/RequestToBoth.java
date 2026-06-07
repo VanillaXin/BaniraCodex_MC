@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -14,6 +15,7 @@ import java.util.function.BiConsumer;
  * 请求数据同步包
  */
 @Getter
+@Accessors(fluent = true)
 public class RequestToBoth implements NetworkPacket {
     /**
      * 请求类型ID到处理器的映射
@@ -61,7 +63,7 @@ public class RequestToBoth implements NetworkPacket {
             if (ctx.isServerSide()) {
                 ServerPlayer player = ctx.sender();
                 if (player != null) {
-                    BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
+                    BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.requestType());
                     if (handler != null) {
                         handler.accept(packet, player);
                     }

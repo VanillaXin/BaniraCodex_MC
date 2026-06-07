@@ -1,5 +1,7 @@
 package xin.vanilla.banira.common.network.packet;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumMoveType;
@@ -15,6 +17,8 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
  */
+@Getter
+@Accessors(fluent = true)
 public class CustomPlayerConfigSyncToServer implements NetworkPacket {
 
     private static final long NOTIFY_OK_MS = 3000L;

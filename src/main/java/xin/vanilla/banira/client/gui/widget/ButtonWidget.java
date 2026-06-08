@@ -105,14 +105,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * 长按判定完成瞬间的「崩裂」粒子存活时间（毫秒）
+     * 长按完成反馈最长显示时间（毫秒）。
      */
-    private static final int LONG_PRESS_BURST_DURATION_MS = 680;
+    private static final int LONG_PRESS_COMPLETION_DURATION_MS = 720;
 
-    private static final int BURST_KIND_COMPLETION_FLASH = 0;
-    private static final int BURST_KIND_COMPLETION_CHECK = 1;
+    private static final int COMPLETION_KIND_FLASH = 0;
+    private static final int COMPLETION_KIND_CHECK = 1;
 
-    private final List<LongPressBurstParticle> longPressBurstParticles = new ArrayList<>();
+    private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
 
     /**
      * 长按进度条模式，默认从左至右
@@ -603,8 +603,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        if (!longPressBurstParticles.isEmpty()) {
-            drawLongPressBurstParticles(stack, drawX, drawY, drawWidth, drawHeight);
+        if (!longPressCompletionEffects.isEmpty()) {
+            drawLongPressCompletionEffects(stack, drawX, drawY, drawWidth, drawHeight);
         }
 
         renderChildren(stack, partialTicks);
@@ -726,34 +726,34 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    // region 长按崩裂粒子
+    // region 长按完成反馈
 
-    private void tickLongPressBurstParticles() {
+    private void tickLongPressCompletionEffects() {
         long now = System.currentTimeMillis();
-        longPressBurstParticles.removeIf(p -> now - p.spawnTimeMs > p.lifetimeMs);
+        longPressCompletionEffects.removeIf(e -> now - e.spawnTimeMs > e.lifetimeMs);
     }
 
-    private void spawnLongPressBurst(int drawWidth, int drawHeight) {
-        longPressBurstParticles.clear();
+    private void spawnLongPressCompletionFeedback(int drawWidth, int drawHeight) {
+        longPressCompletionEffects.clear();
         if (drawWidth < 1 || drawHeight < 1) {
             return;
         }
         long now = System.currentTimeMillis();
-        LongPressParticlePalette colors = longPressParticlePalette();
-        longPressBurstParticles.add(new LongPressBurstParticle(0, 0, 0, 0, colors.wave, now,
-                drawWidth, drawHeight, 0f, BURST_KIND_COMPLETION_FLASH, 560));
+        LongPressCompletionPalette colors = longPressCompletionPalette();
+        longPressCompletionEffects.add(new LongPressCompletionEffect(colors.wave, now,
+                drawWidth, drawHeight, COMPLETION_KIND_FLASH, 560));
         float markSize = Math.max(8f, Math.min(18f, Math.min(drawWidth, drawHeight) * 0.62f));
-        longPressBurstParticles.add(new LongPressBurstParticle(0, 0, 0, 0, colors.sparkAccent, now,
-                markSize, markSize, 0f, BURST_KIND_COMPLETION_CHECK, 720));
+        longPressCompletionEffects.add(new LongPressCompletionEffect(colors.sparkAccent, now,
+                markSize, markSize, COMPLETION_KIND_CHECK, LONG_PRESS_COMPLETION_DURATION_MS));
     }
 
-    private LongPressParticlePalette longPressParticlePalette() {
+    private LongPressCompletionPalette longPressCompletionPalette() {
         int base = opaqueArgb(longPressProgressFillColor);
         int hover = opaqueArgb(hoverBgColor);
         int focus = opaqueArgb(focusedBorderColor != 0 ? focusedBorderColor : hoverBorderColor);
         int sparkAccent = brightenArgb(blendArgb(base, focus, 0.42f), 1.16f);
         int wave = brightenArgb(blendArgb(base, hover, 0.24f), 1.10f);
-        return new LongPressParticlePalette(sparkAccent, wave);
+        return new LongPressCompletionPalette(sparkAccent, wave);
     }
 
     private static int opaqueArgb(int argb) {
@@ -780,25 +780,25 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
-    private void drawLongPressBurstParticles(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
+    private void drawLongPressCompletionEffects(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
         if (drawWidth < 1 || drawHeight < 1) {
             return;
         }
         float cx = drawX + drawWidth * 0.5f;
         float cy = drawY + drawHeight * 0.5f;
         long now = System.currentTimeMillis();
-        for (LongPressBurstParticle p : longPressBurstParticles) {
-            float elapsedMs = now - p.spawnTimeMs;
-            if (elapsedMs <= 0f || elapsedMs >= p.lifetimeMs) {
+        for (LongPressCompletionEffect e : longPressCompletionEffects) {
+            float elapsedMs = now - e.spawnTimeMs;
+            if (elapsedMs <= 0f || elapsedMs >= e.lifetimeMs) {
                 continue;
             }
-            float age = elapsedMs / p.lifetimeMs;
-            if (p.kind == BURST_KIND_COMPLETION_FLASH) {
-                drawLongPressCompletionFlash(stack, cx, cy, p, elapsedMs, age);
+            float age = elapsedMs / e.lifetimeMs;
+            if (e.kind == COMPLETION_KIND_FLASH) {
+                drawLongPressCompletionFlash(stack, cx, cy, e, elapsedMs, age);
                 continue;
             }
-            if (p.kind == BURST_KIND_COMPLETION_CHECK) {
-                drawLongPressCompletionCheck(stack, cx, cy, p, age);
+            if (e.kind == COMPLETION_KIND_CHECK) {
+                drawLongPressCompletionCheck(stack, cx, cy, e, age);
                 continue;
             }
         }
@@ -807,15 +807,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 长按完成反馈主体：全按钮短暂亮起，再有一条轻扫光掠过。
      */
-    private void drawLongPressCompletionFlash(PoseStack stack, float cx, float cy, LongPressBurstParticle p, float elapsedMs, float age) {
-        int w = Math.max(1, Math.round(p.drawW));
-        int h = Math.max(1, Math.round(p.drawH));
+    private void drawLongPressCompletionFlash(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float elapsedMs, float age) {
+        int w = Math.max(1, Math.round(e.drawW));
+        int h = Math.max(1, Math.round(e.drawH));
         int x = Math.round(cx - w * 0.5f);
         int y = Math.round(cy - h * 0.5f);
         float fade = 1f - age;
         int washAlpha = (int) (72f * fade * fade);
         if (washAlpha > 5) {
-            ShapeDrawArgs wash = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(p.baseColor, washAlpha));
+            ShapeDrawArgs wash = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, washAlpha));
             applyButtonRectCorners(wash);
             BaseShapeWidget.drawShape(wash);
         }
@@ -826,14 +826,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             int sweepW = Math.max(5, Math.round(w * 0.24f));
             int sx = x - sweepW + Math.round((w + sweepW * 2f) * sweepProgress);
             AbstractGuiUtils.pushScissor(x, y, w, h);
-            AbstractGuiUtils.fill(stack, sx, y, sweepW, h, withAlphaArgb(p.baseColor, sweepAlpha));
-            AbstractGuiUtils.fill(stack, sx + sweepW / 2, y, 1, h, withAlphaArgb(brightenArgb(p.baseColor, 1.18f), Math.min(255, sweepAlpha + 42)));
+            AbstractGuiUtils.fill(stack, sx, y, sweepW, h, withAlphaArgb(e.baseColor, sweepAlpha));
+            AbstractGuiUtils.fill(stack, sx + sweepW / 2, y, 1, h, withAlphaArgb(brightenArgb(e.baseColor, 1.18f), Math.min(255, sweepAlpha + 42)));
             AbstractGuiUtils.popScissor();
         }
 
         int borderAlpha = (int) (120f * fade);
         if (borderAlpha > 5) {
-            ShapeDrawArgs border = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(p.baseColor, borderAlpha));
+            ShapeDrawArgs border = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, borderAlpha));
             applyButtonRectCorners(border);
             border.rect().border(1.4f);
             BaseShapeWidget.drawShape(border);
@@ -843,7 +843,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 长按完成反馈标记：对勾比粒子和形状更明确地表示“完成”。
      */
-    private void drawLongPressCompletionCheck(PoseStack stack, float cx, float cy, LongPressBurstParticle p, float age) {
+    private void drawLongPressCompletionCheck(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float age) {
         float pop = age < 0.22f ? age / 0.22f : 1f;
         pop = 1f - (1f - pop) * (1f - pop);
         float fade = age < 0.76f ? 1f : Math.max(0f, (1f - age) / 0.24f);
@@ -851,7 +851,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         if (alpha < 8) {
             return;
         }
-        float size = p.drawW * (0.76f + 0.24f * pop);
+        float size = e.drawW * (0.76f + 0.24f * pop);
         float x1 = cx - size * 0.44f;
         float y1 = cy + size * 0.02f;
         float x2 = cx - size * 0.12f;
@@ -859,7 +859,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         float x3 = cx + size * 0.48f;
         float y3 = cy - size * 0.36f;
         int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
-        int color = withAlphaArgb(p.baseColor, alpha);
+        int color = withAlphaArgb(e.baseColor, alpha);
         AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
         AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
         AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
@@ -870,46 +870,35 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (argb & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
-    private static final class LongPressParticlePalette {
+    private static final class LongPressCompletionPalette {
         final int sparkAccent;
         final int wave;
 
-        LongPressParticlePalette(int sparkAccent, int wave) {
+        LongPressCompletionPalette(int sparkAccent, int wave) {
             this.sparkAccent = sparkAccent;
             this.wave = wave;
         }
     }
 
-    private static final class LongPressBurstParticle {
-        final float x0;
-        final float y0;
-        final float vx;
-        final float vy;
+    private static final class LongPressCompletionEffect {
         final int baseColor;
         final long spawnTimeMs;
         final float drawW;
         final float drawH;
-        final float gravityScale;
         final int kind;
         final int lifetimeMs;
 
-        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float drawW, float drawH,
-                               float gravityScale, int kind, int lifetimeMs) {
-            this.x0 = x0;
-            this.y0 = y0;
-            this.vx = vx;
-            this.vy = vy;
+        LongPressCompletionEffect(int baseColor, long spawnTimeMs, float drawW, float drawH, int kind, int lifetimeMs) {
             this.baseColor = baseColor;
             this.spawnTimeMs = spawnTimeMs;
             this.drawW = drawW;
             this.drawH = drawH;
-            this.gravityScale = gravityScale;
             this.kind = kind;
             this.lifetimeMs = lifetimeMs;
         }
     }
 
-    // endregion 长按崩裂粒子
+    // endregion 长按完成反馈
 
     /**
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
@@ -992,18 +981,18 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void update() {
         super.update();
-        boolean hasBurstParticles = !longPressBurstParticles.isEmpty();
+        boolean hasCompletionEffects = !longPressCompletionEffects.isEmpty();
         if (!visible || !enabled) {
-            if (hasBurstParticles) {
-                longPressBurstParticles.clear();
+            if (hasCompletionEffects) {
+                longPressCompletionEffects.clear();
             }
             return;
         }
-        if (longPressHandler == null && !hasBurstParticles) {
+        if (longPressHandler == null && !hasCompletionEffects) {
             return;
         }
-        if (hasBurstParticles) {
-            tickLongPressBurstParticles();
+        if (hasCompletionEffects) {
+            tickLongPressCompletionEffects();
         }
         if (longPressHandler == null) {
             return;
@@ -1012,7 +1001,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             if (System.currentTimeMillis() - mousePressStartMillis() >= longPressDurationMs) {
                 int dw = (int) width() - marginLeft - marginRight;
                 int dh = (int) height() - marginTop - marginBottom;
-                spawnLongPressBurst(Math.max(1, dw), Math.max(1, dh));
+                spawnLongPressCompletionFeedback(Math.max(1, dw), Math.max(1, dh));
                 longPressHandlerFired = true;
                 longPressHandler.accept(this);
                 LOGGER.debug("Button long-pressed: id={}", id);
@@ -1026,7 +1015,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         if (event != null && event.button() == 0 && enabled) {
             if (longPressHandler != null) {
                 longPressHandlerFired = false;
-                longPressBurstParticles.clear();
+                longPressCompletionEffects.clear();
             }
             result = true;
         }

@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
@@ -822,7 +821,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             NotificationManager.get().addNotification(n);
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
@@ -861,7 +860,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.canSyncToServer()) {
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);

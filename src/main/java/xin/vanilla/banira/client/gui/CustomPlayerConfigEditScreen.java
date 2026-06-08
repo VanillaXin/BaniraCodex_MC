@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
@@ -23,6 +22,7 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
@@ -96,7 +96,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         Translator tr = (Translator) Translator.of(BaniraCodex.MODID);
         languageOptions.addAll(tr.getI18nFiles());
 
-        var player = Minecraft.getInstance().player;
+        var player = BaniraClientRuntime.localPlayer();
         String uuid = player != null ? PlayerUtils.getPlayerUUIDString(player) : "";
 
         LabelWidget langLabel = new LabelWidget(this);
@@ -162,13 +162,13 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
         }
-        var player = Minecraft.getInstance().player;
+        var player = BaniraClientRuntime.localPlayer();
         if (player == null) {
             return;
         }

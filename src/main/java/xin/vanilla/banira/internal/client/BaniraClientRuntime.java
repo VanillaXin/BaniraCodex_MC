@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.network.chat.ChatType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
@@ -50,6 +51,18 @@ public final class BaniraClientRuntime {
     public static String serverIp() {
         ServerData server = Minecraft.getInstance().getCurrentServer();
         return server != null ? server.ip : "";
+    }
+
+    public static boolean hasConnection() {
+        return Minecraft.getInstance().getConnection() != null;
+    }
+
+    public static boolean chatLinksEnabled() {
+        return Minecraft.getInstance().options.chatLinks;
+    }
+
+    public static void showGameInfo(@Nonnull net.minecraft.network.chat.Component message, @Nonnull UUID sender) {
+        Minecraft.getInstance().gui.handleChat(ChatType.GAME_INFO, message, sender);
     }
 
     @Nullable

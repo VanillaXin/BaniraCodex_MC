@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -221,11 +220,7 @@ public class Notification extends NotificationData {
 
     private void updateRichLayout() {
         Font font = AbstractGuiUtils.getFont();
-        Minecraft mc = Minecraft.getInstance();
-        int sw = 320;
-        if (mc != null && mc.getWindow() != null) {
-            sw = mc.getWindow().getGuiScaledWidth();
-        }
+        int sw = AbstractGuiUtils.getGuiScaledSize().key();
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
@@ -479,7 +474,7 @@ public class Notification extends NotificationData {
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
 
-                Font font = Minecraft.getInstance().font;
+                Font font = AbstractGuiUtils.getFont();
                 float pad = (float) this.padding();
                 float lineH = font.lineHeight;
                 float textBlockH = this.richDrawLines.size() * lineH;
@@ -552,7 +547,7 @@ public class Notification extends NotificationData {
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         double rx = guiMouseX - this.bodyLeft;
         double ry = guiMouseY - this.bodyTextTop;
         if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {

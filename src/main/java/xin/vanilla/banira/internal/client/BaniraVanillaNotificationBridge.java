@@ -1,10 +1,8 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.entity.player.Player;
 
@@ -19,7 +17,7 @@ public final class BaniraVanillaNotificationBridge {
     }
 
     public static boolean sendChat(@Nonnull net.minecraft.network.chat.Component message) {
-        Player player = Minecraft.getInstance().player;
+        Player player = BaniraClientRuntime.localPlayer();
         if (player == null) {
             return false;
         }
@@ -28,18 +26,18 @@ public final class BaniraVanillaNotificationBridge {
     }
 
     public static void sendActionBar(@Nonnull String line) {
-        Minecraft mc = Minecraft.getInstance();
         net.minecraft.network.chat.Component barMsg = new TextComponent(line);
-        UUID sender = mc.player != null ? mc.player.getUUID() : Util.NIL_UUID;
-        BaniraClientRuntime.execute(() -> mc.gui.handleChat(ChatType.GAME_INFO, barMsg, sender));
+        LocalPlayer player = BaniraClientRuntime.localPlayer();
+        UUID sender = player != null ? player.getUUID() : Util.NIL_UUID;
+        BaniraClientRuntime.execute(() -> BaniraClientRuntime.showGameInfo(barMsg, sender));
     }
 
     public static boolean chatLinksEnabled() {
-        return Minecraft.getInstance().options.chatLinks;
+        return BaniraClientRuntime.chatLinksEnabled();
     }
 
     public static boolean runCommand(@Nonnull String command) {
-        LocalPlayer player = Minecraft.getInstance().player;
+        LocalPlayer player = BaniraClientRuntime.localPlayer();
         if (player == null) {
             return false;
         }

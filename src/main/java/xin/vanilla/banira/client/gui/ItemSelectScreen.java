@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -394,7 +393,7 @@ public class ItemSelectScreen extends BaniraScreen {
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
         this.itemList.clear();
-        LocalPlayer player = Minecraft.getInstance().player;
+        LocalPlayer player = BaniraClientRuntime.localPlayer();
         if (this.inventoryMode && player != null) {
             this.itemList.addAll(ItemUtils.searchPlayerItems(player, s));
         } else {

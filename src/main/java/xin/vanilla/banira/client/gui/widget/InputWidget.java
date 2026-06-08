@@ -4,9 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -372,7 +370,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);
@@ -380,7 +378,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     public InputWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);
@@ -753,12 +751,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (elapsed >= threshold) {
                 lastArrowKeyRepeatTime = currentTime;
                 arrowKeyRepeatTriggered = true;
-                this.shiftPressed = Screen.hasShiftDown();
+                this.shiftPressed = currentShiftPressed();
                 if (heldArrowKey == GLFWKey.GLFW_KEY_LEFT) {
-                    if (Screen.hasControlDown()) moveCursorToWordStart();
+                    if (currentControlPressed()) moveCursorToWordStart();
                     else moveCursor(-1);
                 } else if (heldArrowKey == GLFWKey.GLFW_KEY_RIGHT) {
-                    if (Screen.hasControlDown()) moveCursorToWordEnd();
+                    if (currentControlPressed()) moveCursorToWordEnd();
                     else moveCursor(1);
                 }
             }
@@ -834,7 +832,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
             String visibleText = visibleText(textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
-            this.shiftPressed = Screen.hasShiftDown();
+            this.shiftPressed = currentShiftPressed();
             moveCursorTo(textPos);
             if (!this.shiftPressed) this.highlightPos = textPos;
             return true;
@@ -861,41 +859,41 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         int keyCode = event.keyCode();
-        this.shiftPressed = Screen.hasShiftDown();
+        this.shiftPressed = shiftPressed(event);
 
-        if (Screen.isSelectAll(keyCode)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_A)) {
             moveCursorTo(value.length());
             this.highlightPos = 0;
             this.updateDisplayPos();
             return true;
         }
 
-        if (Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Z && !Screen.hasShiftDown()) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_Z) && !shiftPressed(event)) {
             undo();
             return true;
         }
 
-        if ((Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Y) ||
-                (Screen.hasControlDown() && Screen.hasShiftDown() && keyCode == GLFWKey.GLFW_KEY_Z)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_Y) ||
+                (shortcutPressed(event, GLFWKey.GLFW_KEY_Z) && shiftPressed(event))) {
             redo();
             return true;
         }
 
-        if (Screen.isCopy(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_C)) {
+            AbstractGuiUtils.setClipboard(getHighlighted());
             return true;
         }
 
-        if (Screen.isPaste(keyCode)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_V)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
+                insertText(AbstractGuiUtils.getClipboard());
             }
             return true;
         }
 
-        if (Screen.isCut(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_X)) {
+            AbstractGuiUtils.setClipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");
@@ -907,7 +905,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_LEFT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 moveCursorToWordStart();
             } else {
                 moveCursor(-1);
@@ -918,7 +916,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_RIGHT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 moveCursorToWordEnd();
             } else {
                 moveCursor(1);
@@ -935,7 +933,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 deleteWords(-1);
             } else {
                 deleteChars(-1);
@@ -943,7 +941,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
         if (keyCode == GLFWKey.GLFW_KEY_DELETE) {
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 deleteWords(1);
             } else {
                 deleteChars(1);
@@ -953,6 +951,26 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         this.updateDisplayPos();
         return false;
+    }
+
+    private boolean currentShiftPressed() {
+        return screen != null && screen.inputState().isShiftPressing();
+    }
+
+    private boolean currentControlPressed() {
+        return screen != null && screen.inputState().isCtrlPressing();
+    }
+
+    private static boolean shiftPressed(KeyEvent event) {
+        return event != null && GLFWKey.hasShiftModifier(event.modifiers());
+    }
+
+    private static boolean controlPressed(KeyEvent event) {
+        return event != null && GLFWKey.hasControlModifier(event.modifiers());
+    }
+
+    private static boolean shortcutPressed(KeyEvent event, int keyCode) {
+        return event != null && event.keyCode() == keyCode && controlPressed(event);
     }
 
     @Override

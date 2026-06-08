@@ -216,6 +216,13 @@ public class GLFWKey {
     }
 
     /**
+     * 判断统一键盘事件中的 Control 修饰位。
+     */
+    public static boolean hasControlModifier(int modifiers) {
+        return (modifiers & GLFW_MOD_CONTROL) != 0;
+    }
+
+    /**
      * Mouse buttons. See <a target="_blank" href="http://www.glfw.org/docs/latest/input.html#input_mouse_button">mouse button input</a> for how these are used.
      */
     public static final int

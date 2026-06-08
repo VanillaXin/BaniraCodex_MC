@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -690,7 +689,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private void copyRowToClipboard(int index) {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
-        Minecraft.getInstance().keyboardHandler.setClipboard(s);
+        AbstractGuiUtils.setClipboard(s);
         Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
         NotificationManager.get().addNotification(n);
     }
@@ -882,7 +881,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
 
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;

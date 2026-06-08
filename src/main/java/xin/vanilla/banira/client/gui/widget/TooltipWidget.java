@@ -5,9 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
@@ -18,6 +16,7 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
@@ -255,8 +254,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
      */
     public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
-        boolean advanced = Screen.hasShiftDown();
-        List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
+        boolean advanced = InputStateManager.isShiftPressingStatic();
+        List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, advanced);
         drawItemTooltipComponents(stack, tooltipList, x, y, season);
     }
 
@@ -287,7 +286,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             tooltipComponent = tooltipComponent.append(component);
         }
         Text tooltipText = new Text(tooltipComponent);
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font)).x(x).y(y);
         if (season != null) {
             drawPopupMessageWithSeasonTexture(stack, drawArgs, season);

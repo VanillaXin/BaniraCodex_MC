@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui.widget;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.screens.Screen;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.CharInputEvent;
@@ -106,7 +106,7 @@ public class NumericInputWidget extends InputWidget {
     protected boolean onMouseScroll(MouseScrollEvent event) {
         if (event == null || !canConsumeInput() || renderCoordinate == null) return false;
         double current = parseValue();
-        double step = Screen.hasShiftDown() ? this.step * 10 : this.step;
+        double step = GLFWKey.hasShiftModifier(event.modifiers()) ? this.step * 10 : this.step;
         double delta = event.delta() > 0 ? step : -step;
         double newVal = current + delta;
         if (minValue != null) newVal = Math.max(newVal, minValue);

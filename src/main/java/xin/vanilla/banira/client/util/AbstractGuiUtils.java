@@ -1928,6 +1928,20 @@ public final class AbstractGuiUtils {
         return Minecraft.getInstance().font;
     }
 
+    /**
+     * 统一剪贴板读取入口，后续高版本/加载器差异集中在这里处理。
+     */
+    public static String getClipboard() {
+        return Minecraft.getInstance().keyboardHandler.getClipboard();
+    }
+
+    /**
+     * 统一剪贴板写入入口。
+     */
+    public static void setClipboard(String text) {
+        Minecraft.getInstance().keyboardHandler.setClipboard(text == null ? "" : text);
+    }
+
     public static KeyValue<Integer, Integer> getScreenSize() {
         if (Minecraft.getInstance().screen != null) {
             return new KeyValue<>(Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);

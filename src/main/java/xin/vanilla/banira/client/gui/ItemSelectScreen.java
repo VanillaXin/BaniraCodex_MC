@@ -72,6 +72,7 @@ public class ItemSelectScreen extends BaniraScreen {
     private static final int ITEM_COLS = 9;
     private static final int ITEM_SPACING = 1;
     private final List<BaseWidget> itemWidgets = new ArrayList<>();
+    private final List<ItemCell> itemCells = new ArrayList<>();
     private BaseWidget selectedItemWidget;
     private InputWidget searchInputWidget;
     private ScrollbarWidget scrollbarWidget;
@@ -254,6 +255,7 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         itemWidgets.clear();
+        itemCells.clear();
         int expectedCount = ITEM_ROWS * ITEM_COLS;
         for (int i = 0; i < expectedCount; i++) {
             int row = i / ITEM_COLS;
@@ -282,6 +284,7 @@ public class ItemSelectScreen extends BaniraScreen {
             });
 
             itemWidgets.add(btn);
+            itemCells.add(new ItemCell(btn, itemWidget));
             addWidget(btn);
         }
 
@@ -411,7 +414,7 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     private void refreshButtons() {
-        if (itemWidgets.isEmpty()) {
+        if (itemCells.isEmpty()) {
             return;
         }
 
@@ -421,11 +424,11 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         boolean f = false;
-        for (int i = 0; i < itemWidgets.size(); i++) {
-            BaseWidget buttonWidget = itemWidgets.get(i);
+        for (int i = 0; i < itemCells.size(); i++) {
+            ItemCell cell = itemCells.get(i);
+            BaseWidget buttonWidget = cell.button;
             int index = scrollRow * ITEM_COLS + i;
-            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
-            if (iw == null) continue;
+            ItemWidget iw = cell.item;
             if (index >= 0 && index < itemList.size()) {
                 ItemStack itemStack = itemList.get(index);
                 String itemId = ItemUtils.serializeItemStack(itemStack);
@@ -466,6 +469,19 @@ public class ItemSelectScreen extends BaniraScreen {
         }
         if (this.itemButtonItemWidget != null && this.selectedItem != null) {
             this.itemButtonItemWidget.itemStack(this.selectedItem.copy());
+        }
+    }
+
+    /**
+     * 物品格子在 initWidgets 中固定，刷新时直接复用引用，避免滚动时遍历子树。
+     */
+    private static final class ItemCell {
+        private final BaseWidget button;
+        private final ItemWidget item;
+
+        private ItemCell(BaseWidget button, ItemWidget item) {
+            this.button = button;
+            this.item = item;
         }
     }
 
@@ -528,6 +544,8 @@ public class ItemSelectScreen extends BaniraScreen {
                         ItemStack itemStack = ItemUtils.deserializeItemStack(input.firstValue(), ItemUtils.serializeItemStackTag((this.selectedItem)));
                         itemStack.setCount(count);
                         this.selectedItem = itemStack.copy();
+                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
+                        refreshButtons();
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.COUNT.code()) {
@@ -547,9 +565,11 @@ public class ItemSelectScreen extends BaniraScreen {
                     )
                     .setCallback(input -> {
                         int count = NumberUtils.toInt(input.firstValue());
-                        ItemStack itemStack = (this.selectedItem);
+                        ItemStack itemStack = this.selectedItem.copy();
                         itemStack.setCount(count);
-                        this.selectedItem = itemStack.copy();
+                        this.selectedItem = itemStack;
+                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
+                        refreshButtons();
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.NBT.code()) {
@@ -576,6 +596,7 @@ public class ItemSelectScreen extends BaniraScreen {
                             itemStack.setCount(this.selectedItem.getCount());
                             this.selectedItem = itemStack;
                             this.selectedItemId = ItemUtils.serializeItemStack(itemStack);
+                            refreshButtons();
                         } catch (Exception e) {
                             input.runningResult(e);
                         }

@@ -30,10 +30,12 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
@@ -577,8 +579,7 @@ public final class QuickActionOverlay {
         if (!draggingTray) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        boolean left = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean left = isLeftMouseDown();
         if (!left) {
             draggingTray = false;
             leftDownOnPanel = false;
@@ -589,22 +590,22 @@ public final class QuickActionOverlay {
     }
 
     private double scaledCursorX() {
-        long win = mc().getWindow().getWindow();
+        long win = windowHandle();
         double[] cx = new double[1];
         double[] cy = new double[1];
         GLFW.glfwGetCursorPos(win, cx, cy);
-        int sw = mc().getWindow().getGuiScaledWidth();
-        int fw = Math.max(1, mc().getWindow().getWidth());
+        int sw = guiScreenSize().key();
+        int fw = Math.max(1, physicalScreenSize().key());
         return cx[0] * sw / fw;
     }
 
     private double scaledCursorY() {
-        long win = mc().getWindow().getWindow();
+        long win = windowHandle();
         double[] cx = new double[1];
         double[] cy = new double[1];
         GLFW.glfwGetCursorPos(win, cx, cy);
-        int sh = mc().getWindow().getGuiScaledHeight();
-        int fh = Math.max(1, mc().getWindow().getHeight());
+        int sh = guiScreenSize().val();
+        int fh = Math.max(1, physicalScreenSize().val());
         return cy[0] * sh / fh;
     }
 
@@ -612,8 +613,7 @@ public final class QuickActionOverlay {
         if (!editIconDragging) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!isLeftMouseDown()) {
             finishEditIconDrag(scaledCursorX(), scaledCursorY());
             leftDownOnPanel = false;
             pressStartedSlot = -1;
@@ -666,10 +666,11 @@ public final class QuickActionOverlay {
 
         contextTooltipLine = null;
 
-        Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        lastScreenW = mc.getWindow().getGuiScaledWidth();
-        lastScreenH = mc.getWindow().getGuiScaledHeight();
+        KeyValue<Integer, Integer> screenSize = guiScreenSize();
+        lastScreenW = screenSize.key();
+        lastScreenH = screenSize.val();
+        Minecraft mc = mc();
 
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
@@ -779,7 +780,7 @@ public final class QuickActionOverlay {
             screen.renderTooltip(stack, new TextComponent(contextTooltipLine), mouseX, mouseY);
         }
 
-        renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);
+        renderQuickActionEntryIconTooltipIfHovered(stack, mouseX, mouseY, theme);
     }
 
     /**
@@ -796,7 +797,7 @@ public final class QuickActionOverlay {
     /**
      * 悬停于带 label 的快捷图标时，使用主题 Tooltip 样式绘制说明。
      */
-    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, int mouseX, int mouseY, BaniraColorConfig theme) {
         if (contextOpen) {
             return;
         }
@@ -808,7 +809,7 @@ public final class QuickActionOverlay {
             return;
         }
         boolean useTexture = theme != null && theme.tooltipUseTexture();
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(mc.font))
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(AbstractGuiUtils.getFont()))
                 .x(mouseX)
                 .y(mouseY)
                 .popupUseTexture(useTexture);
@@ -847,8 +848,7 @@ public final class QuickActionOverlay {
         int trayYi = (int) Math.round(tlY);
 
         boolean inPanelGrid = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
-        long win = mc().getWindow().getWindow();
-        boolean leftDown = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean leftDown = isLeftMouseDown();
 
         if (layout.layoutEditMode() && editIconDragging && slotsTotal > 1) {
             if (inPanelGrid) {
@@ -883,8 +883,7 @@ public final class QuickActionOverlay {
         if (!contextScrollbarDragging || !contextOpen) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!isLeftMouseDown()) {
             contextScrollbarDragging = false;
             return;
         }
@@ -901,6 +900,22 @@ public final class QuickActionOverlay {
 
     private static Minecraft mc() {
         return Minecraft.getInstance();
+    }
+
+    private static long windowHandle() {
+        return BaniraClientRuntime.windowHandle();
+    }
+
+    private static boolean isLeftMouseDown() {
+        return GLFW.glfwGetMouseButton(windowHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+    }
+
+    private static KeyValue<Integer, Integer> guiScreenSize() {
+        return AbstractGuiUtils.getGuiScaledSize();
+    }
+
+    private static KeyValue<Integer, Integer> physicalScreenSize() {
+        return AbstractGuiUtils.getGuiSize();
     }
 
     public boolean handleMouseClicked(Screen screen, double mouseX, double mouseY, int button) {
@@ -941,7 +956,7 @@ public final class QuickActionOverlay {
 
         if (contextOpen && button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             List<CtxRow> menuRows = contextRows();
-            ensureContextMenuLayout(menuRows, mc());
+            ensureContextMenuLayout(menuRows, AbstractGuiUtils.getFont());
             boolean inMenu = mouseX >= ctxLayoutX && mouseY >= ctxLayoutY
                     && mouseX < ctxLayoutX + ctxLayoutW && mouseY < ctxLayoutY + ctxLayoutH;
             if (!inMenu) {
@@ -1375,7 +1390,7 @@ public final class QuickActionOverlay {
         return Math.max(0, innerW - MENU_TEXT_PAD_X * 2);
     }
 
-    private void layoutContextMenu(List<CtxRow> rows, Minecraft mc) {
+    private void layoutContextMenu(List<CtxRow> rows, Font font) {
         int n = rows.size();
         int contentH = Math.max(MENU_ROW_H, n * MENU_ROW_H);
         ctxNeedsScrollbar = contentH > MENU_MAX_BODY_H;
@@ -1383,7 +1398,7 @@ public final class QuickActionOverlay {
         int innerPad = 3;
         int maxTextInner = 0;
         for (CtxRow r : rows) {
-            int tw = mc.font.width(r.text);
+            int tw = font.width(r.text);
             int rowW = r.menuIcon != null
                     ? MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP + tw + MENU_TEXT_PAD_X
                     : MENU_TEXT_PAD_X + tw + MENU_TEXT_PAD_X;
@@ -1406,8 +1421,7 @@ public final class QuickActionOverlay {
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }
 
-    private void ensureContextMenuLayout(List<CtxRow> rows, Minecraft mc) {
-        Font font = mc.font;
+    private void ensureContextMenuLayout(List<CtxRow> rows, Font font) {
         if (!contextLayoutDirty
                 && cachedContextLayoutFont == font
                 && cachedContextLayoutScreenW == lastScreenW
@@ -1416,7 +1430,7 @@ public final class QuickActionOverlay {
                 && cachedContextLayoutY == contextY) {
             return;
         }
-        layoutContextMenu(rows, mc);
+        layoutContextMenu(rows, font);
         cachedContextLayoutFont = font;
         cachedContextLayoutScreenW = lastScreenW;
         cachedContextLayoutScreenH = lastScreenH;
@@ -1427,7 +1441,8 @@ public final class QuickActionOverlay {
 
     private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
         List<CtxRow> rows = contextRows();
-        ensureContextMenuLayout(rows, mc);
+        Font font = AbstractGuiUtils.getFont();
+        ensureContextMenuLayout(rows, font);
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1460,7 +1475,6 @@ public final class QuickActionOverlay {
             AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
-        Font font = mc.font;
         for (int i = 0; i < rows.size(); i++) {
             int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
             int rh = MENU_ROW_H;
@@ -1513,7 +1527,7 @@ public final class QuickActionOverlay {
         contextClickMouseY = mouseY;
 
         List<CtxRow> rows = contextRows();
-        ensureContextMenuLayout(rows, mc());
+        ensureContextMenuLayout(rows, AbstractGuiUtils.getFont());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1561,7 +1575,7 @@ public final class QuickActionOverlay {
         contextClickMouseY = mouseY;
 
         List<CtxRow> rows = contextRows();
-        ensureContextMenuLayout(rows, mc());
+        ensureContextMenuLayout(rows, AbstractGuiUtils.getFont());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;

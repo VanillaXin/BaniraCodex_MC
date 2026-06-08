@@ -55,6 +55,8 @@ public class DebugScreen extends BaniraScreen {
     private int fontSize = 9;
     private boolean warp = false;
 
+    private ButtonWidget longPressBtn;
+
 
     public DebugScreen() {
         super(BaniraComponent.get().empty().toVanilla());
@@ -122,7 +124,7 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
 
-        ButtonWidget longPressBtn = new ButtonWidget(this);
+        longPressBtn = new ButtonWidget(this);
         longPressBtn.id("test_config_editor");
         longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         longPressBtn.text("按钮长按测试");
@@ -355,25 +357,27 @@ public class DebugScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
-        if (inputState.isPressingLeftEx()) {
-            // 颜色绘制
-            TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                    .stack(stack)
-                                    .font(super.font)
-                                    .align(EnumAlignment.CENTER))
-                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
-                            .popupUseTexture(false),
-                    getEffectiveTheme(), season());
-        } else if (inputState.isPressingRightEx()) {
-            // 纹理绘制
-            TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                    .stack(stack)
-                                    .font(super.font)
-                                    .align(EnumAlignment.CENTER))
-                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
-                    season());
+        if (!longPressBtn.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
+            if (inputState.isPressingLeftEx()) {
+                // 颜色绘制
+                TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                        .stack(stack)
+                                        .font(super.font)
+                                        .align(EnumAlignment.CENTER))
+                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
+                                .popupUseTexture(false),
+                        getEffectiveTheme(), season());
+            } else if (inputState.isPressingRightEx()) {
+                // 纹理绘制
+                TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                        .stack(stack)
+                                        .font(super.font)
+                                        .align(EnumAlignment.CENTER))
+                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
+                        season());
+            }
         }
     }
 

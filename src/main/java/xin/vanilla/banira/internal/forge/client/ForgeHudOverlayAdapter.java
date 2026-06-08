@@ -5,7 +5,6 @@ import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.BaniraHudGeometry;
-import xin.vanilla.banira.internal.client.PlatformBaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 
@@ -48,7 +47,7 @@ public final class ForgeHudOverlayAdapter {
     private static BaniraHudRenderContext context(@Nonnull RenderGameOverlayEvent event) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraHudRenderContext(
-                new xin.vanilla.banira.api.client.render.BaniraDrawContext(new PlatformBaniraDrawHandle(event.getMatrixStack()), screen.key(), screen.val(), event.getPartialTicks()),
+                new xin.vanilla.banira.api.client.render.BaniraDrawContext(new ForgeBaniraDrawHandle(event.getMatrixStack()), screen.key(), screen.val(), event.getPartialTicks()),
                 screen.key(),
                 screen.val(),
                 event.getPartialTicks()

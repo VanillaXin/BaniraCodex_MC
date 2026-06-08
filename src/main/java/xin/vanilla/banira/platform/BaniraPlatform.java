@@ -49,9 +49,4 @@ public interface BaniraPlatform {
     @Nonnull
     BaniraInputService inputService();
 
-    /**
-     * 当前分支的基础绘制服务。
-     */
-    @Nonnull
-    BaniraRenderService renderService();
 }

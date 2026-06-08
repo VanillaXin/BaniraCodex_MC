@@ -132,9 +132,4 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     public @Nonnull BaniraInputService inputService() {
         return NoopInputService.INSTANCE;
     }
-
-    @Override
-    public @Nonnull BaniraRenderService renderService() {
-        return NoopRenderService.INSTANCE;
-    }
 }

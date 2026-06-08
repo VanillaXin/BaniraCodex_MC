@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.event;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +25,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.client.PlatformBaniraDrawHandle;
+import xin.vanilla.banira.internal.forge.client.ForgeBaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -147,7 +148,7 @@ public final class BaniraClientEventHub {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
-    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                       float partialTick, boolean screenOpen) {
         dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
     }
@@ -321,13 +322,13 @@ public final class BaniraClientEventHub {
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
 
-        public static void fireDrawScreenPreNative(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+        public static void fireDrawScreenPreNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                    double mouseX, double mouseY, float partialTick) {
             handleDrawScreenPre(screen, mouseX, mouseY);
             fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
         }
 
-        public static void fireDrawScreenPostNative(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+        public static void fireDrawScreenPostNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
             NotificationManager.get().renderNative(nativeGraphics);
             if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
@@ -337,7 +338,7 @@ public final class BaniraClientEventHub {
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
         }
 
-        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
                 NotificationManager.get().renderNative(nativeGraphics);
@@ -387,22 +388,22 @@ public final class BaniraClientEventHub {
         keyPressTracker.reset();
     }
 
-    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                          double mouseX, double mouseY, float partialTick) {
         return new BaniraDrawScreenEvent(drawContext(nativeGraphics, partialTick), screenInfo(screen), mouseX, mouseY, partialTick);
     }
 
-    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                         float partialTick, boolean screenOpen) {
         return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 
-    private static BaniraDrawContext drawContext(@Nonnull Object nativeGraphics, float partialTick) {
+    private static BaniraDrawContext drawContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
-        return new BaniraDrawContext(new PlatformBaniraDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
+        return new BaniraDrawContext(new ForgeBaniraDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
     }
 
-    private static BaniraHudRenderContext hudContext(@Nonnull Object nativeGraphics, float partialTick) {
+    private static BaniraHudRenderContext hudContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraHudRenderContext(drawContext(nativeGraphics, partialTick), screen.key(), screen.val(), partialTick);
     }

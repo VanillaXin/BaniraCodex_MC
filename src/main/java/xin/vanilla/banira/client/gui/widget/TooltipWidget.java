@@ -116,9 +116,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                     if (itemStack != null && !itemStack.isEmpty()) {
                         drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {
-                        List<net.minecraft.network.chat.Component> tip = new ArrayList<>();
-                        tip.add(textToDraw.toComponent().toChat());
-                        screen.renderComponentTooltip(s, tip, mouseX, mouseY);
+                        screen.renderComponentTooltip(s, vanillaTooltipLines(), mouseX, mouseY);
                     } else {
                         drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
                     }
@@ -132,10 +130,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 if (itemStack != null && !itemStack.isEmpty()) {
                     drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                 } else if (vanillaTooltip) {
-                    if (tooltip.isEmpty()) {
-                        tooltip.add(text.toComponent().toChat());
-                    }
-                    screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
+                    screen.renderComponentTooltip(stack, vanillaTooltipLines(), mouseX, mouseY);
                 } else {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     EnumSeason season = screen.season();
@@ -156,6 +151,16 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             default:
                 return theme != null && theme.tooltipUseTexture();
         }
+    }
+
+    /**
+     * 原版 tooltip 的 Component 转换较稳定，文本变化时由 text(...) 统一清空缓存。
+     */
+    private List<net.minecraft.network.chat.Component> vanillaTooltipLines() {
+        if (tooltip.isEmpty()) {
+            tooltip.add(text.toComponent().toChat());
+        }
+        return tooltip;
     }
 
     /**
@@ -252,6 +257,29 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
         boolean advanced = Screen.hasShiftDown();
         List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
+        drawItemTooltipComponents(stack, tooltipList, x, y, season);
+    }
+
+    /**
+     * 使用调用方已取得的原版 tooltip 行绘制 Banira 样式，避免同一帧重复解析物品提示。
+     */
+    public static void drawItemTooltipLines(PoseStack stack, List<net.minecraft.network.chat.Component> tooltipList,
+                                            double x, double y, @Nullable EnumSeason season) {
+        if (tooltipList == null || tooltipList.isEmpty()) {
+            return;
+        }
+        List<Component> converted = new ArrayList<>(tooltipList.size());
+        for (net.minecraft.network.chat.Component component : tooltipList) {
+            converted.add(BaniraComponent.get().object(component));
+        }
+        drawItemTooltipComponents(stack, converted, x, y, season);
+    }
+
+    private static void drawItemTooltipComponents(PoseStack stack, List<Component> tooltipList,
+                                                  double x, double y, @Nullable EnumSeason season) {
+        if (tooltipList == null || tooltipList.isEmpty()) {
+            return;
+        }
         Component tooltipComponent = BaniraComponent.get().empty();
         for (int idx = 0; idx < tooltipList.size(); idx++) {
             Component component = tooltipList.get(idx);

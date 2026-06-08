@@ -36,6 +36,8 @@ public class ItemWidget extends BaseWidget {
 
     @Getter
     private ItemStack itemStack;
+    private String cachedItemId;
+    private ItemStack cachedItemIdStack;
 
     @Getter
     @Setter
@@ -123,7 +125,11 @@ public class ItemWidget extends BaseWidget {
             return null;
         }
 
-        return ItemUtils.deserializeItemStack(itemId);
+        if (!itemId.equals(cachedItemId) || cachedItemIdStack == null) {
+            cachedItemId = itemId;
+            cachedItemIdStack = ItemUtils.deserializeItemStack(itemId);
+        }
+        return cachedItemIdStack.isEmpty() ? ItemStack.EMPTY : cachedItemIdStack.copy();
     }
 
     /**
@@ -142,7 +148,7 @@ public class ItemWidget extends BaseWidget {
                 screen.renderComponentTooltip(stack, tooltip, mouseX, mouseY);
             } else {
                 EnumSeason season = seasonTooltip && screen != null ? screen.season() : null;
-                TooltipWidget.drawItemTooltip(stack, itemStack, mouseX, mouseY, season);
+                TooltipWidget.drawItemTooltipLines(stack, tooltip, mouseX, mouseY, season);
             }
             stack.popPose();
         }
@@ -154,6 +160,8 @@ public class ItemWidget extends BaseWidget {
     public ItemWidget itemId(String itemId) {
         this.itemId = itemId;
         this.itemStack = null;
+        this.cachedItemId = null;
+        this.cachedItemIdStack = null;
         return this;
     }
 
@@ -163,6 +171,8 @@ public class ItemWidget extends BaseWidget {
     public ItemWidget itemStack(ItemStack itemStack) {
         this.itemStack = itemStack;
         this.itemId = null;
+        this.cachedItemId = null;
+        this.cachedItemIdStack = null;
         return this;
     }
 

@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
@@ -23,6 +22,7 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -350,7 +350,7 @@ public class InputFormScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            BaniraClientRuntime.setScreen(this.previousScreen());
             return;
         }
 
@@ -461,7 +461,7 @@ public class InputFormScreen extends BaniraScreen {
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(this.previousScreen()));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(this.previousScreen()));
         addWidget(cancelButtonWidget);
 
         for (int i = 0; i < args.getWidgets().size(); i++) {
@@ -798,7 +798,7 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.getTranslationClient(EnumI18nType.WORD, "cancel")))) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            BaniraClientRuntime.setScreen(this.previousScreen());
             return;
         }
 
@@ -830,7 +830,7 @@ public class InputFormScreen extends BaniraScreen {
             }
 
             if (StringUtils.isNullOrEmptyEx(results.runningResult())) {
-                Minecraft.getInstance().setScreen(this.previousScreen());
+                BaniraClientRuntime.setScreen(this.previousScreen());
             } else {
                 this.runningErrorText = Text.literal(results.runningResult()).color(Color.argb(0xFFFF0000));
             }
@@ -909,7 +909,7 @@ public class InputFormScreen extends BaniraScreen {
     @Override
     protected void onRender(PoseStack stack, float partialTicks) {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            BaniraClientRuntime.setScreen(this.previousScreen());
             return;
         }
 
@@ -993,7 +993,7 @@ public class InputFormScreen extends BaniraScreen {
     @Override
     protected void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            BaniraClientRuntime.setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
         super.onMouseClicked(eventArgs);
@@ -1028,7 +1028,7 @@ public class InputFormScreen extends BaniraScreen {
         }
         if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE
                 || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused()))) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            BaniraClientRuntime.setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
     }

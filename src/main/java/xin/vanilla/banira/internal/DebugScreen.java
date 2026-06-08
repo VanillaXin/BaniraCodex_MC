@@ -1,7 +1,6 @@
 package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -28,6 +27,7 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -440,11 +440,11 @@ public class DebugScreen extends BaniraScreen {
                                 .defaultValue("#FF0000")
                                 .hint(Text.transAuto(BaniraCodex.MODID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
-                Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
+                BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
                 break;
             case "opt_item":
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
-                Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
+                BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
             case "opt_advancement":
                 Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
@@ -452,7 +452,7 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultAdvancement(Identifier.id().empty())
                         .onDataReceived(onAdvSelect);
-                Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
+                BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
                 break;
             case "opt_effect":
                 Consumer<MobEffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
@@ -460,10 +460,10 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultEffect(new MobEffectInstance(MobEffects.LUCK, 600, 0))
                         .onDataReceived(onEffectSelect);
-                Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
+                BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
                 break;
             case "opt_notification_log":
-                Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
+                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
                 break;
             default:
                 break;
@@ -499,7 +499,7 @@ public class DebugScreen extends BaniraScreen {
         } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_N) {
             addNotificationTest(positionFromArrowKeys());
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
-            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
+            BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
                 LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));
             })));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
@@ -556,18 +556,18 @@ public class DebugScreen extends BaniraScreen {
                             .allowEmpty(true)
                     )
                     .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
-            Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
             args.parentScreen(this).defaultAdvancement(Identifier.id().empty());
             args.onDataReceived((Consumer<ResourceLocation>) rl -> LOGGER.debug("Selected advancement: {}", rl));
-            Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
+            BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
             EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                     .parentScreen(this)
                     .defaultEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.LUCK, 600, 0));
             effectArgs.onDataReceived((Consumer<net.minecraft.world.effect.MobEffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
-            Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
+            BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
         }
     }
 

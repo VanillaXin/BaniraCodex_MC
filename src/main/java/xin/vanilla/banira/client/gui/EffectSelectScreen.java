@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -31,6 +30,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -151,7 +151,7 @@ public class EffectSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
 
         this.updateSearchResults();
     }
@@ -262,7 +262,7 @@ public class EffectSelectScreen extends BaniraScreen {
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
@@ -271,18 +271,18 @@ public class EffectSelectScreen extends BaniraScreen {
         submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentEffect == null) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
+                BaniraClientRuntime.setScreen(args.parentScreen());
             } else {
                 MobEffectInstance effectInstance = EffectUtils.copyEffectInstance(this.currentEffect);
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(effectInstance);
                     LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    BaniraClientRuntime.setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(effectInstance);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        BaniraClientRuntime.setScreen(args.parentScreen());
                     }
                 }
             }
@@ -370,7 +370,7 @@ public class EffectSelectScreen extends BaniraScreen {
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -395,7 +395,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             eventArgs.consumed(true);
         } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
@@ -612,7 +612,7 @@ public class EffectSelectScreen extends BaniraScreen {
                             markEffectButtonsDirty();
                         }
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.DURATION.code()) {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
@@ -633,7 +633,7 @@ public class EffectSelectScreen extends BaniraScreen {
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
                         markEffectButtonsDirty();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
@@ -654,7 +654,7 @@ public class EffectSelectScreen extends BaniraScreen {
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
                         markEffectButtonsDirty();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

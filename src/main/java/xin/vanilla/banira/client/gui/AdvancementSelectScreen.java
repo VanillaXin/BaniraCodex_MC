@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -29,6 +28,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
 import javax.annotation.Nullable;
@@ -158,7 +158,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
 
         AdvancementUtils.ensureAdvancementData();
         this.wasLoading = AdvancementUtils.isLoading();
@@ -321,7 +321,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
@@ -330,18 +330,18 @@ public class AdvancementSelectScreen extends BaniraScreen {
         submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentAdvancement == null) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
+                BaniraClientRuntime.setScreen(args.parentScreen());
             } else {
                 ResourceLocation location = this.currentAdvancement;
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(location);
                     LOGGER.debug("Advancement selected: {}", location);
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    BaniraClientRuntime.setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(location);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Advancement selected: {}", location);
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        BaniraClientRuntime.setScreen(args.parentScreen());
                     } else {
                         LOGGER.debug("Advancement validation failed: {}", result);
                     }
@@ -399,7 +399,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -426,7 +426,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             eventArgs.consumed(true);
         } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
@@ -652,7 +652,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                             LOGGER.debug("Unexpected error parsing advancement id: {}", id, e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

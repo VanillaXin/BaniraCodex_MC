@@ -23,6 +23,7 @@ import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -105,7 +106,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
         if (EnvironmentUtils.isClient()) {
-            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
+            BaniraClientRuntime.setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
     }
 

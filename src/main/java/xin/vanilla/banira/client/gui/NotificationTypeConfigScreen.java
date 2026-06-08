@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
@@ -25,6 +24,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -441,7 +441,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     @Override
     public void onClose() {
         if (args.parentScreen() != null) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
         } else {
             super.onClose();
         }

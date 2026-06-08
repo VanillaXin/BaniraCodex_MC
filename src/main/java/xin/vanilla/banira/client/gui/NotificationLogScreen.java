@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -30,6 +29,7 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -307,7 +307,7 @@ public class NotificationLogScreen extends BaniraScreen {
         typeCfgBtn.id("type_cfg");
         typeCfgBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
         typeCfgBtn.bounds(new ScreenCoordinate(listX, leftY + leftH - PANEL_MARGIN - TYPE_CFG_BTN_H, Math.min(listW, 180), TYPE_CFG_BTN_H));
-        typeCfgBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(
+        typeCfgBtn.onClick(b -> BaniraClientRuntime.setScreen(new NotificationTypeConfigScreen(
                 new NotificationTypeConfigScreen.Args().parentScreen(this))));
         addWidget(typeCfgBtn);
 
@@ -321,11 +321,11 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().screen == null) {
+        if (event.phase == TickEvent.Phase.END && BaniraClientRuntime.currentScreen() == null) {
             if (BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new NotificationLogScreen(null));
+                BaniraClientRuntime.setScreen(new NotificationLogScreen(null));
             } else if (BaniraClientModSetup.BANIRA_HUB_KEY.isDown()) {
-                Minecraft.getInstance().setScreen(new CodexNavigationScreen(null));
+                BaniraClientRuntime.setScreen(new CodexNavigationScreen(null));
             }
         }
     }
@@ -634,7 +634,7 @@ public class NotificationLogScreen extends BaniraScreen {
     @Override
     public void onClose() {
         if (args.parentScreen() != null) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
         } else {
             super.onClose();
         }

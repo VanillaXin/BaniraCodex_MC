@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
@@ -21,6 +20,7 @@ import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -572,7 +572,7 @@ public abstract class BaniraScreen extends Screen {
         super.onClose();
         this.onClosed();
         if (this.previousScreen != null) {
-            Minecraft.getInstance().setScreen(this.previousScreen);
+            BaniraClientRuntime.setScreen(this.previousScreen);
         }
     }
 

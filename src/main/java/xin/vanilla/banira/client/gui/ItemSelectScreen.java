@@ -27,6 +27,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -156,7 +157,7 @@ public class ItemSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
 
         updateSearchResults();
     }
@@ -304,7 +305,7 @@ public class ItemSelectScreen extends BaniraScreen {
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
@@ -313,18 +314,18 @@ public class ItemSelectScreen extends BaniraScreen {
         submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.selectedItem == null || this.selectedItem.isEmpty()) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
+                BaniraClientRuntime.setScreen(args.parentScreen());
             } else {
                 ItemStack itemStack = this.selectedItem;
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(itemStack);
                     LOGGER.debug("Item selected via callback1: {}", ItemUtils.getItemRegistryString(itemStack));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    BaniraClientRuntime.setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(itemStack);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Item selected via callback2: {}", ItemUtils.getItemRegistryString(itemStack));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        BaniraClientRuntime.setScreen(args.parentScreen());
                     }
                 }
             }
@@ -352,7 +353,7 @@ public class ItemSelectScreen extends BaniraScreen {
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -379,7 +380,7 @@ public class ItemSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             eventArgs.consumed(true);
         }
     }
@@ -547,7 +548,7 @@ public class ItemSelectScreen extends BaniraScreen {
                         this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
                         refreshButtons();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.COUNT.code()) {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
@@ -571,7 +572,7 @@ public class ItemSelectScreen extends BaniraScreen {
                         this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
                         refreshButtons();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.NBT.code()) {
             String itemNbtJsonString = ItemUtils.serializeItemStackTag((this.selectedItem));
             InputFormScreen.Args args = new InputFormScreen.Args()
@@ -601,7 +602,7 @@ public class ItemSelectScreen extends BaniraScreen {
                             input.runningResult(e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         }
     }
 }

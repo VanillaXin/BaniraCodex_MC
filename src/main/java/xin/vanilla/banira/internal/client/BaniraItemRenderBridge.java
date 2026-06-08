@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.client;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -25,34 +24,31 @@ public final class BaniraItemRenderBridge {
     }
 
     public static List<Component> tooltipLines(@Nonnull ItemStack stack, boolean advanced) {
-        Minecraft mc = Minecraft.getInstance();
-        return stack.getTooltipLines(mc.player, advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+        return stack.getTooltipLines(BaniraClientRuntime.localPlayer(), advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
     }
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {
-        Minecraft mc = Minecraft.getInstance();
-        renderGuiItemScaled(mc, stack, x, y, 16);
+        renderGuiItemScaled(stack, x, y, 16);
         if (showCount) {
-            mc.getItemRenderer().renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+            BaniraClientRuntime.itemRenderer().renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
         }
     }
 
     public static void renderScaled(@Nonnull ItemStack stack, int x, int y, int size) {
-        renderGuiItemScaled(Minecraft.getInstance(), stack, x, y, size);
+        renderGuiItemScaled(stack, x, y, size);
     }
 
     public static void renderFlatIcon(@Nonnull PoseStack pose, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
         RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        ItemRenderer itemRenderer = mc.getItemRenderer();
-        BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
+        ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
+        BakedModel model = itemRenderer.getModel(stack, null, BaniraClientRuntime.localPlayer(), 0);
         TextureAtlasSprite sprite = model.getParticleIcon();
-        int tint = mc.getItemColors().getColor(stack, 0);
+        int tint = BaniraClientRuntime.itemColors().getColor(stack, 0);
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;
             float cg = (float) (tint >> 8 & 255) / 255.0F;
@@ -64,7 +60,7 @@ public final class BaniraItemRenderBridge {
         AbstractGuiUtils.restoreGuiRenderState();
     }
 
-    private static void renderGuiItemScaled(@Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
+    private static void renderGuiItemScaled(@Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
@@ -80,7 +76,7 @@ public final class BaniraItemRenderBridge {
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             Lighting.setupFor3DItems();
-            mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+            BaniraClientRuntime.itemRenderer().renderGuiItem(stack, 0, 0);
         } finally {
             Lighting.setupForFlatItems();
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);

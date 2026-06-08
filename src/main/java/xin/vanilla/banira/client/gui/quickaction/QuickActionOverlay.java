@@ -5,7 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -897,10 +896,6 @@ public final class QuickActionOverlay {
         contextScrollPx = (int) Math.round(t * ctxScrollMaxPx);
     }
 
-    private static Minecraft mc() {
-        return Minecraft.getInstance();
-    }
-
     private static long windowHandle() {
         return BaniraClientRuntime.windowHandle();
     }
@@ -1069,7 +1064,6 @@ public final class QuickActionOverlay {
             return;
         }
         QuickActionContext ctx = new QuickActionContext()
-                .minecraft(mc())
                 .currentScreen(BaniraClientRuntime.currentScreen())
                 .entryId(entry.id())
                 .mouseX(mx)
@@ -1196,7 +1190,6 @@ public final class QuickActionOverlay {
             L.add(new CtxRow(it.getLabel().toVanilla().getString(), false, () -> {
                 if (it.getOnActivate() != null) {
                     QuickActionContext ctx = new QuickActionContext()
-                            .minecraft(mc())
                             .currentScreen(BaniraClientRuntime.currentScreen())
                             .entryId(ent.id())
                             .mouseX(contextClickMouseX)

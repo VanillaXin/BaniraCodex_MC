@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.forge.network;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -11,6 +11,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.mixin.accessors.SimpleChannelAccessor;
 
@@ -38,10 +39,10 @@ public final class ForgeNetworkChannels {
     public static void sendToServer(INetworkPacket packet) {
         SimpleChannel channel = resolve(packet);
         if (!hasLocalChannel(channel)) return;
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null) return;
+        LocalPlayer player = BaniraClientRuntime.localPlayer();
+        if (player == null) return;
         // 握手首包需要在远端状态建立前放行。
-        if (!(packet instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(minecraft.player, modId(channel))) {
+        if (!(packet instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(player, modId(channel))) {
             return;
         }
 

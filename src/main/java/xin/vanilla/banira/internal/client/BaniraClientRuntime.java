@@ -1,10 +1,12 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.network.chat.ChatType;
 import net.minecraft.resources.ResourceLocation;
@@ -47,6 +49,14 @@ public final class BaniraClientRuntime {
 
     public static TextureManager textureManager() {
         return Minecraft.getInstance().getTextureManager();
+    }
+
+    public static ItemRenderer itemRenderer() {
+        return Minecraft.getInstance().getItemRenderer();
+    }
+
+    public static ItemColors itemColors() {
+        return Minecraft.getInstance().getItemColors();
     }
 
     public static String serverIp() {

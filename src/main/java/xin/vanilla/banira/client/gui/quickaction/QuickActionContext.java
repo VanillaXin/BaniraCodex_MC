@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui.quickaction;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
 import javax.annotation.Nullable;
@@ -13,10 +12,6 @@ import javax.annotation.Nullable;
  */
 @Accessors(chain = true, fluent = true)
 public class QuickActionContext {
-
-    @Getter
-    @Setter
-    private Minecraft minecraft;
 
     @Getter
     @Setter

@@ -17,8 +17,11 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.net.URI;
 
@@ -31,19 +34,24 @@ public final class NotificationStyleInteractionHelper {
     private NotificationStyleInteractionHelper() {
     }
 
-    public static boolean tryClickStyle(Minecraft mc, Style style) {
+    public static boolean tryClickStyle(Style style) {
         if (style == null || style.getClickEvent() == null) {
             return false;
         }
-        Screen screen = mc.screen;
+        Screen screen = BaniraClientRuntime.currentScreen();
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(mc, style.getClickEvent());
+        return handleClickInGame(Minecraft.getInstance(), style.getClickEvent());
+    }
+
+    @Deprecated
+    public static boolean tryClickStyle(Minecraft mc, Style style) {
+        return tryClickStyle(style);
     }
 
     private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
-        if (Screen.hasShiftDown()) {
+        if (InputStateManager.isShiftPressingStatic()) {
             return false;
         }
         switch (event.getAction()) {
@@ -69,10 +77,10 @@ public final class NotificationStyleInteractionHelper {
                 mc.player.chat(cmd);
                 return true;
             case SUGGEST_COMMAND:
-                mc.setScreen(new ChatScreen(event.getValue()));
+                BaniraClientRuntime.setScreen(new ChatScreen(event.getValue()));
                 return true;
             case COPY_TO_CLIPBOARD:
-                mc.keyboardHandler.setClipboard(event.getValue());
+                AbstractGuiUtils.setClipboard(event.getValue());
                 return true;
             default:
                 return false;
@@ -94,9 +102,9 @@ public final class NotificationStyleInteractionHelper {
         if (tip == null) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
+        Screen screen = BaniraClientRuntime.currentScreen();
+        EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
         boolean useTexture = theme.tooltipUseTexture();
 
         xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
@@ -106,7 +114,7 @@ public final class NotificationStyleInteractionHelper {
         stack.last().pose().setIdentity();
         try {
             TooltipWidget.drawPopupMessage(stack,
-                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(AbstractGuiUtils.getFont())).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, season);
         } finally {
             stack.popPose();

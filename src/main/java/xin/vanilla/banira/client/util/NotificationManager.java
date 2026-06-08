@@ -3,16 +3,13 @@ package xin.vanilla.banira.client.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Style;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -27,6 +24,7 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
@@ -296,18 +294,17 @@ public final class NotificationManager {
 
     @OnlyIn(Dist.CLIENT)
     public void render(PoseStack stack) {
-        Minecraft mc = Minecraft.getInstance();
+        xin.vanilla.banira.common.data.KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getGuiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
-                .width(mc.getWindow().getGuiScaledWidth())
-                .height(mc.getWindow().getGuiScaledHeight());
+                .width(screenSize.key())
+                .height(screenSize.val());
         long currentTime = System.currentTimeMillis();
 
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        Window win = mc.getWindow();
-        double mx = scaledMouseX(mc, win);
-        double my = scaledMouseY(mc, win);
+        double mx = BaniraClientRuntime.scaledMouseX();
+        double my = BaniraClientRuntime.scaledMouseY();
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
             EnumPosition pos = entry.getKey();
@@ -384,14 +381,6 @@ public final class NotificationManager {
         throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
     }
 
-    private static double scaledMouseX(Minecraft mc, Window win) {
-        return mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
-    }
-
-    private static double scaledMouseY(Minecraft mc, Window win) {
-        return mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
-    }
-
     /**
      * 处理叠加层上的通知点击
      *
@@ -402,7 +391,6 @@ public final class NotificationManager {
         if (button != 0) {
             return false;
         }
-        Minecraft mc = Minecraft.getInstance();
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
@@ -417,12 +405,12 @@ public final class NotificationManager {
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);
-            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(mc, st)) {
+            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(st)) {
                 return true;
             }
             if (n.isBodyHit(guiMouseX, guiMouseY)) {
-                mc.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
-                        .parentScreen(mc.screen)
+                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
+                        .parentScreen(BaniraClientRuntime.currentScreen())
                         .selectLogEntryId(n.logEntryId())));
                 return true;
             }
@@ -435,14 +423,12 @@ public final class NotificationManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void tickOutOfScreenClick() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != null) {
+        if (BaniraClientRuntime.currentScreen() != null) {
             return;
         }
-        Window win = mc.getWindow();
-        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean down = BaniraClientRuntime.leftMouseDown();
         if (down && !prevLeftDown) {
-            tryHandleHudClick(scaledMouseX(mc, win), scaledMouseY(mc, win), 0);
+            tryHandleHudClick(BaniraClientRuntime.scaledMouseX(), BaniraClientRuntime.scaledMouseY(), 0);
         }
         prevLeftDown = down;
     }

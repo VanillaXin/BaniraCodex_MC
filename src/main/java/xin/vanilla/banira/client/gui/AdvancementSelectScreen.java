@@ -68,6 +68,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> advancementButtonWidgets = new ArrayList<>();
+    private final List<AdvancementRow> advancementRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private ResourceLocation currentAdvancement;
@@ -270,6 +271,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
         // region 进度列表按钮
         advancementButtonWidgets.clear();
+        advancementRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -309,6 +311,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             });
 
             advancementButtonWidgets.add(btn);
+            advancementRows.add(new AdvancementRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
         // endregion 进度列表按钮
@@ -438,18 +441,18 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     private void refreshAdvancementButtons() {
-        if (advancementButtonWidgets.isEmpty()) return;
+        if (advancementRows.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < advancementButtonWidgets.size(); i++) {
-            ButtonWidget buttonWidget = advancementButtonWidgets.get(i);
+        for (int i = 0; i < advancementRows.size(); i++) {
+            AdvancementRow row = advancementRows.get(i);
+            ButtonWidget buttonWidget = row.button;
             int index = scrollOffset + i;
-            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
-            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
-            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
-            if (iw == null || lw == null) continue;
+            ItemWidget iw = row.icon;
+            LabelWidget lw = row.label;
+            TooltipWidget tw = row.tooltip;
 
             if (index >= 0 && index < advancementList.size()) {
                 AdvancementData advancementData = advancementList.get(index);
@@ -528,6 +531,23 @@ public class AdvancementSelectScreen extends BaniraScreen {
     private void refreshAdvancementButtonsIfDirty() {
         if (advancementButtonsDirty) {
             refreshAdvancementButtons();
+        }
+    }
+
+    /**
+     * 列表行组件在 initWidgets 中固定，刷新时直接复用引用，避免反复遍历子树查找。
+     */
+    private static final class AdvancementRow {
+        private final ButtonWidget button;
+        private final ItemWidget icon;
+        private final LabelWidget label;
+        private final TooltipWidget tooltip;
+
+        private AdvancementRow(ButtonWidget button, ItemWidget icon, LabelWidget label, TooltipWidget tooltip) {
+            this.button = button;
+            this.icon = icon;
+            this.label = label;
+            this.tooltip = tooltip;
         }
     }
 

@@ -67,6 +67,7 @@ public class EffectSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> effectButtonWidgets = new ArrayList<>();
+    private final List<EffectRow> effectRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private MobEffectInstance currentEffect;
@@ -213,6 +214,7 @@ public class EffectSelectScreen extends BaniraScreen {
         addWidget(scrollbarWidget);
 
         effectButtonWidgets.clear();
+        effectRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -252,6 +254,7 @@ public class EffectSelectScreen extends BaniraScreen {
             });
 
             effectButtonWidgets.add(btn);
+            effectRows.add(new EffectRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
 
@@ -407,18 +410,18 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     private void refreshEffectButtons() {
-        if (effectButtonWidgets.isEmpty()) return;
+        if (effectRows.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < effectButtonWidgets.size(); i++) {
-            ButtonWidget buttonWidget = effectButtonWidgets.get(i);
+        for (int i = 0; i < effectRows.size(); i++) {
+            EffectRow row = effectRows.get(i);
+            ButtonWidget buttonWidget = row.button;
             int index = scrollOffset + i;
-            EffectIconWidget ew = buttonWidget.findChildByType(EffectIconWidget.class);
-            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
-            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
-            if (ew == null || lw == null) continue;
+            EffectIconWidget ew = row.icon;
+            LabelWidget lw = row.label;
+            TooltipWidget tw = row.tooltip;
 
             if (index >= 0 && index < effectList.size()) {
                 MobEffect effect = effectList.get(index);
@@ -496,6 +499,23 @@ public class EffectSelectScreen extends BaniraScreen {
     private void refreshEffectButtonsIfDirty() {
         if (effectButtonsDirty) {
             refreshEffectButtons();
+        }
+    }
+
+    /**
+     * 列表行组件在 initWidgets 中固定，刷新时直接复用引用，避免反复遍历子树查找。
+     */
+    private static final class EffectRow {
+        private final ButtonWidget button;
+        private final EffectIconWidget icon;
+        private final LabelWidget label;
+        private final TooltipWidget tooltip;
+
+        private EffectRow(ButtonWidget button, EffectIconWidget icon, LabelWidget label, TooltipWidget tooltip) {
+            this.button = button;
+            this.icon = icon;
+            this.label = label;
+            this.tooltip = tooltip;
         }
     }
 

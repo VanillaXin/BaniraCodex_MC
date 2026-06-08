@@ -670,7 +670,6 @@ public final class QuickActionOverlay {
         KeyValue<Integer, Integer> screenSize = guiScreenSize();
         lastScreenW = screenSize.key();
         lastScreenH = screenSize.val();
-        Minecraft mc = mc();
 
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
@@ -733,7 +732,7 @@ public final class QuickActionOverlay {
             int ix = xy[0] + iconOff;
             int iy = xy[1] + iconOff;
             if (s == 0) {
-                systemIcon().render(stack, mc, ix, iy, iconSize);
+                systemIcon().render(stack, ix, iy, iconSize);
             } else {
                 boolean skipIcon = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot;
                 if (!skipIcon) {
@@ -745,7 +744,7 @@ public final class QuickActionOverlay {
                         drawEntry = reg.getEntry(id);
                     }
                     if (drawEntry != null && drawEntry.display() == EnumQuickActionDisplay.ICON) {
-                        drawEntry.quickIcon().render(stack, mc, ix, iy, iconSize);
+                        drawEntry.quickIcon().render(stack, ix, iy, iconSize);
                     }
                 }
             }
@@ -766,12 +765,12 @@ public final class QuickActionOverlay {
                 int gy = mouseY - cell / 2;
                 prepareQuickActionSlotDrawState();
                 drawSlotBorder(stack, gx, gy, cell, borderRgb);
-                dragged.quickIcon().render(stack, mc, gx + iconOff, gy + iconOff, iconSize);
+                dragged.quickIcon().render(stack, gx + iconOff, gy + iconOff, iconSize);
             }
         }
 
         if (contextOpen) {
-            renderContextMenu(stack, screen, mc, mouseX, mouseY, theme);
+            renderContextMenu(stack, mouseX, mouseY, theme);
         }
 
         stack.popPose();
@@ -1071,7 +1070,7 @@ public final class QuickActionOverlay {
         }
         QuickActionContext ctx = new QuickActionContext()
                 .minecraft(mc())
-                .currentScreen(mc().screen)
+                .currentScreen(BaniraClientRuntime.currentScreen())
                 .entryId(entry.id())
                 .mouseX(mx)
                 .mouseY(my);
@@ -1198,7 +1197,7 @@ public final class QuickActionOverlay {
                 if (it.getOnActivate() != null) {
                     QuickActionContext ctx = new QuickActionContext()
                             .minecraft(mc())
-                            .currentScreen(mc().screen)
+                            .currentScreen(BaniraClientRuntime.currentScreen())
                             .entryId(ent.id())
                             .mouseX(contextClickMouseX)
                             .mouseY(contextClickMouseY);
@@ -1439,7 +1438,7 @@ public final class QuickActionOverlay {
         contextLayoutDirty = false;
     }
 
-    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderContextMenu(PoseStack stack, int mouseX, int mouseY, BaniraColorConfig theme) {
         List<CtxRow> rows = contextRows();
         Font font = AbstractGuiUtils.getFont();
         ensureContextMenuLayout(rows, font);
@@ -1496,7 +1495,7 @@ public final class QuickActionOverlay {
             if (row.menuIcon != null) {
                 int iconX = x + MENU_TEXT_PAD_X;
                 int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
+                row.menuIcon.renderForMenu(stack, iconX, iconY, MENU_ICON_SIZE);
             }
             float textX = row.menuIcon != null
                     ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP

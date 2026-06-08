@@ -1,8 +1,9 @@
 package xin.vanilla.banira.internal.forge.client;
 
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import xin.vanilla.banira.api.client.hud.*;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.BaniraHudGeometry;
 
 import javax.annotation.Nonnull;
@@ -44,11 +45,11 @@ public final class ForgeHudOverlayAdapter {
     }
 
     private static BaniraHudRenderContext context(@Nonnull RenderGameOverlayEvent event) {
-        Minecraft mc = Minecraft.getInstance();
+        KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraHudRenderContext(
                 event.getMatrixStack(),
-                mc.getWindow().getGuiScaledWidth(),
-                mc.getWindow().getGuiScaledHeight(),
+                screen.key(),
+                screen.val(),
                 event.getPartialTicks()
         );
     }

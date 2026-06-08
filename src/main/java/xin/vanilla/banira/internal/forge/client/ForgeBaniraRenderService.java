@@ -1,7 +1,6 @@
 package xin.vanilla.banira.internal.forge.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -40,7 +39,7 @@ public final class ForgeBaniraRenderService implements BaniraRenderService {
     @Override
     public void text(@Nonnull Object nativeGraphics, @Nonnull String text, int x, int y, int argb, boolean shadow) {
         PoseStack stack = poseStack(nativeGraphics);
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         Text drawText = Text.literal(text).stack(stack).font(font).color(argb).shadow(shadow);
         LabelWidget.drawLimitedText(FontDrawArgs.of(drawText).x(x).y(y).position(EnumEllipsisPosition.NONE).wrap(false));
     }

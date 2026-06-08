@@ -10,6 +10,7 @@ import net.minecraft.network.chat.ChatType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.common.data.KeyValue;
 
@@ -63,6 +64,11 @@ public final class BaniraClientRuntime {
 
     public static void showGameInfo(@Nonnull net.minecraft.network.chat.Component message, @Nonnull UUID sender) {
         Minecraft.getInstance().gui.handleChat(ChatType.GAME_INFO, message, sender);
+    }
+
+    @Nullable
+    public static Level level() {
+        return Minecraft.getInstance().level;
     }
 
     @Nullable

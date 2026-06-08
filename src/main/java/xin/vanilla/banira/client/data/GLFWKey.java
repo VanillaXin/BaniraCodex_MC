@@ -209,6 +209,13 @@ public class GLFWKey {
     public static final int GLFW_MOD_NUM_LOCK = 0x20;
 
     /**
+     * 判断统一键盘事件中的 Shift 修饰位，避免控件直接依赖原版 Screen 静态状态。
+     */
+    public static boolean hasShiftModifier(int modifiers) {
+        return (modifiers & GLFW_MOD_SHIFT) != 0;
+    }
+
+    /**
      * Mouse buttons. See <a target="_blank" href="http://www.glfw.org/docs/latest/input.html#input_mouse_button">mouse button input</a> for how these are used.
      */
     public static final int

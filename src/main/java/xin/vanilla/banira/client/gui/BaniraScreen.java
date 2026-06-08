@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
@@ -401,7 +402,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
+        MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers());
         this.cursor.mouseScrolled(scrollEvent);
 
         // 优先让已获得焦点的输入框/滑块处理滚轮，无论鼠标位置
@@ -429,6 +430,17 @@ public abstract class BaniraScreen extends Screen {
                 .delta(delta);
         onMouseScrolled(args);
         return args.consumed() || super.mouseScrolled(mouseX, mouseY, delta);
+    }
+
+    /**
+     * 将当前输入状态转换为 Banira 事件统一使用的 GLFW modifier 位。
+     */
+    protected int currentKeyboardModifiers() {
+        int modifiers = 0;
+        if (inputState.isShiftPressing()) modifiers |= GLFWKey.GLFW_MOD_SHIFT;
+        if (inputState.isCtrlPressing()) modifiers |= GLFWKey.GLFW_MOD_CONTROL;
+        if (inputState.isAltPressing()) modifiers |= GLFWKey.GLFW_MOD_ALT;
+        return modifiers;
     }
 
     /**

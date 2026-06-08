@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -13,6 +12,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.List;
@@ -43,9 +43,9 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
-        Screen mcScreen = Minecraft.getInstance().screen;
-        int w = mcScreen != null ? mcScreen.width : 400;
-        int h = mcScreen != null ? mcScreen.height : 300;
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        int w = screenSize.key();
+        int h = screenSize.val();
         return new ScreenCoordinate(0, 0, w, h);
     }
 
@@ -59,7 +59,7 @@ class DropdownOverlayWidget extends BaseWidget {
         List<DropdownOption> options = parent.filteredOptionEntriesView();
         if (options.isEmpty()) return;
 
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();

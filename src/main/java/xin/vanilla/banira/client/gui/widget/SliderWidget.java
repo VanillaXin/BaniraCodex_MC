@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -18,6 +17,7 @@ import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -438,7 +438,7 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void renderValue(PoseStack stack, int x, int y, int width, int height) {
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         String valueStr = formatDisplayValue(value);
         int textW = font.width(valueStr);
         int textH = font.lineHeight;
@@ -621,7 +621,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = GLFWKey.hasShiftModifier(event.modifiers()) ? step * 10 : step;
         double newValue = value + (event.delta() < 0 ? stepVal : -stepVal);
         setValue(newValue);
         return true;
@@ -716,7 +716,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = GLFWKey.hasShiftModifier(event.modifiers()) ? step * 10 : step;
         boolean handled = false;
         int keyCode = event.keyCode();
 

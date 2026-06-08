@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -19,6 +18,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.enums.IEnumDropdownIcon;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -175,7 +175,7 @@ public class DropdownSelectWidget extends InputWidget {
             tagScrollOffset = 0;
             return;
         }
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         int maxScroll = Math.max(0, tagTotalWidth(font) - cw);
         tagScrollOffset = Math.max(0, Math.min(maxScroll, tagScrollOffset));
     }
@@ -195,8 +195,9 @@ public class DropdownSelectWidget extends InputWidget {
      */
     ScreenCoordinate getPreviewBounds() {
         if (renderCoordinate == null || screen == null) return null;
-        int sw = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.width : 400;
-        int sh = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.height : 300;
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        int sw = screenSize.key();
+        int sh = screenSize.val();
 
         double absX = absoluteX();
         double absY = absoluteY();
@@ -467,8 +468,9 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public ScreenCoordinate getDropdownBounds() {
         if (renderCoordinate == null || screen == null) return null;
-        int sw = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.width : 400;
-        int sh = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.height : 300;
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        int sw = screenSize.key();
+        int sh = screenSize.val();
 
         double absX = absoluteX();
         double absY = absoluteY();
@@ -667,7 +669,7 @@ public class DropdownSelectWidget extends InputWidget {
             return;
         }
         clampTagScrollOffset();
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         StringBuilder builder = new StringBuilder();
         for (TagLayout layout : tagLayouts(font)) {
             if (builder.length() > 0) {
@@ -793,7 +795,7 @@ public class DropdownSelectWidget extends InputWidget {
         if (selectedValues.isEmpty()) return;
         if (screen == null) return;
 
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         BaniraColorConfig theme = screen.getEffectiveTheme();
         int tagBg = theme.color(POPUP_ITEM_SELECTED);
         int tagBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
@@ -976,7 +978,7 @@ public class DropdownSelectWidget extends InputWidget {
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         if (mouseY < tagY || mouseY >= tagY + TAG_MIN_HEIGHT) return -1;
         int currentX = contentLeft - tagScrollOffset;
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         for (TagLayout layout : tagLayouts(font)) {
             if (mouseX >= currentX && mouseX < currentX + layout.tagWidth) return layout.index;
             currentX += layout.tagWidth + TAG_GAP;
@@ -994,7 +996,7 @@ public class DropdownSelectWidget extends InputWidget {
         int drawHeight = (int) height() - marginTop() - marginBottom();
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         for (TagLayout layout : tagLayouts(font)) {
             int closeX = currentX + layout.tagWidth - TAG_PAD - TAG_CLOSE_SIZE;
             int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
@@ -1020,7 +1022,7 @@ public class DropdownSelectWidget extends InputWidget {
             }
         }
         if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
-            Font font = Minecraft.getInstance().font;
+            Font font = AbstractGuiUtils.getFont();
             int contentWidth = getTagContentWidth();
             int maxScroll = Math.max(0, tagTotalWidth(font) - contentWidth);
             if (maxScroll > 0) {

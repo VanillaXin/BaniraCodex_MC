@@ -13,14 +13,13 @@ public class BaniraKeyboardEventTest {
     public void carriesPressMetadata() {
         AtomicLong now = new AtomicLong(1000L);
         BaniraKeyPressTracker tracker = new BaniraKeyPressTracker(300L, now::get);
-        Object screen = new Object();
-        Object nativeEvent = new Object();
+        BaniraScreenInfo screen = new BaniraScreenInfo("test.Screen", "Test", 320, 180, true);
 
         tracker.recordPress(65, 30, 0);
         tracker.recordRelease(65, 30);
         now.addAndGet(100L);
 
-        BaniraKeyboardEvent event = BaniraKeyboardEvent.pressed(screen, 65, 30, 0, nativeEvent)
+        BaniraKeyboardEvent event = BaniraKeyboardEvent.pressed(screen, 65, 30, 0)
                 .withPressMetadata(tracker.recordPress(65, 30, 0));
 
         assertEquals(2, event.pressCount());
@@ -33,11 +32,10 @@ public class BaniraKeyboardEventTest {
     @Test
     public void carriesHeldRepeatMetadata() {
         BaniraKeyPressTracker tracker = new BaniraKeyPressTracker(300L, () -> 1000L);
-        Object screen = new Object();
-        Object nativeEvent = new Object();
+        BaniraScreenInfo screen = new BaniraScreenInfo("test.Screen", "Test", 320, 180, true);
 
         tracker.recordPress(65, 30, 0);
-        BaniraKeyboardEvent event = BaniraKeyboardEvent.pressed(screen, 65, 30, 0, nativeEvent)
+        BaniraKeyboardEvent event = BaniraKeyboardEvent.pressed(screen, 65, 30, 0)
                 .withPressMetadata(tracker.recordPress(65, 30, 0));
 
         assertEquals(1, event.pressCount());

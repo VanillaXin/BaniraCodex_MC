@@ -2,29 +2,28 @@ package xin.vanilla.banira.api.client.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 
 import javax.annotation.Nonnull;
 
 /**
- * 屏幕绘制事件；nativeGraphics 在当前 Forge 1.18.2 分支为 PoseStack。
+ * 屏幕绘制事件；子 mod 应通过 draw 调用稳定绘制能力。
  */
 @Getter
 @Accessors(fluent = true)
 public final class BaniraDrawScreenEvent {
-    private final @Nonnull Object nativeGraphics;
-    private final @Nonnull Object screen;
+    private final @Nonnull BaniraDrawContext draw;
+    private final @Nonnull BaniraScreenInfo screen;
     private final double mouseX;
     private final double mouseY;
     private final float partialTick;
-    private final @Nonnull Object nativeEvent;
 
-    public BaniraDrawScreenEvent(@Nonnull Object nativeGraphics, @Nonnull Object screen,
-                                 double mouseX, double mouseY, float partialTick, @Nonnull Object nativeEvent) {
-        this.nativeGraphics = nativeGraphics;
+    public BaniraDrawScreenEvent(@Nonnull BaniraDrawContext draw, @Nonnull BaniraScreenInfo screen,
+                                 double mouseX, double mouseY, float partialTick) {
+        this.draw = draw;
         this.screen = screen;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.partialTick = partialTick;
-        this.nativeEvent = nativeEvent;
     }
 }

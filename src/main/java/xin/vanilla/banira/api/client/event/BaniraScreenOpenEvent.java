@@ -3,7 +3,7 @@ package xin.vanilla.banira.api.client.event;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 
 /**
  * 客户端屏幕打开/切换事件。
@@ -11,11 +11,9 @@ import javax.annotation.Nullable;
 @Getter
 @Accessors(fluent = true)
 public final class BaniraScreenOpenEvent {
-    private final @Nullable Object screen;
-    private final @Nullable Object nativeEvent;
+    private final @Nonnull BaniraScreenInfo screen;
 
-    public BaniraScreenOpenEvent(@Nullable Object screen, @Nullable Object nativeEvent) {
+    public BaniraScreenOpenEvent(@Nonnull BaniraScreenInfo screen) {
         this.screen = screen;
-        this.nativeEvent = nativeEvent;
     }
 }

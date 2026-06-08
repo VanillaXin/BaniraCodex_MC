@@ -2,6 +2,7 @@ package xin.vanilla.banira.api.client.event;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 
 import javax.annotation.Nonnull;
@@ -13,17 +14,15 @@ import javax.annotation.Nonnull;
 @Accessors(fluent = true)
 public final class BaniraOverlayRenderEvent {
     private final @Nonnull HudOverlayElement element;
-    private final @Nonnull Object nativeGraphics;
+    private final @Nonnull BaniraHudRenderContext context;
     private final float partialTick;
     private final boolean screenOpen;
-    private final @Nonnull Object nativeEvent;
 
-    public BaniraOverlayRenderEvent(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
-                                    float partialTick, boolean screenOpen, @Nonnull Object nativeEvent) {
+    public BaniraOverlayRenderEvent(@Nonnull HudOverlayElement element, @Nonnull BaniraHudRenderContext context,
+                                    float partialTick, boolean screenOpen) {
         this.element = element;
-        this.nativeGraphics = nativeGraphics;
+        this.context = context;
         this.partialTick = partialTick;
         this.screenOpen = screenOpen;
-        this.nativeEvent = nativeEvent;
     }
 }

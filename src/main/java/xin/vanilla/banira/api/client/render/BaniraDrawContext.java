@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 
@@ -14,20 +13,20 @@ import javax.annotation.Nonnull;
 @Getter
 @Accessors(fluent = true)
 public final class BaniraDrawContext {
-    private final @Nonnull Object nativeGraphics;
+    private final @Nonnull BaniraDrawHandle handle;
     private final int screenWidth;
     private final int screenHeight;
     private final float partialTick;
 
-    public BaniraDrawContext(@Nonnull Object nativeGraphics, int screenWidth, int screenHeight, float partialTick) {
-        this.nativeGraphics = nativeGraphics;
+    public BaniraDrawContext(@Nonnull BaniraDrawHandle handle, int screenWidth, int screenHeight, float partialTick) {
+        this.handle = handle;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.partialTick = partialTick;
     }
 
     public void fill(int x, int y, int width, int height, int argb) {
-        BaniraPlatforms.get().renderService().fill(nativeGraphics, x, y, width, height, argb);
+        handle.fill(x, y, width, height, argb);
     }
 
     public void fill(@Nonnull BaniraHudBounds bounds, int argb) {
@@ -37,11 +36,11 @@ public final class BaniraDrawContext {
     }
 
     public void line(float x1, float y1, float x2, float y2, float lineWidth, int argb) {
-        BaniraPlatforms.get().renderService().line(nativeGraphics, x1, y1, x2, y2, lineWidth, argb);
+        handle.line(x1, y1, x2, y2, lineWidth, argb);
     }
 
     public void roundedRect(int x, int y, int width, int height, int argb, int radius) {
-        BaniraPlatforms.get().renderService().roundedRect(nativeGraphics, x, y, width, height, argb, radius);
+        handle.roundedRect(x, y, width, height, argb, radius);
     }
 
     public void roundedRect(@Nonnull BaniraHudBounds bounds, int argb, int radius) {
@@ -77,10 +76,10 @@ public final class BaniraDrawContext {
     }
 
     public void text(@Nonnull String text, int x, int y, int argb, boolean shadow) {
-        BaniraPlatforms.get().renderService().text(nativeGraphics, text, x, y, argb, shadow);
+        handle.text(text, x, y, argb, shadow);
     }
 
     public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height, float u, float v, int textureWidth, int textureHeight) {
-        BaniraPlatforms.get().renderService().texture(nativeGraphics, texture, x, y, width, height, u, v, textureWidth, textureHeight);
+        handle.texture(texture, x, y, width, height, u, v, textureWidth, textureHeight);
     }
 }

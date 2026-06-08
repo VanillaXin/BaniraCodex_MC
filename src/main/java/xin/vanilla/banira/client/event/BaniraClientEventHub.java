@@ -6,21 +6,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
+import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
+import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.PlatformBaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -106,51 +110,6 @@ public final class BaniraClientEventHub {
                 QuickActionOverlay.resetSystemIconTextureCache();
             }
         });
-        Client.onDrawScreenPre(event -> {
-            InputStateManager.instance().handleDrawScreenPre(event.mouseX(), event.mouseY());
-            Screen screen = screen(event.screen());
-            if (screen != null && QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-                QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(event.mouseX()), (int) Math.round(event.mouseY()));
-            }
-        });
-        Client.onDrawScreenPost(event -> NotificationManager.get().renderNative(event.nativeGraphics()));
-        Client.onDrawScreenPost(event -> {
-            Screen screen = screen(event.screen());
-            if (screen != null && QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-                QuickActionOverlay.get().renderNative(event.nativeGraphics(), screen, event.mouseX(), event.mouseY(), event.partialTick());
-                QuickActionOverlay.get().flushSaveIfNeeded();
-            }
-        });
-        Client.onRenderOverlayPost(event -> {
-            if (event.element() == HudOverlayElement.ALL && !event.screenOpen()) {
-                NotificationManager.get().renderNative(event.nativeGraphics());
-            }
-        });
-        Client.onMouseClickedPre(event -> {
-            InputStateManager.instance().handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
-            Screen screen = screen(event.screen());
-            if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
-                event.cancel();
-                return;
-            }
-            if (NotificationManager.get().tryHandleHudClick(event.mouseX(), event.mouseY(), event.button())) {
-                event.cancel();
-            }
-        });
-        Client.onMouseReleasedPre(event -> {
-            Screen screen = screen(event.screen());
-            if (screen != null && QuickActionOverlay.get().handleMouseReleased(screen, event.mouseX(), event.mouseY(), event.button())) {
-                event.cancel();
-            }
-        });
-        Client.onMouseReleasedPost(event -> InputStateManager.instance().handleMouseReleased(event.mouseX(), event.mouseY(), event.button()));
-        Client.onMouseScrolledPre(event -> {
-            InputStateManager.instance().handleMouseScrolled(event.mouseX(), event.mouseY(), event.scrollDelta());
-            Screen screen = screen(event.screen());
-            if (screen != null && QuickActionOverlay.get().handleMouseScroll(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
-                event.cancel();
-            }
-        });
         Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
         Client.onKeyReleasedPost(event -> InputStateManager.instance().handleKeyReleased(event.keyCode()));
         Client.onClientTick(event -> {
@@ -188,26 +147,51 @@ public final class BaniraClientEventHub {
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
+    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+                                                      float partialTick, boolean screenOpen) {
+        dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+    }
+
     public static void dispatchMouseClickedPre(BaniraMouseEvent event) {
+        dispatchMouseClickedPre(event, null);
+    }
+
+    public static void dispatchMouseClickedPre(BaniraMouseEvent event, Screen screen) {
         dragTracker.press(event.mouseX(), event.mouseY(), event.button());
         event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
+        handleMouseClickedPre(event, screen);
         fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
     }
 
     public static void dispatchMouseReleasedPre(BaniraMouseEvent event) {
+        dispatchMouseReleasedPre(event, null);
+    }
+
+    public static void dispatchMouseReleasedPre(BaniraMouseEvent event, Screen screen) {
         event.withDragMetadata(dragTracker.release(event.mouseX(), event.mouseY(), event.button()));
+        handleMouseReleasedPre(event, screen);
         fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
     }
 
     public static void dispatchMouseReleasedPost(BaniraMouseEvent event) {
+        handleMouseReleasedPost(event);
         fire(clientMouseReleasedPostCallbacks, event, "client mouse released post");
     }
 
     public static void dispatchMouseScrolledPre(BaniraMouseEvent event) {
+        dispatchMouseScrolledPre(event, null);
+    }
+
+    public static void dispatchMouseScrolledPre(BaniraMouseEvent event, Screen screen) {
+        handleMouseScrolledPre(event, screen);
         fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
     }
 
     public static void dispatchMouseDraggedPre(BaniraMouseEvent event) {
+        dispatchMouseDraggedPre(event, null);
+    }
+
+    public static void dispatchMouseDraggedPre(BaniraMouseEvent event, Screen screen) {
         event.withDragMetadata(dragTracker.drag(event.mouseX(), event.mouseY(), event.button(), event.dragX(), event.dragY()));
         fire(clientMouseDraggedPreCallbacks, event, "client mouse dragged pre");
     }
@@ -336,6 +320,30 @@ public final class BaniraClientEventHub {
         public static void fireRenderOverlayPost(BaniraOverlayRenderEvent event) {
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
+
+        public static void fireDrawScreenPreNative(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+                                                   double mouseX, double mouseY, float partialTick) {
+            handleDrawScreenPre(screen, mouseX, mouseY);
+            fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        }
+
+        public static void fireDrawScreenPostNative(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+                                                    double mouseX, double mouseY, float partialTick) {
+            NotificationManager.get().renderNative(nativeGraphics);
+            if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
+                QuickActionOverlay.get().renderNative(nativeGraphics, screen, mouseX, mouseY, partialTick);
+                QuickActionOverlay.get().flushSaveIfNeeded();
+            }
+            fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        }
+
+        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+                                                       float partialTick, boolean screenOpen) {
+            if (element == HudOverlayElement.ALL && !screenOpen) {
+                NotificationManager.get().renderNative(nativeGraphics);
+            }
+            fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+        }
     }
 
     // endregion
@@ -365,14 +373,73 @@ public final class BaniraClientEventHub {
         }
     }
 
-    private static Screen screen(Object value) {
-        return value instanceof Screen ? (Screen) value : null;
+    public static BaniraScreenInfo screenInfo(Screen screen) {
+        if (screen == null) {
+            return BaniraScreenInfo.closed();
+        }
+        String title = screen.getTitle() == null ? "" : screen.getTitle().getString();
+        return new BaniraScreenInfo(screen.getClass().getName(), title, screen.width, screen.height, true);
     }
 
     private static void resetInputTrackers() {
         mouseClickTracker.reset();
         dragTracker.reset();
         keyPressTracker.reset();
+    }
+
+    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull Object nativeGraphics, @Nonnull Screen screen,
+                                                         double mouseX, double mouseY, float partialTick) {
+        return new BaniraDrawScreenEvent(drawContext(nativeGraphics, partialTick), screenInfo(screen), mouseX, mouseY, partialTick);
+    }
+
+    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull Object nativeGraphics,
+                                                        float partialTick, boolean screenOpen) {
+        return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
+    }
+
+    private static BaniraDrawContext drawContext(@Nonnull Object nativeGraphics, float partialTick) {
+        KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
+        return new BaniraDrawContext(new PlatformBaniraDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
+    }
+
+    private static BaniraHudRenderContext hudContext(@Nonnull Object nativeGraphics, float partialTick) {
+        KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
+        return new BaniraHudRenderContext(drawContext(nativeGraphics, partialTick), screen.key(), screen.val(), partialTick);
+    }
+
+    private static void handleDrawScreenPre(@Nonnull Screen screen, double mouseX, double mouseY) {
+        InputStateManager.instance().handleDrawScreenPre(mouseX, mouseY);
+        if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
+            QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(mouseX), (int) Math.round(mouseY));
+        }
+    }
+
+    private static void handleMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        InputStateManager.instance().handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
+        if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
+            event.cancel();
+            return;
+        }
+        if (NotificationManager.get().tryHandleHudClick(event.mouseX(), event.mouseY(), event.button())) {
+            event.cancel();
+        }
+    }
+
+    private static void handleMouseReleasedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        if (screen != null && QuickActionOverlay.get().handleMouseReleased(screen, event.mouseX(), event.mouseY(), event.button())) {
+            event.cancel();
+        }
+    }
+
+    private static void handleMouseReleasedPost(@Nonnull BaniraMouseEvent event) {
+        InputStateManager.instance().handleMouseReleased(event.mouseX(), event.mouseY(), event.button());
+    }
+
+    private static void handleMouseScrolledPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        InputStateManager.instance().handleMouseScrolled(event.mouseX(), event.mouseY(), event.scrollDelta());
+        if (screen != null && QuickActionOverlay.get().handleMouseScroll(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
+            event.cancel();
+        }
     }
 
     // endregion

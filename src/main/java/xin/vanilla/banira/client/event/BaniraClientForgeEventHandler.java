@@ -50,26 +50,25 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientChat(ClientChatEvent event) {
-        BaniraClientEventHub.dispatchClientChat(new BaniraChatEvent(event.getMessage(), event));
+        BaniraClientEventHub.dispatchClientChat(new BaniraChatEvent(event.getMessage()));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiScreen(ScreenEvent event) {
-        BaniraClientEventHub.dispatchGuiScreen(new BaniraScreenEvent(event.getScreen(), event));
+        BaniraClientEventHub.dispatchGuiScreen(new BaniraScreenEvent(BaniraClientEventHub.screenInfo(event.getScreen())));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onRenderOverlayPre(RenderGameOverlayEvent.Pre event) {
         ForgeHudOverlayAdapter.dispatchPre(event);
-        BaniraClientEventHub.dispatchRenderOverlayPre(new BaniraOverlayRenderEvent(
+        BaniraClientEventHub.dispatchRenderOverlayPreNative(
                 ForgeHudOverlayAdapter.mapElement(event.getType()),
                 event.getMatrixStack(),
                 event.getPartialTicks(),
-                BaniraClientRuntime.currentScreen() != null,
-                event
-        ));
+                BaniraClientRuntime.currentScreen() != null
+        );
     }
 
     // endregion BaniraClientEventHub Forge 转发
@@ -89,40 +88,52 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGuiOpen(ScreenOpenEvent event) {
-        BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(event.getScreen(), event));
+        BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(BaniraClientEventHub.screenInfo(event.getScreen())));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onTextureStitchPost(TextureStitchEvent.Post event) {
-        BaniraClientEventHub.Client.fireTextureReload(new BaniraTextureReloadEvent(event.getAtlas().location(), event));
+        BaniraClientEventHub.Client.fireTextureReload(new BaniraTextureReloadEvent(event.getAtlas().location()));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPre(ScreenEvent.DrawScreenEvent.Pre event) {
-        BaniraClientEventHub.Client.fireDrawScreenPre(drawScreenEvent(event));
+        BaniraClientEventHub.Client.fireDrawScreenPreNative(
+                event.getPoseStack(),
+                event.getScreen(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getPartialTicks()
+        );
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
-        BaniraClientEventHub.Client.fireDrawScreenPost(drawScreenEvent(event));
+        BaniraClientEventHub.Client.fireDrawScreenPostNative(
+                event.getPoseStack(),
+                event.getScreen(),
+                event.getMouseX(),
+                event.getMouseY(),
+                event.getPartialTicks()
+        );
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseClickedPre(ScreenEvent.MouseClickedEvent.Pre event) {
-        BaniraMouseEvent mouseEvent = BaniraMouseEvent.clicked(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton(), event);
-        BaniraClientEventHub.dispatchMouseClickedPre(mouseEvent);
+        BaniraMouseEvent mouseEvent = BaniraMouseEvent.clicked(BaniraClientEventHub.screenInfo(event.getScreen()), event.getMouseX(), event.getMouseY(), event.getButton());
+        BaniraClientEventHub.dispatchMouseClickedPre(mouseEvent, event.getScreen());
         event.setCanceled(mouseEvent.canceled());
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseReleasedPre(ScreenEvent.MouseReleasedEvent.Pre event) {
-        BaniraMouseEvent mouseEvent = BaniraMouseEvent.released(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton(), event);
-        BaniraClientEventHub.dispatchMouseReleasedPre(mouseEvent);
+        BaniraMouseEvent mouseEvent = BaniraMouseEvent.released(BaniraClientEventHub.screenInfo(event.getScreen()), event.getMouseX(), event.getMouseY(), event.getButton());
+        BaniraClientEventHub.dispatchMouseReleasedPre(mouseEvent, event.getScreen());
         event.setCanceled(mouseEvent.canceled());
     }
 
@@ -130,19 +141,18 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onGuiMouseReleasedPost(ScreenEvent.MouseReleasedEvent.Post event) {
         BaniraClientEventHub.dispatchMouseReleasedPost(BaniraMouseEvent.released(
-                event.getScreen(),
+                BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getMouseX(),
                 event.getMouseY(),
-                event.getButton(),
-                event
+                event.getButton()
         ));
     }
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseScrollPre(ScreenEvent.MouseScrollEvent.Pre event) {
-        BaniraMouseEvent mouseEvent = BaniraMouseEvent.scrolled(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getScrollDelta(), event);
-        BaniraClientEventHub.dispatchMouseScrolledPre(mouseEvent);
+        BaniraMouseEvent mouseEvent = BaniraMouseEvent.scrolled(BaniraClientEventHub.screenInfo(event.getScreen()), event.getMouseX(), event.getMouseY(), event.getScrollDelta());
+        BaniraClientEventHub.dispatchMouseScrolledPre(mouseEvent, event.getScreen());
         event.setCanceled(mouseEvent.canceled());
     }
 
@@ -150,15 +160,14 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiMouseDraggedPre(ScreenEvent.MouseDragEvent.Pre event) {
         BaniraMouseEvent mouseEvent = BaniraMouseEvent.dragged(
-                event.getScreen(),
+                BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getMouseX(),
                 event.getMouseY(),
                 event.getMouseButton(),
                 event.getDragX(),
-                event.getDragY(),
-                event
+                event.getDragY()
         );
-        BaniraClientEventHub.dispatchMouseDraggedPre(mouseEvent);
+        BaniraClientEventHub.dispatchMouseDraggedPre(mouseEvent, event.getScreen());
         event.setCanceled(mouseEvent.canceled());
     }
 
@@ -166,11 +175,10 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiKeyPressedPre(ScreenEvent.KeyboardKeyPressedEvent.Pre event) {
         BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.pressed(
-                event.getScreen(),
+                BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getKeyCode(),
                 event.getScanCode(),
-                event.getModifiers(),
-                event
+                event.getModifiers()
         );
         BaniraClientEventHub.dispatchKeyPressedPre(keyboardEvent);
         event.setCanceled(keyboardEvent.canceled());
@@ -180,11 +188,10 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onGuiKeyReleasedPost(ScreenEvent.KeyboardKeyReleasedEvent.Post event) {
         BaniraClientEventHub.dispatchKeyReleasedPost(BaniraKeyboardEvent.released(
-                event.getScreen(),
+                BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getKeyCode(),
                 event.getScanCode(),
-                event.getModifiers(),
-                event
+                event.getModifiers()
         ));
     }
 
@@ -192,10 +199,9 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onGuiCharTypedPre(ScreenEvent.KeyboardCharTypedEvent.Pre event) {
         BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.charTyped(
-                event.getScreen(),
+                BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getCodePoint(),
-                event.getModifiers(),
-                event
+                event.getModifiers()
         );
         BaniraClientEventHub.dispatchCharTypedPre(keyboardEvent);
         event.setCanceled(keyboardEvent.canceled());
@@ -205,26 +211,14 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
         ForgeHudOverlayAdapter.dispatchPost(event);
-        BaniraClientEventHub.Client.fireRenderOverlayPost(new BaniraOverlayRenderEvent(
+        BaniraClientEventHub.Client.fireRenderOverlayPostNative(
                 ForgeHudOverlayAdapter.mapElement(event.getType()),
                 event.getMatrixStack(),
                 event.getPartialTicks(),
-                BaniraClientRuntime.currentScreen() != null,
-                event
-        ));
+                BaniraClientRuntime.currentScreen() != null
+        );
     }
 
     // endregion 本 Mod GUI（快捷栏 overlay 等）
-
-    private static BaniraDrawScreenEvent drawScreenEvent(ScreenEvent.DrawScreenEvent event) {
-        return new BaniraDrawScreenEvent(
-                event.getPoseStack(),
-                event.getScreen(),
-                event.getMouseX(),
-                event.getMouseY(),
-                event.getPartialTicks(),
-                event
-        );
-    }
 
 }

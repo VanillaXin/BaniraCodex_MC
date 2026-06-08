@@ -14,13 +14,12 @@ public class BaniraMouseEventTest {
     public void carriesClickMetadata() {
         AtomicLong now = new AtomicLong(1000L);
         BaniraMouseClickTracker tracker = new BaniraMouseClickTracker(300L, 5.0D, now::get);
-        Object screen = new Object();
-        Object nativeEvent = new Object();
+        BaniraScreenInfo screen = new BaniraScreenInfo("test.Screen", "Test", 320, 180, true);
 
         tracker.record(10.0D, 20.0D, 0);
         now.addAndGet(100L);
 
-        BaniraMouseEvent event = BaniraMouseEvent.clicked(screen, 11.0D, 21.0D, 0, nativeEvent)
+        BaniraMouseEvent event = BaniraMouseEvent.clicked(screen, 11.0D, 21.0D, 0)
                 .withClickMetadata(tracker.record(11.0D, 21.0D, 0));
 
         assertEquals(2, event.clickCount());
@@ -32,11 +31,10 @@ public class BaniraMouseEventTest {
     @Test
     public void carriesDragMetadata() {
         BaniraDragTracker tracker = new BaniraDragTracker();
-        Object screen = new Object();
-        Object nativeEvent = new Object();
+        BaniraScreenInfo screen = new BaniraScreenInfo("test.Screen", "Test", 320, 180, true);
 
         tracker.press(10.0D, 20.0D, 0);
-        BaniraMouseEvent event = BaniraMouseEvent.dragged(screen, 13.0D, 24.0D, 0, 3.0D, 4.0D, nativeEvent)
+        BaniraMouseEvent event = BaniraMouseEvent.dragged(screen, 13.0D, 24.0D, 0, 3.0D, 4.0D)
                 .withDragMetadata(tracker.drag(13.0D, 24.0D, 0, 3.0D, 4.0D));
 
         assertEquals(BaniraMouseEvent.Action.DRAG, event.action());

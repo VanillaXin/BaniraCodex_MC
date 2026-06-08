@@ -13,12 +13,11 @@ import javax.annotation.Nonnull;
 @Accessors(fluent = true)
 public final class BaniraKeyboardEvent {
     private final @Nonnull Action action;
-    private final @Nonnull Object screen;
+    private final @Nonnull BaniraScreenInfo screen;
     private final int keyCode;
     private final int scanCode;
     private final int modifiers;
     private final int codePoint;
-    private final @Nonnull Object nativeEvent;
     private int pressCount = 1;
     private boolean doublePress;
     private boolean repeatedPress;
@@ -26,30 +25,26 @@ public final class BaniraKeyboardEvent {
     private boolean pressTracked;
     private boolean canceled;
 
-    private BaniraKeyboardEvent(@Nonnull Action action, @Nonnull Object screen, int keyCode, int scanCode,
-                                int modifiers, int codePoint, @Nonnull Object nativeEvent) {
+    private BaniraKeyboardEvent(@Nonnull Action action, @Nonnull BaniraScreenInfo screen, int keyCode, int scanCode,
+                                int modifiers, int codePoint) {
         this.action = action;
         this.screen = screen;
         this.keyCode = keyCode;
         this.scanCode = scanCode;
         this.modifiers = modifiers;
         this.codePoint = codePoint;
-        this.nativeEvent = nativeEvent;
     }
 
-    public static BaniraKeyboardEvent pressed(@Nonnull Object screen, int keyCode, int scanCode, int modifiers,
-                                              @Nonnull Object nativeEvent) {
-        return new BaniraKeyboardEvent(Action.KEY_PRESS, screen, keyCode, scanCode, modifiers, -1, nativeEvent);
+    public static BaniraKeyboardEvent pressed(@Nonnull BaniraScreenInfo screen, int keyCode, int scanCode, int modifiers) {
+        return new BaniraKeyboardEvent(Action.KEY_PRESS, screen, keyCode, scanCode, modifiers, -1);
     }
 
-    public static BaniraKeyboardEvent released(@Nonnull Object screen, int keyCode, int scanCode, int modifiers,
-                                               @Nonnull Object nativeEvent) {
-        return new BaniraKeyboardEvent(Action.KEY_RELEASE, screen, keyCode, scanCode, modifiers, -1, nativeEvent);
+    public static BaniraKeyboardEvent released(@Nonnull BaniraScreenInfo screen, int keyCode, int scanCode, int modifiers) {
+        return new BaniraKeyboardEvent(Action.KEY_RELEASE, screen, keyCode, scanCode, modifiers, -1);
     }
 
-    public static BaniraKeyboardEvent charTyped(@Nonnull Object screen, int codePoint, int modifiers,
-                                                @Nonnull Object nativeEvent) {
-        return new BaniraKeyboardEvent(Action.CHAR_TYPED, screen, -1, -1, modifiers, codePoint, nativeEvent);
+    public static BaniraKeyboardEvent charTyped(@Nonnull BaniraScreenInfo screen, int codePoint, int modifiers) {
+        return new BaniraKeyboardEvent(Action.CHAR_TYPED, screen, -1, -1, modifiers, codePoint);
     }
 
     public char character() {

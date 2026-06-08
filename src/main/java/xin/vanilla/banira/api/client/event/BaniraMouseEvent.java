@@ -14,14 +14,13 @@ import javax.annotation.Nonnull;
 @Accessors(fluent = true)
 public final class BaniraMouseEvent {
     private final @Nonnull Action action;
-    private final @Nonnull Object screen;
+    private final @Nonnull BaniraScreenInfo screen;
     private final double mouseX;
     private final double mouseY;
     private final int button;
     private final double scrollDelta;
     private final double dragX;
     private final double dragY;
-    private final @Nonnull Object nativeEvent;
     private int clickCount = 1;
     private boolean doubleClick;
     private boolean repeatedClick;
@@ -36,8 +35,8 @@ public final class BaniraMouseEvent {
     private double dragTotalY;
     private boolean canceled;
 
-    private BaniraMouseEvent(@Nonnull Action action, @Nonnull Object screen, double mouseX, double mouseY,
-                             int button, double scrollDelta, double dragX, double dragY, @Nonnull Object nativeEvent) {
+    private BaniraMouseEvent(@Nonnull Action action, @Nonnull BaniraScreenInfo screen, double mouseX, double mouseY,
+                             int button, double scrollDelta, double dragX, double dragY) {
         this.action = action;
         this.screen = screen;
         this.mouseX = mouseX;
@@ -46,27 +45,23 @@ public final class BaniraMouseEvent {
         this.scrollDelta = scrollDelta;
         this.dragX = dragX;
         this.dragY = dragY;
-        this.nativeEvent = nativeEvent;
     }
 
-    public static BaniraMouseEvent clicked(@Nonnull Object screen, double mouseX, double mouseY, int button,
-                                           @Nonnull Object nativeEvent) {
-        return new BaniraMouseEvent(Action.CLICK, screen, mouseX, mouseY, button, 0.0D, 0.0D, 0.0D, nativeEvent);
+    public static BaniraMouseEvent clicked(@Nonnull BaniraScreenInfo screen, double mouseX, double mouseY, int button) {
+        return new BaniraMouseEvent(Action.CLICK, screen, mouseX, mouseY, button, 0.0D, 0.0D, 0.0D);
     }
 
-    public static BaniraMouseEvent released(@Nonnull Object screen, double mouseX, double mouseY, int button,
-                                            @Nonnull Object nativeEvent) {
-        return new BaniraMouseEvent(Action.RELEASE, screen, mouseX, mouseY, button, 0.0D, 0.0D, 0.0D, nativeEvent);
+    public static BaniraMouseEvent released(@Nonnull BaniraScreenInfo screen, double mouseX, double mouseY, int button) {
+        return new BaniraMouseEvent(Action.RELEASE, screen, mouseX, mouseY, button, 0.0D, 0.0D, 0.0D);
     }
 
-    public static BaniraMouseEvent scrolled(@Nonnull Object screen, double mouseX, double mouseY, double scrollDelta,
-                                            @Nonnull Object nativeEvent) {
-        return new BaniraMouseEvent(Action.SCROLL, screen, mouseX, mouseY, -1, scrollDelta, 0.0D, 0.0D, nativeEvent);
+    public static BaniraMouseEvent scrolled(@Nonnull BaniraScreenInfo screen, double mouseX, double mouseY, double scrollDelta) {
+        return new BaniraMouseEvent(Action.SCROLL, screen, mouseX, mouseY, -1, scrollDelta, 0.0D, 0.0D);
     }
 
-    public static BaniraMouseEvent dragged(@Nonnull Object screen, double mouseX, double mouseY, int button,
-                                           double dragX, double dragY, @Nonnull Object nativeEvent) {
-        return new BaniraMouseEvent(Action.DRAG, screen, mouseX, mouseY, button, 0.0D, dragX, dragY, nativeEvent);
+    public static BaniraMouseEvent dragged(@Nonnull BaniraScreenInfo screen, double mouseX, double mouseY, int button,
+                                           double dragX, double dragY) {
+        return new BaniraMouseEvent(Action.DRAG, screen, mouseX, mouseY, button, 0.0D, dragX, dragY);
     }
 
     public void cancel() {

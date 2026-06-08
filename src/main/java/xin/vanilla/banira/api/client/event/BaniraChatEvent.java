@@ -12,10 +12,8 @@ import javax.annotation.Nonnull;
 @Accessors(fluent = true)
 public final class BaniraChatEvent {
     private final @Nonnull String message;
-    private final @Nonnull Object nativeEvent;
 
-    public BaniraChatEvent(@Nonnull String message, @Nonnull Object nativeEvent) {
+    public BaniraChatEvent(@Nonnull String message) {
         this.message = message;
-        this.nativeEvent = nativeEvent;
     }
 }

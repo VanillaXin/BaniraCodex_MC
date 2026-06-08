@@ -1,6 +1,11 @@
 package xin.vanilla.banira.api.client.hud;
 
+import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
+import xin.vanilla.banira.api.client.render.BaniraDrawContext;
+import xin.vanilla.banira.api.client.render.BaniraDrawHandle;
+
+import javax.annotation.Nonnull;
 
 import static org.junit.Assert.*;
 
@@ -11,7 +16,7 @@ public class BaniraHudRenderEventTest {
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
                 HudRenderPhase.PRE,
                 HudOverlayElement.EXPERIENCE,
-                new BaniraHudRenderContext(new Object(), 320, 180, 0.5f),
+                context(),
                 true
         );
 
@@ -30,7 +35,7 @@ public class BaniraHudRenderEventTest {
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
                 HudRenderPhase.POST,
                 HudOverlayElement.ALL,
-                new BaniraHudRenderContext(new Object(), 320, 180, 0.5f),
+                context(),
                 false
         );
 
@@ -44,7 +49,7 @@ public class BaniraHudRenderEventTest {
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
                 HudRenderPhase.POST,
                 HudOverlayElement.EXPERIENCE_BAR,
-                new BaniraHudRenderContext(new Object(), 320, 180, 0.5f),
+                context(),
                 BaniraHudBounds.of(69, 151, 182, 5),
                 false
         );
@@ -52,5 +57,32 @@ public class BaniraHudRenderEventTest {
         assertTrue(event.hasKnownBounds());
         assertTrue(event.isExperience());
         assertEquals(69, event.bounds().x());
+    }
+
+    private static BaniraHudRenderContext context() {
+        return new BaniraHudRenderContext(new BaniraDrawContext(new NoopDrawHandle(), 320, 180, 0.5f), 320, 180, 0.5f);
+    }
+
+    private static final class NoopDrawHandle implements BaniraDrawHandle {
+        @Override
+        public void fill(int x, int y, int width, int height, int argb) {
+        }
+
+        @Override
+        public void line(float x1, float y1, float x2, float y2, float lineWidth, int argb) {
+        }
+
+        @Override
+        public void roundedRect(int x, int y, int width, int height, int argb, int radius) {
+        }
+
+        @Override
+        public void text(@Nonnull String text, int x, int y, int argb, boolean shadow) {
+        }
+
+        @Override
+        public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height,
+                            float u, float v, int textureWidth, int textureHeight) {
+        }
     }
 }

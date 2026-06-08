@@ -32,6 +32,6 @@ public final class BaniraClientModSetup {
         NotificationTypeSettingsStore.get().load();
 
         BaniraClientEventHub.registerCodexDefaults();
-        BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent(event));
+        BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
     }
 }

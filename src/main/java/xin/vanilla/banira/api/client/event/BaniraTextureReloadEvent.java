@@ -13,10 +13,8 @@ import javax.annotation.Nonnull;
 @Accessors(fluent = true)
 public final class BaniraTextureReloadEvent {
     private final @Nonnull ResourceLocation atlasLocation;
-    private final @Nonnull Object nativeEvent;
 
-    public BaniraTextureReloadEvent(@Nonnull ResourceLocation atlasLocation, @Nonnull Object nativeEvent) {
+    public BaniraTextureReloadEvent(@Nonnull ResourceLocation atlasLocation) {
         this.atlasLocation = atlasLocation;
-        this.nativeEvent = nativeEvent;
     }
 }

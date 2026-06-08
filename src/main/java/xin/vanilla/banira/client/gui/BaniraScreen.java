@@ -187,6 +187,9 @@ public abstract class BaniraScreen extends Screen {
      * 每帧 render 时缓存的 theme，避免 getEffectiveTheme 重复计算
      */
     private BaniraColorConfig cachedTheme;
+    private long renderFrameId;
+    private long dropdownOpenCacheFrameId = -1;
+    private boolean cachedDropdownOpen;
 
     /**
      * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
@@ -212,6 +215,20 @@ public abstract class BaniraScreen extends Screen {
      * 用于在下拉全屏浮层显示时抑制后方控件的 {@link TooltipWidget}，避免与下拉项提示叠显。
      */
     public boolean isAnyDropdownSelectOpen() {
+        if (cachedTheme != null) {
+            if (dropdownOpenCacheFrameId != renderFrameId) {
+                cachedDropdownOpen = computeAnyDropdownSelectOpen();
+                dropdownOpenCacheFrameId = renderFrameId;
+            }
+            return cachedDropdownOpen;
+        }
+        return computeAnyDropdownSelectOpen();
+    }
+
+    /**
+     * 递归检查整棵组件树；render 内会按帧缓存，事件阶段保持即时计算。
+     */
+    private boolean computeAnyDropdownSelectOpen() {
         for (IWidget w : this.widgets) {
             if (anyDropdownSelectOpenInTree(w)) {
                 return true;
@@ -246,14 +263,18 @@ public abstract class BaniraScreen extends Screen {
             totalRenderCount++;
             this.renderCount++;
         }
+        renderFrameId++;
         cachedTheme = getEffectiveTheme();
+        dropdownOpenCacheFrameId = -1;
+        try {
+            this.onRender(stack, partialTicks);
+            this.flushDeferredTooltipRenders(stack);
 
-        this.onRender(stack, partialTicks);
-        this.flushDeferredTooltipRenders(stack);
-
-        this.popupOption.render(stack, inputState);
-        this.cursor.draw(stack, mouseX, mouseY);
-        cachedTheme = null;
+            this.popupOption.render(stack, inputState);
+            this.cursor.draw(stack, mouseX, mouseY);
+        } finally {
+            cachedTheme = null;
+        }
     }
 
     protected abstract void onRender(PoseStack stack, float partialTicks);

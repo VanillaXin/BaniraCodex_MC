@@ -79,6 +79,7 @@ public class EffectSelectScreen extends BaniraScreen {
     private TooltipWidget effectTooltip;
     private TooltipWidget durationTooltip;
     private TooltipWidget amplifierTooltip;
+    private boolean effectButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -207,7 +208,7 @@ public class EffectSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> refreshEffectButtons());
+        scrollbarWidget.onValueChanged(v -> markEffectButtonsDirty());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
@@ -353,14 +354,13 @@ public class EffectSelectScreen extends BaniraScreen {
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
-        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
-
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
 
-        refreshEffectButtons();
+        refreshEffectButtonsIfDirty();
+        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
+        super.renderWidgets(stack, partialTicks);
     }
 
     @Override
@@ -483,6 +483,20 @@ public class EffectSelectScreen extends BaniraScreen {
                 amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
             }
         }
+        effectButtonsDirty = false;
+    }
+
+    private void markEffectButtonsDirty() {
+        effectButtonsDirty = true;
+    }
+
+    /**
+     * 列表行只在搜索、滚动或当前效果变化后刷新，避免 render 每帧重设所有子控件。
+     */
+    private void refreshEffectButtonsIfDirty() {
+        if (effectButtonsDirty) {
+            refreshEffectButtons();
+        }
     }
 
     private static String buildTooltip(String displayName, String effectId) {
@@ -523,7 +537,7 @@ public class EffectSelectScreen extends BaniraScreen {
             }
         }
 
-        refreshEffectButtons();
+        markEffectButtonsDirty();
         LOGGER.debug("Effect search results updated: count={}, query={}", effectList.size(), s);
     }
 
@@ -533,7 +547,7 @@ public class EffectSelectScreen extends BaniraScreen {
             if (effect != null) {
                 this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                 LOGGER.debug("Select effect: {}", EffectUtils.getEffectDisplayName(effect));
-                refreshEffectButtons();
+                markEffectButtonsDirty();
             }
         }
     }
@@ -575,6 +589,7 @@ public class EffectSelectScreen extends BaniraScreen {
                         MobEffect effect = EffectUtils.getEffectFromRegistry(id);
                         if (effect != null) {
                             this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                            markEffectButtonsDirty();
                         }
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
@@ -596,6 +611,7 @@ public class EffectSelectScreen extends BaniraScreen {
                     .setCallback(input -> {
                         int duration = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
+                        markEffectButtonsDirty();
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
@@ -616,6 +632,7 @@ public class EffectSelectScreen extends BaniraScreen {
                     .setCallback(input -> {
                         int amplifier = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
+                        markEffectButtonsDirty();
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         }

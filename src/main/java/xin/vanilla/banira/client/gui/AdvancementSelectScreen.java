@@ -78,6 +78,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     private ItemWidget advancementButtonItemWidget;
     private TooltipWidget typeTooltip;
     private TooltipWidget advancementTooltip;
+    private boolean advancementButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -220,7 +221,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> refreshAdvancementButtons());
+        scrollbarWidget.onValueChanged(v -> markAdvancementButtonsDirty());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
         // endregion 滚动条
@@ -375,9 +376,6 @@ public class AdvancementSelectScreen extends BaniraScreen {
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
-        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
-
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
@@ -389,7 +387,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
         }
         this.wasLoading = isLoading;
 
-        refreshAdvancementButtons();
+        refreshAdvancementButtonsIfDirty();
+        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
+        super.renderWidgets(stack, partialTicks);
     }
 
     @Override
@@ -515,6 +515,20 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 advancementTooltip.text(Text.transAuto(BaniraCodex.MODID, "advancement_select_advancement"));
             }
         }
+        advancementButtonsDirty = false;
+    }
+
+    private void markAdvancementButtonsDirty() {
+        advancementButtonsDirty = true;
+    }
+
+    /**
+     * 成就列表在搜索、滚动、选择或异步加载完成后才刷新，普通 render 只绘制现有控件。
+     */
+    private void refreshAdvancementButtonsIfDirty() {
+        if (advancementButtonsDirty) {
+            refreshAdvancementButtons();
+        }
     }
 
     private void updateSearchResults() {
@@ -544,7 +558,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             }
         }
 
-        refreshAdvancementButtons();
+        markAdvancementButtonsDirty();
         LOGGER.debug("Search results updated: count={}, query={}", advancementList.size(), s);
     }
 
@@ -554,7 +568,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 ResourceLocation location = Identifier.id().parse(advancementId);
                 this.currentAdvancement = location;
                 LOGGER.debug("Select advancement: {}", location);
-                refreshAdvancementButtons();
+                markAdvancementButtonsDirty();
             } catch (IllegalArgumentException e) {
                 LOGGER.debug("Invalid advancement id format: {}", advancementId);
             } catch (Exception e) {
@@ -611,6 +625,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                         String id = input.firstValue();
                         try {
                             this.currentAdvancement = Identifier.id().parse(id);
+                            markAdvancementButtonsDirty();
                         } catch (IllegalArgumentException e) {
                             LOGGER.debug("Invalid advancement id format: {}", id);
                         } catch (Exception e) {

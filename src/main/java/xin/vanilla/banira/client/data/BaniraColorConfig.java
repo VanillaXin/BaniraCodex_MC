@@ -776,65 +776,65 @@ public final class BaniraColorConfig {
     }
 
     /**
-     * 春 - 樱花粉：白底微粉，层次由浅到深
+     * 春 - 樱花粉白：轻亮、柔软，避免混入过多冷色
      */
     private static BaniraColorConfig builtinSpring() {
         BaniraColorConfig c = new BaniraColorConfig()
-                .accent(0xFFD96A88).accentHover(0xFFF1B4C5).accentFocused(0xFFE889A2).accentPressed(0xFFC95A76)
-                .bgPrimary(0xFFFFFDFB).bgSecondary(0xFFF7FBF4).bgSurface(0xFFFFF6F8).bgTertiary(0xFFF0F5EC).bgQuaternary(0xFFF7E9EF).bgDisabled(0xFFF0E9EC)
-                .textPrimary(0xFF5C3B48).textSecondary(0xFF6F7661).textHint(0xFFA9919C).textDisabled(0xFFAAA4A7)
-                .border(0xFFD8B6C2).borderHover(0xFFC77D92).borderFocused(0xFF9CBF7A).borderDisabled(0xFFD8D2D4)
-                .error(0xFFC63D4F).warning(0xFFC7862F).success(0xFF5D9A68).info(0xFF4F86C6)
-                .cursorLightPressedOverride(0xFFA94866);
+                .accent(0xFFEE7FA8).accentHover(0xFFFFBED3).accentFocused(0xFFF26D9D).accentPressed(0xFFD75B8A)
+                .bgPrimary(0xFFFFFCFE).bgSecondary(0xFFFFF7FB).bgSurface(0xFFFFF0F6).bgTertiary(0xFFFFE8F1).bgQuaternary(0xFFFFDCE9).bgDisabled(0xFFF5EAF0)
+                .textPrimary(0xFF5C3B48).textSecondary(0xFF805D6B).textHint(0xFFB78FA0).textDisabled(0xFFC7B6BE)
+                .border(0xFFF2C7D7).borderHover(0xFFEE8FB2).borderFocused(0xFFF26D9D).borderDisabled(0xFFEADCE2)
+                .error(0xFFDA5B72).warning(0xFFE4A24A).success(0xFF61B875).info(0xFF6DA7E8)
+                .cursorLightPressedOverride(0xFFCC5A83);
         c.listItemTextOverride(0xFF4E3340);
         return c;
     }
 
     /**
-     * 夏 - 清新绿：白底微绿，清爽通透
+     * 夏 - 清新绿白：高明度绿，保持界面干净
      */
     private static BaniraColorConfig builtinSummer() {
         return new BaniraColorConfig()
-                .accent(0xFF2F9D8F).accentHover(0xFF87D9C9).accentFocused(0xFF47B7A7).accentPressed(0xFF238477)
-                .bgPrimary(0xFFF8FEFB).bgSecondary(0xFFF0FAF7).bgSurface(0xFFF8FBF2).bgTertiary(0xFFE6F3EE).bgQuaternary(0xFFEEF2DF).bgDisabled(0xFFEAF0EA)
-                .textPrimary(0xFF244B45).textSecondary(0xFF52746C).textHint(0xFF8FAFA6).textDisabled(0xFF98A8A3)
-                .border(0xFFA8CCC3).borderHover(0xFF2F9D8F).borderFocused(0xFFD6A642).borderDisabled(0xFFD2E0DC)
-                .error(0xFFC94A4A).warning(0xFFD9922E).success(0xFF3C9B64).info(0xFF2E86C1)
-                .cursorLightPressedOverride(0xFF1F766C);
+                .accent(0xFF65C978).accentHover(0xFFB9EFC3).accentFocused(0xFF45B962).accentPressed(0xFF3C9E54)
+                .bgPrimary(0xFFFBFFFC).bgSecondary(0xFFF3FFF5).bgSurface(0xFFEAFBEF).bgTertiary(0xFFDFF5E7).bgQuaternary(0xFFD2EDDC).bgDisabled(0xFFEAF3ED)
+                .textPrimary(0xFF294634).textSecondary(0xFF58735F).textHint(0xFF8EAD98).textDisabled(0xFFA7B8AD)
+                .border(0xFFBCE6C8).borderHover(0xFF74D98A).borderFocused(0xFF45B962).borderDisabled(0xFFD6E8DC)
+                .error(0xFFDA5C63).warning(0xFFE3A13B).success(0xFF45B962).info(0xFF5CAAE6)
+                .cursorLightPressedOverride(0xFF368B4B);
     }
 
     /**
-     * 秋 - 活力橙：白底暖橙，层次分明
+     * 秋 - 蜜橙白：温暖但不过暗，减少土色感
      */
     private static BaniraColorConfig builtinAutumn() {
         return new BaniraColorConfig()
-                .accent(0xFFC76D2E).accentHover(0xFFE6B17E).accentFocused(0xFF7F9B6D).accentPressed(0xFFA85828)
-                .bgPrimary(0xFFFFFBF5).bgSecondary(0xFFF8F1E6).bgSurface(0xFFF4F5EA).bgTertiary(0xFFEDE6DA).bgQuaternary(0xFFE5EAD8).bgDisabled(0xFFF0EAE2)
-                .textPrimary(0xFF4E4034).textSecondary(0xFF706555).textHint(0xFFA28F7A).textDisabled(0xFFA9A096)
-                .border(0xFFC9B59F).borderHover(0xFFC76D2E).borderFocused(0xFF7F9B6D).borderDisabled(0xFFDAD2C8)
-                .error(0xFFB84A45).warning(0xFFC9802F).success(0xFF6E8D56).info(0xFF557FA6)
-                .cursorLightPressedOverride(0xFF9A4A22);
+                .accent(0xFFF59A4C).accentHover(0xFFFFC78F).accentFocused(0xFFE98637).accentPressed(0xFFD8752C)
+                .bgPrimary(0xFFFFFDF9).bgSecondary(0xFFFFF7EF).bgSurface(0xFFFFF0DF).bgTertiary(0xFFFFE7CE).bgQuaternary(0xFFFFD9B8).bgDisabled(0xFFF3E8DC)
+                .textPrimary(0xFF5B432F).textSecondary(0xFF80654A).textHint(0xFFB49578).textDisabled(0xFFC4B4A2)
+                .border(0xFFF1C89D).borderHover(0xFFF7A762).borderFocused(0xFFE98637).borderDisabled(0xFFE5D5C2)
+                .error(0xFFD45B5B).warning(0xFFE28A24).success(0xFF69AE69).info(0xFF5E9DD6)
+                .cursorLightPressedOverride(0xFFBE6323);
     }
 
     /**
-     * 冬 - 宝石蓝：白底冰蓝，清冽通透
+     * 冬 - 冰蓝白：清亮蓝白，保留软萌感
      */
     private static BaniraColorConfig builtinWinter() {
         return new BaniraColorConfig()
-                .accent(0xFF4E8FD8).accentHover(0xFFA7C9F2).accentFocused(0xFF7A6ED0).accentPressed(0xFF346DAF)
-                .bgPrimary(0xFFF9FCFF).bgSecondary(0xFFF3F8FC).bgSurface(0xFFF6F5FB).bgTertiary(0xFFE8F0F7).bgQuaternary(0xFFEDEAF6).bgDisabled(0xFFECEFF4)
-                .textPrimary(0xFF30445D).textSecondary(0xFF61748C).textHint(0xFF96A8BC).textDisabled(0xFFA2AAB5)
-                .border(0xFFB9CBE0).borderHover(0xFF4E8FD8).borderFocused(0xFF7A6ED0).borderDisabled(0xFFD4DCE6)
-                .error(0xFFB9445D).warning(0xFFB6782D).success(0xFF4E9270).info(0xFF4E8FD8)
-                .cursorLightPressedOverride(0xFF275F9D);
+                .accent(0xFF78BDF7).accentHover(0xFFC7E6FF).accentFocused(0xFF5EAFE9).accentPressed(0xFF4B9DDF)
+                .bgPrimary(0xFFFBFEFF).bgSecondary(0xFFF4FBFF).bgSurface(0xFFEAF6FF).bgTertiary(0xFFDCEFFF).bgQuaternary(0xFFCFE6FB).bgDisabled(0xFFE9F0F6)
+                .textPrimary(0xFF2E475F).textSecondary(0xFF5B7892).textHint(0xFF8EACC4).textDisabled(0xFFA9B8C5)
+                .border(0xFFBBDCF5).borderHover(0xFF7AC6FF).borderFocused(0xFF5EAFE9).borderDisabled(0xFFD5E3EF)
+                .error(0xFFD45B74).warning(0xFFE0A244).success(0xFF5BAF82).info(0xFF5EAFE9)
+                .cursorLightPressedOverride(0xFF3B86C7);
     }
 
     private static BaniraColorConfig builtinNightSpring() {
         BaniraColorConfig c = new BaniraColorConfig()
-                .accent(0xFFF0A8C0).accentHover(0xFFFFC8D8).accentFocused(0xFFA8D08A).accentPressed(0xFFE090B0)
+                .accent(0xFFF0A8C0).accentHover(0xFFFFC8D8).accentFocused(0xFFFF9FC2).accentPressed(0xFFE090B0)
                 .bgPrimary(0xFF181519).bgSecondary(0xFF201B20).bgSurface(0xFF28232A).bgTertiary(0xFF2F3030).bgQuaternary(0xFF382E36).bgDisabled(0xFF282428)
                 .textPrimary(0xFFF2DDE5).textSecondary(0xFFC8B7C0).textHint(0xFF9A8E96).textDisabled(0xFF746D72)
-                .border(0xFF66505D).borderHover(0xFFF0A8C0).borderFocused(0xFFA8D08A).borderDisabled(0xFF474047)
+                .border(0xFF66505D).borderHover(0xFFF0A8C0).borderFocused(0xFFFF9FC2).borderDisabled(0xFF474047)
                 .error(0xFFFF7088).warning(0xFFF0B560).success(0xFF8BCB8D).info(0xFF80B8F0)
                 .cursorLightMainOverride(0xFFFFD0E0).cursorDarkMainOverride(0xFFF0A8C0)
                 .cursorLightPressedOverride(0xFFFFA8C8).cursorDarkPressedOverride(0xFFE080A0);
@@ -846,13 +846,13 @@ public final class BaniraColorConfig {
 
     private static BaniraColorConfig builtinNightSummer() {
         return new BaniraColorConfig()
-                .accent(0xFF63D4C1).accentHover(0xFFB4EFE4).accentFocused(0xFFE0C86A).accentPressed(0xFF45B5A5)
-                .bgPrimary(0xFF111918).bgSecondary(0xFF17211F).bgSurface(0xFF1E2927).bgTertiary(0xFF263330).bgQuaternary(0xFF30362A).bgDisabled(0xFF222928)
+                .accent(0xFF7FE192).accentHover(0xFFBDF3C7).accentFocused(0xFF98E7A8).accentPressed(0xFF58C76E)
+                .bgPrimary(0xFF101912).bgSecondary(0xFF172019).bgSurface(0xFF1F2A22).bgTertiary(0xFF27332A).bgQuaternary(0xFF2F3A31).bgDisabled(0xFF222928)
                 .textPrimary(0xFFE2F4EF).textSecondary(0xFFAED1C8).textHint(0xFF7E9E96).textDisabled(0xFF60746F)
-                .border(0xFF436A64).borderHover(0xFF63D4C1).borderFocused(0xFFE0C86A).borderDisabled(0xFF374341)
-                .error(0xFFFF7480).warning(0xFFF0B860).success(0xFF7FD992).info(0xFF78B8F0)
-                .cursorLightMainOverride(0xFFE8FFFA).cursorDarkMainOverride(0xFF63D4C1)
-                .cursorLightPressedOverride(0xFFBDEFE6).cursorDarkPressedOverride(0xFF38A99B)
+                .border(0xFF456B4F).borderHover(0xFF7FE192).borderFocused(0xFF98E7A8).borderDisabled(0xFF374341)
+                .error(0xFFFF7480).warning(0xFFF0B860).success(0xFF8EE59C).info(0xFF78B8F0)
+                .cursorLightMainOverride(0xFFE8FFFA).cursorDarkMainOverride(0xFF7FE192)
+                .cursorLightPressedOverride(0xFFC6F5CE).cursorDarkPressedOverride(0xFF58C76E)
                 .listItemTextOverride(0xFFDFF8F2)
                 .inputBgOverride(0xFF222E2B)
                 .inputBgErrorOverride(0xFF33272A);
@@ -860,10 +860,10 @@ public final class BaniraColorConfig {
 
     private static BaniraColorConfig builtinNightAutumn() {
         return new BaniraColorConfig()
-                .accent(0xFFFFA060).accentHover(0xFFFFC79A).accentFocused(0xFFA7C080).accentPressed(0xFFE58042)
-                .bgPrimary(0xFF181512).bgSecondary(0xFF211B17).bgSurface(0xFF29231E).bgTertiary(0xFF312B25).bgQuaternary(0xFF333828).bgDisabled(0xFF27231F)
+                .accent(0xFFFFA060).accentHover(0xFFFFC79A).accentFocused(0xFFFFB070).accentPressed(0xFFE58042)
+                .bgPrimary(0xFF181512).bgSecondary(0xFF211B17).bgSurface(0xFF29231E).bgTertiary(0xFF312B25).bgQuaternary(0xFF3A3026).bgDisabled(0xFF27231F)
                 .textPrimary(0xFFF1E0CE).textSecondary(0xFFCBBBA3).textHint(0xFF978A7A).textDisabled(0xFF70685F)
-                .border(0xFF675746).borderHover(0xFFFFA060).borderFocused(0xFFA7C080).borderDisabled(0xFF403830)
+                .border(0xFF675746).borderHover(0xFFFFA060).borderFocused(0xFFFFB070).borderDisabled(0xFF403830)
                 .error(0xFFFF7474).warning(0xFFFFB45C).success(0xFFA7C080).info(0xFF82A7D8)
                 .cursorLightMainOverride(0xFFFFF0D8).cursorDarkMainOverride(0xFFFFA868)
                 .cursorLightPressedOverride(0xFFFFD0A0).cursorDarkPressedOverride(0xFFE07830)
@@ -874,10 +874,10 @@ public final class BaniraColorConfig {
 
     private static BaniraColorConfig builtinNightWinter() {
         return new BaniraColorConfig()
-                .accent(0xFF7AB8F2).accentHover(0xFFB8D8FA).accentFocused(0xFFA8A0F0).accentPressed(0xFF4F91D0)
-                .bgPrimary(0xFF11161D).bgSecondary(0xFF171D24).bgSurface(0xFF1F242E).bgTertiary(0xFF272D37).bgQuaternary(0xFF302F3D).bgDisabled(0xFF21262D)
+                .accent(0xFF7AB8F2).accentHover(0xFFB8D8FA).accentFocused(0xFF94CBFF).accentPressed(0xFF4F91D0)
+                .bgPrimary(0xFF11161D).bgSecondary(0xFF171D24).bgSurface(0xFF1F242E).bgTertiary(0xFF272D37).bgQuaternary(0xFF2D3542).bgDisabled(0xFF21262D)
                 .textPrimary(0xFFDDEBFA).textSecondary(0xFFADC2D8).textHint(0xFF7E98B4).textDisabled(0xFF5D7186)
-                .border(0xFF475D73).borderHover(0xFF7AB8F2).borderFocused(0xFFA8A0F0).borderDisabled(0xFF394451)
+                .border(0xFF475D73).borderHover(0xFF7AB8F2).borderFocused(0xFF94CBFF).borderDisabled(0xFF394451)
                 .error(0xFFFF7088).warning(0xFFE8B86A).success(0xFF80CFA0).info(0xFF7AB8F2)
                 .cursorLightMainOverride(0xFFEAF7FF).cursorDarkMainOverride(0xFF7AB8F2)
                 .cursorLightPressedOverride(0xFFC5DFFF).cursorDarkPressedOverride(0xFF4D84C8)

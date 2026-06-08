@@ -366,6 +366,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private int cachedReverseWindowEnd = -1;
     private int cachedReverseWindowWidth = -1;
     private int cachedReverseWindowLength;
+    private final Text clearTooltipText = Text.literal("清空");
+    private String cachedErrorTooltipSource;
+    private Text cachedErrorTooltipText;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -547,11 +550,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal("清空"), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(stack, mx, my, clearTooltipText, EnumTooltipTextureMode.AUTO);
             } else if (error && errorMessage != null && !errorMessage.isEmpty() && isMouseOverTextArea() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(stack, mx, my, errorTooltipText(), EnumTooltipTextureMode.AUTO);
             }
 
             if (shouldShowCursor) {
@@ -714,6 +717,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
             s.popPose();
         });
+    }
+
+    private Text errorTooltipText() {
+        if (cachedErrorTooltipText == null || !java.util.Objects.equals(cachedErrorTooltipSource, errorMessage)) {
+            cachedErrorTooltipSource = errorMessage;
+            cachedErrorTooltipText = Text.literal(errorMessage != null ? errorMessage : "");
+        }
+        return cachedErrorTooltipText;
     }
 
     // endregion 渲染

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.event;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -20,6 +20,7 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -75,12 +76,12 @@ public final class BaniraClientEventHub {
         }
         codexDefaultsRegistered = true;
         ModLoadedToBoth.registerClientHandler(packet -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player == null) {
+            LocalPlayer player = BaniraClientRuntime.localPlayer();
+            if (player == null) {
                 return;
             }
             for (String modid : packet.modids()) {
-                PlayerUtils.setRemoteServerModInstalled(mc.player, modid, false);
+                PlayerUtils.setRemoteServerModInstalled(player, modid, false);
             }
         });
         Player.onClientLoggedIn(player -> {
@@ -153,7 +154,7 @@ public final class BaniraClientEventHub {
         Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
         Client.onKeyReleasedPost(event -> InputStateManager.instance().handleKeyReleased(event.keyCode()));
         Client.onClientTick(event -> {
-            if (event == BaniraClientTickEvent.END && Minecraft.getInstance().screen == null) {
+            if (event == BaniraClientTickEvent.END && BaniraClientRuntime.currentScreen() == null) {
                 InputStateManager.instance().handleScreenClosed();
             }
         });

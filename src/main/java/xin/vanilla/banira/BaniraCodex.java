@@ -2,7 +2,6 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,6 +32,7 @@ import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -177,7 +177,7 @@ public class BaniraCodex {
                 ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
                 Component label = BaniraComponent.get().transClient("key.banira_codex.categories");
                 Consumer<QuickActionContext> action = ctx ->
-                        Minecraft.getInstance().setScreen(
+                        BaniraClientRuntime.setScreen(
                                 new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
                         );
                 QuickActionRegistry.get().registerListOnly(MODID + ":quick_codex_navigation", texture, label, action);

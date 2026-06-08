@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.event;
 
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
@@ -13,6 +12,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.forge.client.ForgeHudOverlayAdapter;
 
 /**
@@ -67,7 +67,7 @@ public final class BaniraClientForgeEventHandler {
                 ForgeHudOverlayAdapter.mapElement(event.getType()),
                 event.getMatrixStack(),
                 event.getPartialTicks(),
-                Minecraft.getInstance().screen != null,
+                BaniraClientRuntime.currentScreen() != null,
                 event
         ));
     }
@@ -209,7 +209,7 @@ public final class BaniraClientForgeEventHandler {
                 ForgeHudOverlayAdapter.mapElement(event.getType()),
                 event.getMatrixStack(),
                 event.getPartialTicks(),
-                Minecraft.getInstance().screen != null,
+                BaniraClientRuntime.currentScreen() != null,
                 event
         ));
     }

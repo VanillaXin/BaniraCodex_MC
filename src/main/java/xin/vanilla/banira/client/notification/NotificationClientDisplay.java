@@ -1,18 +1,12 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.Translator;
-
-import java.util.UUID;
+import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 /**
  * 按玩家在「通知类型配置」中的选择，将网络通知改道至原版聊天或操作栏
@@ -33,12 +27,8 @@ public final class NotificationClientDisplay {
             return false;
         }
         String lang = Translator.getClientLanguage();
-        Minecraft mc = Minecraft.getInstance();
         if (mode == EnumNotificationTypeDisplayMode.VANILLA_CHAT) {
-            Player player = mc.player;
-            if (player != null) {
-                player.sendMessage(component.toChat(lang), player.getUUID());
-            }
+            BaniraVanillaNotificationBridge.sendChat(component.toChat(lang));
             return true;
         }
         if (mode == EnumNotificationTypeDisplayMode.ACTION_BAR) {
@@ -49,9 +39,7 @@ public final class NotificationClientDisplay {
             if (line.trim().isEmpty()) {
                 return false;
             }
-            net.minecraft.network.chat.Component barMsg = new TextComponent(line);
-            UUID sender = mc.player != null ? mc.player.getUUID() : Util.NIL_UUID;
-            mc.execute(() -> mc.gui.handleChat(ChatType.GAME_INFO, barMsg, sender));
+            BaniraVanillaNotificationBridge.sendActionBar(line);
             return true;
         }
         return false;

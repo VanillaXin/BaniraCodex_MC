@@ -2,8 +2,6 @@ package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -22,6 +20,7 @@ import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 import java.net.URI;
 
@@ -42,21 +41,16 @@ public final class NotificationStyleInteractionHelper {
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(Minecraft.getInstance(), style.getClickEvent());
+        return handleClickInGame(style.getClickEvent());
     }
 
-    @Deprecated
-    public static boolean tryClickStyle(Minecraft mc, Style style) {
-        return tryClickStyle(style);
-    }
-
-    private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
+    private static boolean handleClickInGame(ClickEvent event) {
         if (InputStateManager.isShiftPressingStatic()) {
             return false;
         }
         switch (event.getAction()) {
             case OPEN_URL:
-                if (!mc.options.chatLinks) {
+                if (!BaniraVanillaNotificationBridge.chatLinksEnabled()) {
                     return false;
                 }
                 try {
@@ -67,17 +61,9 @@ public final class NotificationStyleInteractionHelper {
                     return false;
                 }
             case RUN_COMMAND:
-                if (mc.player == null) {
-                    return false;
-                }
-                String cmd = event.getValue();
-                if (!cmd.startsWith("/")) {
-                    cmd = "/" + cmd;
-                }
-                mc.player.chat(cmd);
-                return true;
+                return BaniraVanillaNotificationBridge.runCommand(event.getValue());
             case SUGGEST_COMMAND:
-                BaniraClientRuntime.setScreen(new ChatScreen(event.getValue()));
+                BaniraVanillaNotificationBridge.suggestCommand(event.getValue());
                 return true;
             case COPY_TO_CLIPBOARD:
                 AbstractGuiUtils.setClipboard(event.getValue());

@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
@@ -22,6 +21,7 @@ import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -68,15 +68,11 @@ public final class TextureUtils {
     }
 
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return factory.empty();
-        }
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
         ResourceLocation rl = factory.create(safePath);
-        ResourceManager resourceManager = mc.getResourceManager();
-        TextureManager textureManager = mc.getTextureManager();
+        ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
+        TextureManager textureManager = BaniraClientRuntime.textureManager();
 
         // region 资源包纹理
         if (resourceManager.hasResource(rl)) {
@@ -132,11 +128,7 @@ public final class TextureUtils {
         if (MissingTextureAtlasSprite.getLocation().equals(location)) {
             return false;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return false;
-        }
-        TextureManager textureManager = mc.getTextureManager();
+        TextureManager textureManager = BaniraClientRuntime.textureManager();
         AbstractTexture miss = MissingTextureAtlasSprite.getTexture();
 
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(location)) {
@@ -150,7 +142,7 @@ public final class TextureUtils {
             return t.getId() != -1;
         }
 
-        ResourceManager resourceManager = mc.getResourceManager();
+        ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
         if (!resourceManager.hasResource(location)) {
             return false;
         }
@@ -254,12 +246,9 @@ public final class TextureUtils {
     }
 
     public static void clearAll() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null) {
-            TextureManager tm = mc.getTextureManager();
-            for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
-                tm.release(loc);
-            }
+        TextureManager tm = BaniraClientRuntime.textureManager();
+        for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
+            tm.release(loc);
         }
         REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.clear();
         for (NativeImage img : CACHE.values()) {
@@ -284,18 +273,14 @@ public final class TextureUtils {
             return CACHE.get(texture);
         }
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(texture)) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc == null) {
-                return null;
-            }
-            AbstractTexture gpuTexture = mc.getTextureManager().getTexture(texture);
+            AbstractTexture gpuTexture = BaniraClientRuntime.textureManager().getTexture(texture);
             if (gpuTexture instanceof DynamicTexture dt) {
                 return dt.getPixels();
             }
             return null;
         }
         try {
-            ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
+            ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
             if (!resourceManager.hasResource(texture)) {
                 return null;
             }
@@ -357,11 +342,7 @@ public final class TextureUtils {
 
     @Nullable
     private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return null;
-        }
-        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = mc.getTextureManager().getTexture(location);
+        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = BaniraClientRuntime.textureManager().getTexture(location);
         if (gpuTexture == null) {
             return null;
         }

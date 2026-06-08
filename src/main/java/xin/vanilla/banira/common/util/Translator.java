@@ -19,6 +19,7 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -284,7 +285,7 @@ public class Translator implements ITranslator {
             if (BaniraCodex.serverInstance().val()) {
                 manager = BaniraCodex.serverInstance().key().getResourceManager();
             } else {
-                manager = net.minecraft.client.Minecraft.getInstance().getResourceManager();
+                manager = BaniraClientRuntime.resourceManager();
             }
             Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
             languages.addAll(resources.stream()
@@ -378,11 +379,9 @@ public class Translator implements ITranslator {
     public static String getClientLanguage() {
         if (BaniraPlatforms.isInstalled() && EnvironmentUtils.isClient()) {
             try {
-                net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
-                if (minecraft != null
-                        && minecraft.getLanguageManager() != null
-                        && minecraft.getLanguageManager().getSelected() != null) {
-                    return normalizeLanguageCode(minecraft.getLanguageManager().getSelected().getCode());
+                String selected = BaniraClientRuntime.selectedLanguageCode();
+                if (!StringUtils.isNullOrEmptyEx(selected)) {
+                    return normalizeLanguageCode(selected);
                 }
             } catch (Throwable ignored) {
                 // 测试环境或客户端早期启动时语言管理器可能尚未就绪。

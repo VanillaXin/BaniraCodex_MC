@@ -19,6 +19,7 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -99,10 +100,8 @@ public final class PlayerUtils {
 
     @OnlyIn(Dist.CLIENT)
     public static UUID getPlayerUUID() {
-        if (net.minecraft.client.Minecraft.getInstance().player == null) {
-            return null;
-        }
-        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
+        Player player = BaniraClientRuntime.localPlayer();
+        return player != null ? player.getUUID() : null;
     }
 
     public static UUID getPlayerUUID(@Nonnull Player player) {
@@ -146,9 +145,7 @@ public final class PlayerUtils {
         if (StringUtils.isNullOrEmpty(nameString)) {
             try {
                 if (EnvironmentUtils.isClient()) {
-                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                            .filter(info -> info.getProfile().getId().equals(uuid))
-                            .findFirst().orElse(null).getProfile().getName();
+                    nameString = BaniraClientRuntime.onlinePlayerName(uuid);
                 }
             } catch (Throwable ignored) {
             }
@@ -194,7 +191,7 @@ public final class PlayerUtils {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
         try {
-            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
+            entity = BaniraClientRuntime.levelPlayer(uuid);
         } catch (Throwable ignored) {
         }
         return entity;
@@ -204,11 +201,8 @@ public final class PlayerUtils {
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
         try {
-            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
-                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                        .filter(info -> info.getProfile().getId().equals(uuid))
-                        .findFirst().orElse(null).getSkinLocation();
-            }
+            ResourceLocation skin = BaniraClientRuntime.onlinePlayerSkin(uuid);
+            if (skin != null) return skin;
         } catch (Throwable ignored) {
         }
         return Identifier.id().create("minecraft", "textures/entity/steve.png");

@@ -3,12 +3,18 @@ package xin.vanilla.banira.internal.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.entity.player.Player;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.common.data.KeyValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 /**
  * 客户端运行时访问点，集中隔离 Minecraft 单例和窗口句柄。
@@ -33,6 +39,28 @@ public final class BaniraClientRuntime {
         return Minecraft.getInstance().font;
     }
 
+    public static ResourceManager resourceManager() {
+        return Minecraft.getInstance().getResourceManager();
+    }
+
+    public static TextureManager textureManager() {
+        return Minecraft.getInstance().getTextureManager();
+    }
+
+    public static String serverIp() {
+        ServerData server = Minecraft.getInstance().getCurrentServer();
+        return server != null ? server.ip : "";
+    }
+
+    @Nullable
+    public static String selectedLanguageCode() {
+        if (Minecraft.getInstance().getLanguageManager() == null
+                || Minecraft.getInstance().getLanguageManager().getSelected() == null) {
+            return null;
+        }
+        return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+    }
+
     public static String clipboard() {
         return Minecraft.getInstance().keyboardHandler.getClipboard();
     }
@@ -53,6 +81,43 @@ public final class BaniraClientRuntime {
     @Nullable
     public static LocalPlayer localPlayer() {
         return Minecraft.getInstance().player;
+    }
+
+    @Nullable
+    public static Player levelPlayer(@Nullable UUID uuid) {
+        if (uuid == null || Minecraft.getInstance().level == null) {
+            return null;
+        }
+        return Minecraft.getInstance().level.getPlayerByUUID(uuid);
+    }
+
+    /**
+     * 从当前客户端连接缓存中查询玩家名；服务端/离线状态下返回 null。
+     */
+    @Nullable
+    public static String onlinePlayerName(@Nullable UUID uuid) {
+        LocalPlayer player = localPlayer();
+        if (player == null || player.connection == null || uuid == null) {
+            return null;
+        }
+        return player.connection.getOnlinePlayers().stream()
+                .filter(info -> info.getProfile().getId().equals(uuid))
+                .findFirst()
+                .map(info -> info.getProfile().getName())
+                .orElse(null);
+    }
+
+    @Nullable
+    public static ResourceLocation onlinePlayerSkin(@Nullable UUID uuid) {
+        LocalPlayer player = localPlayer();
+        if (player == null || player.connection == null || uuid == null) {
+            return null;
+        }
+        return player.connection.getOnlinePlayers().stream()
+                .filter(info -> info.getProfile().getId().equals(uuid))
+                .findFirst()
+                .map(info -> info.getSkinLocation())
+                .orElse(null);
     }
 
     /**

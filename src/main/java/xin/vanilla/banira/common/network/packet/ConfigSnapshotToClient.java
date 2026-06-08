@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -16,6 +15,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -107,7 +107,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
                 NotificationManager.get().addNotification(err);
                 return;
             }
-            Screen open = Minecraft.getInstance().screen;
+            Screen open = BaniraClientRuntime.currentScreen();
             if (open instanceof ConfigEditorScreen screen) {
                 screen.refreshUIFromHolderAfterRemoteFetch(packet.configName());
             }

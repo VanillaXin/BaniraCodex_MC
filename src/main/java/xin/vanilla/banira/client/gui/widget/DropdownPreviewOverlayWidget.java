@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -13,6 +12,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.List;
 
@@ -55,7 +55,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
 
         List<String> items = parent.selectedValuesView();
         if (items.isEmpty()) {
-            Minecraft.getInstance().execute(parent::closePreview);
+            BaniraClientRuntime.execute(parent::closePreview);
             return;
         }
 

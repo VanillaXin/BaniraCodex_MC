@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
@@ -14,6 +13,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 /**
  * 自定义的鼠标光标
@@ -96,16 +96,14 @@ public class MouseWidget extends BaseWidget {
     }
 
     private void hideSystemCursor() {
-        long windowHandle = Minecraft.getInstance().getWindow().getWindow();
-        GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
+        GLFW.glfwSetInputMode(BaniraClientRuntime.windowHandle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
     }
 
     /**
      * Screen 关闭时恢复系统鼠标
      */
     public void removed() {
-        long windowHandle = Minecraft.getInstance().getWindow().getWindow();
-        GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetInputMode(BaniraClientRuntime.windowHandle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
     }
 
     @Override

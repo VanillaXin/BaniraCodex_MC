@@ -18,8 +18,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
-import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -118,7 +118,7 @@ public class QuickIcon {
             return;
         }
         if (kind == Kind.ITEM) {
-            ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
+            BaniraItemRenderBridge.renderFlatIcon(stack, itemStack, x, y, size);
             return;
         }
         render(stack, mc, x, y, size);
@@ -133,7 +133,7 @@ public class QuickIcon {
         }
         switch (kind) {
             case ITEM: {
-                ItemWidget.renderGuiItemScaled(mc, itemStack, x, y, size);
+                BaniraItemRenderBridge.renderScaled(itemStack, x, y, size);
                 break;
             }
             case EFFECT: {

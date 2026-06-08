@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -14,6 +13,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
 
 import java.util.List;
 
@@ -135,7 +135,7 @@ class DropdownOverlayWidget extends BaseWidget {
                     int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
                     int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
                     int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
-                    ItemWidget.renderGuiItemFlatBlit(s, Minecraft.getInstance(), optEntry.icon(), iconX, iconY, sz);
+                    BaniraItemRenderBridge.renderFlatIcon(s, optEntry.icon(), iconX, iconY, sz);
                 }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;

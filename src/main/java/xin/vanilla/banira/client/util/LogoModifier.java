@@ -5,8 +5,9 @@ import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.common.util.FieldUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.common.ReflectionAccess;
+import xin.vanilla.banira.internal.forge.util.ForgeInternalFieldAccess;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,10 +99,10 @@ public final class LogoModifier {
                     return;
                 }
                 IModInfo sample = mods.get(0);
-                for (String name : FieldUtils.getPrivateFieldNames(ModInfo.class, Optional.class)) {
+                for (String name : ReflectionAccess.privateFieldNames(ModInfo.class, Optional.class)) {
                     try {
                         @SuppressWarnings("unchecked")
-                        Optional<String> logo = (Optional<String>) FieldUtils.getPrivateFieldValue(ModInfo.class, sample, name);
+                        Optional<String> logo = (Optional<String>) ReflectionAccess.fieldValue(ModInfo.class, sample, name);
                         if (logo != null && logo.isPresent()
                                 && StringUtils.isNotNullOrEmpty(logo.get())
                                 && logo.get().matches(".*\\.png$")) {
@@ -126,7 +127,7 @@ public final class LogoModifier {
                     continue;
                 }
 
-                FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
+                ForgeInternalFieldAccess.setObjectField(ModInfo.class, info, FIELD_NAME, customLogo);
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to modify mod logos", e);

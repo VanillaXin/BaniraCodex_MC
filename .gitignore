@@ -127,3 +127,5 @@ __pycache__/
 logs/
 runClient-smoke*.log
 publish.bat
+docs/
+AGENTS.md

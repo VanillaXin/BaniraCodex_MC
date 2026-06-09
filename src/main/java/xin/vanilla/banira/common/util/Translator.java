@@ -14,12 +14,12 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -282,8 +282,8 @@ public class Translator implements ITranslator {
     private void loadFromResourceManager() {
         try {
             ResourceManager manager;
-            if (BaniraCodex.serverInstance().val()) {
-                manager = BaniraCodex.serverInstance().key().getResourceManager();
+            if (BaniraServerRuntime.isRunning()) {
+                manager = BaniraServerRuntime.resourceManager();
             } else {
                 manager = BaniraClientRuntime.resourceManager();
             }

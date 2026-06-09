@@ -7,9 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
@@ -35,7 +35,7 @@ public final class PacketUtils {
      * @param packet 数据包
      */
     public static void broadcastPacket(Packet<?> packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        BaniraServerRuntime.players().forEach(player ->
                 player.connection.send(packet)
         );
     }
@@ -44,7 +44,7 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        BaniraServerRuntime.players().forEach(player ->
                 BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
         );
     }
@@ -55,7 +55,7 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        BaniraServerRuntime.players().forEach(player ->
                 sendSplitPacketToPlayer(packet, player)
         );
     }

@@ -3,11 +3,19 @@ package xin.vanilla.banira.internal.common;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.level.storage.LevelResource;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.StringUtils;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Banira 服务端运行时状态。
@@ -38,6 +46,24 @@ public final class BaniraServerRuntime {
 
     public static boolean isRunning() {
         return serverInstance().val();
+    }
+
+    @Nonnull
+    public static List<ServerPlayer> players() {
+        MinecraftServer server = server();
+        return server != null ? server.getPlayerList().getPlayers() : Collections.emptyList();
+    }
+
+    @Nullable
+    public static ServerPlayer player(@Nonnull UUID uuid) {
+        MinecraftServer server = server();
+        return server != null ? server.getPlayerList().getPlayer(uuid) : null;
+    }
+
+    @Nullable
+    public static ResourceManager resourceManager() {
+        MinecraftServer server = server();
+        return server != null ? server.getResourceManager() : null;
     }
 
     public static void markStarting(MinecraftServer server) {

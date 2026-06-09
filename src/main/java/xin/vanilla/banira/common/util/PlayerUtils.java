@@ -12,7 +12,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.UsernameCache;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.Texture;
@@ -20,6 +19,7 @@ import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -75,7 +75,7 @@ public final class PlayerUtils {
      * 获取所有玩家
      */
     public static List<ServerPlayer> getAllPlayers() {
-        return BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+        return BaniraServerRuntime.players();
     }
 
     /**
@@ -177,7 +177,7 @@ public final class PlayerUtils {
     @Nullable
     public static ServerPlayer getServerPlayerByUUID(UUID uuid) {
         try {
-            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
+            return BaniraServerRuntime.player(uuid);
         } catch (Throwable ignored) {
             return null;
         }

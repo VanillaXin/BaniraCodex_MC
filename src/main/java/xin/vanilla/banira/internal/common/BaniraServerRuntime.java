@@ -5,7 +5,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.world.level.storage.LevelResource;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
@@ -30,8 +29,8 @@ public final class BaniraServerRuntime {
 
     @Getter
     private static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
-            BaniraCodex.BANIRA_PLAYER_DATA_PATH,
-            () -> serverInstance().key().getWorldPath(LevelResource.PLAYER_DATA_DIR),
+            BaniraPaths.PLAYER_DATA_PATH,
+            BaniraPaths::vanillaPlayerDataPath,
             BaniraCodex.MODID,
             "",
             StringUtils.reverseBySeparatorElegant(BaniraCodex.ARTIFACT_ID, ".")

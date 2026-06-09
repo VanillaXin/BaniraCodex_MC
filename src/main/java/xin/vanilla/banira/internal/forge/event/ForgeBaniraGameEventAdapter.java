@@ -11,9 +11,9 @@ import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 /**
  * Forge 游戏总线适配器，只负责把 Forge 事件转换成 Banira 的中立回调。
@@ -39,7 +39,7 @@ public final class ForgeBaniraGameEventAdapter {
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (event.phase != TickEvent.Phase.END || server == null) {
             return;
         }

@@ -9,8 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
-import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.common.BaniraCodexRuntime;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.forge.ForgeBaniraCodexEntry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -53,18 +53,12 @@ public class BaniraCodex {
      * 服务端实例
      */
     @Getter
-    private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
+    private final static KeyValue<MinecraftServer, Boolean> serverInstance = BaniraServerRuntime.serverInstance();
 
     /**
      * 玩家数据管理器
      */
-    public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
-            BANIRA_PLAYER_DATA_PATH,
-            () -> serverInstance().key().getWorldPath(LevelResource.PLAYER_DATA_DIR),
-            MODID,
-            "",
-            StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
-    );
+    public static final PlayerDataManager playerDataManager = BaniraServerRuntime.playerDataManager();
 
     public BaniraCodex() {
         ForgeBaniraCodexEntry.bootstrap();

@@ -37,14 +37,14 @@ public final class BaniraCodexRuntime {
     }
 
     private static void registerServerLifecycle() {
-        BaniraEventBus.Server.onStarting(server -> BaniraCodex.serverInstance().key(server).value(true));
-        BaniraEventBus.Server.onStarting(server -> BaniraCodex.playerDataManager.clearCache());
+        BaniraEventBus.Server.onStarting(BaniraServerRuntime::markStarting);
+        BaniraEventBus.Server.onStarting(server -> BaniraServerRuntime.playerDataManager().clearCache());
         BaniraEventBus.Server.onStarting(server -> AdvancementUtils.clearAdvancementData());
-        BaniraEventBus.Server.onStopping(server -> BaniraCodex.serverInstance().value(false));
+        BaniraEventBus.Server.onStopping(server -> BaniraServerRuntime.markStopping());
 
         // 自定义配置允许外部编辑，运行时定期重新读取并补齐默认值。
         BaniraEventBus.Server.onTick(event -> {
-            MinecraftServer server = BaniraCodex.serverInstance().key();
+            MinecraftServer server = BaniraServerRuntime.server();
             if (server == null) return;
             if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
                 if (!CustomConfig.loadCustomConfig(true)) {
@@ -56,7 +56,7 @@ public final class BaniraCodexRuntime {
 
     private static void registerPlayerLifecycle() {
         BaniraEventBus.Save.onPlayerSave(player ->
-                BaniraCodex.playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
+                BaniraServerRuntime.playerDataManager().saveToDisk(PlayerUtils.getPlayerUUID(player))
         );
         BaniraEventBus.Player.onLoggedOut(player -> {
             if (player instanceof ServerPlayer) {

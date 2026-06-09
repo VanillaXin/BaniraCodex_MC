@@ -24,6 +24,8 @@ import java.util.UUID;
 @Accessors(fluent = true)
 public final class BaniraServerRuntime {
 
+    private static final String LEGACY_ARTIFACT_ID = "xin.vanilla";
+
     @Getter
     private static final KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
 
@@ -33,7 +35,7 @@ public final class BaniraServerRuntime {
             BaniraPaths::vanillaPlayerDataPath,
             BaniraCodex.MODID,
             "",
-            StringUtils.reverseBySeparatorElegant(BaniraCodex.ARTIFACT_ID, ".")
+            StringUtils.reverseBySeparatorElegant(LEGACY_ARTIFACT_ID, ".")
     );
 
     private BaniraServerRuntime() {

@@ -18,6 +18,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private final Map<Class<?>, String> modIdsByMainClass = new HashMap<>();
     private BaniraConfigService configService = NoopConfigService.INSTANCE;
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
+    private Path configDir = Path.of("config");
 
     public TestBaniraPlatform loaderType(String value) {
         this.loaderType = Objects.requireNonNull(value, "loaderType");
@@ -68,6 +69,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         return this;
     }
 
+    public TestBaniraPlatform configDir(Path value) {
+        this.configDir = Objects.requireNonNull(value, "configDir");
+        return this;
+    }
+
     @Override
     public @Nonnull String loaderType() {
         return loaderType;
@@ -115,7 +121,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     @Override
     public @Nonnull Path configDir() {
-        return Path.of("config");
+        return configDir;
     }
 
     @Override

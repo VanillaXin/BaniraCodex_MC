@@ -9,9 +9,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.*;
@@ -52,7 +52,7 @@ public final class DimensionUtils {
     }
 
     public static ServerLevel getLevel(ResourceKey<Level> dimension) {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         return server != null ? server.getLevel(dimension) : null;
     }
 
@@ -65,7 +65,7 @@ public final class DimensionUtils {
     }
 
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server == null) return Collections.emptySet();
         Set<String> ids = new HashSet<>();
         server.levelKeys().forEach(key -> ids.add(key.location().toString()));

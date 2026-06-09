@@ -11,9 +11,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +34,7 @@ public final class PoiUtils {
 
     public static PoiType getPoi(ResourceLocation id) {
         if (id == null) return null;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getOptional(id).orElse(null);
         }
@@ -60,7 +60,7 @@ public final class PoiUtils {
 
     public static Optional<ResourceKey<PoiType>> getKey(PoiType poiType) {
         if (poiType == null) return Optional.empty();
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getResourceKey(poiType);
         }
@@ -74,7 +74,7 @@ public final class PoiUtils {
 
     public static Optional<Holder<PoiType>> getHolder(ResourceLocation id) {
         if (id == null) return Optional.empty();
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).getHolder(getKey(id));
         }
@@ -100,7 +100,7 @@ public final class PoiUtils {
 
     public static boolean hasPoi(ResourceLocation id) {
         if (id == null) return false;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             var registry = server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY);
             if (registry.containsKey(id)) return true;
@@ -117,7 +117,7 @@ public final class PoiUtils {
     }
 
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.POINT_OF_INTEREST_TYPE_REGISTRY).keySet().stream()
                     .map(ResourceLocation::toString)

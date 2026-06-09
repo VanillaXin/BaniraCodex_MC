@@ -11,9 +11,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -39,7 +39,7 @@ public final class StructureUtils {
      */
     public static ConfiguredStructureFeature<?, ?> getStructure(ResourceLocation id) {
         if (id == null) return null;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY).getOptional(id).orElse(null);
         }
@@ -65,7 +65,7 @@ public final class StructureUtils {
 
     public static Optional<ResourceKey<ConfiguredStructureFeature<?, ?>>> getKey(ConfiguredStructureFeature<?, ?> structure) {
         if (structure == null) return Optional.empty();
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY).getResourceKey(structure);
         }
@@ -79,7 +79,7 @@ public final class StructureUtils {
 
     public static Optional<Holder<ConfiguredStructureFeature<?, ?>>> getHolder(ResourceLocation id) {
         if (id == null) return Optional.empty();
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY).getHolder(getKey(id));
         }
@@ -101,7 +101,7 @@ public final class StructureUtils {
 
     public static Optional<HolderSet<ConfiguredStructureFeature<?, ?>>> getHolderSet(ResourceLocation id) {
         if (id == null) return Optional.empty();
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             var registry = server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
             return resolveStructureHolderSet(registry, id);
@@ -130,7 +130,7 @@ public final class StructureUtils {
 
     public static boolean hasStructure(ResourceLocation id) {
         if (id == null) return false;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             var registry = server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
             if (registry.containsKey(id)) return true;
@@ -150,7 +150,7 @@ public final class StructureUtils {
      * 返回当前已加载注册表中的全部直连结构 id，以及全部已绑定标签 id
      */
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             var registry = server.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
             Set<String> result = new HashSet<>();

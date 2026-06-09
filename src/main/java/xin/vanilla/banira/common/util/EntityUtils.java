@@ -9,11 +9,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -256,9 +255,9 @@ public final class EntityUtils {
 
     public static List<Entity> getAllEntities() {
         List<Entity> entities = new ArrayList<>();
-        KeyValue<MinecraftServer, Boolean> serverInstance = BaniraCodex.serverInstance();
-        if (serverInstance.val()) {
-            serverInstance.key().getAllLevels().forEach(level ->
+        MinecraftServer server = BaniraServerRuntime.server();
+        if (server != null) {
+            server.getAllLevels().forEach(level ->
                     level.getEntities().getAll().forEach(entities::add)
             );
         }

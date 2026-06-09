@@ -36,6 +36,7 @@ import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.forge.event.ForgeBaniraGameEventAdapter;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraLifecycleAdapter;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -107,8 +108,7 @@ public class BaniraCodex {
 
         // 注册游戏事件总线
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(BaniraScheduler.class);
-        MinecraftForge.EVENT_BUS.register(BaniraEventBus.class);
+        MinecraftForge.EVENT_BUS.register(ForgeBaniraGameEventAdapter.class);
         // 注册网络通道
         NetworkInit.register();
 

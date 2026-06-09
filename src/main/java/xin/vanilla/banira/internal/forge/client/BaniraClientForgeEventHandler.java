@@ -13,6 +13,7 @@ import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 /**
@@ -43,6 +44,7 @@ public final class BaniraClientForgeEventHandler {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
+            BaniraScheduler.dispatchClientTick();
             NotificationManager.get().tickOutOfScreenClick();
         }
     }

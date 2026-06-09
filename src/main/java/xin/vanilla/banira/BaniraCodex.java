@@ -3,20 +3,14 @@ package xin.vanilla.banira;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.common.network.ModLoadedPresence;
-import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
-import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
-import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
-import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.common.BaniraCodexRuntime;
 import xin.vanilla.banira.internal.forge.ForgeBaniraCodexEntry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -74,52 +68,7 @@ public class BaniraCodex {
 
     public BaniraCodex() {
         ForgeBaniraCodexEntry.bootstrap();
-        registerBaniraEvent();
-    }
-
-    private void registerBaniraEvent() {
-        // 通用事件
-        BaniraLifecycle.onCommonSetup(event -> {
-            CustomConfig.loadCustomConfig(false);
-            ModLoadedPresence.register(MODID);
-        });
-
-        // 服务器事件
-        BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
-        BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());
-        BaniraEventBus.Server.onStarting(server -> AdvancementUtils.clearAdvancementData());
-        BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
-
-        final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
-        BaniraEventBus.Server.onTick(event -> {
-            MinecraftServer server = serverInstance().key();
-            if (server == null) return;
-            if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
-                if (!CustomConfig.loadCustomConfig(true)) {
-                    CustomConfig.saveCustomConfig();
-                }
-            }
-        });
-        BaniraEventBus.Save.onWorldSave(CustomConfig::saveCustomConfig);
-
-        // 玩家事件
-        BaniraEventBus.Save.onPlayerSave(player ->
-                playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
-        );
-        BaniraEventBus.Player.onLoggedOut(player -> {
-            if (player instanceof ServerPlayer) {
-                PlayerUtils.removeRemoteClientDataStatus(player);
-            }
-        });
-        BaniraEventBus.Player.onLoggedIn(player -> {
-            if (player instanceof ServerPlayer sp) {
-                PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), sp);
-            }
-        });
-
-        if (EnvironmentUtils.isClient()) {
-            BaniraCodexClientBootstrap.init();
-        }
+        BaniraCodexRuntime.bootstrap();
     }
 
 }

@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.event;
+package xin.vanilla.banira.internal.forge.client;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -11,9 +11,9 @@ import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.forge.client.ForgeHudOverlayAdapter;
 
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：只做 Forge 事件到 Banira 事件的转换。

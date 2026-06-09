@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.event;
+package xin.vanilla.banira.internal.forge.client;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -9,6 +9,7 @@ import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.NotificationManager;
 

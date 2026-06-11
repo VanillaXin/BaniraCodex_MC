@@ -8,7 +8,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
@@ -19,7 +19,7 @@ import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：只做 Forge 事件到 Banira 事件的转换。
  */
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = Banira.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BaniraClientForgeEventHandler {
 
     private BaniraClientForgeEventHandler() {

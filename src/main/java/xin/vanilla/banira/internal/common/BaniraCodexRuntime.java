@@ -2,7 +2,7 @@ package xin.vanilla.banira.internal.common;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
@@ -31,7 +31,7 @@ public final class BaniraCodexRuntime {
     private static void registerCommonLifecycle() {
         BaniraLifecycle.onCommonSetup(event -> {
             CustomConfig.loadCustomConfig(false);
-            ModLoadedPresence.register(BaniraCodex.MODID);
+            ModLoadedPresence.register(Banira.MOD_ID);
         });
         BaniraEventBus.Save.onWorldSave(CustomConfig::saveCustomConfig);
     }

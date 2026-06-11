@@ -2,8 +2,8 @@ package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -413,7 +413,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private String configModId() {
         String id = holder.getModId();
-        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
+        return id == null || id.isEmpty() ? Banira.MOD_ID : id;
     }
 
     // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）

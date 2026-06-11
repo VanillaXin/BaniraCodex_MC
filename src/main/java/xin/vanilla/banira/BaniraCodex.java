@@ -1,13 +1,12 @@
 package xin.vanilla.banira;
 
 import net.minecraftforge.fml.common.Mod;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.internal.common.BaniraCodexRuntime;
 import xin.vanilla.banira.internal.forge.ForgeBaniraCodexEntry;
 
-@Mod(BaniraCodex.MODID)
+@Mod(Banira.MOD_ID)
 public class BaniraCodex {
-
-    public static final String MODID = "banira_codex";
 
     public BaniraCodex() {
         ForgeBaniraCodexEntry.bootstrap();

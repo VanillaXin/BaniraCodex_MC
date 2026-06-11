@@ -12,8 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -192,7 +192,7 @@ public class EffectSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_effect"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_effect"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -261,14 +261,14 @@ public class EffectSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentEffect == null) {
                 BaniraClientRuntime.setScreen(args.parentScreen());
@@ -308,7 +308,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 typeButtonItemWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                         (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
                 btn.addChild(typeTooltip);
@@ -320,7 +320,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 effectButtonIconWidget.enableTooltip(false);
                 effectTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 effectTooltip.seasonTooltip(useSeasonTooltip);
-                effectTooltip.text(Text.transAuto(BaniraCodex.MODID, "effect_select_effect"));
+                effectTooltip.text(Text.transAuto(Banira.MOD_ID, "effect_select_effect"));
                 btn.addChild(effectTooltip);
                 btn.addChild(effectButtonIconWidget);
             } else if (opCode == ButtonType.DURATION.code()) {
@@ -330,7 +330,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 durationTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 durationTooltip.seasonTooltip(useSeasonTooltip);
-                durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", this.currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", this.currentEffect.getDuration()));
                 btn.addChild(durationTooltip);
                 btn.addChild(iconWidget);
             } else if (opCode == ButtonType.AMPLIFIER.code()) {
@@ -340,7 +340,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 amplifierTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 amplifierTooltip.seasonTooltip(useSeasonTooltip);
-                amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
                 btn.addChild(amplifierTooltip);
                 btn.addChild(iconWidget);
             }
@@ -462,7 +462,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (!found) selectedEffectWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                     (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
         }
@@ -478,12 +478,12 @@ public class EffectSelectScreen extends BaniraScreen {
         }
         if (durationTooltip != null) {
             if (currentEffect != null) {
-                durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", currentEffect.getDuration()));
             }
         }
         if (amplifierTooltip != null) {
             if (currentEffect != null) {
-                amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
             }
         }
         effectButtonsDirty = false;
@@ -593,8 +593,8 @@ public class EffectSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_id"))
-                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_id"))
+                            .hint(Text.transAuto(Banira.MOD_ID, "enter_something"))
                             .defaultValue(EffectUtils.getEffectRegistryString(this.currentEffect))
                             .validator((input) -> {
                                 MobEffect e = EffectUtils.getEffectFromRegistry(input.value());
@@ -617,7 +617,7 @@ public class EffectSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_duration"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_duration"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.currentEffect.getDuration()))
                             .validator((input) -> {
@@ -638,7 +638,7 @@ public class EffectSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_amplifier"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_amplifier"))
                             .regex("\\d{0,3}")
                             .defaultValue(String.valueOf(this.currentEffect.getAmplifier() + 1))
                             .validator((input) -> {

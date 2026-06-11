@@ -5,7 +5,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
@@ -106,7 +106,7 @@ public final class BaniraClientEventHub {
             LogoModifier.modifyLogo();
         });
         Client.onTextureReload(event -> {
-            if (BaniraCodex.MODID.equals(event.atlasLocation().getNamespace())) {
+            if (Banira.MOD_ID.equals(event.atlasLocation().getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 QuickActionOverlay.resetSystemIconTextureCache();
             }

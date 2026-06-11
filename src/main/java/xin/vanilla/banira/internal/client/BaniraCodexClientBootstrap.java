@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.resources.ResourceLocation;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
@@ -23,7 +23,7 @@ public final class BaniraCodexClientBootstrap {
 
     public static void init() {
         BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
-            LogoModifier.register(BaniraCodex.MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
+            LogoModifier.register(Banira.MOD_ID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
             ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
             Component label = BaniraComponent.get().transClient("key.banira_codex.categories");
@@ -31,7 +31,7 @@ public final class BaniraCodexClientBootstrap {
                     BaniraClientRuntime.setScreen(
                             new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
                     );
-            QuickActionRegistry.get().registerListOnly(BaniraCodex.MODID + ":quick_codex_navigation", texture, label, action);
+            QuickActionRegistry.get().registerListOnly(Banira.MOD_ID + ":quick_codex_navigation", texture, label, action);
         });
     }
 }

@@ -8,9 +8,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -424,7 +424,7 @@ public class DebugScreen extends BaniraScreen {
                                         new DropdownOption("冬", new ItemStack(Items.SNOW), BaniraComponent.get().literal("嗜血"))
                                 ))
                                 .defaultValue("夏")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "choose_option")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "choose_option")))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("mc_color")
                                 .title(Text.literal("MC颜色"))
@@ -438,7 +438,7 @@ public class DebugScreen extends BaniraScreen {
                                 .title(Text.literal("颜色"))
                                 .type(InputFormScreen.WidgetType.COLOR)
                                 .defaultValue("#FF0000")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "enter_color_hex")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
                 BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
                 break;

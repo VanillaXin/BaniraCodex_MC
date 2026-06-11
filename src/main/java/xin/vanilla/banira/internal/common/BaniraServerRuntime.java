@@ -5,7 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -33,7 +33,7 @@ public final class BaniraServerRuntime {
     private static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
             BaniraPaths.PLAYER_DATA_PATH,
             BaniraPaths::vanillaPlayerDataPath,
-            BaniraCodex.MODID,
+            Banira.MOD_ID,
             "",
             StringUtils.reverseBySeparatorElegant(LEGACY_ARTIFACT_ID, ".")
     );

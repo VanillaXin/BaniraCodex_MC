@@ -10,8 +10,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -41,7 +41,7 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = Banira.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class NotificationLogScreen extends BaniraScreen {
 
     private static final int LIST_ROW_HEIGHT = 24;
@@ -277,7 +277,7 @@ public class NotificationLogScreen extends BaniraScreen {
         searchInput = new InputWidget(this);
         searchInput.id("notification_log_search");
         searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
-        searchInput.text(Text.transAuto(BaniraCodex.MODID, "notification_log_search_hint"));
+        searchInput.text(Text.transAuto(Banira.MOD_ID, "notification_log_search_hint"));
         searchInput.onTextChanged(this::applySearchAndReselect);
         searchInput.value("");
         addWidget(searchInput);
@@ -410,7 +410,7 @@ public class NotificationLogScreen extends BaniraScreen {
         }
 
         if (filteredEntries.isEmpty()) {
-            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_empty")
+            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_empty")
                             .stack(stack).font(font))
                     .x(listX + listW / 2 - 50).y(listY + listH / 2 - 8).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
@@ -461,7 +461,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
         if (selectedIndex < 0 || selectedIndex >= filteredEntries.size()) {
             metaHoverRegions.clear();
-            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_select_hint")
+            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_select_hint")
                             .stack(stack).font(font))
                     .x(x + w / 2 - 60).y(y + rightH / 2 - 30).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);

@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -278,7 +278,7 @@ public class SliderWidget extends BaseWidget {
         if (inlineInputWidget != null) return;
         inlineInputWidget = new NumericInputWidget(screen);
         inlineInputWidget.id(id() != null ? id() + "_inline" : "slider_inline");
-        inlineInputWidget.text(Text.transAuto(BaniraCodex.MODID, "enter_number"));
+        inlineInputWidget.text(Text.transAuto(Banira.MOD_ID, "enter_number"));
         inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
         inlineInputWidget.decimalPlaces(decimalPlaces);
         inlineInputWidget.enabled(enabled());

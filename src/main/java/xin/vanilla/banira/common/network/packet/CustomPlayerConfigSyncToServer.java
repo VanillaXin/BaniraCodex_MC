@@ -2,8 +2,8 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -52,7 +52,7 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
                 return;
             }
             String lang = packet.language.trim();
-            Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+            Translator translator = (Translator) Translator.of(Banira.MOD_ID);
             boolean langOk = "client".equalsIgnoreCase(lang) || "server".equalsIgnoreCase(lang)
                     || translator.getI18nFiles().contains(lang);
             if (!langOk) {

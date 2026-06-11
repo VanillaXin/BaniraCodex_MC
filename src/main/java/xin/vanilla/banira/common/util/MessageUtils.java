@@ -8,8 +8,8 @@ import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
@@ -202,7 +202,7 @@ public final class MessageUtils {
         String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
         ServerNotificationTypeRegistry.ensureKnown(tid);
         Component payload = notificationPayloadForPlayer(player, component);
-        if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
+        if (!PlayerUtils.isRemoteClientModInstalled(player, Banira.MOD_ID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
                 sendActionBarMessage(player, payload);
             } else {
@@ -405,7 +405,7 @@ public final class MessageUtils {
 
     private static boolean canClientResolveTranslation(ServerPlayer player, String modId) {
         return "minecraft".equals(modId)
-                || BaniraCodex.MODID.equals(modId)
+                || Banira.MOD_ID.equals(modId)
                 || PlayerUtils.isRemoteClientModInstalled(player, modId);
     }
 

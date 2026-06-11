@@ -31,7 +31,7 @@ import java.util.function.Predicate;
  * }
  *
  * // 2. 注册（Forge）
- * ForgeConfigAdapter.register(CommonConfig.class, BaniraCodex.MODID);
+ * ForgeConfigAdapter.register(CommonConfig.class, Banira.MOD_ID);
  *
  * // 3. 使用
  * CommonConfig.RootView config = CommonConfig.get();

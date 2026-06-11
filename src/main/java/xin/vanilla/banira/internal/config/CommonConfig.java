@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -167,6 +167,6 @@ public class CommonConfig implements ConfigData {
 
         @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需虚拟权限完整键（modId:id，与虚拟OP中授予的键一致）",
                 en_us = "Full virtual permission key (modId:id) for editing server config; match keys granted via virtual OP")
-        private String editServerConfigVirtualPermissionKey = BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
+        private String editServerConfigVirtualPermissionKey = Banira.MOD_ID + ":" + "EDIT_SERVER_CONFIG";
     }
 }

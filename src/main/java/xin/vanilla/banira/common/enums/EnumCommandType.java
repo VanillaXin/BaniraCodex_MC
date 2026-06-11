@@ -4,8 +4,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.commands.CommandSourceStack;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
@@ -81,7 +81,7 @@ public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable 
 
     @Override
     public String modId() {
-        return BaniraCodex.MODID;
+        return Banira.MOD_ID;
     }
 
     /**

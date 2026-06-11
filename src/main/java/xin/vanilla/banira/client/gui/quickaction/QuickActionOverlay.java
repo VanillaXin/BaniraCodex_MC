@@ -17,8 +17,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -1120,11 +1120,11 @@ public final class QuickActionOverlay {
     }
 
     private static String trWord(String key) {
-        return Translator.of(BaniraCodex.MODID).translate(EnumI18nType.WORD, key);
+        return Translator.of(Banira.MOD_ID).translate(EnumI18nType.WORD, key);
     }
 
     private static String trFormat(String key, Object... args) {
-        return String.format(Translator.of(BaniraCodex.MODID).translate(EnumI18nType.FORMAT, key), args);
+        return String.format(Translator.of(Banira.MOD_ID).translate(EnumI18nType.FORMAT, key), args);
     }
 
     private static final class CtxRow {

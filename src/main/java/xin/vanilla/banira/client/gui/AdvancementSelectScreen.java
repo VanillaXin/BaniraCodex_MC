@@ -10,9 +10,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -203,7 +203,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_advancement"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_advancement"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -249,7 +249,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, tooltipBounds);
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                         (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
                 btn.addChild(typeTooltip);
@@ -320,14 +320,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentAdvancement == null) {
                 BaniraClientRuntime.setScreen(args.parentScreen());
@@ -494,7 +494,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         if (!found) selectedAdvancementWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                     (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
         }
@@ -515,7 +515,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 String advancementId = sel.id().toString();
                 advancementTooltip.text(Text.literal(buildDeduplicatedTooltip(displayName, description, advancementId)));
             } else {
-                advancementTooltip.text(Text.transAuto(BaniraCodex.MODID, "advancement_select_advancement"));
+                advancementTooltip.text(Text.transAuto(Banira.MOD_ID, "advancement_select_advancement"));
             }
         }
         advancementButtonsDirty = false;
@@ -629,8 +629,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_advancement_id"))
-                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_advancement_id"))
+                            .hint(Text.transAuto(Banira.MOD_ID, "enter_something"))
                             .defaultValue(effectString)
                             .validator((input) -> {
                                 try {

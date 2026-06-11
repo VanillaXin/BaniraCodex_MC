@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -93,7 +93,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         languageOptions = new ArrayList<>();
         languageOptions.add("client");
         languageOptions.add("server");
-        Translator tr = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator tr = (Translator) Translator.of(Banira.MOD_ID);
         languageOptions.addAll(tr.getI18nFiles());
 
         var player = BaniraClientRuntime.localPlayer();

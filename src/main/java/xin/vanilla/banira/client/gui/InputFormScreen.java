@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.BaniraLang;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -92,7 +92,7 @@ public class InputFormScreen extends BaniraScreen {
     public static class Widget {
         private String name = "";
         private Text title;
-        private Text hint = Text.transAuto(BaniraCodex.MODID, "enter_something");
+        private Text hint = Text.transAuto(Banira.MOD_ID, "enter_something");
         private String regex = EnumStringInputRegex.NONE.regex();
         private String defaultValue = "";
         private boolean allowEmpty;
@@ -453,14 +453,14 @@ public class InputFormScreen extends BaniraScreen {
         submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> handleSubmit());
         addWidget(submitButtonWidget);
 
         cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(this.previousScreen()));
         addWidget(cancelButtonWidget);
 
@@ -583,8 +583,8 @@ public class InputFormScreen extends BaniraScreen {
                 pickerInput.bounds(new ScreenCoordinate(contentLeft, inputY, pickerInputW, INPUT_H));
                 pickerInput.value(currentValue);
                 Text pickerHint = widget.type() == WidgetType.FILE
-                        ? Text.transAuto(BaniraCodex.MODID, "enter_file_path")
-                        : Text.transAuto(BaniraCodex.MODID, "enter_color_hex");
+                        ? Text.transAuto(Banira.MOD_ID, "enter_file_path")
+                        : Text.transAuto(Banira.MOD_ID, "enter_color_hex");
                 pickerInput.text(pickerHint);
                 pickerInput.enabled(!widget.disabled());
                 pickerInput.editable(true);
@@ -983,9 +983,9 @@ public class InputFormScreen extends BaniraScreen {
                 return true;
             });
             if (allValid) {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+                submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
             } else {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+                submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
             }
         }
     }

@@ -9,8 +9,8 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.CommandUtils;
@@ -32,7 +32,7 @@ public final class LanguageCommand {
     private static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         String language = StringArgumentType.getString(context, "language");
-        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator translator = (Translator) Translator.of(Banira.MOD_ID);
         if (translator.getI18nFiles().contains(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
             MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language));
@@ -47,7 +47,7 @@ public final class LanguageCommand {
 
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String lang = CommandUtils.getLanguage(context.getSource());
-        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator translator = (Translator) Translator.of(Banira.MOD_ID);
         Component clientTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_client");
         Component serverTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_server");
         builder.suggest("client", clientTooltip.toVanilla(lang));

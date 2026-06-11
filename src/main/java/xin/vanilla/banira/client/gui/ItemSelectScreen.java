@@ -10,8 +10,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -197,7 +197,7 @@ public class ItemSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_item"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_item"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -227,7 +227,7 @@ public class ItemSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 inventoryModeTooltip = new TooltipWidget(this, tooltipBounds);
                 inventoryModeTooltip.seasonTooltip(useSeasonTooltip);
-                inventoryModeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                inventoryModeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.inventoryMode ? "item_display_mode_inventory" : "item_display_mode_all"),
                         (this.inventoryMode ? ItemUtils.getAllPlayerItems().size() : ItemUtils.getAllItems().size())));
                 btn.addChild(inventoryModeTooltip);
@@ -239,14 +239,14 @@ public class ItemSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 countTooltip = new TooltipWidget(this, tooltipBounds);
                 countTooltip.seasonTooltip(useSeasonTooltip);
-                countTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_quantity", this.selectedItem != null ? this.selectedItem.getCount() : 0));
+                countTooltip.text(Text.transAuto(Banira.MOD_ID, "set_quantity", this.selectedItem != null ? this.selectedItem.getCount() : 0));
                 btn.addChild(countTooltip);
             } else {
                 iconWidget.itemStack(new ItemStack(Items.NAME_TAG));
                 iconWidget.enableTooltip(false);
                 TooltipWidget tip = new TooltipWidget(this, tooltipBounds);
                 tip.seasonTooltip(useSeasonTooltip);
-                tip.text(Text.transAuto(BaniraCodex.MODID, "edit_nbt"));
+                tip.text(Text.transAuto(Banira.MOD_ID, "edit_nbt"));
                 btn.addChild(tip);
             }
             btn.addChild(iconWidget);
@@ -303,14 +303,14 @@ public class ItemSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.selectedItem == null || this.selectedItem.isEmpty()) {
                 BaniraClientRuntime.setScreen(args.parentScreen());
@@ -453,14 +453,14 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         if (this.inventoryModeTooltip != null) {
-            this.inventoryModeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            this.inventoryModeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.inventoryMode ? "item_display_mode_inventory" : "item_display_mode_all"),
                     (this.inventoryMode ? ItemUtils.getAllPlayerItems().size() : ItemUtils.getAllItems().size()))
             );
         }
 
         if (this.countTooltip != null) {
-            this.countTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_quantity",
+            this.countTooltip.text(Text.transAuto(Banira.MOD_ID, "set_quantity",
                     this.selectedItem != null ? this.selectedItem.getCount() : 0));
         }
 
@@ -529,7 +529,7 @@ public class ItemSelectScreen extends BaniraScreen {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_id"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_id"))
                             .defaultValue(ItemUtils.getItemRegistryString(this.selectedItem))
                             .validator((input) -> {
                                 Item item = ItemUtils.getItemFromRegistry(input.value());
@@ -552,7 +552,7 @@ public class ItemSelectScreen extends BaniraScreen {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_quantity"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_quantity"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.selectedItem.getCount()))
                             .validator((input) -> {
@@ -577,7 +577,7 @@ public class ItemSelectScreen extends BaniraScreen {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_nbt"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt"))
                             .defaultValue(itemNbtJsonString)
                             .validator((input) -> {
                                 try {

@@ -5,6 +5,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.banira.platform.BaniraRegistryService;
@@ -92,5 +93,15 @@ public enum ForgeBaniraRegistryService implements BaniraRegistryService {
     @Override
     public @Nonnull Collection<MobEffect> effects() {
         return ForgeRegistries.MOB_EFFECTS.getValues();
+    }
+
+    @Override
+    public @Nullable Biome biome(@Nullable ResourceLocation id) {
+        return id != null ? ForgeRegistries.BIOMES.getValue(id) : null;
+    }
+
+    @Override
+    public @Nonnull Collection<ResourceLocation> biomeIds() {
+        return ForgeRegistries.BIOMES.getKeys();
     }
 }

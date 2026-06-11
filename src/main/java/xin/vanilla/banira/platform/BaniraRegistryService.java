@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 
 import javax.annotation.Nonnull;
@@ -53,4 +54,10 @@ public interface BaniraRegistryService {
 
     @Nonnull
     Collection<MobEffect> effects();
+
+    @Nullable
+    Biome biome(@Nullable ResourceLocation id);
+
+    @Nonnull
+    Collection<ResourceLocation> biomeIds();
 }

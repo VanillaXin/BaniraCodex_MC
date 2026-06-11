@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 
 import javax.annotation.Nonnull;
@@ -79,6 +80,16 @@ public enum NoopRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nonnull Collection<MobEffect> effects() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public @Nullable Biome biome(@Nullable ResourceLocation id) {
+        return null;
+    }
+
+    @Override
+    public @Nonnull Collection<ResourceLocation> biomeIds() {
         return Collections.emptyList();
     }
 }

@@ -8,10 +8,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -54,7 +54,7 @@ public final class BiomeUtils {
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
         }
-        return ForgeRegistries.BIOMES.getValue(id);
+        return Banira.platform().registryService().biome(id);
     }
 
     public static Biome getBiome(ServerLevel world, ResourceLocation id) {
@@ -72,7 +72,7 @@ public final class BiomeUtils {
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
-        return ForgeRegistries.BIOMES.getKeys().stream()
+        return Banira.platform().registryService().biomeIds().stream()
                 .map(ResourceLocation::toString)
                 .collect(Collectors.toSet());
     }

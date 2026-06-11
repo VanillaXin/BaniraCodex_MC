@@ -2,8 +2,8 @@ package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonObject;
 import org.junit.Test;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -16,7 +16,7 @@ public class ComponentNetworkTranslationTest {
 
     static {
         BaniraPlatforms.install(new TestBaniraPlatform()
-                .mod(Banira.MOD_ID, BaniraCodex.class));
+                .mod(Banira.MOD_ID, BaniraLang.class));
     }
 
     @Test

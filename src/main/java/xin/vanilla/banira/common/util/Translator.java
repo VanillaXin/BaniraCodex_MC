@@ -9,9 +9,6 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.Banira;
@@ -39,14 +36,14 @@ import java.util.stream.Stream;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入带 {@link Mod} 的主类（与入口 {@code @Mod("modid")} 为同一类），modId 从注解读取，语言文件从该类所在 JAR 加载：
+ * 推荐显式传入 modId 与资源锚点类，避免公共 API 依赖 Forge/Fabric/NeoForge 的入口注解：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
- *     private MyModLang() { super(MyMod.class); }
+ *     private MyModLang() { super("my_mod_id", MyModLang.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时通过 {@link ModList} 解析该 mod 的主类。
+ * 仅使用 {@link #of(String)} 时通过 Banira platform 解析该 mod 的主类。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -71,55 +68,49 @@ public class Translator implements ITranslator {
      */
     private final Set<String> languages = new HashSet<>();
 
-    private final Class<?> modMainClass;
+    private final Class<?> resourceAnchorClass;
 
     private final String modId;
 
     /**
-     * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
+     * @param modMainClass mod 主类或资源锚点类；modId 由当前 platform 解析
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this.modMainClass = modMainClass;
-        this.modId = modIdFromModMainClass(modMainClass);
+        this(resolveModId(modMainClass), modMainClass);
+    }
+
+    /**
+     * @param modId               所属 mod id
+     * @param resourceAnchorClass 用于从 classpath 定位 {@code /assets/<modid>/lang} 的同 jar 类
+     */
+    protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
+        if (StringUtils.isNullOrEmptyEx(modId)) {
+            throw new IllegalArgumentException("modId must not be empty");
+        }
+        this.resourceAnchorClass = resourceAnchorClass;
+        this.modId = modId;
         getI18nFiles();
     }
 
-    // region mod 主类与 modId（@Mod）
+    // region mod 元数据
 
     @NonNull
-    private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
-        Mod mod = modMainClass.getAnnotation(Mod.class);
-        if (mod != null) {
-            String id = mod.value();
-            if (!StringUtils.isNullOrEmptyEx(id)) {
-                return id;
-            }
-        }
+    private static String resolveModId(@NonNull Class<?> modMainClass) {
         if (BaniraPlatforms.isInstalled()) {
             return Banira.platform().modIdFromMainClass(modMainClass);
         }
-        throw new IllegalArgumentException("Class must be annotated with @Mod or resolved by platform: " + modMainClass.getName());
+        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod id for class: " + modMainClass.getName());
     }
 
     @NonNull
-    private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
+    private static Class<?> resolveModMainClass(@NonNull String modId) {
         if (BaniraPlatforms.isInstalled()) {
             return Banira.platform().modMainClass(modId);
         }
-        try {
-            return ModList.get().getModContainerById(modId)
-                    .map(ModContainer::getMod)
-                    .filter(Objects::nonNull)
-                    .map(Object::getClass)
-                    .orElseThrow(() -> new IllegalStateException("No loaded @Mod main class for mod id: " + modId));
-        } catch (IllegalStateException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IllegalStateException("Failed to resolve @Mod main class for mod id: " + modId, t);
-        }
+        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod main class for mod id: " + modId);
     }
 
-    // endregion mod 主类与 modId（@Mod）
+    // endregion mod 元数据
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -137,7 +128,7 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(resolveModMainClassFromModList(modId));
+        return new Translator(modId, resolveModMainClass(modId));
     }
 
     @Override
@@ -254,7 +245,7 @@ public class Translator implements ITranslator {
 
     private void loadFromClasspath() {
         try {
-            URL url = modMainClass.getResource(getLangPath());
+            URL url = resourceAnchorClass.getResource(getLangPath());
             if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
                 loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
                 return;
@@ -275,7 +266,7 @@ public class Translator implements ITranslator {
         if (StringUtils.isNullOrEmptyEx(normalized)) {
             return;
         }
-        loadModLanguage(modMainClass, modId, normalized);
+        loadModLanguage(resourceAnchorClass, modId, normalized);
         languages.add(normalized);
     }
 

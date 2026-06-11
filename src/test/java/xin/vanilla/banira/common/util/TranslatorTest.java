@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraftforge.fml.common.Mod;
 import org.junit.Test;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
@@ -10,20 +9,30 @@ import static org.junit.Assert.assertEquals;
 public class TranslatorTest {
 
     @Test
-    public void annotationModIdWinsOverInstalledPlatform() {
+    public void explicitModIdDoesNotDependOnLoaderAnnotation() {
         BaniraPlatforms.install(new TestBaniraPlatform()
-                .modIdFromMainClass(AnnotatedMod.class, "wrong_mod_id"));
+                .modIdFromMainClass(TranslatorTest.class, "wrong_mod_id"));
 
-        assertEquals("annotated_translation_test", new AnnotatedTranslator().getModId());
+        assertEquals("explicit_translation_test", new ExplicitTranslator().getModId());
     }
 
-    private static final class AnnotatedTranslator extends Translator {
-        private AnnotatedTranslator() {
-            super(AnnotatedMod.class);
+    @Test
+    public void classConstructorUsesPlatformMetadata() {
+        BaniraPlatforms.install(new TestBaniraPlatform()
+                .modIdFromMainClass(TranslatorTest.class, "platform_translation_test"));
+
+        assertEquals("platform_translation_test", new PlatformTranslator().getModId());
+    }
+
+    private static final class ExplicitTranslator extends Translator {
+        private ExplicitTranslator() {
+            super("explicit_translation_test", TranslatorTest.class);
         }
     }
 
-    @Mod("annotated_translation_test")
-    private static final class AnnotatedMod {
+    private static final class PlatformTranslator extends Translator {
+        private PlatformTranslator() {
+            super(TranslatorTest.class);
+        }
     }
 }

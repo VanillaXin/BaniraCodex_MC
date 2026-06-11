@@ -6,11 +6,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
@@ -49,7 +49,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return entityType.getRegistryName();
+        return Banira.platform().registryService().entityTypeKey(entityType);
     }
 
     /**
@@ -242,7 +242,7 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return ForgeRegistries.ENTITIES.getValue(location);
+            return Banira.platform().registryService().entityType(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -286,7 +286,7 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : ForgeRegistries.ENTITIES) {
+                    for (EntityType<?> entityType : Banira.platform().registryService().entityTypes()) {
                         if (entityType == null) continue;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;

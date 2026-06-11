@@ -10,13 +10,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -55,7 +51,6 @@ public final class ItemUtils {
     /**
      * Tooltip缓存
      */
-    @OnlyIn(Dist.CLIENT)
     private static final Map<String, List<Component>> tooltipCache = new ConcurrentHashMap<>();
 
     /**
@@ -96,7 +91,7 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return item.getRegistryName();
+        return Banira.platform().registryService().itemKey(item);
     }
 
     /**
@@ -442,7 +437,7 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.ITEMS.getValue(location);
+            return Banira.platform().registryService().item(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -557,7 +552,7 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : ForgeRegistries.ITEMS) {
+            for (Item item : Banira.platform().registryService().items()) {
                 if (item == null) continue;
                 if (!addedItems.contains(item)) {
                     try {
@@ -568,7 +563,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                item.getRegistryName(), e);
+                                getItemRegistryString(item), e);
                     }
                 }
             }
@@ -644,12 +639,10 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                ForgeRegistries.ITEMS.tags().getReverseTag(item).ifPresent(reverseTag ->
-                        reverseTag.getTagKeys().forEach(tagKey -> {
-                            ResourceLocation loc = tagKey.location();
-                            tags.add(loc.toString().toLowerCase());
-                            tags.add(loc.getPath().toLowerCase());
-                        }));
+                for (ResourceLocation loc : Banira.platform().registryService().itemTagIds(item)) {
+                    tags.add(loc.toString().toLowerCase());
+                    tags.add(loc.getPath().toLowerCase());
+                }
             } catch (Exception e) {
                 LOGGER.debug("Failed to get tags for item: {}", registry, e);
             }
@@ -848,7 +841,6 @@ public final class ItemUtils {
      *
      * @return 玩家身上的所有物品列表副本
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
         try {
@@ -1052,7 +1044,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable Player player, boolean advanced) {
         if (isItemNull(itemStack)) {
@@ -1187,11 +1178,7 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = ForgeRegistries.ITEMS.tags().getReverseTag(item)
-                            .map(rt -> rt.getTagKeys().map(TagKey::location)
-                                    .sorted(Comparator.comparing(ResourceLocation::toString))
-                                    .collect(Collectors.toList()))
-                            .orElse(Collections.emptyList());
+                    List<ResourceLocation> tagIds = new ArrayList<>(Banira.platform().registryService().itemTagIds(item));
                     for (ResourceLocation tagId : tagIds) {
                         Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));
@@ -1239,7 +1226,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         try {

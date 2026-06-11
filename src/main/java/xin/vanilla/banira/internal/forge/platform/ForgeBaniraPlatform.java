@@ -9,10 +9,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
 import xin.vanilla.banira.internal.forge.config.ForgeBaniraConfigService;
 import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
-import xin.vanilla.banira.platform.BaniraConfigService;
-import xin.vanilla.banira.platform.BaniraInputService;
-import xin.vanilla.banira.platform.BaniraNetworkService;
-import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
@@ -99,6 +96,12 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNetworkService networkService() {
         return ForgeBaniraNetworkService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraRegistryService registryService() {
+        return ForgeBaniraRegistryService.INSTANCE;
     }
 
     @Nonnull

@@ -1,7 +1,9 @@
 package xin.vanilla.banira.platform;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.file.Path;
+import java.util.UUID;
 
 /**
  * 只暴露跨 MC 版本稳定的基础平台信息。
@@ -24,6 +26,9 @@ public interface BaniraPlatform {
 
     @Nonnull
     String modDisplayName(@Nonnull String modId);
+
+    @Nullable
+    String lastKnownUsername(@Nonnull UUID uuid);
 
     @Nonnull
     String modIdFromMainClass(@Nonnull Class<?> modMainClass);

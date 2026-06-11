@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraft.SharedConstants;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.UsernameCache;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -12,8 +13,10 @@ import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Forge 1.18.2 的基础 platform 实现。
@@ -58,6 +61,12 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         return ModList.get().getModContainerById(modId)
                 .map(container -> container.getModInfo().getDisplayName())
                 .orElse(modId);
+    }
+
+    @Nullable
+    @Override
+    public String lastKnownUsername(@Nonnull UUID uuid) {
+        return UsernameCache.getLastKnownUsername(uuid);
     }
 
     @Nonnull

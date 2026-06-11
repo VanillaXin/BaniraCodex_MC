@@ -16,6 +16,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private final Set<String> loadedMods = new HashSet<>();
     private final Map<String, Class<?>> modMainClasses = new HashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new HashMap<>();
+    private final Map<UUID, String> usernames = new HashMap<>();
     private BaniraConfigService configService = NoopConfigService.INSTANCE;
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
@@ -57,6 +58,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform modIdFromMainClass(Class<?> mainClass, String modId) {
         modIdsByMainClass.put(Objects.requireNonNull(mainClass, "mainClass"), Objects.requireNonNull(modId, "modId"));
+        return this;
+    }
+
+    public TestBaniraPlatform username(UUID uuid, String username) {
+        usernames.put(Objects.requireNonNull(uuid, "uuid"), username);
         return this;
     }
 
@@ -113,6 +119,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull String modDisplayName(@Nonnull String modId) {
         return modId;
+    }
+
+    @Override
+    public String lastKnownUsername(@Nonnull UUID uuid) {
+        return usernames.get(uuid);
     }
 
     @Override

@@ -1,15 +1,12 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
-import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
+import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,23 +69,9 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
     public static void handle(NotificationTypesSyncToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isClientSide()) {
-                ClientSide.handle(packet);
+                BaniraClientPacketHandlers.applyNotificationTypes(packet);
             }
         });
         ctx.markHandled();
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private static final class ClientSide {
-        private static void handle(NotificationTypesSyncToClient packet) {
-            for (NotificationTypeSyncEntry e : packet.entries()) {
-                if (e == null) {
-                    continue;
-                }
-                NotificationTypeRegistry.ensureKnown(e.typeId());
-                NotificationTypeRegistry.acceptServerSyncedDisplayDefault(e.typeId(), e.defaultDisplayIfAbsent());
-                NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(e.typeId());
-            }
-        }
     }
 }

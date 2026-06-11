@@ -5,8 +5,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -102,12 +100,10 @@ public final class PacketUtils {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasBaniraServer() {
         return BaniraPlatforms.get().networkService().hasDefaultChannel();
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasChannel(ResourceLocation channel) {
         return BaniraPlatforms.get().networkService().hasLocalChannel(channel);
     }

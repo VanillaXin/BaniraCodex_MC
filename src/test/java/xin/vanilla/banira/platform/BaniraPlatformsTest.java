@@ -6,7 +6,6 @@ import net.minecraft.world.World;
 import org.junit.Test;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
@@ -33,6 +32,7 @@ public class BaniraPlatformsTest {
         assertEquals("1.16.5", BaniraPlatforms.get().minecraftVersion());
         assertEquals(Paths.get("config", "vanilla.xin"), BaniraPlatforms.get().pathService().configPath());
         assertNotNull(BaniraPlatforms.get().inputService());
+        assertNotNull(BaniraPlatforms.get().configService());
     }
 
     public static final class FakePlatform implements BaniraPlatform {
@@ -95,7 +95,7 @@ public class BaniraPlatformsTest {
         }
 
         @Override
-        public BaniraConfigService config() {
+        public xin.vanilla.banira.platform.config.BaniraConfigService config() {
             return null;
         }
 

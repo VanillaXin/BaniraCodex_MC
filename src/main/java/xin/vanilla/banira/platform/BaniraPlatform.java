@@ -1,9 +1,10 @@
 package xin.vanilla.banira.platform;
 
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
+import xin.vanilla.banira.internal.config.BaniraConfigHandleAdapter;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.config.BaniraConfigService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.registry.BaniraRegistryService;
@@ -85,7 +86,31 @@ public interface BaniraPlatform {
 
     BaniraLifecycle lifecycle();
 
-    BaniraConfigService config();
+    xin.vanilla.banira.platform.config.BaniraConfigService config();
+
+    /**
+     * 根级配置服务是新版公共入口，旧的 platform.config 服务仅作为当前分支内部实现保留。
+     */
+    default BaniraConfigService configService() {
+        BaniraPlatform self = this;
+        return new BaniraConfigService() {
+            @Override
+            public <T> void register(Class<T> configClass, String modId) {
+                self.config().register(configClass, modId);
+            }
+
+            @Override
+            public <T> T get(Class<T> configClass) {
+                return self.config().get(configClass);
+            }
+
+            @Override
+            public BaniraConfigHandle handle(Class<?> configClass) {
+                ConfigHolder holder = self.config().getHolder(configClass);
+                return holder != null ? new BaniraConfigHandleAdapter(holder) : null;
+            }
+        };
+    }
 
     BaniraCommandService command();
 

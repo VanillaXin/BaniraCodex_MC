@@ -32,7 +32,10 @@ public class BaniraPlatformsTest {
         assertEquals("test", BaniraPlatforms.get().loaderType());
     }
 
-    private static final class FakePlatform implements BaniraPlatform {
+    public static final class FakePlatform implements BaniraPlatform {
+        public FakePlatform() {
+        }
+
         @Override
         public String loaderType() {
             return "test";

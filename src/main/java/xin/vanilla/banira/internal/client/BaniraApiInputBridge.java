@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.client;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
+import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
 
@@ -10,8 +11,26 @@ import javax.annotation.Nonnull;
  * 16.5 分支的 API 输入桥接；旧键位实现留在内部适配层。
  */
 public final class BaniraApiInputBridge {
+    private static final BaniraInputService SERVICE = new BaniraInputService() {
+        @Nonnull
+        @Override
+        public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
+            return BaniraApiInputBridge.register(spec, spec.category() != null
+                    ? spec.category()
+                    : xin.vanilla.banira.api.client.BaniraInput.defaultCategory(spec.modId()));
+        }
+
+        @Override
+        public void flushPendingRegistrations() {
+            BaniraApiInputBridge.flushPendingRegistrations();
+        }
+    };
 
     private BaniraApiInputBridge() {
+    }
+
+    public static BaniraInputService service() {
+        return SERVICE;
     }
 
     @Nonnull

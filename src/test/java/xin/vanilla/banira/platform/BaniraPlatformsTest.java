@@ -30,6 +30,9 @@ public class BaniraPlatformsTest {
         assertTrue(BaniraPlatforms.isInstalled());
         assertSame(platform, BaniraPlatforms.get());
         assertEquals("test", BaniraPlatforms.get().loaderType());
+        assertEquals("1.16.5", BaniraPlatforms.get().minecraftVersion());
+        assertEquals(Paths.get("config", "vanilla.xin"), BaniraPlatforms.get().pathService().configPath());
+        assertNotNull(BaniraPlatforms.get().inputService());
     }
 
     public static final class FakePlatform implements BaniraPlatform {

@@ -1,5 +1,6 @@
 package xin.vanilla.banira.platform;
 
+import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.config.BaniraConfigService;
@@ -19,6 +20,10 @@ import java.util.UUID;
 public interface BaniraPlatform {
     String loaderType();
 
+    default String minecraftVersion() {
+        return "1.16.5";
+    }
+
     boolean isClient();
 
     boolean isDedicatedServer();
@@ -36,6 +41,47 @@ public interface BaniraPlatform {
     String lastKnownUsername(UUID uuid);
 
     Path configDir();
+
+    /**
+     * 当前加载器和 MC 版本的数据路径服务。
+     */
+    default BaniraPathService pathService() {
+        BaniraPlatform self = this;
+        return new BaniraPathService() {
+            @Override
+            public String rootDirectoryName() {
+                return "vanilla.xin";
+            }
+
+            @Override
+            public Path configPath() {
+                return self.configDir().resolve(rootDirectoryName());
+            }
+
+            @Override
+            public Path worldDataPath() {
+                return self.server().worldDataPath(rootDirectoryName());
+            }
+
+            @Override
+            public Path playerDataPath() {
+                Path worldDataPath = worldDataPath();
+                return worldDataPath != null ? worldDataPath.resolve("playerdata") : null;
+            }
+
+            @Override
+            public Path vanillaPlayerDataPath() {
+                return self.server().worldPlayerDataPath();
+            }
+        };
+    }
+
+    /**
+     * 当前加载器的客户端输入服务。
+     */
+    default BaniraInputService inputService() {
+        return BaniraApiInputBridge.service();
+    }
 
     BaniraLifecycle lifecycle();
 

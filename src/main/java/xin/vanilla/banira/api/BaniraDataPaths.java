@@ -1,7 +1,5 @@
 package xin.vanilla.banira.api;
 
-import xin.vanilla.banira.BaniraCodex;
-
 import java.nio.file.Path;
 
 /**
@@ -13,23 +11,22 @@ public final class BaniraDataPaths {
     }
 
     public static String rootDirectoryName() {
-        return BaniraCodex.VANILLA_XIN;
+        return Banira.platform().pathService().rootDirectoryName();
     }
 
     public static Path worldDataPath() {
-        return Banira.platform().server().worldDataPath(rootDirectoryName());
+        return Banira.platform().pathService().worldDataPath();
     }
 
     public static Path playerDataPath() {
-        Path worldDataPath = worldDataPath();
-        return worldDataPath != null ? worldDataPath.resolve("playerdata") : null;
+        return Banira.platform().pathService().playerDataPath();
     }
 
     public static Path configPath() {
-        return Banira.platform().configDir().resolve(rootDirectoryName());
+        return Banira.platform().pathService().configPath();
     }
 
     public static Path vanillaPlayerDataPath() {
-        return Banira.platform().server().worldPlayerDataPath();
+        return Banira.platform().pathService().vanillaPlayerDataPath();
     }
 }

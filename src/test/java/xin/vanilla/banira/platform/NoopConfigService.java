@@ -1,7 +1,5 @@
 package xin.vanilla.banira.platform;
 
-import xin.vanilla.banira.common.config.ConfigHolder;
-
 /**
  * 测试用配置服务，平台契约测试默认不触碰真实加载器配置。
  */
@@ -18,7 +16,7 @@ public enum NoopConfigService implements BaniraConfigService {
     }
 
     @Override
-    public ConfigHolder holder(Class<?> configClass) {
+    public BaniraConfigHandle handle(Class<?> configClass) {
         return null;
     }
 }

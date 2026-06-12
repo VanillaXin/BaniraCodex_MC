@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.forge.config;
 
-import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 import xin.vanilla.banira.platform.BaniraConfigService;
 
 import javax.annotation.Nonnull;
@@ -25,7 +25,7 @@ public enum ForgeBaniraConfigService implements BaniraConfigService {
 
     @Nullable
     @Override
-    public ConfigHolder holder(@Nonnull Class<?> configClass) {
+    public BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
         return ForgeConfigAdapter.getHolder(configClass);
     }
 }

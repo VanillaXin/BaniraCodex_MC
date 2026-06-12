@@ -1,7 +1,5 @@
 package xin.vanilla.banira.platform;
 
-import xin.vanilla.banira.common.config.ConfigHolder;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -16,5 +14,5 @@ public interface BaniraConfigService {
     <T> T get(@Nonnull Class<T> configClass);
 
     @Nullable
-    ConfigHolder holder(@Nonnull Class<?> configClass);
+    BaniraConfigHandle handle(@Nonnull Class<?> configClass);
 }

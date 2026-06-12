@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import org.junit.Test;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
@@ -40,7 +41,7 @@ public class BaniraConfigTest {
         }
 
         @Override
-        public ConfigHolder holder(Class<?> configClass) {
+        public BaniraConfigHandle handle(Class<?> configClass) {
             return null;
         }
     }

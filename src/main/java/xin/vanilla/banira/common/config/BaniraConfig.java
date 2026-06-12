@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,6 +24,18 @@ public final class BaniraConfig {
 
     @Nullable
     public static ConfigHolder holder(@Nonnull Class<?> configClass) {
-        return Banira.platform().configService().holder(configClass);
+        BaniraConfigHandle handle = handle(configClass);
+        if (handle == null) {
+            return null;
+        }
+        if (handle instanceof ConfigHolder) {
+            return (ConfigHolder) handle;
+        }
+        throw new IllegalStateException("Config handle is not a ConfigHolder: " + handle.getClass().getName());
+    }
+
+    @Nullable
+    public static BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
+        return Banira.platform().configService().handle(configClass);
     }
 }

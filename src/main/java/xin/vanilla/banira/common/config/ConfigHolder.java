@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -8,7 +9,7 @@ import java.util.*;
 /**
  * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
-public class ConfigHolder {
+public class ConfigHolder implements BaniraConfigHandle {
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等

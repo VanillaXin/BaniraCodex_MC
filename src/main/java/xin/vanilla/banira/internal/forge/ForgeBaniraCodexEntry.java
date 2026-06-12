@@ -8,6 +8,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -27,7 +28,8 @@ public final class ForgeBaniraCodexEntry {
         BaniraPlatforms.get().config().register(ClientConfig.class, BaniraCodex.MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.addListener((FMLCommonSetupEvent event) -> BaniraEventBus.dispatchModCommonSetup());
+        modBus.addListener((FMLCommonSetupEvent event) ->
+                BaniraEventBus.dispatchModCommonSetup(BaniraCommonSetupEvent.withWorkQueue(event::enqueueWork)));
 
         MinecraftForge.EVENT_BUS.register(ForgeBaniraEventBridge.class);
         BaniraScheduler.init();

@@ -7,6 +7,8 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
+import xin.vanilla.banira.api.event.BaniraLifecycle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -34,7 +36,6 @@ public final class BaniraEventBus {
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Runnable> modCommonSetupRunnables = new ArrayList<>();
 
     private BaniraEventBus() {
     }
@@ -134,7 +135,7 @@ public final class BaniraEventBus {
         }
 
         public static void onCommonSetup(@Nonnull Runnable callback) {
-            modCommonSetupRunnables.add(callback);
+            BaniraLifecycle.onCommonSetup(event -> event.enqueueWork(callback));
         }
     }
 
@@ -184,7 +185,11 @@ public final class BaniraEventBus {
     }
 
     public static void dispatchModCommonSetup() {
-        fire(modCommonSetupRunnables, "mod common setup");
+        dispatchModCommonSetup(BaniraCommonSetupEvent.immediate());
+    }
+
+    public static void dispatchModCommonSetup(@Nonnull BaniraCommonSetupEvent event) {
+        BaniraLifecycle.dispatchCommonSetup(event);
     }
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {

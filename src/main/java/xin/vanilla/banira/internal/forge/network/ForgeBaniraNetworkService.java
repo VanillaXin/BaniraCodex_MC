@@ -2,9 +2,9 @@ package xin.vanilla.banira.internal.forge.network;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 
 import javax.annotation.Nonnull;
@@ -25,12 +25,12 @@ public final class ForgeBaniraNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public void sendToServer(@Nonnull INetworkPacket packet) {
+    public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
         ForgeNetworkChannels.sendToServer(packet);
     }
 
     @Override
-    public void sendToPlayer(@Nonnull INetworkPacket packet, @Nonnull ServerPlayer player) {
+    public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
         ForgeNetworkChannels.sendToPlayer(packet, player);
     }
 

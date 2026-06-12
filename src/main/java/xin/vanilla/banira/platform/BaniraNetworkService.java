@@ -2,7 +2,6 @@ package xin.vanilla.banira.platform;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.util.IIdentifier;
 
@@ -15,9 +14,9 @@ public interface BaniraNetworkService {
     @Nonnull
     NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier);
 
-    void sendToServer(@Nonnull INetworkPacket packet);
+    void sendToServer(@Nonnull BaniraNetworkPacket packet);
 
-    void sendToPlayer(@Nonnull INetworkPacket packet, @Nonnull ServerPlayer player);
+    void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player);
 
     boolean hasDefaultChannel();
 

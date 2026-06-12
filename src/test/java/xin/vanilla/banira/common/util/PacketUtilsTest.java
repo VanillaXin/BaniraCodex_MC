@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.junit.Test;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
@@ -106,13 +107,13 @@ public class PacketUtilsTest {
         }
 
         @Override
-        public void sendToServer(@Nonnull INetworkPacket packet) {
-            serverPackets.add(packet);
+        public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
+            serverPackets.add((INetworkPacket) packet);
         }
 
         @Override
-        public void sendToPlayer(@Nonnull INetworkPacket packet, @Nonnull ServerPlayer player) {
-            playerPackets.add(packet);
+        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
+            playerPackets.add((INetworkPacket) packet);
             players.add(player);
         }
 

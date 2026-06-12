@@ -32,11 +32,11 @@ public enum NoopNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public void sendToServer(INetworkPacket packet) {
+    public void sendToServer(BaniraNetworkPacket packet) {
     }
 
     @Override
-    public void sendToPlayer(INetworkPacket packet, ServerPlayer player) {
+    public void sendToPlayer(BaniraNetworkPacket packet, ServerPlayer player) {
     }
 
     @Override

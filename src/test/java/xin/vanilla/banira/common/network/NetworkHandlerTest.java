@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.junit.Test;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
@@ -90,11 +91,11 @@ public class NetworkHandlerTest {
         }
 
         @Override
-        public void sendToServer(@Nonnull INetworkPacket packet) {
+        public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
         }
 
         @Override
-        public void sendToPlayer(@Nonnull INetworkPacket packet, @Nonnull ServerPlayer player) {
+        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
         }
 
         @Override

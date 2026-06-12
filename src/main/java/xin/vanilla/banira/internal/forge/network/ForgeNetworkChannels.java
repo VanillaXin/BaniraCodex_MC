@@ -8,12 +8,12 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
-import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.mixin.accessors.SimpleChannelAccessor;
+import xin.vanilla.banira.platform.BaniraNetworkPacket;
 
 /**
  * Forge 分支的通道适配器；公共层只处理 Banira 网络包语义。
@@ -25,7 +25,7 @@ public final class ForgeNetworkChannels {
     private ForgeNetworkChannels() {
     }
 
-    public static SimpleChannel resolve(INetworkPacket packet) {
+    public static SimpleChannel resolve(BaniraNetworkPacket packet) {
         return defaultChannel;
     }
 
@@ -36,7 +36,7 @@ public final class ForgeNetworkChannels {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public static void sendToServer(INetworkPacket packet) {
+    public static void sendToServer(BaniraNetworkPacket packet) {
         SimpleChannel channel = resolve(packet);
         if (!hasLocalChannel(channel)) return;
         LocalPlayer player = BaniraClientRuntime.localPlayer();
@@ -49,7 +49,7 @@ public final class ForgeNetworkChannels {
         channel.sendToServer(packet);
     }
 
-    public static void sendToPlayer(INetworkPacket packet, ServerPlayer player) {
+    public static void sendToPlayer(BaniraNetworkPacket packet, ServerPlayer player) {
         SimpleChannel channel = resolve(packet);
         if (!hasPlayerChannel(player, channel)) return;
         if (!PlayerUtils.isRemoteClientModInstalled(player, modId(channel))) return;

@@ -23,7 +23,7 @@ public final class BaniraCommonSetupEvent {
     }
 
     /**
-     * 在加载器允许的主线程/安全阶段执行工作，Forge 下会桥接到 FMLCommonSetupEvent.enqueueWork。
+     * 在当前加载器允许的主线程/安全阶段执行工作。
      */
     public void enqueueWork(@Nonnull Runnable task) {
         workQueue.accept(Objects.requireNonNull(task, "task"));

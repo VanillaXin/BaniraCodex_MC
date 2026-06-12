@@ -6,8 +6,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.ArraySet;
@@ -179,7 +177,6 @@ public final class AdvancementUtils {
     /**
      * 获取所有可显示的进度列表（有图标的进度）
      */
-    @OnlyIn(Dist.CLIENT)
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
                 .filter(Objects::nonNull)
@@ -294,7 +291,6 @@ public final class AdvancementUtils {
      * @param keyword 搜索关键字
      * @return 匹配的进度列表
      */
-    @OnlyIn(Dist.CLIENT)
     public static List<AdvancementData> searchDisplayableAdvancements(String keyword) {
         if (StringUtils.isNullOrEmpty(keyword)) {
             return getDisplayableAdvancements();

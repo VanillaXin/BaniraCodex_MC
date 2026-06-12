@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.data;
 
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
+
 @SuppressWarnings("unused")
 public class GLFWKey {
 
@@ -45,7 +47,7 @@ public class GLFWKey {
     /**
      * The unknown key.
      */
-    public static final int GLFW_KEY_UNKNOWN = -1;
+    public static final int GLFW_KEY_UNKNOWN = BaniraKeyCodes.KEY_UNKNOWN;
 
     /**
      * Printable keys.
@@ -181,32 +183,60 @@ public class GLFWKey {
     /**
      * If this bit is set one or more Shift keys were held down.
      */
-    public static final int GLFW_MOD_SHIFT = 0x1;
+    public static final int GLFW_MOD_SHIFT = BaniraKeyCodes.MOD_SHIFT;
 
     /**
      * If this bit is set one or more Control keys were held down.
      */
-    public static final int GLFW_MOD_CONTROL = 0x2;
+    public static final int GLFW_MOD_CONTROL = BaniraKeyCodes.MOD_CONTROL;
 
     /**
      * If this bit is set one or more Alt keys were held down.
      */
-    public static final int GLFW_MOD_ALT = 0x4;
+    public static final int GLFW_MOD_ALT = BaniraKeyCodes.MOD_ALT;
 
     /**
      * If this bit is set one or more Super keys were held down.
      */
-    public static final int GLFW_MOD_SUPER = 0x8;
+    public static final int GLFW_MOD_SUPER = BaniraKeyCodes.MOD_SUPER;
 
     /**
      * If this bit is set the Caps Lock key is enabled and the LOCK_KEY_MODS input mode is set.
      */
-    public static final int GLFW_MOD_CAPS_LOCK = 0x10;
+    public static final int GLFW_MOD_CAPS_LOCK = BaniraKeyCodes.MOD_CAPS_LOCK;
 
     /**
      * If this bit is set the Num Lock key is enabled and the LOCK_KEY_MODS input mode is set.
      */
-    public static final int GLFW_MOD_NUM_LOCK = 0x20;
+    public static final int GLFW_MOD_NUM_LOCK = BaniraKeyCodes.MOD_NUM_LOCK;
+
+    public static boolean hasShiftModifier(int modifiers) {
+        return BaniraKeyCodes.hasShiftModifier(modifiers);
+    }
+
+    public static boolean hasControlModifier(int modifiers) {
+        return BaniraKeyCodes.hasControlModifier(modifiers);
+    }
+
+    public static boolean hasAltModifier(int modifiers) {
+        return BaniraKeyCodes.hasAltModifier(modifiers);
+    }
+
+    public static boolean hasSuperModifier(int modifiers) {
+        return BaniraKeyCodes.hasSuperModifier(modifiers);
+    }
+
+    public static boolean matchesModifiers(int actualModifiers, int requiredModifiers) {
+        return BaniraKeyCodes.matchesModifiers(actualModifiers, requiredModifiers);
+    }
+
+    public static boolean matchesExactModifiers(int actualModifiers, int expectedModifiers) {
+        return BaniraKeyCodes.matchesExactModifiers(actualModifiers, expectedModifiers);
+    }
+
+    public static String formatShortcut(int keyCode, int modifiers) {
+        return BaniraKeyCodes.formatShortcut(keyCode, modifiers);
+    }
 
     /**
      * Mouse buttons. See <a target="_blank" href="http://www.glfw.org/docs/latest/input.html#input_mouse_button">mouse button input</a> for how these are used.

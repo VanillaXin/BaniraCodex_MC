@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.common;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
+import xin.vanilla.banira.platform.BaniraPathService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
@@ -18,6 +19,32 @@ public final class BaniraPaths {
     public static final Supplier<Path> WORLD_DATA_PATH = BaniraPaths::worldDataPath;
     public static final Supplier<Path> PLAYER_DATA_PATH = BaniraPaths::playerDataPath;
     public static final Supplier<Path> CONFIG_PATH = BaniraPaths::configPath;
+    public static final BaniraPathService SERVICE = new BaniraPathService() {
+        @Override
+        public String rootDirectoryName() {
+            return ROOT_DIRECTORY_NAME;
+        }
+
+        @Override
+        public Path configPath() {
+            return BaniraPaths.configPath();
+        }
+
+        @Override
+        public Path worldDataPath() {
+            return BaniraPaths.worldDataPath();
+        }
+
+        @Override
+        public Path playerDataPath() {
+            return BaniraPaths.playerDataPath();
+        }
+
+        @Override
+        public Path vanillaPlayerDataPath() {
+            return BaniraPaths.vanillaPlayerDataPath();
+        }
+    };
 
     private BaniraPaths() {
     }

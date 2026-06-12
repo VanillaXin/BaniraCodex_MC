@@ -1,8 +1,5 @@
 package xin.vanilla.banira.api;
 
-import net.minecraft.world.level.storage.LevelResource;
-import xin.vanilla.banira.internal.common.BaniraPaths;
-
 import java.nio.file.Path;
 
 /**
@@ -14,22 +11,22 @@ public final class BaniraDataPaths {
     }
 
     public static String rootDirectoryName() {
-        return BaniraPaths.ROOT_DIRECTORY_NAME;
-    }
-
-    public static LevelResource worldDataDirectory() {
-        return BaniraPaths.WORLD_DATA_DIRECTORY;
+        return Banira.platform().pathService().rootDirectoryName();
     }
 
     public static Path worldDataPath() {
-        return BaniraPaths.worldDataPath();
+        return Banira.platform().pathService().worldDataPath();
     }
 
     public static Path playerDataPath() {
-        return BaniraPaths.playerDataPath();
+        return Banira.platform().pathService().playerDataPath();
     }
 
     public static Path configPath() {
-        return BaniraPaths.configPath();
+        return Banira.platform().pathService().configPath();
+    }
+
+    public static Path vanillaPlayerDataPath() {
+        return Banira.platform().pathService().vanillaPlayerDataPath();
     }
 }

@@ -7,6 +7,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
+import xin.vanilla.banira.internal.common.BaniraPaths;
 import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
 import xin.vanilla.banira.internal.forge.config.ForgeBaniraConfigService;
 import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
@@ -93,6 +94,12 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Nonnull
+    @Override
+    public BaniraPathService pathService() {
+        return BaniraPaths.SERVICE;
     }
 
     @Nonnull

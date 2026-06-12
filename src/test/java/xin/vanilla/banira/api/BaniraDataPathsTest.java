@@ -7,7 +7,6 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class BaniraDataPathsTest {
 
@@ -17,6 +16,8 @@ public class BaniraDataPathsTest {
 
         assertEquals("vanilla.xin", BaniraDataPaths.rootDirectoryName());
         assertEquals(Path.of("build", "test-config", "vanilla.xin"), BaniraDataPaths.configPath());
-        assertNotNull(BaniraDataPaths.worldDataDirectory());
+        assertEquals(Path.of("build", "test-world", "vanilla.xin"), BaniraDataPaths.worldDataPath());
+        assertEquals(Path.of("build", "test-world", "vanilla.xin", "playerdata"), BaniraDataPaths.playerDataPath());
+        assertEquals(Path.of("build", "test-world", "playerdata"), BaniraDataPaths.vanillaPlayerDataPath());
     }
 }

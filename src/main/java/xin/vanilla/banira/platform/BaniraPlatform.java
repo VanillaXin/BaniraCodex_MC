@@ -39,6 +39,12 @@ public interface BaniraPlatform {
     @Nonnull
     Path configDir();
 
+    /**
+     * 当前加载器和 MC 版本的数据路径服务。
+     */
+    @Nonnull
+    BaniraPathService pathService();
+
     @Nonnull
     BaniraConfigService configService();
 

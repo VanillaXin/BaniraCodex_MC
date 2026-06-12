@@ -21,6 +21,32 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
     private Path configDir = Path.of("config");
+    private BaniraPathService pathService = new BaniraPathService() {
+        @Override
+        public @Nonnull String rootDirectoryName() {
+            return "vanilla.xin";
+        }
+
+        @Override
+        public @Nonnull Path configPath() {
+            return configDir.resolve(rootDirectoryName());
+        }
+
+        @Override
+        public @Nonnull Path worldDataPath() {
+            return Path.of("build", "test-world", rootDirectoryName());
+        }
+
+        @Override
+        public @Nonnull Path playerDataPath() {
+            return worldDataPath().resolve("playerdata");
+        }
+
+        @Override
+        public @Nonnull Path vanillaPlayerDataPath() {
+            return Path.of("build", "test-world", "playerdata");
+        }
+    };
 
     public TestBaniraPlatform loaderType(String value) {
         this.loaderType = Objects.requireNonNull(value, "loaderType");
@@ -86,6 +112,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         return this;
     }
 
+    public TestBaniraPlatform pathService(BaniraPathService value) {
+        this.pathService = Objects.requireNonNull(value, "pathService");
+        return this;
+    }
+
     @Override
     public @Nonnull String loaderType() {
         return loaderType;
@@ -139,6 +170,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull Path configDir() {
         return configDir;
+    }
+
+    @Override
+    public @Nonnull BaniraPathService pathService() {
+        return pathService;
     }
 
     @Override

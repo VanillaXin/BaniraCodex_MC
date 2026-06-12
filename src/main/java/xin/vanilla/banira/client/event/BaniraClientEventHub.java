@@ -4,6 +4,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.internal.client.BaniraClientDefaults;
+import xin.vanilla.banira.internal.client.BaniraLegacyDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -91,10 +92,12 @@ public final class BaniraClientEventHub {
 
     public static void dispatchHudPreRender(BaniraHudRenderEvent event) {
         fire(hudPreRenderCallbacks, event, "hud pre render");
+        dispatchApiHudEvent(event, true);
     }
 
     public static void dispatchHudPostRender(BaniraHudRenderEvent event) {
         fire(hudPostRenderCallbacks, event, "hud post render");
+        dispatchApiHudEvent(event, false);
     }
 
     public static final class Player {
@@ -212,6 +215,92 @@ public final class BaniraClientEventHub {
             } catch (Throwable t) {
                 LOGGER.warn("Error executing callback for {} event", eventName, t);
             }
+        }
+    }
+
+    private static void dispatchApiHudEvent(BaniraHudRenderEvent event, boolean pre) {
+        if (event == null) {
+            return;
+        }
+        // 新 HUD API 的取消结果需要回写给 1.16.5 的 Forge 事件适配层。
+        xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent apiEvent = toApiHudEvent(event, pre);
+        if (pre) {
+            xin.vanilla.banira.api.client.hud.BaniraHudEvents.dispatchPre(apiEvent);
+        } else {
+            xin.vanilla.banira.api.client.hud.BaniraHudEvents.dispatchPost(apiEvent);
+        }
+        if (apiEvent.canceled()) {
+            event.cancelVanilla();
+        }
+    }
+
+    private static xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent toApiHudEvent(BaniraHudRenderEvent event, boolean pre) {
+        BaniraDrawContext legacyDraw = event.draw();
+        xin.vanilla.banira.api.client.render.BaniraDrawContext draw =
+                new xin.vanilla.banira.api.client.render.BaniraDrawContext(
+                        new BaniraLegacyDrawHandle(legacyDraw),
+                        legacyDraw != null ? legacyDraw.width() : 0,
+                        legacyDraw != null ? legacyDraw.height() : 0,
+                        legacyDraw != null ? legacyDraw.partialTicks() : 0.0F
+                );
+        xin.vanilla.banira.api.client.hud.BaniraHudRenderContext context =
+                new xin.vanilla.banira.api.client.hud.BaniraHudRenderContext(
+                        draw,
+                        draw.screenWidth(),
+                        draw.screenHeight(),
+                        draw.partialTick()
+                );
+        return new xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent(
+                pre ? xin.vanilla.banira.api.client.hud.HudRenderPhase.PRE : xin.vanilla.banira.api.client.hud.HudRenderPhase.POST,
+                toApiHudElement(event.element()),
+                context,
+                toApiHudBounds(event.bounds()),
+                pre
+        );
+    }
+
+    private static xin.vanilla.banira.api.client.hud.BaniraHudBounds toApiHudBounds(BaniraHudBounds bounds) {
+        if (bounds == null || !bounds.isKnown()) {
+            return xin.vanilla.banira.api.client.hud.BaniraHudBounds.empty();
+        }
+        return xin.vanilla.banira.api.client.hud.BaniraHudBounds.of(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+    }
+
+    private static xin.vanilla.banira.api.client.hud.HudOverlayElement toApiHudElement(BaniraHudOverlayElement element) {
+        if (element == null) {
+            return xin.vanilla.banira.api.client.hud.HudOverlayElement.UNKNOWN;
+        }
+        switch (element) {
+            case ALL:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.ALL;
+            case HOTBAR:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.HOTBAR;
+            case EXPERIENCE_BAR:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.EXPERIENCE_BAR;
+            case EXPERIENCE_TEXT:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.EXPERIENCE_TEXT;
+            case HEALTH:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.HEALTH;
+            case ARMOR:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.ARMOR;
+            case FOOD:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.FOOD;
+            case AIR:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.AIR;
+            case CHAT:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.CHAT;
+            case CROSSHAIR:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.CROSSHAIR;
+            case BOSS_HEALTH:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.BOSS_HEALTH;
+            case PLAYER_LIST:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.PLAYER_LIST;
+            case DEBUG:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.DEBUG_TEXT;
+            case HUD_TEXT:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.TEXT;
+            default:
+                return xin.vanilla.banira.api.client.hud.HudOverlayElement.UNKNOWN;
         }
     }
 }

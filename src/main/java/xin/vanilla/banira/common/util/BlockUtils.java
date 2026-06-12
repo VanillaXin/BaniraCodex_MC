@@ -49,7 +49,7 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().blockId(block) : null;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().blockKey(block) : null;
     }
 
     /**
@@ -265,7 +265,7 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().block(location) : null;
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().block(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -317,8 +317,8 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    List<Block> blocks = BaniraPlatforms.isInstalled()
-                            ? BaniraPlatforms.get().registry().blocks()
+                    Collection<Block> blocks = BaniraPlatforms.isInstalled()
+                            ? BaniraPlatforms.get().registryService().blocks()
                             : Collections.emptyList();
                     for (Block block : blocks) {
                         if (block == null) continue;

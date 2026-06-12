@@ -47,7 +47,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().entityTypeId(entityType) : null;
+        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().entityTypeKey(entityType) : null;
     }
 
     /**
@@ -240,7 +240,7 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registry().entityType(location) : null;
+            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().entityType(location) : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -282,8 +282,8 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    List<EntityType<?>> entityTypes = BaniraPlatforms.isInstalled()
-                            ? BaniraPlatforms.get().registry().entityTypes()
+                    Collection<EntityType<?>> entityTypes = BaniraPlatforms.isInstalled()
+                            ? BaniraPlatforms.get().registryService().entityTypes()
                             : Collections.emptyList();
                     for (EntityType<?> entityType : entityTypes) {
                         if (entityType == null) continue;

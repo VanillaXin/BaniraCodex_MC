@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.client;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
-import xin.vanilla.banira.client.event.BaniraTextureReloadEvent;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.TextureUtils;
 
@@ -24,7 +23,7 @@ public final class BaniraClientResourceService {
         BaniraClientEventHub.Client.onTextureReload(BaniraClientResourceService::handleTextureReload);
     }
 
-    public static void handleTextureReload(BaniraTextureReloadEvent event) {
+    public static void handleTextureReload(xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent event) {
         if (event == null || event.atlasLocation() == null) {
             return;
         }

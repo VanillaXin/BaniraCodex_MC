@@ -8,6 +8,8 @@ import net.minecraft.world.level.LevelAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
+import xin.vanilla.banira.api.event.BaniraEventRegistration;
+import xin.vanilla.banira.api.event.BaniraLifecycle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -36,11 +38,13 @@ public final class BaniraEventBus {
     private static final List<Consumer<LevelAccessor>> worldUnloadCallbacks = new ArrayList<>();
     private static final List<Consumer<LevelAccessor>> worldTickCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<BaniraCommonSetupEvent>> modCommonSetupCallbacks = new ArrayList<>();
-
     private BaniraEventBus() {
     }
 
+    /**
+     * @deprecated 使用 {@link BaniraEventRegistration}。
+     */
+    @Deprecated
     public interface Registration {
         void unregister();
     }
@@ -182,8 +186,8 @@ public final class BaniraEventBus {
         }
 
         public static Registration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
-            modCommonSetupCallbacks.add(callback);
-            return createRegistration(() -> modCommonSetupCallbacks.remove(callback));
+            BaniraEventRegistration registration = BaniraLifecycle.onCommonSetup(callback);
+            return registration::unregister;
         }
     }
 
@@ -238,7 +242,7 @@ public final class BaniraEventBus {
     }
 
     public static void dispatchCommonSetup(@Nonnull BaniraCommonSetupEvent event) {
-        fire(modCommonSetupCallbacks, event, "mod common setup");
+        BaniraLifecycle.dispatchCommonSetup(event);
     }
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {

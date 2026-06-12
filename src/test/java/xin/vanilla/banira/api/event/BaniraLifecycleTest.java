@@ -1,7 +1,6 @@
 package xin.vanilla.banira.api.event;
 
 import org.junit.Test;
-import xin.vanilla.banira.common.util.BaniraEventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +13,13 @@ public class BaniraLifecycleTest {
     public void commonSetupUsesLoaderNeutralEventAndRegistration() {
         List<String> calls = new ArrayList<>();
 
-        BaniraEventBus.Registration registration = BaniraLifecycle.onCommonSetup(event ->
+        BaniraEventRegistration registration = BaniraLifecycle.onCommonSetup(event ->
                 event.enqueueWork(() -> calls.add("queued"))
         );
 
-        BaniraEventBus.dispatchCommonSetup(BaniraCommonSetupEvent.immediate());
+        BaniraLifecycle.dispatchCommonSetup(BaniraCommonSetupEvent.immediate());
         registration.unregister();
-        BaniraEventBus.dispatchCommonSetup(BaniraCommonSetupEvent.immediate());
+        BaniraLifecycle.dispatchCommonSetup(BaniraCommonSetupEvent.immediate());
 
         assertEquals(List.of("queued"), calls);
     }

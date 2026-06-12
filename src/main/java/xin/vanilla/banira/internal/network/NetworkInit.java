@@ -1,10 +1,7 @@
 package xin.vanilla.banira.internal.network;
 
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.BaniraNetworkContext;
-import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.common.network.*;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
@@ -21,7 +18,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public final class NetworkInit {
-    public static final BaniraNetworkChannel HANDLER = BaniraPlatforms.get().network().create("main_network", Identifier.id());
+    public static final BaniraNetworkChannel DEFAULT_CHANNEL = BaniraPlatforms.get().network().create("main_network", Identifier.id());
+    public static final NetworkHandler HANDLER = NetworkHandler.from(DEFAULT_CHANNEL);
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;

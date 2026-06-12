@@ -191,7 +191,7 @@ public interface BaniraPlatform {
 
             @Override
             public boolean hasDefaultChannel() {
-                return self.network().hasChannel(NetworkInit.HANDLER);
+                return self.network().hasChannel(NetworkInit.DEFAULT_CHANNEL);
             }
 
             @Override

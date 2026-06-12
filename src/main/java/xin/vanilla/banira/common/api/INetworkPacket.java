@@ -12,6 +12,6 @@ public interface INetworkPacket extends BaniraNetworkPacket {
      * 1.16.5 的旧发送链路仍需要 channel，默认指向 Banira 主通道；自定义通道包可以覆盖。
      */
     default BaniraNetworkChannel networkChannel() {
-        return NetworkInit.HANDLER;
+        return NetworkInit.DEFAULT_CHANNEL;
     }
 }

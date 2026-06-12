@@ -16,12 +16,13 @@ import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
-import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -213,7 +214,98 @@ public interface BaniraPlatform {
         };
     }
 
-    BaniraRegistryService registry();
+    /**
+     * @deprecated 子 mod 请使用 {@link #registryService()}；该入口仅保留给 1.16.5 内部适配。
+     */
+    @Deprecated
+    xin.vanilla.banira.platform.registry.BaniraRegistryService registry();
+
+    /**
+     * 根级注册表服务是新版公共入口；旧的 platform.registry 服务仅作为当前分支内部实现保留。
+     */
+    default BaniraRegistryService registryService() {
+        BaniraPlatform self = this;
+        return new BaniraRegistryService() {
+            @Override
+            public net.minecraft.util.ResourceLocation blockKey(net.minecraft.block.Block block) {
+                return self.registry().blockId(block);
+            }
+
+            @Override
+            public net.minecraft.block.Block block(net.minecraft.util.ResourceLocation id) {
+                return self.registry().block(id);
+            }
+
+            @Override
+            public Collection<net.minecraft.block.Block> blocks() {
+                return self.registry().blocks();
+            }
+
+            @Override
+            public net.minecraft.util.ResourceLocation itemKey(net.minecraft.item.Item item) {
+                return self.registry().itemId(item);
+            }
+
+            @Override
+            public net.minecraft.item.Item item(net.minecraft.util.ResourceLocation id) {
+                return self.registry().item(id);
+            }
+
+            @Override
+            public Collection<net.minecraft.item.Item> items() {
+                return self.registry().items();
+            }
+
+            @Override
+            public Collection<net.minecraft.util.ResourceLocation> itemTagIds(net.minecraft.item.Item item) {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public net.minecraft.util.ResourceLocation entityTypeKey(net.minecraft.entity.EntityType<?> entityType) {
+                return self.registry().entityTypeId(entityType);
+            }
+
+            @Override
+            public net.minecraft.entity.EntityType<?> entityType(net.minecraft.util.ResourceLocation id) {
+                return self.registry().entityType(id);
+            }
+
+            @Override
+            public Collection<net.minecraft.entity.EntityType<?>> entityTypes() {
+                return self.registry().entityTypes();
+            }
+
+            @Override
+            public net.minecraft.util.ResourceLocation effectKey(net.minecraft.potion.Effect effect) {
+                return self.registry().effectId(effect);
+            }
+
+            @Override
+            public net.minecraft.potion.Effect effect(net.minecraft.util.ResourceLocation id) {
+                return self.registry().effect(id);
+            }
+
+            @Override
+            public Collection<net.minecraft.potion.Effect> effects() {
+                return self.registry().effects();
+            }
+
+            @Override
+            public net.minecraft.world.biome.Biome biome(net.minecraft.util.ResourceLocation id) {
+                return self.registry().biome(id);
+            }
+
+            @Override
+            public Collection<net.minecraft.util.ResourceLocation> biomeIds() {
+                java.util.List<net.minecraft.util.ResourceLocation> ids = new java.util.ArrayList<>();
+                for (String id : self.registry().biomeIds()) {
+                    ids.add(new net.minecraft.util.ResourceLocation(id));
+                }
+                return ids;
+            }
+        };
+    }
 
     BaniraWorldService world();
 

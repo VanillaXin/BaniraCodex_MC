@@ -7,7 +7,6 @@ import org.junit.Test;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
-import xin.vanilla.banira.platform.registry.BaniraRegistryService;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
@@ -33,6 +32,7 @@ public class BaniraPlatformsTest {
         assertNotNull(BaniraPlatforms.get().inputService());
         assertNotNull(BaniraPlatforms.get().configService());
         assertNotNull(BaniraPlatforms.get().networkService());
+        assertNotNull(BaniraPlatforms.get().registryService());
     }
 
     public static final class FakePlatform implements BaniraPlatform {
@@ -193,7 +193,7 @@ public class BaniraPlatformsTest {
         }
 
         @Override
-        public BaniraRegistryService registry() {
+        public xin.vanilla.banira.platform.registry.BaniraRegistryService registry() {
             return null;
         }
 

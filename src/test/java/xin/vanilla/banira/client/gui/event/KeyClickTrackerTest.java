@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.gui.event;
 
 import org.junit.Test;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -84,5 +85,19 @@ public class KeyClickTrackerTest {
         assertTrue(event.repeatedPress());
         assertFalse(event.heldRepeat());
         assertTrue(event.pressTracked());
+    }
+
+    @Test
+    public void keyEventExposesShortcutHelpers() {
+        KeyEvent event = KeyEvent.of(BaniraKeyCodes.KEY_K, 30,
+                BaniraKeyCodes.MOD_ALT | BaniraKeyCodes.MOD_CONTROL | BaniraKeyCodes.MOD_SHIFT);
+
+        assertTrue(event.hasControlModifier());
+        assertTrue(event.hasShiftModifier());
+        assertTrue(event.hasAltModifier());
+        assertFalse(event.hasSuperModifier());
+        assertTrue(event.matchesShortcut(BaniraKeyCodes.KEY_K, BaniraKeyCodes.MOD_CONTROL | BaniraKeyCodes.MOD_SHIFT));
+        assertFalse(event.matchesExactShortcut(BaniraKeyCodes.KEY_K, BaniraKeyCodes.MOD_CONTROL | BaniraKeyCodes.MOD_SHIFT));
+        assertEquals("Ctrl + Shift + Alt + K", event.shortcutDisplay());
     }
 }

@@ -3,7 +3,7 @@ package xin.vanilla.banira.api.client;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 public final class BaniraKeySpec {
     private @Nonnull String modId = "";
     private @Nonnull String suffix = "";
-    private int defaultKey = GLFWKey.GLFW_KEY_UNKNOWN;
+    private int defaultKey = BaniraKeyCodes.KEY_UNKNOWN;
     private @Nullable String category;
 
     @Nonnull

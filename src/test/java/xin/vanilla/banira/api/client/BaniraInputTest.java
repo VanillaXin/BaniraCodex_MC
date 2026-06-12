@@ -1,7 +1,7 @@
 package xin.vanilla.banira.api.client;
 
 import org.junit.Test;
-import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,7 +19,7 @@ public class BaniraInputTest {
 
         assertEquals("example", spec.modId());
         assertEquals("open_panel", spec.suffix());
-        assertEquals(GLFWKey.GLFW_KEY_UNKNOWN, spec.defaultKey());
+        assertEquals(BaniraKeyCodes.KEY_UNKNOWN, spec.defaultKey());
     }
 
     @Test(expected = IllegalArgumentException.class)

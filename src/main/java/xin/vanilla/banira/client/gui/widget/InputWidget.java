@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -962,15 +963,15 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     private static boolean shiftPressed(KeyEvent event) {
-        return event != null && GLFWKey.hasShiftModifier(event.modifiers());
+        return event != null && event.hasShiftModifier();
     }
 
     private static boolean controlPressed(KeyEvent event) {
-        return event != null && GLFWKey.hasControlModifier(event.modifiers());
+        return event != null && event.hasControlModifier();
     }
 
     private static boolean shortcutPressed(KeyEvent event, int keyCode) {
-        return event != null && event.keyCode() == keyCode && controlPressed(event);
+        return event != null && event.matchesShortcut(keyCode, BaniraKeyCodes.MOD_CONTROL);
     }
 
     @Override

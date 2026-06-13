@@ -4,6 +4,10 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import org.junit.Test;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
@@ -14,6 +18,8 @@ import xin.vanilla.banira.platform.world.BaniraWorldService;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -202,8 +208,45 @@ public class BaniraPlatformsTest {
         }
 
         @Override
-        public xin.vanilla.banira.platform.network.BaniraNetworkService network() {
-            return null;
+        public BaniraNetworkService networkService() {
+            return new BaniraNetworkService() {
+                @Override
+                public NetworkPacketRegistrar registrar(String channelName, xin.vanilla.banira.common.util.IIdentifier identifier) {
+                    return new NetworkPacketRegistrar() {
+                        @Override
+                        public <MSG extends INetworkPacket> void register(
+                                int packetId,
+                                Class<MSG> packetClass,
+                                BiConsumer<MSG, BaniraPacketBuffer> encoder,
+                                Function<BaniraPacketBuffer, MSG> decoder,
+                                BiConsumer<MSG, BaniraNetworkContext> handler) {
+                        }
+                    };
+                }
+
+                @Override
+                public void sendToServer(BaniraNetworkPacket packet) {
+                }
+
+                @Override
+                public void sendToPlayer(BaniraNetworkPacket packet, net.minecraft.entity.player.ServerPlayerEntity player) {
+                }
+
+                @Override
+                public boolean hasDefaultChannel() {
+                    return false;
+                }
+
+                @Override
+                public boolean hasLocalChannel(ResourceLocation channel) {
+                    return false;
+                }
+
+                @Override
+                public boolean hasPlayerChannel(net.minecraft.entity.player.ServerPlayerEntity player, ResourceLocation channel) {
+                    return false;
+                }
+            };
         }
 
         @Override

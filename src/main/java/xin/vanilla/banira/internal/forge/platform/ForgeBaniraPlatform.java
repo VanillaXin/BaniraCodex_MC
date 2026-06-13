@@ -8,12 +8,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.platform.BaniraConfigService;
+import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraRegistryService;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.event.BaniraLifecycle;
-import xin.vanilla.banira.platform.network.BaniraNetworkService;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
@@ -116,7 +116,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     @Override
-    public BaniraNetworkService network() {
+    public BaniraNetworkService networkService() {
         return network;
     }
 

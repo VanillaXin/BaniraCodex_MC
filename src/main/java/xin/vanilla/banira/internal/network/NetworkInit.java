@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.network;
 
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.*;
 import xin.vanilla.banira.common.network.packet.*;
@@ -11,15 +12,15 @@ import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
 import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
 
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public final class NetworkInit {
-    public static final BaniraNetworkChannel DEFAULT_CHANNEL = BaniraPlatforms.get().network().create("main_network", Identifier.id());
-    public static final NetworkHandler HANDLER = NetworkHandler.from(DEFAULT_CHANNEL);
+    public static final ResourceLocation DEFAULT_CHANNEL_NAME = Identifier.id().create("main_network");
+    public static final NetworkHandler HANDLER = new NetworkHandler(
+            BaniraPlatforms.get().networkService().registrar("main_network", Identifier.id()));
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;

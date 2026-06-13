@@ -7,7 +7,6 @@ import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.network.BaniraNetworkChannel;
 
 import java.util.List;
 
@@ -58,16 +57,8 @@ public final class PacketUtils {
         return BaniraPlatforms.get().networkService().hasDefaultChannel();
     }
 
-    public static boolean hasChannel(BaniraNetworkChannel channel) {
-        return channel != null && hasChannel(channel.channelName());
-    }
-
     public static boolean hasChannel(ResourceLocation channel) {
         return BaniraPlatforms.get().networkService().hasLocalChannel(channel);
-    }
-
-    public static boolean hasChannel(ServerPlayerEntity player, BaniraNetworkChannel channel) {
-        return channel != null && hasChannel(player, channel.channelName());
     }
 
     public static boolean hasChannel(ServerPlayerEntity player, ResourceLocation channel) {

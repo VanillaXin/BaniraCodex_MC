@@ -95,8 +95,22 @@ public class BaniraPlatformsTest {
         }
 
         @Override
-        public xin.vanilla.banira.platform.config.BaniraConfigService config() {
-            return null;
+        public BaniraConfigService configService() {
+            return new BaniraConfigService() {
+                @Override
+                public <T> void register(Class<T> configClass, String modId) {
+                }
+
+                @Override
+                public <T> T get(Class<T> configClass) {
+                    return null;
+                }
+
+                @Override
+                public BaniraConfigHandle handle(Class<?> configClass) {
+                    return null;
+                }
+            };
         }
 
         @Override

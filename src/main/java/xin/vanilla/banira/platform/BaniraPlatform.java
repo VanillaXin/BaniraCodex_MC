@@ -4,13 +4,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
-import xin.vanilla.banira.internal.config.BaniraConfigHandleAdapter;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
@@ -97,36 +95,10 @@ public interface BaniraPlatform {
     }
 
     BaniraLifecycle lifecycle();
-
     /**
-     * @deprecated 子 mod 请使用 {@link #configService()}；该入口仅保留给 1.16.5 内部适配。
+     * 根级配置服务；子 mod 只通过该入口注册、读取配置。
      */
-    @Deprecated
-    xin.vanilla.banira.platform.config.BaniraConfigService config();
-
-    /**
-     * 根级配置服务是新版公共入口，旧的 platform.config 服务仅作为当前分支内部实现保留。
-     */
-    default BaniraConfigService configService() {
-        BaniraPlatform self = this;
-        return new BaniraConfigService() {
-            @Override
-            public <T> void register(Class<T> configClass, String modId) {
-                self.config().register(configClass, modId);
-            }
-
-            @Override
-            public <T> T get(Class<T> configClass) {
-                return self.config().get(configClass);
-            }
-
-            @Override
-            public BaniraConfigHandle handle(Class<?> configClass) {
-                ConfigHolder holder = self.config().getHolder(configClass);
-                return holder != null ? new BaniraConfigHandleAdapter(holder) : null;
-            }
-        };
-    }
+    BaniraConfigService configService();
 
     BaniraCommandService command();
 

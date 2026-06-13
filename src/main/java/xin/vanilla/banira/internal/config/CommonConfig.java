@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
  * 通用（Common）配置：注解结构用于构建 ForgeConfigSpec 与配置编辑器；
@@ -48,7 +47,7 @@ public class CommonConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return CommonConfigAccess.root(BaniraPlatforms.get().config().getHolder(CommonConfig.class));
+        return CommonConfigAccess.root(BaniraConfigHandles.holder(CommonConfig.class));
     }
 
     // region 运行时视图接口

@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
  * 客户端专用配置（Forge CLIENT）
@@ -91,7 +90,7 @@ public class ClientConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return ClientConfigAccess.root(BaniraPlatforms.get().config().getHolder(ClientConfig.class));
+        return ClientConfigAccess.root(BaniraConfigHandles.holder(ClientConfig.class));
     }
 
     // region 运行时视图接口

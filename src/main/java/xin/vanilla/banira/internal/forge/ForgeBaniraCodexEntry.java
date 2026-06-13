@@ -24,8 +24,8 @@ public final class ForgeBaniraCodexEntry {
         BaniraPlatforms.install(new ForgeBaniraPlatform());
 
         // Config specs must be registered before Forge finishes loading CONFIG specs.
-        BaniraPlatforms.get().config().register(CommonConfig.class, BaniraCodex.MODID);
-        BaniraPlatforms.get().config().register(ClientConfig.class, BaniraCodex.MODID);
+        BaniraPlatforms.get().configService().register(CommonConfig.class, BaniraCodex.MODID);
+        BaniraPlatforms.get().configService().register(ClientConfig.class, BaniraCodex.MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener((FMLCommonSetupEvent event) ->

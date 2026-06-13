@@ -21,6 +21,13 @@ public class BaniraConfigHandleAdapter implements BaniraConfigHandle {
         this.holder = holder;
     }
 
+    /**
+     * 内部配置视图仍需要访问旧 holder；不要把它加入公共接口。
+     */
+    public ConfigHolder holder() {
+        return holder;
+    }
+
     @Override
     public String getModId() {
         return holder.getModId();

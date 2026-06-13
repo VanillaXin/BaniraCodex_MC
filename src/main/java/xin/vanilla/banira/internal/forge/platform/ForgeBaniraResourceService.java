@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
-import xin.vanilla.banira.platform.resource.BaniraResourceService;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -22,11 +21,13 @@ import java.util.function.Predicate;
 /**
  * Forge 1.16.5 resource-pack traversal. Resource manager internals change often by version.
  */
-public final class ForgeBaniraResourceService implements BaniraResourceService {
+public final class ForgeBaniraResourceService {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    @Override
-    public Map<String, JsonObject> modLanguageFiles(String modId) {
+    private ForgeBaniraResourceService() {
+    }
+
+    public static Map<String, JsonObject> modLanguageFiles(String modId) {
         Map<String, JsonObject> result = new LinkedHashMap<>();
         if (modId == null || modId.trim().isEmpty()) return result;
         IResourceManager manager = activeResourceManager();
@@ -41,7 +42,7 @@ public final class ForgeBaniraResourceService implements BaniraResourceService {
         return result;
     }
 
-    private IResourceManager activeResourceManager() {
+    private static IResourceManager activeResourceManager() {
         if (BaniraCodex.serverInstance().key() != null) {
             return BaniraCodex.serverInstance().key().getDataPackRegistries().getResourceManager();
         }
@@ -54,7 +55,7 @@ public final class ForgeBaniraResourceService implements BaniraResourceService {
         }
     }
 
-    private void collectLanguageFiles(IResourcePack pack, String modId, Predicate<String> predicate, Map<String, JsonObject> result) {
+    private static void collectLanguageFiles(IResourcePack pack, String modId, Predicate<String> predicate, Map<String, JsonObject> result) {
         try {
             Collection<ResourceLocation> locations = pack.getResources(ResourcePackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, predicate);
             for (ResourceLocation location : locations) {
@@ -66,7 +67,7 @@ public final class ForgeBaniraResourceService implements BaniraResourceService {
         }
     }
 
-    private void loadLanguage(ResourcePackType packType, IResourcePack pack, ResourceLocation location, Map<String, JsonObject> result) {
+    private static void loadLanguage(ResourcePackType packType, IResourcePack pack, ResourceLocation location, Map<String, JsonObject> result) {
         try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, location), StandardCharsets.UTF_8)) {
             String languageCode = languageCode(location);
             JsonObject json = JsonUtils.parseObject(reader);
@@ -81,7 +82,7 @@ public final class ForgeBaniraResourceService implements BaniraResourceService {
         }
     }
 
-    private String languageCode(ResourceLocation location) {
+    private static String languageCode(ResourceLocation location) {
         String path = location.getPath();
         int slash = path.lastIndexOf('/');
         String name = slash >= 0 ? path.substring(slash + 1) : path;

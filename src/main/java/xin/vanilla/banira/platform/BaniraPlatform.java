@@ -3,7 +3,6 @@ package xin.vanilla.banira.platform;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -101,6 +100,4 @@ public interface BaniraPlatform {
     BaniraWorldService world();
 
     BaniraServerService server();
-
-    BaniraResourceService resources();
 }

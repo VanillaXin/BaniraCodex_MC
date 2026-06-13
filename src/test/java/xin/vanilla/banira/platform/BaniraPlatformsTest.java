@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -371,11 +370,6 @@ public class BaniraPlatformsTest {
                     return 0;
                 }
             };
-        }
-
-        @Override
-        public BaniraResourceService resources() {
-            return modId -> java.util.Collections.emptyMap();
         }
     }
 }

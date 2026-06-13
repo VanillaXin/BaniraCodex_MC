@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.resource.BaniraResourceAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -230,7 +231,7 @@ public class Translator implements ITranslator {
     private void loadFromResourceManager() {
         try {
             Map<String, JsonObject> loaded = BaniraPlatforms.isInstalled()
-                    ? BaniraPlatforms.get().resources().modLanguageFiles(modId)
+                    ? BaniraResourceAccess.modLanguageFiles(modId)
                     : Collections.emptyMap();
             loaded.forEach((languageCode, json) -> {
                 languages.add(languageCode);

@@ -207,8 +207,8 @@ public class BaniraPlatformsTest {
         }
 
         @Override
-        public xin.vanilla.banira.platform.registry.BaniraRegistryService registry() {
-            return null;
+        public BaniraRegistryService registryService() {
+            return NoopRegistryService.INSTANCE;
         }
 
         @Override

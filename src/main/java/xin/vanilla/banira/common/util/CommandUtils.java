@@ -24,6 +24,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -144,7 +145,7 @@ public final class CommandUtils {
      */
     public static void refreshPermission(@NonNull ServerPlayerEntity player) {
         if (BaniraPlatforms.isInstalled()) {
-            BaniraPlatforms.get().server().refreshPlayerPermission(player);
+            BaniraServerAccess.refreshPlayerPermission(player);
         }
     }
 

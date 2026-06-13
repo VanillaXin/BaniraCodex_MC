@@ -6,6 +6,7 @@ import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public final class PacketUtils {
     }
 
     public static void broadcastPacket(IPacket<?> packet) {
-        BaniraPlatforms.get().server().broadcastRawPacket(packet);
+        BaniraServerAccess.broadcastRawPacket(packet);
     }
 
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {

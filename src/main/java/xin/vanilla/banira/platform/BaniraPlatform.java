@@ -1,10 +1,11 @@
 package xin.vanilla.banira.platform;
 
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
-import xin.vanilla.banira.platform.server.BaniraServerService;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -53,7 +54,8 @@ public interface BaniraPlatform {
 
             @Override
             public Path worldDataPath() {
-                return self.server().worldDataPath(rootDirectoryName());
+                Path path = BaniraServerAccess.worldDataPath(rootDirectoryName());
+                return path != null ? path : Paths.get("world", rootDirectoryName());
             }
 
             @Override
@@ -64,7 +66,8 @@ public interface BaniraPlatform {
 
             @Override
             public Path vanillaPlayerDataPath() {
-                return self.server().worldPlayerDataPath();
+                Path path = BaniraServerAccess.worldPlayerDataPath();
+                return path != null ? path : Paths.get("world", "playerdata");
             }
         };
     }
@@ -92,6 +95,4 @@ public interface BaniraPlatform {
     BaniraRegistryService registryService();
 
     BaniraWorldService world();
-
-    BaniraServerService server();
 }

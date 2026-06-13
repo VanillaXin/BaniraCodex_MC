@@ -12,7 +12,7 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.storage.FolderName;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.platform.server.BaniraServerService;
+import xin.vanilla.banira.internal.server.BaniraServerService;
 
 import java.nio.file.Path;
 import java.util.Collection;

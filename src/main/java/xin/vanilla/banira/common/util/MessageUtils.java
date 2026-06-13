@@ -20,7 +20,7 @@ import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -34,7 +34,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayerEntity player, Component message) {
-        BaniraPlatforms.get().server()
+        BaniraServerAccess
                 .broadcastSystemMessage(null, new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChat()));
     }
 
@@ -45,7 +45,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        BaniraPlatforms.get().server()
+        BaniraServerAccess
                 .broadcastSystemMessage(server, new TranslationTextComponent("chat.type.announcement", "Server", message.toChat()));
     }
 
@@ -65,7 +65,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, Component message) {
-        BaniraPlatforms.get().server().sendPlayerMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
+        BaniraServerAccess.sendPlayerMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
     }
 
     /**
@@ -75,7 +75,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void sendMessage(PlayerEntity player, String message) {
-        BaniraPlatforms.get().server().sendPlayerMessage(player, BaniraComponent.get().literal(message).toChat());
+        BaniraServerAccess.sendPlayerMessage(player, BaniraComponent.get().literal(message).toChat());
     }
 
     /**
@@ -124,7 +124,7 @@ public final class MessageUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(PlayerEntity player, String key, Object... args) {
-        BaniraPlatforms.get().server().sendPlayerMessage(player,
+        BaniraServerAccess.sendPlayerMessage(player,
                 BaniraComponent.get().trans(key, args).languageCode(Translator.getPlayerLanguage(player)).toChat());
     }
 
@@ -162,7 +162,7 @@ public final class MessageUtils {
      * 发送操作栏消息
      */
     public static void sendActionBarMessage(ServerPlayerEntity player, Component message) {
-        BaniraPlatforms.get().server().sendActionBarMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
+        BaniraServerAccess.sendActionBarMessage(player, message.toChat(Translator.getPlayerLanguage(player)));
     }
 
     // region 指定通知类型 — sendNotification / broadcastNotification

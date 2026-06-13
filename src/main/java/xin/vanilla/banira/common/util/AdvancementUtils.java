@@ -12,6 +12,7 @@ import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -117,7 +118,7 @@ public final class AdvancementUtils {
     public static ArraySet<AdvancementData> advancementData() {
         // 服务端
         if (advancementData.isEmpty() && BaniraPlatforms.isInstalled()) {
-            Collection<Advancement> serverAdvancements = BaniraPlatforms.get().server().advancements();
+            Collection<Advancement> serverAdvancements = BaniraServerAccess.advancements();
             if (CollectionUtils.isNotNullOrEmpty(serverAdvancements)) {
                 advancementData(serverAdvancements.stream()
                         .map(AdvancementData::fromAdvancement).collect(Collectors.toList())

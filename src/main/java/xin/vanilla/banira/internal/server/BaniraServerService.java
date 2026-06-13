@@ -1,4 +1,4 @@
-package xin.vanilla.banira.platform.server;
+package xin.vanilla.banira.internal.server;
 
 import net.minecraft.advancements.Advancement;
 import net.minecraft.entity.player.PlayerEntity;

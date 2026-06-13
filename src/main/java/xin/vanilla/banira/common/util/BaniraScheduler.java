@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.ScheduledTask;
 import xin.vanilla.banira.common.data.WallClockScheduledTask;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -135,7 +136,7 @@ public final class BaniraScheduler {
     }
 
     private static long currentServerTick() {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().tickCount() : 0;
+        return BaniraPlatforms.isInstalled() ? BaniraServerAccess.tickCount() : 0;
     }
 
     public static int getServerPendingTaskCount() {

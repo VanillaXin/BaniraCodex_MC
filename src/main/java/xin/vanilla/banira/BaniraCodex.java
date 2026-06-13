@@ -13,6 +13,7 @@ import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ public final class BaniraCodex {
 
     public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
             BANIRA_PLAYER_DATA_PATH,
-            () -> BaniraPlatforms.get().server().worldPlayerDataPath(),
+            () -> BaniraServerAccess.worldPlayerDataPath(),
             MODID,
             "",
             StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
@@ -48,7 +49,7 @@ public final class BaniraCodex {
     }
 
     private static Path baniraWorldDataPath() {
-        return BaniraPlatforms.get().server().worldDataPath(VANILLA_XIN);
+        return BaniraServerAccess.worldDataPath(VANILLA_XIN);
     }
 
     private static Path baniraPlayerDataPath() {
@@ -79,7 +80,7 @@ public final class BaniraCodex {
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
         BaniraEventBus.Server.onTickEnd(() -> {
-            long tick = BaniraPlatforms.get().server().tickCount();
+            long tick = BaniraServerAccess.tickCount();
             if (tick > 0 && tick % CONFIG_SAVE_INTERVAL_TICKS == 0) {
                 if (!CustomConfig.loadCustomConfig(true)) {
                     CustomConfig.saveCustomConfig();

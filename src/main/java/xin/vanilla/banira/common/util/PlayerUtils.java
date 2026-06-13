@@ -15,6 +15,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -70,7 +71,7 @@ public final class PlayerUtils {
      * 获取所有玩家
      */
     public static List<ServerPlayerEntity> getAllPlayers() {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().players() : java.util.Collections.emptyList();
+        return BaniraPlatforms.isInstalled() ? BaniraServerAccess.players() : java.util.Collections.emptyList();
     }
 
     /**
@@ -169,7 +170,7 @@ public final class PlayerUtils {
      */
     @Nullable
     public static ServerPlayerEntity getServerPlayerByUUID(UUID uuid) {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().server().player(uuid) : null;
+        return BaniraPlatforms.isInstalled() ? BaniraServerAccess.player(uuid) : null;
     }
 
     /**

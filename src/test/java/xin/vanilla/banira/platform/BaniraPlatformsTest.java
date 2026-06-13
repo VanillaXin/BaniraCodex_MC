@@ -8,7 +8,6 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
@@ -217,69 +216,5 @@ public class BaniraPlatformsTest {
             };
         }
 
-        @Override
-        public BaniraServerService server() {
-            return new BaniraServerService() {
-                @Override
-                public net.minecraft.server.MinecraftServer currentServer() {
-                    return null;
-                }
-
-                @Override
-                public java.util.List<net.minecraft.entity.player.ServerPlayerEntity> players() {
-                    return java.util.Collections.emptyList();
-                }
-
-                @Override
-                public net.minecraft.entity.player.ServerPlayerEntity player(UUID uuid) {
-                    return null;
-                }
-
-                @Override
-                public void broadcastRawPacket(net.minecraft.network.IPacket<?> packet) {
-                }
-
-                @Override
-                public void broadcastSystemMessage(net.minecraft.server.MinecraftServer server, net.minecraft.util.text.ITextComponent message) {
-                }
-
-                @Override
-                public void sendPlayerMessage(net.minecraft.entity.player.PlayerEntity player, net.minecraft.util.text.ITextComponent message) {
-                }
-
-                @Override
-                public void sendActionBarMessage(net.minecraft.entity.player.ServerPlayerEntity player, net.minecraft.util.text.ITextComponent message) {
-                }
-
-                @Override
-                public void refreshPlayerPermission(net.minecraft.entity.player.ServerPlayerEntity player) {
-                }
-
-                @Override
-                public java.util.Collection<net.minecraft.advancements.Advancement> advancements() {
-                    return java.util.Collections.emptyList();
-                }
-
-                @Override
-                public net.minecraft.resources.IResourceManager serverResourceManager() {
-                    return null;
-                }
-
-                @Override
-                public java.nio.file.Path worldDataPath(String directoryName) {
-                    return java.nio.file.Paths.get("world", directoryName == null ? "" : directoryName);
-                }
-
-                @Override
-                public java.nio.file.Path worldPlayerDataPath() {
-                    return java.nio.file.Paths.get("world", "playerdata");
-                }
-
-                @Override
-                public long tickCount() {
-                    return 0;
-                }
-            };
-        }
     }
 }

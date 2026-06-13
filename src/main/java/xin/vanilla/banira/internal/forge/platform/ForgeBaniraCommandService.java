@@ -17,8 +17,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.platform.command.BaniraCommandExecutor;
-import xin.vanilla.banira.platform.command.BaniraCommandService;
+import xin.vanilla.banira.internal.command.BaniraCommandExecutor;
+import xin.vanilla.banira.internal.command.BaniraCommandService;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,9 +1,9 @@
-package xin.vanilla.banira.platform.command;
+package xin.vanilla.banira.internal.command;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 /**
- * Loader-neutral wrapper for command execution callbacks.
+ * 内部命令执行回调；避免把 Brigadier 注册细节挂到 public platform 上。
  */
 @FunctionalInterface
 public interface BaniraCommandExecutor {

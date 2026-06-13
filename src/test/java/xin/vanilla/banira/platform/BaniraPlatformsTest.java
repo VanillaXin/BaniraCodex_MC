@@ -9,7 +9,6 @@ import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.platform.client.BaniraClientService;
-import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -108,89 +107,6 @@ public class BaniraPlatformsTest {
                 @Override
                 public BaniraConfigHandle handle(Class<?> configClass) {
                     return null;
-                }
-            };
-        }
-
-        @Override
-        public BaniraCommandService command() {
-            return new BaniraCommandService() {
-                @Override
-                public boolean executePlayerCommand(net.minecraft.entity.player.ServerPlayerEntity player, String command, int permission, boolean suppressedOutput) {
-                    return false;
-                }
-
-                @Override
-                public boolean hasPermission(Object source, int permission) {
-                    return false;
-                }
-
-                @Override
-                public net.minecraft.entity.Entity sourceEntity(Object source) {
-                    return null;
-                }
-
-                @Override
-                public net.minecraft.entity.player.ServerPlayerEntity sourcePlayer(Object source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
-                }
-
-                @Override
-                public net.minecraft.world.server.ServerWorld dimension(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    return null;
-                }
-
-                @Override
-                public RegistryKey<World> dimensionKey(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    return World.OVERWORLD;
-                }
-
-                @Override
-                public net.minecraft.entity.player.ServerPlayerEntity player(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
-                }
-
-                @Override
-                public net.minecraft.entity.player.ServerPlayerEntity playerOrSelf(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    throw net.minecraft.command.CommandSource.ERROR_NOT_PLAYER.create();
-                }
-
-                @Override
-                public java.util.Collection<net.minecraft.entity.player.ServerPlayerEntity> players(com.mojang.brigadier.context.CommandContext<?> context, String name) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-                    return java.util.Collections.emptyList();
-                }
-
-                @Override
-                public void sendSuccess(Object source, net.minecraft.util.text.ITextComponent message, boolean notifyAdmins) {
-                }
-
-                @Override
-                public void sendFailure(Object source, net.minecraft.util.text.ITextComponent message) {
-                }
-
-                @Override
-                public Object literal(String name) {
-                    return new Object();
-                }
-
-                @Override
-                public void executes(Object commandNode, xin.vanilla.banira.platform.command.BaniraCommandExecutor executor) {
-                }
-
-                @Override
-                public void then(Object parentNode, Object childNode) {
-                }
-
-                @Override
-                public void register(Object dispatcher, Object commandNode) {
-                }
-
-                @Override
-                public void onRegisterDispatcher(java.util.function.Consumer<Object> callback) {
-                }
-
-                @Override
-                public void dispatchRegisterDispatcher(Object dispatcher) {
                 }
             };
         }

@@ -12,7 +12,6 @@ import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraRegistryService;
 import xin.vanilla.banira.platform.client.BaniraClientService;
-import xin.vanilla.banira.platform.command.BaniraCommandService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -22,7 +21,6 @@ import java.util.UUID;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraConfigService config = new ForgeBaniraConfigService();
-    private final BaniraCommandService command = new ForgeBaniraCommandService();
     private final BaniraClientService client = DistExecutor.safeRunForDist(
             () -> xin.vanilla.banira.internal.forge.client.ForgeBaniraClientService::new,
             () -> BaniraClientService::noop);
@@ -94,11 +92,6 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraConfigService configService() {
         return config;
-    }
-
-    @Override
-    public BaniraCommandService command() {
-        return command;
     }
 
     @Override

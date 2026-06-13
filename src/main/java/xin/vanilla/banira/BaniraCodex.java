@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -69,7 +70,7 @@ public final class BaniraCodex {
             CustomConfig.loadCustomConfig(false);
             ModLoadedPresence.register(MODID);
         });
-        BaniraPlatforms.get().command().onRegisterDispatcher(BaniraCommand::register);
+        BaniraCommandAccess.onRegisterDispatcher(BaniraCommand::register);
 
         BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
         BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());

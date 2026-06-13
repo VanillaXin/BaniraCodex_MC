@@ -3,9 +3,8 @@ package xin.vanilla.banira.command;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.command.BaniraCommandService;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -83,16 +82,15 @@ public class BaniraCommand {
     public static void register(Object dispatcher) {
         refreshHelpMessage();
 
-        BaniraCommandService command = BaniraPlatforms.get().command();
-        Object mainCommand = command.literal(getCommandPrefix());
+        Object mainCommand = BaniraCommandAccess.literal(getCommandPrefix());
 
-        command.executes(mainCommand, HelpCommand::executeRaw);
+        BaniraCommandAccess.executes(mainCommand, HelpCommand::executeRaw);
         for (EnumCommandType type : EnumCommandType.values()) {
             if (type.instance() != null) {
                 Object child = type.instance().get();
-                command.then(mainCommand, child);
+                BaniraCommandAccess.then(mainCommand, child);
             }
         }
-        command.register(dispatcher, mainCommand);
+        BaniraCommandAccess.register(dispatcher, mainCommand);
     }
 }

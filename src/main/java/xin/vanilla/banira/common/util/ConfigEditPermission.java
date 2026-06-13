@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -38,7 +39,7 @@ public final class ConfigEditPermission {
                 virtualKey = fieldKey;
             }
         }
-        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().command().hasPermission(player, level)) {
+        if (BaniraPlatforms.isInstalled() && BaniraCommandAccess.hasPermission(player, level)) {
             return true;
         }
         return virtualKey != null && !virtualKey.isEmpty()

@@ -18,6 +18,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -84,15 +85,15 @@ public final class MessageUtils {
      * @param success 是否成功
      */
     public static void sendMessage(CommandSource source, boolean success, Component message) {
-        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
+        if (BaniraCommandAccess.sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendMessage(BaniraPlatforms.get().command().sourcePlayer(source), message);
+                sendMessage(BaniraCommandAccess.sourcePlayer(source), message);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            BaniraPlatforms.get().command().sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), false);
+            BaniraCommandAccess.sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            BaniraPlatforms.get().command().sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
+            BaniraCommandAccess.sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -103,15 +104,15 @@ public final class MessageUtils {
      * @param success 是否成功
      */
     public static void sendMessageWithAdmin(CommandSource source, boolean success, Component message) {
-        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
+        if (BaniraCommandAccess.sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendMessage(BaniraPlatforms.get().command().sourcePlayer(source), message);
+                sendMessage(BaniraCommandAccess.sourcePlayer(source), message);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            BaniraPlatforms.get().command().sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), true);
+            BaniraCommandAccess.sendSuccess(source, message.languageCode(Translator.getServerLanguage()).toChat(), true);
         } else {
-            BaniraPlatforms.get().command().sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
+            BaniraCommandAccess.sendFailure(source, message.languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 
@@ -136,15 +137,15 @@ public final class MessageUtils {
      * @param args    参数
      */
     public static void sendTranslatableMessage(CommandSource source, boolean success, String key, Object... args) {
-        if (BaniraPlatforms.get().command().sourceEntity(source) instanceof ServerPlayerEntity) {
+        if (BaniraCommandAccess.sourceEntity(source) instanceof ServerPlayerEntity) {
             try {
-                sendTranslatableMessage(BaniraPlatforms.get().command().sourcePlayer(source), key, args);
+                sendTranslatableMessage(BaniraCommandAccess.sourcePlayer(source), key, args);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
-            BaniraPlatforms.get().command().sendSuccess(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
+            BaniraCommandAccess.sendSuccess(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat(), false);
         } else {
-            BaniraPlatforms.get().command().sendFailure(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
+            BaniraCommandAccess.sendFailure(source, BaniraComponent.get().trans(key, args).languageCode(Translator.getServerLanguage()).toChat());
         }
     }
 

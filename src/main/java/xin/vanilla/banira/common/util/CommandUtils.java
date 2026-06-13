@@ -23,6 +23,7 @@ import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -40,7 +41,7 @@ public final class CommandUtils {
     public static boolean checkModStatus(CommandContext<CommandSource> context, Supplier<Boolean> modDisabled) {
         if (modDisabled.get()) {
             CommandSource source = context.getSource();
-            Entity entity = BaniraPlatforms.get().command().sourceEntity(source);
+            Entity entity = BaniraCommandAccess.sourceEntity(source);
             if (entity instanceof ServerPlayerEntity) {
                 MessageUtils.sendMessage((ServerPlayerEntity) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
             }
@@ -50,10 +51,10 @@ public final class CommandUtils {
 
     public static String getLanguage(CommandSource source) {
         String lang = Translator.getServerLanguage();
-        Entity entity = BaniraPlatforms.get().command().sourceEntity(source);
+        Entity entity = BaniraCommandAccess.sourceEntity(source);
         if (entity instanceof ServerPlayerEntity) {
             try {
-                lang = Translator.getPlayerLanguage(BaniraPlatforms.get().command().sourcePlayer(source));
+                lang = Translator.getPlayerLanguage(BaniraCommandAccess.sourcePlayer(source));
             } catch (Exception ignored) {
             }
         }
@@ -61,24 +62,24 @@ public final class CommandUtils {
     }
 
     public static Entity getSourceEntity(CommandSource source) {
-        return BaniraPlatforms.get().command().sourceEntity(source);
+        return BaniraCommandAccess.sourceEntity(source);
     }
 
     @Nullable
     public static ServerPlayerEntity getSourcePlayer(CommandSource source) {
         try {
-            return BaniraPlatforms.get().command().sourcePlayer(source);
+            return BaniraCommandAccess.sourcePlayer(source);
         } catch (CommandSyntaxException ignored) {
             return null;
         }
     }
 
     public static ServerPlayerEntity requireSourcePlayer(CommandSource source) throws CommandSyntaxException {
-        return BaniraPlatforms.get().command().sourcePlayer(source);
+        return BaniraCommandAccess.sourcePlayer(source);
     }
 
     public static boolean hasPermission(CommandSource source, int permission) {
-        return BaniraPlatforms.get().command().hasPermission(source, permission);
+        return BaniraCommandAccess.hasPermission(source, permission);
     }
 
     public static boolean hasVirtualPermission(CommandSource source, IVirtualPermissionType type) {
@@ -114,7 +115,7 @@ public final class CommandUtils {
      */
     public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command, int permission, boolean suppressedOutput) {
         return BaniraPlatforms.isInstalled()
-                && BaniraPlatforms.get().command().executePlayerCommand(player, command, permission, suppressedOutput);
+                && BaniraCommandAccess.executePlayerCommand(player, command, permission, suppressedOutput);
     }
 
     /**
@@ -217,7 +218,7 @@ public final class CommandUtils {
 
     public static ServerWorld getDimensionDefault(CommandContext<CommandSource> context, String name, ServerWorld defaultValue) {
         try {
-            return BaniraPlatforms.get().command().dimension(context, name);
+            return BaniraCommandAccess.dimension(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException e) {
             return defaultValue;
         }
@@ -251,7 +252,7 @@ public final class CommandUtils {
      * 尝试获取玩家参数，若无则返回执行者自身（若执行者为玩家），否则抛出 CommandSyntaxException
      */
     public static ServerPlayerEntity getPlayerOrSelf(CommandContext<CommandSource> context, String name) throws CommandSyntaxException {
-        return BaniraPlatforms.get().command().playerOrSelf(context, name);
+        return BaniraCommandAccess.playerOrSelf(context, name);
     }
 
     /**
@@ -260,7 +261,7 @@ public final class CommandUtils {
     @Nullable
     public static ServerPlayerEntity getPlayerOptional(CommandContext<CommandSource> context, String name) {
         try {
-            return BaniraPlatforms.get().command().player(context, name);
+            return BaniraCommandAccess.player(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
             return null;
         }
@@ -271,7 +272,7 @@ public final class CommandUtils {
      */
     public static Collection<ServerPlayerEntity> getPlayersOptional(CommandContext<CommandSource> context, String name, Collection<ServerPlayerEntity> fallback) {
         try {
-            return BaniraPlatforms.get().command().players(context, name);
+            return BaniraCommandAccess.players(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
             return fallback;
         }
@@ -282,7 +283,7 @@ public final class CommandUtils {
      */
     public static RegistryKey<World> getDimensionKeyDefault(CommandContext<CommandSource> context, String name, RegistryKey<World> defaultValue) {
         try {
-            return BaniraPlatforms.get().command().dimensionKey(context, name);
+            return BaniraCommandAccess.dimensionKey(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
             return defaultValue;
         }
@@ -293,7 +294,7 @@ public final class CommandUtils {
      */
     public static void notifyHelp(CommandContext<CommandSource> context, ICommandNotify playerData, Component modName, String command) {
         CommandSource source = context.getSource();
-        Entity entity = BaniraPlatforms.get().command().sourceEntity(source);
+        Entity entity = BaniraCommandAccess.sourceEntity(source);
         if (entity instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) entity;
             if (!playerData.isNotified()) {

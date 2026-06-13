@@ -1,4 +1,4 @@
-package xin.vanilla.banira.platform.command;
+package xin.vanilla.banira.internal.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
- * Loader/version-neutral command helpers for vanilla command source and argument APIs.
+ * Banira 内部命令适配接口；不同版本的参数和注册 API 只在内部实现中变化。
  */
 public interface BaniraCommandService {
     boolean executePlayerCommand(ServerPlayerEntity player, String command, int permission, boolean suppressedOutput);

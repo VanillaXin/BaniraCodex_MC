@@ -13,7 +13,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 
 public final class ForgeBaniraEventBridge {
     private ForgeBaniraEventBridge() {
@@ -92,6 +92,6 @@ public final class ForgeBaniraEventBridge {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        BaniraPlatforms.get().command().dispatchRegisterDispatcher(event.getDispatcher());
+        BaniraCommandAccess.dispatchRegisterDispatcher(event.getDispatcher());
     }
 }

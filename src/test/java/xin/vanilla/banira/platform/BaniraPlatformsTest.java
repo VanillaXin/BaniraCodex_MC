@@ -10,7 +10,6 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
@@ -93,11 +92,6 @@ public class BaniraPlatformsTest {
         @Override
         public Path configDir() {
             return Paths.get("config");
-        }
-
-        @Override
-        public BaniraLifecycle lifecycle() {
-            return null;
         }
 
         @Override

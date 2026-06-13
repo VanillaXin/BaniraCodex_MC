@@ -13,7 +13,6 @@ import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraRegistryService;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
@@ -23,7 +22,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
-    private final BaniraLifecycle lifecycle = new ForgeBaniraLifecycle();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraCommandService command = new ForgeBaniraCommandService();
     private final BaniraClientService client = DistExecutor.safeRunForDist(
@@ -93,11 +91,6 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
-    }
-
-    @Override
-    public BaniraLifecycle lifecycle() {
-        return lifecycle;
     }
 
     @Override

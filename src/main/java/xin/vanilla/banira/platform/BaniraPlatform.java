@@ -3,7 +3,6 @@ package xin.vanilla.banira.platform;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
 import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.command.BaniraCommandService;
-import xin.vanilla.banira.platform.event.BaniraLifecycle;
 import xin.vanilla.banira.platform.resource.BaniraResourceService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
@@ -79,8 +78,6 @@ public interface BaniraPlatform {
     default BaniraInputService inputService() {
         return BaniraApiInputBridge.service();
     }
-
-    BaniraLifecycle lifecycle();
 
     /**
      * 根级配置服务；子 mod 只通过该入口注册、读取配置。

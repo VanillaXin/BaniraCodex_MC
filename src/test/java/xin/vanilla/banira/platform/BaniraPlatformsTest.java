@@ -8,7 +8,6 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -109,11 +108,6 @@ public class BaniraPlatformsTest {
                     return null;
                 }
             };
-        }
-
-        @Override
-        public BaniraClientService client() {
-            return BaniraClientService.noop();
         }
 
         @Override

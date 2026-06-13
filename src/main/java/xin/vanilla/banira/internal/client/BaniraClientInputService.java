@@ -23,7 +23,7 @@ public final class BaniraClientInputService {
     }
 
     public static boolean isWindowActive() {
-        return clientReady() && BaniraPlatforms.get().client().isWindowActive();
+        return clientReady() && BaniraClientAccess.isWindowActive();
     }
 
     public static KeyValue<Double, Double> rawCursorPos() {
@@ -87,14 +87,14 @@ public final class BaniraClientInputService {
     }
 
     private static long windowHandle() {
-        return BaniraPlatforms.get().client().windowHandle();
+        return BaniraClientAccess.windowHandle();
     }
 
     private static KeyValue<Integer, Integer> guiPixelSize() {
-        return clientReady() ? BaniraPlatforms.get().client().guiPixelSize() : new KeyValue<>(1, 1);
+        return clientReady() ? BaniraClientAccess.guiPixelSize() : new KeyValue<>(1, 1);
     }
 
     private static KeyValue<Integer, Integer> guiScaledSize() {
-        return clientReady() ? BaniraPlatforms.get().client().guiScaledSize() : new KeyValue<>(1, 1);
+        return clientReady() ? BaniraClientAccess.guiScaledSize() : new KeyValue<>(1, 1);
     }
 }

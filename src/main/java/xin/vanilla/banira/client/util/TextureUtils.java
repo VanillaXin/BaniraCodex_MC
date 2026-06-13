@@ -10,6 +10,7 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.BaniraClientTextureService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -57,7 +58,7 @@ public final class TextureUtils {
     private static boolean hasClientResource(ResourceLocation location) {
         return BaniraPlatforms.isInstalled()
                 && BaniraPlatforms.get().isClient()
-                && BaniraPlatforms.get().client().hasResource(location);
+                && BaniraClientAccess.hasResource(location);
     }
 
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {

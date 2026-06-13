@@ -33,8 +33,8 @@ import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -632,7 +632,7 @@ public final class QuickActionOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        KeyValue<Integer, Integer> screenSize = BaniraPlatforms.get().client().guiScaledSize();
+        KeyValue<Integer, Integer> screenSize = BaniraClientAccess.guiScaledSize();
         lastScreenW = screenSize.key();
         lastScreenH = screenSize.val();
 

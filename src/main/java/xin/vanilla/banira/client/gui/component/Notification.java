@@ -26,7 +26,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -217,7 +217,7 @@ public class Notification extends NotificationData {
 
     private void updateRichLayout() {
         FontRenderer font = AbstractGuiUtils.getFont();
-        int sw = Math.max(320, BaniraPlatforms.get().client().guiScaledSize().key());
+        int sw = Math.max(320, BaniraClientAccess.guiScaledSize().key());
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();

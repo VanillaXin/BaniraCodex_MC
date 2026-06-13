@@ -29,8 +29,8 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.GuiScissorStack;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -99,7 +99,7 @@ public final class AbstractGuiUtils {
 
     @Deprecated
     public static void bindTexture(ResourceLocation location) {
-        BaniraPlatforms.get().client().bindTexture(location);
+        BaniraClientAccess.bindTexture(location);
     }
 
     public static void blit(MatrixStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
@@ -1888,8 +1888,8 @@ public final class AbstractGuiUtils {
      * 获取指定坐标点像素颜色
      */
     public static int getPixelArgb(double guiX, double guiY) {
-        double guiScale = BaniraPlatforms.get().client().guiScale();
-        int windowHeight = BaniraPlatforms.get().client().guiPixelSize().val();
+        double guiScale = BaniraClientAccess.guiScale();
+        int windowHeight = BaniraClientAccess.guiPixelSize().val();
 
         // 将 GUI 坐标（左上为原点）转换为物理屏幕坐标（左下为原点）
         int pixelX = (int) (guiX * guiScale);
@@ -1913,15 +1913,15 @@ public final class AbstractGuiUtils {
     }
 
     public static KeyValue<Integer, Integer> getScreenSize() {
-        return BaniraPlatforms.get().client().screenSize();
+        return BaniraClientAccess.screenSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiScaledSize() {
-        return BaniraPlatforms.get().client().guiScaledSize();
+        return BaniraClientAccess.guiScaledSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiSize() {
-        return BaniraPlatforms.get().client().guiPixelSize();
+        return BaniraClientAccess.guiPixelSize();
     }
 
     /**

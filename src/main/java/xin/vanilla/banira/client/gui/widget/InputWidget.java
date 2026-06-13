@@ -23,7 +23,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -840,20 +840,20 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (Screen.isCopy(keyCode)) {
-            BaniraPlatforms.get().client().clipboard(getHighlighted());
+            BaniraClientAccess.clipboard(getHighlighted());
             return true;
         }
 
         if (Screen.isPaste(keyCode)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(BaniraPlatforms.get().client().clipboard());
+                insertText(BaniraClientAccess.clipboard());
             }
             return true;
         }
 
         if (Screen.isCut(keyCode)) {
-            BaniraPlatforms.get().client().clipboard(getHighlighted());
+            BaniraClientAccess.clipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");

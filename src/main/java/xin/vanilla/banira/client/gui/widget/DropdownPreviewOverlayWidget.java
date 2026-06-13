@@ -11,7 +11,7 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
 
         List<String> items = parent.getSelectedValues();
         if (items.isEmpty()) {
-            BaniraPlatforms.get().client().runOnClientThread(parent::closePreview);
+            BaniraClientAccess.runOnClientThread(parent::closePreview);
             return;
         }
 

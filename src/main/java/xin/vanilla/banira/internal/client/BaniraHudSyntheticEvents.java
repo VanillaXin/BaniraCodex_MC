@@ -58,7 +58,7 @@ public final class BaniraHudSyntheticEvents {
 
     private static KeyValue<Integer, Integer> guiScaledSize() {
         return BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
-                ? BaniraPlatforms.get().client().guiScaledSize()
+                ? BaniraClientAccess.guiScaledSize()
                 : null;
     }
 }

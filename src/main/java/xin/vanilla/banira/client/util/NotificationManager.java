@@ -20,9 +20,9 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -224,7 +224,7 @@ public final class NotificationManager {
     }
 
     public void render(MatrixStack stack) {
-        KeyValue<Integer, Integer> scaledSize = BaniraPlatforms.get().client().guiScaledSize();
+        KeyValue<Integer, Integer> scaledSize = BaniraClientAccess.guiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
                 .width(scaledSize.key())
                 .height(scaledSize.val());

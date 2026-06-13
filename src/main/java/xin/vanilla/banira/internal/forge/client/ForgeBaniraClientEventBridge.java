@@ -11,10 +11,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.event.*;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.BaniraClientGuiService;
 import xin.vanilla.banira.internal.client.BaniraClientResourceService;
 import xin.vanilla.banira.internal.client.BaniraHudGeometry;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.Objects;
 
@@ -47,7 +47,7 @@ public final class ForgeBaniraClientEventBridge {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         BaniraClientEventHub.dispatchClientTick(new BaniraClientTickEvent(toBaniraTickPhase(event.phase)));
         if (event.phase == TickEvent.Phase.END) {
-            BaniraClientGuiService.handleClientTickEnd(!BaniraPlatforms.get().client().hasScreen());
+            BaniraClientGuiService.handleClientTickEnd(!BaniraClientAccess.hasScreen());
         }
     }
 

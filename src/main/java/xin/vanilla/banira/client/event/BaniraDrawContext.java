@@ -4,8 +4,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.client.BaniraClientService;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
+import xin.vanilla.banira.internal.client.BaniraClientService;
 
 @Getter
 @Accessors(fluent = true)
@@ -31,7 +31,7 @@ public final class BaniraDrawContext {
     }
 
     public void fill(int x, int y, int width, int height, int argb) {
-        client().fill(nativeContext, x, y, width, height, argb);
+        clientService().fill(nativeContext, x, y, width, height, argb);
     }
 
     public void fill(BaniraHudBounds bounds, int argb) {
@@ -83,7 +83,7 @@ public final class BaniraDrawContext {
     }
 
     public int drawText(String text, int x, int y, int argb, boolean shadow) {
-        return client().drawText(nativeContext, text, x, y, argb, shadow);
+        return clientService().drawText(nativeContext, text, x, y, argb, shadow);
     }
 
     /**
@@ -98,11 +98,11 @@ public final class BaniraDrawContext {
     }
 
     public int textWidth(String text) {
-        return client().textWidth(text);
+        return clientService().textWidth(text);
     }
 
     public int lineHeight() {
-        return client().lineHeight();
+        return clientService().lineHeight();
     }
 
     public void fillScreen(int argb) {
@@ -110,7 +110,7 @@ public final class BaniraDrawContext {
     }
 
     public void blit(ResourceLocation texture, int x, int y, double u, double v, int width, int height, int textureWidth, int textureHeight) {
-        client().blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+        clientService().blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
     }
 
     public void drawTexture(ResourceLocation texture, int x, int y, int width, int height) {
@@ -128,19 +128,19 @@ public final class BaniraDrawContext {
     }
 
     public void push() {
-        client().pushTransform(nativeContext);
+        clientService().pushTransform(nativeContext);
     }
 
     public void pop() {
-        client().popTransform(nativeContext);
+        clientService().popTransform(nativeContext);
     }
 
     public void translate(double x, double y, double z) {
-        client().translate(nativeContext, x, y, z);
+        clientService().translate(nativeContext, x, y, z);
     }
 
     public void scale(float x, float y, float z) {
-        client().scale(nativeContext, x, y, z);
+        clientService().scale(nativeContext, x, y, z);
     }
 
     /**
@@ -157,9 +157,7 @@ public final class BaniraDrawContext {
         }
     }
 
-    private static BaniraClientService client() {
-        return BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
-                ? BaniraPlatforms.get().client()
-                : BaniraClientService.noop();
+    private static BaniraClientService clientService() {
+        return BaniraClientAccess.service();
     }
 }

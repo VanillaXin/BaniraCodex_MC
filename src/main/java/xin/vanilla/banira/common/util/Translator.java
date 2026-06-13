@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.resource.BaniraResourceAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -285,7 +286,7 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-            String languageCode = BaniraPlatforms.get().client().selectedLanguageCode();
+            String languageCode = BaniraClientAccess.selectedLanguageCode();
             if (StringUtils.isNotNullOrEmpty(languageCode)) {
                 return normalizeLanguageCode(languageCode);
             }

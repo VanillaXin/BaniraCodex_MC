@@ -26,6 +26,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -630,10 +631,10 @@ public final class ItemUtils {
             try {
                 // Tooltip description can only be read safely on a physical client.
                 PlayerEntity clientPlayer = BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
-                        ? BaniraPlatforms.get().client().localPlayer()
+                        ? BaniraClientAccess.localPlayer()
                         : null;
                 if (clientPlayer != null) {
-                    List<ITextComponent> tooltip = BaniraPlatforms.get().client().itemTooltip(stack, clientPlayer, false);
+                    List<ITextComponent> tooltip = BaniraClientAccess.itemTooltip(stack, clientPlayer, false);
                     if (CollectionUtils.isNotNullOrEmpty(tooltip)) {
                         description = tooltip.stream()
                                 .skip(1)
@@ -857,7 +858,7 @@ public final class ItemUtils {
     public static List<ItemStack> getAllPlayerItems() {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return new ArrayList<>();
         try {
-            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
+            PlayerEntity player = BaniraClientAccess.localPlayer();
             if (player != null) {
                 return getAllPlayerItems(player);
             }
@@ -1090,7 +1091,7 @@ public final class ItemUtils {
                 // 获取基础 tooltip；具体版本的 tooltip flag 由 client adapter 处理。
                 List<ITextComponent> baseTooltip = new ArrayList<>();
                 if (player != null && BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-                    baseTooltip.addAll(BaniraPlatforms.get().client().itemTooltip(itemStack, player, advanced));
+                    baseTooltip.addAll(BaniraClientAccess.itemTooltip(itemStack, player, advanced));
                 } else {
                     baseTooltip.add(itemStack.getHoverName());
                 }
@@ -1243,7 +1244,7 @@ public final class ItemUtils {
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return getItemTooltip(itemStack, null, advanced);
         try {
-            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
+            PlayerEntity player = BaniraClientAccess.localPlayer();
             return getItemTooltip(itemStack, player, advanced);
         } catch (Exception e) {
             LOGGER.debug("Failed to get client player for tooltip", e);

@@ -9,7 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.platform.client.BaniraClientService;
+import xin.vanilla.banira.internal.client.BaniraClientService;
 
 import java.util.Collections;
 import java.util.List;

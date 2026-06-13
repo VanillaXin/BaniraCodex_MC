@@ -11,7 +11,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 /**
  * 自定义的鼠标光标
@@ -93,7 +93,7 @@ public class MouseWidget extends BaseWidget {
     }
 
     private void hideSystemCursor() {
-        long windowHandle = BaniraPlatforms.get().client().windowHandle();
+        long windowHandle = BaniraClientAccess.windowHandle();
         GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
     }
 
@@ -101,7 +101,7 @@ public class MouseWidget extends BaseWidget {
      * Screen 关闭时恢复系统鼠标
      */
     public void removed() {
-        long windowHandle = BaniraPlatforms.get().client().windowHandle();
+        long windowHandle = BaniraClientAccess.windowHandle();
         GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
     }
 

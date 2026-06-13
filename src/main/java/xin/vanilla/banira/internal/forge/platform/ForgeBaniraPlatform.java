@@ -2,7 +2,6 @@ package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.UsernameCache;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -11,7 +10,6 @@ import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraRegistryService;
-import xin.vanilla.banira.platform.client.BaniraClientService;
 import xin.vanilla.banira.platform.server.BaniraServerService;
 import xin.vanilla.banira.platform.world.BaniraWorldService;
 
@@ -21,9 +19,6 @@ import java.util.UUID;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraConfigService config = new ForgeBaniraConfigService();
-    private final BaniraClientService client = DistExecutor.safeRunForDist(
-            () -> xin.vanilla.banira.internal.forge.client.ForgeBaniraClientService::new,
-            () -> BaniraClientService::noop);
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraWorldService world = new ForgeBaniraWorldService();
@@ -92,11 +87,6 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraConfigService configService() {
         return config;
-    }
-
-    @Override
-    public BaniraClientService client() {
-        return client;
     }
 
     @Override

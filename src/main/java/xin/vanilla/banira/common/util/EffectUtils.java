@@ -8,6 +8,7 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -238,7 +239,7 @@ public final class EffectUtils {
         List<Effect> result = new ArrayList<>();
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return result;
         try {
-            PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
+            PlayerEntity player = BaniraClientAccess.localPlayer();
             if (player != null) {
                 Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
                 for (Effect e : player.getActiveEffectsMap().keySet()) {

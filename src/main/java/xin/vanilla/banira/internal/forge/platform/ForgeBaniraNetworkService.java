@@ -11,12 +11,12 @@ import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.forge.network.ForgeNetworkChannel;
 import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
-import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +53,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
         if (channel == null || !hasLocalChannel(channel.channelName())) {
             return;
         }
-        PlayerEntity player = BaniraPlatforms.get().client().localPlayer();
+        PlayerEntity player = BaniraClientAccess.localPlayer();
         if (player == null) {
             return;
         }

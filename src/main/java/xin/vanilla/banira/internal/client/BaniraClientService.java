@@ -1,4 +1,4 @@
-package xin.vanilla.banira.platform.client;
+package xin.vanilla.banira.internal.client;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;

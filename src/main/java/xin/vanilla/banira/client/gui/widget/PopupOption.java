@@ -20,7 +20,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -425,7 +425,7 @@ public class PopupOption extends BaseWidget {
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (beforeRender != null) beforeRender.accept(this);
-        if (CollectionUtils.isNullOrEmpty(optionList) || !BaniraPlatforms.get().client().hasScreen()) {
+        if (CollectionUtils.isNullOrEmpty(optionList) || !BaniraClientAccess.hasScreen()) {
             if (afterRender != null) afterRender.accept(this);
             return;
         }

@@ -21,7 +21,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -657,7 +657,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private void copyRowToClipboard(int index) {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
-        BaniraPlatforms.get().client().clipboard(s);
+        BaniraClientAccess.clipboard(s);
         Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
         NotificationManager.get().addNotification(n);
     }

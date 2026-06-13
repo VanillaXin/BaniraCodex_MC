@@ -13,6 +13,7 @@ import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -96,7 +97,7 @@ public final class PlayerUtils {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) {
             return null;
         }
-        return BaniraPlatforms.get().client().localPlayerUuid();
+        return BaniraClientAccess.localPlayerUuid();
     }
 
     public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
@@ -139,7 +140,7 @@ public final class PlayerUtils {
         String nameString = getPlayerNameString(getPlayerByUUID(uuid));
         if (StringUtils.isNullOrEmpty(nameString)) {
             if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-                nameString = BaniraPlatforms.get().client().onlinePlayerName(uuid);
+                nameString = BaniraClientAccess.onlinePlayerName(uuid);
             }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
@@ -179,7 +180,7 @@ public final class PlayerUtils {
         PlayerEntity entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
         if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-            entity = BaniraPlatforms.get().client().playerByUuid(uuid);
+            entity = BaniraClientAccess.playerByUuid(uuid);
         }
         return entity;
     }
@@ -189,7 +190,7 @@ public final class PlayerUtils {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) {
             return Identifier.id().create("minecraft", "textures/entity/steve.png");
         }
-        ResourceLocation skin = BaniraPlatforms.get().client().playerSkin(uuid);
+        ResourceLocation skin = BaniraClientAccess.playerSkin(uuid);
         return skin != null ? skin : Identifier.id().create("minecraft", "textures/entity/steve.png");
     }
 

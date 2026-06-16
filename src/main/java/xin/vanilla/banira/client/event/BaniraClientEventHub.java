@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.event;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.Banira;
@@ -106,7 +107,9 @@ public final class BaniraClientEventHub {
             LogoModifier.modifyLogo();
         });
         Client.onTextureReload(event -> {
-            if (Banira.MOD_ID.equals(event.atlasLocation().getNamespace())) {
+            // 公共事件只暴露字符串，内部再转换成当前 MC 版本的资源位置类型。
+            ResourceLocation atlasLocation = ResourceLocation.tryParse(event.atlasLocation());
+            if (atlasLocation != null && Banira.MOD_ID.equals(atlasLocation.getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 QuickActionOverlay.resetSystemIconTextureCache();
             }

@@ -91,7 +91,8 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return Banira.platform().registryService().itemKey(item);
+        String id = Banira.platform().registryService().itemKey(item);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -437,7 +438,8 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return Banira.platform().registryService().item(location);
+            Object item = Banira.platform().registryService().item(location.toString());
+            return item instanceof Item ? (Item) item : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -552,8 +554,9 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : Banira.platform().registryService().items()) {
-                if (item == null) continue;
+            for (Object value : Banira.platform().registryService().items()) {
+                if (!(value instanceof Item)) continue;
+                Item item = (Item) value;
                 if (!addedItems.contains(item)) {
                     try {
                         ItemStack defaultStack = new ItemStack(item);
@@ -639,7 +642,9 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                for (ResourceLocation loc : Banira.platform().registryService().itemTagIds(item)) {
+                for (String tagId : Banira.platform().registryService().itemTagIds(item)) {
+                    ResourceLocation loc = ResourceLocation.tryParse(tagId);
+                    if (loc == null) continue;
                     tags.add(loc.toString().toLowerCase());
                     tags.add(loc.getPath().toLowerCase());
                 }
@@ -1178,7 +1183,10 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = new ArrayList<>(Banira.platform().registryService().itemTagIds(item));
+                    List<ResourceLocation> tagIds = Banira.platform().registryService().itemTagIds(item).stream()
+                            .map(ResourceLocation::tryParse)
+                            .filter(java.util.Objects::nonNull)
+                            .collect(Collectors.toList());
                     for (ResourceLocation tagId : tagIds) {
                         Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));

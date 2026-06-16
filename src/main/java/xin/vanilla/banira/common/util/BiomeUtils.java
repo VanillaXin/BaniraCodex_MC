@@ -18,6 +18,7 @@ import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -54,7 +55,8 @@ public final class BiomeUtils {
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
         }
-        return Banira.platform().registryService().biome(id);
+        Object biome = Banira.platform().registryService().biome(id.toString());
+        return biome instanceof Biome ? (Biome) biome : null;
     }
 
     public static Biome getBiome(ServerLevel world, ResourceLocation id) {
@@ -72,9 +74,7 @@ public final class BiomeUtils {
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
-        return Banira.platform().registryService().biomeIds().stream()
-                .map(ResourceLocation::toString)
-                .collect(Collectors.toSet());
+        return new HashSet<>(Banira.platform().registryService().biomeIds());
     }
 
     /**

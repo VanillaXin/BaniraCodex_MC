@@ -96,7 +96,7 @@ public final class BaniraClientForgeEventHandler {
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onTextureStitchPost(TextureStitchEvent.Post event) {
-        BaniraClientEventHub.Client.fireTextureReload(new BaniraTextureReloadEvent(event.getAtlas().location()));
+        BaniraClientEventHub.Client.fireTextureReload(new BaniraTextureReloadEvent(event.getAtlas().location().toString()));
     }
 
     @OnlyIn(Dist.CLIENT)

@@ -45,8 +45,11 @@ public final class ForgeBaniraDrawHandle implements BaniraDrawHandle {
     }
 
     @Override
-    public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height,
+    public void texture(@Nonnull String textureId, int x, int y, int width, int height,
                         float u, float v, int textureWidth, int textureHeight) {
-        AbstractGuiUtils.blit(poseStack, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+        ResourceLocation texture = ResourceLocation.tryParse(textureId);
+        if (texture != null) {
+            AbstractGuiUtils.blit(poseStack, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+        }
     }
 }

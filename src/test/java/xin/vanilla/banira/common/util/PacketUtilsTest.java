@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import org.junit.Test;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
@@ -78,9 +77,9 @@ public class PacketUtilsTest {
         assertTrue(PacketUtils.hasChannel(localChannel));
         assertFalse(PacketUtils.hasChannel(null, playerChannel));
 
-        assertSame(localChannel, service.queriedLocalChannel);
+        assertEquals(localChannel.toString(), service.queriedLocalChannel);
         assertNull(service.queriedPlayer);
-        assertSame(playerChannel, service.queriedPlayerChannel);
+        assertEquals(playerChannel.toString(), service.queriedPlayerChannel);
     }
 
     private static RecordingNetworkService installRecordingNetwork() {
@@ -92,13 +91,13 @@ public class PacketUtilsTest {
     private static final class RecordingNetworkService implements BaniraNetworkService {
         private final List<INetworkPacket> serverPackets = new ArrayList<>();
         private final List<INetworkPacket> playerPackets = new ArrayList<>();
-        private final List<ServerPlayer> players = new ArrayList<>();
+        private final List<Object> players = new ArrayList<>();
         private boolean defaultChannelResult;
         private boolean localChannelResult;
         private boolean playerChannelResult;
-        private ResourceLocation queriedLocalChannel;
-        private ServerPlayer queriedPlayer;
-        private ResourceLocation queriedPlayerChannel;
+        private String queriedLocalChannel;
+        private Object queriedPlayer;
+        private String queriedPlayerChannel;
 
         @Override
         public @Nonnull xin.vanilla.banira.common.network.NetworkPacketRegistrar registrar(@Nonnull String channelName,
@@ -112,7 +111,7 @@ public class PacketUtilsTest {
         }
 
         @Override
-        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
+        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
             playerPackets.add((INetworkPacket) packet);
             players.add(player);
         }
@@ -123,15 +122,15 @@ public class PacketUtilsTest {
         }
 
         @Override
-        public boolean hasLocalChannel(@Nonnull ResourceLocation channel) {
-            queriedLocalChannel = channel;
+        public boolean hasLocalChannel(@Nonnull String channelId) {
+            queriedLocalChannel = channelId;
             return localChannelResult;
         }
 
         @Override
-        public boolean hasPlayerChannel(@Nonnull ServerPlayer player, @Nonnull ResourceLocation channel) {
+        public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
             queriedPlayer = player;
-            queriedPlayerChannel = channel;
+            queriedPlayerChannel = channelId;
             return playerChannelResult;
         }
     }

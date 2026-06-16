@@ -42,7 +42,8 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return Banira.platform().registryService().effectKey(effect);
+        String id = Banira.platform().registryService().effectKey(effect);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -216,7 +217,8 @@ public final class EffectUtils {
     public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return Banira.platform().registryService().effect(location);
+            Object effect = Banira.platform().registryService().effect(location.toString());
+            return effect instanceof MobEffect ? (MobEffect) effect : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -276,8 +278,9 @@ public final class EffectUtils {
      */
     private static List<MobEffect> buildUniqueEffectsList() {
         Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-        for (MobEffect effect : Banira.platform().registryService().effects()) {
-            if (effect == null) continue;
+        for (Object value : Banira.platform().registryService().effects()) {
+            if (!(value instanceof MobEffect)) continue;
+            MobEffect effect = (MobEffect) value;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;
             byId.putIfAbsent(rl, effect);

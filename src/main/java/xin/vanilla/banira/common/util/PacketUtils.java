@@ -105,10 +105,18 @@ public final class PacketUtils {
     }
 
     public static boolean hasChannel(ResourceLocation channel) {
-        return BaniraPlatforms.get().networkService().hasLocalChannel(channel);
+        return channel != null && hasChannel(channel.toString());
+    }
+
+    public static boolean hasChannel(String channelId) {
+        return BaniraPlatforms.get().networkService().hasLocalChannel(channelId);
     }
 
     public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
-        return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channel);
+        return channel != null && hasChannel(player, channel.toString());
+    }
+
+    public static boolean hasChannel(ServerPlayer player, String channelId) {
+        return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channelId);
     }
 }

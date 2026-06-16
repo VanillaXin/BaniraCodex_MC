@@ -49,7 +49,8 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return Banira.platform().registryService().blockKey(block);
+        String id = Banira.platform().registryService().blockKey(block);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -265,7 +266,8 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return Banira.platform().registryService().block(location);
+            Object block = Banira.platform().registryService().block(location.toString());
+            return block instanceof Block ? (Block) block : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -317,8 +319,9 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : Banira.platform().registryService().blocks()) {
-                        if (block == null) continue;
+                    for (Object value : Banira.platform().registryService().blocks()) {
+                        if (!(value instanceof Block)) continue;
+                        Block block = (Block) value;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;
                         byId.putIfAbsent(rl, block);

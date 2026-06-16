@@ -49,7 +49,8 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return Banira.platform().registryService().entityTypeKey(entityType);
+        String id = Banira.platform().registryService().entityTypeKey(entityType);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -242,7 +243,8 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return Banira.platform().registryService().entityType(location);
+            Object entityType = Banira.platform().registryService().entityType(location.toString());
+            return entityType instanceof EntityType ? (EntityType<?>) entityType : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -286,8 +288,9 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : Banira.platform().registryService().entityTypes()) {
-                        if (entityType == null) continue;
+                    for (Object value : Banira.platform().registryService().entityTypes()) {
+                        if (!(value instanceof EntityType)) continue;
+                        EntityType<?> entityType = (EntityType<?>) value;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;
                         byId.putIfAbsent(rl, entityType);

@@ -30,8 +30,10 @@ public final class ForgeBaniraNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
-        ForgeNetworkChannels.sendToPlayer(packet, player);
+    public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
+        if (player instanceof ServerPlayer) {
+            ForgeNetworkChannels.sendToPlayer(packet, (ServerPlayer) player);
+        }
     }
 
     @Override
@@ -40,12 +42,15 @@ public final class ForgeBaniraNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public boolean hasLocalChannel(@Nonnull ResourceLocation channel) {
-        return ForgeNetworkChannels.hasLocalChannel(channel);
+    public boolean hasLocalChannel(@Nonnull String channelId) {
+        ResourceLocation channel = ResourceLocation.tryParse(channelId);
+        return channel != null && ForgeNetworkChannels.hasLocalChannel(channel);
     }
 
     @Override
-    public boolean hasPlayerChannel(@Nonnull ServerPlayer player, @Nonnull ResourceLocation channel) {
-        return ForgeNetworkChannels.hasPlayerChannel(player, channel);
+    public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
+        ResourceLocation channel = ResourceLocation.tryParse(channelId);
+        return player instanceof ServerPlayer && channel != null
+                && ForgeNetworkChannels.hasPlayerChannel((ServerPlayer) player, channel);
     }
 }

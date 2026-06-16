@@ -1,7 +1,5 @@
 package xin.vanilla.banira.platform;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -36,7 +34,7 @@ public enum NoopNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public void sendToPlayer(BaniraNetworkPacket packet, ServerPlayer player) {
+    public void sendToPlayer(BaniraNetworkPacket packet, Object player) {
     }
 
     @Override
@@ -45,12 +43,12 @@ public enum NoopNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public boolean hasLocalChannel(ResourceLocation channel) {
+    public boolean hasLocalChannel(String channelId) {
         return false;
     }
 
     @Override
-    public boolean hasPlayerChannel(ServerPlayer player, ResourceLocation channel) {
+    public boolean hasPlayerChannel(Object player, String channelId) {
         return false;
     }
 }

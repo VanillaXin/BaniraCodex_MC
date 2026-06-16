@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import org.junit.Test;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.util.IIdentifier;
@@ -95,7 +93,7 @@ public class NetworkHandlerTest {
         }
 
         @Override
-        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayer player) {
+        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
         }
 
         @Override
@@ -104,12 +102,12 @@ public class NetworkHandlerTest {
         }
 
         @Override
-        public boolean hasLocalChannel(@Nonnull ResourceLocation channel) {
+        public boolean hasLocalChannel(@Nonnull String channelId) {
             return false;
         }
 
         @Override
-        public boolean hasPlayerChannel(@Nonnull ServerPlayer player, @Nonnull ResourceLocation channel) {
+        public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
             return false;
         }
     }

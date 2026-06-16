@@ -1,12 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import me.shedaniel.autoconfig.ConfigData;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.language.I18n;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -17,7 +14,7 @@ import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.data.ScopedComponent;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
@@ -25,16 +22,17 @@ import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.editable.*;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
+
 /**
- * 配置编辑界面，支持可视化编辑基于 Cloth / AutoConfig 的 {@link ConfigData} 配置。
+ * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
@@ -65,7 +63,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int BUTTON_GAP = 8;
     private static final int CARD_GAP = 1;
 
-    private final EditableConfigHolder holder;
+    private final ConfigHolder holder;
 
     private CollapsiblePanelWidget contentRootPanel;
     private ScrollbarWidget scrollbar;
@@ -82,6 +80,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int contentW;
     private int btnY;
     private int contentTotalW;
+    private final ScreenCoordinate contentViewport = new ScreenCoordinate();
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
 
     /**
@@ -97,21 +96,17 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
 
-    public ConfigEditorScreen(EditableConfigHolder holder, Args args) {
-        super(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.title").toVanilla());
+    public ConfigEditorScreen(ConfigHolder holder, Args args) {
+        super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
 
-    public static void open(EditableConfigHolder holder, @Nullable Screen parent) {
+    public static void open(ConfigHolder holder, @Nullable Screen parent) {
         if (EnvironmentUtils.isClient()) {
-            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
+            BaniraClientRuntime.setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
-    }
-
-    public static void open(Class<? extends ConfigData> configClass, @Nullable Screen parent) {
-        open(EditableConfigRegistry.getRequired(configClass), parent);
     }
 
     @Override
@@ -146,15 +141,15 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         ButtonWidget saveBtn = new ButtonWidget(this);
         saveBtn.id("save");
-        saveBtn.text(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.save").toString());
+        saveBtn.text(BaniraComponent.get().transClientAuto("config_editor_save").toString());
         saveBtn.onClick(b -> saveConfig());
         if (holder.canSyncToServer()) {
             saveBtn.onLongPress(b -> fetchConfigFromServer());
         }
         TooltipWidget saveTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
         saveTip.text(holder.canSyncToServer()
-                ? BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.tooltip.save_network")
-                : BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.tooltip.save"));
+                ? BaniraComponent.get().transClientAuto("config_editor_save_tooltip_network")
+                : BaniraComponent.get().transClientAuto("config_editor_save_tooltip"));
         saveTip.popupAtScreenCoords(true);
         saveBtn.addChild(saveTip);
         bottomButtons.add(saveBtn);
@@ -162,11 +157,11 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (holder.canSyncToServer()) {
             ButtonWidget syncBtn = new ButtonWidget(this);
             syncBtn.id("sync");
-            syncBtn.text(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.sync").toString());
+            syncBtn.text(BaniraComponent.get().transClientAuto("config_editor_sync").toString());
             syncBtn.onClick(b -> syncToServer());
             syncBtn.onLongPress(b -> syncToServerFull());
             TooltipWidget syncTip = new TooltipWidget(this, new ScreenCoordinate(0, 0, 20, BUTTON_HEIGHT));
-            syncTip.text(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.tooltip.sync"));
+            syncTip.text(BaniraComponent.get().transClientAuto("config_editor_sync_tooltip"));
             syncTip.popupAtScreenCoords(true);
             syncBtn.addChild(syncTip);
             bottomButtons.add(syncBtn);
@@ -174,7 +169,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
-        closeBtn.text(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.close").toString());
+        closeBtn.text(BaniraComponent.get().transClientAuto("config_editor_close").toString());
         closeBtn.onClick(b -> onClose());
         bottomButtons.add(closeBtn);
 
@@ -190,22 +185,20 @@ public class ConfigEditorScreen extends BaniraScreen {
      * 使用 CollapsiblePanelWidget 构建配置树
      */
     private CollapsiblePanelWidget buildContentPanel() {
-        List<EditableConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
+        List<ConfigHolder.CategoryTreeNode> roots = holder.getCategoryTree();
         String rootTitle = holder.getConfigName();
         if (rootTitle == null || rootTitle.isEmpty()) {
             rootTitle = "General";
         }
         if (roots.isEmpty()) {
             CollapsiblePanelWidget empty = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-            applyRootPanelTitle(empty, rootTitle);
-            empty.expanded(true);
+            empty.text(rootTitle).expanded(true);
             empty.onExpandChanged(p -> syncContentHeight());
             return empty;
         }
-        EditableConfigHolder.CategoryTreeNode rootNode = roots.get(0);
+        ConfigHolder.CategoryTreeNode rootNode = roots.get(0);
         CollapsiblePanelWidget rootPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
-        applyRootPanelTitle(rootPanel, rootTitle);
-        rootPanel.expanded(true);
+        rootPanel.text(rootTitle).expanded(true);
         rootPanel.contentGap(ROW_GAP);
         rootPanel.headerHeight(ROW_HEIGHT);
         rootPanel.onExpandChanged(p -> syncContentHeight());
@@ -215,7 +208,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         return rootPanel;
     }
 
-    private void buildPanelContent(CollapsiblePanelWidget panel, EditableConfigHolder.CategoryTreeNode node) {
+    private void buildPanelContent(CollapsiblePanelWidget panel, ConfigHolder.CategoryTreeNode node) {
         double cw = panel.getContentWidth();
         for (ConfigEntryDescriptor desc : node.getEntries()) {
             IConfigEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
@@ -225,11 +218,10 @@ public class ConfigEditorScreen extends BaniraScreen {
                 panel.addChildAuto(adapter.getWidget(), rowHeight);
             }
         }
-        for (EditableConfigHolder.CategoryTreeNode child : node.getChildren()) {
+        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
             CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
-            childPanel.text(resolveCollapsibleCategoryTitle(child.getCategoryPath(),
-                    holder.getCategoryTitleSpec(child.getCategoryPath()),
-                    child.getDisplayName())).expanded(false);
+            childPanel.text(ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
+                    configModId(), child.getDisplayName())).expanded(false);
             childPanel.contentGap(ROW_GAP);
             childPanel.headerHeight(ROW_HEIGHT);
             childPanel.onExpandChanged(p -> syncContentHeight());
@@ -262,7 +254,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.maxValue(0);
             scrollbar.value(0);
             scrollbar.visible(false);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
         } else {
             listAreaHeight = maxListHeight;
             btnY = centeredBtnY;
@@ -272,7 +264,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
             scrollOffset = scrollbar.value();
             scrollbar.visibleSize(listAreaHeight);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
@@ -331,11 +323,23 @@ public class ConfigEditorScreen extends BaniraScreen {
                 tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
             }
         }
+        refreshContentViewport();
     }
 
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
+            contentRootPanel.renderViewport(contentViewport);
+        }
+    }
+
+    private void refreshContentViewport() {
+        contentViewport.x(contentLeft)
+                .y(listTop)
+                .width(contentTotalW)
+                .height(Math.max(1, listAreaHeight));
+        if (contentRootPanel != null) {
+            contentRootPanel.renderViewport(contentViewport);
         }
     }
 
@@ -409,174 +413,10 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private String configModId() {
         String id = holder.getModId();
-        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
+        return id == null || id.isEmpty() ? Banira.MOD_ID : id;
     }
 
-    /**
-     * 最外层折叠面板标题固定为 AutoConfig 配置文件名（{@code @Config(name)}），例如 {@code banira_codex-client}。
-     */
-    private void applyRootPanelTitle(CollapsiblePanelWidget panel, String configFileName) {
-        String cfg = (configFileName != null && !configFileName.isEmpty()) ? configFileName : "General";
-        panel.text(BaniraComponent.get().literal(cfg));
-    }
-
-    // region 与 Cloth AutoConfig 一致的翻译键解析（text.autoconfig.* / word.<modId>.*）
-
-    /**
-     * 行内左侧显示配置键末尾段（如 {@code guiNightMode}、{@code helpHeader}）。
-     */
-    private xin.vanilla.banira.common.data.Component resolveEntryLabel(ConfigEntryDescriptor desc) {
-        return BaniraComponent.get().literal(desc.getDisplayName());
-    }
-
-    /**
-     * 悬浮提示：注解中的说明；否则使用与 Cloth 一致的 {@code text.autoconfig.*} / fallback 词典翻译。
-     */
-    @Nullable
-    private xin.vanilla.banira.common.data.Component resolveEntryTooltip(ConfigEntryDescriptor desc) {
-        String modId = configModId();
-        return switch (desc.getTooltipGuiKind()) {
-            case TRANSLATION_KEY, LOCALIZED_STATIC -> {
-                if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
-                    yield null;
-                }
-                yield ConfigEntryTooltipTexts.guiTooltipComponent(desc, modId);
-            }
-            case MULTILINE_LITERAL -> {
-                String langKey = firstExistingLangKey(desc.getPath());
-                if (langKey != null && I18n.exists(langKey)) {
-                    yield BaniraComponent.get().transClient(langKey);
-                }
-                if (ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
-                    yield ConfigEntryTooltipTexts.guiTooltipComponent(desc, modId);
-                }
-                yield null;
-            }
-        };
-    }
-
-    private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
-        xin.vanilla.banira.common.data.Component tipComp = resolveEntryTooltip(desc);
-        if (tipComp == null) {
-            return null;
-        }
-        TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, labelTextWidth(w), rowH));
-        tooltip.id("tip_" + desc.getPath().replace(".", "_"));
-        tooltip.text(tipComp);
-        tooltip.popupAtScreenCoords(true);
-        return tooltip;
-    }
-
-    private xin.vanilla.banira.common.data.Component resolveCollapsibleCategoryTitle(String categoryPath,
-                                                                                     @Nullable ConfigCategoryTitleSpec spec,
-                                                                                     String fallbackDisplayName) {
-        String fb = fallbackDisplayName != null ? fallbackDisplayName : "";
-        String mod = configModId();
-        if (spec != null) {
-            switch (spec.getKind()) {
-                case TRANSLATION_KEY -> {
-                    String kt = spec.getTranslationKey();
-                    if (!StringUtils.isNullOrEmptyEx(kt)) {
-                        if (kt.startsWith("text.autoconfig.")) {
-                            return BaniraComponent.get().transClient(kt);
-                        }
-                        return new ScopedComponent(mod).transClientAuto(kt);
-                    }
-                }
-                case LOCALIZED_STATIC -> {
-                    return ConfigCategoryTitleTexts.categoryTitleComponent(spec, mod, fb);
-                }
-                case LITERAL -> {
-                    String k = firstExistingLangKey(categoryPath);
-                    if (k != null) {
-                        return BaniraComponent.get().transClient(k);
-                    }
-                    if (!StringUtils.isNullOrEmptyEx(spec.getLiteral())) {
-                        return BaniraComponent.get().literal(spec.getLiteral());
-                    }
-                }
-            }
-        }
-        String k = firstExistingLangKey(categoryPath);
-        if (k != null) {
-            return BaniraComponent.get().transClient(k);
-        }
-        return BaniraComponent.get().literal(fb);
-    }
-
-    /**
-     * 按 Cloth {@code ConfigScreenProvider} 约定查找已有翻译键；用于条目悬浮说明（及折叠分组标题等）。
-     * <ol>
-     *   <li>{@code text.autoconfig.<configName>.option.<点分路径>}</li>
-     *   <li>{@code word.<modId>.<路径末段 snake_case>}</li>
-     *   <li>{@code word.<modId>.<全路径各段 snake 下划线连接>}</li>
-     * </ol>
-     */
-    @Nullable
-    private String firstExistingLangKey(String fieldPath) {
-        if (fieldPath == null || fieldPath.isEmpty()) {
-            return null;
-        }
-        String cfgName = holder.getConfigName();
-        String mod = configModId();
-        String auto = "text.autoconfig." + cfgName + ".option." + fieldPath;
-        if (I18n.exists(auto)) {
-            return auto;
-        }
-        String wordLeaf = "word." + mod + "." + camelToSnakeIdent(lastPathSegment(fieldPath));
-        if (I18n.exists(wordLeaf)) {
-            return wordLeaf;
-        }
-        String wordFull = "word." + mod + "." + pathSegmentsToSnake(fieldPath);
-        if (I18n.exists(wordFull)) {
-            return wordFull;
-        }
-        return null;
-    }
-
-    private static String lastPathSegment(String path) {
-        int dot = path.lastIndexOf('.');
-        return dot < 0 ? path : path.substring(dot + 1);
-    }
-
-    /**
-     * 将驼峰标识转为 snake_case（用于匹配 lang 中的 {@code word.<mod>.xxx}）。
-     */
-    private static String camelToSnakeIdent(String camel) {
-        if (camel == null || camel.isEmpty()) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < camel.length(); i++) {
-            char c = camel.charAt(i);
-            if (Character.isUpperCase(c)) {
-                if (i > 0) {
-                    sb.append('_');
-                }
-                sb.append(Character.toLowerCase(c));
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    private static String pathSegmentsToSnake(String path) {
-        if (path == null || path.isEmpty()) {
-            return "";
-        }
-        String[] parts = path.split("\\.");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) {
-                sb.append('_');
-            }
-            sb.append(camelToSnakeIdent(parts[i]));
-        }
-        return sb.toString();
-    }
-
-    // endregion
+    // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
 
     /**
      * 标签列右边界 X（值控件从此处开始，左侧留出 {@link #GAP_LABEL_TO_VALUE} 给标签文字）
@@ -635,7 +475,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         });
         TooltipWidget resetTip = new TooltipWidget(this, new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));
         resetTip.id("reset_tip_" + desc.getPath().replace(".", "_"));
-        resetTip.text(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.tooltip.reset"));
+        resetTip.text(BaniraComponent.get().transClientAuto("config_editor_reset_tooltip"));
         resetTip.popupAtScreenCoords(true);
         row.addChild(btn);
         row.addChild(resetTip);
@@ -648,7 +488,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
         label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(resolveEntryLabel(desc));
+        label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
@@ -673,6 +513,17 @@ public class ConfigEditorScreen extends BaniraScreen {
         return new ConfigEntryWidgetAdapter(desc, row, label, input, tooltip, input::value, v -> input.value(String.valueOf(v)));
     }
 
+    private TooltipWidget createEntryTooltip(ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
+        if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
+            return null;
+        }
+        TooltipWidget tooltip = new TooltipWidget(this, new ScreenCoordinate(x, y, labelTextWidth(w), rowH));
+        tooltip.id("tip_" + desc.getPath().replace(".", "_"));
+        tooltip.text(ConfigEntryTooltipTexts.guiTooltipComponent(desc, configModId()));
+        tooltip.popupAtScreenCoords(true);
+        return tooltip;
+    }
+
     private IConfigEntryWidget createBooleanRow(ConfigEntryDescriptor desc, double w, int rowH) {
         EntryRowWidget row = new EntryRowWidget(this);
         row.bounds(new ScreenCoordinate(0, 0, w, rowH));
@@ -680,7 +531,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
         label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(resolveEntryLabel(desc));
+        label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
@@ -713,7 +564,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
         label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(resolveEntryLabel(desc));
+        label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
@@ -788,7 +639,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
         label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(resolveEntryLabel(desc));
+        label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
@@ -839,7 +690,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         LabelWidget label = new LabelWidget(this);
         label.id("lbl_" + desc.getPath().replace(".", "_"));
         label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(w), rowH));
-        label.text(resolveEntryLabel(desc));
+        label.text(desc.getDisplayName());
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
 
@@ -903,7 +754,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private void saveConfig() {
         collectModifiedFromWidgets();
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
@@ -914,14 +765,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         modifiedValues.clear();
         try {
             holder.save();
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.save_success"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
             NotificationManager.get().addNotification(n);
             // if (previousScreen() != null) {
             //     onClose();
             // }
         } catch (Exception ex) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.message.save_failed", ex.getMessage()));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_failed", ex.getMessage()));
             n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(n);
         }
@@ -929,14 +780,14 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private void syncToServer() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.sync_nothing"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
             NotificationManager.get().addNotification(n);
             return;
@@ -954,7 +805,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.message.sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }
@@ -965,20 +816,20 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private void syncToServerFull() {
         if (hasInvalidEntryWidgets()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.validation_failed"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
             NotificationManager.get().addNotification(n);
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.sync_not_connected"));
+        if (!BaniraClientRuntime.hasConnection()) {
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.sync_nothing"));
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
             NotificationManager.get().addNotification(n);
             return;
@@ -996,7 +847,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             }
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.message.sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }
@@ -1009,8 +860,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.canSyncToServer()) {
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.fetch_not_connected"));
+        if (!BaniraClientRuntime.hasConnection()) {
+            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
@@ -1019,14 +870,14 @@ public class ConfigEditorScreen extends BaniraScreen {
             PacketUtils.sendPacketToServer(new ConfigFetchRequestToServer(holder.getConfigName()));
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClient("text.autoconfig.banira_codex.editor.message.fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
+                    BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
             NotificationManager.get().addNotification(err);
         }
     }
 
     /**
-     * 在收到 {@link xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient} 后，若本界面正在编辑对应配置，则用 {@link EditableConfigHolder} 刷新控件显示。
+     * 在收到 {@link xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient} 后，若本界面正在编辑对应配置，则用 {@link ConfigHolder} 刷新控件显示。
      */
     public void refreshUIFromHolderAfterRemoteFetch(String configName) {
         if (!holder.getConfigName().equals(configName)) {
@@ -1133,7 +984,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
@@ -1163,7 +1014,8 @@ public class ConfigEditorScreen extends BaniraScreen {
                     0, 0, 0, CARD_RADIUS, cardBg);
         }
 
-        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
+        refreshContentViewport();
+        AbstractGuiUtils.enableScissor(contentViewport.xInt(), contentViewport.yInt(), contentViewport.widthInt(), contentViewport.heightInt());
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
@@ -1201,7 +1053,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {

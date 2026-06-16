@@ -378,7 +378,11 @@ public class Translator implements ITranslator {
         }
         String desired = normalizeLanguageCode(languageCode);
         if (StringUtils.isNullOrEmptyEx(desired)) {
-            desired = normalizeLanguageCode(getClientLanguage());
+            try {
+                desired = normalizeLanguageCode(getClientLanguage());
+            } catch (Throwable ignored) {
+                desired = "";
+            }
         }
         String hit = norm.get(desired);
         if (!StringUtils.isNullOrEmptyEx(hit)) {

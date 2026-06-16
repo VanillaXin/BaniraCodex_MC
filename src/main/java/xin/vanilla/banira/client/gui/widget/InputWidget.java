@@ -4,17 +4,18 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.CharInputEvent;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -27,6 +28,8 @@ import java.util.Deque;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 输入框
@@ -82,42 +85,42 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputText();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_TEXT);
 
     /**
      * 背景颜色
      */
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BG);
 
     /**
      * 错误状态时的背景颜色
      */
     @Getter
     @Setter
-    private int errorBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBgError();
+    private int errorBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BG_ERROR);
 
     /**
      * 不可编辑时的文本颜色
      */
     @Getter
     @Setter
-    private int uneditableTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputTextUneditable();
+    private int uneditableTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_TEXT_UNEDITABLE);
 
     /**
      * 提示文本颜色
      */
     @Getter
     @Setter
-    private int hintColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputHint();
+    private int hintColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_HINT);
 
     /**
      * 光标颜色
      */
     @Getter
     @Setter
-    private int cursorColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputCursor();
+    private int cursorColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_CURSOR);
 
     /**
      * 文本字体大小
@@ -138,21 +141,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorder();
+    private int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER);
 
     /**
      * 焦点时的边框颜色
      */
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER_FOCUSED);
 
     /**
      * 禁用时的边框颜色
      */
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).inputBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, INPUT_BORDER_DISABLED);
 
     /**
      * 边框宽度
@@ -207,11 +210,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        textColor(theme.inputText()).bgColor(theme.inputBg()).errorBgColor(theme.inputBgError())
-                .uneditableTextColor(theme.inputTextUneditable()).hintColor(theme.inputHint())
-                .cursorColor(theme.inputCursor())
-                .borderColor(theme.inputBorder()).focusedBorderColor(theme.inputBorderFocused())
-                .disabledBorderColor(theme.inputBorderDisabled());
+        textColor(theme.color(INPUT_TEXT)).bgColor(theme.color(INPUT_BG)).errorBgColor(theme.color(INPUT_BG_ERROR))
+                .uneditableTextColor(theme.color(INPUT_TEXT_UNEDITABLE)).hintColor(theme.color(INPUT_HINT))
+                .cursorColor(theme.color(INPUT_CURSOR))
+                .borderColor(theme.color(INPUT_BORDER)).focusedBorderColor(theme.color(INPUT_BORDER_FOCUSED))
+                .disabledBorderColor(theme.color(INPUT_BORDER_DISABLED));
     }
 
     /**
@@ -346,10 +349,29 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 字体渲染
      */
     private final Font font;
+    private String cachedValueWidthText;
+    private int cachedValueWidth;
+    private String cachedVisibleTextValue;
+    private int cachedVisibleTextDisplayPos = -1;
+    private int cachedVisibleTextWidth = -1;
+    private String cachedVisibleText = "";
+    private String cachedPrefixWidthTextA;
+    private int cachedPrefixWidthIndexA = -1;
+    private int cachedPrefixWidthA;
+    private String cachedPrefixWidthTextB;
+    private int cachedPrefixWidthIndexB = -1;
+    private int cachedPrefixWidthB;
+    private String cachedReverseWindowText;
+    private int cachedReverseWindowEnd = -1;
+    private int cachedReverseWindowWidth = -1;
+    private int cachedReverseWindowLength;
+    private final Text clearTooltipText = Text.literal("清空");
+    private String cachedErrorTooltipSource;
+    private Text cachedErrorTooltipText;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);
@@ -357,7 +379,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     public InputWidget(BaniraScreen screen, ScreenCoordinate bounds) {
         super(screen, bounds);
-        this.font = Minecraft.getInstance().font;
+        this.font = AbstractGuiUtils.getFont();
         this.highlightPos = this.cursorPosition;
         this.lastCursorPos = this.cursorPosition;
         screen.registerFocusableWidget(this);
@@ -429,7 +451,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int highlightPos = this.highlightPos;
             int displayPos = this.displayPos;
 
-            String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
+            String visibleText = visibleText(scaledInnerWidth);
 
             boolean hasLeftHidden = displayPos > 0;
             boolean hasRightHidden = displayPos + visibleText.length() < value.length();
@@ -498,22 +520,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            if (this.hint != null && value.isEmpty() && !this.focused()) {
-                float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
-                float hintFontScale = actualHintFontSize / font.lineHeight;
-                if (hintFontScale != 1.0f) {
-                    stack.pushPose();
-                    stack.translate(textX, textY, 0);
-                    stack.scale(hintFontScale, hintFontScale, 1.0f);
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale))
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
-                    stack.popPose();
-                } else {
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth)
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(args);
-                }
+            if (shouldRenderHint()) {
+                renderHint(stack, textX, textY, innerWidth);
             }
 
             if (highlightPos != cursorPos) {
@@ -524,8 +532,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
 
                 if (highlightStartInVisible < highlightEndInVisible) {
-                    int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
-                    int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
+                    int highlightX1 = textX + (int) (prefixWidth(visibleText, highlightStartInVisible) * fontScale);
+                    int highlightX2 = textX + (int) (prefixWidth(visibleText, highlightEndInVisible) * fontScale);
                     renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
                 }
             }
@@ -541,11 +549,11 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (showClearButton && !value.isEmpty() && isMouseOverClearButton() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal("清空"), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(stack, mx, my, clearTooltipText, EnumTooltipTextureMode.AUTO);
             } else if (error && errorMessage != null && !errorMessage.isEmpty() && isMouseOverTextArea() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(stack, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(stack, mx, my, errorTooltipText(), EnumTooltipTextureMode.AUTO);
             }
 
             if (shouldShowCursor) {
@@ -565,6 +573,31 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
         }
+    }
+
+    private boolean shouldRenderHint() {
+        return this.hint != null && !this.hint.isEmpty() && value.isEmpty() && !this.focused();
+    }
+
+    private void renderHint(PoseStack stack, int textX, int textY, int innerWidth) {
+        float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
+        float hintFontScale = actualHintFontSize / font.lineHeight;
+        if (hintFontScale != 1.0f) {
+            stack.pushPose();
+            stack.translate(textX, textY, 0);
+            stack.scale(hintFontScale, hintFontScale, 1.0f);
+            drawHintText(stack, 0, 0, (int) (innerWidth / hintFontScale));
+            stack.popPose();
+        } else {
+            drawHintText(stack, textX, textY, innerWidth);
+        }
+    }
+
+    private void drawHintText(PoseStack stack, int x, int y, int maxWidth) {
+        FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor))
+                .x(x).y(y).maxWidth(maxWidth)
+                .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
+        LabelWidget.drawLimitedText(args);
     }
 
     /**
@@ -685,6 +718,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         });
     }
 
+    private Text errorTooltipText() {
+        if (cachedErrorTooltipText == null || !java.util.Objects.equals(cachedErrorTooltipSource, errorMessage)) {
+            cachedErrorTooltipSource = errorMessage;
+            cachedErrorTooltipText = Text.literal(errorMessage != null ? errorMessage : "");
+        }
+        return cachedErrorTooltipText;
+    }
+
     // endregion 渲染
 
     private static void drawClearIcon(PoseStack stack, int centerX, int centerY, int color) {
@@ -699,6 +740,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled) {
             return;
         }
+        if (!focused() && heldArrowKey == -1) {
+            return;
+        }
 
         long currentTime = System.currentTimeMillis();
 
@@ -708,12 +752,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (elapsed >= threshold) {
                 lastArrowKeyRepeatTime = currentTime;
                 arrowKeyRepeatTriggered = true;
-                this.shiftPressed = Screen.hasShiftDown();
+                this.shiftPressed = currentShiftPressed();
                 if (heldArrowKey == GLFWKey.GLFW_KEY_LEFT) {
-                    if (Screen.hasControlDown()) moveCursorToWordStart();
+                    if (currentControlPressed()) moveCursorToWordStart();
                     else moveCursor(-1);
                 } else if (heldArrowKey == GLFWKey.GLFW_KEY_RIGHT) {
-                    if (Screen.hasControlDown()) moveCursorToWordEnd();
+                    if (currentControlPressed()) moveCursorToWordEnd();
                     else moveCursor(1);
                 }
             }
@@ -787,9 +831,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int clickX = Mth.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
-            String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
+            String visibleText = visibleText(textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
-            this.shiftPressed = Screen.hasShiftDown();
+            this.shiftPressed = currentShiftPressed();
             moveCursorTo(textPos);
             if (!this.shiftPressed) this.highlightPos = textPos;
             return true;
@@ -803,53 +847,54 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (renderCoordinate == null) return false;
         int totalWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
         int innerWidth = getTextAreaWidth(totalWidth);
-        if (this.font.width(value) <= innerWidth) return false;
+        if (valueWidth() <= innerWidth) return false;
         int step = event.delta() > 0 ? -SCROLL_STEP : SCROLL_STEP;
         moveCursor(step);
         return true;
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!canConsumeInput()) {
             return false;
         }
 
-        this.shiftPressed = Screen.hasShiftDown();
+        int keyCode = event.keyCode();
+        this.shiftPressed = shiftPressed(event);
 
-        if (Screen.isSelectAll(keyCode)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_A)) {
             moveCursorTo(value.length());
             this.highlightPos = 0;
             this.updateDisplayPos();
             return true;
         }
 
-        if (Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Z && !Screen.hasShiftDown()) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_Z) && !shiftPressed(event)) {
             undo();
             return true;
         }
 
-        if ((Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Y) ||
-                (Screen.hasControlDown() && Screen.hasShiftDown() && keyCode == GLFWKey.GLFW_KEY_Z)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_Y) ||
+                (shortcutPressed(event, GLFWKey.GLFW_KEY_Z) && shiftPressed(event))) {
             redo();
             return true;
         }
 
-        if (Screen.isCopy(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_C)) {
+            AbstractGuiUtils.setClipboard(getHighlighted());
             return true;
         }
 
-        if (Screen.isPaste(keyCode)) {
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_V)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
+                insertText(AbstractGuiUtils.getClipboard());
             }
             return true;
         }
 
-        if (Screen.isCut(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+        if (shortcutPressed(event, GLFWKey.GLFW_KEY_X)) {
+            AbstractGuiUtils.setClipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");
@@ -861,7 +906,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_LEFT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 moveCursorToWordStart();
             } else {
                 moveCursor(-1);
@@ -872,7 +917,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_RIGHT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 moveCursorToWordEnd();
             } else {
                 moveCursor(1);
@@ -889,7 +934,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 deleteWords(-1);
             } else {
                 deleteChars(-1);
@@ -897,7 +942,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
         if (keyCode == GLFWKey.GLFW_KEY_DELETE) {
-            if (Screen.hasControlDown()) {
+            if (controlPressed(event)) {
                 deleteWords(1);
             } else {
                 deleteChars(1);
@@ -909,8 +954,29 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         return false;
     }
 
+    private boolean currentShiftPressed() {
+        return screen != null && screen.inputState().isShiftPressing();
+    }
+
+    private boolean currentControlPressed() {
+        return screen != null && screen.inputState().isCtrlPressing();
+    }
+
+    private static boolean shiftPressed(KeyEvent event) {
+        return event != null && event.hasShiftModifier();
+    }
+
+    private static boolean controlPressed(KeyEvent event) {
+        return event != null && event.hasControlModifier();
+    }
+
+    private static boolean shortcutPressed(KeyEvent event, int keyCode) {
+        return event != null && event.matchesShortcut(keyCode, BaniraKeyCodes.MOD_CONTROL);
+    }
+
     @Override
-    protected boolean onKeyRelease(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyRelease(KeyEvent event) {
+        int keyCode = event.keyCode();
         if (keyCode == heldArrowKey) {
             heldArrowKey = -1;
         }
@@ -918,7 +984,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    protected boolean onCharTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(CharInputEvent event) {
         if (!focused() || !enabled || !editable) {
             return false;
         }
@@ -927,7 +993,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        insertText(String.valueOf(codePoint));
+        insertText(event.text());
         return true;
     }
 
@@ -944,6 +1010,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         this.value = value;
         if (!value.equals(oldValue)) {
             this.error = false;
+            invalidateValueWidthCache();
         }
         int valueLength = value.length();
         this.displayPos = Mth.clamp(this.displayPos, 0, valueLength);
@@ -953,6 +1020,83 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (onTextChanged != null) {
             onTextChanged.accept(value);
         }
+    }
+
+    private void invalidateValueWidthCache() {
+        cachedValueWidthText = null;
+        invalidateVisibleTextCache();
+    }
+
+    /**
+     * 输入框会频繁判断整串是否超出视口，文本未变化时复用测量结果。
+     */
+    private int valueWidth() {
+        if (!value.equals(cachedValueWidthText)) {
+            cachedValueWidthText = value;
+            cachedValueWidth = font.width(value);
+        }
+        return cachedValueWidth;
+    }
+
+    private void invalidateVisibleTextCache() {
+        cachedVisibleTextValue = null;
+        cachedPrefixWidthTextA = null;
+        cachedPrefixWidthTextB = null;
+        cachedReverseWindowText = null;
+    }
+
+    /**
+     * 缓存当前 displayPos 下的可见文本窗口，减少 render/update/click 定位的重复截取。
+     */
+    private String visibleText(int width) {
+        if (!value.equals(cachedVisibleTextValue)
+                || cachedVisibleTextDisplayPos != displayPos
+                || cachedVisibleTextWidth != width) {
+            cachedVisibleTextValue = value;
+            cachedVisibleTextDisplayPos = displayPos;
+            cachedVisibleTextWidth = width;
+            cachedVisibleText = font.plainSubstrByWidth(value.substring(displayPos), width);
+        }
+        return cachedVisibleText;
+    }
+
+    /**
+     * 选区绘制每帧会查询起点和终点两个前缀宽度，保留两槽缓存即可覆盖常见情况。
+     */
+    private int prefixWidth(String text, int index) {
+        int safeIndex = Mth.clamp(index, 0, text.length());
+        if (text.equals(cachedPrefixWidthTextA) && safeIndex == cachedPrefixWidthIndexA) {
+            return cachedPrefixWidthA;
+        }
+        if (text.equals(cachedPrefixWidthTextB) && safeIndex == cachedPrefixWidthIndexB) {
+            return cachedPrefixWidthB;
+        }
+
+        int width = safeIndex <= 0 ? 0 : font.width(text.substring(0, safeIndex));
+        cachedPrefixWidthTextB = cachedPrefixWidthTextA;
+        cachedPrefixWidthIndexB = cachedPrefixWidthIndexA;
+        cachedPrefixWidthB = cachedPrefixWidthA;
+        cachedPrefixWidthTextA = text;
+        cachedPrefixWidthIndexA = safeIndex;
+        cachedPrefixWidthA = width;
+        return width;
+    }
+
+    /**
+     * 计算指定位置向左能显示多少字符；光标和选区滚动校正都会反复查询它。
+     */
+    private int reverseWindowLength(int endPos, int width) {
+        int safeEnd = Mth.clamp(endPos, 0, value.length());
+        if (value.equals(cachedReverseWindowText)
+                && cachedReverseWindowEnd == safeEnd
+                && cachedReverseWindowWidth == width) {
+            return cachedReverseWindowLength;
+        }
+        cachedReverseWindowText = value;
+        cachedReverseWindowEnd = safeEnd;
+        cachedReverseWindowWidth = width;
+        cachedReverseWindowLength = font.plainSubstrByWidth(value.substring(0, safeEnd), width, true).length();
+        return cachedReverseWindowLength;
     }
 
     /**
@@ -1077,7 +1221,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (innerWidth <= 0) {
             return;
         }
-        if (this.font.width(value) <= innerWidth) {
+        if (valueWidth() <= innerWidth) {
             this.displayPos = 0;
             return;
         }
@@ -1088,8 +1232,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.lastCursorPos = cursorPos;
         }
 
-        String remainingText = value.substring(this.displayPos);
-        String visibleText = this.font.plainSubstrByWidth(remainingText, innerWidth);
+        String visibleText = visibleText(innerWidth);
         int visibleEnd = this.displayPos + visibleText.length();
 
         boolean hasLeftHidden = this.displayPos > 0;
@@ -1098,13 +1241,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int cursorInVisible = cursorPos - this.displayPos;
 
         if (cursorPos < this.displayPos) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else if (cursorPos > visibleEnd) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else {
             int lenVisible = visibleText.length();
             if (movingRight && hasRightHidden && lenVisible > 0) {
@@ -1121,16 +1260,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (this.highlightPos != cursorPos) {
-            visibleText = this.font.plainSubstrByWidth(value.substring(this.displayPos), innerWidth);
+            visibleText = visibleText(innerWidth);
             visibleEnd = visibleText.length() + this.displayPos;
 
             boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
 
             if (cursorVisible) {
                 if (this.highlightPos < this.displayPos) {
-                    String beforeHighlight = value.substring(0, this.highlightPos);
-                    String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
-                    int newDisplayPos = Math.max(0, this.highlightPos - reverseText.length());
+                    int newDisplayPos = Math.max(0, this.highlightPos - reverseWindowLength(this.highlightPos, innerWidth));
                     // 确保光标仍然可见
                     if (cursorPos >= newDisplayPos) {
                         String newVisibleText = this.font.plainSubstrByWidth(value.substring(newDisplayPos), innerWidth);
@@ -1139,9 +1276,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                         }
                     }
                 } else if (this.highlightPos > visibleEnd) {
-                    String beforeHighlight = value.substring(0, this.highlightPos);
-                    String reverseText = this.font.plainSubstrByWidth(beforeHighlight, innerWidth, true);
-                    int newDisplayPos = Math.max(0, this.highlightPos - reverseText.length());
+                    int newDisplayPos = Math.max(0, this.highlightPos - reverseWindowLength(this.highlightPos, innerWidth));
                     // 确保光标仍然可见
                     if (cursorPos >= newDisplayPos) {
                         String newVisibleText = this.font.plainSubstrByWidth(value.substring(newDisplayPos), innerWidth);

@@ -1,11 +1,9 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.internal.network.NetworkInit;
 
+/**
+ * Banira 默认网络包标记；默认通道由当前加载器适配层解析。
+ */
 public interface NetworkPacket extends INetworkPacket {
-    default ResourceLocation channel() {
-        return NetworkInit.HANDLER.channel();
-    }
 }

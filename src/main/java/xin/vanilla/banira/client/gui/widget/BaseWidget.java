@@ -8,9 +8,8 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
@@ -66,6 +65,8 @@ public abstract class BaseWidget implements IWidget {
     protected IWidget parent;
 
     protected final List<IWidget> children = new ArrayList<>();
+
+    private final List<IWidget> readonlyChildren = Collections.unmodifiableList(children);
 
     /**
      * absoluteX/absoluteY 缓存，parent 或 bounds 变更时失效
@@ -160,6 +161,13 @@ public abstract class BaseWidget implements IWidget {
 
     @Override
     public boolean needsUpdate() {
+        return needsSelfUpdate() || hasChildrenNeedingUpdate();
+    }
+
+    /**
+     * 控制本控件自身是否需要每帧轮询 hover/长按等状态；子类可关闭以降低静态控件开销。
+     */
+    protected boolean needsSelfUpdate() {
         return true;
     }
 
@@ -168,13 +176,37 @@ public abstract class BaseWidget implements IWidget {
         if (!visible || !enabled) {
             return;
         }
-        if (screen != null) {
-            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
-            if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
-                longPressFired = true;
-                onLongPress(MouseEvent.of(screen.inputState().mouseX(), screen.inputState().mouseY(), pressedMouseButton));
+        updateInteractiveState();
+        updateChildren();
+    }
+
+    /**
+     * 更新控件自身的交互状态。自定义子节点遍历顺序的容器也应调用它，避免 hover/长按逻辑分叉。
+     */
+    protected void updateInteractiveState() {
+        if (!needsSelfUpdate() || screen == null) {
+            return;
+        }
+        InputStateManager input = screen.inputState();
+        double mouseX = input.mouseX();
+        double mouseY = input.mouseY();
+        updateMouseHover(mouseX, mouseY);
+        if (mousePressed && !longPressFired && (System.currentTimeMillis() - pressStartTime) >= genericLongPressThresholdMs()) {
+            longPressFired = true;
+            onLongPress(MouseEvent.of(mouseX, mouseY, pressedMouseButton));
+        }
+    }
+
+    protected boolean hasChildrenNeedingUpdate() {
+        for (IWidget child : children) {
+            if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
+                return true;
             }
         }
+        return false;
+    }
+
+    protected void updateChildren() {
         for (IWidget child : children) {
             if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
                 child.update();
@@ -183,6 +215,25 @@ public abstract class BaseWidget implements IWidget {
     }
 
     // region 事件处理
+
+    @FunctionalInterface
+    protected interface ChildEventDispatcher {
+        boolean dispatch(IWidget child);
+    }
+
+    /**
+     * 从顶层到下层倒序分发给可交互子控件，返回第一个消费事件的子控件。
+     */
+    @Nullable
+    protected IWidget findHandlingChild(ChildEventDispatcher dispatcher) {
+        for (int i = children.size() - 1; i >= 0; i--) {
+            IWidget child = children.get(i);
+            if (child != null && child.visible() && child.enabled() && dispatcher.dispatch(child)) {
+                return child;
+            }
+        }
+        return null;
+    }
 
     @Override
     public boolean handleMouseClick(MouseEvent event) {
@@ -196,14 +247,10 @@ public abstract class BaseWidget implements IWidget {
         double absY = absoluteY();
 
         lastClickFocusTarget = null;
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseClick(event)) {
-                    lastClickFocusTarget = child;
-                    return true;
-                }
-            }
+        IWidget handlingChild = findHandlingChild(child -> child.handleMouseClick(event));
+        if (handlingChild != null) {
+            lastClickFocusTarget = handlingChild;
+            return true;
         }
         if (isMouseInside(mouseX, mouseY, absX, absY)) {
             mousePressed = true;
@@ -227,13 +274,8 @@ public abstract class BaseWidget implements IWidget {
         double absX = absoluteX();
         double absY = absoluteY();
 
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseRelease(event)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleMouseRelease(event)) != null) {
+            return true;
         }
         boolean wasPressed = mousePressed && pressedMouseButton == mouseButton;
         if (wasPressed) {
@@ -249,55 +291,40 @@ public abstract class BaseWidget implements IWidget {
     }
 
     @Override
-    public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyPress(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
 
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleKeyPress(keyCode, scanCode, modifiers)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleKeyPress(event)) != null) {
+            return true;
         }
-        return onKeyPress(keyCode, scanCode, modifiers);
+        return onKeyPress(event);
     }
 
     @Override
-    public boolean handleKeyRelease(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyRelease(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
 
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleKeyRelease(keyCode, scanCode, modifiers)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleKeyRelease(event)) != null) {
+            return true;
         }
-        return onKeyRelease(keyCode, scanCode, modifiers);
+        return onKeyRelease(event);
     }
 
     @Override
-    public boolean handleCharTyped(char codePoint, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleCharTyped(CharInputEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
 
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleCharTyped(codePoint, modifiers)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleCharTyped(event)) != null) {
+            return true;
         }
 
-        return onCharTyped(codePoint, modifiers);
+        return onCharTyped(event);
     }
 
     @Override
@@ -305,13 +332,8 @@ public abstract class BaseWidget implements IWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseDrag(event)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleMouseDrag(event)) != null) {
+            return true;
         }
 
         if (mousePressed) {
@@ -330,13 +352,8 @@ public abstract class BaseWidget implements IWidget {
         double absX = absoluteX();
         double absY = absoluteY();
 
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(event)) {
-                    return true;
-                }
-            }
+        if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
+            return true;
         }
 
         if (focused || isMouseInside(mouseX, mouseY, absX, absY)) {
@@ -566,21 +583,21 @@ public abstract class BaseWidget implements IWidget {
     /**
      * 键盘按下回调
      */
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         return false;
     }
 
     /**
      * 键盘释放回调
      */
-    protected boolean onKeyRelease(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyRelease(KeyEvent event) {
         return false;
     }
 
     /**
      * 字符输入回调
      */
-    protected boolean onCharTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(CharInputEvent event) {
         return false;
     }
 
@@ -678,7 +695,7 @@ public abstract class BaseWidget implements IWidget {
      */
     @Override
     public List<IWidget> children() {
-        return Collections.unmodifiableList(children);
+        return readonlyChildren;
     }
 
     @Override
@@ -698,6 +715,7 @@ public abstract class BaseWidget implements IWidget {
                 baseWidget.children.remove(child);
             }
             childWidget.parent = this;
+            childWidget.invalidateAbsCache();
         }
     }
 
@@ -709,6 +727,7 @@ public abstract class BaseWidget implements IWidget {
         boolean removed = children.remove(child);
         if (removed && child instanceof BaseWidget baseWidget) {
             baseWidget.parent = null;
+            baseWidget.invalidateAbsCache();
         }
         return removed;
     }
@@ -754,6 +773,7 @@ public abstract class BaseWidget implements IWidget {
         for (IWidget child : children) {
             if (child instanceof BaseWidget baseWidget) {
                 baseWidget.parent = null;
+                baseWidget.invalidateAbsCache();
             }
         }
         children.clear();

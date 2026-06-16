@@ -140,8 +140,8 @@ public class DebugScreen extends BaniraScreen {
         configBtn.id("config_editor");
         configBtn.bounds(new ScreenCoordinate(190, 140, 75, 24));
         configBtn.text("配置编辑");
-        configBtn.onClick(b -> ConfigEditorScreen.open(ClientConfig.class, this));
-        configBtn.onLongPress(1000L, b -> ConfigEditorScreen.open(CommonConfig.class, this));
+        configBtn.onClick(b -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
+        configBtn.onLongPress(1000L, b -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
         addWidget(configBtn);
 
         ButtonWidget quickActionPlusBtn = new ButtonWidget(this);

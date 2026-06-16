@@ -2,19 +2,13 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
-import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +33,7 @@ public final class PacketUtils {
      * @param packet 数据包
      */
     public static void broadcastPacket(Packet<?> packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+        BaniraServerRuntime.players().forEach(player ->
                 player.connection.send(packet)
         );
     }
@@ -48,9 +42,8 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        ResourceLocation channel = msg.channel();
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPacketToPlayer(channel, msg, player)
+        BaniraServerRuntime.players().forEach(player ->
+                BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
         );
     }
 
@@ -60,9 +53,8 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        ResourceLocation channel = packet.channel();
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacketToPlayer(channel, packet, player)
+        BaniraServerRuntime.players().forEach(player ->
+                sendSplitPacketToPlayer(packet, player)
         );
     }
 
@@ -71,14 +63,14 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        sendPacketToServer(msg.channel(), msg);
+        BaniraPlatforms.get().networkService().sendToServer(msg);
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
-        sendPacketToPlayer(msg.channel(), msg, player);
+        BaniraPlatforms.get().networkService().sendToPlayer(msg, player);
     }
 
     /**
@@ -89,7 +81,10 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
-        sendSplitPacketToPlayer(packet.channel(), packet, player);
+        List<T> splitPackets = packet.split();
+        for (T splitPacket : splitPackets) {
+            sendPacketToPlayer(splitPacket, player);
+        }
     }
 
     /**
@@ -99,80 +94,29 @@ public final class PacketUtils {
      * @param <T>    分包类型
      */
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
-        sendSplitPacketToServer(packet.channel(), packet);
-    }
-
-
-    /**
-     * 发送数据包至服务器
-     */
-    @Environment(EnvType.CLIENT)
-    private static <MSG extends INetworkPacket> void sendPacketToServer(ResourceLocation channel, MSG msg) {
-        if (!hasChannel(channel)) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        // ModLoadedToBoth 为握手首包，不依赖已记录的远程服务端状态
-        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, getModId(channel))) {
-            return;
-        }
-
-        ClientPlayNetworking.send(channel, NetworkInit.HANDLER.encode(msg));
-    }
-
-    /**
-     * 发送数据包至玩家
-     */
-    private static <MSG extends INetworkPacket> void sendPacketToPlayer(ResourceLocation channel, MSG msg, ServerPlayer player) {
-        if (!hasChannel(player, channel)) return;
-        if (!PlayerUtils.isRemoteClientModInstalled(player, getModId(channel))) return;
-        ServerPlayNetworking.send(player, channel, NetworkInit.HANDLER.encode(msg));
-    }
-
-    /**
-     * 发送分包数据包至玩家
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param player  目标玩家
-     * @param <T>     分包类型
-     */
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(ResourceLocation channel, T packet, ServerPlayer player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            sendPacketToPlayer(channel, splitPacket, player);
+            sendPacketToServer(splitPacket);
         }
     }
 
-    /**
-     * 发送分包数据包至服务器
-     *
-     * @param channel 网络通道
-     * @param packet  要发送的数据包
-     * @param <T>     分包类型
-     */
-    private static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(ResourceLocation channel, T packet) {
-        List<T> splitPackets = packet.split();
-        for (T splitPacket : splitPackets) {
-            sendPacketToServer(channel, splitPacket);
-        }
-    }
-
-
-    @Environment(EnvType.CLIENT)
     public static boolean hasBaniraServer() {
-        return hasChannel(NetworkInit.HANDLER.channel());
+        return BaniraPlatforms.get().networkService().hasDefaultChannel();
     }
 
-    @Environment(EnvType.CLIENT)
     public static boolean hasChannel(ResourceLocation channel) {
-        return ClientPlayNetworking.canSend(channel);
+        return channel != null && hasChannel(channel.toString());
+    }
+
+    public static boolean hasChannel(String channelId) {
+        return BaniraPlatforms.get().networkService().hasLocalChannel(channelId);
     }
 
     public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
-        return ServerPlayNetworking.canSend(player, channel);
+        return channel != null && hasChannel(player, channel.toString());
     }
 
-    public static String getModId(ResourceLocation channel) {
-        return channel.getNamespace();
+    public static boolean hasChannel(ServerPlayer player, String channelId) {
+        return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channelId);
     }
 }

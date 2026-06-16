@@ -2,10 +2,10 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
-import xin.vanilla.banira.common.network.NetworkContext;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -68,7 +68,7 @@ public class ModLoadedToBoth implements NetworkPacket {
         return Collections.singletonList(modid);
     }
 
-    public ModLoadedToBoth(FriendlyByteBuf buf) {
+    public ModLoadedToBoth(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
         if (n < 0) {
             this.modids = Collections.emptyList();
@@ -88,7 +88,7 @@ public class ModLoadedToBoth implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         List<String> toWrite = new ArrayList<>();
         for (String id : modids) {
             if (!StringUtils.isNullOrEmptyEx(id)) {
@@ -104,11 +104,10 @@ public class ModLoadedToBoth implements NetworkPacket {
         }
     }
 
-    public static void handle(ModLoadedToBoth packet, NetworkContext ctx) {
+    public static void handle(ModLoadedToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            NetworkContext context = ctx;
-            if (context.isServerSide()) {
-                ServerPlayer player = context.sender();
+            if (ctx.isServerSide()) {
+                ServerPlayer player = ctx.sender();
                 if (player == null || packet.modids().isEmpty()) {
                     return;
                 }
@@ -126,5 +125,6 @@ public class ModLoadedToBoth implements NetworkPacket {
                 }
             }
         });
-            }
+        ctx.markHandled();
+    }
 }

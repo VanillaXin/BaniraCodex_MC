@@ -3,11 +3,10 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -25,9 +24,12 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
@@ -439,7 +441,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     @Override
     public void onClose() {
         if (args.parentScreen() != null) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
         } else {
             super.onClose();
         }
@@ -451,7 +453,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
@@ -521,7 +523,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {

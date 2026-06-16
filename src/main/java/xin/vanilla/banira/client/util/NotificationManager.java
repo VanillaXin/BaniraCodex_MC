@@ -3,16 +3,13 @@ package xin.vanilla.banira.client.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
+import net.minecraft.network.chat.Style;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Style;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -27,6 +24,7 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
@@ -35,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
@@ -49,6 +46,11 @@ public final class NotificationManager {
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
     private Style frameHoverStyle;
+    private final CoalescingAsyncTask logSaveTask = new CoalescingAsyncTask(
+            "BaniraCodex-NotificationLogSave",
+            this::saveLogSnapshot,
+            e -> LOGGER.warn("Failed to save notification log: {}", e.getMessage())
+    );
 
     private static boolean prevLeftDown;
 
@@ -140,7 +142,7 @@ public final class NotificationManager {
     }
 
     private void applyBurstStagger(Notification n, long nowMs) {
-        ClientConfig cfg = ClientConfig.get();
+        ClientConfig.RootView cfg = ClientConfig.get();
         int stagger = cfg.notificationBurstStaggerMs();
         if (stagger <= 0) {
             return;
@@ -260,58 +262,53 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LOG_FILE_NAME);
-                JsonObject root = new JsonObject();
-                JsonArray arr = new JsonArray();
-                List<NotificationLogEntry> snapshot;
-                synchronized (log) {
-                    snapshot = new ArrayList<>(log);
-                }
-                for (NotificationLogEntry e : snapshot) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("id", e.id());
-                    obj.addProperty("timestamp", e.timestamp());
-                    obj.addProperty("componentJson", e.componentJson());
-                    obj.addProperty("positionName", e.positionName());
-                    obj.addProperty("animationName", e.animationName());
-                    obj.addProperty("durationTime", e.durationTime());
-                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-                    obj.addProperty("source", e.source());
-                    arr.add(obj);
-                }
-                root.add("entries", arr);
-                Files.writeString(path, JsonUtils.toPrettyString(root));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
-            }
-        }).start();
+        logSaveTask.request();
+    }
+
+    private void saveLogSnapshot() throws Exception {
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(LOG_FILE_NAME);
+        JsonObject root = new JsonObject();
+        JsonArray arr = new JsonArray();
+        List<NotificationLogEntry> snapshot;
+        synchronized (log) {
+            snapshot = new ArrayList<>(log);
+        }
+        for (NotificationLogEntry e : snapshot) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", e.id());
+            obj.addProperty("timestamp", e.timestamp());
+            obj.addProperty("componentJson", e.componentJson());
+            obj.addProperty("positionName", e.positionName());
+            obj.addProperty("animationName", e.animationName());
+            obj.addProperty("durationTime", e.durationTime());
+            obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+            obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
+            obj.addProperty("source", e.source());
+            arr.add(obj);
+        }
+        root.add("entries", arr);
+        Files.writeString(path, JsonUtils.toPrettyString(root));
     }
 
     @Environment(EnvType.CLIENT)
     public void render(PoseStack stack) {
-        Minecraft mc = Minecraft.getInstance();
+        xin.vanilla.banira.common.data.KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getGuiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
-                .width(mc.getWindow().getGuiScaledWidth())
-                .height(mc.getWindow().getGuiScaledHeight());
+                .width(screenSize.key())
+                .height(screenSize.val());
         long currentTime = System.currentTimeMillis();
 
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        double[] mouse = scaledMouse(mc);
-        double mx = mouse[0];
-        double my = mouse[1];
+        double mx = BaniraClientRuntime.scaledMouseX();
+        double my = BaniraClientRuntime.scaledMouseY();
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
-            entry.getValue().removeIf(Notification::finished);
-
             EnumPosition pos = entry.getKey();
-            List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
+            List<Notification> list = entry.getValue();
 
             boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
                     || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
@@ -328,6 +325,9 @@ public final class NotificationManager {
                     iter.remove();
                     continue;
                 }
+                if (n.scheduledTime() > currentTime) {
+                    continue;
+                }
 
                 if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
                     preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
@@ -340,7 +340,7 @@ public final class NotificationManager {
                 }
 
                 frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
+                n.index(i++).renderAt(stack, preInfo, screenInfo, currentTime, lastInfo);
 
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());
@@ -369,11 +369,16 @@ public final class NotificationManager {
         }
     }
 
-    private static double[] scaledMouse(Minecraft mc) {
-        Window win = mc.getWindow();
-        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
-        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
-        return new double[]{mx, my};
+    /**
+     * 事件层只持有 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack 渲染通知。
+     */
+    @Environment(EnvType.CLIENT)
+    public void renderNative(Object nativeGraphics) {
+        if (nativeGraphics instanceof PoseStack) {
+            render((PoseStack) nativeGraphics);
+            return;
+        }
+        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
     }
 
     /**
@@ -386,7 +391,6 @@ public final class NotificationManager {
         if (button != 0) {
             return false;
         }
-        Minecraft mc = Minecraft.getInstance();
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
@@ -401,12 +405,12 @@ public final class NotificationManager {
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);
-            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(mc, st)) {
+            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(st)) {
                 return true;
             }
             if (n.isBodyHit(guiMouseX, guiMouseY)) {
-                mc.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
-                        .parentScreen(mc.screen)
+                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
+                        .parentScreen(BaniraClientRuntime.currentScreen())
                         .selectLogEntryId(n.logEntryId())));
                 return true;
             }
@@ -419,15 +423,12 @@ public final class NotificationManager {
      */
     @Environment(EnvType.CLIENT)
     public void tickOutOfScreenClick() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != null) {
+        if (BaniraClientRuntime.currentScreen() != null) {
             return;
         }
-        Window win = mc.getWindow();
-        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean down = BaniraClientRuntime.leftMouseDown();
         if (down && !prevLeftDown) {
-            double[] m = scaledMouse(mc);
-            tryHandleHudClick(m[0], m[1], 0);
+            tryHandleHudClick(BaniraClientRuntime.scaledMouseX(), BaniraClientRuntime.scaledMouseY(), 0);
         }
         prevLeftDown = down;
     }

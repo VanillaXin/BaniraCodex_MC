@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -13,10 +12,13 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.DebugScreen;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
 import javax.annotation.Nullable;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 香草志功能导航
@@ -59,19 +61,19 @@ public class CodexNavigationScreen extends BaniraScreen {
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
         addNavButton(cx, y, btnW, "codex_navigation_notification_log",
-                () -> Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
+                () -> BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
         y += BTN_H + BTN_GAP;
 
-        addNavButton(cx, y, btnW, "text.autoconfig.banira_codex.navigation.client_config",
-                () -> ConfigEditorScreen.open(ClientConfig.class, this));
+        addNavButton(cx, y, btnW, "codex_navigation_client_config",
+                () -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
         y += BTN_H + BTN_GAP;
 
-        addNavButton(cx, y, btnW, "text.autoconfig.banira_codex.navigation.common_config",
-                () -> ConfigEditorScreen.open(CommonConfig.class, this));
+        addNavButton(cx, y, btnW, "codex_navigation_common_config",
+                () -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",
-                () -> Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
+                () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
@@ -80,7 +82,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         closeBtn.radius(CLOSE_BTN_SIZE / 3f);
         closeBtn.padding(1);
         closeBtn.onClick(b -> onClose());
-        closeBtn.onLongPress(b -> Minecraft.getInstance().setScreen(new DebugScreen().previousScreen(this)));
+        closeBtn.onLongPress(b -> BaniraClientRuntime.setScreen(new DebugScreen().previousScreen(this)));
         addWidget(closeBtn);
     }
 
@@ -88,10 +90,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         ButtonWidget btn = new ButtonWidget(this);
         btn.id(langKey);
         btn.bounds(new ScreenCoordinate(x, y, w, BTN_H));
-        var label = langKey.startsWith("text.autoconfig.")
-                ? BaniraComponent.get().transClient(langKey)
-                : BaniraComponent.get().transClientAuto(langKey);
-        btn.text(label.toString());
+        btn.text(BaniraComponent.get().transClientAuto(langKey).toString());
         btn.onClick(b -> action.run());
         addWidget(btn);
     }
@@ -104,7 +103,7 @@ public class CodexNavigationScreen extends BaniraScreen {
     @Override
     protected void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), 0xFF);
         AbstractGuiUtils.drawRoundedRect(stack, CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
                 CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
         super.renderWidgets(stack, partialTicks);

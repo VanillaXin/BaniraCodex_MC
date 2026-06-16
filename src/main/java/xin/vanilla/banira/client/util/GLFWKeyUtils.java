@@ -4,6 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -22,6 +23,7 @@ public final class GLFWKeyUtils {
     private static final Map<Integer, String> KEY_CODE_TO_NAME = new HashMap<>();
     private static final Map<String, Integer> MOUSE_NAME_TO_CODE = new HashMap<>();
     private static final Map<Integer, String> MOUSE_CODE_TO_NAME = new HashMap<>();
+    private static final Map<String, Integer> OPERATOR_KEY_ORDER = new HashMap<>();
 
     // 操作类按键集合
     private static final Set<String> OPERATOR_KEYS = new HashSet<>(Arrays.asList(
@@ -33,6 +35,23 @@ public final class GLFWKeyUtils {
     ));
 
     static {
+        // 组合键显示按语义排序，避免 Ctrl/Shift/Alt 受底层 key code 顺序影响。
+        OPERATOR_KEY_ORDER.put("Ctrl", 0);
+        OPERATOR_KEY_ORDER.put("LeftCtrl", 0);
+        OPERATOR_KEY_ORDER.put("RightCtrl", 0);
+        OPERATOR_KEY_ORDER.put("LeftControl", 0);
+        OPERATOR_KEY_ORDER.put("RightControl", 0);
+        OPERATOR_KEY_ORDER.put("Shift", 1);
+        OPERATOR_KEY_ORDER.put("LeftShift", 1);
+        OPERATOR_KEY_ORDER.put("RightShift", 1);
+        OPERATOR_KEY_ORDER.put("Alt", 2);
+        OPERATOR_KEY_ORDER.put("LeftAlt", 2);
+        OPERATOR_KEY_ORDER.put("RightAlt", 2);
+        OPERATOR_KEY_ORDER.put("Super", 3);
+        OPERATOR_KEY_ORDER.put("LeftSuper", 3);
+        OPERATOR_KEY_ORDER.put("RightSuper", 3);
+        OPERATOR_KEY_ORDER.put("Menu", 4);
+
         Field[] fields = GLFWKey.class.getDeclaredFields();
         for (Field field : fields) {
             String fieldName = field.getName();
@@ -42,6 +61,7 @@ public final class GLFWKeyUtils {
                     int code = field.getInt(null);
                     String keyName = StringUtils.toPascalCase(fieldName.substring("GLFW_KEY_".length()));
                     KEY_NAME_TO_CODE.put(keyName, code);
+                    KEY_NAME_TO_CODE.put(keyName.toLowerCase(Locale.ROOT), code);
                     KEY_CODE_TO_NAME.put(code, keyName);
                 }
                 // 鼠标按键
@@ -49,6 +69,7 @@ public final class GLFWKeyUtils {
                     int code = field.getInt(null);
                     String mouseName = StringUtils.toPascalCase("MOUSE_" + fieldName.substring("GLFW_MOUSE_BUTTON_".length()));
                     MOUSE_NAME_TO_CODE.put(mouseName, code);
+                    MOUSE_NAME_TO_CODE.put(mouseName.toLowerCase(Locale.ROOT), code);
                     MOUSE_CODE_TO_NAME.put(code, mouseName);
                 }
             } catch (IllegalAccessException e) {
@@ -95,8 +116,8 @@ public final class GLFWKeyUtils {
             }
         }
         if (sort) {
-            // 按照映射中的 code 顺序排序
-            operatorKeys.sort(Comparator.comparingInt(KEY_NAME_TO_CODE::get));
+            operatorKeys.sort(Comparator.comparingInt(GLFWKeyUtils::operatorOrder)
+                    .thenComparingInt(KEY_NAME_TO_CODE::get));
             normalKeys.sort(Comparator.comparingInt(KEY_NAME_TO_CODE::get));
         }
         List<String> result = new ArrayList<>();
@@ -121,6 +142,10 @@ public final class GLFWKeyUtils {
     public static String getKeyDisplayString(int... codes) {
         List<String> names = getKeyDisplayNames(true, codes);
         return String.join("+", names);
+    }
+
+    public static String getShortcutDisplayString(int keyCode, int modifiers) {
+        return BaniraKeyCodes.formatShortcut(keyCode, modifiers);
     }
 
     public static String getKeyDisplayStringInOrder(int... codes) {
@@ -212,6 +237,10 @@ public final class GLFWKeyUtils {
         } else {
             return lower;
         }
+    }
+
+    private static int operatorOrder(String keyName) {
+        return OPERATOR_KEY_ORDER.getOrDefault(keyName, 100);
     }
 
 }

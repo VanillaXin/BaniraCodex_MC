@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +32,6 @@ public final class BaniraScheduler {
         serverTasks.add(ScheduledTask.server(executeAt, action));
     }
 
-    @Environment(EnvType.CLIENT)
     public static void schedule(int delayTicks, @Nonnull Runnable action) {
         long executeAt = clientTicks.get() + Math.max(0, delayTicks);
         clientTasks.add(ScheduledTask.client(executeAt, action));
@@ -54,20 +51,19 @@ public final class BaniraScheduler {
     /**
      * 客户端：墙钟延迟 {@code delayMillis} 毫秒
      */
-    @Environment(EnvType.CLIENT)
     public static void scheduleAfterMillis(double delayMillis, @Nonnull Runnable action) {
         clientWallClockTasks.add(WallClockScheduledTask.client(delayMillis, action));
     }
 
-    public static void onServerTick(MinecraftServer server) {
-        if (server == null) return;
-
+    /**
+     * 由加载器 adapter 在服务器 END tick 阶段调用。
+     */
+    public static void dispatchServerTick(@Nonnull MinecraftServer server) {
         runTask(server.getTickCount(), serverTasks, serverExecutedCount);
         runWallClockTask(serverWallClockTasks, serverExecutedCount);
     }
 
-    @Environment(EnvType.CLIENT)
-    public static void onClientTick() {
+    public static void dispatchClientTick() {
         long tick = clientTicks.incrementAndGet();
         runTask(tick, clientTasks, clientExecutedCount);
         runWallClockTask(clientWallClockTasks, clientExecutedCount);

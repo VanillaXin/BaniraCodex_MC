@@ -4,15 +4,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -27,6 +26,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -72,6 +72,7 @@ public class ItemSelectScreen extends BaniraScreen {
     private static final int ITEM_COLS = 9;
     private static final int ITEM_SPACING = 1;
     private final List<BaseWidget> itemWidgets = new ArrayList<>();
+    private final List<ItemCell> itemCells = new ArrayList<>();
     private BaseWidget selectedItemWidget;
     private InputWidget searchInputWidget;
     private ScrollbarWidget scrollbarWidget;
@@ -155,7 +156,7 @@ public class ItemSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
 
         updateSearchResults();
     }
@@ -196,7 +197,7 @@ public class ItemSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_item"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_item"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -226,7 +227,7 @@ public class ItemSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 inventoryModeTooltip = new TooltipWidget(this, tooltipBounds);
                 inventoryModeTooltip.seasonTooltip(useSeasonTooltip);
-                inventoryModeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                inventoryModeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.inventoryMode ? "item_display_mode_inventory" : "item_display_mode_all"),
                         (this.inventoryMode ? ItemUtils.getAllPlayerItems().size() : ItemUtils.getAllItems().size())));
                 btn.addChild(inventoryModeTooltip);
@@ -238,14 +239,14 @@ public class ItemSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 countTooltip = new TooltipWidget(this, tooltipBounds);
                 countTooltip.seasonTooltip(useSeasonTooltip);
-                countTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_quantity", this.selectedItem != null ? this.selectedItem.getCount() : 0));
+                countTooltip.text(Text.transAuto(Banira.MOD_ID, "set_quantity", this.selectedItem != null ? this.selectedItem.getCount() : 0));
                 btn.addChild(countTooltip);
             } else {
                 iconWidget.itemStack(new ItemStack(Items.NAME_TAG));
                 iconWidget.enableTooltip(false);
                 TooltipWidget tip = new TooltipWidget(this, tooltipBounds);
                 tip.seasonTooltip(useSeasonTooltip);
-                tip.text(Text.transAuto(BaniraCodex.MODID, "edit_nbt"));
+                tip.text(Text.transAuto(Banira.MOD_ID, "edit_nbt"));
                 btn.addChild(tip);
             }
             btn.addChild(iconWidget);
@@ -254,6 +255,7 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         itemWidgets.clear();
+        itemCells.clear();
         int expectedCount = ITEM_ROWS * ITEM_COLS;
         for (int i = 0; i < expectedCount; i++) {
             int row = i / ITEM_COLS;
@@ -282,6 +284,7 @@ public class ItemSelectScreen extends BaniraScreen {
             });
 
             itemWidgets.add(btn);
+            itemCells.add(new ItemCell(btn, itemWidget));
             addWidget(btn);
         }
 
@@ -300,28 +303,28 @@ public class ItemSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.selectedItem == null || this.selectedItem.isEmpty()) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
+                BaniraClientRuntime.setScreen(args.parentScreen());
             } else {
                 ItemStack itemStack = this.selectedItem;
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(itemStack);
                     LOGGER.debug("Item selected via callback1: {}", ItemUtils.getItemRegistryString(itemStack));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    BaniraClientRuntime.setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(itemStack);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Item selected via callback2: {}", ItemUtils.getItemRegistryString(itemStack));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        BaniraClientRuntime.setScreen(args.parentScreen());
                     }
                 }
             }
@@ -349,7 +352,7 @@ public class ItemSelectScreen extends BaniraScreen {
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -376,7 +379,7 @@ public class ItemSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             eventArgs.consumed(true);
         }
     }
@@ -390,7 +393,7 @@ public class ItemSelectScreen extends BaniraScreen {
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
         this.itemList.clear();
-        LocalPlayer player = Minecraft.getInstance().player;
+        LocalPlayer player = BaniraClientRuntime.localPlayer();
         if (this.inventoryMode && player != null) {
             this.itemList.addAll(ItemUtils.searchPlayerItems(player, s));
         } else {
@@ -411,7 +414,7 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     private void refreshButtons() {
-        if (itemWidgets.isEmpty()) {
+        if (itemCells.isEmpty()) {
             return;
         }
 
@@ -421,11 +424,11 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         boolean f = false;
-        for (int i = 0; i < itemWidgets.size(); i++) {
-            BaseWidget buttonWidget = itemWidgets.get(i);
+        for (int i = 0; i < itemCells.size(); i++) {
+            ItemCell cell = itemCells.get(i);
+            BaseWidget buttonWidget = cell.button;
             int index = scrollRow * ITEM_COLS + i;
-            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
-            if (iw == null) continue;
+            ItemWidget iw = cell.item;
             if (index >= 0 && index < itemList.size()) {
                 ItemStack itemStack = itemList.get(index);
                 String itemId = ItemUtils.serializeItemStack(itemStack);
@@ -450,14 +453,14 @@ public class ItemSelectScreen extends BaniraScreen {
         }
 
         if (this.inventoryModeTooltip != null) {
-            this.inventoryModeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            this.inventoryModeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.inventoryMode ? "item_display_mode_inventory" : "item_display_mode_all"),
                     (this.inventoryMode ? ItemUtils.getAllPlayerItems().size() : ItemUtils.getAllItems().size()))
             );
         }
 
         if (this.countTooltip != null) {
-            this.countTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_quantity",
+            this.countTooltip.text(Text.transAuto(Banira.MOD_ID, "set_quantity",
                     this.selectedItem != null ? this.selectedItem.getCount() : 0));
         }
 
@@ -466,6 +469,19 @@ public class ItemSelectScreen extends BaniraScreen {
         }
         if (this.itemButtonItemWidget != null && this.selectedItem != null) {
             this.itemButtonItemWidget.itemStack(this.selectedItem.copy());
+        }
+    }
+
+    /**
+     * 物品格子在 initWidgets 中固定，刷新时直接复用引用，避免滚动时遍历子树。
+     */
+    private static final class ItemCell {
+        private final BaseWidget button;
+        private final ItemWidget item;
+
+        private ItemCell(BaseWidget button, ItemWidget item) {
+            this.button = button;
+            this.item = item;
         }
     }
 
@@ -513,7 +529,7 @@ public class ItemSelectScreen extends BaniraScreen {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_id"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_id"))
                             .defaultValue(ItemUtils.getItemRegistryString(this.selectedItem))
                             .validator((input) -> {
                                 Item item = ItemUtils.getItemFromRegistry(input.value());
@@ -528,13 +544,15 @@ public class ItemSelectScreen extends BaniraScreen {
                         ItemStack itemStack = ItemUtils.deserializeItemStack(input.firstValue(), ItemUtils.serializeItemStackTag((this.selectedItem)));
                         itemStack.setCount(count);
                         this.selectedItem = itemStack.copy();
+                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
+                        refreshButtons();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.COUNT.code()) {
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_quantity"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_quantity"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.selectedItem.getCount()))
                             .validator((input) -> {
@@ -547,17 +565,19 @@ public class ItemSelectScreen extends BaniraScreen {
                     )
                     .setCallback(input -> {
                         int count = NumberUtils.toInt(input.firstValue());
-                        ItemStack itemStack = (this.selectedItem);
+                        ItemStack itemStack = this.selectedItem.copy();
                         itemStack.setCount(count);
-                        this.selectedItem = itemStack.copy();
+                        this.selectedItem = itemStack;
+                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
+                        refreshButtons();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         } else if (operationCode == ButtonType.NBT.code()) {
             String itemNbtJsonString = ItemUtils.serializeItemStackTag((this.selectedItem));
             InputFormScreen.Args args = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_item_nbt"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt"))
                             .defaultValue(itemNbtJsonString)
                             .validator((input) -> {
                                 try {
@@ -576,11 +596,12 @@ public class ItemSelectScreen extends BaniraScreen {
                             itemStack.setCount(this.selectedItem.getCount());
                             this.selectedItem = itemStack;
                             this.selectedItemId = ItemUtils.serializeItemStack(itemStack);
+                            refreshButtons();
                         } catch (Exception e) {
                             input.runningResult(e);
                         }
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(args));
+            BaniraClientRuntime.setScreen(new InputFormScreen(args));
         }
     }
 }

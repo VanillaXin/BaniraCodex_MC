@@ -9,14 +9,14 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 折叠面板控件。支持展开/折叠，嵌套时保持正确的层级结构显示。
@@ -126,19 +126,19 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int headerBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgSecondary();
+    private int headerBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BG_SECONDARY);
 
     @Getter
     @Setter
-    private int headerHoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgTertiary();
+    private int headerHoverBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BG_TERTIARY);
 
     @Getter
     @Setter
-    private int headerBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textHint();
+    private int headerBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_HINT);
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_PRIMARY);
 
     @Getter
     @Setter
@@ -154,6 +154,12 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
      */
     @Nullable
     private IWidget lastClickFocusTarget;
+
+    /**
+     * 绝对屏幕坐标裁剪区；仅跳过不可见子树的渲染/鼠标/update，不参与布局计算。
+     */
+    @Nullable
+    private ScreenCoordinate renderViewport;
 
     public CollapsiblePanelWidget(BaniraScreen screen) {
         super(screen);
@@ -230,7 +236,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
         // region 绘制内容区（仅展开时）
         if (isExpanded && !children.isEmpty()) {
-            renderChildren(stack, partialTicks);
+            renderVisibleChildren(stack, partialTicks);
         }
         // endregion 绘制内容区
 
@@ -267,17 +273,101 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 0, color);
     }
 
+    public CollapsiblePanelWidget renderViewport(@Nullable ScreenCoordinate viewport) {
+        this.renderViewport = viewport;
+        return this;
+    }
+
+    private void renderVisibleChildren(PoseStack stack, float partialTicks) {
+        if (!visible || children.isEmpty()) {
+            return;
+        }
+
+        stack.pushPose();
+        stack.translate(x(), y(), 0);
+
+        for (IWidget child : children) {
+            if (shouldRenderChild(child)) {
+                applyRenderViewportToChild(child);
+                child.render(stack, partialTicks);
+            }
+        }
+
+        stack.popPose();
+    }
+
+    private boolean shouldRenderChild(@Nullable IWidget child) {
+        return child != null && child.visible() && shouldProcessChildInViewport(child);
+    }
+
+    private boolean shouldUpdateChild(@Nullable IWidget child) {
+        return child != null && child.visible() && child.enabled() && child.needsUpdate()
+                && shouldProcessChildInViewport(child);
+    }
+
+    /**
+     * 鼠标事件只分发给当前裁剪区内的子控件，避免滚动面板扫描大量不可见组件。
+     */
+    @Nullable
+    private IWidget findHandlingViewportChild(ChildEventDispatcher dispatcher) {
+        for (int i = children.size() - 1; i >= 0; i--) {
+            IWidget child = children.get(i);
+            if (child != null && child.visible() && child.enabled() && shouldProcessChildInViewport(child)) {
+                applyRenderViewportToChild(child);
+                if (dispatcher.dispatch(child)) {
+                    return child;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 嵌套面板继承父级裁剪区，只影响渲染/update 的跳过判断，不改布局。
+     */
+    private void applyRenderViewportToChild(IWidget child) {
+        if (child instanceof CollapsiblePanelWidget panelWidget) {
+            panelWidget.renderViewport(renderViewport);
+        }
+    }
+
+    private boolean shouldProcessChildInViewport(IWidget child) {
+        if (renderViewport == null || child == null) {
+            return true;
+        }
+        double vx = renderViewport.x();
+        double vy = renderViewport.y();
+        double vw = renderViewport.width();
+        double vh = renderViewport.height();
+        double x1 = child.absoluteX();
+        double y1 = child.absoluteY();
+        ScreenCoordinate bounds = child.bounds();
+        double childWidth = bounds != null ? bounds.width() : 1;
+        double x2 = x1 + Math.max(1, childWidth);
+        double y2 = y1 + Math.max(1, child.effectiveHeight());
+        return x2 >= vx && x1 <= vx + vw && y2 >= vy && y1 <= vy + vh;
+    }
+
+    private boolean isMouseInsideRenderViewport(double mouseX, double mouseY) {
+        if (renderViewport == null) {
+            return true;
+        }
+        return mouseX >= renderViewport.x()
+                && mouseX < renderViewport.x() + renderViewport.width()
+                && mouseY >= renderViewport.y()
+                && mouseY < renderViewport.y() + renderViewport.height();
+    }
+
     @Override
     public void update() {
         if (!visible || !enabled) {
             return;
         }
-        if (screen != null) {
-            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
-        }
+        updateInteractiveState();
         if (expanded) {
             for (IWidget child : children) {
-                if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
+                if (shouldUpdateChild(child)) {
+                    applyRenderViewportToChild(child);
                     child.update();
                 }
             }
@@ -295,21 +385,17 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         double absY = absoluteY();
         double relY = mouseY - absY;
 
-        if (isMouseInside(mouseX, mouseY, absX, absY)) {
+        if (isMouseInsideRenderViewport(mouseX, mouseY) && isMouseInside(mouseX, mouseY, absX, absY)) {
             lastClickFocusTarget = null;
             if (relY < headerHeight && event.button() == 0) {
                 toggleExpanded();
                 return true;
             }
             if (expanded) {
-                for (int i = children.size() - 1; i >= 0; i--) {
-                    IWidget child = children.get(i);
-                    if (child != null && child.visible() && child.enabled()) {
-                        if (child.handleMouseClick(event)) {
-                            lastClickFocusTarget = child;
-                            return true;
-                        }
-                    }
+                IWidget handlingChild = findHandlingViewportChild(child -> child.handleMouseClick(event));
+                if (handlingChild != null) {
+                    lastClickFocusTarget = handlingChild;
+                    return true;
                 }
             }
             return onMouseClick(event);
@@ -322,15 +408,13 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !mousePressed) {
+            return false;
+        }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseRelease(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingViewportChild(child -> child.handleMouseRelease(event)) != null) {
+                return true;
             }
         }
 
@@ -350,15 +434,13 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !focused) {
+            return false;
+        }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseScroll(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingViewportChild(child -> child.handleMouseScroll(event)) != null) {
+                return true;
             }
         }
 
@@ -373,15 +455,13 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
+        if (!isMouseInsideRenderViewport(event.mouseX(), event.mouseY()) && !mousePressed) {
+            return false;
+        }
 
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleMouseDrag(event)) {
-                        return true;
-                    }
-                }
+            if (findHandlingViewportChild(child -> child.handleMouseDrag(event)) != null) {
+                return true;
             }
         }
 
@@ -392,57 +472,42 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyPress(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyPress(keyCode, scanCode, modifiers)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleKeyPress(event)) != null) {
+                return true;
             }
         }
-        return onKeyPress(keyCode, scanCode, modifiers);
+        return onKeyPress(event);
     }
 
     @Override
-    public boolean handleKeyRelease(int keyCode, int scanCode, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleKeyRelease(KeyEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleKeyRelease(keyCode, scanCode, modifiers)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleKeyRelease(event)) != null) {
+                return true;
             }
         }
-        return onKeyRelease(keyCode, scanCode, modifiers);
+        return onKeyRelease(event);
     }
 
     @Override
-    public boolean handleCharTyped(char codePoint, int modifiers) {
-        if (!visible || !enabled) {
+    public boolean handleCharTyped(CharInputEvent event) {
+        if (!visible || !enabled || event == null) {
             return false;
         }
         if (expanded) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                IWidget child = children.get(i);
-                if (child != null && child.visible() && child.enabled()) {
-                    if (child.handleCharTyped(codePoint, modifiers)) {
-                        return true;
-                    }
-                }
+            if (findHandlingChild(child -> child.handleCharTyped(event)) != null) {
+                return true;
             }
         }
-        return onCharTyped(codePoint, modifiers);
+        return onCharTyped(event);
     }
 
     @Override
@@ -572,10 +637,10 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
         if (theme != null) {
-            headerBgColor(theme.bgSecondary());
-            headerHoverBgColor(theme.bgTertiary());
-            headerBorderColor(theme.textHint());
-            textColor(theme.textPrimary());
+            headerBgColor(theme.color(BG_SECONDARY));
+            headerHoverBgColor(theme.color(BG_TERTIARY));
+            headerBorderColor(theme.color(TEXT_HINT));
+            textColor(theme.color(TEXT_PRIMARY));
         }
     }
 

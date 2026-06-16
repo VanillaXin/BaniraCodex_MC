@@ -5,8 +5,7 @@ import net.fabricmc.api.Environment;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
  * 客户端已知的通知类型集合。默认包含 {@link NotificationTypeKeys#DEFAULT}，收到通知或加载配置时会自动登记。
@@ -20,19 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Environment(EnvType.CLIENT)
 public final class NotificationTypeRegistry {
 
-    private static final Set<String> KNOWN = ConcurrentHashMap.newKeySet();
-    /**
-     * 本 Mod 在客户端显式登记的「配置文件无条目时」展示方式
-     */
-    private static final ConcurrentHashMap<String, EnumNotificationTypeDisplayMode> MOD_REGISTERED_DISPLAY_DEFAULT = new ConcurrentHashMap<>();
-    /**
-     * 登录包下发的展示方式建议（不与本 Mod 显式登记冲突）
-     */
-    private static final ConcurrentHashMap<String, EnumNotificationTypeDisplayMode> SERVER_SYNCED_DISPLAY_DEFAULT = new ConcurrentHashMap<>();
-
-    static {
-        KNOWN.add(NotificationTypeKeys.DEFAULT);
-    }
+    private static final ClientNotificationTypeRegistryState STATE = new ClientNotificationTypeRegistryState();
 
     private NotificationTypeRegistry() {
     }
@@ -41,7 +28,7 @@ public final class NotificationTypeRegistry {
      * 显式注册类型（可在客户端 Mod 初始化时调用，便于配置界面提前列出）。
      */
     public static void register(String typeId) {
-        KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
+        STATE.register(typeId);
     }
 
     /**
@@ -49,82 +36,47 @@ public final class NotificationTypeRegistry {
      * 不会覆盖 JSON 中已有条目。若在 {@link NotificationTypeSettingsStore#load()} 之后调用，则立即对「当前内存中无该键」的情况补写并异步保存。
      */
     public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
-        String t = NotificationTypeKeys.normalizeOrDefault(typeId);
-        KNOWN.add(t);
-        if (defaultIfAbsent != null) {
-            MOD_REGISTERED_DISPLAY_DEFAULT.put(t, defaultIfAbsent);
-        } else {
-            MOD_REGISTERED_DISPLAY_DEFAULT.remove(t);
-        }
+        String t = STATE.register(typeId, defaultIfAbsent);
         if (NotificationTypeSettingsStore.get().isSettingsLoadedFromDisk()) {
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(t);
         }
     }
 
     public static void ensureKnown(String typeId) {
-        KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
+        STATE.register(typeId);
     }
 
     /**
      * 合并服务端在玩家登录时同步的类型 id（无展示方式字段时的兼容用法）
      */
     public static void registerAllFromServer(Iterable<String> typeIds) {
-        if (typeIds == null) {
-            return;
-        }
-        for (String id : typeIds) {
-            if (id != null) {
-                ensureKnown(id);
-            }
-        }
+        STATE.registerAllFromServer(typeIds);
     }
 
     /**
      * 接收登录同步包中的展示方式建议（若本 Mod 已通过 {@link #register(String, EnumNotificationTypeDisplayMode)} 登记过该 id，则忽略服务端值）。
      */
     public static void acceptServerSyncedDisplayDefault(String typeId, EnumNotificationTypeDisplayMode mode) {
-        String t = NotificationTypeKeys.normalizeOrDefault(typeId);
-        if (mode == null) {
-            return;
-        }
-        if (MOD_REGISTERED_DISPLAY_DEFAULT.containsKey(t)) {
-            return;
-        }
-        SERVER_SYNCED_DISPLAY_DEFAULT.put(t, mode);
+        STATE.acceptServerSyncedDisplayDefault(typeId, mode);
     }
 
     /**
      * 本 Mod 登记优先，否则为登录同步建议
      */
     public static EnumNotificationTypeDisplayMode resolvedDisplayDefault(String typeId) {
-        String t = NotificationTypeKeys.normalizeOrDefault(typeId);
-        EnumNotificationTypeDisplayMode m = MOD_REGISTERED_DISPLAY_DEFAULT.get(t);
-        if (m != null) {
-            return m;
-        }
-        return SERVER_SYNCED_DISPLAY_DEFAULT.get(t);
+        return STATE.resolvedDisplayDefault(typeId);
     }
 
     /**
      * 在 {@link NotificationTypeSettingsStore#load()} 完成后调用：对存在解析后默认、且 JSON 未包含条目的类型写入 {@link NotificationTypeSettingsStore}
      */
     public static void applyAllResolvedDefaultsAfterStoreLoad() {
-        Set<String> union = new HashSet<>(MOD_REGISTERED_DISPLAY_DEFAULT.keySet());
-        union.addAll(SERVER_SYNCED_DISPLAY_DEFAULT.keySet());
-        for (String id : union) {
+        for (String id : STATE.typeIdsWithResolvedDefaults()) {
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(id);
         }
     }
 
     public static List<String> knownTypesSorted() {
-        Set<String> fromSettings = NotificationTypeSettingsStore.get().typeIdsFromStored();
-        List<String> all = new ArrayList<>(KNOWN);
-        for (String s : fromSettings) {
-            if (!all.contains(s)) {
-                all.add(s);
-            }
-        }
-        Collections.sort(all);
-        return all;
+        return STATE.knownTypesSorted(NotificationTypeSettingsStore.get().typeIdsFromStored());
     }
 }

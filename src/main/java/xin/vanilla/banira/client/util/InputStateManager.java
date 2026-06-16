@@ -2,9 +2,6 @@ package xin.vanilla.banira.client.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -13,6 +10,7 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.nio.DoubleBuffer;
 import java.util.HashMap;
@@ -23,7 +21,6 @@ import java.util.Set;
 /**
  * 统一的输入状态管理器
  */
-@Environment(EnvType.CLIENT)
 @Accessors(fluent = true)
 public final class InputStateManager {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -68,7 +65,7 @@ public final class InputStateManager {
     }
 
     private static long getWindowHandle() {
-        return Minecraft.getInstance().getWindow().getWindow();
+        return BaniraClientRuntime.windowHandle();
     }
 
     // endregion
@@ -118,24 +115,18 @@ public final class InputStateManager {
     }
 
     public static KeyValue<Integer, Integer> rawToGui(double rawX, double rawY) {
-        Minecraft mc = Minecraft.getInstance();
-        int w = mc.getWindow().getWidth();
-        int h = mc.getWindow().getHeight();
-        int sw = mc.getWindow().getGuiScaledWidth();
-        int sh = mc.getWindow().getGuiScaledHeight();
-        int gx = (int) Math.round(rawX * (double) sw / w);
-        int gy = (int) Math.round(rawY * (double) sh / h);
+        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
+        KeyValue<Integer, Integer> scaled = BaniraClientRuntime.guiScaledSize();
+        int gx = (int) Math.round(rawX * (double) scaled.key() / Math.max(1, window.key()));
+        int gy = (int) Math.round(rawY * (double) scaled.val() / Math.max(1, window.val()));
         return new KeyValue<>(gx, gy);
     }
 
     public static KeyValue<Double, Double> guiToRaw(double guiX, double guiY) {
-        Minecraft mc = Minecraft.getInstance();
-        int w = mc.getWindow().getWidth();
-        int h = mc.getWindow().getHeight();
-        int sw = mc.getWindow().getGuiScaledWidth();
-        int sh = mc.getWindow().getGuiScaledHeight();
-        double rx = guiX * (double) w / sw;
-        double ry = guiY * (double) h / sh;
+        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
+        KeyValue<Integer, Integer> scaled = BaniraClientRuntime.guiScaledSize();
+        double rx = guiX * (double) window.key() / Math.max(1, scaled.key());
+        double ry = guiY * (double) window.val() / Math.max(1, scaled.val());
         return new KeyValue<>(rx, ry);
     }
 
@@ -396,51 +387,32 @@ public final class InputStateManager {
 
     // endregion
 
-    // region 事件监听
+    // region 事件更新入口
 
-    public static void dispatchDrawScreenPre(int mouseX, int mouseY) {
-        InputStateManager.instance().onDrawScreenPre(mouseX, mouseY);
-    }
-
-    public static void dispatchMouseClicked(double mouseX, double mouseY, int button) {
-        InputStateManager.instance().onMouseClicked(mouseX, mouseY, button);
-    }
-
-    public static void dispatchMouseReleased(double mouseX, double mouseY, int button) {
-        InputStateManager.instance().onMouseReleased(mouseX, mouseY, button);
-    }
-
-    public static void dispatchMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
-        InputStateManager.instance().onMouseScrolled(mouseX, mouseY, scrollDelta);
-    }
-
-    public static void dispatchClientTick() {
-        if (Minecraft.getInstance().screen == null) {
-            InputStateManager.instance().onScreenClosed();
-        }
-    }
-
-    // endregion
-
-    // region 内部更新逻辑
-
-    private void onDrawScreenPre(int mouseX, int mouseY) {
+    /**
+     * 由 BaniraClientEventHub 在屏幕绘制前同步鼠标位置与轮询状态。
+     */
+    public void handleDrawScreenPre(double mouseX, double mouseY) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         tick();
     }
 
-    private void onKeyPressed(int keyCode) {
+    public static void dispatchDrawScreenPre(double mouseX, double mouseY) {
+        instance().handleDrawScreenPre(mouseX, mouseY);
+    }
+
+    public void handleKeyPressed(int keyCode) {
         pressedKeys.add(keyCode);
         updateKeyHistory(keyCode, true);
     }
 
-    private void onKeyReleased(int keyCode) {
+    public void handleKeyReleased(int keyCode) {
         pressedKeys.remove(keyCode);
         updateKeyHistory(keyCode, false);
     }
 
-    private void onMouseClicked(double mouseX, double mouseY, int button) {
+    public void handleMouseClicked(double mouseX, double mouseY, int button) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         pressedMouses.add(button);
@@ -455,7 +427,11 @@ public final class InputStateManager {
         }
     }
 
-    private void onMouseReleased(double mouseX, double mouseY, int button) {
+    public static void dispatchMouseClicked(double mouseX, double mouseY, int button) {
+        instance().handleMouseClicked(mouseX, mouseY, button);
+    }
+
+    public void handleMouseReleased(double mouseX, double mouseY, int button) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         pressedMouses.remove(button);
@@ -470,18 +446,30 @@ public final class InputStateManager {
         }
     }
 
-    private void onMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+    public static void dispatchMouseReleased(double mouseX, double mouseY, int button) {
+        instance().handleMouseReleased(mouseX, mouseY, button);
+    }
+
+    public void handleMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.mousedScroll = scrollDelta;
     }
 
-    private void onScreenClosed() {
+    public static void dispatchMouseScrolled(double mouseX, double mouseY, double scrollDelta) {
+        instance().handleMouseScrolled(mouseX, mouseY, scrollDelta);
+    }
+
+    public void handleScreenClosed() {
         clear();
     }
 
+    // endregion
+
+    // region 内部更新逻辑
+
     private void tick() {
-        if (!Minecraft.getInstance().isWindowActive()) {
+        if (!BaniraClientRuntime.isWindowActive()) {
             if (keyActive) {
                 LOGGER.debug("Window is not active, clear all input state");
             }

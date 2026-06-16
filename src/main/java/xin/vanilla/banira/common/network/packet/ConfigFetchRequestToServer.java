@@ -1,20 +1,20 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
-import xin.vanilla.banira.common.network.NetworkContext;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.editable.ConfigEntryDescriptor;
-import xin.vanilla.banira.editable.EditableConfigHolder;
-import xin.vanilla.banira.editable.EditableConfigRegistry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,11 +32,11 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
         this.configName = configName != null ? configName : "";
     }
 
-    public ConfigFetchRequestToServer(FriendlyByteBuf buf) {
+    public ConfigFetchRequestToServer(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
     }
 
@@ -44,7 +44,7 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
         return configName;
     }
 
-    public static void handle(ConfigFetchRequestToServer packet, NetworkContext ctx) {
+    public static void handle(ConfigFetchRequestToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (!ctx.isServerSide()) {
                 return;
@@ -54,16 +54,16 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
                 return;
             }
             if (!ConfigEditPermission.canAccessServerConfigEditor(player)) {
-                sendErr(player, "text.autoconfig.banira_codex.editor.sync_server_no_permission");
+                sendErr(player, "config_editor_sync_server_no_permission");
                 return;
             }
-            EditableConfigHolder holder = EditableConfigRegistry.get(packet.configName);
+            ConfigHolder holder = ConfigRegistry.get(packet.configName);
             if (holder == null) {
-                sendErr(player, "text.autoconfig.banira_codex.editor.message.sync_server_unknown_config", packet.configName);
+                sendErr(player, "config_editor_sync_server_unknown_config", packet.configName);
                 return;
             }
             if (!holder.canSyncToServer()) {
-                sendErr(player, "text.autoconfig.banira_codex.editor.sync_server_not_applicable");
+                sendErr(player, "config_editor_sync_server_not_applicable");
                 return;
             }
             Map<String, String> snapshot = new LinkedHashMap<>();
@@ -74,13 +74,14 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
             }
             PacketUtils.sendPacketToPlayer(new ConfigSnapshotToClient(packet.configName, snapshot), player);
         });
+        ctx.markHandled();
     }
 
-    private static void sendErr(ServerPlayer player, String translationKey, Object... args) {
+    private static void sendErr(ServerPlayer player, String langKey, Object... args) {
         String lang = Translator.getPlayerLanguage(player);
         Component text = args.length > 0
-                ? BaniraComponent.get().transLang(lang, translationKey, args)
-                : BaniraComponent.get().transLang(lang, translationKey);
+                ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
+                : BaniraComponent.get().transAuto(langKey).languageCode(lang);
         MessageUtils.sendDefaultNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
     }
 }

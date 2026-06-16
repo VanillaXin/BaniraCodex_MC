@@ -1,11 +1,13 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
-import xin.vanilla.banira.BaniraCodex;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
-import xin.vanilla.banira.common.network.NetworkContext;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -15,6 +17,8 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
  */
+@Getter
+@Accessors(fluent = true)
 public class CustomPlayerConfigSyncToServer implements NetworkPacket {
 
     private static final long NOTIFY_OK_MS = 3000L;
@@ -28,17 +32,17 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
         this.notificationReceiveMode = notificationReceiveMode != null ? notificationReceiveMode : "";
     }
 
-    public CustomPlayerConfigSyncToServer(FriendlyByteBuf buf) {
+    public CustomPlayerConfigSyncToServer(BaniraPacketBuffer buf) {
         this.language = buf.readUtf(256);
         this.notificationReceiveMode = buf.readUtf(256);
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(language, 256);
         buf.writeUtf(notificationReceiveMode, 256);
     }
 
-    public static void handle(CustomPlayerConfigSyncToServer packet, NetworkContext ctx) {
+    public static void handle(CustomPlayerConfigSyncToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (!ctx.isServerSide()) {
                 return;
@@ -48,7 +52,7 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
                 return;
             }
             String lang = packet.language.trim();
-            Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+            Translator translator = (Translator) Translator.of(Banira.MOD_ID);
             boolean langOk = "client".equalsIgnoreCase(lang) || "server".equalsIgnoreCase(lang)
                     || translator.getI18nFiles().contains(lang);
             if (!langOk) {
@@ -65,5 +69,6 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
                     BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(Translator.getPlayerLanguage(player)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);
         });
-            }
+        ctx.markHandled();
+    }
 }

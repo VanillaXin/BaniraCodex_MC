@@ -4,9 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -14,9 +13,11 @@ import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -24,6 +25,8 @@ import xin.vanilla.banira.common.util.StringUtils;
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 数值滑块 Widget。用于在 min～max 范围内选择数值。
@@ -155,6 +158,15 @@ public class SliderWidget extends BaseWidget {
     @Getter
     private double thumbSize;
 
+    private double lastThumbTrackSize = Double.NaN;
+    private double lastThumbMinValue = Double.NaN;
+    private double lastThumbMaxValue = Double.NaN;
+    private double lastThumbValue = Double.NaN;
+    private int lastThumbRadius = Integer.MIN_VALUE;
+    private int lastMinThumbSize = Integer.MIN_VALUE;
+    @Nullable
+    private SliderStyle lastThumbStyle;
+
     @Getter
     private boolean dragging;
 
@@ -172,19 +184,19 @@ public class SliderWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int trackColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
+    private int trackColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_BG);
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB);
 
     @Getter
     @Setter
-    private int thumbHoverColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
+    private int thumbHoverColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB_HOVER);
 
     @Getter
     @Setter
-    private int valueTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).textPrimary();
+    private int valueTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, TEXT_PRIMARY);
 
     /**
      * 数值显示区域背景色（半透明，避免与轨道融合）。0 表示根据文字颜色自动选择半透明白/黑
@@ -215,8 +227,8 @@ public class SliderWidget extends BaseWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        trackColor(theme.scrollbarBg()).thumbColor(theme.scrollbarThumb()).thumbHoverColor(theme.scrollbarThumbHover())
-                .valueTextColor(theme.textPrimary());
+        trackColor(theme.color(SCROLLBAR_BG)).thumbColor(theme.color(SCROLLBAR_THUMB)).thumbHoverColor(theme.color(SCROLLBAR_THUMB_HOVER))
+                .valueTextColor(theme.color(TEXT_PRIMARY));
         if (inlineInputWidget != null) {
             inlineInputWidget.applyTheme(theme);
         }
@@ -266,7 +278,7 @@ public class SliderWidget extends BaseWidget {
         if (inlineInputWidget != null) return;
         inlineInputWidget = new NumericInputWidget(screen);
         inlineInputWidget.id(id() != null ? id() + "_inline" : "slider_inline");
-        inlineInputWidget.text(Text.transAuto(BaniraCodex.MODID, "enter_number"));
+        inlineInputWidget.text(Text.transAuto(Banira.MOD_ID, "enter_number"));
         inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
         inlineInputWidget.decimalPlaces(decimalPlaces);
         inlineInputWidget.enabled(enabled());
@@ -426,7 +438,7 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void renderValue(PoseStack stack, int x, int y, int width, int height) {
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         String valueStr = formatDisplayValue(value);
         int textW = font.width(valueStr);
         int textH = font.lineHeight;
@@ -593,11 +605,8 @@ public class SliderWidget extends BaseWidget {
         if (!visible || !enabled || event == null) {
             return false;
         }
-        for (int i = children().size() - 1; i >= 0; i--) {
-            IWidget child = children().get(i);
-            if (child != null && child.visible() && child.enabled() && child.handleMouseScroll(event)) {
-                return true;
-            }
+        if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
+            return true;
         }
         // 仅当获得焦点时响应滚轮，避免滚动列表时误修改
         if (focused()) {
@@ -612,7 +621,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = GLFWKey.hasShiftModifier(event.modifiers()) ? step * 10 : step;
         double newValue = value + (event.delta() < 0 ? stepVal : -stepVal);
         setValue(newValue);
         return true;
@@ -649,6 +658,11 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void updateThumb(double effectiveTrackSize) {
+        if (thumbLayoutFresh(effectiveTrackSize)) {
+            return;
+        }
+        rememberThumbLayout(effectiveTrackSize);
+
         double valueRange = maxValue - minValue;
 
         if (style == SliderStyle.ROUND) {
@@ -668,8 +682,31 @@ public class SliderWidget extends BaseWidget {
         thumbPosition = ratio * availableTrack;
     }
 
+    /**
+     * render/update 会多次请求 thumb 布局；缓存输入可避免同一帧重复计算。
+     */
+    private boolean thumbLayoutFresh(double effectiveTrackSize) {
+        return Double.compare(lastThumbTrackSize, effectiveTrackSize) == 0
+                && Double.compare(lastThumbMinValue, minValue) == 0
+                && Double.compare(lastThumbMaxValue, maxValue) == 0
+                && Double.compare(lastThumbValue, value) == 0
+                && lastThumbRadius == thumbRadius
+                && lastMinThumbSize == minThumbSize
+                && lastThumbStyle == style;
+    }
+
+    private void rememberThumbLayout(double effectiveTrackSize) {
+        lastThumbTrackSize = effectiveTrackSize;
+        lastThumbMinValue = minValue;
+        lastThumbMaxValue = maxValue;
+        lastThumbValue = value;
+        lastThumbRadius = thumbRadius;
+        lastMinThumbSize = minThumbSize;
+        lastThumbStyle = style;
+    }
+
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
@@ -679,8 +716,9 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = GLFWKey.hasShiftModifier(event.modifiers()) ? step * 10 : step;
         boolean handled = false;
+        int keyCode = event.keyCode();
 
         if (orientation == EnumOrientation.VERTICAL) {
             if (keyCode == xin.vanilla.banira.client.data.GLFWKey.GLFW_KEY_UP) {

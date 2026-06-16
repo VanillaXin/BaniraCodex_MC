@@ -1,77 +1,61 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
+import xin.vanilla.banira.api.event.BaniraEventRegistration;
+import xin.vanilla.banira.api.event.BaniraLifecycle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * 事件总线工具类
- * <p>
- * 用于统一管理游戏事件的监听和回调，提供清晰的模块化 API。
- * 客户端专用类型（{@code ScreenEvent} 等）见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}，不得写入本类，否则专用服无法 {@code register}。
- * </p>
- * <h3>使用示例</h3>
- * <pre>{@code
- * BaniraEventBus.Server.onStarting(server -> ...);
- * BaniraEventBus.Player.onLoggedOut(player -> ...);
- * BaniraClientEventHub.Client.onGuiChanged(e -> ...); // 客户端见 {@link xin.vanilla.banira.client.event.BaniraClientEventHub}
- * BaniraEventBus.WorldEvents.onUnload(e -> ...);
- * BaniraEventBus.EntityEvents.onJoinLevel(e -> ...);
- * BaniraEventBus.Commands.onRegister(e -> ...);
- * BaniraEventBus.ModLifecycle.onCommonSetup(e -> ...);
- *
- * // 支持取消注册
- * Registration reg = BaniraEventBus.registerServerStarting(server -> ...);
- * reg.unregister();  // 需要时取消
- * }</pre>
+ * 加载器无关的服务端事件回调中心；Forge/Fabric/NeoForge 事件只在 internal adapter 中转换。
  */
 public final class BaniraEventBus {
-    private BaniraEventBus() {
-    }
-
     private static final Logger LOGGER = LogManager.getLogger();
-
-    // region 回调存储
 
     private static final List<Consumer<MinecraftServer>> serverStartingCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
     private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
+    private static final List<Consumer<MinecraftServer>> serverTickCallbacks = new ArrayList<>();
 
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
     private static final List<Consumer<ServerPlayer>> playerSaveCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<MinecraftServer>> serverTickCallbacks = new ArrayList<>();
+    private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
+    private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<LevelAccessor>> worldUnloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<LevelAccessor>> worldTickCallbacks = new ArrayList<>();
 
-    // endregion
-
-    // region 公共 API：Registration
+    private BaniraEventBus() {
+    }
 
     /**
-     * 事件注册句柄，用于取消已注册的回调
+     * @deprecated 使用 {@link BaniraEventRegistration}。
      */
+    @Deprecated
     public interface Registration {
         void unregister();
+    }
+
+    public record PlayerChangedDimensionEvent(ServerPlayer player, ResourceKey<Level> from, ResourceKey<Level> to) {
     }
 
     private static Registration createRegistration(Runnable unregister) {
         return unregister::run;
     }
 
-    // endregion
-
-    // region 分类 API：Server
-
-    /**
-     * 服务器相关事件
-     */
     public static final class Server {
         private Server() {
         }
@@ -88,6 +72,13 @@ public final class BaniraEventBus {
             serverStoppingCallbacks.add(callback);
         }
 
+        /**
+         * 服务器 tick 回调；各加载器 adapter 只在 END 阶段派发。
+         */
+        public static void onTick(@Nonnull Consumer<MinecraftServer> callback) {
+            serverTickCallbacks.add(callback);
+        }
+
         public static Registration onStartingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
             serverStartingCallbacks.add(callback);
             return createRegistration(() -> serverStartingCallbacks.remove(callback));
@@ -97,24 +88,10 @@ public final class BaniraEventBus {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
-
-        /**
-         * 注册服务器每 tick 回调（Phase.END 阶段）
-         */
-        public static void onTick(@Nonnull Consumer<MinecraftServer> callback) {
-            serverTickCallbacks.add(callback);
-        }
     }
 
-    // endregion
-
-    // region 分类 API：Player
-
-    /**
-     * 玩家相关事件
-     */
-    public static final class Player {
-        private Player() {
+    public static final class PlayerEvents {
+        private PlayerEvents() {
         }
 
         public static void onLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
@@ -125,18 +102,55 @@ public final class BaniraEventBus {
             playerLoggedOutCallbacks.add(callback);
         }
 
+        public static void onChangedDimension(@Nonnull Consumer<PlayerChangedDimensionEvent> callback) {
+            playerChangedDimensionCallbacks.add(callback);
+        }
+
+        public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
+            playerChangedDimensionCallbacks.add(event -> callback.accept(event.player()));
+        }
+
+        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
+            playerChangedDimensionCallbacks.add(event -> callback.accept(event.player(), event.from()));
+        }
+
         public static void onSave(@Nonnull Consumer<ServerPlayer> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
 
-    // endregion
-
-    // region 分类 API：Save
-
     /**
-     * 保存相关事件
+     * 旧名称保留为分类别名，避免 Banira 自身调用处频繁变动。
      */
+    public static final class Player {
+        private Player() {
+        }
+
+        public static void onLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+            PlayerEvents.onLoggedIn(callback);
+        }
+
+        public static void onLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+            PlayerEvents.onLoggedOut(callback);
+        }
+
+        public static void onChangedDimension(@Nonnull Consumer<PlayerChangedDimensionEvent> callback) {
+            PlayerEvents.onChangedDimension(callback);
+        }
+
+        public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
+            PlayerEvents.onEnterDimension(callback);
+        }
+
+        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
+            PlayerEvents.onExitDimension(callback);
+        }
+
+        public static void onSave(@Nonnull Consumer<ServerPlayer> callback) {
+            PlayerEvents.onSave(callback);
+        }
+    }
+
     public static final class Save {
         private Save() {
         }
@@ -145,47 +159,91 @@ public final class BaniraEventBus {
             worldSaveCallbacks.add(callback);
         }
 
+        public static void onChunkSave(@Nonnull Runnable callback) {
+            chunkSaveCallbacks.add(callback);
+        }
+
         public static void onPlayerSave(@Nonnull Consumer<ServerPlayer> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
 
-    // endregion
+    public static final class WorldEvents {
+        private WorldEvents() {
+        }
 
-    // region Fabric 事件转发
+        public static void onUnload(@Nonnull Consumer<LevelAccessor> callback) {
+            worldUnloadCallbacks.add(callback);
+        }
 
-    public static void dispatchServerStarting(MinecraftServer server) {
-        fire(serverStartingCallbacks, server, "server starting");
-    }
-
-    public static void dispatchServerStarted(MinecraftServer server) {
-        fire(serverStartedCallbacks, server, "server started");
-    }
-
-    public static void dispatchServerStopping(MinecraftServer server) {
-        fire(serverStoppingCallbacks, server, "server stopping");
-        fire(worldSaveCallbacks, "world save");
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            fire(playerSaveCallbacks, player, "player save");
+        public static void onTick(@Nonnull Consumer<LevelAccessor> callback) {
+            worldTickCallbacks.add(callback);
         }
     }
 
-    public static void dispatchServerTick(MinecraftServer server) {
+    public static final class ModLifecycle {
+        private ModLifecycle() {
+        }
+
+        public static Registration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
+            BaniraEventRegistration registration = BaniraLifecycle.onCommonSetup(callback);
+            return registration::unregister;
+        }
+    }
+
+    public static void dispatchServerStarting(@Nonnull MinecraftServer server) {
+        fire(serverStartingCallbacks, server, "server starting");
+    }
+
+    public static void dispatchServerStarted(@Nonnull MinecraftServer server) {
+        fire(serverStartedCallbacks, server, "server started");
+    }
+
+    public static void dispatchServerStopping(@Nonnull MinecraftServer server) {
+        fire(serverStoppingCallbacks, server, "server stopping");
+    }
+
+    public static void dispatchServerTick(@Nonnull MinecraftServer server) {
         fire(serverTickCallbacks, server, "server tick");
     }
 
-    public static void dispatchPlayerLoggedIn(ServerPlayer player) {
+    public static void dispatchPlayerLoggedIn(@Nonnull net.minecraft.world.entity.player.Player player) {
         fire(playerLoggedInCallbacks, player, "player logged in");
     }
 
-    public static void dispatchPlayerLoggedOut(ServerPlayer player) {
+    public static void dispatchPlayerLoggedOut(@Nonnull net.minecraft.world.entity.player.Player player) {
         fire(playerLoggedOutCallbacks, player, "player logged out");
+    }
+
+    public static void dispatchPlayerChangedDimension(@Nonnull ServerPlayer player,
+                                                      @Nonnull ResourceKey<Level> from,
+                                                      @Nonnull ResourceKey<Level> to) {
+        fire(playerChangedDimensionCallbacks, new PlayerChangedDimensionEvent(player, from, to), "player changed dimension");
+    }
+
+    public static void dispatchWorldSave() {
+        fire(worldSaveCallbacks, "world save");
+    }
+
+    public static void dispatchChunkSave() {
+        fire(chunkSaveCallbacks, "chunk save");
+    }
+
+    public static void dispatchPlayerSave(@Nonnull ServerPlayer player) {
         fire(playerSaveCallbacks, player, "player save");
     }
 
-    // endregion Fabric 事件转发
+    public static void dispatchWorldUnload(@Nonnull LevelAccessor world) {
+        fire(worldUnloadCallbacks, world, "world unload");
+    }
 
-    // region 内部回调执行
+    public static void dispatchWorldTick(@Nonnull LevelAccessor world) {
+        fire(worldTickCallbacks, world, "world tick");
+    }
+
+    public static void dispatchCommonSetup(@Nonnull BaniraCommonSetupEvent event) {
+        BaniraLifecycle.dispatchCommonSetup(event);
+    }
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {
         for (Consumer<T> callback : callbacks) {
@@ -206,7 +264,4 @@ public final class BaniraEventBus {
             }
         }
     }
-
-    // endregion
-
 }

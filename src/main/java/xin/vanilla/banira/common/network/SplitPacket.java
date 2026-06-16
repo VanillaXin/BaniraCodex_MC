@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.network;
 
 import lombok.Data;
-import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.banira.common.util.PacketUtils;
 
 import java.util.*;
@@ -31,7 +30,7 @@ public abstract class SplitPacket {
         this.id = String.format("%d.%d", System.currentTimeMillis(), random.nextInt(999999999));
     }
 
-    protected SplitPacket(FriendlyByteBuf buf) {
+    protected SplitPacket(BaniraPacketBuffer buf) {
         this.id = buf.readUtf();
         this.total = buf.readInt();
         this.sort = buf.readInt();
@@ -46,32 +45,60 @@ public abstract class SplitPacket {
      */
     public static <T extends SplitPacket> List<T> handle(T packet) {
         List<T> result = new ArrayList<>();
+        if (isInvalidPacket(packet)) {
+            return result;
+        }
         Map<String, List<? extends SplitPacket>> packetCache = PacketUtils.packetCache();
         @SuppressWarnings("unchecked")
-        List<T> splitPackets = (List<T>) packetCache.computeIfAbsent(packet.getId(), k -> new ArrayList<>());
-        splitPackets.add(packet);
-        if (splitPackets.size() == packet.getTotal()) {
-            result = splitPackets.stream()
-                    .sorted(Comparator.comparingInt(SplitPacket::getSort))
-                    .collect(Collectors.toList());
-            // 清理缓存
-            packetCache.remove(packet.getId());
-            // 清理过时缓存(超过5分钟)
-            PacketUtils.packetCache().keySet().stream()
-                    .filter(key -> {
-                        String[] parts = key.split("\\.");
-                        if (parts.length > 0) {
-                            try {
-                                return Math.abs(System.currentTimeMillis() - Long.parseLong(parts[0])) > 1000 * 60 * 5;
-                            } catch (NumberFormatException e) {
-                                return false;
-                            }
-                        }
-                        return false;
-                    })
-                    .forEach(packetCache::remove);
+        List<T> splitPackets = (List<T>) packetCache.computeIfAbsent(packet.getId(), k -> Collections.synchronizedList(new ArrayList<>()));
+        synchronized (splitPackets) {
+            boolean duplicateSort = splitPackets.stream().anyMatch(cached -> cached.getSort() == packet.getSort());
+            if (duplicateSort) {
+                // 同一批次出现重复序号时丢弃整批，避免错误合并污染业务数据。
+                packetCache.remove(packet.getId());
+                return result;
+            }
+            splitPackets.add(packet);
+            if (splitPackets.size() > packet.getTotal()) {
+                packetCache.remove(packet.getId());
+                return result;
+            }
+            if (splitPackets.size() == packet.getTotal()) {
+                result = splitPackets.stream()
+                        .sorted(Comparator.comparingInt(SplitPacket::getSort))
+                        .collect(Collectors.toList());
+                packetCache.remove(packet.getId());
+                cleanupExpiredPacketCache(packetCache);
+            }
         }
         return result;
+    }
+
+    private static boolean isInvalidPacket(SplitPacket packet) {
+        return packet == null
+                || packet.getId() == null
+                || packet.getId().trim().isEmpty()
+                || packet.getTotal() <= 0
+                || packet.getSort() < 0
+                || packet.getSort() >= packet.getTotal();
+    }
+
+    private static void cleanupExpiredPacketCache(Map<String, List<? extends SplitPacket>> packetCache) {
+        packetCache.keySet().stream()
+                .filter(SplitPacket::isExpiredPacketCacheKey)
+                .forEach(packetCache::remove);
+    }
+
+    private static boolean isExpiredPacketCacheKey(String key) {
+        String[] parts = key.split("\\.");
+        if (parts.length == 0) {
+            return false;
+        }
+        try {
+            return Math.abs(System.currentTimeMillis() - Long.parseLong(parts[0])) > 1000 * 60 * 5;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     /**
@@ -109,7 +136,7 @@ public abstract class SplitPacket {
         return Collections.singletonList((T) this);
     }
 
-    protected void toBytes(FriendlyByteBuf buf) {
+    protected void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(id);
         buf.writeInt(total);
         buf.writeInt(sort);

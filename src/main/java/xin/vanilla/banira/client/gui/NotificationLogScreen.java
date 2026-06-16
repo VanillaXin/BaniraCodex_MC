@@ -618,7 +618,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     private boolean tryHandleDetailContentClick(double mouseX, double mouseY) {
         Style st = styleAtDetailContentPoint(mouseX, mouseY);
-        return st != null && NotificationStyleInteractionHelper.tryClickStyle(Minecraft.getInstance(), st);
+        return st != null && NotificationStyleInteractionHelper.tryClickStyle(st);
     }
 
     @Override

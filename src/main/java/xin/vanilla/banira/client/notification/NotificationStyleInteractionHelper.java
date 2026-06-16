@@ -1,24 +1,26 @@
 package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 import java.net.URI;
 
@@ -31,24 +33,24 @@ public final class NotificationStyleInteractionHelper {
     private NotificationStyleInteractionHelper() {
     }
 
-    public static boolean tryClickStyle(Minecraft mc, Style style) {
+    public static boolean tryClickStyle(Style style) {
         if (style == null || style.getClickEvent() == null) {
             return false;
         }
-        Screen screen = mc.screen;
+        Screen screen = BaniraClientRuntime.currentScreen();
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(mc, style.getClickEvent());
+        return handleClickInGame(style.getClickEvent());
     }
 
-    private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
-        if (Screen.hasShiftDown()) {
+    private static boolean handleClickInGame(ClickEvent event) {
+        if (InputStateManager.isShiftPressingStatic()) {
             return false;
         }
         switch (event.getAction()) {
             case OPEN_URL:
-                if (!mc.options.chatLinks().get()) {
+                if (!BaniraVanillaNotificationBridge.chatLinksEnabled()) {
                     return false;
                 }
                 try {
@@ -59,21 +61,12 @@ public final class NotificationStyleInteractionHelper {
                     return false;
                 }
             case RUN_COMMAND:
-                if (mc.player == null) {
-                    return false;
-                }
-                String cmd = event.getValue();
-                if (!cmd.startsWith("/")) {
-                    cmd = "/" + cmd;
-                }
-                String commandLine = cmd.startsWith("/") ? cmd.substring(1) : cmd;
-                mc.player.commandSigned(commandLine, Component.empty());
-                return true;
+                return BaniraVanillaNotificationBridge.runCommand(event.getValue());
             case SUGGEST_COMMAND:
-                mc.setScreen(new ChatScreen(event.getValue()));
+                BaniraVanillaNotificationBridge.suggestCommand(event.getValue());
                 return true;
             case COPY_TO_CLIPBOARD:
-                mc.keyboardHandler.setClipboard(event.getValue());
+                AbstractGuiUtils.setClipboard(event.getValue());
                 return true;
             default:
                 return false;
@@ -95,9 +88,9 @@ public final class NotificationStyleInteractionHelper {
         if (tip == null) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
+        Screen screen = BaniraClientRuntime.currentScreen();
+        EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
         boolean useTexture = theme.tooltipUseTexture();
 
         xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
@@ -107,7 +100,7 @@ public final class NotificationStyleInteractionHelper {
         stack.last().pose().setIdentity();
         try {
             TooltipWidget.drawPopupMessage(stack,
-                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(AbstractGuiUtils.getFont())).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, season);
         } finally {
             stack.popPose();

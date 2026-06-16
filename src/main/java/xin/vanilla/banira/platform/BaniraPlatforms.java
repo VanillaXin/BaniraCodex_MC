@@ -1,6 +1,5 @@
 package xin.vanilla.banira.platform;
 
-import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
@@ -12,11 +11,10 @@ public final class BaniraPlatforms {
     private BaniraPlatforms() {
     }
 
-    public static void install(@Nonnull BaniraPlatform value) {
+    public static void install(BaniraPlatform value) {
         platform = Objects.requireNonNull(value, "platform");
     }
 
-    @Nonnull
     public static BaniraPlatform get() {
         BaniraPlatform current = platform;
         if (current == null) {

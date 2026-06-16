@@ -1,8 +1,9 @@
-package xin.vanilla.banira.common.config;
+package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -30,7 +31,7 @@ import java.util.function.Predicate;
  * }
  *
  * // 2. 注册（Forge）
- * ForgeConfigAdapter.register(CommonConfig.class, BaniraCodex.MODID);
+ * ForgeConfigAdapter.register(CommonConfig.class, Banira.MOD_ID);
  *
  * // 3. 使用
  * CommonConfig.RootView config = CommonConfig.get();
@@ -39,6 +40,7 @@ import java.util.function.Predicate;
  * // 或直接 holder：config.holder().set("help.helpHeader", "new");
  * }</pre>
  */
+@Deprecated
 public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
@@ -55,7 +57,7 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ModConfig.Type configType = configAnn.type();
+        ConfigScope configScope = configAnn.type();
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -66,14 +68,15 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
+        ForgeConfigValueStore valueStore = new ForgeConfigValueStore(spec, valueMap);
+        ConfigHolder holder = ConfigHolder.create(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
+            ModConfig modConfig = new ModConfig(toForgeType(configScope), spec, container, fileName);
             container.addConfig(modConfig);
-            holder.setModConfig(modConfig);
+            valueStore.bindModConfig(modConfig);
         });
 
         HOLDER_MAP.put(configClass, holder);
@@ -392,8 +395,7 @@ public final class ForgeConfigAdapter {
                 .minValue(min)
                 .maxValue(max)
                 .decimalPlaces(decimalPlaces)
-                .enumClass(enumClass)
-                .configValue(cv);
+                .enumClass(enumClass);
         applyRequiresEditPermission(field, b);
         descriptors.add(b.build());
     }
@@ -454,7 +456,7 @@ public final class ForgeConfigAdapter {
     }
 
     private static String resolvePath(ConfigHolder holder, String methodName, String prefix) {
-        for (String path : holder.getValueMap().keySet()) {
+        for (String path : holder.valuePaths()) {
             String fieldName = path.substring(path.lastIndexOf('.') + 1);
             if (methodName.equals(fieldName)) {
                 if (prefix.isEmpty()) return path;
@@ -462,5 +464,13 @@ public final class ForgeConfigAdapter {
             }
         }
         return null;
+    }
+
+    private static ModConfig.Type toForgeType(ConfigScope scope) {
+        return switch (scope) {
+            case CLIENT -> ModConfig.Type.CLIENT;
+            case SERVER -> ModConfig.Type.SERVER;
+            case COMMON -> ModConfig.Type.COMMON;
+        };
     }
 }

@@ -11,6 +11,7 @@ import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
@@ -18,8 +19,9 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 按钮Widget
@@ -103,21 +105,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * 长按判定完成瞬间的「崩裂」粒子存活时间（毫秒）
+     * 长按完成反馈最长显示时间（毫秒）。
      */
-    private static final int LONG_PRESS_BURST_DURATION_MS = 520;
+    private static final int LONG_PRESS_COMPLETION_DURATION_MS = 720;
 
-    /**
-     * 崩裂粒子数量
-     */
-    private static final int LONG_PRESS_BURST_PARTICLE_COUNT = 40;
+    private static final int COMPLETION_KIND_FLASH = 0;
+    private static final int COMPLETION_KIND_CHECK = 1;
 
-    /**
-     * 崩裂粒子重力（像素/秒²，屏幕 Y 向下为正）
-     */
-    private static final float LONG_PRESS_BURST_GRAVITY = 380f;
-
-    private final List<LongPressBurstParticle> longPressBurstParticles = new ArrayList<>();
+    private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
 
     /**
      * 长按进度条模式，默认从左至右
@@ -128,6 +123,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     private Text text = Text.empty();
+
+    private Font cachedTextWidthFont;
+    private String cachedTextWidthContent;
+    private int cachedTextWidth;
 
     @Getter
     @Setter
@@ -149,43 +148,43 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG);
 
     @Getter
     @Setter
-    private int hoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgHover();
+    private int hoverBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_HOVER);
 
     @Getter
     @Setter
-    private int focusedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgFocused();
+    private int focusedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgPressed();
+    private int pressedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_PRESSED);
 
     @Getter
     @Setter
-    private int disabledBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgDisabled();
+    private int disabledBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_DISABLED);
 
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorder();
+    private int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER);
 
     @Getter
     @Setter
-    private int hoverBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderHover();
+    private int hoverBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_HOVER);
 
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderFocused();
+    private int focusedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderPressed();
+    private int pressedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_PRESSED);
 
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderDisabled();
+    private int disabledBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_DISABLED);
 
     @Getter
     @Setter
@@ -193,30 +192,30 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonText();
+    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT);
 
     @Getter
     @Setter
-    private int hoverTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextHover();
+    private int hoverTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_HOVER);
 
     @Getter
     @Setter
-    private int focusedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextFocused();
+    private int focusedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextPressed();
+    private int pressedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_PRESSED);
 
     @Getter
     @Setter
-    private int disabledTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextDisabled();
+    private int disabledTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_DISABLED);
 
     /**
      * 长按进度填充色（与 hover 轨道区分），由主题 {@link BaniraColorConfig#buttonLongPressProgressFill()} 提供
      */
     @Getter
     @Setter
-    private int longPressProgressFillColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonLongPressProgressFill();
+    private int longPressProgressFillColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_LONG_PRESS_PROGRESS_FILL);
 
     @Getter
     @Setter
@@ -279,23 +278,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private int iconColor = 0xFF333333;
+    private int iconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON);
 
     @Getter
     @Setter
-    private int hoverIconColor = 0xFF555555;
+    private int hoverIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_HOVER);
 
     @Getter
     @Setter
-    private int focusedIconColor = 0xFF444444;
+    private int focusedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_FOCUSED);
 
     @Getter
     @Setter
-    private int pressedIconColor = 0xFF222222;
+    private int pressedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_PRESSED);
 
     @Getter
     @Setter
-    private int disabledIconColor = 0xFFAAAAAA;
+    private int disabledIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_DISABLED);
 
     /**
      * 图标线条宽度
@@ -307,22 +306,22 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.buttonBg()).hoverBgColor(theme.buttonBgHover())
-                .focusedBgColor(theme.buttonBgFocused()).pressedBgColor(theme.buttonBgPressed())
-                .disabledBgColor(theme.buttonBgDisabled())
-                .borderColor(theme.buttonBorder()).hoverBorderColor(theme.buttonBorderHover())
-                .focusedBorderColor(theme.buttonBorderFocused()).pressedBorderColor(theme.buttonBorderPressed())
-                .disabledBorderColor(theme.buttonBorderDisabled())
-                .textColor(theme.buttonText()).hoverTextColor(theme.buttonTextHover())
-                .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
-                .disabledTextColor(theme.buttonTextDisabled())
-                .longPressProgressFillColor(theme.buttonLongPressProgressFill());
+        bgColor(theme.color(BUTTON_BG)).hoverBgColor(theme.color(BUTTON_BG_HOVER))
+                .focusedBgColor(theme.color(BUTTON_BG_FOCUSED)).pressedBgColor(theme.color(BUTTON_BG_PRESSED))
+                .disabledBgColor(theme.color(BUTTON_BG_DISABLED))
+                .borderColor(theme.color(BUTTON_BORDER)).hoverBorderColor(theme.color(BUTTON_BORDER_HOVER))
+                .focusedBorderColor(theme.color(BUTTON_BORDER_FOCUSED)).pressedBorderColor(theme.color(BUTTON_BORDER_PRESSED))
+                .disabledBorderColor(theme.color(BUTTON_BORDER_DISABLED))
+                .textColor(theme.color(BUTTON_TEXT)).hoverTextColor(theme.color(BUTTON_TEXT_HOVER))
+                .focusedTextColor(theme.color(BUTTON_TEXT_FOCUSED)).pressedTextColor(theme.color(BUTTON_TEXT_PRESSED))
+                .disabledTextColor(theme.color(BUTTON_TEXT_DISABLED))
+                .longPressProgressFillColor(theme.color(BUTTON_LONG_PRESS_PROGRESS_FILL));
         if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
-            iconColor(theme.buttonPresetIconColor())
-                    .hoverIconColor(theme.buttonPresetIconHoverColor())
-                    .focusedIconColor(theme.buttonPresetIconFocusedColor())
-                    .pressedIconColor(theme.buttonPresetIconPressedColor())
-                    .disabledIconColor(theme.buttonPresetIconDisabledColor());
+            iconColor(theme.color(BUTTON_ICON))
+                    .hoverIconColor(theme.color(BUTTON_ICON_HOVER))
+                    .focusedIconColor(theme.color(BUTTON_ICON_FOCUSED))
+                    .pressedIconColor(theme.color(BUTTON_ICON_PRESSED))
+                    .disabledIconColor(theme.color(BUTTON_ICON_DISABLED));
         }
     }
 
@@ -589,14 +588,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 stack.translate(contentX, contentY, 0);
                 float scale = fontSize / 9.0f;
                 stack.scale(scale, scale, 1.0f);
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
                 int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
                 LabelWidget.drawLimitedText(drawArgs.x(scaledTextX).y(scaledTextY));
                 stack.popPose();
             } else {
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int centeredTextX = contentX + (availableWidth - textWidth) / 2;
                 int centeredTextY = contentY + (availableHeight - textHeight) / 2;
@@ -604,11 +603,27 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        if (!longPressBurstParticles.isEmpty()) {
-            drawLongPressBurstParticles(stack, drawX, drawY, drawWidth, drawHeight);
+        if (!longPressCompletionEffects.isEmpty()) {
+            drawLongPressCompletionEffects(stack, drawX, drawY, drawWidth, drawHeight);
         }
 
         renderChildren(stack, partialTicks);
+    }
+
+    private int cachedTextWidth(Font font) {
+        String content = text.content();
+        if (cachedTextWidthFont != font || !content.equals(cachedTextWidthContent)) {
+            cachedTextWidthFont = font;
+            cachedTextWidthContent = content;
+            cachedTextWidth = AbstractGuiUtils.getTextWidth(font, this.text);
+        }
+        return cachedTextWidth;
+    }
+
+    private void invalidateTextWidthCache() {
+        cachedTextWidthFont = null;
+        cachedTextWidthContent = null;
+        cachedTextWidth = 0;
     }
 
     private void renderLongPressPressedFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
@@ -711,147 +726,38 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    // region 长按崩裂粒子
+    // region 长按完成反馈
 
-    /**
-     * 左右向进度完成时的崩裂：沿前缘整段高度、扇形飞散、扁平碎块、回弹碎屑与高光火星
-     */
-    private void spawnHorizontalBurstStrip(ThreadLocalRandom r, float hw, float hh, long now, boolean rightToLeft) {
-        float sign = rightToLeft ? -1f : 1f;
-
-        for (int i = 0; i < 26; i++) {
-            float x0 = sign * hw * (0.74f + r.nextFloat() * 0.24f);
-            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.99f;
-            float fan = (r.nextFloat() - 0.5f) * 1.25f;
-            float speed = 145f + r.nextFloat() * 235f;
-            float vx = sign * (float) Math.cos(fan) * speed;
-            float vy = (float) Math.sin(fan) * speed * 0.82f + (r.nextFloat() - 0.5f) * 62f;
-            if (r.nextFloat() < 0.16f) {
-                vx -= sign * (55f + r.nextFloat() * 140f);
-            }
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
-            if (r.nextFloat() < 0.15f) {
-                c = brightenArgb(c, 1.12f + r.nextFloat() * 0.12f);
-            }
-            float dw = 1.8f + r.nextFloat() * 2.6f;
-            float dh = 0.55f + r.nextFloat() * 0.85f;
-            float g = 0.58f + r.nextFloat() * 0.22f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, g));
-        }
-
-        for (int i = 0; i < 20; i++) {
-            float x0 = sign * hw * (0.48f + r.nextFloat() * 0.34f);
-            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.92f;
-            float fan = (r.nextFloat() - 0.5f) * 1.65f;
-            float speed = 88f + r.nextFloat() * 195f;
-            float vx = sign * (float) Math.cos(fan) * speed;
-            float vy = (float) Math.sin(fan) * speed * 0.9f + (r.nextFloat() - 0.5f) * 85f;
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
-            float dw = 1f + r.nextFloat() * 1.5f;
-            float dh = dw;
-            float gScale = 0.78f + r.nextFloat() * 0.18f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
-        }
-
-        for (int i = 0; i < 16; i++) {
-            float x0 = sign * hw * (0.68f + r.nextFloat() * 0.30f);
-            float y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.98f;
-            float fan = (r.nextFloat() - 0.5f) * 1.0f;
-            float speed = 165f + r.nextFloat() * 260f;
-            float vx = sign * (float) Math.cos(fan) * speed;
-            float vy = (float) Math.sin(fan) * speed * 0.75f + (r.nextFloat() - 0.5f) * 45f;
-            int c = brightenArgb(longPressProgressFillColor, 1.28f + r.nextFloat() * 0.25f);
-            if (r.nextFloat() < 0.35f) {
-                c = 0xFFFFE8D0;
-            }
-            float dw = 0.75f + r.nextFloat() * 1.05f;
-            float dh = dw;
-            float gScale = 0.45f + r.nextFloat() * 0.2f;
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, dw, dh, gScale));
-        }
-    }
-
-    private void tickLongPressBurstParticles() {
+    private void tickLongPressCompletionEffects() {
         long now = System.currentTimeMillis();
-        longPressBurstParticles.removeIf(p -> now - p.spawnTimeMs > LONG_PRESS_BURST_DURATION_MS);
+        longPressCompletionEffects.removeIf(e -> now - e.spawnTimeMs > e.lifetimeMs);
     }
 
-    private void spawnLongPressBurst(int drawWidth, int drawHeight) {
-        longPressBurstParticles.clear();
+    private void spawnLongPressCompletionFeedback(int drawWidth, int drawHeight) {
+        longPressCompletionEffects.clear();
         if (drawWidth < 1 || drawHeight < 1) {
             return;
         }
-        ThreadLocalRandom r = ThreadLocalRandom.current();
         long now = System.currentTimeMillis();
-        float hw = drawWidth * 0.5f;
-        float hh = drawHeight * 0.5f;
-        if (longPressProgressMode == LongPressProgressMode.LEFT_TO_RIGHT || longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT) {
-            spawnHorizontalBurstStrip(r, hw, hh, now, longPressProgressMode == LongPressProgressMode.RIGHT_TO_LEFT);
-            return;
-        }
-        float spreadY = Math.max(2f, hh * 0.5f);
-        for (int i = 0; i < LONG_PRESS_BURST_PARTICLE_COUNT; i++) {
-            float x0 = 0f;
-            float y0 = 0f;
-            float vx = 0f;
-            float vy = 0f;
-            switch (longPressProgressMode) {
-                case INSIDE_OUT: {
-                    int edge = r.nextInt(4);
-                    float speed = 75f + r.nextFloat() * 155f;
-                    if (edge == 0) {
-                        x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.96f;
-                        y0 = -hh;
-                        vx = (r.nextFloat() - 0.5f) * 130f;
-                        vy = -(speed + r.nextFloat() * 45f);
-                    } else if (edge == 1) {
-                        x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.96f;
-                        y0 = hh;
-                        vx = (r.nextFloat() - 0.5f) * 130f;
-                        vy = speed + r.nextFloat() * 55f;
-                    } else if (edge == 2) {
-                        x0 = -hw;
-                        y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.96f;
-                        vx = -(speed + r.nextFloat() * 45f);
-                        vy = (r.nextFloat() - 0.5f) * 130f;
-                    } else {
-                        x0 = hw;
-                        y0 = (r.nextFloat() - 0.5f) * 2f * hh * 0.96f;
-                        vx = speed + r.nextFloat() * 45f;
-                        vy = (r.nextFloat() - 0.5f) * 130f;
-                    }
-                    break;
-                }
-                case OUTSIDE_IN: {
-                    float spread = Math.max(2f, Math.min(hw, hh) * 0.26f);
-                    x0 = (r.nextFloat() - 0.5f) * 2f * spread;
-                    y0 = (r.nextFloat() - 0.5f) * 2f * spread;
-                    double ang = r.nextDouble() * Math.PI * 2;
-                    float speed = 85f + r.nextFloat() * 165f;
-                    vx = (float) (Math.cos(ang) * speed);
-                    vy = (float) (Math.sin(ang) * speed) - 18f - r.nextFloat() * 35f;
-                    break;
-                }
-                case TOP_TO_BOTTOM:
-                    x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.92f;
-                    y0 = hh * (0.52f + r.nextFloat() * 0.48f);
-                    vx = (r.nextFloat() - 0.5f) * 110f;
-                    vy = 105f + r.nextFloat() * 175f;
-                    break;
-                case BOTTOM_TO_TOP:
-                    x0 = (r.nextFloat() - 0.5f) * 2f * hw * 0.9f;
-                    y0 = -hh * (0.52f + r.nextFloat() * 0.48f);
-                    vx = (r.nextFloat() - 0.5f) * 110f;
-                    vy = -(195f + r.nextFloat() * 230f);
-                    break;
-            }
-            int c = r.nextBoolean() ? longPressProgressFillColor : hoverBgColor;
-            if (r.nextFloat() < 0.18f) {
-                c = brightenArgb(c, 1.18f + r.nextFloat() * 0.15f);
-            }
-            float size = 1f + r.nextFloat() * (r.nextFloat() < 0.12f ? 3.2f : 1.8f);
-            longPressBurstParticles.add(new LongPressBurstParticle(x0, y0, vx, vy, c, now, size));
-        }
+        LongPressCompletionPalette colors = longPressCompletionPalette();
+        longPressCompletionEffects.add(new LongPressCompletionEffect(colors.wave, now,
+                drawWidth, drawHeight, COMPLETION_KIND_FLASH, 560));
+        float markSize = Math.max(8f, Math.min(18f, Math.min(drawWidth, drawHeight) * 0.62f));
+        longPressCompletionEffects.add(new LongPressCompletionEffect(colors.sparkAccent, now,
+                markSize, markSize, COMPLETION_KIND_CHECK, LONG_PRESS_COMPLETION_DURATION_MS));
+    }
+
+    private LongPressCompletionPalette longPressCompletionPalette() {
+        int base = opaqueArgb(longPressProgressFillColor);
+        int hover = opaqueArgb(hoverBgColor);
+        int focus = opaqueArgb(focusedBorderColor != 0 ? focusedBorderColor : hoverBorderColor);
+        int sparkAccent = brightenArgb(blendArgb(base, focus, 0.42f), 1.16f);
+        int wave = brightenArgb(blendArgb(base, hover, 0.24f), 1.10f);
+        return new LongPressCompletionPalette(sparkAccent, wave);
+    }
+
+    private static int opaqueArgb(int argb) {
+        return 0xFF000000 | (argb & 0x00FFFFFF);
     }
 
     private static int brightenArgb(int argb, float factor) {
@@ -865,70 +771,134 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (a << 24) | (cr << 16) | (cg << 8) | cb;
     }
 
-    private void drawLongPressBurstParticles(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
+    private static int blendArgb(int from, int to, float t) {
+        float clamped = Math.max(0f, Math.min(1f, t));
+        int a = Math.round(((from >>> 24) & 0xFF) * (1f - clamped) + ((to >>> 24) & 0xFF) * clamped);
+        int r = Math.round(((from >> 16) & 0xFF) * (1f - clamped) + ((to >> 16) & 0xFF) * clamped);
+        int g = Math.round(((from >> 8) & 0xFF) * (1f - clamped) + ((to >> 8) & 0xFF) * clamped);
+        int b = Math.round((from & 0xFF) * (1f - clamped) + (to & 0xFF) * clamped);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private void drawLongPressCompletionEffects(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
         if (drawWidth < 1 || drawHeight < 1) {
             return;
         }
         float cx = drawX + drawWidth * 0.5f;
         float cy = drawY + drawHeight * 0.5f;
         long now = System.currentTimeMillis();
-        float maxAge = LONG_PRESS_BURST_DURATION_MS / 1000f;
-        for (LongPressBurstParticle p : longPressBurstParticles) {
-            float t = (now - p.spawnTimeMs) / 1000f;
-            if (t <= 0f || t >= maxAge) {
+        for (LongPressCompletionEffect e : longPressCompletionEffects) {
+            float elapsedMs = now - e.spawnTimeMs;
+            if (elapsedMs <= 0f || elapsedMs >= e.lifetimeMs) {
                 continue;
             }
-            float px = p.x0 + p.vx * t;
-            float py = p.y0 + p.vy * t + LONG_PRESS_BURST_GRAVITY * p.gravityScale * t * t;
-            float life = 1f - t / maxAge;
-            life = Math.max(0f, Math.min(1f, life));
-            int alpha = (int) (255f * life * life);
-            if (alpha < 6) {
+            float age = elapsedMs / e.lifetimeMs;
+            if (e.kind == COMPLETION_KIND_FLASH) {
+                drawLongPressCompletionFlash(stack, cx, cy, e, elapsedMs, age);
                 continue;
             }
-            int col = withAlphaArgb(p.baseColor, alpha);
-            float lifeScale = 0.75f + 0.35f * life;
-            int wPx = Math.max(1, Math.round(p.drawW * lifeScale));
-            int hPx = Math.max(1, Math.round(p.drawH * lifeScale));
-            int ix = Math.round(cx + px - wPx * 0.5f);
-            int iy = Math.round(cy + py - hPx * 0.5f);
-            AbstractGuiUtils.fill(stack, ix, iy, wPx, hPx, col);
+            if (e.kind == COMPLETION_KIND_CHECK) {
+                drawLongPressCompletionCheck(stack, cx, cy, e, age);
+                continue;
+            }
         }
+    }
+
+    /**
+     * 长按完成反馈主体：全按钮短暂亮起，再有一条轻扫光掠过。
+     */
+    private void drawLongPressCompletionFlash(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float elapsedMs, float age) {
+        int w = Math.max(1, Math.round(e.drawW));
+        int h = Math.max(1, Math.round(e.drawH));
+        int x = Math.round(cx - w * 0.5f);
+        int y = Math.round(cy - h * 0.5f);
+        float fade = 1f - age;
+        int washAlpha = (int) (72f * fade * fade);
+        if (washAlpha > 5) {
+            ShapeDrawArgs wash = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, washAlpha));
+            applyButtonRectCorners(wash);
+            BaseShapeWidget.drawShape(wash);
+        }
+
+        float sweepProgress = Math.min(1f, elapsedMs / 360f);
+        int sweepAlpha = (int) (110f * (1f - Math.abs(sweepProgress - 0.5f) * 1.45f) * Math.max(0f, fade));
+        if (sweepAlpha > 5) {
+            int sweepW = Math.max(5, Math.round(w * 0.24f));
+            int sx = x - sweepW + Math.round((w + sweepW * 2f) * sweepProgress);
+            AbstractGuiUtils.pushScissor(x, y, w, h);
+            AbstractGuiUtils.fill(stack, sx, y, sweepW, h, withAlphaArgb(e.baseColor, sweepAlpha));
+            AbstractGuiUtils.fill(stack, sx + sweepW / 2, y, 1, h, withAlphaArgb(brightenArgb(e.baseColor, 1.18f), Math.min(255, sweepAlpha + 42)));
+            AbstractGuiUtils.popScissor();
+        }
+
+        int borderAlpha = (int) (120f * fade);
+        if (borderAlpha > 5) {
+            ShapeDrawArgs border = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, borderAlpha));
+            applyButtonRectCorners(border);
+            border.rect().border(1.4f);
+            BaseShapeWidget.drawShape(border);
+        }
+    }
+
+    /**
+     * 长按完成反馈标记：对勾比粒子和形状更明确地表示“完成”。
+     */
+    private void drawLongPressCompletionCheck(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float age) {
+        float pop = age < 0.22f ? age / 0.22f : 1f;
+        pop = 1f - (1f - pop) * (1f - pop);
+        float fade = age < 0.76f ? 1f : Math.max(0f, (1f - age) / 0.24f);
+        int alpha = (int) (235f * fade);
+        if (alpha < 8) {
+            return;
+        }
+        float size = e.drawW * (0.76f + 0.24f * pop);
+        float x1 = cx - size * 0.44f;
+        float y1 = cy + size * 0.02f;
+        float x2 = cx - size * 0.12f;
+        float y2 = cy + size * 0.34f;
+        float x3 = cx + size * 0.48f;
+        float y3 = cy - size * 0.36f;
+        int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
+        int color = withAlphaArgb(e.baseColor, alpha);
+        AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
+        AbstractGuiUtils.drawLine(stack, x2, y2, x3, y3, 2.6f, color);
     }
 
     private static int withAlphaArgb(int argb, int alpha) {
         return (argb & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
-    private static final class LongPressBurstParticle {
-        final float x0;
-        final float y0;
-        final float vx;
-        final float vy;
+    private static final class LongPressCompletionPalette {
+        final int sparkAccent;
+        final int wave;
+
+        LongPressCompletionPalette(int sparkAccent, int wave) {
+            this.sparkAccent = sparkAccent;
+            this.wave = wave;
+        }
+    }
+
+    private static final class LongPressCompletionEffect {
         final int baseColor;
         final long spawnTimeMs;
         final float drawW;
         final float drawH;
-        final float gravityScale;
+        final int kind;
+        final int lifetimeMs;
 
-        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float uniformSize) {
-            this(x0, y0, vx, vy, baseColor, spawnTimeMs, uniformSize, uniformSize, 1f);
-        }
-
-        LongPressBurstParticle(float x0, float y0, float vx, float vy, int baseColor, long spawnTimeMs, float drawW, float drawH, float gravityScale) {
-            this.x0 = x0;
-            this.y0 = y0;
-            this.vx = vx;
-            this.vy = vy;
+        LongPressCompletionEffect(int baseColor, long spawnTimeMs, float drawW, float drawH, int kind, int lifetimeMs) {
             this.baseColor = baseColor;
             this.spawnTimeMs = spawnTimeMs;
             this.drawW = drawW;
             this.drawH = drawH;
-            this.gravityScale = gravityScale;
+            this.kind = kind;
+            this.lifetimeMs = lifetimeMs;
         }
     }
 
-    // endregion 长按崩裂粒子
+    // endregion 长按完成反馈
 
     /**
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
@@ -1011,11 +981,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void update() {
         super.update();
+        boolean hasCompletionEffects = !longPressCompletionEffects.isEmpty();
         if (!visible || !enabled) {
-            longPressBurstParticles.clear();
+            if (hasCompletionEffects) {
+                longPressCompletionEffects.clear();
+            }
             return;
         }
-        tickLongPressBurstParticles();
+        if (longPressHandler == null && !hasCompletionEffects) {
+            return;
+        }
+        if (hasCompletionEffects) {
+            tickLongPressCompletionEffects();
+        }
         if (longPressHandler == null) {
             return;
         }
@@ -1023,7 +1001,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
             if (System.currentTimeMillis() - mousePressStartMillis() >= longPressDurationMs) {
                 int dw = (int) width() - marginLeft - marginRight;
                 int dh = (int) height() - marginTop - marginBottom;
-                spawnLongPressBurst(Math.max(1, dw), Math.max(1, dh));
+                spawnLongPressCompletionFeedback(Math.max(1, dw), Math.max(1, dh));
                 longPressHandlerFired = true;
                 longPressHandler.accept(this);
                 LOGGER.debug("Button long-pressed: id={}", id);
@@ -1037,7 +1015,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         if (event != null && event.button() == 0 && enabled) {
             if (longPressHandler != null) {
                 longPressHandlerFired = false;
-                longPressBurstParticles.clear();
+                longPressCompletionEffects.clear();
             }
             result = true;
         }
@@ -1057,25 +1035,29 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     public ButtonWidget text(String text) {
         this.text = Text.literal(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Component text) {
         this.text = Text.from(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Text text) {
         this.text = text;
+        invalidateTextWidthCache();
         return this;
     }
 
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
 
+        int keyCode = event.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER || keyCode == GLFWKey.GLFW_KEY_SPACE) {
             if (onClick != null) {
                 onClick.accept(this);

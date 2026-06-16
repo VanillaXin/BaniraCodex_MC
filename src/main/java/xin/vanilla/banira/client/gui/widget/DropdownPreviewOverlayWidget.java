@@ -1,9 +1,7 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -13,8 +11,12 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.List;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 
 class DropdownPreviewOverlayWidget extends BaseWidget {
@@ -38,9 +40,9 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
-        Screen mcScreen = Minecraft.getInstance().screen;
-        int w = mcScreen != null ? mcScreen.width : 400;
-        int h = mcScreen != null ? mcScreen.height : 300;
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        int w = screenSize.key();
+        int h = screenSize.val();
         return new ScreenCoordinate(0, 0, w, h);
     }
 
@@ -51,23 +53,23 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         ScreenCoordinate pb = parent.getPreviewBounds();
         if (pb == null) return;
 
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         if (items.isEmpty()) {
-            Minecraft.getInstance().execute(parent::closePreview);
+            BaniraClientRuntime.execute(parent::closePreview);
             return;
         }
 
-        Font font = Minecraft.getInstance().font;
+        Font font = AbstractGuiUtils.getFont();
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();
-        int popupBg = theme.popupBg();
-        int popupBorder = theme.popupBorder();
-        int popupSelected = theme.popupItemSelected();
-        int textColor = theme.listItemText();
-        int scrollbarBg = theme.scrollbarBg();
-        int scrollbarThumb = theme.scrollbarThumb();
-        int scrollbarThumbHover = theme.scrollbarThumbHover();
+        int popupBg = theme.color(POPUP_BG);
+        int popupBorder = theme.color(POPUP_BORDER);
+        int popupSelected = theme.color(POPUP_ITEM_SELECTED);
+        int textColor = theme.color(LIST_ITEM_TEXT);
+        int scrollbarBg = theme.color(SCROLLBAR_BG);
+        int scrollbarThumb = theme.color(SCROLLBAR_THUMB);
+        int scrollbarThumbHover = theme.color(SCROLLBAR_THUMB_HOVER);
 
         double mouseX = scr.inputState().mouseX();
         double mouseY = scr.inputState().mouseY();
@@ -93,9 +95,12 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
 
             AbstractGuiUtils.pushScissor((int) pb.x() + 1, (int) pb.y() + 1, contentWidth, (int) pb.height() - 2);
 
+            int visibleCount = visibleHeight / ITEM_HEIGHT;
+            int startIdx = Math.max(0, scrollOffset / ITEM_HEIGHT);
+            int endIdx = Math.min(startIdx + visibleCount + 2, items.size());
             int contentY = (int) pb.y() + PAD - scrollOffset;
             try {
-                for (int i = 0; i < items.size(); i++) {
+                for (int i = startIdx; i < endIdx; i++) {
                     int itemY = contentY + i * ITEM_HEIGHT;
                     if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
 
@@ -162,7 +167,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     private boolean isMouseOverScrollbarThumb(ScreenCoordinate pb, double mouseX, double mouseY) {
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -193,7 +198,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
             return true;
         }
 
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         boolean scrollable = contentHeight > visibleHeight;
@@ -214,17 +219,15 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         }
 
         int itemAreaWidth = scrollable ? (int) pb.width() - PAD * 2 - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN - 2 : (int) pb.width() - 2;
-        int contentY = (int) pb.y() + PAD - parent.getPreviewScrollOffset();
-        for (int i = 0; i < items.size(); i++) {
-            int itemY = contentY + i * ITEM_HEIGHT;
-            if (mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT) {
-                int closeX = (int) (pb.x() + itemAreaWidth - PAD - TAG_CLOSE_SIZE);
-                int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
-                if (mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE) {
-                    parent.removeSelectedValueAt(i);
-                    return true;
-                }
-                break;
+        int relY = (int) (mouseY - pb.y() - PAD + parent.getPreviewScrollOffset());
+        int index = relY / ITEM_HEIGHT;
+        if (index >= 0 && index < items.size()) {
+            int itemY = (int) pb.y() + PAD + index * ITEM_HEIGHT - parent.getPreviewScrollOffset();
+            int closeX = (int) (pb.x() + itemAreaWidth - PAD - TAG_CLOSE_SIZE);
+            int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
+            if (mouseX >= closeX && mouseX < closeX + TAG_CLOSE_SIZE && mouseY >= closeY && mouseY < closeY + TAG_CLOSE_SIZE) {
+                parent.removeSelectedValueAt(index);
+                return true;
             }
         }
         return true;
@@ -247,7 +250,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         if (scrollbarDragging && event.button() == 0) {
             ScreenCoordinate pb = parent.getPreviewBounds();
             if (pb != null) {
-                List<String> items = parent.getSelectedValues();
+                List<String> items = parent.selectedValuesView();
                 int contentHeight = items.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) pb.height() - PAD * 2;
                 int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -279,7 +282,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         if (mouseX < pb.x() || mouseX >= pb.x() + pb.width() || mouseY < pb.y() || mouseY >= pb.y() + pb.height()) {
             return false;
         }
-        List<String> items = parent.getSelectedValues();
+        List<String> items = parent.selectedValuesView();
         int contentHeight = items.size() * ITEM_HEIGHT;
         int visibleHeight = (int) pb.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);

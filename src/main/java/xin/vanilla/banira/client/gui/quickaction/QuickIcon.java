@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -18,8 +17,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
-import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -113,39 +112,39 @@ public class QuickIcon {
     /**
      * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
      */
-    public void renderForMenu(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void renderForMenu(@Nonnull PoseStack stack, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
         if (kind == Kind.ITEM) {
-            ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
+            BaniraItemRenderBridge.renderFlatIcon(stack, itemStack, x, y, size);
             return;
         }
-        render(stack, mc, x, y, size);
+        render(stack, x, y, size);
     }
 
     /**
      * 在 GUI 坐标系下绘制图标，尺寸为 {@code size}×{@code size}。
      */
-    public void render(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void render(@Nonnull PoseStack stack, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
         switch (kind) {
             case ITEM: {
-                ItemWidget.renderGuiItemScaled(mc, itemStack, x, y, size);
+                BaniraItemRenderBridge.renderScaled(itemStack, x, y, size);
                 break;
             }
             case EFFECT: {
                 MobEffect e = mobEffect != null ? mobEffect : MobEffects.LUCK;
                 MobEffectInstance inst = new MobEffectInstance(e, 1, 0);
-                EffectIconWidget.drawEffectIcon(stack, mc.font, inst, x, y, size, size, false);
+                EffectIconWidget.drawEffectIcon(stack, AbstractGuiUtils.getFont(), inst, x, y, size, size, false);
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;
             }
             case RESOURCE: {
                 if (texture == null) {
-                    item(new ItemStack(Items.PAPER)).render(stack, mc, x, y, size);
+                    item(new ItemStack(Items.PAPER)).render(stack, x, y, size);
                     return;
                 }
 

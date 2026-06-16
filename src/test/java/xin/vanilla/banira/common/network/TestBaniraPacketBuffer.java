@@ -1,0 +1,94 @@
+package xin.vanilla.banira.common.network;
+
+import net.minecraft.resources.ResourceLocation;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 测试用内存 buffer，只验证 Banira 公共协议的读写顺序。
+ */
+public final class TestBaniraPacketBuffer implements BaniraPacketBuffer {
+    private final List<Object> values = new ArrayList<>();
+    private int cursor;
+
+    public TestBaniraPacketBuffer rewind() {
+        cursor = 0;
+        return this;
+    }
+
+    @Override
+    public String readUtf() {
+        return readUtf(32767);
+    }
+
+    @Override
+    public String readUtf(int maxLength) {
+        return (String) values.get(cursor++);
+    }
+
+    @Override
+    public void writeUtf(String value) {
+        writeUtf(value, 32767);
+    }
+
+    @Override
+    public void writeUtf(String value, int maxLength) {
+        values.add(value);
+    }
+
+    @Override
+    public int readInt() {
+        return (Integer) values.get(cursor++);
+    }
+
+    @Override
+    public void writeInt(int value) {
+        values.add(value);
+    }
+
+    @Override
+    public int readVarInt() {
+        return (Integer) values.get(cursor++);
+    }
+
+    @Override
+    public void writeVarInt(int value) {
+        values.add(value);
+    }
+
+    @Override
+    public long readLong() {
+        return (Long) values.get(cursor++);
+    }
+
+    @Override
+    public void writeLong(long value) {
+        values.add(value);
+    }
+
+    @Override
+    public boolean readBoolean() {
+        return (Boolean) values.get(cursor++);
+    }
+
+    @Override
+    public void writeBoolean(boolean value) {
+        values.add(value);
+    }
+
+    @Override
+    public ResourceLocation readResourceLocation() {
+        return (ResourceLocation) values.get(cursor++);
+    }
+
+    @Override
+    public void writeResourceLocation(ResourceLocation value) {
+        values.add(value);
+    }
+
+    @Override
+    public Object nativeBuffer() {
+        return values;
+    }
+}

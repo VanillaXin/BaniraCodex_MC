@@ -1,19 +1,15 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.NetworkEvent;
-import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
-import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
+import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * 将服务端当前已知的通知类型列表（及可选的「配置文件无条目时」展示方式建议）同步给刚登录的玩家客户端
@@ -29,7 +25,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         this.entries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
     }
 
-    public NotificationTypesSyncToClient(FriendlyByteBuf buf) {
+    public NotificationTypesSyncToClient(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
         if (n < 0) {
             n = 0;
@@ -51,7 +47,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         int n = Math.min(entries.size(), MAX_TYPE_COUNT);
         buf.writeVarInt(n);
         for (int i = 0; i < n; i++) {
@@ -70,26 +66,12 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         return entries;
     }
 
-    public static void handle(NotificationTypesSyncToClient packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (ctx.get().getDirection().getReceptionSide().isClient()) {
-                ClientSide.handle(packet);
+    public static void handle(NotificationTypesSyncToClient packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
+                BaniraClientPacketHandlers.applyNotificationTypes(packet);
             }
         });
-        ctx.get().setPacketHandled(true);
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private static final class ClientSide {
-        private static void handle(NotificationTypesSyncToClient packet) {
-            for (NotificationTypeSyncEntry e : packet.entries()) {
-                if (e == null) {
-                    continue;
-                }
-                NotificationTypeRegistry.ensureKnown(e.typeId());
-                NotificationTypeRegistry.acceptServerSyncedDisplayDefault(e.typeId(), e.defaultDisplayIfAbsent());
-                NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(e.typeId());
-            }
-        }
+        ctx.markHandled();
     }
 }

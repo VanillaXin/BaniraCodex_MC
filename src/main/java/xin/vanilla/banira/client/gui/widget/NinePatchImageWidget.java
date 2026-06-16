@@ -54,7 +54,7 @@ public class NinePatchImageWidget extends BaseWidget {
     }
 
     @Override
-    public boolean needsUpdate() {
+    protected boolean needsSelfUpdate() {
         return false;
     }
 

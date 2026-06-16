@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.common.BaniraPaths;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class CustomConfig {
     }
 
     public static Path getConfigDirectory() {
-        return BaniraCodex.BANIRA_CONFIG_PATH.get();
+        return BaniraPaths.configPath();
     }
 
     /**

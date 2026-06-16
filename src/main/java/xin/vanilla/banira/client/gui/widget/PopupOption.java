@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -21,6 +20,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -28,6 +28,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 弹出层选项框。支持链式调用，默认 FINE 模式绘制。
@@ -70,6 +72,7 @@ public class PopupOption extends BaseWidget {
     private final List<String> optionIds = new ArrayList<>();
     @Getter
     private final List<Text> renderList = new ArrayList<>();
+    private final List<Integer> renderLineCounts = new ArrayList<>();
     private final Map<Integer, Integer> relationMap = new HashMap<>();
     private final Map<Integer, Text> tipsMap = new HashMap<>();
     private final List<Consumer<SelectEvent>> optionCallbacks = new ArrayList<>();
@@ -86,6 +89,7 @@ public class PopupOption extends BaseWidget {
     private int maxWidth = -1, maxHeight = -1;
     private int selectedIndex = -1;
     private int scrollOffset, maxLines;
+    private int scrollUnit = 1;
     private int pressedOptionIndex = -1;
 
     @Setter
@@ -215,6 +219,7 @@ public class PopupOption extends BaseWidget {
                 .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
+            renderLineCounts.add(lineCount(lines.get(i)));
         }
         optionList.add(literal);
         optionIds.add(resolvedId);
@@ -234,6 +239,7 @@ public class PopupOption extends BaseWidget {
                 .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
+            renderLineCounts.add(lineCount(lines.get(i)));
         }
         optionList.add(text);
         optionIds.add(resolvedId);
@@ -290,6 +296,7 @@ public class PopupOption extends BaseWidget {
         optionList.clear();
         optionIds.clear();
         renderList.clear();
+        renderLineCounts.clear();
         tipsMap.clear();
         relationMap.clear();
         optionCallbacks.clear();
@@ -299,6 +306,7 @@ public class PopupOption extends BaseWidget {
         selectedIndex = -1;
         pressedOptionIndex = -1;
         scrollOffset = maxLines = 0;
+        scrollUnit = 1;
         built = false;
         bounds(new ScreenCoordinate(0, 0, 0, 0));
         return this;
@@ -410,10 +418,8 @@ public class PopupOption extends BaseWidget {
     }
 
     public boolean addScrollOffset(double delta) {
-        if (!isHovered()) return false;
-        int unit = renderList.size() / maxLines > 25
-                ? Math.max(1, maxLines - 1)
-                : Math.min(Math.max(1, (int) Math.ceil(Math.sqrt(renderList.size() / (double) maxLines))), Math.max(1, maxLines - 1));
+        if (!isHovered() || maxLines <= 0) return false;
+        int unit = Math.max(1, scrollUnit);
         if (delta > 0) {
             scrollOffset = Math.max(scrollOffset - unit, 0);
             return true;
@@ -427,7 +433,7 @@ public class PopupOption extends BaseWidget {
     @Override
     public void render(PoseStack stack, float partialTicks) {
         if (beforeRender != null) beforeRender.accept(this);
-        if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
+        if (CollectionUtils.isNullOrEmpty(optionList) || screen == null) {
             if (afterRender != null) afterRender.accept(this);
             return;
         }
@@ -436,11 +442,11 @@ public class PopupOption extends BaseWidget {
         selectedIndex = findHoveredIndex(inputState.mouseX(), inputState.mouseY());
 
         BaniraColorConfig theme = screen.getEffectiveTheme();
-        int popupBg = theme.popupBg();
-        int popupBorder = theme.popupBorder();
-        int popupItemHover = theme.popupItemHover();
-        int textColorUnselected = theme.popupItemText();
-        int textColorSelected = theme.popupItemTextSelected();
+        int popupBg = theme.color(POPUP_BG);
+        int popupBorder = theme.color(POPUP_BORDER);
+        int popupItemHover = theme.color(POPUP_ITEM_HOVER);
+        int textColorUnselected = theme.color(POPUP_ITEM_TEXT);
+        int textColorSelected = theme.color(POPUP_ITEM_TEXT_SELECTED);
 
         AbstractGuiUtils.renderByDepth(stack, renderDepth(), s -> {
             ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, adjustedX, adjustedY, width, height, popupBg);
@@ -455,16 +461,17 @@ public class PopupOption extends BaseWidget {
                 if (index >= 0 && index < renderList.size()) {
                     Text text = renderList.get(index);
                     boolean isSelected = selectedIndex == index;
+                    int lineCount = renderLineCount(index);
                     if (isSelected) {
-                        int lineH = font.lineHeight * StringUtils.getLineCount(text.content());
+                        int lineH = font.lineHeight * lineCount;
                         AbstractGuiUtils.fill(stack, adjustedX + 1, adjustedY + PAD_TOP + lineOffset * (font.lineHeight + 1), width - 2, lineH, popupItemHover);
                     }
                     int textColor = isSelected ? textColorSelected : textColorUnselected;
                     FontDrawArgs args = FontDrawArgs.of(text.stack(stack).font(font).color(textColor))
-                            .x(adjustedX + PAD_LEFT).y(adjustedY + PAD_TOP + i * (font.lineHeight + 1));
+                            .x(adjustedX + PAD_LEFT).y(adjustedY + PAD_TOP + lineOffset * (font.lineHeight + 1));
                     if (maxWidth > 0) args.maxWidth(maxWidth).position(EnumEllipsisPosition.MIDDLE);
                     LabelWidget.drawLimitedText(args);
-                    lineOffset += StringUtils.getLineCount(text.content());
+                    lineOffset += lineCount;
                 }
             }
         });
@@ -494,15 +501,16 @@ public class PopupOption extends BaseWidget {
     }
 
     private void layout(int px, int py) {
-        Objects.requireNonNull(Minecraft.getInstance().screen);
-        int screenWidth = Minecraft.getInstance().screen.width;
-        int screenHeight = Minecraft.getInstance().screen.height;
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        int screenWidth = screenSize.key();
+        int screenHeight = screenSize.val();
         if (maxWidth <= 0) maxWidth = screenWidth - MARGIN * 2;
         if (maxHeight <= 0) maxHeight = screenHeight - MARGIN * 2;
 
         width = Math.min(AbstractGuiUtils.getTextWidth(font, renderList) + PAD_LEFT + PAD_RIGHT, maxWidth);
         height = Math.min(AbstractGuiUtils.getTextHeight(font, renderList) + renderList.size() - 1 + PAD_TOP + PAD_BOTTOM, maxHeight);
         maxLines = ((height - PAD_TOP - PAD_BOTTOM) + 1) / (font.lineHeight + 1);
+        scrollUnit = computeScrollUnit();
 
         adjustedX = px + MARGIN;
         adjustedY = py + MARGIN;
@@ -538,13 +546,39 @@ public class PopupOption extends BaseWidget {
 
         int lines = 0;
         for (int i = 0; i < maxLines && scrollOffset + i < renderList.size(); i++) {
-            Text t = renderList.get(scrollOffset + i);
-            int curLines = StringUtils.getLineCount(t.content());
+            int curLines = renderLineCount(scrollOffset + i);
             if (relativeY >= lines * (font.lineHeight + 1) && relativeY < (lines + curLines) * (font.lineHeight + 1) - 1) {
                 return scrollOffset + i;
             }
             lines += curLines;
         }
         return -1;
+    }
+
+    private int computeScrollUnit() {
+        if (maxLines <= 0 || renderList.isEmpty()) {
+            return 1;
+        }
+        if (renderList.size() / maxLines > 25) {
+            return Math.max(1, maxLines - 1);
+        }
+        return Math.min(Math.max(1, (int) Math.ceil(Math.sqrt(renderList.size() / (double) maxLines))), Math.max(1, maxLines - 1));
+    }
+
+    /**
+     * renderList 通常已按换行拆开；保留行数缓存是为了兼容 Text 内容后续可能带来的多行。
+     */
+    private int renderLineCount(int index) {
+        if (index >= 0 && index < renderLineCounts.size()) {
+            return renderLineCounts.get(index);
+        }
+        if (index >= 0 && index < renderList.size()) {
+            return lineCount(renderList.get(index));
+        }
+        return 1;
+    }
+
+    private static int lineCount(Text text) {
+        return text == null ? 1 : Math.max(1, StringUtils.getLineCount(text.content()));
     }
 }

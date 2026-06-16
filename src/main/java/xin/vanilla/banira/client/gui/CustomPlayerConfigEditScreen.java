@@ -3,10 +3,9 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -23,11 +22,14 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 编辑 CustomConfig 中当前玩家的配置
@@ -91,10 +93,10 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         languageOptions = new ArrayList<>();
         languageOptions.add("client");
         languageOptions.add("server");
-        Translator tr = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator tr = (Translator) Translator.of(Banira.MOD_ID);
         languageOptions.addAll(tr.getI18nFiles());
 
-        var player = Minecraft.getInstance().player;
+        var player = BaniraClientRuntime.localPlayer();
         String uuid = player != null ? PlayerUtils.getPlayerUUIDString(player) : "";
 
         LabelWidget langLabel = new LabelWidget(this);
@@ -160,13 +162,13 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
             return;
         }
-        var player = Minecraft.getInstance().player;
+        var player = BaniraClientRuntime.localPlayer();
         if (player == null) {
             return;
         }
@@ -200,7 +202,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     @Override
     protected void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), 0xFF);
         AbstractGuiUtils.drawRoundedRect(stack, CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
                 CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
         super.renderWidgets(stack, partialTicks);

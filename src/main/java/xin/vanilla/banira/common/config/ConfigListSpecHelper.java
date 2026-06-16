@@ -439,20 +439,10 @@ public final class ConfigListSpecHelper {
             Object raw;
             switch (lt) {
                 case STRING_LIST:
-                    raw = t;
-                    break;
                 case INTEGER_LIST:
-                    raw = Integer.parseInt(t);
-                    break;
                 case LONG_LIST:
-                    raw = Long.parseLong(t);
-                    break;
                 case DOUBLE_LIST:
-                    raw = Double.parseDouble(t);
-                    break;
                 case BOOLEAN_LIST:
-                    raw = Boolean.parseBoolean(t);
-                    break;
                 case ENUM_LIST:
                     raw = t;
                     break;

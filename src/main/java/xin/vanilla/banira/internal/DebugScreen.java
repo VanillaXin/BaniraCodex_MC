@@ -1,7 +1,6 @@
 package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -9,9 +8,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -22,12 +21,14 @@ import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.client.util.PlayerTextureUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -54,6 +55,8 @@ public class DebugScreen extends BaniraScreen {
     private int contentLength = 20;
     private int fontSize = 9;
     private boolean warp = false;
+
+    private ButtonWidget longPressBtn;
 
 
     public DebugScreen() {
@@ -122,7 +125,7 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
 
-        ButtonWidget longPressBtn = new ButtonWidget(this);
+        longPressBtn = new ButtonWidget(this);
         longPressBtn.id("test_config_editor");
         longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         longPressBtn.text("按钮长按测试");
@@ -159,7 +162,7 @@ public class DebugScreen extends BaniraScreen {
         quickActionMinusBtn.onClick(b -> debugQuickActionRemove());
         addWidget(quickActionMinusBtn);
 
-        Texture[] skin = PlayerUtils.getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerUUID());
+        Texture[] skin = PlayerTextureUtils.getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerUUID());
         if (skin != null && skin.length == 2) {
             ImageWidget face = new ImageWidget(this);
             face.texture(skin[0]);
@@ -355,25 +358,27 @@ public class DebugScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
-        if (inputState.isPressingLeftEx()) {
-            // 颜色绘制
-            TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                    .stack(stack)
-                                    .font(super.font)
-                                    .align(EnumAlignment.CENTER))
-                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
-                            .popupUseTexture(false),
-                    getEffectiveTheme(), season());
-        } else if (inputState.isPressingRightEx()) {
-            // 纹理绘制
-            TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                    .stack(stack)
-                                    .font(super.font)
-                                    .align(EnumAlignment.CENTER))
-                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
-                    season());
+        if (!longPressBtn.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
+            if (inputState.isPressingLeftEx()) {
+                // 颜色绘制
+                TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                        .stack(stack)
+                                        .font(super.font)
+                                        .align(EnumAlignment.CENTER))
+                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
+                                .popupUseTexture(false),
+                        getEffectiveTheme(), season());
+            } else if (inputState.isPressingRightEx()) {
+                // 纹理绘制
+                TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                        .stack(stack)
+                                        .font(super.font)
+                                        .align(EnumAlignment.CENTER))
+                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
+                        season());
+            }
         }
     }
 
@@ -420,7 +425,7 @@ public class DebugScreen extends BaniraScreen {
                                         new DropdownOption("冬", new ItemStack(Items.SNOW), BaniraComponent.get().literal("嗜血"))
                                 ))
                                 .defaultValue("夏")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "choose_option")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "choose_option")))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("mc_color")
                                 .title(Text.literal("MC颜色"))
@@ -434,13 +439,13 @@ public class DebugScreen extends BaniraScreen {
                                 .title(Text.literal("颜色"))
                                 .type(InputFormScreen.WidgetType.COLOR)
                                 .defaultValue("#FF0000")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "enter_color_hex")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
-                Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
+                BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
                 break;
             case "opt_item":
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
-                Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
+                BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
             case "opt_advancement":
                 Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
@@ -448,7 +453,7 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultAdvancement(Identifier.id().empty())
                         .onDataReceived(onAdvSelect);
-                Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
+                BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
                 break;
             case "opt_effect":
                 Consumer<MobEffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
@@ -456,10 +461,10 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultEffect(new MobEffectInstance(MobEffects.LUCK, 600, 0))
                         .onDataReceived(onEffectSelect);
-                Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
+                BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
                 break;
             case "opt_notification_log":
-                Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
+                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
                 break;
             default:
                 break;
@@ -495,7 +500,7 @@ public class DebugScreen extends BaniraScreen {
         } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_N) {
             addNotificationTest(positionFromArrowKeys());
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
-            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
+            BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
                 LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));
             })));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
@@ -552,18 +557,18 @@ public class DebugScreen extends BaniraScreen {
                             .allowEmpty(true)
                     )
                     .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
-            Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
             args.parentScreen(this).defaultAdvancement(Identifier.id().empty());
             args.onDataReceived((Consumer<ResourceLocation>) rl -> LOGGER.debug("Selected advancement: {}", rl));
-            Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
+            BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
             EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                     .parentScreen(this)
                     .defaultEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.LUCK, 600, 0));
             effectArgs.onDataReceived((Consumer<net.minecraft.world.effect.MobEffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
-            Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
+            BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
         }
     }
 

@@ -5,12 +5,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
@@ -18,8 +16,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -28,11 +26,14 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
@@ -41,6 +42,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
@@ -149,6 +153,15 @@ public final class QuickActionOverlay {
     private boolean ctxNeedsScrollbar;
     private double contextClickMouseX;
     private double contextClickMouseY;
+    private final List<CtxRow> cachedContextRows = new ArrayList<>();
+    private boolean contextRowsDirty = true;
+    private boolean contextLayoutDirty = true;
+    @Nullable
+    private Font cachedContextLayoutFont;
+    private int cachedContextLayoutScreenW;
+    private int cachedContextLayoutScreenH;
+    private int cachedContextLayoutX;
+    private int cachedContextLayoutY;
 
     private boolean leftDownOnPanel;
     private long leftPressStartMs;
@@ -164,7 +177,15 @@ public final class QuickActionOverlay {
     private int editDragFromSlot = -1;
     private int editDragHoverSlot = -1;
 
-    private volatile boolean savePending;
+    /**
+     * 保存前先在调用线程生成 JSON 快照，后台线程只负责写盘，避免异步读取可变布局状态。
+     */
+    private final AtomicReference<String> pendingLayoutJson = new AtomicReference<>();
+    private final CoalescingAsyncTask saveTask = new CoalescingAsyncTask(
+            "banira-quick-action-save",
+            this::writePendingLayoutFile,
+            t -> LOGGER.warn("Failed to save inventory quick-action layout: {}", t.getMessage())
+    );
 
     @Nullable
     private QuickIcon cachedSystemIcon;
@@ -196,10 +217,12 @@ public final class QuickActionOverlay {
         contextOmitEditToggleRow = false;
         contextScrollPx = 0;
         contextScrollbarDragging = false;
+        invalidateContextMenuCache();
     }
 
     public void onRegistryChanged() {
         syncLayoutWithRegistry();
+        invalidateContextMenuCache();
         markSave();
     }
 
@@ -231,25 +254,25 @@ public final class QuickActionOverlay {
     }
 
     private void markSave() {
-        savePending = true;
+        pendingLayoutJson.set(JsonUtils.toPrettyString(layout.toJson()));
+        saveTask.request();
     }
 
     public void flushSaveIfNeeded() {
-        if (!savePending) {
+        if (pendingLayoutJson.get() != null) {
+            saveTask.request();
+        }
+    }
+
+    private void writePendingLayoutFile() throws Exception {
+        String json = pendingLayoutJson.getAndSet(null);
+        if (json == null) {
             return;
         }
-        savePending = false;
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LAYOUT_FILE);
-                JsonObject o = layout.toJson();
-                Files.writeString(path, JsonUtils.toPrettyString(o));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save inventory quick-action layout: {}", e.getMessage());
-            }
-        }, "banira-quick-action-save").start();
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(LAYOUT_FILE);
+        Files.writeString(path, json);
     }
 
     public static boolean isSupportedInventoryScreen(@Nullable Screen screen) {
@@ -554,8 +577,7 @@ public final class QuickActionOverlay {
         if (!draggingTray) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        boolean left = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean left = isLeftMouseDown();
         if (!left) {
             draggingTray = false;
             leftDownOnPanel = false;
@@ -566,22 +588,22 @@ public final class QuickActionOverlay {
     }
 
     private double scaledCursorX() {
-        long win = mc().getWindow().getWindow();
+        long win = windowHandle();
         double[] cx = new double[1];
         double[] cy = new double[1];
         GLFW.glfwGetCursorPos(win, cx, cy);
-        int sw = mc().getWindow().getGuiScaledWidth();
-        int fw = Math.max(1, mc().getWindow().getWidth());
+        int sw = guiScreenSize().key();
+        int fw = Math.max(1, physicalScreenSize().key());
         return cx[0] * sw / fw;
     }
 
     private double scaledCursorY() {
-        long win = mc().getWindow().getWindow();
+        long win = windowHandle();
         double[] cx = new double[1];
         double[] cy = new double[1];
         GLFW.glfwGetCursorPos(win, cx, cy);
-        int sh = mc().getWindow().getGuiScaledHeight();
-        int fh = Math.max(1, mc().getWindow().getHeight());
+        int sh = guiScreenSize().val();
+        int fh = Math.max(1, physicalScreenSize().val());
         return cy[0] * sh / fh;
     }
 
@@ -589,8 +611,7 @@ public final class QuickActionOverlay {
         if (!editIconDragging) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!isLeftMouseDown()) {
             finishEditIconDrag(scaledCursorX(), scaledCursorY());
             leftDownOnPanel = false;
             pressStartedSlot = -1;
@@ -643,10 +664,10 @@ public final class QuickActionOverlay {
 
         contextTooltipLine = null;
 
-        Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        lastScreenW = mc.getWindow().getGuiScaledWidth();
-        lastScreenH = mc.getWindow().getGuiScaledHeight();
+        KeyValue<Integer, Integer> screenSize = guiScreenSize();
+        lastScreenW = screenSize.key();
+        lastScreenH = screenSize.val();
 
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
@@ -683,8 +704,8 @@ public final class QuickActionOverlay {
 
         RenderSystem.enableBlend();
 
-        int borderRgb = theme.border() | 0xFF000000;
-        int accentRgb = theme.accentHover();
+        int borderRgb = theme.color(BORDER) | 0xFF000000;
+        int accentRgb = theme.color(ACCENT_HOVER);
         int iconSize = Math.max(8, cell - 2 * ICON_CELL_INSET);
         int iconOff = (cell - iconSize) / 2;
 
@@ -709,7 +730,7 @@ public final class QuickActionOverlay {
             int ix = xy[0] + iconOff;
             int iy = xy[1] + iconOff;
             if (s == 0) {
-                systemIcon().render(stack, mc, ix, iy, iconSize);
+                systemIcon().render(stack, ix, iy, iconSize);
             } else {
                 boolean skipIcon = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot;
                 if (!skipIcon) {
@@ -721,14 +742,14 @@ public final class QuickActionOverlay {
                         drawEntry = reg.getEntry(id);
                     }
                     if (drawEntry != null && drawEntry.display() == EnumQuickActionDisplay.ICON) {
-                        drawEntry.quickIcon().render(stack, mc, ix, iy, iconSize);
+                        drawEntry.quickIcon().render(stack, ix, iy, iconSize);
                     }
                 }
             }
             if (layout.layoutEditMode() && s == hoveredSlot && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
             } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
-                int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
+                int hi = (theme.color(ACCENT_HOVER) & 0xFFFFFF) | 0x44000000;
                 AbstractGuiUtils.fill(stack, xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi);
             }
         }
@@ -742,27 +763,38 @@ public final class QuickActionOverlay {
                 int gy = mouseY - cell / 2;
                 prepareQuickActionSlotDrawState();
                 drawSlotBorder(stack, gx, gy, cell, borderRgb);
-                dragged.quickIcon().render(stack, mc, gx + iconOff, gy + iconOff, iconSize);
+                dragged.quickIcon().render(stack, gx + iconOff, gy + iconOff, iconSize);
             }
         }
 
         if (contextOpen) {
-            renderContextMenu(stack, screen, mc, mouseX, mouseY, theme);
+            renderContextMenu(stack, mouseX, mouseY, theme);
         }
 
         stack.popPose();
 
         if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
-            screen.renderTooltip(stack, Component.literal(contextTooltipLine), mouseX, mouseY);
+            screen.renderTooltip(stack, net.minecraft.network.chat.Component.literal(contextTooltipLine), mouseX, mouseY);
         }
 
-        renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);
+        renderQuickActionEntryIconTooltipIfHovered(stack, mouseX, mouseY, theme);
+    }
+
+    /**
+     * 事件层只传递 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack。
+     */
+    public void renderNative(Object nativeGraphics, Screen screen, double mouseX, double mouseY, float partialTicks) {
+        if (nativeGraphics instanceof PoseStack) {
+            render((PoseStack) nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTicks);
+            return;
+        }
+        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
     }
 
     /**
      * 悬停于带 label 的快捷图标时，使用主题 Tooltip 样式绘制说明。
      */
-    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, int mouseX, int mouseY, BaniraColorConfig theme) {
         if (contextOpen) {
             return;
         }
@@ -774,7 +806,7 @@ public final class QuickActionOverlay {
             return;
         }
         boolean useTexture = theme != null && theme.tooltipUseTexture();
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(mc.font))
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(AbstractGuiUtils.getFont()))
                 .x(mouseX)
                 .y(mouseY)
                 .popupUseTexture(useTexture);
@@ -813,8 +845,7 @@ public final class QuickActionOverlay {
         int trayYi = (int) Math.round(tlY);
 
         boolean inPanelGrid = hitPanel(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap);
-        long win = mc().getWindow().getWindow();
-        boolean leftDown = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean leftDown = isLeftMouseDown();
 
         if (layout.layoutEditMode() && editIconDragging && slotsTotal > 1) {
             if (inPanelGrid) {
@@ -849,8 +880,7 @@ public final class QuickActionOverlay {
         if (!contextScrollbarDragging || !contextOpen) {
             return;
         }
-        long win = mc().getWindow().getWindow();
-        if (GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!isLeftMouseDown()) {
             contextScrollbarDragging = false;
             return;
         }
@@ -865,8 +895,20 @@ public final class QuickActionOverlay {
         contextScrollPx = (int) Math.round(t * ctxScrollMaxPx);
     }
 
-    private static Minecraft mc() {
-        return Minecraft.getInstance();
+    private static long windowHandle() {
+        return BaniraClientRuntime.windowHandle();
+    }
+
+    private static boolean isLeftMouseDown() {
+        return GLFW.glfwGetMouseButton(windowHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+    }
+
+    private static KeyValue<Integer, Integer> guiScreenSize() {
+        return AbstractGuiUtils.getGuiScaledSize();
+    }
+
+    private static KeyValue<Integer, Integer> physicalScreenSize() {
+        return AbstractGuiUtils.getGuiSize();
     }
 
     public boolean handleMouseClicked(Screen screen, double mouseX, double mouseY, int button) {
@@ -906,7 +948,8 @@ public final class QuickActionOverlay {
         }
 
         if (contextOpen && button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            layoutContextMenu(buildContextRows(), mc());
+            List<CtxRow> menuRows = contextRows();
+            ensureContextMenuLayout(menuRows, AbstractGuiUtils.getFont());
             boolean inMenu = mouseX >= ctxLayoutX && mouseY >= ctxLayoutY
                     && mouseX < ctxLayoutX + ctxLayoutW && mouseY < ctxLayoutY + ctxLayoutH;
             if (!inMenu) {
@@ -914,6 +957,7 @@ public final class QuickActionOverlay {
                 contextMenuKind = ContextMenuKind.NONE;
                 contextEntrySubmenuId = null;
                 contextPage = CTX_PAGE_ROOT;
+                invalidateContextMenuCache();
             }
             return true;
         }
@@ -1019,8 +1063,7 @@ public final class QuickActionOverlay {
             return;
         }
         QuickActionContext ctx = new QuickActionContext()
-                .minecraft(mc())
-                .currentScreen(mc().screen)
+                .currentScreen(BaniraClientRuntime.currentScreen())
                 .entryId(entry.id())
                 .mouseX(mx)
                 .mouseY(my);
@@ -1072,14 +1115,15 @@ public final class QuickActionOverlay {
         contextScrollPx = 0;
         contextX = mx;
         contextY = my;
+        invalidateContextMenuCache();
     }
 
     private static String trWord(String key) {
-        return Translator.of(BaniraCodex.MODID).translate(EnumI18nType.WORD, key);
+        return Translator.of(Banira.MOD_ID).translate(EnumI18nType.WORD, key);
     }
 
     private static String trFormat(String key, Object... args) {
-        return String.format(Translator.of(BaniraCodex.MODID).translate(EnumI18nType.FORMAT, key), args);
+        return String.format(Translator.of(Banira.MOD_ID).translate(EnumI18nType.FORMAT, key), args);
     }
 
     private static final class CtxRow {
@@ -1145,8 +1189,7 @@ public final class QuickActionOverlay {
             L.add(new CtxRow(it.getLabel().toVanilla().getString(), false, () -> {
                 if (it.getOnActivate() != null) {
                     QuickActionContext ctx = new QuickActionContext()
-                            .minecraft(mc())
-                            .currentScreen(mc().screen)
+                            .currentScreen(BaniraClientRuntime.currentScreen())
                             .entryId(ent.id())
                             .mouseX(contextClickMouseX)
                             .mouseY(contextClickMouseY);
@@ -1289,6 +1332,21 @@ public final class QuickActionOverlay {
         return L;
     }
 
+    private void invalidateContextMenuCache() {
+        contextRowsDirty = true;
+        contextLayoutDirty = true;
+    }
+
+    private List<CtxRow> contextRows() {
+        if (contextRowsDirty) {
+            cachedContextRows.clear();
+            cachedContextRows.addAll(buildContextRows());
+            contextRowsDirty = false;
+            contextLayoutDirty = true;
+        }
+        return cachedContextRows;
+    }
+
     private void resetAnchorPreset() {
         final QuickActionLayout DEFAULT = new QuickActionLayout();
         layout.coordinateModeX(DEFAULT.coordinateModeX());
@@ -1323,7 +1381,7 @@ public final class QuickActionOverlay {
         return Math.max(0, innerW - MENU_TEXT_PAD_X * 2);
     }
 
-    private void layoutContextMenu(List<CtxRow> rows, Minecraft mc) {
+    private void layoutContextMenu(List<CtxRow> rows, Font font) {
         int n = rows.size();
         int contentH = Math.max(MENU_ROW_H, n * MENU_ROW_H);
         ctxNeedsScrollbar = contentH > MENU_MAX_BODY_H;
@@ -1331,7 +1389,7 @@ public final class QuickActionOverlay {
         int innerPad = 3;
         int maxTextInner = 0;
         for (CtxRow r : rows) {
-            int tw = mc.font.width(r.text);
+            int tw = font.width(r.text);
             int rowW = r.menuIcon != null
                     ? MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP + tw + MENU_TEXT_PAD_X
                     : MENU_TEXT_PAD_X + tw + MENU_TEXT_PAD_X;
@@ -1354,16 +1412,35 @@ public final class QuickActionOverlay {
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }
 
-    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
-        List<CtxRow> rows = buildContextRows();
-        layoutContextMenu(rows, mc);
+    private void ensureContextMenuLayout(List<CtxRow> rows, Font font) {
+        if (!contextLayoutDirty
+                && cachedContextLayoutFont == font
+                && cachedContextLayoutScreenW == lastScreenW
+                && cachedContextLayoutScreenH == lastScreenH
+                && cachedContextLayoutX == contextX
+                && cachedContextLayoutY == contextY) {
+            return;
+        }
+        layoutContextMenu(rows, font);
+        cachedContextLayoutFont = font;
+        cachedContextLayoutScreenW = lastScreenW;
+        cachedContextLayoutScreenH = lastScreenH;
+        cachedContextLayoutX = contextX;
+        cachedContextLayoutY = contextY;
+        contextLayoutDirty = false;
+    }
+
+    private void renderContextMenu(PoseStack stack, int mouseX, int mouseY, BaniraColorConfig theme) {
+        List<CtxRow> rows = contextRows();
+        Font font = AbstractGuiUtils.getFont();
+        ensureContextMenuLayout(rows, font);
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
         int w = ctxLayoutW;
         int h = ctxLayoutH;
-        int bg = theme.bgSurface() | 0xFF000000;
-        int borderArgb = theme.border() | 0xFF000000;
+        int bg = theme.color(BG_SURFACE) | 0xFF000000;
+        int borderArgb = theme.color(BORDER) | 0xFF000000;
         ShapeDrawArgs menuFill = ShapeDrawArgs.rect(stack, x, y, w, h, bg);
         menuFill.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(menuFill);
@@ -1375,21 +1452,20 @@ public final class QuickActionOverlay {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int textColor = theme.textPrimary() | 0xFF000000;
+        int textColor = theme.color(TEXT_PRIMARY) | 0xFF000000;
         int innerTop = ctxInnerTop;
         int innerBottom = innerTop + ctxInnerH;
 
         if (ctxNeedsScrollbar) {
             int sbX = ctxScrollbarLeft;
-            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000);
+            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.color(BORDER) & 0xFFFFFF) | 0x99000000);
             int contentH = rows.size() * MENU_ROW_H;
             int thumbH = Math.max(10, ctxInnerH * ctxInnerH / Math.max(1, contentH));
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
-            int accent = theme.accentHover() | 0xFF000000;
+            int accent = theme.color(ACCENT_HOVER) | 0xFF000000;
             AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
-        Font font = mc.font;
         for (int i = 0; i < rows.size(); i++) {
             int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
             int rh = MENU_ROW_H;
@@ -1403,7 +1479,7 @@ public final class QuickActionOverlay {
                 int rowBot = Math.min(ry + rh, innerBottom);
                 int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
                 AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
-                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                        (theme.color(ACCENT_HOVER) & 0xFFFFFF) | 0x66000000);
             }
             CtxRow row = rows.get(i);
             String full = row.text;
@@ -1411,7 +1487,7 @@ public final class QuickActionOverlay {
             if (row.menuIcon != null) {
                 int iconX = x + MENU_TEXT_PAD_X;
                 int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
+                row.menuIcon.renderForMenu(stack, iconX, iconY, MENU_ICON_SIZE);
             }
             float textX = row.menuIcon != null
                     ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
@@ -1441,8 +1517,8 @@ public final class QuickActionOverlay {
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
 
-        List<CtxRow> rows = buildContextRows();
-        layoutContextMenu(rows, mc());
+        List<CtxRow> rows = contextRows();
+        ensureContextMenuLayout(rows, AbstractGuiUtils.getFont());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1478,6 +1554,7 @@ public final class QuickActionOverlay {
         contextEntrySubmenuId = sec.id();
         contextPage = CTX_PAGE_ENTRY_CONTEXT;
         contextScrollPx = 0;
+        invalidateContextMenuCache();
         return true;
     }
 
@@ -1488,8 +1565,8 @@ public final class QuickActionOverlay {
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
 
-        List<CtxRow> rows = buildContextRows();
-        layoutContextMenu(rows, mc());
+        List<CtxRow> rows = contextRows();
+        ensureContextMenuLayout(rows, AbstractGuiUtils.getFont());
 
         int x = ctxLayoutX;
         int y = ctxLayoutY;
@@ -1525,6 +1602,7 @@ public final class QuickActionOverlay {
         }
         CtxRow row = rows.get(idx);
         row.action.run();
+        invalidateContextMenuCache();
         if (!row.keepOpen) {
             contextOpen = false;
             contextMenuKind = ContextMenuKind.NONE;
@@ -1559,5 +1637,6 @@ public final class QuickActionOverlay {
         contextOmitEditToggleRow = false;
         contextEntrySubmenuId = null;
         contextPage = CTX_PAGE_ROOT;
+        invalidateContextMenuCache();
     }
 }

@@ -1,11 +1,9 @@
 package xin.vanilla.banira.client.util;
 
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
@@ -29,6 +27,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -1904,13 +1903,13 @@ public final class AbstractGuiUtils {
      * 获取指定坐标点像素颜色
      */
     public static int getPixelArgb(double guiX, double guiY) {
-        Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
+        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
+        double scale = BaniraClientRuntime.guiScale();
 
         // 将 GUI 坐标（左上为原点）转换为物理屏幕坐标（左下为原点）
-        int pixelX = (int) (guiX * window.getGuiScale());
-        int pixelY = (int) (guiY * window.getGuiScale());
-        int glY = window.getHeight() - pixelY - 1;
+        int pixelX = (int) (guiX * scale);
+        int pixelY = (int) (guiY * scale);
+        int glY = window.val() - pixelY - 1;
 
         // 创建 ByteBuffer 存储像素数据（RGBA）
         ByteBuffer buffer = BufferUtils.createByteBuffer(4);
@@ -1925,23 +1924,33 @@ public final class AbstractGuiUtils {
     }
 
     public static Font getFont() {
-        return Minecraft.getInstance().font;
+        return BaniraClientRuntime.font();
+    }
+
+    /**
+     * 统一剪贴板读取入口，后续高版本/加载器差异集中在这里处理。
+     */
+    public static String getClipboard() {
+        return BaniraClientRuntime.clipboard();
+    }
+
+    /**
+     * 统一剪贴板写入入口。
+     */
+    public static void setClipboard(String text) {
+        BaniraClientRuntime.clipboard(text);
     }
 
     public static KeyValue<Integer, Integer> getScreenSize() {
-        if (Minecraft.getInstance().screen != null) {
-            return new KeyValue<>(Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
-        } else {
-            return getGuiScaledSize();
-        }
+        return BaniraClientRuntime.screenSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiScaledSize() {
-        return new KeyValue<>(Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight());
+        return BaniraClientRuntime.guiScaledSize();
     }
 
     public static KeyValue<Integer, Integer> getGuiSize() {
-        return new KeyValue<>(Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight());
+        return BaniraClientRuntime.windowSize();
     }
 
     /**
@@ -1949,11 +1958,10 @@ public final class AbstractGuiUtils {
      * 使用 GUI 坐标（左上角为原点）。
      */
     public static void enableScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
+        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
+        int scale = Math.max(1, (int) BaniraClientRuntime.guiScale());
         int x = guiX * scale;
-        int y = window.getHeight() - (guiY + guiHeight) * scale;
+        int y = window.val() - (guiY + guiHeight) * scale;
         int w = Math.max(0, guiWidth * scale);
         int h = Math.max(0, guiHeight * scale);
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -1974,18 +1982,17 @@ public final class AbstractGuiUtils {
      * 使用后必须调用 {@link #popScissor()} 恢复。
      */
     public static void pushScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
-        int winW = window.getWidth() / scale;
-        int winH = window.getHeight() / scale;
+        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
+        int scale = Math.max(1, (int) BaniraClientRuntime.guiScale());
+        int winW = window.key() / scale;
+        int winH = window.val() / scale;
         int[] prev = new int[5];
         prev[0] = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST) ? 1 : 0;
         if (prev[0] == 1) {
             int[] box = new int[4];
             GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
             prev[1] = box[0] / scale;
-            prev[2] = (window.getHeight() - box[1] - box[3]) / scale;
+            prev[2] = (window.val() - box[1] - box[3]) / scale;
             prev[3] = box[2] / scale;
             prev[4] = box[3] / scale;
         } else {

@@ -10,6 +10,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
@@ -17,6 +18,8 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 滚动条Widget。
@@ -52,15 +55,15 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
+    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_BG);
 
     @Getter
     @Setter
-    private int thumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumb();
+    private int thumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB);
 
     @Getter
     @Setter
-    private int hoverThumbColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarThumbHover();
+    private int hoverThumbColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, SCROLLBAR_THUMB_HOVER);
 
     @Getter
     @Setter
@@ -71,6 +74,14 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     private double thumbSize = 10.0;
+
+    private double lastThumbTrackSize = Double.NaN;
+    private double lastThumbMinValue = Double.NaN;
+    private double lastThumbMaxValue = Double.NaN;
+    private double lastThumbValue = Double.NaN;
+    private double lastThumbVisibleSize = Double.NaN;
+    private int lastMinThumbSize = Integer.MIN_VALUE;
+    private EnumOrientation lastThumbOrientation;
 
     @Getter
     private boolean dragging;
@@ -96,7 +107,7 @@ public class ScrollbarWidget extends BaseWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.scrollbarBg()).thumbColor(theme.scrollbarThumb()).hoverThumbColor(theme.scrollbarThumbHover());
+        bgColor(theme.color(SCROLLBAR_BG)).thumbColor(theme.color(SCROLLBAR_THUMB)).hoverThumbColor(theme.color(SCROLLBAR_THUMB_HOVER));
     }
 
     /**
@@ -107,6 +118,13 @@ public class ScrollbarWidget extends BaseWidget {
             scrollingCoordinates = new ArrayList<>();
         }
         scrollingCoordinates.add(area);
+        return this;
+    }
+
+    public ScrollbarWidget clearScrollHoverAreas() {
+        if (scrollingCoordinates != null) {
+            scrollingCoordinates.clear();
+        }
         return this;
     }
 
@@ -278,14 +296,9 @@ public class ScrollbarWidget extends BaseWidget {
         double relativeMouseX = mouseX - absoluteX() + x();
         double relativeMouseY = mouseY - absoluteY() + y();
 
-        MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, scrollDelta);
-        for (int i = children.size() - 1; i >= 0; i--) {
-            IWidget child = children.get(i);
-            if (child != null && child.visible() && child.enabled()) {
-                if (child.handleMouseScroll(relEvent)) {
-                    return true;
-                }
-            }
+        MouseScrollEvent relEvent = MouseScrollEvent.of(relativeMouseX, relativeMouseY, scrollDelta, event.modifiers());
+        if (findHandlingChild(child -> child.handleMouseScroll(relEvent)) != null) {
+            return true;
         }
 
         return onMouseScroll(event);
@@ -340,6 +353,11 @@ public class ScrollbarWidget extends BaseWidget {
 
     private void updateThumb() {
         double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
+        if (thumbLayoutFresh(trackSize)) {
+            return;
+        }
+        rememberThumbLayout(trackSize);
+
         double valueRange = maxValue - minValue;
         double totalContentSize = visibleSize + valueRange;
 
@@ -357,8 +375,31 @@ public class ScrollbarWidget extends BaseWidget {
         }
     }
 
+    /**
+     * 滚动条会在事件、update、render 中请求布局；参数未变时直接复用上一结果。
+     */
+    private boolean thumbLayoutFresh(double trackSize) {
+        return Double.compare(lastThumbTrackSize, trackSize) == 0
+                && Double.compare(lastThumbMinValue, minValue) == 0
+                && Double.compare(lastThumbMaxValue, maxValue) == 0
+                && Double.compare(lastThumbValue, value) == 0
+                && Double.compare(lastThumbVisibleSize, visibleSize) == 0
+                && lastMinThumbSize == minThumbSize
+                && lastThumbOrientation == orientation;
+    }
+
+    private void rememberThumbLayout(double trackSize) {
+        lastThumbTrackSize = trackSize;
+        lastThumbMinValue = minValue;
+        lastThumbMaxValue = maxValue;
+        lastThumbValue = value;
+        lastThumbVisibleSize = visibleSize;
+        lastMinThumbSize = minThumbSize;
+        lastThumbOrientation = orientation;
+    }
+
     @Override
-    protected boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPress(KeyEvent event) {
         if (!enabled || !focused) {
             return false;
         }
@@ -375,6 +416,7 @@ public class ScrollbarWidget extends BaseWidget {
             step = Math.max(1.0, visibleSize * 0.33);
         }
 
+        int keyCode = event.keyCode();
         boolean handled = false;
         if (orientation == EnumOrientation.VERTICAL) {
             if (keyCode == GLFWKey.GLFW_KEY_UP) {

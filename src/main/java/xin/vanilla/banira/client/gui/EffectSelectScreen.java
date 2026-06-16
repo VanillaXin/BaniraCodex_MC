@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -13,8 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -31,6 +30,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -67,6 +67,7 @@ public class EffectSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> effectButtonWidgets = new ArrayList<>();
+    private final List<EffectRow> effectRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private MobEffectInstance currentEffect;
@@ -79,6 +80,7 @@ public class EffectSelectScreen extends BaniraScreen {
     private TooltipWidget effectTooltip;
     private TooltipWidget durationTooltip;
     private TooltipWidget amplifierTooltip;
+    private boolean effectButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -149,7 +151,7 @@ public class EffectSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
 
         this.updateSearchResults();
     }
@@ -190,7 +192,7 @@ public class EffectSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_effect"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_effect"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -207,11 +209,12 @@ public class EffectSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> refreshEffectButtons());
+        scrollbarWidget.onValueChanged(v -> markEffectButtonsDirty());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
         effectButtonWidgets.clear();
+        effectRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -251,34 +254,35 @@ public class EffectSelectScreen extends BaniraScreen {
             });
 
             effectButtonWidgets.add(btn);
+            effectRows.add(new EffectRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
 
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
+        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentEffect == null) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
+                BaniraClientRuntime.setScreen(args.parentScreen());
             } else {
                 MobEffectInstance effectInstance = EffectUtils.copyEffectInstance(this.currentEffect);
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(effectInstance);
                     LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    BaniraClientRuntime.setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(effectInstance);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        BaniraClientRuntime.setScreen(args.parentScreen());
                     }
                 }
             }
@@ -304,7 +308,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 typeButtonItemWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                         (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
                 btn.addChild(typeTooltip);
@@ -316,7 +320,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 effectButtonIconWidget.enableTooltip(false);
                 effectTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 effectTooltip.seasonTooltip(useSeasonTooltip);
-                effectTooltip.text(Text.transAuto(BaniraCodex.MODID, "effect_select_effect"));
+                effectTooltip.text(Text.transAuto(Banira.MOD_ID, "effect_select_effect"));
                 btn.addChild(effectTooltip);
                 btn.addChild(effectButtonIconWidget);
             } else if (opCode == ButtonType.DURATION.code()) {
@@ -326,7 +330,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 durationTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 durationTooltip.seasonTooltip(useSeasonTooltip);
-                durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", this.currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", this.currentEffect.getDuration()));
                 btn.addChild(durationTooltip);
                 btn.addChild(iconWidget);
             } else if (opCode == ButtonType.AMPLIFIER.code()) {
@@ -336,7 +340,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 amplifierTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 amplifierTooltip.seasonTooltip(useSeasonTooltip);
-                amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
                 btn.addChild(amplifierTooltip);
                 btn.addChild(iconWidget);
             }
@@ -353,21 +357,20 @@ public class EffectSelectScreen extends BaniraScreen {
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
-        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
-
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
 
-        refreshEffectButtons();
+        refreshEffectButtonsIfDirty();
+        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
+        super.renderWidgets(stack, partialTicks);
     }
 
     @Override
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -392,7 +395,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
             eventArgs.consumed(true);
         } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
@@ -407,18 +410,18 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     private void refreshEffectButtons() {
-        if (effectButtonWidgets.isEmpty()) return;
+        if (effectRows.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < effectButtonWidgets.size(); i++) {
-            ButtonWidget buttonWidget = effectButtonWidgets.get(i);
+        for (int i = 0; i < effectRows.size(); i++) {
+            EffectRow row = effectRows.get(i);
+            ButtonWidget buttonWidget = row.button;
             int index = scrollOffset + i;
-            EffectIconWidget ew = buttonWidget.findChildByType(EffectIconWidget.class);
-            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
-            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
-            if (ew == null || lw == null) continue;
+            EffectIconWidget ew = row.icon;
+            LabelWidget lw = row.label;
+            TooltipWidget tw = row.tooltip;
 
             if (index >= 0 && index < effectList.size()) {
                 MobEffect effect = effectList.get(index);
@@ -459,7 +462,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (!found) selectedEffectWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                     (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
         }
@@ -475,13 +478,44 @@ public class EffectSelectScreen extends BaniraScreen {
         }
         if (durationTooltip != null) {
             if (currentEffect != null) {
-                durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", currentEffect.getDuration()));
             }
         }
         if (amplifierTooltip != null) {
             if (currentEffect != null) {
-                amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
             }
+        }
+        effectButtonsDirty = false;
+    }
+
+    private void markEffectButtonsDirty() {
+        effectButtonsDirty = true;
+    }
+
+    /**
+     * 列表行只在搜索、滚动或当前效果变化后刷新，避免 render 每帧重设所有子控件。
+     */
+    private void refreshEffectButtonsIfDirty() {
+        if (effectButtonsDirty) {
+            refreshEffectButtons();
+        }
+    }
+
+    /**
+     * 列表行组件在 initWidgets 中固定，刷新时直接复用引用，避免反复遍历子树查找。
+     */
+    private static final class EffectRow {
+        private final ButtonWidget button;
+        private final EffectIconWidget icon;
+        private final LabelWidget label;
+        private final TooltipWidget tooltip;
+
+        private EffectRow(ButtonWidget button, EffectIconWidget icon, LabelWidget label, TooltipWidget tooltip) {
+            this.button = button;
+            this.icon = icon;
+            this.label = label;
+            this.tooltip = tooltip;
         }
     }
 
@@ -523,7 +557,7 @@ public class EffectSelectScreen extends BaniraScreen {
             }
         }
 
-        refreshEffectButtons();
+        markEffectButtonsDirty();
         LOGGER.debug("Effect search results updated: count={}, query={}", effectList.size(), s);
     }
 
@@ -533,7 +567,7 @@ public class EffectSelectScreen extends BaniraScreen {
             if (effect != null) {
                 this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                 LOGGER.debug("Select effect: {}", EffectUtils.getEffectDisplayName(effect));
-                refreshEffectButtons();
+                markEffectButtonsDirty();
             }
         }
     }
@@ -559,8 +593,8 @@ public class EffectSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_id"))
-                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_id"))
+                            .hint(Text.transAuto(Banira.MOD_ID, "enter_something"))
                             .defaultValue(EffectUtils.getEffectRegistryString(this.currentEffect))
                             .validator((input) -> {
                                 MobEffect e = EffectUtils.getEffectFromRegistry(input.value());
@@ -575,14 +609,15 @@ public class EffectSelectScreen extends BaniraScreen {
                         MobEffect effect = EffectUtils.getEffectFromRegistry(id);
                         if (effect != null) {
                             this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                            markEffectButtonsDirty();
                         }
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.DURATION.code()) {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_duration"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_duration"))
                             .regex("\\d{0,4}")
                             .defaultValue(String.valueOf(this.currentEffect.getDuration()))
                             .validator((input) -> {
@@ -596,13 +631,14 @@ public class EffectSelectScreen extends BaniraScreen {
                     .setCallback(input -> {
                         int duration = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
+                        markEffectButtonsDirty();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_amplifier"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_effect_amplifier"))
                             .regex("\\d{0,3}")
                             .defaultValue(String.valueOf(this.currentEffect.getAmplifier() + 1))
                             .validator((input) -> {
@@ -616,8 +652,9 @@ public class EffectSelectScreen extends BaniraScreen {
                     .setCallback(input -> {
                         int amplifier = NumberUtils.toInt(input.firstValue());
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
+                        markEffectButtonsDirty();
                     });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

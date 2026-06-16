@@ -8,18 +8,17 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.network.NetworkInit;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -52,11 +51,12 @@ public final class BiomeUtils {
 
     public static Biome getBiome(ResourceLocation id) {
         if (id == null) return null;
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
         }
-        return ForgeRegistries.BIOMES.getValue(id);
+        Object biome = Banira.platform().registryService().biome(id.toString());
+        return biome instanceof Biome ? (Biome) biome : null;
     }
 
     public static Biome getBiome(ServerLevel world, ResourceLocation id) {
@@ -68,15 +68,13 @@ public final class BiomeUtils {
     }
 
     public static Set<String> getAllIds() {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
+        MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
             return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).keySet().stream()
                     .map(ResourceLocation::toString)
                     .collect(Collectors.toSet());
         }
-        return ForgeRegistries.BIOMES.getKeys().stream()
-                .map(ResourceLocation::toString)
-                .collect(Collectors.toSet());
+        return new HashSet<>(Banira.platform().registryService().biomeIds());
     }
 
     /**
@@ -87,8 +85,7 @@ public final class BiomeUtils {
         var registry = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
         var biomeKey = registry.getResourceKey(biome).orElse(null);
         if (biomeKey == null) return null;
-        int h = Math.max(1, minDistance);
-        Pair<BlockPos, Holder<Biome>> nearestBiome = world.findClosestBiome3d(holder -> holder.is(biomeKey), start.toBlockPos(), radius, h, h);
+        Pair<BlockPos, Holder<Biome>> nearestBiome = world.findClosestBiome3d(holder -> holder.is(biomeKey), start.toBlockPos(), radius, minDistance, minDistance);
         if (nearestBiome != null) {
             BlockPos pos = nearestBiome.getFirst();
             if (pos != null) {
@@ -113,13 +110,13 @@ public final class BiomeUtils {
     }
 
     public static void ensureData() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedData && CLIENT_BIOME_IDS.isEmpty()) {
             requestDataFromServer();
         }
     }
 
     public static void requestDataFromServer() {
-        if (FMLEnvironment.dist == Dist.CLIENT && !requestedData) {
+        if (EnvironmentUtils.isClient() && !requestedData) {
             requestedData = true;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_BIOME_DATA));
             LOGGER.debug("Request biome data from server.");

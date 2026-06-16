@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.player;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
 /**
  * 玩家数据
@@ -14,9 +14,9 @@ public interface IPlayerData<T extends IPlayerData<T>> {
 
     void setDirty(boolean dirty);
 
-    void writeToBuffer(FriendlyByteBuf buffer);
+    void writeToBuffer(BaniraPacketBuffer buffer);
 
-    void readFromBuffer(FriendlyByteBuf buffer);
+    void readFromBuffer(BaniraPacketBuffer buffer);
 
     CompoundTag serializeNBT();
 

@@ -3,9 +3,7 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.gui.event.MouseDragEvent;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.event.*;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -66,22 +64,20 @@ public interface IWidget {
     /**
      * 处理按键按下事件。
      *
-     * @param keyCode   GLFW 键码
-     * @param scanCode  扫描码
-     * @param modifiers 修饰键
+     * @param event 键盘事件
      * @return 若已消费则返回 true
      */
-    boolean handleKeyPress(int keyCode, int scanCode, int modifiers);
+    boolean handleKeyPress(KeyEvent event);
 
     /**
      * 处理按键释放事件。
      */
-    boolean handleKeyRelease(int keyCode, int scanCode, int modifiers);
+    boolean handleKeyRelease(KeyEvent event);
 
     /**
      * 处理字符输入（用于文本输入框）。
      */
-    boolean handleCharTyped(char codePoint, int modifiers);
+    boolean handleCharTyped(CharInputEvent event);
 
     /**
      * 处理鼠标拖拽事件。

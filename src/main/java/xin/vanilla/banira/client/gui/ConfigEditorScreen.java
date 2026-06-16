@@ -1,11 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -22,12 +20,16 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
@@ -78,6 +80,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int contentW;
     private int btnY;
     private int contentTotalW;
+    private final ScreenCoordinate contentViewport = new ScreenCoordinate();
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
 
     /**
@@ -101,8 +104,8 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
-        if (FMLEnvironment.dist.isClient()) {
-            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
+        if (EnvironmentUtils.isClient()) {
+            BaniraClientRuntime.setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
     }
 
@@ -251,7 +254,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.maxValue(0);
             scrollbar.value(0);
             scrollbar.visible(false);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
         } else {
             listAreaHeight = maxListHeight;
             btnY = centeredBtnY;
@@ -261,7 +264,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
             scrollOffset = scrollbar.value();
             scrollbar.visibleSize(listAreaHeight);
-            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.clearScrollHoverAreas();
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
@@ -320,11 +323,23 @@ public class ConfigEditorScreen extends BaniraScreen {
                 tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
             }
         }
+        refreshContentViewport();
     }
 
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
+            contentRootPanel.renderViewport(contentViewport);
+        }
+    }
+
+    private void refreshContentViewport() {
+        contentViewport.x(contentLeft)
+                .y(listTop)
+                .width(contentTotalW)
+                .height(Math.max(1, listAreaHeight));
+        if (contentRootPanel != null) {
+            contentRootPanel.renderViewport(contentViewport);
         }
     }
 
@@ -398,7 +413,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private String configModId() {
         String id = holder.getModId();
-        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
+        return id == null || id.isEmpty() ? Banira.MOD_ID : id;
     }
 
     // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
@@ -806,7 +821,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             NotificationManager.get().addNotification(n);
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
@@ -845,7 +860,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.canSyncToServer()) {
             return;
         }
-        if (Minecraft.getInstance().getConnection() == null) {
+        if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
             NotificationManager.get().addNotification(n);
@@ -969,7 +984,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     @Override
     protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
@@ -999,7 +1014,8 @@ public class ConfigEditorScreen extends BaniraScreen {
                     0, 0, 0, CARD_RADIUS, cardBg);
         }
 
-        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
+        refreshContentViewport();
+        AbstractGuiUtils.enableScissor(contentViewport.xInt(), contentViewport.yInt(), contentViewport.widthInt(), contentViewport.heightInt());
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
@@ -1037,7 +1053,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {

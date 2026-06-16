@@ -5,18 +5,16 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
-import xin.vanilla.banira.common.enums.EnumMoveType;
-import xin.vanilla.banira.common.enums.EnumNotificationStyle;
-import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
-import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 public final class MessageUtils {
@@ -48,7 +46,7 @@ public final class MessageUtils {
      * 发送消息至所有玩家
      */
     public static void sendMessageToAll(Component message) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendMessage(player, message);
         }
     }
@@ -162,7 +160,7 @@ public final class MessageUtils {
      * 发送操作栏消息至所有玩家
      */
     public static void sendActionBarMessageToAll(Component message) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendActionBarMessage(player, message);
         }
     }
@@ -216,7 +214,7 @@ public final class MessageUtils {
         String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
         ServerNotificationTypeRegistry.ensureKnown(tid);
         Component payload = notificationPayloadForPlayer(player, component);
-        if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
+        if (!PlayerUtils.isRemoteClientModInstalled(player, Banira.MOD_ID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
                 sendActionBarMessage(player, payload);
             } else {
@@ -241,49 +239,49 @@ public final class MessageUtils {
      * 广播通知（指定类型，位置与动画取服务端默认值，5s、NORMAL、聊天栏回退）
      */
     public static void broadcastNotification(Component component, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumNotificationStyle style, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, style, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, style, vanillaFallback, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumPosition position, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, position, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, position, animation, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, position, animation, durationTimeMs, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, position, animation, durationTimeMs, style, notificationType);
         }
     }
 
     public static void broadcastNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback, notificationType);
         }
     }
@@ -345,7 +343,7 @@ public final class MessageUtils {
     }
 
     public static void broadcastDefaultNotification(Component component, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendDefaultNotification(player, component, style, vanillaFallback);
         }
     }
@@ -367,7 +365,7 @@ public final class MessageUtils {
     }
 
     public static void broadcastDefaultNotification(Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback) {
-        for (ServerPlayer player : BaniraCodex.serverInstance().key().getPlayerList().getPlayers()) {
+        for (ServerPlayer player : BaniraServerRuntime.players()) {
             sendDefaultNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback);
         }
     }
@@ -382,8 +380,45 @@ public final class MessageUtils {
             return BaniraComponent.get().literal("");
         }
         Component copy = component.clone();
-        copy.languageCodeIfEmpty(Translator.getPlayerLanguage(player));
+        String lang = Translator.getPlayerLanguage(player);
+        copy.languageCodeIfEmpty(lang);
+        if (requiresServerResolvedNotificationPayload(player, copy)) {
+            return BaniraComponent.get().literal(copy.getString(lang, false, true));
+        }
         return copy;
+    }
+
+    /**
+     * 客户端可选子 Mod 的语言文件可能不存在；此时由服务端先按玩家语言解析为文本。
+     */
+    private static boolean requiresServerResolvedNotificationPayload(ServerPlayer player, Component component) {
+        if (component == null) {
+            return false;
+        }
+        if (component.i18nType() != EnumI18nType.PLAIN
+                && component.i18nType() != EnumI18nType.NONE
+                && component.i18nType() != EnumI18nType.ORIGINAL
+                && !component.isModIdEmpty()
+                && !canClientResolveTranslation(player, component.modId())) {
+            return true;
+        }
+        for (Component child : component.getChildren()) {
+            if (requiresServerResolvedNotificationPayload(player, child)) {
+                return true;
+            }
+        }
+        for (Component arg : component.getArgs()) {
+            if (requiresServerResolvedNotificationPayload(player, arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean canClientResolveTranslation(ServerPlayer player, String modId) {
+        return "minecraft".equals(modId)
+                || Banira.MOD_ID.equals(modId)
+                || PlayerUtils.isRemoteClientModInstalled(player, modId);
     }
 
     /**

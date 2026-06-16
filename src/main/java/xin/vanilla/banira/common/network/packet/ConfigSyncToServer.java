@@ -1,8 +1,6 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -11,6 +9,8 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
@@ -19,7 +19,6 @@ import xin.vanilla.banira.common.util.Translator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +37,7 @@ public class ConfigSyncToServer implements NetworkPacket {
         this.changes = changes != null ? new HashMap<>(changes) : new HashMap<>();
     }
 
-    public ConfigSyncToServer(FriendlyByteBuf buf) {
+    public ConfigSyncToServer(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.changes = new HashMap<>(size);
@@ -49,7 +48,7 @@ public class ConfigSyncToServer implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(changes.size());
         for (Map.Entry<String, String> e : changes.entrySet()) {
@@ -58,12 +57,20 @@ public class ConfigSyncToServer implements NetworkPacket {
         }
     }
 
-    public static void handle(ConfigSyncToServer packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (!ctx.get().getDirection().getReceptionSide().isServer()) {
+    public String configName() {
+        return configName;
+    }
+
+    public Map<String, String> changes() {
+        return changes;
+    }
+
+    public static void handle(ConfigSyncToServer packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (!ctx.isServerSide()) {
                 return;
             }
-            ServerPlayer player = ctx.get().getSender();
+            ServerPlayer player = ctx.sender();
             if (player == null) {
                 return;
             }
@@ -81,18 +88,21 @@ public class ConfigSyncToServer implements NetworkPacket {
                 return;
             }
             try {
+                Map<String, Object> parsedChanges = new HashMap<>();
                 for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                     ConfigEntryDescriptor pathDesc = holder.getDescriptor(e.getKey());
                     if (!ConfigEditPermission.canModifyEntry(player, pathDesc)) {
                         sendNotify(player, "config_editor_sync_server_no_permission", NOTIFY_ERR_MS);
                         return;
                     }
-                }
-                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
                     Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
+                    if (!holder.validate(e.getKey(), parsed)) {
+                        throw new IllegalArgumentException("Invalid config value: " + e.getKey());
                     }
+                    parsedChanges.put(e.getKey(), parsed);
+                }
+                for (Map.Entry<String, Object> e : parsedChanges.entrySet()) {
+                    holder.set(e.getKey(), e.getValue());
                 }
                 saveConfig(holder);
                 sendNotify(player, "config_editor_sync_server_ok", NOTIFY_OK_MS,
@@ -102,7 +112,7 @@ public class ConfigSyncToServer implements NetworkPacket {
                 sendNotify(player, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 
     private static void sendNotify(ServerPlayer player, String langKey, long durationMs, Object... args) {
@@ -144,7 +154,13 @@ public class ConfigSyncToServer implements NetworkPacket {
         try {
             switch (desc.getValueType()) {
                 case BOOLEAN:
-                    return Boolean.parseBoolean(value);
+                    if ("true".equalsIgnoreCase(value)) {
+                        return Boolean.TRUE;
+                    }
+                    if ("false".equalsIgnoreCase(value)) {
+                        return Boolean.FALSE;
+                    }
+                    return value;
                 case INTEGER:
                     return Integer.parseInt(value);
                 case LONG:

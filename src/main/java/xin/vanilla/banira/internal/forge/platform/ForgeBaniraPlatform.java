@@ -6,16 +6,16 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
-import xin.vanilla.banira.platform.BaniraConfigService;
-import xin.vanilla.banira.platform.BaniraNetworkService;
-import xin.vanilla.banira.platform.BaniraPlatform;
-import xin.vanilla.banira.platform.BaniraRegistryService;
+import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
+import xin.vanilla.banira.platform.*;
 
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
+    private final BaniraPathService path = new ForgeBaniraPathService(this::configDir);
+    private final BaniraInputService input = BaniraApiInputBridge.service();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
@@ -23,6 +23,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public String loaderType() {
         return "forge";
+    }
+
+    @Override
+    public String minecraftVersion() {
+        return "1.16.5";
     }
 
     @Override
@@ -78,6 +83,16 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Override
+    public BaniraPathService pathService() {
+        return path;
+    }
+
+    @Override
+    public BaniraInputService inputService() {
+        return input;
     }
 
     @Override

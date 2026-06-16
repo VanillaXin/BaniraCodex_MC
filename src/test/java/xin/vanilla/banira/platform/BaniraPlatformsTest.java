@@ -42,6 +42,11 @@ public class BaniraPlatformsTest {
         }
 
         @Override
+        public String minecraftVersion() {
+            return "1.16.5";
+        }
+
+        @Override
         public boolean isClient() {
             return false;
         }
@@ -84,6 +89,50 @@ public class BaniraPlatformsTest {
         @Override
         public Path configDir() {
             return Paths.get("config");
+        }
+
+        @Override
+        public BaniraPathService pathService() {
+            return new BaniraPathService() {
+                @Override
+                public String rootDirectoryName() {
+                    return "vanilla.xin";
+                }
+
+                @Override
+                public Path configPath() {
+                    return configDir().resolve(rootDirectoryName());
+                }
+
+                @Override
+                public Path worldDataPath() {
+                    return Paths.get("world", rootDirectoryName());
+                }
+
+                @Override
+                public Path playerDataPath() {
+                    return worldDataPath().resolve("playerdata");
+                }
+
+                @Override
+                public Path vanillaPlayerDataPath() {
+                    return Paths.get("world", "playerdata");
+                }
+            };
+        }
+
+        @Override
+        public BaniraInputService inputService() {
+            return new BaniraInputService() {
+                @Override
+                public xin.vanilla.banira.api.client.BaniraKeyHandle register(xin.vanilla.banira.api.client.BaniraKeySpec spec) {
+                    return null;
+                }
+
+                @Override
+                public void flushPendingRegistrations() {
+                }
+            };
         }
 
         @Override

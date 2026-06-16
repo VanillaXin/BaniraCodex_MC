@@ -1,21 +1,19 @@
 package xin.vanilla.banira.platform;
 
-import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
-import xin.vanilla.banira.internal.server.BaniraServerAccess;
-
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
  * 子 mod 面向的稳定 platform 入口；加载器和 MC 版本差异留在实现层。
  */
 public interface BaniraPlatform {
+    @Nonnull
     String loaderType();
 
-    default String minecraftVersion() {
-        return "1.16.5";
-    }
+    @Nonnull
+    String minecraftVersion();
 
     boolean isClient();
 
@@ -23,73 +21,50 @@ public interface BaniraPlatform {
 
     boolean isDevelopment();
 
-    boolean isModLoaded(String modId);
+    boolean isModLoaded(@Nonnull String modId);
 
-    String modDisplayName(String modId);
+    @Nonnull
+    String modDisplayName(@Nonnull String modId);
 
-    String modIdFromMainClass(Class<?> modMainClass);
+    @Nonnull
+    String modIdFromMainClass(@Nonnull Class<?> modMainClass);
 
-    Class<?> modMainClass(String modId);
+    @Nonnull
+    Class<?> modMainClass(@Nonnull String modId);
 
-    String lastKnownUsername(UUID uuid);
+    @Nullable
+    String lastKnownUsername(@Nonnull UUID uuid);
 
+    @Nonnull
     Path configDir();
 
     /**
      * 当前加载器和 MC 版本的数据路径服务。
      */
-    default BaniraPathService pathService() {
-        BaniraPlatform self = this;
-        return new BaniraPathService() {
-            @Override
-            public String rootDirectoryName() {
-                return "vanilla.xin";
-            }
-
-            @Override
-            public Path configPath() {
-                return self.configDir().resolve(rootDirectoryName());
-            }
-
-            @Override
-            public Path worldDataPath() {
-                Path path = BaniraServerAccess.worldDataPath(rootDirectoryName());
-                return path != null ? path : Paths.get("world", rootDirectoryName());
-            }
-
-            @Override
-            public Path playerDataPath() {
-                Path worldDataPath = worldDataPath();
-                return worldDataPath != null ? worldDataPath.resolve("playerdata") : null;
-            }
-
-            @Override
-            public Path vanillaPlayerDataPath() {
-                Path path = BaniraServerAccess.worldPlayerDataPath();
-                return path != null ? path : Paths.get("world", "playerdata");
-            }
-        };
-    }
+    @Nonnull
+    BaniraPathService pathService();
 
     /**
      * 当前加载器的客户端输入服务。
      */
-    default BaniraInputService inputService() {
-        return BaniraApiInputBridge.service();
-    }
+    @Nonnull
+    BaniraInputService inputService();
 
     /**
      * 根级配置服务；子 mod 只通过该入口注册、读取配置。
      */
+    @Nonnull
     BaniraConfigService configService();
 
     /**
      * 根级网络服务；具体加载器和 MC 版本差异留在实现层。
      */
+    @Nonnull
     BaniraNetworkService networkService();
 
     /**
      * 根级注册表服务；具体加载器和 MC 版本差异留在实现层。
      */
+    @Nonnull
     BaniraRegistryService registryService();
 }

@@ -10,7 +10,6 @@ import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraRegistryService;
-import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
 import java.util.Objects;
@@ -20,7 +19,6 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
-    private final BaniraWorldService world = new ForgeBaniraWorldService();
 
     @Override
     public String loaderType() {
@@ -95,10 +93,5 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraRegistryService registryService() {
         return registry;
-    }
-
-    @Override
-    public BaniraWorldService world() {
-        return world;
     }
 }

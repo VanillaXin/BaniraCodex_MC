@@ -6,6 +6,7 @@ import net.minecraft.world.server.ServerWorld;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.internal.forge.platform.ForgeStructureRegistryAccess;
+import xin.vanilla.banira.internal.world.BaniraWorldAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.Set;
@@ -33,7 +34,7 @@ public final class StructureUtils {
      * 在指定范围内查找最近的结构位置
      */
     public static WorldCoordinate findNearestStructure(ServerWorld world, WorldCoordinate start, Structure<?> structure, int radius) {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().findNearestStructure(world, start, structure, radius) : null;
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.findNearestStructure(world, start, structure, radius) : null;
     }
 
 }

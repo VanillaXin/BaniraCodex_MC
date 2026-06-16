@@ -2,7 +2,6 @@ package xin.vanilla.banira.platform;
 
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
 import xin.vanilla.banira.internal.server.BaniraServerAccess;
-import xin.vanilla.banira.platform.world.BaniraWorldService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,6 +92,4 @@ public interface BaniraPlatform {
      * 根级注册表服务；具体加载器和 MC 版本差异留在实现层。
      */
     BaniraRegistryService registryService();
-
-    BaniraWorldService world();
 }

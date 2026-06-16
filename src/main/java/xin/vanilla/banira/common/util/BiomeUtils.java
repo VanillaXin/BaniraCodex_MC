@@ -9,6 +9,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.internal.world.BaniraWorldAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.ArrayList;
@@ -43,22 +44,22 @@ public final class BiomeUtils {
     }
 
     public static Biome getBiome(ResourceLocation id) {
-        return id != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biome(id) : null;
+        return id != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.biome(id) : null;
     }
 
     public static Biome getBiome(ServerWorld world, ResourceLocation id) {
-        return id != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biome(world, id) : null;
+        return id != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.biome(world, id) : null;
     }
 
     public static Set<String> getAllIds() {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().biomeIds() : Collections.emptySet();
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.biomeIds() : Collections.emptySet();
     }
 
     /**
      * 在指定范围内查找最近的生物群系位置
      */
     public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().findNearestBiome(world, start, biome, radius, minDistance) : null;
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.findNearestBiome(world, start, biome, radius, minDistance) : null;
     }
 
     /**

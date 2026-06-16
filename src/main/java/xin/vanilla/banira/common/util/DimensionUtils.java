@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.internal.world.BaniraWorldAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.*;
@@ -46,11 +47,11 @@ public final class DimensionUtils {
     }
 
     public static RegistryKey<World> parse(ResourceLocation dimension) {
-        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().dimensionKey(dimension) : World.OVERWORLD;
+        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.dimensionKey(dimension) : World.OVERWORLD;
     }
 
     public static ServerWorld getLevel(RegistryKey<World> dimension) {
-        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().level(dimension) : null;
+        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.level(dimension) : null;
     }
 
     public static ServerWorld getLevel(ResourceLocation dimension) {
@@ -62,15 +63,15 @@ public final class DimensionUtils {
     }
 
     public static Set<String> getAllIds() {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().dimensionIds() : Collections.emptySet();
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.dimensionIds() : Collections.emptySet();
     }
 
     public static int getWorldMinY(World world) {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().minBuildHeight(world) : 0;
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.minBuildHeight(world) : 0;
     }
 
     public static int getWorldMaxY(World world) {
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().world().maxBuildHeight(world) : 0;
+        return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.maxBuildHeight(world) : 0;
     }
 
     public static String getDimensionId(Entity entity) {

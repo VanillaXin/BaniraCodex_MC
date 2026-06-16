@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.internal.world.BaniraWorldAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -254,7 +255,7 @@ public final class EntityUtils {
     public static List<Entity> getAllEntities() {
         List<Entity> entities = new ArrayList<>();
         if (BaniraPlatforms.isInstalled()) {
-            BaniraPlatforms.get().world().loadedServerWorlds()
+            BaniraWorldAccess.loadedServerWorlds()
                     .forEach(level -> level.getEntities().forEach(entities::add));
         }
         return entities;

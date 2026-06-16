@@ -1,4 +1,4 @@
-package xin.vanilla.banira.platform.world;
+package xin.vanilla.banira.internal.world;
 
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;

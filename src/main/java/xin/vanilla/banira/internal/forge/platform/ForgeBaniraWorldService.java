@@ -12,7 +12,7 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.WorldCoordinate;
-import xin.vanilla.banira.platform.world.BaniraWorldService;
+import xin.vanilla.banira.internal.world.BaniraWorldService;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -1,7 +1,5 @@
 package xin.vanilla.banira.api.client.render;
 
-import net.minecraft.util.ResourceLocation;
-
 import javax.annotation.Nonnull;
 
 /**
@@ -16,6 +14,9 @@ public interface BaniraDrawHandle {
 
     void text(@Nonnull String text, int x, int y, int argb, boolean shadow);
 
-    void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height,
+    /**
+     * 纹理使用 namespace:path 字符串，避免公开层绑定不同版本的纹理位置类。
+     */
+    void texture(@Nonnull String textureId, int x, int y, int width, int height,
                  float u, float v, int textureWidth, int textureHeight);
 }

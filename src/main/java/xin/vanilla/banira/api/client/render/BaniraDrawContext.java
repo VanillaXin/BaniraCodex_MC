@@ -2,7 +2,6 @@ package xin.vanilla.banira.api.client.render;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
 
 import javax.annotation.Nonnull;
@@ -79,7 +78,7 @@ public final class BaniraDrawContext {
         handle.text(text, x, y, argb, shadow);
     }
 
-    public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height, float u, float v, int textureWidth, int textureHeight) {
-        handle.texture(texture, x, y, width, height, u, v, textureWidth, textureHeight);
+    public void texture(@Nonnull String textureId, int x, int y, int width, int height, float u, float v, int textureWidth, int textureHeight) {
+        handle.texture(textureId, x, y, width, height, u, v, textureWidth, textureHeight);
     }
 }

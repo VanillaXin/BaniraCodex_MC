@@ -8,7 +8,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import javax.annotation.Nonnull;
 
 /**
- * 1.16.5 的旧绘制上下文适配器；子 mod 只接触 api.client.render。
+ * 1.16.5 旧绘制上下文适配器；子 mod 只接触 api.client.render。
  */
 public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
     private final xin.vanilla.banira.client.event.BaniraDrawContext draw;
@@ -48,9 +48,10 @@ public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
     }
 
     @Override
-    public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height,
+    public void texture(@Nonnull String textureId, int x, int y, int width, int height,
                         float u, float v, int textureWidth, int textureHeight) {
-        if (draw != null) {
+        ResourceLocation texture = ResourceLocation.tryParse(textureId);
+        if (draw != null && texture != null) {
             draw.blit(texture, x, y, u, v, width, height, textureWidth, textureHeight);
         }
     }

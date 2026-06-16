@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
@@ -27,7 +28,8 @@ public final class BaniraClientResourceService {
         if (event == null || event.atlasLocation() == null) {
             return;
         }
-        if (BaniraCodex.MODID.equals(event.atlasLocation().getNamespace())) {
+        ResourceLocation atlasLocation = ResourceLocation.tryParse(event.atlasLocation());
+        if (atlasLocation != null && BaniraCodex.MODID.equals(atlasLocation.getNamespace())) {
             TextureUtils.resourceReloadEvent();
             QuickActionOverlay.resetSystemIconTextureCache();
         }

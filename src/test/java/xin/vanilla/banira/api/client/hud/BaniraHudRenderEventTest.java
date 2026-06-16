@@ -1,6 +1,5 @@
 package xin.vanilla.banira.api.client.hud;
 
-import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.api.client.render.BaniraDrawHandle;
@@ -81,7 +80,7 @@ public class BaniraHudRenderEventTest {
         }
 
         @Override
-        public void texture(@Nonnull ResourceLocation texture, int x, int y, int width, int height,
+        public void texture(@Nonnull String textureId, int x, int y, int width, int height,
                             float u, float v, int textureWidth, int textureHeight) {
         }
     }

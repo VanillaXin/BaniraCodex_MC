@@ -118,7 +118,7 @@ public final class BaniraClientEventHub {
     public static void dispatchClientTextureReload(BaniraTextureReloadEvent event) {
         fire(clientTextureReloadCallbacks, event, "client texture reload");
         if (event != null && event.atlasLocation() != null) {
-            fire(apiTextureReloadCallbacks, new xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent(event.atlasLocation()), "api client texture reload");
+            fire(apiTextureReloadCallbacks, new xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent(event.atlasLocation().toString()), "api client texture reload");
         }
     }
 

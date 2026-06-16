@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
 
 @Accessors(fluent = true)
 public final class BaniraCodex {
-    public static final String MODID = "banira_codex";
+    public static final String MODID = Banira.MOD_ID;
 
     @Deprecated
     public static final String ARTIFACT_ID = "xin.vanilla";

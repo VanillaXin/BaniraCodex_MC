@@ -1,95 +1,88 @@
 package xin.vanilla.banira.platform;
 
-import net.minecraft.block.Block;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
-import net.minecraft.potion.Effect;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.biome.Biome;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 
 /**
- * 测试和早期启动兜底实现；真实加载器需提供自己的注册表访问。
+ * 测试和早期启动兜底实现；真实加载器需要提供自己的注册表访问。
  */
 public enum NoopRegistryService implements BaniraRegistryService {
     INSTANCE;
 
     @Override
-    public @Nullable ResourceLocation blockKey(@Nullable Block block) {
+    public @Nullable String blockKey(@Nullable Object block) {
         return null;
     }
 
     @Override
-    public @Nullable Block block(@Nullable ResourceLocation id) {
+    public @Nullable Object block(@Nullable String id) {
         return null;
     }
 
     @Override
-    public @Nonnull Collection<Block> blocks() {
+    public @Nonnull Collection<?> blocks() {
         return Collections.emptyList();
     }
 
     @Override
-    public @Nullable ResourceLocation itemKey(@Nullable Item item) {
+    public @Nullable String itemKey(@Nullable Object item) {
         return null;
     }
 
     @Override
-    public @Nullable Item item(@Nullable ResourceLocation id) {
+    public @Nullable Object item(@Nullable String id) {
         return null;
     }
 
     @Override
-    public @Nonnull Collection<Item> items() {
+    public @Nonnull Collection<?> items() {
         return Collections.emptyList();
     }
 
     @Override
-    public @Nonnull Collection<ResourceLocation> itemTagIds(@Nullable Item item) {
+    public @Nonnull Collection<String> itemTagIds(@Nullable Object item) {
         return Collections.emptyList();
     }
 
     @Override
-    public @Nullable ResourceLocation entityTypeKey(@Nullable EntityType<?> entityType) {
+    public @Nullable String entityTypeKey(@Nullable Object entityType) {
         return null;
     }
 
     @Override
-    public @Nullable EntityType<?> entityType(@Nullable ResourceLocation id) {
+    public @Nullable Object entityType(@Nullable String id) {
         return null;
     }
 
     @Override
-    public @Nonnull Collection<EntityType<?>> entityTypes() {
+    public @Nonnull Collection<?> entityTypes() {
         return Collections.emptyList();
     }
 
     @Override
-    public @Nullable ResourceLocation effectKey(@Nullable Effect effect) {
+    public @Nullable String effectKey(@Nullable Object effect) {
         return null;
     }
 
     @Override
-    public @Nullable Effect effect(@Nullable ResourceLocation id) {
+    public @Nullable Object effect(@Nullable String id) {
         return null;
     }
 
     @Override
-    public @Nonnull Collection<Effect> effects() {
+    public @Nonnull Collection<?> effects() {
         return Collections.emptyList();
     }
 
     @Override
-    public @Nullable Biome biome(@Nullable ResourceLocation id) {
+    public @Nullable Object biome(@Nullable String id) {
         return null;
     }
 
     @Override
-    public @Nonnull Collection<ResourceLocation> biomeIds() {
+    public @Nonnull Collection<String> biomeIds() {
         return Collections.emptyList();
     }
 }

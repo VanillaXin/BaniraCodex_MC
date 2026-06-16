@@ -39,7 +39,11 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(Effect effect) {
         if (effect == null) return null;
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().effectKey(effect) : null;
+        if (!BaniraPlatforms.isInstalled()) {
+            return null;
+        }
+        String id = BaniraPlatforms.get().registryService().effectKey(effect);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -199,7 +203,8 @@ public final class EffectUtils {
     public static Effect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().effect(location) : null;
+            Object effect = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().effect(location.toString()) : null;
+            return effect instanceof Effect ? (Effect) effect : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -260,11 +265,12 @@ public final class EffectUtils {
      */
     private static List<Effect> buildUniqueEffectsList() {
         Map<ResourceLocation, Effect> byId = new LinkedHashMap<>();
-        Collection<Effect> effects = BaniraPlatforms.isInstalled()
+        Collection<?> effects = BaniraPlatforms.isInstalled()
                 ? BaniraPlatforms.get().registryService().effects()
                 : new ArrayList<>();
-        for (Effect effect : effects) {
-            if (effect == null) continue;
+        for (Object value : effects) {
+            if (!(value instanceof Effect)) continue;
+            Effect effect = (Effect) value;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;
             byId.putIfAbsent(rl, effect);

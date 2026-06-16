@@ -48,7 +48,11 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().entityTypeKey(entityType) : null;
+        if (!BaniraPlatforms.isInstalled()) {
+            return null;
+        }
+        String id = BaniraPlatforms.get().registryService().entityTypeKey(entityType);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -241,7 +245,8 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().entityType(location) : null;
+            Object entityType = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().entityType(location.toString()) : null;
+            return entityType instanceof EntityType ? (EntityType<?>) entityType : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -283,11 +288,12 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    Collection<EntityType<?>> entityTypes = BaniraPlatforms.isInstalled()
+                    Collection<?> entityTypes = BaniraPlatforms.isInstalled()
                             ? BaniraPlatforms.get().registryService().entityTypes()
                             : Collections.emptyList();
-                    for (EntityType<?> entityType : entityTypes) {
-                        if (entityType == null) continue;
+                    for (Object value : entityTypes) {
+                        if (!(value instanceof EntityType)) continue;
+                        EntityType<?> entityType = (EntityType<?>) value;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;
                         byId.putIfAbsent(rl, entityType);

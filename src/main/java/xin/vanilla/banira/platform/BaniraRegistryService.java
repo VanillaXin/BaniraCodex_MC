@@ -1,62 +1,57 @@
 package xin.vanilla.banira.platform;
 
-import net.minecraft.block.Block;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
-import net.minecraft.potion.Effect;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.biome.Biome;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
- * 跨加载器注册表访问入口；具体注册表差异留在 platform 实现。
+ * 跨版本注册表访问入口。
+ * <p>
+ * MC 1.17 起很多注册表类型包名发生迁移，所以公开 platform 层只暴露对象和字符串 id。
  */
 public interface BaniraRegistryService {
     @Nullable
-    ResourceLocation blockKey(@Nullable Block block);
+    String blockKey(@Nullable Object block);
 
     @Nullable
-    Block block(@Nullable ResourceLocation id);
+    Object block(@Nullable String id);
 
     @Nonnull
-    Collection<Block> blocks();
+    Collection<?> blocks();
 
     @Nullable
-    ResourceLocation itemKey(@Nullable Item item);
+    String itemKey(@Nullable Object item);
 
     @Nullable
-    Item item(@Nullable ResourceLocation id);
+    Object item(@Nullable String id);
 
     @Nonnull
-    Collection<Item> items();
+    Collection<?> items();
 
     @Nonnull
-    Collection<ResourceLocation> itemTagIds(@Nullable Item item);
+    Collection<String> itemTagIds(@Nullable Object item);
 
     @Nullable
-    ResourceLocation entityTypeKey(@Nullable EntityType<?> entityType);
+    String entityTypeKey(@Nullable Object entityType);
 
     @Nullable
-    EntityType<?> entityType(@Nullable ResourceLocation id);
+    Object entityType(@Nullable String id);
 
     @Nonnull
-    Collection<EntityType<?>> entityTypes();
+    Collection<?> entityTypes();
 
     @Nullable
-    ResourceLocation effectKey(@Nullable Effect effect);
+    String effectKey(@Nullable Object effect);
 
     @Nullable
-    Effect effect(@Nullable ResourceLocation id);
+    Object effect(@Nullable String id);
 
     @Nonnull
-    Collection<Effect> effects();
+    Collection<?> effects();
 
     @Nullable
-    Biome biome(@Nullable ResourceLocation id);
+    Object biome(@Nullable String id);
 
     @Nonnull
-    Collection<ResourceLocation> biomeIds();
+    Collection<String> biomeIds();
 }

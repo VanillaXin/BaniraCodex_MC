@@ -97,7 +97,11 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().itemKey(item) : null;
+        if (!BaniraPlatforms.isInstalled()) {
+            return null;
+        }
+        String id = BaniraPlatforms.get().registryService().itemKey(item);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -443,7 +447,8 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().item(location) : null;
+            Object item = BaniraPlatforms.isInstalled() ? BaniraPlatforms.get().registryService().item(location.toString()) : null;
+            return item instanceof Item ? (Item) item : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -558,11 +563,12 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            Collection<Item> registryItems = BaniraPlatforms.isInstalled()
+            Collection<?> registryItems = BaniraPlatforms.isInstalled()
                     ? BaniraPlatforms.get().registryService().items()
                     : Collections.emptyList();
-            for (Item item : registryItems) {
-                if (item == null) continue;
+            for (Object value : registryItems) {
+                if (!(value instanceof Item)) continue;
+                Item item = (Item) value;
                 if (!addedItems.contains(item)) {
                     try {
                         ItemStack defaultStack = new ItemStack(item);

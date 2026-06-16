@@ -1,6 +1,5 @@
 package xin.vanilla.banira.platform;
 
-import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -128,7 +127,7 @@ public class BaniraPlatformsTest {
                 }
 
                 @Override
-                public void sendToPlayer(BaniraNetworkPacket packet, net.minecraft.entity.player.ServerPlayerEntity player) {
+                public void sendToPlayer(BaniraNetworkPacket packet, Object player) {
                 }
 
                 @Override
@@ -137,12 +136,12 @@ public class BaniraPlatformsTest {
                 }
 
                 @Override
-                public boolean hasLocalChannel(ResourceLocation channel) {
+                public boolean hasLocalChannel(String channelId) {
                     return false;
                 }
 
                 @Override
-                public boolean hasPlayerChannel(net.minecraft.entity.player.ServerPlayerEntity player, ResourceLocation channel) {
+                public boolean hasPlayerChannel(Object player, String channelId) {
                     return false;
                 }
             };

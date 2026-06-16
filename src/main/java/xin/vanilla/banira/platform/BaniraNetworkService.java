@@ -1,14 +1,14 @@
 package xin.vanilla.banira.platform;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.util.IIdentifier;
 
 import javax.annotation.Nonnull;
 
 /**
- * 当前加载器的网络能力适配入口。
+ * 当前加载器的网络能力入口。
+ * <p>
+ * 公开签名避免直接暴露玩家/通道的版本映射类，具体转换留给 loader adapter。
  */
 public interface BaniraNetworkService {
     @Nonnull
@@ -16,11 +16,11 @@ public interface BaniraNetworkService {
 
     void sendToServer(@Nonnull BaniraNetworkPacket packet);
 
-    void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull ServerPlayerEntity player);
+    void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player);
 
     boolean hasDefaultChannel();
 
-    boolean hasLocalChannel(@Nonnull ResourceLocation channel);
+    boolean hasLocalChannel(@Nonnull String channelId);
 
-    boolean hasPlayerChannel(@Nonnull ServerPlayerEntity player, @Nonnull ResourceLocation channel);
+    boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId);
 }

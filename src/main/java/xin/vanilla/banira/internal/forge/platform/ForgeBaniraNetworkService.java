@@ -50,7 +50,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
     public void sendToServer(BaniraNetworkPacket packet) {
         INetworkPacket networkPacket = asNetworkPacket(packet);
         ForgeNetworkChannel channel = channels.get(networkPacket.networkChannelName());
-        if (channel == null || !hasLocalChannel(channel.channelName())) {
+        if (channel == null || !hasLocalChannel(channel.channelName().toString())) {
             return;
         }
         PlayerEntity player = BaniraClientAccess.localPlayer();
@@ -64,31 +64,36 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
     }
 
     @Override
-    public void sendToPlayer(BaniraNetworkPacket packet, ServerPlayerEntity player) {
+    public void sendToPlayer(BaniraNetworkPacket packet, Object player) {
+        if (!(player instanceof ServerPlayerEntity)) {
+            return;
+        }
+        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         INetworkPacket networkPacket = asNetworkPacket(packet);
         ForgeNetworkChannel channel = channels.get(networkPacket.networkChannelName());
-        if (channel == null || !hasPlayerChannel(player, channel.channelName())) {
+        if (channel == null || !hasPlayerChannel(serverPlayer, channel.channelName().toString())) {
             return;
         }
-        if (!PlayerUtils.isRemoteClientModInstalled(player, channel.modId())) {
+        if (!PlayerUtils.isRemoteClientModInstalled(serverPlayer, channel.modId())) {
             return;
         }
-        channel.sendToPlayer(player, networkPacket);
+        channel.sendToPlayer(serverPlayer, networkPacket);
     }
 
     @Override
     public boolean hasDefaultChannel() {
-        return hasLocalChannel(NetworkInit.DEFAULT_CHANNEL_NAME);
+        return hasLocalChannel(NetworkInit.DEFAULT_CHANNEL_NAME.toString());
     }
 
     @Override
-    public boolean hasLocalChannel(ResourceLocation channel) {
+    public boolean hasLocalChannel(String channelId) {
+        ResourceLocation channel = parseChannel(channelId);
         return channel != null && registry().banira$instances().containsKey(channel);
     }
 
     @Override
-    public boolean hasPlayerChannel(ServerPlayerEntity player, ResourceLocation channel) {
-        return hasLocalChannel(channel);
+    public boolean hasPlayerChannel(Object player, String channelId) {
+        return player instanceof ServerPlayerEntity && hasLocalChannel(channelId);
     }
 
     private ForgeNetworkChannel create(String channelName, IIdentifier identifier) {
@@ -102,6 +107,10 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
             return (INetworkPacket) packet;
         }
         throw new IllegalArgumentException("BaniraNetworkPacket must also implement INetworkPacket on Forge 1.16.5");
+    }
+
+    private static ResourceLocation parseChannel(String channelId) {
+        return channelId == null ? null : ResourceLocation.tryParse(channelId);
     }
 
     private NetworkRegistryAccessor registry() {

@@ -19,12 +19,6 @@ public enum FabricBaniraConfigService implements BaniraConfigService {
 
     @Nonnull
     @Override
-    public <T> T get(@Nonnull Class<T> configClass) {
-        return FabricConfigAdapter.get(configClass);
-    }
-
-    @Nonnull
-    @Override
     public <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass) {
         return FabricConfigAdapter.view(configClass, viewClass);
     }

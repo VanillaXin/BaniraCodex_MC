@@ -45,19 +45,6 @@ final class FabricConfigAdapter {
         ConfigRegistry.registerHolder(holder);
     }
 
-    @SuppressWarnings("unchecked")
-    static <T> T get(Class<T> configClass) {
-        ConfigHolder holder = getHolder(configClass);
-        if (holder == null) {
-            throw new IllegalStateException("Config not registered: " + configClass.getName());
-        }
-        Class<?> viewInterface = primaryViewInterface(configClass);
-        if (viewInterface == null) {
-            throw new IllegalArgumentException("Config class must implement an interface for fluent API: " + configClass.getName());
-        }
-        return (T) viewProxy(configClass.getClassLoader(), viewInterface, holder, "");
-    }
-
     static <T> T view(Class<?> configClass, Class<T> viewClass) {
         ConfigHolder holder = getHolder(configClass);
         if (holder == null) {
@@ -178,15 +165,6 @@ final class FabricConfigAdapter {
             current = current.getSuperclass();
         }
         return fields;
-    }
-
-    private static Class<?> primaryViewInterface(Class<?> configClass) {
-        for (Class<?> iface : configClass.getInterfaces()) {
-            if (iface != ConfigData.class) {
-                return iface;
-            }
-        }
-        return null;
     }
 
     private static Object viewProxy(ClassLoader classLoader, Class<?> viewInterface, ConfigHolder holder, String prefix) {

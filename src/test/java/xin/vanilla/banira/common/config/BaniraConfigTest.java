@@ -55,11 +55,6 @@ public class BaniraConfigTest {
         }
 
         @Override
-        public <T> T get(Class<T> configClass) {
-            throw new IllegalStateException("No config registered");
-        }
-
-        @Override
         public <T> T view(Class<?> configClass, Class<T> viewClass) {
             this.viewConfigClass = configClass;
             this.viewClass = viewClass;

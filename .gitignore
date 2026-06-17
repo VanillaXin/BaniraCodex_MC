@@ -120,3 +120,12 @@ runs/
 !gradle-wrapper.jar
 
 bin/
+
+# Local Codex/editor scratch
+.cursor/
+__pycache__/
+logs/
+runClient-smoke*.log
+publish.bat
+docs/
+AGENTS.md

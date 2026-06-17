@@ -7,11 +7,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
@@ -49,7 +49,8 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return ForgeRegistries.BLOCKS.getKey(block);
+        String key = Banira.platform().registryService().blockKey(block);
+        return key != null ? ResourceLocation.tryParse(key) : null;
     }
 
     /**
@@ -264,7 +265,8 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return ForgeRegistries.BLOCKS.getValue(location);
+            Object block = Banira.platform().registryService().block(location.toString());
+            return block instanceof Block ? (Block) block : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -316,7 +318,9 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : ForgeRegistries.BLOCKS) {
+                    for (Object value : Banira.platform().registryService().blocks()) {
+                        if (!(value instanceof Block)) continue;
+                        Block block = (Block) value;
                         if (block == null) continue;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;

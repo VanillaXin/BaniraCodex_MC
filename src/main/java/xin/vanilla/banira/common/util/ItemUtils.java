@@ -10,16 +10,15 @@ import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 
@@ -91,7 +90,8 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return ForgeRegistries.ITEMS.getKey(item);
+        String key = Banira.platform().registryService().itemKey(item);
+        return key != null ? ResourceLocation.tryParse(key) : null;
     }
 
     /**
@@ -429,7 +429,7 @@ public final class ItemUtils {
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
-            Item item = ForgeRegistries.ITEMS.getValue(rl);
+            Item item = getItemFromRegistry(rl);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -453,7 +453,7 @@ public final class ItemUtils {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        Item item = ForgeRegistries.ITEMS.getValue(id);
+        Item item = getItemFromRegistry(id);
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -475,7 +475,8 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return ForgeRegistries.ITEMS.getValue(location);
+            Object item = Banira.platform().registryService().item(location.toString());
+            return item instanceof Item ? (Item) item : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -590,8 +591,9 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : ForgeRegistries.ITEMS) {
-                if (item == null) continue;
+            for (Object value : Banira.platform().registryService().items()) {
+                if (!(value instanceof Item)) continue;
+                Item item = (Item) value;
                 if (!addedItems.contains(item)) {
                     try {
                         ItemStack defaultStack = new ItemStack(item);
@@ -601,7 +603,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                ForgeRegistries.ITEMS.getKey(item), e);
+                                getItemRegistry(item), e);
                     }
                 }
             }
@@ -676,12 +678,13 @@ public final class ItemUtils {
 
             // 获取标签
             try {
-                ForgeRegistries.ITEMS.tags().getReverseTag(item).ifPresent(reverseTag ->
-                        reverseTag.getTagKeys().forEach(tagKey -> {
-                            ResourceLocation loc = tagKey.location();
-                            tags.add(loc.toString().toLowerCase());
-                            tags.add(loc.getPath().toLowerCase());
-                        }));
+                for (String tagId : Banira.platform().registryService().itemTagIds(item)) {
+                    ResourceLocation loc = ResourceLocation.tryParse(tagId);
+                    if (loc != null) {
+                        tags.add(loc.toString().toLowerCase());
+                        tags.add(loc.getPath().toLowerCase());
+                    }
+                }
             } catch (Exception e) {
                 LOGGER.debug("Failed to get tags for item: {}", registry, e);
             }
@@ -1219,12 +1222,9 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = ForgeRegistries.ITEMS.tags().getReverseTag(item)
-                            .map(rt -> rt.getTagKeys().map(TagKey::location)
-                                    .sorted(Comparator.comparing(ResourceLocation::toString))
-                                    .collect(Collectors.toList()))
-                            .orElse(Collections.emptyList());
-                    for (ResourceLocation tagId : tagIds) {
+                    List<String> tagIds = new ArrayList<>(Banira.platform().registryService().itemTagIds(item));
+                    tagIds.sort(Comparator.naturalOrder());
+                    for (String tagId : tagIds) {
                         Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));
                         result.add(tagComponent);

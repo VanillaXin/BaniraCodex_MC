@@ -120,3 +120,11 @@ runs/
 !gradle-wrapper.jar
 
 bin/
+logs/
+
+# Local Codex workspace notes; keep them off remote branches.
+AGENTS.md
+docs/
+.cursor/
+__pycache__/
+publish.bat

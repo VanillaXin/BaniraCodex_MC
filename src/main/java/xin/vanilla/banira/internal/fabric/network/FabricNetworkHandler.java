@@ -46,6 +46,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         PacketRegistration<MSG> registration = new PacketRegistration<>(packetId, packetClass, encoder, decoder, handler);
         byId.put(packetId, registration);
         byClass.put(packetClass, registration);
+        FabricNetworkChannels.registerPacket(packetClass, this);
         registerServerReceiver();
         if (FabricNetworkChannels.clientReceiverAllowed()) {
             registerClientReceiver();

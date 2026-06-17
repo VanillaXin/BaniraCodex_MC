@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.fabric.config;
 
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 
 import javax.annotation.Nullable;
@@ -43,8 +44,9 @@ final class FabricConfigValueStore implements ConfigValueStore {
 
     @Override
     public void set(String path, Object value) {
-        if (validate(path, value)) {
-            values.put(path, value);
+        Object normalized = normalize(path, value);
+        if (normalized != null) {
+            values.put(path, normalized);
         }
     }
 
@@ -63,25 +65,30 @@ final class FabricConfigValueStore implements ConfigValueStore {
 
     @Override
     public boolean validate(String path, Object value) {
+        return normalize(path, value) != null;
+    }
+
+    @Nullable
+    private Object normalize(String path, Object value) {
         ConfigEntryDescriptor descriptor = descriptors.get(path);
         if (descriptor == null || value == null) {
-            return false;
+            return null;
         }
         switch (descriptor.getValueType()) {
             case INTEGER:
-                return value instanceof Integer && inRange((Integer) value, descriptor.getMinValue(), descriptor.getMaxValue());
+                return value instanceof Integer && inRange((Integer) value, descriptor.getMinValue(), descriptor.getMaxValue()) ? value : null;
             case LONG:
-                return value instanceof Long && inRange((Long) value, descriptor.getMinValue(), descriptor.getMaxValue());
+                return value instanceof Long && inRange((Long) value, descriptor.getMinValue(), descriptor.getMaxValue()) ? value : null;
             case DOUBLE:
-                return value instanceof Double && inRange((Double) value, descriptor.getMinValue(), descriptor.getMaxValue());
+                return value instanceof Double && inRange((Double) value, descriptor.getMinValue(), descriptor.getMaxValue()) ? value : null;
             case BOOLEAN:
-                return value instanceof Boolean;
+                return value instanceof Boolean ? value : null;
             case STRING:
-                return value instanceof String;
+                return value instanceof String ? value : null;
             case ENUM:
-                return descriptor.getEnumClass() != null && descriptor.getEnumClass().isInstance(value);
+                return descriptor.getEnumClass() != null && descriptor.getEnumClass().isInstance(value) ? value : null;
             default:
-                return value instanceof List;
+                return normalizeList(descriptor, value);
         }
     }
 
@@ -154,8 +161,8 @@ final class FabricConfigValueStore implements ConfigValueStore {
         if (raw.isEmpty()) {
             return new ArrayList<>();
         }
-        String[] parts = raw.split(",", -1);
-        List<Object> result = new ArrayList<>(parts.length);
+        List<String> parts = splitEscapedCsv(raw);
+        List<Object> result = new ArrayList<>(parts.size());
         for (String part : parts) {
             result.add(parseListValue(descriptor, part));
         }
@@ -175,7 +182,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
             case ENUM_LIST:
                 return parseEnum(descriptor.getEnumClass(), raw);
             default:
-                return raw.replace("\\,", ",");
+                return raw;
         }
     }
 
@@ -186,11 +193,63 @@ final class FabricConfigValueStore implements ConfigValueStore {
         if (value instanceof List<?>) {
             List<String> parts = new ArrayList<>();
             for (Object element : (List<?>) value) {
-                parts.add(element instanceof Enum<?> ? ((Enum<?>) element).name() : String.valueOf(element).replace(",", "\\,"));
+                parts.add(element instanceof Enum<?> ? ((Enum<?>) element).name() : escapeListValue(String.valueOf(element)));
             }
             return String.join(",", parts);
         }
         return String.valueOf(value);
+    }
+
+    @Nullable
+    private Object normalizeList(ConfigEntryDescriptor descriptor, Object value) {
+        if (!(value instanceof List<?> raw)) {
+            return null;
+        }
+        List<Object> result = new ArrayList<>(raw.size());
+        for (Object element : raw) {
+            Object coerced = ConfigListSpecHelper.coerceListElement(
+                    element,
+                    descriptor.getValueType(),
+                    descriptor.getEnumClass(),
+                    descriptor.getMinValue(),
+                    descriptor.getMaxValue(),
+                    descriptor.getDecimalPlaces()
+            );
+            if (coerced == null) {
+                return null;
+            }
+            result.add(coerced);
+        }
+        return result;
+    }
+
+    private List<String> splitEscapedCsv(String raw) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean escaped = false;
+        for (int i = 0; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (escaped) {
+                current.append(c);
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == ',') {
+                result.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (escaped) {
+            current.append('\\');
+        }
+        result.add(current.toString());
+        return result;
+    }
+
+    private String escapeListValue(String value) {
+        return value.replace("\\", "\\\\").replace(",", "\\,");
     }
 
     private boolean inRange(Number value, Number min, Number max) {

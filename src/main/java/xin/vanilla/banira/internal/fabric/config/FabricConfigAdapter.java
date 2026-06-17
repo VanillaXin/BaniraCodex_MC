@@ -6,6 +6,7 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
@@ -50,24 +51,11 @@ final class FabricConfigAdapter {
         if (holder == null) {
             throw new IllegalStateException("Config not registered: " + configClass.getName());
         }
-        Class<?>[] ifaces = configClass.getInterfaces();
-        if (ifaces.length == 0) {
+        Class<?> viewInterface = primaryViewInterface(configClass);
+        if (viewInterface == null) {
             throw new IllegalArgumentException("Config class must implement an interface for fluent API: " + configClass.getName());
         }
-        return (T) Proxy.newProxyInstance(configClass.getClassLoader(), ifaces, (proxy, method, args) -> {
-            String path = resolvePath(holder, method.getName(), "");
-            if (path != null && method.getParameterCount() == 0) {
-                return holder.get(path);
-            }
-            if (path != null && method.getParameterCount() == 1) {
-                holder.set(path, args[0]);
-                return proxy;
-            }
-            if ("equals".equals(method.getName())) return proxy == args[0];
-            if ("hashCode".equals(method.getName())) return System.identityHashCode(proxy);
-            if ("toString".equals(method.getName())) return "FabricConfigProxy@" + configClass.getSimpleName();
-            return null;
-        });
+        return (T) viewProxy(configClass.getClassLoader(), viewInterface, holder, "");
     }
 
     static ConfigHolder getHolder(Class<?> configClass) {
@@ -181,13 +169,57 @@ final class FabricConfigAdapter {
         return fields;
     }
 
-    private static String resolvePath(ConfigHolder holder, String methodName, String prefix) {
-        for (String path : holder.valuePaths()) {
-            String fieldName = path.substring(path.lastIndexOf('.') + 1);
-            if (methodName.equals(fieldName) && (prefix.isEmpty() || path.startsWith(prefix + "."))) {
-                return path;
+    private static Class<?> primaryViewInterface(Class<?> configClass) {
+        for (Class<?> iface : configClass.getInterfaces()) {
+            if (iface != ConfigData.class) {
+                return iface;
             }
         }
         return null;
+    }
+
+    private static Object viewProxy(ClassLoader classLoader, Class<?> viewInterface, ConfigHolder holder, String prefix) {
+        return Proxy.newProxyInstance(classLoader, new Class<?>[]{viewInterface}, (proxy, method, args) ->
+                handleViewMethod(classLoader, viewInterface, holder, prefix, proxy, method, args));
+    }
+
+    private static Object handleViewMethod(ClassLoader classLoader, Class<?> viewInterface, ConfigHolder holder,
+                                           String prefix, Object proxy, Method method, Object[] args) {
+        if (method.getDeclaringClass() == Object.class) {
+            String name = method.getName();
+            if ("equals".equals(name)) return proxy == args[0];
+            if ("hashCode".equals(name)) return System.identityHashCode(proxy);
+            if ("toString".equals(name)) return "FabricConfigProxy@" + viewInterface.getSimpleName() + "(" + prefix + ")";
+            throw new UnsupportedOperationException(method.toString());
+        }
+
+        int parameterCount = method.getParameterCount();
+        String path = prefix.isEmpty() ? method.getName() : prefix + "." + method.getName();
+        if ("holder".equals(method.getName()) && parameterCount == 0 && method.getReturnType().isAssignableFrom(ConfigHolder.class)) {
+            return holder;
+        }
+        if (holder.hasValue(path)) {
+            if (parameterCount == 0) {
+                return holder.get(path);
+            }
+            if (parameterCount == 1) {
+                holder.set(path, args[0]);
+                return proxy;
+            }
+        }
+        if (parameterCount == 0 && method.getReturnType().isInterface() && hasChildValue(holder, path)) {
+            return viewProxy(classLoader, method.getReturnType(), holder, path);
+        }
+        throw new UnsupportedOperationException(method.toString());
+    }
+
+    private static boolean hasChildValue(ConfigHolder holder, String path) {
+        String childPrefix = path + ".";
+        for (String valuePath : holder.valuePaths()) {
+            if (valuePath.startsWith(childPrefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

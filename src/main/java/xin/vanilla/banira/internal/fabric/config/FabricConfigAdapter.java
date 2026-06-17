@@ -58,6 +58,17 @@ final class FabricConfigAdapter {
         return (T) viewProxy(configClass.getClassLoader(), viewInterface, holder, "");
     }
 
+    static <T> T view(Class<?> configClass, Class<T> viewClass) {
+        ConfigHolder holder = getHolder(configClass);
+        if (holder == null) {
+            throw new IllegalStateException("Config not registered: " + configClass.getName());
+        }
+        if (!viewClass.isInterface()) {
+            throw new IllegalArgumentException("Config view must be an interface: " + viewClass.getName());
+        }
+        return viewClass.cast(viewProxy(configClass.getClassLoader(), viewClass, holder, ""));
+    }
+
     static ConfigHolder getHolder(Class<?> configClass) {
         return HOLDER_MAP.get(configClass);
     }

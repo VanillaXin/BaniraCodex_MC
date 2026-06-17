@@ -23,8 +23,7 @@ public class FabricConfigAdapterTest {
         BaniraPlatforms.install(new TestBaniraPlatform().configDir(temporaryFolder.getRoot().toPath()));
         FabricConfigAdapter.register(NestedConfig.class, "test_mod");
 
-        Object raw = FabricConfigAdapter.get(NestedConfig.class);
-        NestedConfigView view = (NestedConfigView) raw;
+        NestedConfigView view = FabricConfigAdapter.view(NestedConfig.class, NestedConfigView.class);
 
         SectionView section = view.section();
         assertEquals(2, section.count());

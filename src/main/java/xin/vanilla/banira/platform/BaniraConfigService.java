@@ -13,6 +13,15 @@ public interface BaniraConfigService {
     @Nonnull
     <T> T get(@Nonnull Class<T> configClass);
 
+    @Nonnull
+    default <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass) {
+        Object view = get(configClass);
+        if (viewClass.isInstance(view)) {
+            return viewClass.cast(view);
+        }
+        throw new IllegalStateException("Config view is not " + viewClass.getName() + ": " + view.getClass().getName());
+    }
+
     @Nullable
     BaniraConfigHandle handle(@Nonnull Class<?> configClass);
 }

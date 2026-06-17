@@ -22,6 +22,11 @@ public final class BaniraConfig {
         return Banira.platform().configService().get(configClass);
     }
 
+    @Nonnull
+    public static <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass) {
+        return Banira.platform().configService().view(configClass, viewClass);
+    }
+
     @Nullable
     public static ConfigHolder holder(@Nonnull Class<?> configClass) {
         BaniraConfigHandle handle = handle(configClass);

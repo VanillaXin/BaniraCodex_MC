@@ -147,7 +147,7 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Nonnull
     @Override
     public BaniraRegistryService registryService() {
-        return NoopRegistryService.INSTANCE;
+        return FabricBaniraRegistryService.INSTANCE;
     }
 
     @Nonnull

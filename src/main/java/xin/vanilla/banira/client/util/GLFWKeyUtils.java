@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
@@ -10,9 +8,6 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
-
-
-@OnlyIn(Dist.CLIENT)
 public final class GLFWKeyUtils {
     private GLFWKeyUtils() {
     }

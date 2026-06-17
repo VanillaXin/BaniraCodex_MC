@@ -14,8 +14,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +51,6 @@ public final class ItemUtils {
     /**
      * Tooltip缓存
      */
-    @OnlyIn(Dist.CLIENT)
     private static final Map<String, List<Component>> tooltipCache = new ConcurrentHashMap<>();
 
     /**
@@ -883,7 +880,6 @@ public final class ItemUtils {
      *
      * @return 玩家身上的所有物品列表副本
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
         try {
@@ -1089,7 +1085,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable Player player, boolean advanced) {
         if (isItemNull(itemStack)) {
@@ -1276,7 +1271,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @OnlyIn(Dist.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         try {

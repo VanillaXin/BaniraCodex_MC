@@ -11,8 +11,6 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -49,7 +47,6 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(fluent = true)
 @SuppressWarnings("resource")
 public final class QuickActionOverlay {

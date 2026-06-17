@@ -8,8 +8,6 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
@@ -33,7 +31,6 @@ import java.util.Map;
  * <p>
  * 通过 Forge {@link net.minecraftforge.event.AddReloadListenerEvent} 注册。
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {
 
     public static final BaniraColorThemeLoader INSTANCE = new BaniraColorThemeLoader();

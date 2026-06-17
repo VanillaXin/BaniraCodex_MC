@@ -11,7 +11,7 @@ public interface BaniraConfigService {
     <T> void register(@Nonnull Class<T> configClass, @Nonnull String modId);
 
     @Nonnull
-    <T> T get(@Nonnull Class<T> configClass);
+    <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass);
 
     @Nullable
     BaniraConfigHandle handle(@Nonnull Class<?> configClass);

@@ -11,7 +11,7 @@ public enum NoopConfigService implements BaniraConfigService {
     }
 
     @Override
-    public <T> T get(Class<T> configClass) {
+    public <T> T view(Class<?> configClass, Class<T> viewClass) {
         throw new IllegalStateException("No config registered");
     }
 

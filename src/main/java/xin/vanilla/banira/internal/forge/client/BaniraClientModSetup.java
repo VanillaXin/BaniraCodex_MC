@@ -15,8 +15,10 @@ import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.forge.util.ForgeLogoModifier;
 
 /**
  * 客户端 Mod 总线（{@code Dist.CLIENT}）：键位注册、通知日志加载、{@link BaniraClientEventHub} 默认回调与 {@link FMLClientSetupEvent} 分发。
@@ -35,6 +37,7 @@ public final class BaniraClientModSetup {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
+        LogoModifier.installApplier(ForgeLogoModifier::modifyLogo);
         BaniraInput.flushPendingRegistrations();
         NotificationManager.get().loadLog();
         NotificationTypeSettingsStore.get().load();

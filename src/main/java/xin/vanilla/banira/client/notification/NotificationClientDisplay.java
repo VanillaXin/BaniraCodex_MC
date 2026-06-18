@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -11,7 +9,6 @@ import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 /**
  * 按玩家在「通知类型配置」中的选择，将网络通知改道至原版聊天或操作栏
  */
-@OnlyIn(Dist.CLIENT)
 public final class NotificationClientDisplay {
 
     private NotificationClientDisplay() {

@@ -5,8 +5,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -34,7 +32,6 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
  */
-@OnlyIn(Dist.CLIENT)
 public class NotificationTypeConfigScreen extends BaniraScreen {
 
     private static final int CARD_MARGIN = 10;

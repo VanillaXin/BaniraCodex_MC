@@ -7,8 +7,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -33,9 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_SECONDARY;
-
-
-@OnlyIn(Dist.CLIENT)
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true, fluent = true)
@@ -235,8 +230,6 @@ public class Notification extends NotificationData {
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
-
-    @OnlyIn(Dist.CLIENT)
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         renderAt(stack, preInfo, screenInfo, currentTime, this.calculatePosition(screenInfo, preInfo));
     }
@@ -244,7 +237,6 @@ public class Notification extends NotificationData {
     /**
      * 使用调用方已计算好的基础坐标渲染，避免通知管理器每帧重复计算位置。
      */
-    @OnlyIn(Dist.CLIENT)
     public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;

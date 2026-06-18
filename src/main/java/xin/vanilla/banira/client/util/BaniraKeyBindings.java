@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
@@ -11,7 +9,6 @@ import javax.annotation.Nonnull;
 /**
  * 旧包名下的按键注册别名；新代码优先使用 {@link BaniraInput}。
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraKeyBindings {
 
     private BaniraKeyBindings() {

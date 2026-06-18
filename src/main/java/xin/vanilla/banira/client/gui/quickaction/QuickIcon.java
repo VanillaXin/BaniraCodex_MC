@@ -12,8 +12,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
@@ -26,7 +24,6 @@ import javax.annotation.Nullable;
 /**
  * 快捷项在托盘上显示的图标来源：物品、药水效果或纹理资源。
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(chain = true, fluent = true)
 public class QuickIcon {
 

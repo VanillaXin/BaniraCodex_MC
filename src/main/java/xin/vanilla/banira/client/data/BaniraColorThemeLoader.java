@@ -29,7 +29,7 @@ import java.util.Map;
  * 资源缺失或解析失败时回退 {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
  * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}；当前是否用夜间由 {@link BaniraGuiNightMode} 与客户端配置决定。
  * <p>
- * 通过 Forge {@link net.minecraftforge.event.AddReloadListenerEvent} 注册。
+ * 具体加载器的资源重载事件由内部适配层注册。
  */
 public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {
 

@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
-import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -21,6 +20,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -1070,9 +1070,7 @@ public final class ItemUtils {
         }
         return modNameCache.computeIfAbsent(modId, id -> {
             try {
-                return ModList.get().getModContainerById(id)
-                        .map(container -> container.getModInfo().getDisplayName())
-                        .orElse(id);
+                return BaniraPlatforms.isInstalled() ? Banira.platform().modDisplayName(id) : id;
             } catch (Exception e) {
                 LOGGER.debug("Failed to get mod name for: {}", id, e);
                 return id;

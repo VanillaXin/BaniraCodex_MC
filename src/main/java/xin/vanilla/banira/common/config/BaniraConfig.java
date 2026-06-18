@@ -18,8 +18,8 @@ public final class BaniraConfig {
     }
 
     @Nonnull
-    public static <T> T get(@Nonnull Class<T> configClass) {
-        return Banira.platform().configService().get(configClass);
+    public static <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass) {
+        return Banira.platform().configService().view(configClass, viewClass);
     }
 
     @Nullable

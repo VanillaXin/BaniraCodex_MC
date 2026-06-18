@@ -86,17 +86,15 @@ public final class ForgeConfigAdapter {
     /**
      * 获取配置的 fluent 代理实例
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T get(Class<T> configClass) {
+    public static <T> T view(Class<?> configClass, Class<T> viewClass) {
         ConfigHolder holder = HOLDER_MAP.get(configClass);
         if (holder == null) {
             throw new IllegalStateException("Config not registered: " + configClass.getName());
         }
-        Class<?>[] ifaces = configClass.getInterfaces();
-        if (ifaces.length == 0) {
-            throw new IllegalArgumentException("Config class must implement an interface for fluent API: " + configClass.getName());
+        if (!viewClass.isInterface()) {
+            throw new IllegalArgumentException("Config view must be an interface: " + viewClass.getName());
         }
-        return (T) createProxy(ifaces, configClass, holder, "");
+        return viewClass.cast(createProxy(new Class<?>[]{viewClass}, configClass, holder, ""));
     }
 
     /**

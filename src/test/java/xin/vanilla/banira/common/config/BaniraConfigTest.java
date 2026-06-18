@@ -22,12 +22,31 @@ public class BaniraConfigTest {
         assertEquals("sample", service.registeredModId);
     }
 
+    @Test
+    public void viewDelegatesExplicitViewTypeToInstalledPlatformService() {
+        RecordingConfigService service = new RecordingConfigService();
+        BaniraPlatforms.install(new TestBaniraPlatform().configService(service));
+
+        SampleConfigView view = BaniraConfig.view(SampleConfig.class, SampleConfigView.class);
+
+        assertSame(service.view, view);
+        assertSame(SampleConfig.class, service.viewConfigClass);
+        assertSame(SampleConfigView.class, service.viewClass);
+    }
+
     private static final class SampleConfig {
+    }
+
+    private interface SampleConfigView {
     }
 
     private static final class RecordingConfigService implements BaniraConfigService {
         Class<?> registeredClass;
         String registeredModId;
+        Class<?> viewConfigClass;
+        Class<?> viewClass;
+        SampleConfigView view = new SampleConfigView() {
+        };
 
         @Override
         public <T> void register(Class<T> configClass, String modId) {
@@ -36,8 +55,10 @@ public class BaniraConfigTest {
         }
 
         @Override
-        public <T> T get(Class<T> configClass) {
-            throw new IllegalStateException("No config registered");
+        public <T> T view(Class<?> configClass, Class<T> viewClass) {
+            this.viewConfigClass = configClass;
+            this.viewClass = viewClass;
+            return viewClass.cast(view);
         }
 
         @Override

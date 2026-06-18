@@ -17,6 +17,7 @@ import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.forge.util.ForgeLogoModifier;
 
@@ -37,6 +38,7 @@ public final class BaniraClientModSetup {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
+        BaniraClientDrawBridge.install(ForgeBaniraDrawHandle::new);
         LogoModifier.installApplier(ForgeLogoModifier::modifyLogo);
         BaniraInput.flushPendingRegistrations();
         NotificationManager.get().loadLog();

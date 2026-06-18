@@ -42,7 +42,10 @@ public class PublicApiBoundaryTest {
                 String line = lines.get(i).trim();
                 if (line.startsWith("import net.minecraftforge.")
                         || line.startsWith("import net.fabricmc.")
-                        || line.startsWith("import net.neoforged.")) {
+                        || line.startsWith("import net.neoforged.")
+                        || line.startsWith("import xin.vanilla.banira.internal.forge.")
+                        || line.startsWith("import xin.vanilla.banira.internal.fabric.")
+                        || line.startsWith("import xin.vanilla.banira.internal.neoforge.")) {
                     violations.add(location(file, i + 1) + " " + line);
                 }
             }

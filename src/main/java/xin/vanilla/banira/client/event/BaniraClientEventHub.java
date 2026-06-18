@@ -25,8 +25,8 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.forge.client.ForgeBaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -403,7 +403,7 @@ public final class BaniraClientEventHub {
 
     private static BaniraDrawContext drawContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
-        return new BaniraDrawContext(new ForgeBaniraDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
+        return new BaniraDrawContext(BaniraClientDrawBridge.handle(nativeGraphics), screen.key(), screen.val(), partialTick);
     }
 
     private static BaniraHudRenderContext hudContext(@Nonnull PoseStack nativeGraphics, float partialTick) {

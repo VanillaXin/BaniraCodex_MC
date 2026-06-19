@@ -10,10 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
@@ -159,7 +159,8 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(effectInstance.getEffect());
+        String effectId = Banira.platform().registryService().effectKey(effectInstance.getEffect());
+        ResourceLocation registryName = effectId != null ? ResourceLocation.tryParse(effectId) : null;
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

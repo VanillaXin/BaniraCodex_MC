@@ -7,7 +7,7 @@ import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
 import javax.annotation.Nonnull;
 
 /**
- * 子 mod 绘制 HUD/GUI 的稳定入口；不同 MC 版本在内部转换到实际渲染上下文。
+ * 子 mod 绘制 HUD/GUI 的稳定入口；不同 MC 版本在内部转换到 PoseStack/GuiGraphics。
  */
 @Getter
 @Accessors(fluent = true)

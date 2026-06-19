@@ -3,7 +3,7 @@ package xin.vanilla.banira.platform;
 import java.util.Objects;
 
 /**
- * Runtime holder for the active loader implementation.
+ * 当前加载器 platform 的运行时持有者。
  */
 public final class BaniraPlatforms {
     private static volatile BaniraPlatform platform;

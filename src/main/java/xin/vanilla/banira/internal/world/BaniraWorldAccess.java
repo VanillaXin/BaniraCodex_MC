@@ -33,6 +33,14 @@ public final class BaniraWorldAccess {
         return SERVICE.biomeIds();
     }
 
+    public static Structure<?> structure(ResourceLocation id) {
+        return SERVICE.structure(id);
+    }
+
+    public static Set<String> structureIds() {
+        return SERVICE.structureIds();
+    }
+
     public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         return SERVICE.findNearestBiome(world, start, biome, radius, minDistance);
     }

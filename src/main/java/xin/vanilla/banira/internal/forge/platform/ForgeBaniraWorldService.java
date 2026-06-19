@@ -55,6 +55,19 @@ public final class ForgeBaniraWorldService implements BaniraWorldService {
     }
 
     @Override
+    public Structure<?> structure(ResourceLocation id) {
+        return id != null ? ForgeRegistries.STRUCTURE_FEATURES.getValue(id) : null;
+    }
+
+    @Override
+    public Set<String> structureIds() {
+        if (ForgeRegistries.STRUCTURE_FEATURES == null) return Collections.emptySet();
+        return ForgeRegistries.STRUCTURE_FEATURES.getKeys().stream()
+                .map(ResourceLocation::toString)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
     public WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         if (world == null || start == null || biome == null) return null;
         BlockPos pos = world.findNearestBiome(biome, start.toBlockPos(), radius, minDistance);

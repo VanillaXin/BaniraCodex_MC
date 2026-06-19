@@ -21,6 +21,10 @@ public interface BaniraWorldService {
 
     Set<String> biomeIds();
 
+    Structure<?> structure(ResourceLocation id);
+
+    Set<String> structureIds();
+
     WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance);
 
     ServerWorld level(RegistryKey<World> dimension);

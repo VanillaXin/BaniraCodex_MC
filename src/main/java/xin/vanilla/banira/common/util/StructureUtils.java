@@ -5,7 +5,6 @@ import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.server.ServerWorld;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
-import xin.vanilla.banira.internal.forge.platform.ForgeStructureRegistryAccess;
 import xin.vanilla.banira.internal.world.BaniraWorldAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -23,11 +22,11 @@ public final class StructureUtils {
     }
 
     public static Structure<?> getStructure(ResourceLocation id) {
-        return id != null ? ForgeStructureRegistryAccess.structure(id) : null;
+        return id != null ? BaniraWorldAccess.structure(id) : null;
     }
 
     public static Set<String> getAllIds() {
-        return ForgeStructureRegistryAccess.structureIds();
+        return BaniraWorldAccess.structureIds();
     }
 
     /**

@@ -333,9 +333,10 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPostNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
-            NotificationManager.get().renderNative(nativeGraphics);
+            NotificationManager.get().render(nativeGraphics);
             if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-                QuickActionOverlay.get().renderNative(nativeGraphics, screen, mouseX, mouseY, partialTick);
+                QuickActionOverlay.get().render(nativeGraphics, screen,
+                        (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
                 QuickActionOverlay.get().flushSaveIfNeeded();
             }
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
@@ -344,7 +345,7 @@ public final class BaniraClientEventHub {
         public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
-                NotificationManager.get().renderNative(nativeGraphics);
+                NotificationManager.get().render(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }

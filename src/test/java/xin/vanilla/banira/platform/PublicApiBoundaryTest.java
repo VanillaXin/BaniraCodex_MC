@@ -45,9 +45,34 @@ public class PublicApiBoundaryTest {
         assertNoViolations("BaniraPlatform should be a pure contract.", violations);
     }
 
+    @Test
+    public void sharedCommonAndClientPackagesDoNotImportLoaderApis() throws IOException {
+        List<String> violations = new ArrayList<>();
+        forEachSharedPackageFile(file -> {
+            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i).trim();
+                if (line.startsWith("import net.minecraftforge.")
+                        || line.startsWith("import net.fabricmc.")
+                        || line.startsWith("import net.neoforged.")
+                        || line.startsWith("import xin.vanilla.banira.internal.forge.")
+                        || line.startsWith("import xin.vanilla.banira.internal.fabric.")
+                        || line.startsWith("import xin.vanilla.banira.internal.neoforge.")) {
+                    violations.add(location(file, i + 1) + " " + line);
+                }
+            }
+        });
+        assertNoViolations("Shared common/client packages must keep loader APIs in internal adapters.", violations);
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);
+    }
+
+    private static void forEachSharedPackageFile(ThrowingPathConsumer consumer) throws IOException {
+        forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common")), consumer);
+        forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client")), consumer);
     }
 
     private static void forEachJavaFile(Path root, ThrowingPathConsumer consumer) throws IOException {

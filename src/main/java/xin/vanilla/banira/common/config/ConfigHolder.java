@@ -1,13 +1,15 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Loader-neutral config holder with metadata and value access.
+ * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
-public class ConfigHolder {
+public class ConfigHolder implements BaniraConfigHandle {
     @Getter
     private final String modId;
 
@@ -52,6 +54,11 @@ public class ConfigHolder {
         return backend.getValuePaths();
     }
 
+    @Override
+    public Set<String> valuePaths() {
+        return getValuePaths();
+    }
+
     public ConfigCategoryTitleSpec getCategoryTitleSpec(String categoryPath) {
         return categoryTitleSpecs.get(categoryPath);
     }
@@ -60,6 +67,7 @@ public class ConfigHolder {
         backend.save();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T get(String path) {
         if (!backend.getValuePaths().contains(path)) {
@@ -73,10 +81,78 @@ public class ConfigHolder {
         return (T) value;
     }
 
+    @Override
     public void set(String path, Object value) {
         if (backend.getValuePaths().contains(path)) {
             backend.set(path, value);
         }
+    }
+
+    @Override
+    public boolean hasValue(String path) {
+        return backend.getValuePaths().contains(path);
+    }
+
+    @Nullable
+    @Override
+    public String findValuePath(String key) {
+        if (key == null) {
+            return null;
+        }
+        if (hasValue(key)) {
+            return key;
+        }
+        String lowerKey = key.toLowerCase(Locale.ROOT);
+        String match = null;
+        for (String path : backend.getValuePaths()) {
+            if (!path.toLowerCase(Locale.ROOT).contains(lowerKey)) {
+                continue;
+            }
+            if (match != null) {
+                return null;
+            }
+            match = path;
+        }
+        return match;
+    }
+
+    @Override
+    public Class<?> valueClass(String path) {
+        Object defaultValue = defaultValue(path);
+        if (defaultValue != null) {
+            return defaultValue.getClass();
+        }
+        Object value = get(path);
+        return value != null ? value.getClass() : Object.class;
+    }
+
+    @Nullable
+    @Override
+    public Object defaultValue(String path) {
+        ConfigEntryDescriptor descriptor = getDescriptor(path);
+        return descriptor != null ? descriptor.getDefaultValue() : null;
+    }
+
+    @Override
+    public boolean validate(String path, Object value) {
+        if (!hasValue(path)) {
+            return false;
+        }
+        ConfigEntryDescriptor descriptor = getDescriptor(path);
+        if (descriptor == null) {
+            Object defaultValue = defaultValue(path);
+            return value == null || defaultValue == null || defaultValue.getClass().isInstance(value);
+        }
+        return validateDescriptorValue(descriptor, value);
+    }
+
+    @Override
+    public boolean setIfValid(String path, Object value) {
+        if (!validate(path, value)) {
+            return false;
+        }
+        set(path, value);
+        return true;
     }
 
     public ConfigEntryDescriptor getDescriptor(String path) {
@@ -148,6 +224,43 @@ public class ConfigHolder {
     private static String getParentPath(String path) {
         int lastDot = path.lastIndexOf('.');
         return lastDot > 0 ? path.substring(0, lastDot) : "";
+    }
+
+    private static boolean validateDescriptorValue(ConfigEntryDescriptor descriptor, Object value) {
+        if (descriptor == null || value == null) {
+            return false;
+        }
+        if (descriptor.isListType()) {
+            if (!(value instanceof List)) {
+                return false;
+            }
+            for (Object one : (List<?>) value) {
+                if (ConfigListSpecHelper.coerceListElement(one, descriptor.getValueType(), descriptor.getEnumClass(),
+                        descriptor.getMinValue(), descriptor.getMaxValue(), descriptor.getDecimalPlaces()) == null) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        switch (descriptor.getValueType()) {
+            case INTEGER:
+            case LONG:
+            case DOUBLE:
+                if (!(value instanceof Number)) {
+                    return false;
+                }
+                double number = ((Number) value).doubleValue();
+                return (descriptor.getMinValue() == null || number >= descriptor.getMinValue().doubleValue())
+                        && (descriptor.getMaxValue() == null || number <= descriptor.getMaxValue().doubleValue());
+            case BOOLEAN:
+                return value instanceof Boolean;
+            case ENUM:
+                return value instanceof Enum && descriptor.getEnumClass() != null
+                        && descriptor.getEnumClass().isAssignableFrom(value.getClass());
+            case STRING:
+            default:
+                return value instanceof String;
+        }
     }
 
     @Getter

@@ -13,8 +13,8 @@ final class BaniraConfigHandles {
 
     static ConfigHolder holder(Class<?> configClass) {
         BaniraConfigHandle handle = BaniraPlatforms.get().configService().handle(configClass);
-        if (handle instanceof BaniraConfigHandleAdapter) {
-            return ((BaniraConfigHandleAdapter) handle).holder();
+        if (handle instanceof ConfigHolder) {
+            return (ConfigHolder) handle;
         }
         throw new IllegalStateException("Config holder is not available for " + configClass.getName());
     }

@@ -46,7 +46,7 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
 
     public static void handle(ConfigFetchRequestToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isServerReception()) {
+            if (!ctx.isServerSide()) {
                 return;
             }
             ServerPlayerEntity player = ctx.sender();

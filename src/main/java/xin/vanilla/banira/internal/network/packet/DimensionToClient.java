@@ -36,7 +36,7 @@ public class DimensionToClient extends SplitPacket
 
     public static void handle(DimensionToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientReception()) {
+            if (ctx.isClientSide()) {
                 DimensionUtils.setClientDimensionIds(packet.getDimensionIds());
             }
         });

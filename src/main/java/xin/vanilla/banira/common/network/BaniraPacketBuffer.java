@@ -4,84 +4,46 @@ import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 
 /**
- * Small loader-neutral facade around the active branch packet buffer.
+ * Banira 网络缓冲区抽象；只暴露公共协议当前需要的稳定读写操作。
  */
-public final class BaniraPacketBuffer {
-    private final BaniraPacketBufferDelegate delegate;
+public interface BaniraPacketBuffer {
+    int readVarInt();
 
-    public BaniraPacketBuffer(BaniraPacketBufferDelegate delegate) {
-        this.delegate = delegate;
-    }
+    void writeVarInt(int value);
 
-    public int readVarInt() {
-        return delegate.readVarInt();
-    }
+    String readUtf();
 
-    public BaniraPacketBuffer writeVarInt(int value) {
-        delegate.writeVarInt(value);
-        return this;
-    }
+    String readUtf(int maxLength);
 
-    public String readUtf() {
-        return delegate.readUtf();
-    }
+    void writeUtf(String value);
 
-    public String readUtf(int maxLength) {
-        return delegate.readUtf(maxLength);
-    }
+    void writeUtf(String value, int maxLength);
 
-    public BaniraPacketBuffer writeUtf(String value) {
-        delegate.writeUtf(value);
-        return this;
-    }
+    int readInt();
 
-    public BaniraPacketBuffer writeUtf(String value, int maxLength) {
-        delegate.writeUtf(value, maxLength);
-        return this;
-    }
+    void writeInt(int value);
 
-    public int readInt() {
-        return delegate.readInt();
-    }
+    long readLong();
 
-    public BaniraPacketBuffer writeInt(int value) {
-        delegate.writeInt(value);
-        return this;
-    }
+    void writeLong(long value);
 
-    public long readLong() {
-        return delegate.readLong();
-    }
+    boolean readBoolean();
 
-    public BaniraPacketBuffer writeLong(long value) {
-        delegate.writeLong(value);
-        return this;
-    }
+    void writeBoolean(boolean value);
 
-    public boolean readBoolean() {
-        return delegate.readBoolean();
-    }
+    ResourceLocation readResourceLocation();
 
-    public BaniraPacketBuffer writeBoolean(boolean value) {
-        delegate.writeBoolean(value);
-        return this;
-    }
+    void writeResourceLocation(ResourceLocation value);
 
-    public ResourceLocation readResourceLocation() {
-        return delegate.readResourceLocation();
-    }
+    /**
+     * 1.16.5 Advancement DisplayInfo 的序列化仍依赖原版实现，限制在当前分支内部使用。
+     */
+    DisplayInfo readDisplayInfo();
 
-    public BaniraPacketBuffer writeResourceLocation(ResourceLocation value) {
-        delegate.writeResourceLocation(value);
-        return this;
-    }
+    void writeDisplayInfo(DisplayInfo value);
 
-    public DisplayInfo readDisplayInfo() {
-        return delegate.readDisplayInfo();
-    }
-
-    public BaniraPacketBuffer writeDisplayInfo(DisplayInfo value) {
-        delegate.writeDisplayInfo(value);
-        return this;
-    }
+    /**
+     * 仅供版本/加载器内部适配复杂原版序列化时使用，公共包协议不要直接依赖返回类型。
+     */
+    Object nativeBuffer();
 }

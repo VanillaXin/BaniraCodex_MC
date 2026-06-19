@@ -37,7 +37,7 @@ public class BiomeToClient extends SplitPacket
 
     public static void handle(BiomeToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientReception()) {
+            if (ctx.isClientSide()) {
                 BiomeUtils.setClientBiomeIds(packet.getBiomeIds());
             }
         });

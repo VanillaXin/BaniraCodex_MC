@@ -5,33 +5,32 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import javax.annotation.Nullable;
 
 /**
- * Loader-neutral packet handling context.
+ * Banira 网络包处理上下文；不同加载器只需要适配这些最小语义。
  */
-public final class BaniraNetworkContext {
-    private final BaniraNetworkContextDelegate delegate;
+public interface BaniraNetworkContext {
+    /**
+     * 将处理逻辑切回 MC 主线程执行。
+     */
+    void enqueueWork(Runnable work);
 
-    public BaniraNetworkContext(BaniraNetworkContextDelegate delegate) {
-        this.delegate = delegate;
-    }
+    /**
+     * 标记当前网络包已经处理完毕。
+     */
+    void markHandled();
 
-    public void enqueueWork(Runnable runnable) {
-        delegate.enqueueWork(runnable);
-    }
+    /**
+     * 当前包是否由客户端接收。
+     */
+    boolean isClientSide();
 
+    /**
+     * 当前包是否由服务端接收。
+     */
+    boolean isServerSide();
+
+    /**
+     * 服务端收到客户端包时的发送者；客户端接收包时通常为空。
+     */
     @Nullable
-    public ServerPlayerEntity sender() {
-        return delegate.sender();
-    }
-
-    public boolean isClientReception() {
-        return delegate.isClientReception();
-    }
-
-    public boolean isServerReception() {
-        return delegate.isServerReception();
-    }
-
-    public void markHandled() {
-        delegate.markHandled();
-    }
+    ServerPlayerEntity sender();
 }

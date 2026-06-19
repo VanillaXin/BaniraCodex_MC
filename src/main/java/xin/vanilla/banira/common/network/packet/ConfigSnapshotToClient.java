@@ -51,7 +51,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
 
     public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isClientReception()) {
+            if (!ctx.isClientSide()) {
                 return;
             }
             BaniraClientPacketDispatch.handle(packet);

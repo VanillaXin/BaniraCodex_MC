@@ -3,12 +3,15 @@ package xin.vanilla.banira.internal.forge.network;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.banira.common.network.BaniraPacketBufferDelegate;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
-final class ForgePacketBufferDelegate implements BaniraPacketBufferDelegate {
+/**
+ * Forge 1.16.5 的 PacketBuffer 适配实现。
+ */
+final class ForgePacketBuffer implements BaniraPacketBuffer {
     private final PacketBuffer buffer;
 
-    ForgePacketBufferDelegate(PacketBuffer buffer) {
+    ForgePacketBuffer(PacketBuffer buffer) {
         this.buffer = buffer;
     }
 
@@ -90,5 +93,10 @@ final class ForgePacketBufferDelegate implements BaniraPacketBufferDelegate {
     @Override
     public void writeDisplayInfo(DisplayInfo value) {
         value.serializeToNetwork(buffer);
+    }
+
+    @Override
+    public Object nativeBuffer() {
+        return buffer;
     }
 }

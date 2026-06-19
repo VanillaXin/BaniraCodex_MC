@@ -59,7 +59,7 @@ public class ConfigSyncToServer implements NetworkPacket {
 
     public static void handle(ConfigSyncToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isServerReception()) {
+            if (!ctx.isServerSide()) {
                 return;
             }
             ServerPlayerEntity player = ctx.sender();

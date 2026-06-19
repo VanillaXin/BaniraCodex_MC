@@ -41,7 +41,7 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
 
     public static void handle(CustomPlayerConfigSyncToServer packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!ctx.isServerReception()) {
+            if (!ctx.isServerSide()) {
                 return;
             }
             ServerPlayerEntity player = ctx.sender();

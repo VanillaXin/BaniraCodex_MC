@@ -117,10 +117,10 @@ public final class ForgeNetworkChannel {
     }
 
     private static BaniraPacketBuffer wrap(PacketBuffer buffer) {
-        return new BaniraPacketBuffer(new ForgePacketBufferDelegate(buffer));
+        return new ForgePacketBuffer(buffer);
     }
 
     private static BaniraNetworkContext wrap(Supplier<NetworkEvent.Context> context) {
-        return new BaniraNetworkContext(new ForgeNetworkContextDelegate(context));
+        return new ForgeNetworkContext(context);
     }
 }

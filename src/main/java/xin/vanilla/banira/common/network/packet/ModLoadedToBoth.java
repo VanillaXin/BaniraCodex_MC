@@ -106,7 +106,7 @@ public class ModLoadedToBoth implements NetworkPacket {
 
     public static void handle(ModLoadedToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isServerReception()) {
+            if (ctx.isServerSide()) {
                 ServerPlayerEntity player = ctx.sender();
                 if (player == null || packet.modids().isEmpty()) {
                     return;

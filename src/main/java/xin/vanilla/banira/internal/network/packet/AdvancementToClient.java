@@ -47,7 +47,7 @@ public class AdvancementToClient extends SplitPacket
      */
     public static void handle(AdvancementToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientReception()) {
+            if (ctx.isClientSide()) {
                 AdvancementUtils.advancementData(packet.getAdvancements());
             }
         });

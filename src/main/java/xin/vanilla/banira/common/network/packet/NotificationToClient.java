@@ -78,7 +78,7 @@ public class NotificationToClient implements NetworkPacket {
 
     public static void handle(NotificationToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.isClientReception()) {
+            if (ctx.isClientSide()) {
                 BaniraClientPacketDispatch.handle(packet);
             }
         });

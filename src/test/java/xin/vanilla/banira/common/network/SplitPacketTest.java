@@ -42,12 +42,28 @@ public class SplitPacketTest {
     }
 
     @Test
-    public void duplicateSortDoesNotCompleteAssemblyEarly() {
+    public void duplicateSortDropsCurrentAssembly() {
         DummySplitPacket original = packet("duplicate", 2, 0);
         DummySplitPacket replacement = packet("duplicate", 2, 0);
         DummySplitPacket last = packet("duplicate", 2, 1);
 
         assertTrue(SplitPacket.handle(original).isEmpty());
+        assertTrue(SplitPacket.handle(replacement).isEmpty());
+        assertEquals(0, SplitPacket.assemblyCountForTest());
+
+        List<DummySplitPacket> merged = SplitPacket.handle(last);
+
+        assertTrue(merged.isEmpty());
+        assertEquals(1, SplitPacket.assemblyCountForTest());
+    }
+
+    @Test
+    public void mismatchedTotalStartsNewAssembly() {
+        DummySplitPacket old = packet("retotal", 3, 0);
+        DummySplitPacket replacement = packet("retotal", 2, 0);
+        DummySplitPacket last = packet("retotal", 2, 1);
+
+        assertTrue(SplitPacket.handle(old).isEmpty());
         assertTrue(SplitPacket.handle(replacement).isEmpty());
 
         List<DummySplitPacket> merged = SplitPacket.handle(last);

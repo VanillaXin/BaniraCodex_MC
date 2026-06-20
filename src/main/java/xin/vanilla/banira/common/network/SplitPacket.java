@@ -52,6 +52,10 @@ public abstract class SplitPacket {
 
         List<T> result;
         synchronized (assembly) {
+            if (assembly.hasSort(packet.getSort())) {
+                ASSEMBLIES.remove(packet.getId(), assembly);
+                return Collections.emptyList();
+            }
             assembly.put(packet);
             if (!assembly.isComplete()) {
                 return Collections.emptyList();
@@ -135,6 +139,10 @@ public abstract class SplitPacket {
         private void put(SplitPacket packet) {
             packets.put(packet.getSort(), packet);
             touch();
+        }
+
+        private boolean hasSort(int sort) {
+            return packets.containsKey(sort);
         }
 
         private boolean isComplete() {

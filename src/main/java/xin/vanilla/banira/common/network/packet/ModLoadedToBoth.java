@@ -2,14 +2,12 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.server.ServerSenderAccess;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -107,17 +105,17 @@ public class ModLoadedToBoth implements NetworkPacket {
     public static void handle(ModLoadedToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isServerSide()) {
-                ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
-                if (player == null || packet.modids().isEmpty()) {
+                Object sender = ctx.sender();
+                if (sender == null || packet.modids().isEmpty()) {
                     return;
                 }
                 for (String modid : packet.modids()) {
-                    PlayerUtils.setRemoteClientModInstalled(player, modid, false);
-                    ModLoadedPresence.dispatchServerSync(player, modid);
+                    ServerSenderAccess.setRemoteClientModInstalled(sender, modid, false);
+                    ModLoadedPresence.dispatchServerSync(sender, modid);
                 }
                 List<String> serverIds = ModLoadedPresence.announcedModIds();
                 if (!serverIds.isEmpty()) {
-                    PacketUtils.sendPacketToPlayer(new ModLoadedToBoth(serverIds), player);
+                    ServerSenderAccess.sendPacket(sender, new ModLoadedToBoth(serverIds));
                 }
             } else {
                 if (!packet.modids().isEmpty()) {

@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class ConfigSnapshotClientHandler {
@@ -21,12 +22,7 @@ public final class ConfigSnapshotClientHandler {
             return;
         }
         try {
-            for (Map.Entry<String, String> e : packet.snapshot().entrySet()) {
-                Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
-                if (parsed != null) {
-                    holder.set(e.getKey(), parsed);
-                }
-            }
+            applyValidatedSnapshot(holder, packet.snapshot());
             holder.save();
         } catch (Exception ex) {
             LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
@@ -36,5 +32,19 @@ public final class ConfigSnapshotClientHandler {
         }
         BaniraClientScreenService.refreshOpenConfigEditor(packet.configName());
         ConfigEditorNotifier.show("config_editor_fetch_applied", 3000, String.valueOf(packet.snapshot().size()));
+    }
+
+    static void applyValidatedSnapshot(ConfigHolder holder, Map<String, String> snapshot) {
+        Map<String, Object> parsedSnapshot = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : snapshot.entrySet()) {
+            Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
+            if (!holder.validate(e.getKey(), parsed)) {
+                throw new IllegalArgumentException("Invalid config value: " + e.getKey());
+            }
+            parsedSnapshot.put(e.getKey(), parsed);
+        }
+        for (Map.Entry<String, Object> e : parsedSnapshot.entrySet()) {
+            holder.set(e.getKey(), e.getValue());
+        }
     }
 }

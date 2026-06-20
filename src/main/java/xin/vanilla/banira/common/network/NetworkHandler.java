@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.network;
 
 import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -13,7 +15,14 @@ public class NetworkHandler {
     private final NetworkPacketRegistrar registrar;
     private int nextPacketId = 0;
 
-    public NetworkHandler(NetworkPacketRegistrar registrar) {
+    /**
+     * 创建跨加载器网络处理器，调用方不需要直接接触具体加载器的 channel/registrar。
+     */
+    public static NetworkHandler create(String channelName, IIdentifier identifier) {
+        return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(channelName, identifier));
+    }
+
+    NetworkHandler(NetworkPacketRegistrar registrar) {
         this.registrar = registrar;
     }
 

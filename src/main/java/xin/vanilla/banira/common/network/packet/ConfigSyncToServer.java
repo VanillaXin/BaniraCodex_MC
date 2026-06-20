@@ -62,7 +62,7 @@ public class ConfigSyncToServer implements NetworkPacket {
             if (!ctx.isServerSide()) {
                 return;
             }
-            ServerPlayerEntity player = ctx.sender();
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player == null) {
                 return;
             }

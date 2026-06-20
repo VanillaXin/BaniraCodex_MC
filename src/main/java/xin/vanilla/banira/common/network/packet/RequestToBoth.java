@@ -64,7 +64,7 @@ public class RequestToBoth implements NetworkPacket {
     public static void handle(RequestToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isServerSide()) {
-                ServerPlayerEntity player = ctx.sender();
+                ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
                 HANDLERS.dispatch(packet, player);
             }
         });

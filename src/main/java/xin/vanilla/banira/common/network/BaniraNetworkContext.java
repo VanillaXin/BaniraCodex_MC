@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-
 import javax.annotation.Nullable;
 
 /**
@@ -32,5 +30,14 @@ public interface BaniraNetworkContext {
      * 服务端收到客户端包时的发送者；客户端接收包时通常为空。
      */
     @Nullable
-    ServerPlayerEntity sender();
+    Object sender();
+
+    /**
+     * 版本内部代码按当前 MC 版本的玩家类型读取 sender；公共 API 只承诺 Object。
+     */
+    @Nullable
+    default <T> T senderAs(Class<T> type) {
+        Object value = sender();
+        return type.isInstance(value) ? type.cast(value) : null;
+    }
 }

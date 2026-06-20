@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -27,7 +25,7 @@ public final class ModLoadedPresence {
      * @param onServerSync 服务端收到该玩家已安装此 mod 后的回调（例如在此时下发自定义同步数据）
      */
     @Nonnull
-    public static ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<ServerPlayerEntity> onServerSync) {
+    public static ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<Object> onServerSync) {
         return REGISTRY.register(modid, onServerSync);
     }
 
@@ -62,7 +60,7 @@ public final class ModLoadedPresence {
     /**
      * 服务端：在已写入玩家 mod 安装状态后，执行该 mod 注册的同步回调（若存在）。
      */
-    public static boolean dispatchServerSync(@Nonnull ServerPlayerEntity player, @Nonnull String modid) {
+    public static boolean dispatchServerSync(@Nonnull Object player, @Nonnull String modid) {
         return REGISTRY.dispatchServerSync(player, modid);
     }
 }

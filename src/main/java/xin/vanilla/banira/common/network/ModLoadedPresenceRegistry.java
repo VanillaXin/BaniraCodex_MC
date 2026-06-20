@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nonnull;
@@ -19,10 +18,10 @@ import java.util.function.Consumer;
 public final class ModLoadedPresenceRegistry {
 
     private final Object lock = new Object();
-    private final Map<String, Consumer<ServerPlayerEntity>> syncByModId = new LinkedHashMap<>();
+    private final Map<String, Consumer<Object>> syncByModId = new LinkedHashMap<>();
 
     @Nonnull
-    public ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<ServerPlayerEntity> onServerSync) {
+    public ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<Object> onServerSync) {
         Objects.requireNonNull(onServerSync, "onServerSync");
         String key = normalizeModId(modid);
         if (key.isEmpty()) {
@@ -44,7 +43,7 @@ public final class ModLoadedPresenceRegistry {
         }
     }
 
-    public boolean unregister(@Nonnull String modid, @Nonnull Consumer<ServerPlayerEntity> onServerSync) {
+    public boolean unregister(@Nonnull String modid, @Nonnull Consumer<Object> onServerSync) {
         Objects.requireNonNull(onServerSync, "onServerSync");
         String key = normalizeModId(modid);
         if (key.isEmpty()) {
@@ -76,11 +75,11 @@ public final class ModLoadedPresenceRegistry {
         }
     }
 
-    public boolean dispatchServerSync(@Nullable ServerPlayerEntity player, @Nonnull String modid) {
+    public boolean dispatchServerSync(@Nullable Object player, @Nonnull String modid) {
         if (player == null) {
             return false;
         }
-        Consumer<ServerPlayerEntity> sync;
+        Consumer<Object> sync;
         synchronized (lock) {
             sync = syncByModId.get(normalizeModId(modid));
         }

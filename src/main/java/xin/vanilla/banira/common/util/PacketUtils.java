@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
@@ -36,11 +35,11 @@ public final class PacketUtils {
         BaniraPlatforms.get().networkService().sendToServer(msg);
     }
 
-    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayerEntity player) {
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, Object player) {
         BaniraPlatforms.get().networkService().sendToPlayer(msg, player);
     }
 
-    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayerEntity player) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, Object player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(splitPacket, player);
@@ -66,11 +65,11 @@ public final class PacketUtils {
         return BaniraPlatforms.get().networkService().hasLocalChannel(channelId);
     }
 
-    public static boolean hasChannel(ServerPlayerEntity player, ResourceLocation channel) {
+    public static boolean hasChannel(Object player, ResourceLocation channel) {
         return channel != null && hasChannel(player, channel.toString());
     }
 
-    public static boolean hasChannel(ServerPlayerEntity player, String channelId) {
+    public static boolean hasChannel(Object player, String channelId) {
         return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channelId);
     }
 }

@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
 import org.junit.Test;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 
@@ -24,9 +23,9 @@ public class RequestPacketHandlersTest {
     @Test
     public void registrationOnlyRemovesOwnHandler() {
         RequestPacketHandlers handlers = new RequestPacketHandlers();
-        BiConsumer<RequestToBoth, ServerPlayerEntity> first = (packet, player) -> {
+        BiConsumer<RequestToBoth, Object> first = (packet, player) -> {
         };
-        BiConsumer<RequestToBoth, ServerPlayerEntity> second = (packet, player) -> {
+        BiConsumer<RequestToBoth, Object> second = (packet, player) -> {
         };
 
         RequestHandlerRegistration registration = handlers.register(3, first);

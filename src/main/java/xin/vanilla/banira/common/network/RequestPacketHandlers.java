@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 
 import javax.annotation.Nonnull;
@@ -16,14 +15,14 @@ import java.util.function.BiConsumer;
 public final class RequestPacketHandlers {
 
     private final Object lock = new Object();
-    private final Map<Integer, BiConsumer<RequestToBoth, ServerPlayerEntity>> handlers = new LinkedHashMap<>();
+    private final Map<Integer, BiConsumer<RequestToBoth, Object>> handlers = new LinkedHashMap<>();
 
     /**
      * 注册或覆盖一个请求类型处理器，并返回可撤销本次注册的凭据。
      */
     @Nonnull
     public RequestHandlerRegistration register(int requestType,
-                                               @Nonnull BiConsumer<RequestToBoth, ServerPlayerEntity> handler) {
+                                               @Nonnull BiConsumer<RequestToBoth, Object> handler) {
         Objects.requireNonNull(handler, "handler");
         synchronized (lock) {
             handlers.put(requestType, handler);
@@ -34,7 +33,7 @@ public final class RequestPacketHandlers {
     /**
      * 仅当当前处理器仍是指定实例时才移除，避免旧凭据误删后续覆盖注册。
      */
-    public boolean unregister(int requestType, @Nonnull BiConsumer<RequestToBoth, ServerPlayerEntity> handler) {
+    public boolean unregister(int requestType, @Nonnull BiConsumer<RequestToBoth, Object> handler) {
         Objects.requireNonNull(handler, "handler");
         synchronized (lock) {
             if (handlers.get(requestType) == handler) {
@@ -57,11 +56,11 @@ public final class RequestPacketHandlers {
         }
     }
 
-    public boolean dispatch(@Nonnull RequestToBoth packet, @Nullable ServerPlayerEntity player) {
+    public boolean dispatch(@Nonnull RequestToBoth packet, @Nullable Object player) {
         if (player == null) {
             return false;
         }
-        BiConsumer<RequestToBoth, ServerPlayerEntity> handler;
+        BiConsumer<RequestToBoth, Object> handler;
         synchronized (lock) {
             handler = handlers.get(packet.requestType());
         }

@@ -87,12 +87,7 @@ public class ConfigSyncToServer implements NetworkPacket {
                         return;
                     }
                 }
-                for (Map.Entry<String, String> e : packet.changes.entrySet()) {
-                    Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
-                    }
-                }
+                applyValidatedChanges(holder, packet.changes);
                 saveConfig(holder);
                 sendNotify(player, "config_editor_sync_server_ok", NOTIFY_OK_MS,
                         String.valueOf(packet.changes.size()));
@@ -102,6 +97,20 @@ public class ConfigSyncToServer implements NetworkPacket {
             }
         });
         ctx.markHandled();
+    }
+
+    static void applyValidatedChanges(ConfigHolder holder, Map<String, String> changes) {
+        Map<String, Object> parsedChanges = new HashMap<>();
+        for (Map.Entry<String, String> e : changes.entrySet()) {
+            Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
+            if (!holder.validate(e.getKey(), parsed)) {
+                throw new IllegalArgumentException("Invalid config value: " + e.getKey());
+            }
+            parsedChanges.put(e.getKey(), parsed);
+        }
+        for (Map.Entry<String, Object> e : parsedChanges.entrySet()) {
+            holder.set(e.getKey(), e.getValue());
+        }
     }
 
     private static void sendNotify(ServerPlayerEntity player, String langKey, long durationMs, Object... args) {
@@ -144,7 +153,13 @@ public class ConfigSyncToServer implements NetworkPacket {
         try {
             switch (desc.getValueType()) {
                 case BOOLEAN:
-                    return Boolean.parseBoolean(value);
+                    if ("true".equalsIgnoreCase(value)) {
+                        return Boolean.TRUE;
+                    }
+                    if ("false".equalsIgnoreCase(value)) {
+                        return Boolean.FALSE;
+                    }
+                    return value;
                 case INTEGER:
                     return Integer.parseInt(value);
                 case LONG:

@@ -102,7 +102,14 @@ public final class CommandUtils {
     }
 
     /**
-     * 是否拥有指定完整虚拟权限键（{@code modId:id}）
+     * 对中立玩家句柄判断指定完整虚拟权限键（{@code modId:id}）。
+     */
+    public static boolean hasVirtualPermission(Object player, String fullPermissionKey) {
+        return player instanceof PlayerEntity && hasVirtualPermission((PlayerEntity) player, fullPermissionKey);
+    }
+
+    /**
+     * 是否拥有指定完整虚拟权限键（{@code modId:id}）。
      */
     public static boolean hasVirtualPermission(PlayerEntity player, String fullPermissionKey) {
         if (player == null || fullPermissionKey == null || fullPermissionKey.isEmpty()) {

@@ -2,7 +2,6 @@ package xin.vanilla.banira;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.command.BaniraCommand;
@@ -15,6 +14,7 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.server.BaniraServerAccess;
+import xin.vanilla.banira.internal.server.ServerSenderAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
@@ -90,19 +90,15 @@ public final class BaniraCodex {
         });
         BaniraEventBus.Save.onWorldSave(CustomConfig::saveCustomConfig);
 
-        BaniraEventBus.Save.onPlayerSave(player ->
-                playerDataManager.saveToDisk(PlayerUtils.getPlayerUUID(player))
-        );
-        BaniraEventBus.Player.onLoggedOut(player -> {
-            if (player instanceof ServerPlayerEntity) {
-                PlayerUtils.removeRemoteClientDataStatus(player);
+        BaniraEventBus.Save.onPlayerSave(event -> {
+            if (event.uuid() != null) {
+                playerDataManager.saveToDisk(event.uuid());
             }
         });
-        BaniraEventBus.Player.onLoggedIn(player -> {
-            if (player instanceof ServerPlayerEntity) {
-                ServerPlayerEntity sp = (ServerPlayerEntity) player;
-                PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), sp);
-            }
-        });
+        BaniraEventBus.Player.onLoggedOut(event -> ServerSenderAccess.removeRemoteClientDataStatus(event.player()));
+        BaniraEventBus.Player.onLoggedIn(event -> ServerSenderAccess.sendPacket(
+                event.player(),
+                new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries())
+        ));
     }
 }

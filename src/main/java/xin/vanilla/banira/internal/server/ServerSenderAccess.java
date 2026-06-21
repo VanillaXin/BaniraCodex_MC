@@ -81,4 +81,11 @@ public final class ServerSenderAccess {
             PlayerUtils.setRemoteClientModInstalled(player, modid, synced);
         }
     }
+
+    public static void removeRemoteClientDataStatus(Object sender) {
+        ServerPlayerEntity player = asServerPlayer(sender);
+        if (player != null) {
+            PlayerUtils.removeRemoteClientDataStatus(player);
+        }
+    }
 }

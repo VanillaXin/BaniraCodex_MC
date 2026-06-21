@@ -1,19 +1,16 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
+import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
+import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -28,11 +25,10 @@ public final class BaniraEventBus {
     private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
     private static final List<Runnable> clientTickEndCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<PlayerEntity>> playerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerEntity>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<ServerPlayerEntity>> playerEnteredDimensionCallbacks = new ArrayList<>();
-    private static final List<BiConsumer<ServerPlayerEntity, RegistryKey<World>>> playerExitedDimensionCallbacks = new ArrayList<>();
-    private static final List<Consumer<ServerPlayerEntity>> playerSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedInCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedOutCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
@@ -92,23 +88,19 @@ public final class BaniraEventBus {
         private Player() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedInCallbacks.add(callback);
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<PlayerEntity> callback) {
+        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedOutCallbacks.add(callback);
         }
 
-        public static void onEnterDimension(@Nonnull Consumer<ServerPlayerEntity> callback) {
-            playerEnteredDimensionCallbacks.add(callback);
+        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
+            playerChangedDimensionCallbacks.add(callback);
         }
 
-        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayerEntity, RegistryKey<World>> callback) {
-            playerExitedDimensionCallbacks.add(callback);
-        }
-
-        public static void onSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
+        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
@@ -125,7 +117,7 @@ public final class BaniraEventBus {
             chunkSaveCallbacks.add(callback);
         }
 
-        public static void onPlayerSave(@Nonnull Consumer<ServerPlayerEntity> callback) {
+        public static void onPlayerSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
@@ -159,17 +151,16 @@ public final class BaniraEventBus {
         fire(clientTickEndCallbacks, "client tick end");
     }
 
-    public static void dispatchPlayerLoggedIn(PlayerEntity player) {
-        fire(playerLoggedInCallbacks, player, "player logged in");
+    public static void dispatchPlayerLoggedIn(@Nonnull BaniraPlayerEvent event) {
+        fire(playerLoggedInCallbacks, event, "player logged in");
     }
 
-    public static void dispatchPlayerLoggedOut(PlayerEntity player) {
-        fire(playerLoggedOutCallbacks, player, "player logged out");
+    public static void dispatchPlayerLoggedOut(@Nonnull BaniraPlayerEvent event) {
+        fire(playerLoggedOutCallbacks, event, "player logged out");
     }
 
-    public static void dispatchPlayerChangedDimension(ServerPlayerEntity player, RegistryKey<World> from) {
-        fire(playerEnteredDimensionCallbacks, player, "player enter dimension");
-        fire(playerExitedDimensionCallbacks, player, from, "player exit dimension");
+    public static void dispatchPlayerChangedDimension(@Nonnull BaniraPlayerDimensionEvent event) {
+        fire(playerChangedDimensionCallbacks, event, "player changed dimension");
     }
 
     public static void dispatchWorldSave() {
@@ -180,8 +171,8 @@ public final class BaniraEventBus {
         fire(chunkSaveCallbacks, "chunk save");
     }
 
-    public static void dispatchPlayerSave(ServerPlayerEntity player) {
-        fire(playerSaveCallbacks, player, "player save");
+    public static void dispatchPlayerSave(@Nonnull BaniraPlayerEvent event) {
+        fire(playerSaveCallbacks, event, "player save");
     }
 
     public static void dispatchModCommonSetup() {
@@ -196,16 +187,6 @@ public final class BaniraEventBus {
         for (Consumer<T> callback : callbacks) {
             try {
                 callback.accept(parameter);
-            } catch (Throwable t) {
-                LOGGER.warn("Error executing callback for {} event", eventName, t);
-            }
-        }
-    }
-
-    private static <A, B> void fire(List<BiConsumer<A, B>> callbacks, A first, B second, String eventName) {
-        for (BiConsumer<A, B> callback : callbacks) {
-            try {
-                callback.accept(first, second);
             } catch (Throwable t) {
                 LOGGER.warn("Error executing callback for {} event", eventName, t);
             }

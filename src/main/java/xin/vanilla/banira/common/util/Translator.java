@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -391,17 +390,17 @@ public class Translator implements ITranslator {
     /**
      * 获取服务端玩家语言
      */
-    public static String getServerPlayerLanguage(ServerPlayer player) {
+    public static String getServerPlayerLanguage(Object player) {
         return PlayerLanguageManager.get(player);
     }
 
     /**
      * 解析有效语言（支持 "client"、"server" 等特殊值）
      */
-    public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
+    public static String getValidLanguage(@Nullable Object player, @Nullable String language) {
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            return player instanceof ServerPlayer serverPlayer
-                    ? getServerPlayerLanguage(serverPlayer)
+            return PlayerLanguageManager.has(player)
+                    ? getServerPlayerLanguage(player)
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {

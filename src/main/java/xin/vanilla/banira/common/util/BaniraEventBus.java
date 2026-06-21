@@ -1,12 +1,12 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
+import xin.vanilla.banira.api.event.BaniraServerEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -19,9 +19,9 @@ import java.util.function.Consumer;
 public final class BaniraEventBus {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final List<Consumer<MinecraftServer>> serverStartingCallbacks = new ArrayList<>();
-    private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
-    private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStartingCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStartedCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStoppingCallbacks = new ArrayList<>();
     private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
     private static final List<Runnable> clientTickEndCallbacks = new ArrayList<>();
 
@@ -48,15 +48,15 @@ public final class BaniraEventBus {
         private Server() {
         }
 
-        public static void onStarting(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStarting(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
         }
 
-        public static void onStarted(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStarted(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartedCallbacks.add(callback);
         }
 
-        public static void onStopping(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStopping(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
         }
 
@@ -64,12 +64,12 @@ public final class BaniraEventBus {
             serverTickEndCallbacks.add(callback);
         }
 
-        public static Registration onStartingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
+        public static Registration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
             return createRegistration(() -> serverStartingCallbacks.remove(callback));
         }
 
-        public static Registration onStoppingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
+        public static Registration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
@@ -131,16 +131,16 @@ public final class BaniraEventBus {
         }
     }
 
-    public static void dispatchServerStarting(MinecraftServer server) {
-        fire(serverStartingCallbacks, server, "server starting");
+    public static void dispatchServerStarting(@Nonnull BaniraServerEvent event) {
+        fire(serverStartingCallbacks, event, "server starting");
     }
 
-    public static void dispatchServerStarted(MinecraftServer server) {
-        fire(serverStartedCallbacks, server, "server started");
+    public static void dispatchServerStarted(@Nonnull BaniraServerEvent event) {
+        fire(serverStartedCallbacks, event, "server started");
     }
 
-    public static void dispatchServerStopping(MinecraftServer server) {
-        fire(serverStoppingCallbacks, server, "server stopping");
+    public static void dispatchServerStopping(@Nonnull BaniraServerEvent event) {
+        fire(serverStoppingCallbacks, event, "server stopping");
     }
 
     public static void dispatchServerTickEnd() {

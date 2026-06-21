@@ -16,6 +16,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
+import xin.vanilla.banira.api.event.BaniraServerEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 
@@ -25,17 +26,17 @@ public final class ForgeBaniraEventBridge {
 
     @SubscribeEvent
     public static void onServerStarting(FMLServerStartingEvent event) {
-        BaniraEventBus.dispatchServerStarting(event.getServer());
+        BaniraEventBus.dispatchServerStarting(new BaniraServerEvent(event.getServer()));
     }
 
     @SubscribeEvent
     public static void onServerStarted(FMLServerStartedEvent event) {
-        BaniraEventBus.dispatchServerStarted(event.getServer());
+        BaniraEventBus.dispatchServerStarted(new BaniraServerEvent(event.getServer()));
     }
 
     @SubscribeEvent
     public static void onServerStopping(FMLServerStoppingEvent event) {
-        BaniraEventBus.dispatchServerStopping(event.getServer());
+        BaniraEventBus.dispatchServerStopping(new BaniraServerEvent(event.getServer()));
     }
 
     @SubscribeEvent

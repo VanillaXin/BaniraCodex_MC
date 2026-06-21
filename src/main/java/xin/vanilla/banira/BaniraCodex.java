@@ -74,10 +74,10 @@ public final class BaniraCodex {
         });
         BaniraCommandAccess.onRegisterDispatcher(BaniraCommand::register);
 
-        BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
-        BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());
-        BaniraEventBus.Server.onStarting(server -> AdvancementUtils.clearAdvancementData());
-        BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
+        BaniraEventBus.Server.onStarting(event -> serverInstance().key(event.serverAs(MinecraftServer.class)).value(true));
+        BaniraEventBus.Server.onStarting(event -> playerDataManager.clearCache());
+        BaniraEventBus.Server.onStarting(event -> AdvancementUtils.clearAdvancementData());
+        BaniraEventBus.Server.onStopping(event -> serverInstance().value(false));
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
         BaniraEventBus.Server.onTickEnd(() -> {

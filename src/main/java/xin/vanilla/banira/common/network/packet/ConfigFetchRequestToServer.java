@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -11,10 +10,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.util.ConfigEditPermission;
-import xin.vanilla.banira.common.util.MessageUtils;
-import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.server.ServerSenderAccess;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,21 +45,21 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
             if (!ctx.isServerSide()) {
                 return;
             }
-            ServerPlayer player = ctx.sender();
-            if (player == null) {
+            Object sender = ctx.sender();
+            if (sender == null) {
                 return;
             }
-            if (!ConfigEditPermission.canAccessServerConfigEditor(player)) {
-                sendErr(player, "config_editor_sync_server_no_permission");
+            if (!ServerSenderAccess.canAccessServerConfigEditor(sender)) {
+                sendErr(sender, "config_editor_sync_server_no_permission");
                 return;
             }
             ConfigHolder holder = ConfigRegistry.get(packet.configName);
             if (holder == null) {
-                sendErr(player, "config_editor_sync_server_unknown_config", packet.configName);
+                sendErr(sender, "config_editor_sync_server_unknown_config", packet.configName);
                 return;
             }
             if (!holder.canSyncToServer()) {
-                sendErr(player, "config_editor_sync_server_not_applicable");
+                sendErr(sender, "config_editor_sync_server_not_applicable");
                 return;
             }
             Map<String, String> snapshot = new LinkedHashMap<>();
@@ -72,16 +68,16 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
                 Object v = holder.get(path);
                 snapshot.put(path, v != null ? ConfigSyncToServer.encodeConfigValue(v) : "");
             }
-            PacketUtils.sendPacketToPlayer(new ConfigSnapshotToClient(packet.configName, snapshot), player);
+            ServerSenderAccess.sendPacket(sender, new ConfigSnapshotToClient(packet.configName, snapshot));
         });
         ctx.markHandled();
     }
 
-    private static void sendErr(ServerPlayer player, String langKey, Object... args) {
-        String lang = Translator.getPlayerLanguage(player);
+    private static void sendErr(Object sender, String langKey, Object... args) {
+        String lang = ServerSenderAccess.language(sender);
         Component text = args.length > 0
                 ? BaniraComponent.get().transAuto(langKey, args).languageCode(lang)
                 : BaniraComponent.get().transAuto(langKey).languageCode(lang);
-        MessageUtils.sendDefaultNotification(player, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
+        ServerSenderAccess.sendDefaultNotification(sender, text, EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
     }
 }

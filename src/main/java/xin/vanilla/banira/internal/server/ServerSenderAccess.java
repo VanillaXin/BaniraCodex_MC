@@ -1,13 +1,24 @@
 package xin.vanilla.banira.internal.server;
 
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
+import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.util.ConfigEditPermission;
+import xin.vanilla.banira.common.util.MessageUtils;
+import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * 服务端玩家句柄的窄门面；公共工具只处理 Object，版本玩家类型留在 internal 层。
+ * 网络包处理中的服务端玩家窄门面；公共 packet 只持有 Object sender。
  */
 public final class ServerSenderAccess {
     private ServerSenderAccess() {
@@ -16,6 +27,19 @@ public final class ServerSenderAccess {
     @Nullable
     private static ServerPlayer asServerPlayer(Object sender) {
         return sender instanceof ServerPlayer ? (ServerPlayer) sender : null;
+    }
+
+    public static boolean canAccessServerConfigEditor(Object sender) {
+        return ConfigEditPermission.canAccessServerConfigEditor(sender);
+    }
+
+    public static boolean canModifyConfigEntry(Object sender, @Nullable ConfigEntryDescriptor desc) {
+        return ConfigEditPermission.canModifyEntry(sender, desc);
+    }
+
+    public static String language(Object sender) {
+        ServerPlayer player = asServerPlayer(sender);
+        return player != null ? Translator.getPlayerLanguage(player) : Translator.getServerLanguage();
     }
 
     @Nullable
@@ -28,5 +52,43 @@ public final class ServerSenderAccess {
     public static String uuidString(Object sender) {
         UUID uuid = uuid(sender);
         return uuid != null ? uuid.toString() : null;
+    }
+
+    public static void sendDefaultNotification(Object sender, Component component, EnumPosition position,
+                                               EnumMoveType animation, long durationTimeMs) {
+        ServerPlayer player = asServerPlayer(sender);
+        if (player != null) {
+            MessageUtils.sendDefaultNotification(player, component, position, animation, durationTimeMs);
+        }
+    }
+
+    public static void sendDefaultNotification(Object sender, Component component, EnumPosition position,
+                                               EnumMoveType animation, long durationTimeMs,
+                                               EnumNotificationStyle style,
+                                               EnumNotificationVanillaFallback vanillaFallback) {
+        ServerPlayer player = asServerPlayer(sender);
+        if (player != null) {
+            MessageUtils.sendDefaultNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback);
+        }
+    }
+
+    public static void sendPacket(Object sender, INetworkPacket packet) {
+        if (asServerPlayer(sender) != null) {
+            PacketUtils.sendPacketToPlayer(packet, sender);
+        }
+    }
+
+    public static void setRemoteClientModInstalled(Object sender, String modid, boolean synced) {
+        ServerPlayer player = asServerPlayer(sender);
+        if (player != null) {
+            PlayerUtils.setRemoteClientModInstalled(player, modid, synced);
+        }
+    }
+
+    public static void removeRemoteClientDataStatus(Object sender) {
+        ServerPlayer player = asServerPlayer(sender);
+        if (player != null) {
+            PlayerUtils.removeRemoteClientDataStatus(player);
+        }
     }
 }

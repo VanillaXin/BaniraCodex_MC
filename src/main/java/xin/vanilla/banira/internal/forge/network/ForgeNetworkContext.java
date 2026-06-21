@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.forge.network;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 
@@ -39,7 +38,7 @@ public final class ForgeNetworkContext implements BaniraNetworkContext {
 
     @Nullable
     @Override
-    public ServerPlayer sender() {
+    public Object sender() {
         return context.get().getSender();
     }
 }

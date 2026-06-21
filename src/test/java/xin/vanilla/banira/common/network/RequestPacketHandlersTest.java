@@ -40,7 +40,7 @@ public class RequestPacketHandlersTest {
     }
 
     @Test
-    public void dispatchWithoutServerPlayerIsIgnored() {
+    public void dispatchWithoutSenderIsIgnored() {
         RequestPacketHandlers handlers = new RequestPacketHandlers();
         AtomicInteger calls = new AtomicInteger();
         handlers.register(7, (packet, player) -> calls.incrementAndGet());

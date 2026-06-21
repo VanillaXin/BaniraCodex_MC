@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -69,7 +68,7 @@ public final class PacketUtils {
     /**
      * 发送数据包至玩家
      */
-    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, Object player) {
         BaniraPlatforms.get().networkService().sendToPlayer(msg, player);
     }
 
@@ -80,7 +79,7 @@ public final class PacketUtils {
      * @param player 目标玩家
      * @param <T>    分包类型
      */
-    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, Object player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
             sendPacketToPlayer(splitPacket, player);
@@ -112,11 +111,11 @@ public final class PacketUtils {
         return BaniraPlatforms.get().networkService().hasLocalChannel(channelId);
     }
 
-    public static boolean hasChannel(ServerPlayer player, ResourceLocation channel) {
+    public static boolean hasChannel(Object player, ResourceLocation channel) {
         return channel != null && hasChannel(player, channel.toString());
     }
 
-    public static boolean hasChannel(ServerPlayer player, String channelId) {
+    public static boolean hasChannel(Object player, String channelId) {
         return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channelId);
     }
 }

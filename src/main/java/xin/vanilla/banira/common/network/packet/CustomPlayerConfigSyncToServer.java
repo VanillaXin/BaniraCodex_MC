@@ -9,10 +9,9 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.util.MessageUtils;
-import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.server.ServerSenderAccess;
 
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。
@@ -47,8 +46,8 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
             if (!ctx.isServerSide()) {
                 return;
             }
-            var player = ctx.sender();
-            if (player == null) {
+            Object sender = ctx.sender();
+            if (sender == null) {
                 return;
             }
             String lang = packet.language.trim();
@@ -56,17 +55,20 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
             boolean langOk = "client".equalsIgnoreCase(lang) || "server".equalsIgnoreCase(lang)
                     || translator.getI18nFiles().contains(lang);
             if (!langOk) {
-                MessageUtils.sendDefaultNotification(player,
-                        BaniraComponent.get().transAuto("custom_player_config_sync_invalid_language").languageCode(Translator.getPlayerLanguage(player)),
+                ServerSenderAccess.sendDefaultNotification(sender,
+                        BaniraComponent.get().transAuto("custom_player_config_sync_invalid_language").languageCode(ServerSenderAccess.language(sender)),
                         EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_ERR_MS);
                 return;
             }
-            String uuid = PlayerUtils.getPlayerUUIDString(player);
+            String uuid = ServerSenderAccess.uuidString(sender);
+            if (uuid == null) {
+                return;
+            }
             CustomConfig.setPlayerLanguage(uuid, lang);
             CustomConfig.setPlayerNotificationReceiveMode(uuid, packet.notificationReceiveMode);
             CustomConfig.saveCustomConfig();
-            MessageUtils.sendDefaultNotification(player,
-                    BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(Translator.getPlayerLanguage(player)),
+            ServerSenderAccess.sendDefaultNotification(sender,
+                    BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(ServerSenderAccess.language(sender)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);
         });
         ctx.markHandled();

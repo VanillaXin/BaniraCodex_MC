@@ -1,6 +1,4 @@
 package xin.vanilla.banira.common.network;
-
-import net.minecraft.server.level.ServerPlayer;
 import org.junit.Test;
 
 import java.util.List;
@@ -49,9 +47,9 @@ public class ModLoadedPresenceRegistryTest {
     @Test
     public void oldRegistrationTokenDoesNotRemoveReplacement() {
         ModLoadedPresenceRegistry registry = new ModLoadedPresenceRegistry();
-        Consumer<ServerPlayer> oldHandler = player -> {
+        Consumer<Object> oldHandler = player -> {
         };
-        Consumer<ServerPlayer> newHandler = player -> {
+        Consumer<Object> newHandler = player -> {
         };
         ModLoadedRegistration oldRegistration = registry.register("banira_codex", oldHandler);
         ModLoadedRegistration newRegistration = registry.register("banira_codex", newHandler);

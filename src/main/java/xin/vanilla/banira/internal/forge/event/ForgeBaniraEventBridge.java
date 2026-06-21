@@ -17,6 +17,7 @@ import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 import xin.vanilla.banira.api.event.BaniraServerEvent;
+import xin.vanilla.banira.api.event.BaniraWorldEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 
@@ -50,6 +51,13 @@ public final class ForgeBaniraEventBridge {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             BaniraEventBus.dispatchClientTickEnd();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onWorldTick(TickEvent.WorldTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            BaniraEventBus.dispatchWorldTick(worldEvent(event.world));
         }
     }
 
@@ -94,6 +102,11 @@ public final class ForgeBaniraEventBridge {
     }
 
     @SubscribeEvent
+    public static void onWorldUnload(WorldEvent.Unload event) {
+        BaniraEventBus.dispatchWorldUnload(worldEvent(event.getWorld()));
+    }
+
+    @SubscribeEvent
     public static void onPlayerSaveToFile(PlayerEvent.SaveToFile event) {
         PlayerEntity player = event.getPlayer();
         if (player instanceof ServerPlayerEntity) {
@@ -112,6 +125,14 @@ public final class ForgeBaniraEventBridge {
                 player != null ? player.getUUID() : null,
                 player != null ? player.getName().getString() : null
         );
+    }
+
+    private static BaniraWorldEvent worldEvent(IWorld world) {
+        return new BaniraWorldEvent(world, dimensionId(world), world != null && world.isClientSide());
+    }
+
+    private static String dimensionId(IWorld world) {
+        return world instanceof World ? dimensionId(((World) world).dimension()) : "";
     }
 
     private static String dimensionId(RegistryKey<World> dimension) {

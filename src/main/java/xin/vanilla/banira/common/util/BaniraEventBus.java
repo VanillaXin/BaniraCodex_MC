@@ -7,6 +7,7 @@ import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 import xin.vanilla.banira.api.event.BaniraServerEvent;
+import xin.vanilla.banira.api.event.BaniraWorldEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -32,6 +33,8 @@ public final class BaniraEventBus {
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldUnloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldTickCallbacks = new ArrayList<>();
 
     private BaniraEventBus() {
     }
@@ -122,6 +125,19 @@ public final class BaniraEventBus {
         }
     }
 
+    public static final class WorldEvents {
+        private WorldEvents() {
+        }
+
+        public static void onUnload(@Nonnull Consumer<BaniraWorldEvent> callback) {
+            worldUnloadCallbacks.add(callback);
+        }
+
+        public static void onTick(@Nonnull Consumer<BaniraWorldEvent> callback) {
+            worldTickCallbacks.add(callback);
+        }
+    }
+
     public static final class ModLifecycle {
         private ModLifecycle() {
         }
@@ -173,6 +189,14 @@ public final class BaniraEventBus {
 
     public static void dispatchPlayerSave(@Nonnull BaniraPlayerEvent event) {
         fire(playerSaveCallbacks, event, "player save");
+    }
+
+    public static void dispatchWorldUnload(@Nonnull BaniraWorldEvent event) {
+        fire(worldUnloadCallbacks, event, "world unload");
+    }
+
+    public static void dispatchWorldTick(@Nonnull BaniraWorldEvent event) {
+        fire(worldTickCallbacks, event, "world tick");
     }
 
     public static void dispatchModCommonSetup() {

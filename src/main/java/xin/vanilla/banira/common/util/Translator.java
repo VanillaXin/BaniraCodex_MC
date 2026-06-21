@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;
@@ -304,17 +303,17 @@ public class Translator implements ITranslator {
     /**
      * 获取服务端玩家语言
      */
-    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
+    public static String getServerPlayerLanguage(Object player) {
         return PlayerLanguageManager.get(player);
     }
 
     /**
      * 解析有效语言（支持 "client"、"server" 等特殊值）
      */
-    public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
+    public static String getValidLanguage(@Nullable Object player, @Nullable String language) {
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            return player instanceof ServerPlayerEntity
-                    ? getServerPlayerLanguage((ServerPlayerEntity) player)
+            return PlayerLanguageManager.has(player)
+                    ? getServerPlayerLanguage(player)
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {

@@ -15,6 +15,7 @@ import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 /**
  * 网络包处理中的服务端玩家窄门面。
@@ -43,9 +44,15 @@ public final class ServerSenderAccess {
     }
 
     @Nullable
-    public static String uuidString(Object sender) {
+    public static UUID uuid(Object sender) {
         ServerPlayerEntity player = asServerPlayer(sender);
-        return player != null ? PlayerUtils.getPlayerUUIDString(player) : null;
+        return player != null ? PlayerUtils.getPlayerUUID(player) : null;
+    }
+
+    @Nullable
+    public static String uuidString(Object sender) {
+        UUID uuid = uuid(sender);
+        return uuid != null ? uuid.toString() : null;
     }
 
     public static void sendDefaultNotification(Object sender, Component component, EnumPosition position,

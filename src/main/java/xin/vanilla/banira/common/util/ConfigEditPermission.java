@@ -2,9 +2,8 @@ package xin.vanilla.banira.common.util;
 
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.internal.server.ServerPermissionAccess;
 
 import javax.annotation.Nullable;
 
@@ -38,10 +37,10 @@ public final class ConfigEditPermission {
                 virtualKey = fieldKey;
             }
         }
-        if (BaniraPlatforms.isInstalled() && BaniraCommandAccess.hasPermission(player, level)) {
+        if (ServerPermissionAccess.hasPermission(player, level)) {
             return true;
         }
         return virtualKey != null && !virtualKey.isEmpty()
-                && CommandUtils.hasVirtualPermission(player, virtualKey);
+                && ServerPermissionAccess.hasVirtualPermission(player, virtualKey);
     }
 }

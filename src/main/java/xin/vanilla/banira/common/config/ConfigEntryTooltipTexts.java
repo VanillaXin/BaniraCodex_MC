@@ -50,7 +50,7 @@ public final class ConfigEntryTooltipTexts {
             case TRANSLATION_KEY:
                 return new ScopedComponent(modId).transClientAuto(desc.getTooltipTranslationKey());
             case LOCALIZED_STATIC:
-                return BaniraComponent.get().literal(Translator.pickLocalizedMapValue("",
+                return BaniraComponent.get().literal(Translator.pickLocalizedMapValue(null,
                         desc.getTooltipLocalizedByLang()));
             case MULTILINE_LITERAL:
             default:

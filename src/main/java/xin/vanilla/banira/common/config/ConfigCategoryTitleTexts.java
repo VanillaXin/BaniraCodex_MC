@@ -29,7 +29,7 @@ public final class ConfigCategoryTitleTexts {
                 }
                 return new ScopedComponent(modId).transClientAuto(spec.getTranslationKey());
             case LOCALIZED_STATIC:
-                String picked = Translator.pickLocalizedMapValue("", spec.getLocalizedByLang());
+                String picked = Translator.pickLocalizedMapValue(null, spec.getLocalizedByLang());
                 if (!StringUtils.isNullOrEmptyEx(picked)) {
                     return BaniraComponent.get().literal(picked);
                 }

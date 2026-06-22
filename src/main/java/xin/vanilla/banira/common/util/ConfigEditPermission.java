@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.server.ServerPermissionAccess;
 
 import javax.annotation.Nullable;
 
@@ -17,14 +17,14 @@ public final class ConfigEditPermission {
     /**
      * 是否允许从服务端拉取/同步该配置（整份配置的入口权限，使用全局「修改服务端配置」设置）。
      */
-    public static boolean canAccessServerConfigEditor(ServerPlayer player) {
+    public static boolean canAccessServerConfigEditor(Object player) {
         return canModifyEntry(player, null);
     }
 
     /**
      * 是否允许修改服务端上的该配置项（含未知路径时仅按全局设置判断）。
      */
-    public static boolean canModifyEntry(ServerPlayer player, @Nullable ConfigEntryDescriptor desc) {
+    public static boolean canModifyEntry(Object player, @Nullable ConfigEntryDescriptor desc) {
         int level = CommonConfig.get().permission().editServerConfigPermission();
         String virtualKey = CommonConfig.get().permission().editServerConfigVirtualPermissionKey();
         if (desc != null && desc.getEditPermissionPolicy() == ConfigEntry.EditPermissionPolicy.FIELD_OVERRIDE) {
@@ -37,10 +37,10 @@ public final class ConfigEditPermission {
                 virtualKey = fieldKey;
             }
         }
-        if (player.createCommandSourceStack().hasPermission(level)) {
+        if (ServerPermissionAccess.hasPermission(player, level)) {
             return true;
         }
         return virtualKey != null && !virtualKey.isEmpty()
-                && CommandUtils.hasVirtualPermission(player, virtualKey);
+                && ServerPermissionAccess.hasVirtualPermission(player, virtualKey);
     }
 }

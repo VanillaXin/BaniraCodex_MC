@@ -255,8 +255,8 @@ public final class ForgeConfigSpecBuilder {
             pathStack.pop();
         }
         ForgeConfigSpec spec = builder.build();
-        ForgeConfigBackend backend = new ForgeConfigBackend(new LinkedHashMap<>(valueMap));
-        return new ConfigHolder(modId, configName, toScope(configType), backend, new ArrayList<>(descriptors),
+        ForgeConfigBackend backend = new ForgeConfigBackend(spec, new LinkedHashMap<>(valueMap));
+        return ConfigHolder.create(modId, configName, toScope(configType), backend, new ArrayList<>(descriptors),
                 Collections.emptyMap(), Collections.emptyMap());
     }
 

@@ -324,7 +324,7 @@ public final class CommandUtils {
     // region config modifier
 
     public static void configKeySuggestion(ConfigHolder holder, SuggestionsBuilder builder, String configKey) {
-        if (holder == null || holder.getValuePaths().isEmpty()) {
+        if (holder == null || holder.valuePaths().isEmpty()) {
             return;
         }
         if (configKey == null) {
@@ -335,7 +335,7 @@ public final class CommandUtils {
         String lowerInput = configKey.toLowerCase(Locale.ROOT);
 
         if (isEmpty) {
-            for (String key : holder.getValuePaths()) {
+            for (String key : holder.valuePaths()) {
                 builder.suggest(key);
             }
             return;
@@ -346,7 +346,7 @@ public final class CommandUtils {
             int prefixSegments = inputParts.length - 1;
             String lastInputPart = inputParts[inputParts.length - 1];
 
-            for (String key : holder.getValuePaths()) {
+            for (String key : holder.valuePaths()) {
                 String lowerKey = key.toLowerCase(Locale.ROOT);
                 String[] keyParts = lowerKey.split("\\.");
                 if (keyParts.length < prefixSegments + 1) {
@@ -368,7 +368,7 @@ public final class CommandUtils {
                 }
             }
         } else {
-            for (String key : holder.getValuePaths()) {
+            for (String key : holder.valuePaths()) {
                 if (key.toLowerCase(Locale.ROOT).contains(lowerInput)) {
                     builder.suggest(key);
                 }
@@ -444,10 +444,10 @@ public final class CommandUtils {
         if (holder == null || key == null) {
             return null;
         }
-        if (holder.getValuePaths().contains(key)) {
+        if (holder.valuePaths().contains(key)) {
             return key;
         }
-        List<String> matches = holder.getValuePaths().stream()
+        List<String> matches = holder.valuePaths().stream()
                 .filter(s -> s.toLowerCase(Locale.ROOT).contains(key.toLowerCase(Locale.ROOT)))
                 .collect(Collectors.toList());
         if (matches.size() == 1) {

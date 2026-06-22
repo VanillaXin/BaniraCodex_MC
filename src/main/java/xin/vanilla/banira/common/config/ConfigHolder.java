@@ -10,6 +10,10 @@ import java.util.*;
  * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
 public class ConfigHolder implements BaniraConfigHandle {
+
+    /**
+     * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等。
+     */
     @Getter
     private final String modId;
 
@@ -17,24 +21,46 @@ public class ConfigHolder implements BaniraConfigHandle {
     private final String configName;
 
     @Getter
-    private final ConfigScope scope;
-    private final ConfigValueBackend backend;
+    private final ConfigScope configScope;
+
+    private final ConfigValueStore valueStore;
 
     @Getter
     private final List<ConfigEntryDescriptor> descriptors;
 
+    /**
+     * 分类路径 -> 显示名；配置编辑器折叠标题优先使用 {@link #categoryTitleSpecs}。
+     */
     private final Map<String, String> categoryTooltips;
+
+    /**
+     * 分类路径 -> 折叠面板标题元数据。
+     */
     private final Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs;
+
+    /**
+     * 配置路径 -> 描述符，用于 GUI 和列表运行时归一化。
+     */
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
 
-    public ConfigHolder(String modId, String configName, ConfigScope scope, ConfigValueBackend backend,
-                        List<ConfigEntryDescriptor> descriptors,
-                        Map<String, String> categoryTooltips,
-                        Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
+    /**
+     * 供各加载器配置服务创建统一 holder。
+     */
+    public static ConfigHolder create(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                                      List<ConfigEntryDescriptor> descriptors,
+                                      Map<String, String> categoryTooltips,
+                                      Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
+        return new ConfigHolder(modId, configName, configScope, valueStore, descriptors, categoryTooltips, categoryTitleSpecs);
+    }
+
+    ConfigHolder(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                 List<ConfigEntryDescriptor> descriptors,
+                 Map<String, String> categoryTooltips,
+                 Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
         this.configName = configName;
-        this.scope = scope != null ? scope : ConfigScope.COMMON;
-        this.backend = backend;
+        this.configScope = configScope != null ? configScope : ConfigScope.COMMON;
+        this.valueStore = valueStore;
         this.descriptors = Collections.unmodifiableList(new ArrayList<>(descriptors));
         this.categoryTooltips = categoryTooltips != null
                 ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTooltips))
@@ -50,30 +76,31 @@ public class ConfigHolder implements BaniraConfigHandle {
         this.descriptorByPath = Collections.unmodifiableMap(byPath);
     }
 
-    public Set<String> getValuePaths() {
-        return backend.getValuePaths();
+    ConfigValueStore valueStore() {
+        return valueStore;
     }
 
     @Override
     public Set<String> valuePaths() {
-        return getValuePaths();
+        return valueStore.paths();
     }
 
+    @Nullable
     public ConfigCategoryTitleSpec getCategoryTitleSpec(String categoryPath) {
         return categoryTitleSpecs.get(categoryPath);
     }
 
     public void save() {
-        backend.save();
+        valueStore.save();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(String path) {
-        if (!backend.getValuePaths().contains(path)) {
+        if (!valueStore.paths().contains(path)) {
             return null;
         }
-        Object value = backend.get(path);
+        Object value = valueStore.get(path);
         ConfigEntryDescriptor desc = descriptorByPath.get(path);
         if (desc != null && desc.isListType() && value instanceof List) {
             value = ConfigListSpecHelper.normalizeListForRuntime((List<?>) value, desc);
@@ -83,14 +110,14 @@ public class ConfigHolder implements BaniraConfigHandle {
 
     @Override
     public void set(String path, Object value) {
-        if (backend.getValuePaths().contains(path)) {
-            backend.set(path, value);
+        if (valueStore.paths().contains(path)) {
+            valueStore.set(path, value);
         }
     }
 
     @Override
     public boolean hasValue(String path) {
-        return backend.getValuePaths().contains(path);
+        return valueStore.paths().contains(path);
     }
 
     @Nullable
@@ -99,12 +126,12 @@ public class ConfigHolder implements BaniraConfigHandle {
         if (key == null) {
             return null;
         }
-        if (hasValue(key)) {
+        if (valueStore.paths().contains(key)) {
             return key;
         }
         String lowerKey = key.toLowerCase(Locale.ROOT);
         String match = null;
-        for (String path : backend.getValuePaths()) {
+        for (String path : valueStore.paths()) {
             if (!path.toLowerCase(Locale.ROOT).contains(lowerKey)) {
                 continue;
             }
@@ -118,32 +145,18 @@ public class ConfigHolder implements BaniraConfigHandle {
 
     @Override
     public Class<?> valueClass(String path) {
-        Object defaultValue = defaultValue(path);
-        if (defaultValue != null) {
-            return defaultValue.getClass();
-        }
-        Object value = get(path);
-        return value != null ? value.getClass() : Object.class;
+        return valueStore.valueClass(path);
     }
 
     @Nullable
     @Override
     public Object defaultValue(String path) {
-        ConfigEntryDescriptor descriptor = getDescriptor(path);
-        return descriptor != null ? descriptor.getDefaultValue() : null;
+        return valueStore.defaultValue(path);
     }
 
     @Override
     public boolean validate(String path, Object value) {
-        if (!hasValue(path)) {
-            return false;
-        }
-        ConfigEntryDescriptor descriptor = getDescriptor(path);
-        if (descriptor == null) {
-            Object defaultValue = defaultValue(path);
-            return value == null || defaultValue == null || defaultValue.getClass().isInstance(value);
-        }
-        return validateDescriptorValue(descriptor, value);
+        return valueStore.validate(path, value);
     }
 
     @Override
@@ -160,11 +173,11 @@ public class ConfigHolder implements BaniraConfigHandle {
     }
 
     public boolean isServerConfig() {
-        return scope == ConfigScope.SERVER;
+        return configScope == ConfigScope.SERVER;
     }
 
     public boolean canSyncToServer() {
-        return scope == ConfigScope.SERVER || scope == ConfigScope.COMMON;
+        return configScope == ConfigScope.SERVER || configScope == ConfigScope.COMMON;
     }
 
     public List<CategoryGroup> getDescriptorsGroupedByCategory() {
@@ -224,43 +237,6 @@ public class ConfigHolder implements BaniraConfigHandle {
     private static String getParentPath(String path) {
         int lastDot = path.lastIndexOf('.');
         return lastDot > 0 ? path.substring(0, lastDot) : "";
-    }
-
-    private static boolean validateDescriptorValue(ConfigEntryDescriptor descriptor, Object value) {
-        if (descriptor == null || value == null) {
-            return false;
-        }
-        if (descriptor.isListType()) {
-            if (!(value instanceof List)) {
-                return false;
-            }
-            for (Object one : (List<?>) value) {
-                if (ConfigListSpecHelper.coerceListElement(one, descriptor.getValueType(), descriptor.getEnumClass(),
-                        descriptor.getMinValue(), descriptor.getMaxValue(), descriptor.getDecimalPlaces()) == null) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        switch (descriptor.getValueType()) {
-            case INTEGER:
-            case LONG:
-            case DOUBLE:
-                if (!(value instanceof Number)) {
-                    return false;
-                }
-                double number = ((Number) value).doubleValue();
-                return (descriptor.getMinValue() == null || number >= descriptor.getMinValue().doubleValue())
-                        && (descriptor.getMaxValue() == null || number <= descriptor.getMaxValue().doubleValue());
-            case BOOLEAN:
-                return value instanceof Boolean;
-            case ENUM:
-                return value instanceof Enum && descriptor.getEnumClass() != null
-                        && descriptor.getEnumClass().isAssignableFrom(value.getClass());
-            case STRING:
-            default:
-                return value instanceof String;
-        }
     }
 
     @Getter

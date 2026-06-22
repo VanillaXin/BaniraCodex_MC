@@ -67,8 +67,8 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ForgeConfigBackend backend = new ForgeConfigBackend(valueMap);
-        ConfigHolder holder = new ConfigHolder(modId, configName, configAnn.type(), backend, descriptors, categoryTooltips,
+        ForgeConfigBackend backend = new ForgeConfigBackend(spec, valueMap);
+        ConfigHolder holder = ConfigHolder.create(modId, configName, configAnn.type(), backend, descriptors, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
@@ -468,7 +468,7 @@ public final class ForgeConfigAdapter {
     }
 
     private static String resolvePath(ConfigHolder holder, String methodName, String prefix) {
-        for (String path : holder.getValuePaths()) {
+        for (String path : holder.valuePaths()) {
             String fieldName = path.substring(path.lastIndexOf('.') + 1);
             if (methodName.equals(fieldName)) {
                 if (prefix.isEmpty()) return path;

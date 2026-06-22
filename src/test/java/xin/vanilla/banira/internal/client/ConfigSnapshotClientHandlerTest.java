@@ -3,8 +3,9 @@ package xin.vanilla.banira.internal.client;
 import org.junit.Test;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ConfigValueBackend;
+import xin.vanilla.banira.common.config.ConfigValueStore;
 
 import java.util.*;
 
@@ -54,8 +55,8 @@ public class ConfigSnapshotClientHandlerTest {
     }
 
     private static ConfigHolder holder(Map<String, Object> values, ConfigEntryDescriptor... descriptors) {
-        return new ConfigHolder("test", "test-common.toml", ConfigScope.COMMON,
-                new MapBackend(values), Arrays.asList(descriptors), Collections.emptyMap(), Collections.emptyMap());
+        return ConfigHolder.create("test", "test-common.toml", ConfigScope.COMMON,
+                new MapStore(values, descriptors), Arrays.asList(descriptors), Collections.emptyMap(), Collections.emptyMap());
     }
 
     private static ConfigEntryDescriptor integerDescriptor(String path, int min, int max) {
@@ -76,15 +77,19 @@ public class ConfigSnapshotClientHandlerTest {
                 .build();
     }
 
-    private static final class MapBackend implements ConfigValueBackend {
+    private static final class MapStore implements ConfigValueStore {
         private final Map<String, Object> values;
+        private final Map<String, ConfigEntryDescriptor> descriptors = new LinkedHashMap<>();
 
-        private MapBackend(Map<String, Object> values) {
+        private MapStore(Map<String, Object> values, ConfigEntryDescriptor... descriptors) {
             this.values = values;
+            for (ConfigEntryDescriptor descriptor : descriptors) {
+                this.descriptors.put(descriptor.getPath(), descriptor);
+            }
         }
 
         @Override
-        public Set<String> getValuePaths() {
+        public Set<String> paths() {
             return values.keySet();
         }
 
@@ -96,6 +101,61 @@ public class ConfigSnapshotClientHandlerTest {
         @Override
         public void set(String path, Object value) {
             values.put(path, value);
+        }
+
+        @Override
+        public Class<?> valueClass(String path) {
+            Object defaultValue = defaultValue(path);
+            if (defaultValue != null) {
+                return defaultValue.getClass();
+            }
+            Object value = get(path);
+            return value != null ? value.getClass() : Object.class;
+        }
+
+        @Override
+        public Object defaultValue(String path) {
+            ConfigEntryDescriptor descriptor = descriptors.get(path);
+            return descriptor != null ? descriptor.getDefaultValue() : null;
+        }
+
+        @Override
+        public boolean validate(String path, Object value) {
+            ConfigEntryDescriptor descriptor = descriptors.get(path);
+            if (descriptor == null || value == null) {
+                return false;
+            }
+            if (descriptor.isListType()) {
+                if (!(value instanceof List)) {
+                    return false;
+                }
+                for (Object one : (List<?>) value) {
+                    if (ConfigListSpecHelper.coerceListElement(one, descriptor.getValueType(), descriptor.getEnumClass(),
+                            descriptor.getMinValue(), descriptor.getMaxValue(), descriptor.getDecimalPlaces()) == null) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            switch (descriptor.getValueType()) {
+                case INTEGER:
+                case LONG:
+                case DOUBLE:
+                    if (!(value instanceof Number)) {
+                        return false;
+                    }
+                    double number = ((Number) value).doubleValue();
+                    return (descriptor.getMinValue() == null || number >= descriptor.getMinValue().doubleValue())
+                            && (descriptor.getMaxValue() == null || number <= descriptor.getMaxValue().doubleValue());
+                case BOOLEAN:
+                    return value instanceof Boolean;
+                case ENUM:
+                    return value instanceof Enum && descriptor.getEnumClass() != null
+                            && descriptor.getEnumClass().isAssignableFrom(value.getClass());
+                case STRING:
+                default:
+                    return value instanceof String;
+            }
         }
 
         @Override

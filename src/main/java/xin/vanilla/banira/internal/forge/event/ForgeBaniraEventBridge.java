@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.forge.event;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
@@ -19,7 +20,9 @@ import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 import xin.vanilla.banira.api.event.BaniraServerEvent;
 import xin.vanilla.banira.api.event.BaniraWorldEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
+import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
+import xin.vanilla.banira.internal.server.BaniraServerAccess;
 
 public final class ForgeBaniraEventBridge {
     private ForgeBaniraEventBridge() {
@@ -43,14 +46,18 @@ public final class ForgeBaniraEventBridge {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            BaniraEventBus.dispatchServerTickEnd();
+            MinecraftServer server = BaniraServerAccess.currentServer();
+            if (server != null) {
+                BaniraEventBus.dispatchServerTick(new BaniraServerEvent(server));
+                BaniraScheduler.dispatchServerTick(server);
+            }
         }
     }
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            BaniraEventBus.dispatchClientTickEnd();
+            BaniraScheduler.dispatchClientTick();
         }
     }
 

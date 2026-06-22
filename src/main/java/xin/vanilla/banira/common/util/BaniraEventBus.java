@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
+import xin.vanilla.banira.api.event.BaniraEventRegistration;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Loader-neutral event hub. Loader adapters dispatch platform events into this class.
+ * 加载器无关的事件回调中心；Forge/Fabric/NeoForge 事件只在 internal adapter 中转换。
  */
 public final class BaniraEventBus {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -23,8 +24,7 @@ public final class BaniraEventBus {
     private static final List<Consumer<BaniraServerEvent>> serverStartingCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraServerEvent>> serverStartedCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraServerEvent>> serverStoppingCallbacks = new ArrayList<>();
-    private static final List<Runnable> serverTickEndCallbacks = new ArrayList<>();
-    private static final List<Runnable> clientTickEndCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverTickCallbacks = new ArrayList<>();
 
     private static final List<Consumer<BaniraPlayerEvent>> playerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraPlayerEvent>> playerLoggedOutCallbacks = new ArrayList<>();
@@ -39,11 +39,7 @@ public final class BaniraEventBus {
     private BaniraEventBus() {
     }
 
-    public interface Registration {
-        void unregister();
-    }
-
-    private static Registration createRegistration(Runnable unregister) {
+    private static BaniraEventRegistration createRegistration(Runnable unregister) {
         return unregister::run;
     }
 
@@ -63,32 +59,26 @@ public final class BaniraEventBus {
             serverStoppingCallbacks.add(callback);
         }
 
-        public static void onTickEnd(@Nonnull Runnable callback) {
-            serverTickEndCallbacks.add(callback);
+        /**
+         * 服务器 tick 回调；各加载器 adapter 只在 END 阶段派发。
+         */
+        public static void onTick(@Nonnull Consumer<BaniraServerEvent> callback) {
+            serverTickCallbacks.add(callback);
         }
 
-        public static Registration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
             return createRegistration(() -> serverStartingCallbacks.remove(callback));
         }
 
-        public static Registration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
     }
 
-    public static final class Client {
-        private Client() {
-        }
-
-        public static void onTickEnd(@Nonnull Runnable callback) {
-            clientTickEndCallbacks.add(callback);
-        }
-    }
-
-    public static final class Player {
-        private Player() {
+    public static final class PlayerEvents {
+        private PlayerEvents() {
         }
 
         public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
@@ -105,6 +95,30 @@ public final class BaniraEventBus {
 
         public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
+        }
+    }
+
+    /**
+     * 旧名称保留为分类别名，避免 Banira 自身调用处频繁变动。
+     */
+    public static final class Player {
+        private Player() {
+        }
+
+        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            PlayerEvents.onLoggedIn(callback);
+        }
+
+        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            PlayerEvents.onLoggedOut(callback);
+        }
+
+        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
+            PlayerEvents.onChangedDimension(callback);
+        }
+
+        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            PlayerEvents.onSave(callback);
         }
     }
 
@@ -142,8 +156,8 @@ public final class BaniraEventBus {
         private ModLifecycle() {
         }
 
-        public static void onCommonSetup(@Nonnull Runnable callback) {
-            BaniraLifecycle.onCommonSetup(event -> event.enqueueWork(callback));
+        public static BaniraEventRegistration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
+            return BaniraLifecycle.onCommonSetup(callback);
         }
     }
 
@@ -159,12 +173,8 @@ public final class BaniraEventBus {
         fire(serverStoppingCallbacks, event, "server stopping");
     }
 
-    public static void dispatchServerTickEnd() {
-        fire(serverTickEndCallbacks, "server tick end");
-    }
-
-    public static void dispatchClientTickEnd() {
-        fire(clientTickEndCallbacks, "client tick end");
+    public static void dispatchServerTick(@Nonnull BaniraServerEvent event) {
+        fire(serverTickCallbacks, event, "server tick");
     }
 
     public static void dispatchPlayerLoggedIn(@Nonnull BaniraPlayerEvent event) {
@@ -199,11 +209,7 @@ public final class BaniraEventBus {
         fire(worldTickCallbacks, event, "world tick");
     }
 
-    public static void dispatchModCommonSetup() {
-        dispatchModCommonSetup(BaniraCommonSetupEvent.immediate());
-    }
-
-    public static void dispatchModCommonSetup(@Nonnull BaniraCommonSetupEvent event) {
+    public static void dispatchCommonSetup(@Nonnull BaniraCommonSetupEvent event) {
         BaniraLifecycle.dispatchCommonSetup(event);
     }
 

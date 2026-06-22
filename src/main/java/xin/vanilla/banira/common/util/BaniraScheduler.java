@@ -33,8 +33,6 @@ public final class BaniraScheduler {
     public static void init() {
         if (initialized) return;
         initialized = true;
-        BaniraEventBus.Server.onTickEnd(BaniraScheduler::onServerTickEnd);
-        BaniraEventBus.Client.onTickEnd(BaniraScheduler::onClientTickEnd);
     }
 
     /**
@@ -75,14 +73,15 @@ public final class BaniraScheduler {
         clientWallClockTasks.add(WallClockScheduledTask.client(delayMillis, action));
     }
 
-    private static void onServerTickEnd() {
-        long tick = currentServerTick();
-        if (tick <= 0) return;
-        runTask(tick, serverTasks, serverExecutedCount);
+    /**
+     * 由加载器 adapter 在服务器 END tick 阶段调用。
+     */
+    public static void dispatchServerTick(@Nonnull MinecraftServer server) {
+        runTask(server.getTickCount(), serverTasks, serverExecutedCount);
         runWallClockTask(serverWallClockTasks, serverExecutedCount);
     }
 
-    private static void onClientTickEnd() {
+    public static void dispatchClientTick() {
         long tick = clientTicks.incrementAndGet();
         runTask(tick, clientTasks, clientExecutedCount);
         runWallClockTask(clientWallClockTasks, clientExecutedCount);

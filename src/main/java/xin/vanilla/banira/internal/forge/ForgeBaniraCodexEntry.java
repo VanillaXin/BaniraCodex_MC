@@ -29,7 +29,7 @@ public final class ForgeBaniraCodexEntry {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener((FMLCommonSetupEvent event) ->
-                BaniraEventBus.dispatchModCommonSetup(BaniraCommonSetupEvent.withWorkQueue(event::enqueueWork)));
+                BaniraEventBus.dispatchCommonSetup(BaniraCommonSetupEvent.withWorkQueue(event::enqueueWork)));
 
         MinecraftForge.EVENT_BUS.register(ForgeBaniraEventBridge.class);
         BaniraScheduler.init();

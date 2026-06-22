@@ -68,10 +68,10 @@ public final class BaniraCodex {
     }
 
     private static void registerBaniraEvent() {
-        BaniraEventBus.ModLifecycle.onCommonSetup(() -> {
+        BaniraEventBus.ModLifecycle.onCommonSetup(event -> event.enqueueWork(() -> {
             CustomConfig.loadCustomConfig(false);
             ModLoadedPresence.register(MODID);
-        });
+        }));
         BaniraCommandAccess.onRegisterDispatcher(BaniraCommand::register);
 
         BaniraEventBus.Server.onStarting(event -> serverInstance().key(event.serverAs(MinecraftServer.class)).value(true));
@@ -80,7 +80,7 @@ public final class BaniraCodex {
         BaniraEventBus.Server.onStopping(event -> serverInstance().value(false));
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
-        BaniraEventBus.Server.onTickEnd(() -> {
+        BaniraEventBus.Server.onTick(event -> {
             long tick = BaniraServerAccess.tickCount();
             if (tick > 0 && tick % CONFIG_SAVE_INTERVAL_TICKS == 0) {
                 if (!CustomConfig.loadCustomConfig(true)) {

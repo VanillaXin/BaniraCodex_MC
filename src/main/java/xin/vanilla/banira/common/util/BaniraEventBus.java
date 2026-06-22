@@ -1,42 +1,40 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.api.event.BaniraEventRegistration;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
+import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
+import xin.vanilla.banira.api.event.BaniraPlayerEvent;
+import xin.vanilla.banira.api.event.BaniraServerEvent;
+import xin.vanilla.banira.api.event.BaniraWorldEvent;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * 加载器无关的服务端事件回调中心；Forge/Fabric/NeoForge 事件只在 internal adapter 中转换。
+ * 加载器无关的事件回调中心；Forge/Fabric/NeoForge 事件只在 internal adapter 中转换。
  */
 public final class BaniraEventBus {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final List<Consumer<MinecraftServer>> serverStartingCallbacks = new ArrayList<>();
-    private static final List<Consumer<MinecraftServer>> serverStartedCallbacks = new ArrayList<>();
-    private static final List<Consumer<MinecraftServer>> serverStoppingCallbacks = new ArrayList<>();
-    private static final List<Consumer<MinecraftServer>> serverTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStartingCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStartedCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStoppingCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverTickCallbacks = new ArrayList<>();
 
-    private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<net.minecraft.world.entity.player.Player>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<PlayerChangedDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
-    private static final List<Consumer<ServerPlayer>> playerSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedInCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedOutCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerSaveCallbacks = new ArrayList<>();
 
     private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
     private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Consumer<LevelAccessor>> worldUnloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<LevelAccessor>> worldTickCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldUnloadCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldTickCallbacks = new ArrayList<>();
 
     private BaniraEventBus() {
     }
@@ -49,9 +47,6 @@ public final class BaniraEventBus {
         void unregister();
     }
 
-    public record PlayerChangedDimensionEvent(ServerPlayer player, ResourceKey<Level> from, ResourceKey<Level> to) {
-    }
-
     private static Registration createRegistration(Runnable unregister) {
         return unregister::run;
     }
@@ -60,31 +55,31 @@ public final class BaniraEventBus {
         private Server() {
         }
 
-        public static void onStarting(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStarting(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
         }
 
-        public static void onStarted(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStarted(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartedCallbacks.add(callback);
         }
 
-        public static void onStopping(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onStopping(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
         }
 
         /**
          * 服务器 tick 回调；各加载器 adapter 只在 END 阶段派发。
          */
-        public static void onTick(@Nonnull Consumer<MinecraftServer> callback) {
+        public static void onTick(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverTickCallbacks.add(callback);
         }
 
-        public static Registration onStartingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
+        public static Registration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
             return createRegistration(() -> serverStartingCallbacks.remove(callback));
         }
 
-        public static Registration onStoppingWithRegistration(@Nonnull Consumer<MinecraftServer> callback) {
+        public static Registration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
             return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
@@ -94,27 +89,19 @@ public final class BaniraEventBus {
         private PlayerEvents() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedInCallbacks.add(callback);
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedOutCallbacks.add(callback);
         }
 
-        public static void onChangedDimension(@Nonnull Consumer<PlayerChangedDimensionEvent> callback) {
+        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
             playerChangedDimensionCallbacks.add(callback);
         }
 
-        public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
-            playerChangedDimensionCallbacks.add(event -> callback.accept(event.player()));
-        }
-
-        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
-            playerChangedDimensionCallbacks.add(event -> callback.accept(event.player(), event.from()));
-        }
-
-        public static void onSave(@Nonnull Consumer<ServerPlayer> callback) {
+        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
@@ -126,27 +113,19 @@ public final class BaniraEventBus {
         private Player() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             PlayerEvents.onLoggedIn(callback);
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             PlayerEvents.onLoggedOut(callback);
         }
 
-        public static void onChangedDimension(@Nonnull Consumer<PlayerChangedDimensionEvent> callback) {
+        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
             PlayerEvents.onChangedDimension(callback);
         }
 
-        public static void onEnterDimension(@Nonnull Consumer<ServerPlayer> callback) {
-            PlayerEvents.onEnterDimension(callback);
-        }
-
-        public static void onExitDimension(@Nonnull BiConsumer<ServerPlayer, ResourceKey<Level>> callback) {
-            PlayerEvents.onExitDimension(callback);
-        }
-
-        public static void onSave(@Nonnull Consumer<ServerPlayer> callback) {
+        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             PlayerEvents.onSave(callback);
         }
     }
@@ -163,7 +142,7 @@ public final class BaniraEventBus {
             chunkSaveCallbacks.add(callback);
         }
 
-        public static void onPlayerSave(@Nonnull Consumer<ServerPlayer> callback) {
+        public static void onPlayerSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
         }
     }
@@ -172,11 +151,11 @@ public final class BaniraEventBus {
         private WorldEvents() {
         }
 
-        public static void onUnload(@Nonnull Consumer<LevelAccessor> callback) {
+        public static void onUnload(@Nonnull Consumer<BaniraWorldEvent> callback) {
             worldUnloadCallbacks.add(callback);
         }
 
-        public static void onTick(@Nonnull Consumer<LevelAccessor> callback) {
+        public static void onTick(@Nonnull Consumer<BaniraWorldEvent> callback) {
             worldTickCallbacks.add(callback);
         }
     }
@@ -191,34 +170,32 @@ public final class BaniraEventBus {
         }
     }
 
-    public static void dispatchServerStarting(@Nonnull MinecraftServer server) {
-        fire(serverStartingCallbacks, server, "server starting");
+    public static void dispatchServerStarting(@Nonnull BaniraServerEvent event) {
+        fire(serverStartingCallbacks, event, "server starting");
     }
 
-    public static void dispatchServerStarted(@Nonnull MinecraftServer server) {
-        fire(serverStartedCallbacks, server, "server started");
+    public static void dispatchServerStarted(@Nonnull BaniraServerEvent event) {
+        fire(serverStartedCallbacks, event, "server started");
     }
 
-    public static void dispatchServerStopping(@Nonnull MinecraftServer server) {
-        fire(serverStoppingCallbacks, server, "server stopping");
+    public static void dispatchServerStopping(@Nonnull BaniraServerEvent event) {
+        fire(serverStoppingCallbacks, event, "server stopping");
     }
 
-    public static void dispatchServerTick(@Nonnull MinecraftServer server) {
-        fire(serverTickCallbacks, server, "server tick");
+    public static void dispatchServerTick(@Nonnull BaniraServerEvent event) {
+        fire(serverTickCallbacks, event, "server tick");
     }
 
-    public static void dispatchPlayerLoggedIn(@Nonnull net.minecraft.world.entity.player.Player player) {
-        fire(playerLoggedInCallbacks, player, "player logged in");
+    public static void dispatchPlayerLoggedIn(@Nonnull BaniraPlayerEvent event) {
+        fire(playerLoggedInCallbacks, event, "player logged in");
     }
 
-    public static void dispatchPlayerLoggedOut(@Nonnull net.minecraft.world.entity.player.Player player) {
-        fire(playerLoggedOutCallbacks, player, "player logged out");
+    public static void dispatchPlayerLoggedOut(@Nonnull BaniraPlayerEvent event) {
+        fire(playerLoggedOutCallbacks, event, "player logged out");
     }
 
-    public static void dispatchPlayerChangedDimension(@Nonnull ServerPlayer player,
-                                                      @Nonnull ResourceKey<Level> from,
-                                                      @Nonnull ResourceKey<Level> to) {
-        fire(playerChangedDimensionCallbacks, new PlayerChangedDimensionEvent(player, from, to), "player changed dimension");
+    public static void dispatchPlayerChangedDimension(@Nonnull BaniraPlayerDimensionEvent event) {
+        fire(playerChangedDimensionCallbacks, event, "player changed dimension");
     }
 
     public static void dispatchWorldSave() {
@@ -229,16 +206,16 @@ public final class BaniraEventBus {
         fire(chunkSaveCallbacks, "chunk save");
     }
 
-    public static void dispatchPlayerSave(@Nonnull ServerPlayer player) {
-        fire(playerSaveCallbacks, player, "player save");
+    public static void dispatchPlayerSave(@Nonnull BaniraPlayerEvent event) {
+        fire(playerSaveCallbacks, event, "player save");
     }
 
-    public static void dispatchWorldUnload(@Nonnull LevelAccessor world) {
-        fire(worldUnloadCallbacks, world, "world unload");
+    public static void dispatchWorldUnload(@Nonnull BaniraWorldEvent event) {
+        fire(worldUnloadCallbacks, event, "world unload");
     }
 
-    public static void dispatchWorldTick(@Nonnull LevelAccessor world) {
-        fire(worldTickCallbacks, world, "world tick");
+    public static void dispatchWorldTick(@Nonnull BaniraWorldEvent event) {
+        fire(worldTickCallbacks, event, "world tick");
     }
 
     public static void dispatchCommonSetup(@Nonnull BaniraCommonSetupEvent event) {

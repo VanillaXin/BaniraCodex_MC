@@ -7,11 +7,16 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
+import xin.vanilla.banira.api.event.BaniraPlayerEvent;
+import xin.vanilla.banira.api.event.BaniraServerEvent;
+import xin.vanilla.banira.api.event.BaniraWorldEvent;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -63,25 +68,50 @@ public class BaniraCodex implements ModInitializer {
     }
 
     private void registerFabricEvents() {
-        ServerLifecycleEvents.SERVER_STARTING.register(BaniraEventBus::dispatchServerStarting);
-        ServerLifecycleEvents.SERVER_STARTED.register(BaniraEventBus::dispatchServerStarted);
-        ServerLifecycleEvents.SERVER_STOPPING.register(BaniraEventBus::dispatchServerStopping);
+        ServerLifecycleEvents.SERVER_STARTING.register(server ->
+                BaniraEventBus.dispatchServerStarting(new BaniraServerEvent(server)));
+        ServerLifecycleEvents.SERVER_STARTED.register(server ->
+                BaniraEventBus.dispatchServerStarted(new BaniraServerEvent(server)));
+        ServerLifecycleEvents.SERVER_STOPPING.register(server ->
+                BaniraEventBus.dispatchServerStopping(new BaniraServerEvent(server)));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            BaniraEventBus.dispatchServerTick(server);
+            BaniraEventBus.dispatchServerTick(new BaniraServerEvent(server));
             BaniraScheduler.dispatchServerTick(server);
         });
-        ServerTickEvents.END_WORLD_TICK.register(BaniraEventBus::dispatchWorldTick);
+        ServerTickEvents.END_WORLD_TICK.register(world ->
+                BaniraEventBus.dispatchWorldTick(worldEvent(world)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                BaniraEventBus.dispatchPlayerLoggedIn(handler.player));
+                BaniraEventBus.dispatchPlayerLoggedIn(playerEvent(handler.player)));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                BaniraEventBus.dispatchPlayerLoggedOut(handler.player));
-        ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> BaniraEventBus.dispatchWorldUnload(world));
+                BaniraEventBus.dispatchPlayerLoggedOut(playerEvent(handler.player)));
+        ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) ->
+                BaniraEventBus.dispatchWorldUnload(worldEvent(world)));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             BaniraEventBus.dispatchWorldSave();
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                BaniraEventBus.dispatchPlayerSave(player);
+                BaniraEventBus.dispatchPlayerSave(playerEvent(player));
             }
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> BaniraCommand.register(dispatcher));
+    }
+
+    private static BaniraPlayerEvent playerEvent(ServerPlayer player) {
+        return new BaniraPlayerEvent(
+                player,
+                player != null ? player.getUUID() : null,
+                player != null ? player.getName().getString() : null
+        );
+    }
+
+    private static BaniraWorldEvent worldEvent(Level world) {
+        return new BaniraWorldEvent(world, dimensionId(world), world != null && world.isClientSide());
+    }
+
+    private static String dimensionId(Level world) {
+        return world != null ? dimensionId(world.dimension()) : "";
+    }
+
+    private static String dimensionId(ResourceKey<Level> dimension) {
+        return dimension != null && dimension.location() != null ? dimension.location().toString() : "";
     }
 }

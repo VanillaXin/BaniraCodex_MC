@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.network.*;
 
 import java.util.function.BiConsumer;
@@ -44,7 +43,7 @@ public class RequestToBoth implements NetworkPacket {
      * @param requestType 请求类型ID
      * @param handler     处理器
      */
-    public static RequestHandlerRegistration registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayer> handler) {
+    public static RequestHandlerRegistration registerHandler(int requestType, BiConsumer<RequestToBoth, Object> handler) {
         return HANDLERS.register(requestType, handler);
     }
 
@@ -64,8 +63,7 @@ public class RequestToBoth implements NetworkPacket {
     public static void handle(RequestToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.isServerSide()) {
-                ServerPlayer player = ctx.sender();
-                HANDLERS.dispatch(packet, player);
+                HANDLERS.dispatch(packet, ctx.sender());
             }
         });
         ctx.markHandled();

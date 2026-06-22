@@ -56,7 +56,7 @@ public final class FabricNetworkContext implements BaniraNetworkContext {
 
     @Nullable
     @Override
-    public ServerPlayer sender() {
+    public Object sender() {
         return sender;
     }
 }

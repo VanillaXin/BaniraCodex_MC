@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Loader-neutral registry for config holders.
+ * 配置注册表，管理多个 ConfigHolder 的注册与加载。
  */
 public final class ConfigRegistry {
     private static final Map<String, ConfigHolder> HOLDERS = new LinkedHashMap<>();
@@ -21,26 +21,11 @@ public final class ConfigRegistry {
     }
 
     public static ConfigHolder get(String configName, ConfigScope scope) {
-        String key = configName + "-" + extension(scope);
+        String key = configName + "-" + scope.extension();
         return HOLDERS.get(key);
     }
 
     public static Map<String, ConfigHolder> getAll() {
         return new LinkedHashMap<>(HOLDERS);
-    }
-
-    private static String extension(ConfigScope scope) {
-        if (scope == null) {
-            return "toml";
-        }
-        switch (scope) {
-            case CLIENT:
-                return "toml";
-            case SERVER:
-                return "toml";
-            case COMMON:
-            default:
-                return "toml";
-        }
     }
 }

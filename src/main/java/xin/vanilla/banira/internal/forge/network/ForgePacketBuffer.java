@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.forge.network;
 
-import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -83,16 +82,6 @@ final class ForgePacketBuffer implements BaniraPacketBuffer {
     @Override
     public void writeResourceLocation(ResourceLocation value) {
         buffer.writeResourceLocation(value);
-    }
-
-    @Override
-    public DisplayInfo readDisplayInfo() {
-        return DisplayInfo.fromNetwork(buffer);
-    }
-
-    @Override
-    public void writeDisplayInfo(DisplayInfo value) {
-        value.serializeToNetwork(buffer);
     }
 
     @Override

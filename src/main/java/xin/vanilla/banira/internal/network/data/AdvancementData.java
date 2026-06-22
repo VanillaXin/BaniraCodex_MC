@@ -53,7 +53,7 @@ public class AdvancementData {
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
         ResourceLocation id = buffer.readResourceLocation();
-        return new AdvancementData(id, buffer.readDisplayInfo());
+        return new AdvancementData(id, AdvancementBufferAccess.readDisplayInfo(buffer));
     }
 
     public static DisplayInfo emptyDisplayInfo() {
@@ -77,7 +77,7 @@ public class AdvancementData {
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
         buffer.writeResourceLocation(id);
-        buffer.writeDisplayInfo(displayInfo);
+        AdvancementBufferAccess.writeDisplayInfo(buffer, displayInfo);
     }
 
 

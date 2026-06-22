@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 
 /**
@@ -34,13 +33,6 @@ public interface BaniraPacketBuffer {
     ResourceLocation readResourceLocation();
 
     void writeResourceLocation(ResourceLocation value);
-
-    /**
-     * 1.16.5 Advancement DisplayInfo 的序列化仍依赖原版实现，限制在当前分支内部使用。
-     */
-    DisplayInfo readDisplayInfo();
-
-    void writeDisplayInfo(DisplayInfo value);
 
     /**
      * 仅供版本/加载器内部适配复杂原版序列化时使用，公共包协议不要直接依赖返回类型。

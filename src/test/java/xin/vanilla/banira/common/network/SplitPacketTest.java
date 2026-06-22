@@ -1,104 +1,88 @@
 package xin.vanilla.banira.common.network;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.util.PacketUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class SplitPacketTest {
-
     @Before
-    public void clearCacheBefore() {
-        PacketUtils.packetCache().clear();
-    }
-
-    @After
-    public void clearCacheAfter() {
-        PacketUtils.packetCache().clear();
+    public void clearAssemblies() {
+        SplitPacket.clearAssembliesForTest();
     }
 
     @Test
-    public void returnsEmptyUntilAllPartsArrive() {
-        TestSplitPacket first = packet("partial", 2, 0, "a");
+    public void handleReturnsSortedPacketsWhenAllPartsArrive() {
+        DummySplitPacket second = packet("merge", 3, 2);
+        DummySplitPacket first = packet("merge", 3, 0);
+        DummySplitPacket middle = packet("merge", 3, 1);
 
-        List<TestSplitPacket> result = SplitPacket.handle(first);
+        assertTrue(SplitPacket.handle(second).isEmpty());
+        assertTrue(SplitPacket.handle(first).isEmpty());
 
-        assertTrue(result.isEmpty());
-        assertTrue(PacketUtils.packetCache().containsKey("partial"));
+        List<DummySplitPacket> merged = SplitPacket.handle(middle);
+
+        assertEquals(3, merged.size());
+        assertSame(first, merged.get(0));
+        assertSame(middle, merged.get(1));
+        assertSame(second, merged.get(2));
+        assertEquals(0, SplitPacket.assemblyCountForTest());
     }
 
     @Test
-    public void returnsSortedPartsAndClearsCacheWhenComplete() {
-        SplitPacket.handle(packet("complete", 3, 2, "c"));
-        SplitPacket.handle(packet("complete", 3, 0, "a"));
+    public void handleDropsInvalidPackets() {
+        assertTrue(SplitPacket.handle(packet("", 1, 0)).isEmpty());
+        assertTrue(SplitPacket.handle(packet("bad-total", 0, 0)).isEmpty());
+        assertTrue(SplitPacket.handle(packet("bad-sort", 1, 1)).isEmpty());
+        assertTrue(SplitPacket.handle(packet("negative-sort", 1, -1)).isEmpty());
 
-        List<TestSplitPacket> result = SplitPacket.handle(packet("complete", 3, 1, "b"));
-
-        assertEquals(List.of("a", "b", "c"), payloads(result));
-        assertFalse(PacketUtils.packetCache().containsKey("complete"));
-        assertEquals("abc", SplitPacket.merge(result).payload);
+        assertEquals(0, SplitPacket.assemblyCountForTest());
     }
 
     @Test
-    public void invalidPartDoesNotPolluteCache() {
-        assertTrue(SplitPacket.handle(packet("", 2, 0, "blank")).isEmpty());
-        assertTrue(SplitPacket.handle(packet("bad_total", 0, 0, "bad")).isEmpty());
-        assertTrue(SplitPacket.handle(packet("bad_sort", 2, 2, "bad")).isEmpty());
+    public void duplicateSortDropsCurrentAssembly() {
+        DummySplitPacket original = packet("duplicate", 2, 0);
+        DummySplitPacket replacement = packet("duplicate", 2, 0);
+        DummySplitPacket last = packet("duplicate", 2, 1);
 
-        assertTrue(PacketUtils.packetCache().isEmpty());
+        assertTrue(SplitPacket.handle(original).isEmpty());
+        assertTrue(SplitPacket.handle(replacement).isEmpty());
+        assertEquals(0, SplitPacket.assemblyCountForTest());
+
+        List<DummySplitPacket> merged = SplitPacket.handle(last);
+
+        assertTrue(merged.isEmpty());
+        assertEquals(1, SplitPacket.assemblyCountForTest());
     }
 
     @Test
-    public void duplicateSortDropsCurrentBatch() {
-        SplitPacket.handle(packet("dup", 2, 0, "a"));
+    public void mismatchedTotalStartsNewAssembly() {
+        DummySplitPacket old = packet("retotal", 3, 0);
+        DummySplitPacket replacement = packet("retotal", 2, 0);
+        DummySplitPacket last = packet("retotal", 2, 1);
 
-        List<TestSplitPacket> result = SplitPacket.handle(packet("dup", 2, 0, "duplicate"));
+        assertTrue(SplitPacket.handle(old).isEmpty());
+        assertTrue(SplitPacket.handle(replacement).isEmpty());
 
-        assertTrue(result.isEmpty());
-        assertFalse(PacketUtils.packetCache().containsKey("dup"));
+        List<DummySplitPacket> merged = SplitPacket.handle(last);
+
+        assertEquals(2, merged.size());
+        assertSame(replacement, merged.get(0));
+        assertSame(last, merged.get(1));
+        assertEquals(0, SplitPacket.assemblyCountForTest());
     }
 
-    @Test
-    public void completionCleansExpiredCacheKeys() {
-        String expiredId = (System.currentTimeMillis() - 1000 * 60 * 6) + ".old";
-        PacketUtils.packetCache().put(expiredId, new ArrayList<>(List.of(packet(expiredId, 2, 0, "old"))));
-
-        SplitPacket.handle(packet("fresh", 1, 0, "fresh"));
-
-        assertFalse(PacketUtils.packetCache().containsKey(expiredId));
-    }
-
-    private static TestSplitPacket packet(String id, int total, int sort, String payload) {
-        TestSplitPacket packet = new TestSplitPacket(payload);
+    private static DummySplitPacket packet(String id, int total, int sort) {
+        DummySplitPacket packet = new DummySplitPacket();
         packet.setId(id);
         packet.setTotal(total);
         packet.setSort(sort);
         return packet;
     }
 
-    private static List<String> payloads(List<TestSplitPacket> packets) {
-        return packets.stream().map(packet -> packet.payload).toList();
-    }
-
-    private static final class TestSplitPacket extends SplitPacket
-            implements INetworkPacket, SplitPacket.MergeableSplitPacket<TestSplitPacket> {
-        private final String payload;
-
-        private TestSplitPacket(String payload) {
-            this.payload = payload;
-        }
-
-        @Override
-        public TestSplitPacket mergePackets(List<TestSplitPacket> packets) {
-            return new TestSplitPacket(String.join("", payloads(packets)));
-        }
-
+    private static final class DummySplitPacket extends SplitPacket {
         @Override
         public int getChunkSize() {
             return 1;

@@ -9,6 +9,6 @@ public final class BaniraClientScreenDefaults {
     }
 
     public static void register() {
-        BaniraClientEventHub.Screen.onChanged(event -> LogoModifier.modifyLogo());
+        BaniraClientEventHub.Client.onGuiChanged(event -> LogoModifier.modifyLogo());
     }
 }

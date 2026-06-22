@@ -8,20 +8,18 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import javax.annotation.Nonnull;
 
 /**
- * 1.16.5 旧绘制上下文适配器；子 mod 只接触 api.client.render。
+ * 1.16.5 MatrixStack 绘制适配器；子 mod 只接触 api.client.render。
  */
 public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
-    private final xin.vanilla.banira.client.event.BaniraDrawContext draw;
+    private final Object nativeContext;
 
-    public BaniraLegacyDrawHandle(xin.vanilla.banira.client.event.BaniraDrawContext draw) {
-        this.draw = draw;
+    public BaniraLegacyDrawHandle(Object nativeContext) {
+        this.nativeContext = nativeContext;
     }
 
     @Override
     public void fill(int x, int y, int width, int height, int argb) {
-        if (draw != null) {
-            draw.fill(x, y, width, height, argb);
-        }
+        BaniraClientAccess.fill(nativeContext, x, y, width, height, argb);
     }
 
     @Override
@@ -42,21 +40,19 @@ public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
 
     @Override
     public void text(@Nonnull String text, int x, int y, int argb, boolean shadow) {
-        if (draw != null) {
-            draw.drawText(text, x, y, argb, shadow);
-        }
+        BaniraClientAccess.drawText(nativeContext, text, x, y, argb, shadow);
     }
 
     @Override
     public void texture(@Nonnull String textureId, int x, int y, int width, int height,
                         float u, float v, int textureWidth, int textureHeight) {
         ResourceLocation texture = ResourceLocation.tryParse(textureId);
-        if (draw != null && texture != null) {
-            draw.blit(texture, x, y, u, v, width, height, textureWidth, textureHeight);
+        if (texture != null) {
+            BaniraClientAccess.blit(nativeContext, texture, x, y, u, v, width, height, textureWidth, textureHeight);
         }
     }
 
     private MatrixStack matrixStack() {
-        return draw != null ? draw.nativeContext(MatrixStack.class) : null;
+        return nativeContext instanceof MatrixStack ? (MatrixStack) nativeContext : null;
     }
 }

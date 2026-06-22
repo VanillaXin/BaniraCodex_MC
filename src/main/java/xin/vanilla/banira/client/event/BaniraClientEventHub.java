@@ -1,11 +1,31 @@
 package xin.vanilla.banira.client.event;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.player.PlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.event.BaniraChatEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
+import xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent;
+import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
+import xin.vanilla.banira.api.client.event.BaniraMouseEvent;
+import xin.vanilla.banira.api.client.event.BaniraOverlayRenderEvent;
+import xin.vanilla.banira.api.client.event.BaniraScreenEvent;
+import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
+import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
+import xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent;
+import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
+import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
+import xin.vanilla.banira.api.client.render.BaniraDrawContext;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.BaniraClientDefaults;
 import xin.vanilla.banira.internal.client.BaniraLegacyDrawHandle;
 
@@ -15,44 +35,35 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Client-only event hub exposed to child mods. Loader event objects are converted
- * by internal adapters before reaching this class.
+ * 客户端公共事件入口；1.16.5 的 Forge/MatrixStack 差异只在 adapter 内转换。
  */
 public final class BaniraClientEventHub {
-
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final List<Consumer<PlayerEntity>> clientPlayerLoggedInCallbacks = new ArrayList<>();
     private static final List<Consumer<PlayerEntity>> clientPlayerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientScreenEvent>> clientScreenChangedCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraScreenOpenEvent>> clientGuiChangedCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraTextureReloadEvent>> clientTextureReloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientScreenEvent>> clientScreenPreRenderCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientScreenEvent>> clientScreenPostRenderCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientInputEvent>> clientInputCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraHudRenderEvent>> hudPreRenderCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraHudRenderEvent>> hudPostRenderCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraDrawScreenEvent>> clientDrawScreenPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraDrawScreenEvent>> clientDrawScreenPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraOverlayRenderEvent>> clientRenderOverlayPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseClickedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseReleasedPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseScrolledPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraMouseEvent>> clientMouseDraggedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientKeyPressedPreCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientKeyReleasedPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraKeyboardEvent>> clientCharTypedPreCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraClientTickEvent>> clientTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientChatEvent>> clientChatCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraClientScreenEvent>> clientScreenCallbacks = new ArrayList<>();
-    private static final List<Runnable> modClientSetupCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraClientSetupEvent>> apiModClientSetupCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraClientTickEvent>> apiClientTickCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraChatEvent>> apiClientChatCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent>> apiScreenChangedCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent>> apiTextureReloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent>> apiScreenPreRenderCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent>> apiScreenPostRenderCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraScreenEvent>> apiScreenCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent>> apiMouseClickedPreCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent>> apiMouseReleasedPreCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent>> apiMouseScrolledPreCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraKeyboardEvent>> apiKeyPressedPreCallbacks = new ArrayList<>();
-    private static final List<Consumer<xin.vanilla.banira.api.client.event.BaniraKeyboardEvent>> apiKeyReleasedPostCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraChatEvent>> clientChatCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
 
     private static final BaniraMouseClickTracker mouseClickTracker = new BaniraMouseClickTracker();
     private static final BaniraDragTracker dragTracker = new BaniraDragTracker();
     private static final BaniraKeyPressTracker keyPressTracker = new BaniraKeyPressTracker();
-
     private static volatile boolean codexDefaultsRegistered;
 
     private BaniraClientEventHub() {
@@ -67,8 +78,11 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchModClientSetup() {
-        fire(modClientSetupCallbacks, "mod client setup");
-        fire(apiModClientSetupCallbacks, new xin.vanilla.banira.api.client.event.BaniraClientSetupEvent(), "api mod client setup");
+        dispatchModClientSetup(new BaniraClientSetupEvent());
+    }
+
+    public static void dispatchModClientSetup(@Nonnull BaniraClientSetupEvent event) {
+        fire(modClientSetupCallbacks, event, "mod client setup");
     }
 
     public static void dispatchClientPlayerLoggedIn(PlayerEntity player) {
@@ -79,69 +93,63 @@ public final class BaniraClientEventHub {
         fire(clientPlayerLoggedOutCallbacks, player, "player logged out");
     }
 
-    public static void dispatchClientTick(BaniraClientTickEvent event) {
+    public static void dispatchClientTick(@Nonnull BaniraClientTickEvent event) {
         fire(clientTickCallbacks, event, "client tick");
-        if (event != null && event.phase() == BaniraTickPhase.END) {
-            fire(apiClientTickCallbacks, xin.vanilla.banira.api.client.event.BaniraClientTickEvent.END, "api client tick");
-        }
     }
 
-    public static void dispatchClientChat(BaniraClientChatEvent event) {
+    public static void dispatchClientChat(@Nonnull BaniraChatEvent event) {
         fire(clientChatCallbacks, event, "client chat");
-        if (event != null) {
-            fire(apiClientChatCallbacks, new xin.vanilla.banira.api.client.event.BaniraChatEvent(event.message()), "api client chat");
-        }
     }
 
-    public static void dispatchClientScreen(BaniraClientScreenEvent event) {
-        fire(clientScreenCallbacks, event, "client screen");
-        if (event != null) {
-            fire(apiScreenCallbacks, new xin.vanilla.banira.api.client.event.BaniraScreenEvent(screenInfo(event.nativeScreen(Screen.class))), "api client screen");
-        }
+    public static void dispatchGuiScreen(@Nonnull BaniraScreenEvent event) {
+        fire(clientGuiScreenCallbacks, event, "client gui screen");
     }
 
-    public static void dispatchClientScreenChanged(BaniraClientScreenEvent event) {
-        fire(clientScreenChangedCallbacks, event, "client screen changed");
-        resetInputTrackers();
-        if (event != null) {
-            fire(apiScreenChangedCallbacks, new xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent(screenInfo(event.nativeScreen(Screen.class))), "api client screen changed");
-        }
+    public static void dispatchRenderOverlayPre(@Nonnull BaniraOverlayRenderEvent event) {
+        fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
-    public static void dispatchClientScreenPreRender(BaniraClientScreenEvent event) {
-        fire(clientScreenPreRenderCallbacks, event, "client screen pre render");
-        if (event != null && event.draw() != null) {
-            fire(apiScreenPreRenderCallbacks, drawScreenEvent(event), "api client screen pre render");
-        }
+    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull MatrixStack nativeGraphics,
+                                                      float partialTick, boolean screenOpen) {
+        dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
     }
 
-    public static void dispatchClientTextureReload(BaniraTextureReloadEvent event) {
-        fire(clientTextureReloadCallbacks, event, "client texture reload");
-        if (event != null && event.atlasLocation() != null) {
-            fire(apiTextureReloadCallbacks, new xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent(event.atlasLocation().toString()), "api client texture reload");
-        }
+    public static void dispatchMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        dragTracker.press(event.mouseX(), event.mouseY(), event.button());
+        event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
+        fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
     }
 
-    public static void dispatchClientScreenPostRender(BaniraClientScreenEvent event) {
-        fire(clientScreenPostRenderCallbacks, event, "client screen post render");
-        if (event != null && event.draw() != null) {
-            fire(apiScreenPostRenderCallbacks, drawScreenEvent(event), "api client screen post render");
-        }
+    public static void dispatchMouseReleasedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        event.withDragMetadata(dragTracker.release(event.mouseX(), event.mouseY(), event.button()));
+        fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
     }
 
-    public static void dispatchClientInput(BaniraClientInputEvent event) {
-        fire(clientInputCallbacks, event, "client input");
-        dispatchApiInputEvent(event);
+    public static void dispatchMouseReleasedPost(@Nonnull BaniraMouseEvent event) {
+        fire(clientMouseReleasedPostCallbacks, event, "client mouse released post");
     }
 
-    public static void dispatchHudPreRender(BaniraHudRenderEvent event) {
-        fire(hudPreRenderCallbacks, event, "hud pre render");
-        dispatchApiHudEvent(event, true);
+    public static void dispatchMouseScrolledPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
     }
 
-    public static void dispatchHudPostRender(BaniraHudRenderEvent event) {
-        fire(hudPostRenderCallbacks, event, "hud post render");
-        dispatchApiHudEvent(event, false);
+    public static void dispatchMouseDraggedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        event.withDragMetadata(dragTracker.drag(event.mouseX(), event.mouseY(), event.button(), event.dragX(), event.dragY()));
+        fire(clientMouseDraggedPreCallbacks, event, "client mouse dragged pre");
+    }
+
+    public static void dispatchKeyPressedPre(@Nonnull BaniraKeyboardEvent event) {
+        event.withPressMetadata(keyPressTracker.recordPress(event.keyCode(), event.scanCode(), event.modifiers()));
+        fire(clientKeyPressedPreCallbacks, event, "client key pressed pre");
+    }
+
+    public static void dispatchKeyReleasedPost(@Nonnull BaniraKeyboardEvent event) {
+        keyPressTracker.recordRelease(event.keyCode(), event.scanCode());
+        fire(clientKeyReleasedPostCallbacks, event, "client key released post");
+    }
+
+    public static void dispatchCharTypedPre(@Nonnull BaniraKeyboardEvent event) {
+        fire(clientCharTypedPreCallbacks, event, "client char typed pre");
     }
 
     public static final class Player {
@@ -161,111 +169,116 @@ public final class BaniraClientEventHub {
         private Client() {
         }
 
-        public static void onGuiChanged(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent> callback) {
-            apiScreenChangedCallbacks.add(callback);
+        public static void onGuiChanged(@Nonnull Consumer<BaniraScreenOpenEvent> callback) {
+            clientGuiChangedCallbacks.add(callback);
         }
 
-        public static void onScreenChanged(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenChangedCallbacks.add(callback);
+        public static void fireGuiChanged(@Nonnull BaniraScreenOpenEvent event) {
+            resetInputTrackers();
+            fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
 
-        public static void onTextureReload(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent> callback) {
-            apiTextureReloadCallbacks.add(callback);
+        public static void onTextureReload(@Nonnull Consumer<BaniraTextureReloadEvent> callback) {
+            clientTextureReloadCallbacks.add(callback);
         }
 
-        public static void onDrawScreenPre(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent> callback) {
-            apiScreenPreRenderCallbacks.add(callback);
+        public static void onDrawScreenPre(@Nonnull Consumer<BaniraDrawScreenEvent> callback) {
+            clientDrawScreenPreCallbacks.add(callback);
         }
 
-        public static void onDrawScreenPost(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent> callback) {
-            apiScreenPostRenderCallbacks.add(callback);
+        public static void onDrawScreenPost(@Nonnull Consumer<BaniraDrawScreenEvent> callback) {
+            clientDrawScreenPostCallbacks.add(callback);
         }
 
-        public static void onScreenPreRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenPreRenderCallbacks.add(callback);
+        public static void onRenderOverlayPre(@Nonnull Consumer<BaniraOverlayRenderEvent> callback) {
+            clientRenderOverlayPreCallbacks.add(callback);
         }
 
-        public static void onScreenPostRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenPostRenderCallbacks.add(callback);
+        public static void onRenderOverlayPost(@Nonnull Consumer<BaniraOverlayRenderEvent> callback) {
+            clientRenderOverlayPostCallbacks.add(callback);
         }
 
-        public static void onClientTick(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraClientTickEvent> callback) {
-            apiClientTickCallbacks.add(callback);
+        public static void onClientTick(@Nonnull Consumer<BaniraClientTickEvent> callback) {
+            clientTickCallbacks.add(callback);
         }
 
-        public static void onChat(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraChatEvent> callback) {
-            apiClientChatCallbacks.add(callback);
+        public static void onChat(@Nonnull Consumer<BaniraChatEvent> callback) {
+            clientChatCallbacks.add(callback);
         }
 
-        public static void onGuiScreen(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraScreenEvent> callback) {
-            apiScreenCallbacks.add(callback);
+        public static void onGuiScreen(@Nonnull Consumer<BaniraScreenEvent> callback) {
+            clientGuiScreenCallbacks.add(callback);
         }
 
-        public static void onScreenEvent(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenCallbacks.add(callback);
+        public static void onMouseClickedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseClickedPreCallbacks.add(callback);
         }
 
-        public static void onMouseClickedPre(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent> callback) {
-            apiMouseClickedPreCallbacks.add(callback);
+        public static void onMouseReleasedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseReleasedPreCallbacks.add(callback);
         }
 
-        public static void onMouseReleasedPre(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent> callback) {
-            apiMouseReleasedPreCallbacks.add(callback);
+        public static void onMouseReleasedPost(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseReleasedPostCallbacks.add(callback);
         }
 
-        public static void onMouseScrolledPre(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraMouseEvent> callback) {
-            apiMouseScrolledPreCallbacks.add(callback);
+        public static void onMouseScrolledPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseScrolledPreCallbacks.add(callback);
         }
 
-        public static void onKeyPressedPre(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraKeyboardEvent> callback) {
-            apiKeyPressedPreCallbacks.add(callback);
+        public static void onMouseDraggedPre(@Nonnull Consumer<BaniraMouseEvent> callback) {
+            clientMouseDraggedPreCallbacks.add(callback);
         }
 
-        public static void onKeyReleasedPost(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraKeyboardEvent> callback) {
-            apiKeyReleasedPostCallbacks.add(callback);
-        }
-    }
-
-    public static final class Screen {
-        private Screen() {
+        public static void onKeyPressedPre(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientKeyPressedPreCallbacks.add(callback);
         }
 
-        public static void onChanged(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenChangedCallbacks.add(callback);
+        public static void onKeyReleasedPost(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientKeyReleasedPostCallbacks.add(callback);
         }
 
-        public static void onEvent(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenCallbacks.add(callback);
+        public static void onCharTypedPre(@Nonnull Consumer<BaniraKeyboardEvent> callback) {
+            clientCharTypedPreCallbacks.add(callback);
         }
 
-        public static void onPreRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenPreRenderCallbacks.add(callback);
+        public static void fireTextureReload(@Nonnull BaniraTextureReloadEvent event) {
+            fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
 
-        public static void onPostRender(@Nonnull Consumer<BaniraClientScreenEvent> callback) {
-            clientScreenPostRenderCallbacks.add(callback);
-        }
-    }
-
-    public static final class Input {
-        private Input() {
+        public static void fireDrawScreenPre(@Nonnull BaniraDrawScreenEvent event) {
+            fire(clientDrawScreenPreCallbacks, event, "client draw screen pre");
         }
 
-        public static void onInput(@Nonnull Consumer<BaniraClientInputEvent> callback) {
-            clientInputCallbacks.add(callback);
-        }
-    }
-
-    public static final class Hud {
-        private Hud() {
+        public static void fireDrawScreenPost(@Nonnull BaniraDrawScreenEvent event) {
+            fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
         }
 
-        public static void onPreRender(@Nonnull Consumer<BaniraHudRenderEvent> callback) {
-            hudPreRenderCallbacks.add(callback);
+        public static void fireRenderOverlayPost(@Nonnull BaniraOverlayRenderEvent event) {
+            fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
 
-        public static void onPostRender(@Nonnull Consumer<BaniraHudRenderEvent> callback) {
-            hudPostRenderCallbacks.add(callback);
+        public static void fireDrawScreenPreNative(@Nonnull MatrixStack nativeGraphics, @Nonnull Screen screen,
+                                                   double mouseX, double mouseY, float partialTick) {
+            fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        }
+
+        public static void fireDrawScreenPostNative(@Nonnull MatrixStack nativeGraphics, @Nonnull Screen screen,
+                                                    double mouseX, double mouseY, float partialTick) {
+            NotificationManager.get().render(nativeGraphics);
+            if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
+                QuickActionOverlay.get().render(nativeGraphics, screen, (int) mouseX, (int) mouseY, partialTick);
+                QuickActionOverlay.get().flushSaveIfNeeded();
+            }
+            fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        }
+
+        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull MatrixStack nativeGraphics,
+                                                       float partialTick, boolean screenOpen) {
+            if (element == HudOverlayElement.ALL && !screenOpen) {
+                NotificationManager.get().render(nativeGraphics);
+            }
+            fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }
     }
 
@@ -273,11 +286,7 @@ public final class BaniraClientEventHub {
         private ModLifecycle() {
         }
 
-        public static void onClientSetup(@Nonnull Consumer<xin.vanilla.banira.api.client.event.BaniraClientSetupEvent> callback) {
-            apiModClientSetupCallbacks.add(callback);
-        }
-
-        public static void onClientSetup(@Nonnull Runnable callback) {
+        public static void onClientSetup(@Nonnull Consumer<BaniraClientSetupEvent> callback) {
             modClientSetupCallbacks.add(callback);
         }
     }
@@ -292,80 +301,17 @@ public final class BaniraClientEventHub {
         }
     }
 
-    private static void fire(List<Runnable> callbacks, String eventName) {
-        for (Runnable callback : callbacks) {
-            try {
-                callback.run();
-            } catch (Throwable t) {
-                LOGGER.warn("Error executing callback for {} event", eventName, t);
-            }
-        }
-    }
-
-    public static xin.vanilla.banira.api.client.event.BaniraScreenInfo screenInfo(Screen screen) {
+    public static BaniraScreenInfo screenInfo(Screen screen) {
         if (screen == null) {
-            return xin.vanilla.banira.api.client.event.BaniraScreenInfo.closed();
+            return BaniraScreenInfo.closed();
         }
-        // 1.16.5 与高版本 Screen 的标题/尺寸命名不同，这里只做只读探测。
-        return new xin.vanilla.banira.api.client.event.BaniraScreenInfo(
+        return new BaniraScreenInfo(
                 screen.getClass().getName(),
-                screenTitle(screen),
-                screenDimension(screen, "width", "field_230708_k_", "f_96543_"),
-                screenDimension(screen, "height", "field_230709_l_", "f_96544_"),
+                screen.getTitle() == null ? "" : screen.getTitle().getString(),
+                screen.width,
+                screen.height,
                 true
         );
-    }
-
-    private static String screenTitle(Screen screen) {
-        Object title = invokeNoArg(screen, "getTitle", "func_230705_a_");
-        if (title == null) {
-            title = fieldValue(screen, "title", "field_230704_d_", "f_96539_");
-        }
-        Object text = title == null ? null : invokeNoArg(title, "getString", "getContents", "getText");
-        return text != null ? String.valueOf(text) : "";
-    }
-
-    private static int screenDimension(Screen screen, String... names) {
-        Object value = fieldValue(screen, names);
-        return value instanceof Number ? Math.max(0, ((Number) value).intValue()) : 0;
-    }
-
-    private static Object invokeNoArg(Object target, String... methodNames) {
-        if (target == null) {
-            return null;
-        }
-        Class<?> type = target.getClass();
-        while (type != null) {
-            for (String methodName : methodNames) {
-                try {
-                    java.lang.reflect.Method method = type.getDeclaredMethod(methodName);
-                    method.setAccessible(true);
-                    return method.invoke(target);
-                } catch (ReflectiveOperationException ignored) {
-                }
-            }
-            type = type.getSuperclass();
-        }
-        return null;
-    }
-
-    private static Object fieldValue(Object target, String... fieldNames) {
-        if (target == null) {
-            return null;
-        }
-        Class<?> type = target.getClass();
-        while (type != null) {
-            for (String fieldName : fieldNames) {
-                try {
-                    java.lang.reflect.Field field = type.getDeclaredField(fieldName);
-                    field.setAccessible(true);
-                    return field.get(target);
-                } catch (ReflectiveOperationException ignored) {
-                }
-            }
-            type = type.getSuperclass();
-        }
-        return null;
     }
 
     private static void resetInputTrackers() {
@@ -374,160 +320,23 @@ public final class BaniraClientEventHub {
         keyPressTracker.reset();
     }
 
-    private static xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent drawScreenEvent(BaniraClientScreenEvent event) {
-        return new xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent(
-                apiDrawContext(event.draw()),
-                screenInfo(event.nativeScreen(Screen.class)),
-                event.mouseX(),
-                event.mouseY(),
-                event.partialTicks()
-        );
+    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull MatrixStack nativeGraphics, @Nonnull Screen screen,
+                                                         double mouseX, double mouseY, float partialTick) {
+        return new BaniraDrawScreenEvent(drawContext(nativeGraphics, partialTick), screenInfo(screen), mouseX, mouseY, partialTick);
     }
 
-    private static xin.vanilla.banira.api.client.render.BaniraDrawContext apiDrawContext(BaniraDrawContext legacyDraw) {
-        return new xin.vanilla.banira.api.client.render.BaniraDrawContext(
-                new BaniraLegacyDrawHandle(legacyDraw),
-                legacyDraw != null ? legacyDraw.width() : 0,
-                legacyDraw != null ? legacyDraw.height() : 0,
-                legacyDraw != null ? legacyDraw.partialTicks() : 0.0F
-        );
+    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull MatrixStack nativeGraphics,
+                                                        float partialTick, boolean screenOpen) {
+        return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 
-    private static void dispatchApiInputEvent(BaniraClientInputEvent event) {
-        if (event == null) {
-            return;
-        }
-        Screen screen = event.nativeScreen(Screen.class);
-        xin.vanilla.banira.api.client.event.BaniraScreenInfo screenInfo = screenInfo(screen);
-        if (event.type() == BaniraClientInputEventType.MOUSE_CLICK) {
-            dragTracker.press(event.mouseX(), event.mouseY(), event.button());
-            xin.vanilla.banira.api.client.event.BaniraMouseEvent apiEvent =
-                    xin.vanilla.banira.api.client.event.BaniraMouseEvent.clicked(screenInfo, event.mouseX(), event.mouseY(), event.button())
-                            .withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
-            fire(apiMouseClickedPreCallbacks, apiEvent, "api mouse clicked pre");
-            if (apiEvent.canceled()) {
-                event.cancel();
-            }
-            return;
-        }
-        if (event.type() == BaniraClientInputEventType.MOUSE_RELEASE) {
-            xin.vanilla.banira.api.client.event.BaniraMouseEvent apiEvent =
-                    xin.vanilla.banira.api.client.event.BaniraMouseEvent.released(screenInfo, event.mouseX(), event.mouseY(), event.button())
-                            .withDragMetadata(dragTracker.release(event.mouseX(), event.mouseY(), event.button()));
-            fire(apiMouseReleasedPreCallbacks, apiEvent, "api mouse released pre");
-            if (apiEvent.canceled()) {
-                event.cancel();
-            }
-            return;
-        }
-        if (event.type() == BaniraClientInputEventType.MOUSE_SCROLL) {
-            xin.vanilla.banira.api.client.event.BaniraMouseEvent apiEvent =
-                    xin.vanilla.banira.api.client.event.BaniraMouseEvent.scrolled(screenInfo, event.mouseX(), event.mouseY(), event.scrollDelta());
-            fire(apiMouseScrolledPreCallbacks, apiEvent, "api mouse scrolled pre");
-            if (apiEvent.canceled()) {
-                event.cancel();
-            }
-            return;
-        }
-        if (event.type() == BaniraClientInputEventType.KEY_PRESS) {
-            xin.vanilla.banira.api.client.event.BaniraKeyboardEvent apiEvent =
-                    xin.vanilla.banira.api.client.event.BaniraKeyboardEvent.pressed(screenInfo, event.keyCode(), event.scanCode(), event.modifiers())
-                            .withPressMetadata(keyPressTracker.recordPress(event.keyCode(), event.scanCode(), event.modifiers()));
-            fire(apiKeyPressedPreCallbacks, apiEvent, "api key pressed pre");
-            if (apiEvent.canceled()) {
-                event.cancel();
-            }
-            return;
-        }
-        if (event.type() == BaniraClientInputEventType.KEY_RELEASE) {
-            keyPressTracker.recordRelease(event.keyCode(), event.scanCode());
-            xin.vanilla.banira.api.client.event.BaniraKeyboardEvent apiEvent =
-                    xin.vanilla.banira.api.client.event.BaniraKeyboardEvent.released(screenInfo, event.keyCode(), event.scanCode(), event.modifiers());
-            fire(apiKeyReleasedPostCallbacks, apiEvent, "api key released post");
-            if (apiEvent.canceled()) {
-                event.cancel();
-            }
-        }
+    private static BaniraDrawContext drawContext(@Nonnull MatrixStack nativeGraphics, float partialTick) {
+        KeyValue<Integer, Integer> screen = BaniraClientAccess.guiScaledSize();
+        return new BaniraDrawContext(new BaniraLegacyDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
     }
 
-    private static void dispatchApiHudEvent(BaniraHudRenderEvent event, boolean pre) {
-        if (event == null) {
-            return;
-        }
-        // 新 HUD API 的取消结果需要回写给 1.16.5 的 Forge 事件适配层。
-        xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent apiEvent = toApiHudEvent(event, pre);
-        if (pre) {
-            xin.vanilla.banira.api.client.hud.BaniraHudEvents.dispatchPre(apiEvent);
-        } else {
-            xin.vanilla.banira.api.client.hud.BaniraHudEvents.dispatchPost(apiEvent);
-        }
-        if (apiEvent.canceled()) {
-            event.cancelVanilla();
-        }
-    }
-
-    private static xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent toApiHudEvent(BaniraHudRenderEvent event, boolean pre) {
-        BaniraDrawContext legacyDraw = event.draw();
-        xin.vanilla.banira.api.client.render.BaniraDrawContext draw =
-                apiDrawContext(legacyDraw);
-        xin.vanilla.banira.api.client.hud.BaniraHudRenderContext context =
-                new xin.vanilla.banira.api.client.hud.BaniraHudRenderContext(
-                        draw,
-                        draw.screenWidth(),
-                        draw.screenHeight(),
-                        draw.partialTick()
-                );
-        return new xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent(
-                pre ? xin.vanilla.banira.api.client.hud.HudRenderPhase.PRE : xin.vanilla.banira.api.client.hud.HudRenderPhase.POST,
-                toApiHudElement(event.element()),
-                context,
-                toApiHudBounds(event.bounds()),
-                pre
-        );
-    }
-
-    private static xin.vanilla.banira.api.client.hud.BaniraHudBounds toApiHudBounds(BaniraHudBounds bounds) {
-        if (bounds == null || !bounds.isKnown()) {
-            return xin.vanilla.banira.api.client.hud.BaniraHudBounds.empty();
-        }
-        return xin.vanilla.banira.api.client.hud.BaniraHudBounds.of(bounds.x(), bounds.y(), bounds.width(), bounds.height());
-    }
-
-    private static xin.vanilla.banira.api.client.hud.HudOverlayElement toApiHudElement(BaniraHudOverlayElement element) {
-        if (element == null) {
-            return xin.vanilla.banira.api.client.hud.HudOverlayElement.UNKNOWN;
-        }
-        switch (element) {
-            case ALL:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.ALL;
-            case HOTBAR:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.HOTBAR;
-            case EXPERIENCE_BAR:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.EXPERIENCE_BAR;
-            case EXPERIENCE_TEXT:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.EXPERIENCE_TEXT;
-            case HEALTH:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.HEALTH;
-            case ARMOR:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.ARMOR;
-            case FOOD:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.FOOD;
-            case AIR:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.AIR;
-            case CHAT:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.CHAT;
-            case CROSSHAIR:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.CROSSHAIR;
-            case BOSS_HEALTH:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.BOSS_HEALTH;
-            case PLAYER_LIST:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.PLAYER_LIST;
-            case DEBUG:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.DEBUG_TEXT;
-            case HUD_TEXT:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.TEXT;
-            default:
-                return xin.vanilla.banira.api.client.hud.HudOverlayElement.UNKNOWN;
-        }
+    private static BaniraHudRenderContext hudContext(@Nonnull MatrixStack nativeGraphics, float partialTick) {
+        KeyValue<Integer, Integer> screen = BaniraClientAccess.guiScaledSize();
+        return new BaniraHudRenderContext(drawContext(nativeGraphics, partialTick), screen.key(), screen.val(), partialTick);
     }
 }

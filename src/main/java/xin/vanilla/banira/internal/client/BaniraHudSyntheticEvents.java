@@ -1,10 +1,12 @@
 package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
-import xin.vanilla.banira.client.event.BaniraDrawContext;
-import xin.vanilla.banira.client.event.BaniraHudOverlayElement;
-import xin.vanilla.banira.client.event.BaniraHudRenderEvent;
+import xin.vanilla.banira.api.client.hud.BaniraHudEvents;
+import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
+import xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent;
+import xin.vanilla.banira.api.client.hud.HudOverlayElement;
+import xin.vanilla.banira.api.client.hud.HudRenderPhase;
+import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -17,33 +19,44 @@ public final class BaniraHudSyntheticEvents {
     }
 
     public static boolean beforeExperienceText(MatrixStack stack, int x) {
-        BaniraDrawContext draw = new BaniraDrawContext(stack, screenWidth(), screenHeight(), 0.0F);
+        BaniraDrawContext draw = drawContext(stack);
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
-                BaniraHudOverlayElement.EXPERIENCE_TEXT,
-                draw,
-                true,
-                BaniraHudGeometry.experienceTextBounds(x, draw.height())
+                HudRenderPhase.PRE,
+                HudOverlayElement.EXPERIENCE_TEXT,
+                hudContext(draw),
+                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                true
         );
-        BaniraClientEventHub.dispatchHudPreRender(event);
+        BaniraHudEvents.dispatchPre(event);
         if (event.canceled()) {
-            BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(
-                    BaniraHudOverlayElement.EXPERIENCE_TEXT,
-                    draw,
-                    false,
-                    BaniraHudGeometry.experienceTextBounds(x, draw.height())
+            BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
+                    HudRenderPhase.POST,
+                    HudOverlayElement.EXPERIENCE_TEXT,
+                    hudContext(draw),
+                    BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                    false
             ));
         }
         return event.canceled();
     }
 
     public static void afterExperienceText(MatrixStack stack, int x) {
-        BaniraDrawContext draw = new BaniraDrawContext(stack, screenWidth(), screenHeight(), 0.0F);
-        BaniraClientEventHub.dispatchHudPostRender(new BaniraHudRenderEvent(
-                BaniraHudOverlayElement.EXPERIENCE_TEXT,
-                draw,
-                false,
-                BaniraHudGeometry.experienceTextBounds(x, draw.height())
+        BaniraDrawContext draw = drawContext(stack);
+        BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
+                HudRenderPhase.POST,
+                HudOverlayElement.EXPERIENCE_TEXT,
+                hudContext(draw),
+                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                false
         ));
+    }
+
+    private static BaniraDrawContext drawContext(MatrixStack stack) {
+        return new BaniraDrawContext(new BaniraLegacyDrawHandle(stack), screenWidth(), screenHeight(), 0.0F);
+    }
+
+    private static BaniraHudRenderContext hudContext(BaniraDrawContext draw) {
+        return new BaniraHudRenderContext(draw, draw.screenWidth(), draw.screenHeight(), draw.partialTick());
     }
 
     private static int screenWidth() {

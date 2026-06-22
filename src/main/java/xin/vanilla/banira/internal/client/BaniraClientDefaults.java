@@ -12,7 +12,6 @@ public final class BaniraClientDefaults {
         BaniraClientNetworkDefaults.register();
         BaniraClientScreenDefaults.register();
         BaniraClientResourceService.registerDefaults();
-        BaniraClientNotificationDefaults.register();
         BaniraHudLayerDiagnostics.register();
     }
 }

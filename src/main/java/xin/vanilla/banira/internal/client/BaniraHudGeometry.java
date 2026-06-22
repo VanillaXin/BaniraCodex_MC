@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import xin.vanilla.banira.client.event.BaniraHudBounds;
+import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
 
 /**
  * Shared HUD geometry formulas for branch adapters and synthetic hooks.

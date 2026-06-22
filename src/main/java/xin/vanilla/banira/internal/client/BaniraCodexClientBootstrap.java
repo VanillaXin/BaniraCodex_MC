@@ -19,7 +19,7 @@ public final class BaniraCodexClientBootstrap {
     }
 
     public static void init() {
-        BaniraClientEventHub.ModLifecycle.onClientSetup(() -> {
+        BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
             LogoModifier.register(BaniraCodex.MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
             ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");

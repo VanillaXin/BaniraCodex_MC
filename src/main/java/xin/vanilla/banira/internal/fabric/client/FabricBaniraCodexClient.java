@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
@@ -18,7 +19,6 @@ import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
-import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
@@ -32,14 +32,14 @@ import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
  * Fabric 客户端入口，只负责把 Fabric 事件转换成 Banira 客户端运行时回调。
  */
 public final class FabricBaniraCodexClient implements ClientModInitializer {
-    private static final BaniraKeyHandle NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
-    private static final BaniraKeyHandle BANIRA_HUB_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
+    private static final BaniraKeyHandle NOTIFICATION_LOG_KEY = BaniraInput.registerKey(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
+    private static final BaniraKeyHandle BANIRA_HUB_KEY = BaniraInput.registerKey(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
 
     @Override
     public void onInitializeClient() {
         BaniraClientDrawBridge.install(FabricBaniraDrawHandle::new);
         FabricNetworkChannels.registerClientReceivers();
-        BaniraKeyBindings.flushPendingRegistrations();
+        BaniraInput.flushPendingRegistrations();
         NotificationManager.get().loadLog();
         NotificationTypeSettingsStore.get().load();
         BaniraClientEventHub.registerCodexDefaults();

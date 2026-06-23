@@ -113,6 +113,27 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void notificationTypeRegistriesKeepStableApiFacades() throws IOException {
+        Path serverFacade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "notification", "BaniraNotificationTypes.java"));
+        Path clientFacade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "client", "notification", "BaniraClientNotificationTypes.java"));
+        if (!Files.exists(serverFacade) || !Files.exists(clientFacade)) {
+            fail("Notification type registration must stay in api.notification and api.client.notification facades.");
+        }
+        Path serverRegistry = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "notification", "ServerNotificationTypeRegistry.java"));
+        Path clientRegistry = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "notification", "NotificationTypeRegistry.java"));
+        String serverSource = new String(Files.readAllBytes(serverRegistry), StandardCharsets.UTF_8);
+        String clientSource = new String(Files.readAllBytes(clientRegistry), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        if (!serverSource.contains("registerInternal") || !serverSource.contains("sortedSnapshotInternal")) {
+            violations.add("Server notification type registry must expose internal methods for api.notification delegation.");
+        }
+        if (!clientSource.contains("registerInternal") || !clientSource.contains("knownTypesSortedInternal")) {
+            violations.add("Client notification type registry must expose internal methods for api.client.notification delegation.");
+        }
+        assertNoViolations("Notification type registration belongs in Banira notification type facades.", violations);
+    }
+
+    @Test
     public void logoModifierDoesNotReturnToClientUtil() {
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
         if (Files.exists(legacy)) {

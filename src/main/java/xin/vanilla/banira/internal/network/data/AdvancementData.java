@@ -12,6 +12,7 @@ import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -82,7 +83,10 @@ public class AdvancementData {
     }
 
     private static FriendlyByteBuf nativeBuffer(BaniraPacketBuffer buffer) {
-        return (FriendlyByteBuf) buffer.nativeBuffer();
+        if (buffer instanceof NativePacketBufferAccess) {
+            return (FriendlyByteBuf) ((NativePacketBufferAccess<?>) buffer).nativeBuffer();
+        }
+        throw new IllegalArgumentException("BaniraPacketBuffer does not expose a native FriendlyByteBuf");
     }
 
 

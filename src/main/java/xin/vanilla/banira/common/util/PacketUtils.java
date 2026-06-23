@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -40,14 +41,14 @@ public final class PacketUtils {
      * 发送数据包至服务器
      */
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        BaniraPlatforms.get().networkService().sendToServer(msg);
+        BaniraNetwork.sendToServer(msg);
     }
 
     /**
      * 发送数据包至玩家
      */
     public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, Object player) {
-        BaniraPlatforms.get().networkService().sendToPlayer(msg, player);
+        BaniraNetwork.sendToPlayer(msg, player);
     }
 
     /**
@@ -78,7 +79,7 @@ public final class PacketUtils {
     }
 
     public static boolean hasBaniraServer() {
-        return BaniraPlatforms.get().networkService().hasDefaultChannel();
+        return BaniraNetwork.hasBaniraServer();
     }
 
     public static boolean hasChannel(ResourceLocation channel) {
@@ -86,7 +87,7 @@ public final class PacketUtils {
     }
 
     public static boolean hasChannel(String channelId) {
-        return BaniraPlatforms.get().networkService().hasLocalChannel(channelId);
+        return BaniraNetwork.hasLocalChannel(channelId);
     }
 
     public static boolean hasChannel(Object player, ResourceLocation channel) {
@@ -94,6 +95,6 @@ public final class PacketUtils {
     }
 
     public static boolean hasChannel(Object player, String channelId) {
-        return BaniraPlatforms.get().networkService().hasPlayerChannel(player, channelId);
+        return BaniraNetwork.hasPlayerChannel(player, channelId);
     }
 }

@@ -101,6 +101,21 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void packetUtilsUsesNetworkFacadeForSimpleSending() throws IOException {
+        Path packetUtils = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "PacketUtils.java"));
+        String source = new String(Files.readAllBytes(packetUtils), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "networkService().sendToServer", violations, "PacketUtils simple send must delegate to api.BaniraNetwork.");
+        addIfContains(source, "networkService().hasDefaultChannel", violations, "PacketUtils channel checks must delegate to api.BaniraNetwork.");
+        addIfContains(source, "networkService().hasLocalChannel", violations, "PacketUtils channel checks must delegate to api.BaniraNetwork.");
+        addIfContains(source, "networkService().hasPlayerChannel", violations, "PacketUtils channel checks must delegate to api.BaniraNetwork.");
+        if (!source.contains("BaniraNetwork.sendToPlayer(msg, player)")) {
+            violations.add("PacketUtils sendPacketToPlayer must delegate to api.BaniraNetwork.");
+        }
+        assertNoViolations("New network API belongs in api.BaniraNetwork.", violations);
+    }
+
+    @Test
     public void logoModifierDoesNotReturnToClientUtil() {
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
         if (Files.exists(legacy)) {

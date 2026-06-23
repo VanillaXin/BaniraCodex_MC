@@ -3,11 +3,12 @@ package xin.vanilla.banira.internal.fabric.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 /**
  * Fabric 1.19.2 的 FriendlyByteBuf 适配；公共协议只依赖 BaniraPacketBuffer。
  */
-public final class FabricPacketBuffer implements BaniraPacketBuffer {
+public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
     public FabricPacketBuffer(FriendlyByteBuf delegate) {
@@ -85,7 +86,7 @@ public final class FabricPacketBuffer implements BaniraPacketBuffer {
     }
 
     @Override
-    public Object nativeBuffer() {
+    public FriendlyByteBuf nativeBuffer() {
         return delegate;
     }
 }

@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.GLFWKeyUtils;
 
 import java.nio.DoubleBuffer;
 import java.util.HashMap;

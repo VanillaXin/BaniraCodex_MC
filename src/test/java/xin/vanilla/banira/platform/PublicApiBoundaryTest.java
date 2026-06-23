@@ -45,6 +45,14 @@ public class PublicApiBoundaryTest {
         assertNoViolations("BaniraPlatform should be a pure contract.", violations);
     }
 
+    @Test
+    public void legacyClientInputUtilityDoesNotReturnToPublicPackages() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "GLFWKeyUtils.java"));
+        if (Files.exists(legacy)) {
+            fail("GLFWKeyUtils must stay internal. Public key helpers belong in api.client.input.BaniraKeyCodes.");
+        }
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

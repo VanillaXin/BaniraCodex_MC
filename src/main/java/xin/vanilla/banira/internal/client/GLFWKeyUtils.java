@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.util;
+package xin.vanilla.banira.internal.client;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,7 +1,6 @@
 package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
@@ -14,17 +13,6 @@ import java.util.List;
 @Accessors(fluent = true)
 public final class PacketUtils {
     private PacketUtils() {
-    }
-
-    /**
-     * 广播数据包至所有玩家
-     *
-     * @param packet 数据包
-     */
-    public static void broadcastPacket(Packet<?> packet) {
-        BaniraServerRuntime.players().forEach(player ->
-                player.connection.send(packet)
-        );
     }
 
     /**

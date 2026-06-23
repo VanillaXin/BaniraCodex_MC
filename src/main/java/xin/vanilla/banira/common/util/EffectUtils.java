@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -254,7 +252,6 @@ public final class EffectUtils {
     /**
      * 获取玩家当前拥有的效果列表
      */
-    @Environment(EnvType.CLIENT)
     public static List<MobEffect> getPlayerEffects() {
         List<MobEffect> result = new ArrayList<>();
         try {

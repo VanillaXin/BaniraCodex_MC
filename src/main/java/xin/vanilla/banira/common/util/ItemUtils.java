@@ -2,9 +2,6 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.NonNullList;
@@ -19,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.Color;
@@ -52,7 +50,6 @@ public final class ItemUtils {
     /**
      * Tooltip缓存
      */
-    @Environment(EnvType.CLIENT)
     private static final Map<String, List<Component>> tooltipCache = new ConcurrentHashMap<>();
 
     /**
@@ -870,7 +867,6 @@ public final class ItemUtils {
      *
      * @return 玩家身上的所有物品列表副本
      */
-    @Environment(EnvType.CLIENT)
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
         try {
@@ -1058,9 +1054,7 @@ public final class ItemUtils {
         }
         return modNameCache.computeIfAbsent(modId, id -> {
             try {
-                return FabricLoader.getInstance().getModContainer(id)
-                        .map(container -> container.getMetadata().getName())
-                        .orElse(id);
+                return Banira.platform().modDisplayName(id);
             } catch (Exception e) {
                 LOGGER.debug("Failed to get mod name for: {}", id, e);
                 return id;
@@ -1076,7 +1070,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @Environment(EnvType.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable Player player, boolean advanced) {
         if (isItemNull(itemStack)) {
@@ -1247,7 +1240,6 @@ public final class ItemUtils {
      * @param advanced  是否显示高级信息
      * @return Tooltip列表
      */
-    @Environment(EnvType.CLIENT)
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         try {

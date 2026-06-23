@@ -23,13 +23,18 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public final class CommandUtils {
     private CommandUtils() {
@@ -311,6 +316,152 @@ public final class CommandUtils {
 
     // endregion 指令参数相关
 
+
+    // region config modifier
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object parseStringToType(String parsedStr, Class<?> targetType) throws IllegalArgumentException {
+        if (targetType == Boolean.class || targetType == boolean.class) {
+            return StringUtils.stringToBoolean(parsedStr);
+        }
+        if (targetType == Integer.class || targetType == int.class) {
+            return NumberUtils.toInt(parsedStr);
+        }
+        if (targetType == Long.class || targetType == long.class) {
+            return NumberUtils.toLong(parsedStr);
+        }
+        if (targetType == Double.class || targetType == double.class) {
+            return NumberUtils.toDouble(parsedStr);
+        }
+        if (Enum.class.isAssignableFrom(targetType)) {
+            Class<? extends Enum> enumClass = (Class<? extends Enum>) targetType;
+            for (Object c : enumClass.getEnumConstants()) {
+                if (c.toString().equalsIgnoreCase(parsedStr) || ((Enum<?>) c).name().equalsIgnoreCase(parsedStr)) {
+                    return Enum.valueOf(enumClass, ((Enum<?>) c).name());
+                }
+            }
+            throw new IllegalArgumentException("Unknown enum constant: " + parsedStr);
+        }
+        if (targetType == String.class) {
+            return parsedStr;
+        }
+        if (List.class.isAssignableFrom(targetType)) {
+            String[] parts = parsedStr.split(",");
+            return Arrays.stream(parts).map(String::trim).collect(Collectors.toList());
+        }
+        return parsedStr;
+    }
+
+    public static void configKeySuggestion(ConfigHolder holder, SuggestionsBuilder builder, String configKey) {
+        if (holder == null || CollectionUtils.isNullOrEmpty(holder.valuePaths())) {
+            return;
+        }
+        if (configKey == null) {
+            configKey = "";
+        }
+        configKey = configKey.trim();
+        boolean isEmpty = configKey.isEmpty();
+        String lowerInput = configKey.toLowerCase(Locale.ROOT);
+
+        if (isEmpty) {
+            for (String key : holder.valuePaths()) {
+                builder.suggest(key);
+            }
+            return;
+        }
+
+        if (configKey.indexOf('.') >= 0) {
+            String[] inputParts = lowerInput.split("\\.");
+            int prefixSegments = inputParts.length - 1;
+            String lastInputPart = inputParts[inputParts.length - 1];
+
+            for (String key : holder.valuePaths()) {
+                String lowerKey = key.toLowerCase(Locale.ROOT);
+                String[] keyParts = lowerKey.split("\\.");
+                if (keyParts.length < prefixSegments + 1) {
+                    continue;
+                }
+                boolean prefixMatches = true;
+                for (int i = 0; i < prefixSegments; i++) {
+                    if (!keyParts[i].equals(inputParts[i])) {
+                        prefixMatches = false;
+                        break;
+                    }
+                }
+                if (!prefixMatches) {
+                    continue;
+                }
+                String lastKeyPart = keyParts[keyParts.length - 1];
+                if (lastKeyPart.contains(lastInputPart)) {
+                    builder.suggest(key);
+                }
+            }
+        } else {
+            for (String key : holder.valuePaths()) {
+                if (key.toLowerCase(Locale.ROOT).contains(lowerInput)) {
+                    builder.suggest(key);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void configValueSuggestion(ConfigHolder holder, SuggestionsBuilder builder, String configKey) {
+        if (holder == null) {
+            return;
+        }
+        String path = holder.findValuePath(configKey);
+        if (path == null) {
+            return;
+        }
+        builder.suggest(String.valueOf(holder.get(path)));
+        Object defaultValue = holder.defaultValue(path);
+        if (defaultValue != null) {
+            builder.suggest(String.valueOf(defaultValue));
+        }
+        Class<?> type = holder.valueClass(path);
+        if (type == Boolean.class || type == boolean.class) {
+            builder.suggest("true").suggest("false");
+        } else if (Enum.class.isAssignableFrom(type)) {
+            Class<? extends Enum> enumClass = (Class<? extends Enum>) type;
+            for (Object c : enumClass.getEnumConstants()) {
+                builder.suggest(((Enum<?>) c).name());
+            }
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static int executeModifyConfig(ConfigHolder holder, CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String configKey = StringArgumentType.getString(context, "configKey");
+        String configValue = StringArgumentType.getString(context, "configValue");
+
+        String path = holder.findValuePath(configKey);
+        if (path == null) {
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_key_absent", configKey));
+            return 0;
+        }
+
+        Class<?> type = holder.valueClass(path);
+        Object parsed;
+        try {
+            parsed = parseStringToType(configValue, type);
+        } catch (Exception e) {
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_value_parse_error", configValue, e.getMessage()));
+            return 0;
+        }
+
+        if (!holder.setIfValid(path, parsed)) {
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_value_set_error", configKey, configValue));
+            return 0;
+        }
+
+        holder.save();
+        MessageUtils.sendMessageWithAdmin(source, true, BaniraComponent.get().transAuto("config_value_set_success", path, parsed));
+        return 1;
+    }
+
+    // endregion config modifier
 
 
 }

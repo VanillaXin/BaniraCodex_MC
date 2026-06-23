@@ -10,11 +10,13 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
@@ -27,14 +29,14 @@ import java.util.stream.Collectors;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入主类，语言文件从当前 Fabric 资源管理器加载：
+ * 推荐显式传入 modId 与资源锚点类，避免公共 API 依赖 Forge/Fabric/NeoForge 的入口注解：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
- *     private MyModLang() { super(MyMod.class); }
+ *     private MyModLang() { super("my_mod_id", MyModLang.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时直接按 modId 创建实例。
+ * 仅使用 {@link #of(String)} 时通过 Banira platform 解析该 mod 的主类。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -62,30 +64,47 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass mod 主类
+     * @param modMainClass mod 主类或资源锚点类；modId 由当前 platform 解析
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this.modId = modIdFromModMainClass(modMainClass);
-        getI18nFiles();
+        this(resolveModId(modMainClass), modMainClass);
     }
 
-    protected Translator(@NonNull String modId) {
+    /**
+     * @param modId               所属 mod id
+     * @param resourceAnchorClass 用于从 classpath 定位 {@code /assets/<modid>/lang} 的同 jar 类
+     */
+    protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
+        if (StringUtils.isNullOrEmptyEx(modId)) {
+            throw new IllegalArgumentException("modId must not be empty");
+        }
         this.modId = modId;
         getI18nFiles();
     }
 
-    // region mod 主类与 modId
-
-    @NonNull
-    private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
-        if (modMainClass == BaniraCodex.class) {
-            return BaniraCodex.MODID;
-        }
-        String simple = modMainClass.getSimpleName();
-        return StringUtils.isNullOrEmptyEx(simple) ? BaniraCodex.MODID : simple.toLowerCase(Locale.ROOT);
+    private Translator(@NonNull String modId) {
+        this(modId, resolveModMainClass(modId));
     }
 
-    // endregion mod 主类与 modId
+    // region mod 元数据
+
+    @NonNull
+    private static String resolveModId(@NonNull Class<?> modMainClass) {
+        if (BaniraPlatforms.isInstalled()) {
+            return Banira.platform().modIdFromMainClass(modMainClass);
+        }
+        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod id for class: " + modMainClass.getName());
+    }
+
+    @NonNull
+    private static Class<?> resolveModMainClass(@NonNull String modId) {
+        if (BaniraPlatforms.isInstalled()) {
+            return Banira.platform().modMainClass(modId);
+        }
+        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod main class for mod id: " + modId);
+    }
+
+    // endregion mod 元数据
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。

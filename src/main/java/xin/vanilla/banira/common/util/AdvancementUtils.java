@@ -3,8 +3,6 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
@@ -177,7 +175,6 @@ public final class AdvancementUtils {
     /**
      * 获取所有可显示的进度列表（有图标的进度）
      */
-    @Environment(EnvType.CLIENT)
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
                 .filter(Objects::nonNull)
@@ -292,7 +289,6 @@ public final class AdvancementUtils {
      * @param keyword 搜索关键字
      * @return 匹配的进度列表
      */
-    @Environment(EnvType.CLIENT)
     public static List<AdvancementData> searchDisplayableAdvancements(String keyword) {
         if (StringUtils.isNullOrEmpty(keyword)) {
             return getDisplayableAdvancements();

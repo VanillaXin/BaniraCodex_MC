@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -18,7 +19,6 @@ import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -691,7 +691,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         String s = formatItemLabel(items.get(index));
         AbstractGuiUtils.setClipboard(s);
         Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
-        NotificationManager.get().addNotification(n);
+        BaniraNotifications.show(n);
     }
 
     /**

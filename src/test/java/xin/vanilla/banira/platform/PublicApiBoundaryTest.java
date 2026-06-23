@@ -61,6 +61,7 @@ public class PublicApiBoundaryTest {
         addIfContains(source, "default String minecraftVersion", violations, "minecraftVersion must be implemented per branch.");
         addIfContains(source, "default BaniraPathService", violations, "pathService must be implemented by the loader adapter.");
         addIfContains(source, "default BaniraInputService", violations, "inputService must be implemented by the loader adapter.");
+        addIfContains(source, "default BaniraNotificationService", violations, "notificationService must be implemented by the loader adapter.");
         addIfContains(source, "xin.vanilla.banira.internal", violations, "root platform must not depend on internal packages.");
         assertNoViolations("BaniraPlatform should be a pure contract.", violations);
     }

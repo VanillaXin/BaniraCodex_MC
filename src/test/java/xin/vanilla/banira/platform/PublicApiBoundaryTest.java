@@ -73,6 +73,16 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void environmentUtilsStaysCompatibilityFacade() throws IOException {
+        Path environment = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "EnvironmentUtils.java"));
+        String source = new String(Files.readAllBytes(environment), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "Banira.platform()", violations, "EnvironmentUtils must delegate to api.BaniraEnvironment.");
+        addIfContains(source, "FabricLoader", violations, "EnvironmentUtils must not depend on loader APIs.");
+        assertNoViolations("New environment API belongs in api.BaniraEnvironment.", violations);
+    }
+
+    @Test
     public void logoModifierDoesNotReturnToClientUtil() {
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
         if (Files.exists(legacy)) {

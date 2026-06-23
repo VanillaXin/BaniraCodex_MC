@@ -1,8 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
@@ -10,31 +8,11 @@ import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 @Accessors(fluent = true)
 public final class PacketUtils {
     private PacketUtils() {
-    }
-
-    /**
-     * 分片网络包缓存
-     */
-    @Getter
-    private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
-
-
-    /**
-     * 广播数据包至所有玩家
-     *
-     * @param packet 数据包
-     */
-    public static void broadcastPacket(Packet<?> packet) {
-        BaniraServerRuntime.players().forEach(player ->
-                player.connection.send(packet)
-        );
     }
 
     /**

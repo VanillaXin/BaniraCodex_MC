@@ -366,17 +366,6 @@ public final class NotificationManager {
     }
 
     /**
-     * 事件层只持有 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack 渲染通知。
-     */
-    public void renderNative(Object nativeGraphics) {
-        if (nativeGraphics instanceof PoseStack) {
-            render((PoseStack) nativeGraphics);
-            return;
-        }
-        throw new IllegalStateException("nativeGraphics is not a PoseStack on this branch: " + nativeGraphics.getClass().getName());
-    }
-
-    /**
      * 处理叠加层上的通知点击
      *
      * @return 是否已消费

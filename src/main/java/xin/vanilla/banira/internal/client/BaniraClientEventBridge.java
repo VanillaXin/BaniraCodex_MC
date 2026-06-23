@@ -3,13 +3,13 @@ package xin.vanilla.banira.internal.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.api.client.event.BaniraOverlayRenderEvent;
 import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
 import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -25,7 +25,7 @@ public final class BaniraClientEventBridge {
     }
 
     public static void fireGuiChanged(Screen screen) {
-        BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(screen)));
+        BaniraClientEvents.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(screen)));
     }
 
     public static void fireDrawScreenPre(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
@@ -34,7 +34,7 @@ public final class BaniraClientEventBridge {
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(mouseX), (int) Math.round(mouseY));
         }
-        BaniraClientEventHub.Client.fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        BaniraClientEvents.Client.fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
     }
 
     public static void fireDrawScreenPost(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
@@ -44,7 +44,7 @@ public final class BaniraClientEventBridge {
             QuickActionOverlay.get().render(nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
-        BaniraClientEventHub.Client.fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        BaniraClientEvents.Client.fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
     }
 
     public static void fireRenderOverlayPost(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
@@ -52,12 +52,12 @@ public final class BaniraClientEventBridge {
         if (element == HudOverlayElement.ALL && !screenOpen) {
             NotificationManager.get().render(nativeGraphics);
         }
-        BaniraClientEventHub.Client.fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+        BaniraClientEvents.Client.fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
     }
 
     public static void dispatchRenderOverlayPre(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                 float partialTick, boolean screenOpen) {
-        BaniraClientEventHub.dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+        BaniraClientEvents.dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
     }
 
     public static BaniraScreenInfo screenInfo(Screen screen) {

@@ -14,7 +14,6 @@ import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
@@ -26,6 +25,7 @@ import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientEventBridge;
+import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 /**

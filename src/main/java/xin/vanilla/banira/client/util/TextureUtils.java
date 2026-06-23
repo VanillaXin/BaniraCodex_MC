@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
@@ -642,7 +642,7 @@ public final class TextureUtils {
     }
 
     /**
-     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link BaniraClientEventHub.Client} 触发。
+     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link BaniraClientEvents.Client} 触发。
      */
     public static void resourceReloadEvent() {
         clearAll();

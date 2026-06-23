@@ -390,7 +390,7 @@ public final class InputStateManager {
     // region 事件更新入口
 
     /**
-     * 由 BaniraClientEventHub 在屏幕绘制前同步鼠标位置与轮询状态。
+     * 由内部客户端事件桥接层在屏幕绘制前同步鼠标位置与轮询状态。
      */
     public void handleDrawScreenPre(double mouseX, double mouseY) {
         this.mouseX = mouseX;

@@ -80,6 +80,19 @@ public class PublicApiBoundaryTest {
         }
     }
 
+    @Test
+    public void fabricClientEntrypointDoesNotOwnOverlayImplementation() throws IOException {
+        Path entrypoint = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "fabric", "client", "FabricBaniraCodexClient.java"));
+        if (!Files.exists(entrypoint)) {
+            return;
+        }
+        String source = new String(Files.readAllBytes(entrypoint), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "client.util.NotificationManager", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for notifications.");
+        addIfContains(source, "client.gui.quickaction.QuickActionOverlay", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for quick actions.");
+        assertNoViolations("Loader entrypoints should only adapt native events.", violations);
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

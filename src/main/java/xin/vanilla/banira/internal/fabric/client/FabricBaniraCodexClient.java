@@ -17,15 +17,14 @@ import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientEventBridge;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
+import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 /**
@@ -40,7 +39,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         BaniraClientDrawBridge.install(FabricBaniraDrawHandle::new);
         FabricNetworkChannels.registerClientReceivers();
         BaniraInput.flushPendingRegistrations();
-        NotificationManager.get().loadLog();
+        BaniraClientOverlayBridge.loadNotificationLog();
         NotificationTypeSettingsStore.get().load();
         BaniraClientEventHub.registerCodexDefaults();
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
@@ -61,7 +60,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             BaniraScheduler.dispatchClientTick();
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
-            NotificationManager.get().tickOutOfScreenClick();
+            BaniraClientOverlayBridge.tickOutOfScreenNotifications();
             if (client.screen == null) {
                 if (NOTIFICATION_LOG_KEY.isDown()) {
                     client.setScreen(new NotificationLogScreen(null));
@@ -72,11 +71,11 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         });
         HudRenderCallback.EVENT.register((stack, tickDelta) -> {
             if (Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(stack);
+                BaniraClientOverlayBridge.renderHud(stack, tickDelta);
             }
         });
         ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            QuickActionOverlay.get().resetInteractionState();
+            BaniraClientOverlayBridge.resetScreenInteraction();
             BaniraClientEventBridge.fireGuiChanged(screen);
         });
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
@@ -87,12 +86,11 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
                 BaniraClientEventBridge.fireDrawScreenPost(stack, scr, mouseX, mouseY, tickDelta);
             });
             ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) ->
-                    !QuickActionOverlay.get().handleMouseClicked(scr, mouseX, mouseY, button)
-                            && !NotificationManager.get().tryHandleHudClick(mouseX, mouseY, button));
+                    BaniraClientOverlayBridge.allowMouseClick(scr, mouseX, mouseY, button));
             ScreenMouseEvents.allowMouseRelease(screen).register((scr, mouseX, mouseY, button) ->
-                    !QuickActionOverlay.get().handleMouseReleased(scr, mouseX, mouseY, button));
+                    BaniraClientOverlayBridge.allowMouseRelease(scr, mouseX, mouseY, button));
             ScreenMouseEvents.allowMouseScroll(screen).register((scr, mouseX, mouseY, horizontalAmount, verticalAmount) ->
-                    !QuickActionOverlay.get().handleMouseScroll(scr, mouseX, mouseY, verticalAmount));
+                    BaniraClientOverlayBridge.allowMouseScroll(scr, mouseX, mouseY, verticalAmount));
         });
     }
 }

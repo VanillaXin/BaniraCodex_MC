@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -16,7 +17,6 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
@@ -254,7 +254,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
      */
     public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
-        boolean advanced = InputStateManager.isShiftPressingStatic();
+        boolean advanced = BaniraInput.isShiftDown();
         List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, advanced);
         drawItemTooltipComponents(stack, tooltipList, x, y, season);
     }

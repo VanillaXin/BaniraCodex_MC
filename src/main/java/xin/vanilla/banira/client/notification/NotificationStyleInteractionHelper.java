@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -15,7 +16,6 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
@@ -42,7 +42,7 @@ public final class NotificationStyleInteractionHelper {
     }
 
     private static boolean handleClickInGame(ClickEvent event) {
-        if (InputStateManager.isShiftPressingStatic()) {
+        if (BaniraInput.isShiftDown()) {
             return false;
         }
         switch (event.getAction()) {

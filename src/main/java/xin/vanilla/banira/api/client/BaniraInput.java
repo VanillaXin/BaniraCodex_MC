@@ -1,6 +1,7 @@
 package xin.vanilla.banira.api.client;
 
 import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 
 import javax.annotation.Nonnull;
 
@@ -60,6 +61,18 @@ public final class BaniraInput {
      */
     public static boolean isMouseDown(int button) {
         return BaniraPlatforms.get().inputService().isMouseDown(button);
+    }
+
+    public static boolean isShiftDown() {
+        return isKeyDown(BaniraKeyCodes.KEY_LEFT_SHIFT) || isKeyDown(BaniraKeyCodes.KEY_RIGHT_SHIFT);
+    }
+
+    public static boolean isControlDown() {
+        return isKeyDown(BaniraKeyCodes.KEY_LEFT_CONTROL) || isKeyDown(BaniraKeyCodes.KEY_RIGHT_CONTROL);
+    }
+
+    public static boolean isAltDown() {
+        return isKeyDown(BaniraKeyCodes.KEY_LEFT_ALT) || isKeyDown(BaniraKeyCodes.KEY_RIGHT_ALT);
     }
 
     private static void validate(@Nonnull BaniraKeySpec spec) {

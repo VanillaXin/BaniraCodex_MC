@@ -7,9 +7,9 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
@@ -127,7 +127,7 @@ public class ItemWidget extends BaseWidget {
      * 渲染 Tooltip
      */
     private void renderTooltip(PoseStack stack, int mouseX, int mouseY, ItemStack itemStack) {
-        List<Component> tooltip = BaniraItemRenderBridge.tooltipLines(itemStack, InputStateManager.isShiftPressingStatic());
+        List<Component> tooltip = BaniraItemRenderBridge.tooltipLines(itemStack, BaniraInput.isShiftDown());
 
         if (!tooltip.isEmpty()) {
             stack.pushPose();

@@ -86,9 +86,4 @@ public final class TestBaniraPacketBuffer implements BaniraPacketBuffer {
     public void writeResourceLocation(ResourceLocation value) {
         values.add(value);
     }
-
-    @Override
-    public Object nativeBuffer() {
-        return values;
-    }
 }

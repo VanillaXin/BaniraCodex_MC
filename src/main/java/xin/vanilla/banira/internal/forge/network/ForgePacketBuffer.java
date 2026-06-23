@@ -3,11 +3,12 @@ package xin.vanilla.banira.internal.forge.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 /**
- * Forge 1.18.2 的 FriendlyByteBuf 适配实现。
+ * Forge FriendlyByteBuf 适配实现。
  */
-public final class ForgePacketBuffer implements BaniraPacketBuffer {
+public final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
     public ForgePacketBuffer(FriendlyByteBuf delegate) {
@@ -85,7 +86,7 @@ public final class ForgePacketBuffer implements BaniraPacketBuffer {
     }
 
     @Override
-    public Object nativeBuffer() {
+    public FriendlyByteBuf nativeBuffer() {
         return delegate;
     }
 }

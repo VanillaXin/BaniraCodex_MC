@@ -33,9 +33,4 @@ public interface BaniraPacketBuffer {
     ResourceLocation readResourceLocation();
 
     void writeResourceLocation(ResourceLocation value);
-
-    /**
-     * 仅供版本/加载器内部适配复杂原版序列化时使用，公共包协议不要直接依赖返回类型。
-     */
-    Object nativeBuffer();
 }

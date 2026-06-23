@@ -8,7 +8,6 @@ import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
-import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.common.data.Component;
 
 import java.util.function.Consumer;

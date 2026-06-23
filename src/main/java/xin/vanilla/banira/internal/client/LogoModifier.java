@@ -1,7 +1,5 @@
-package xin.vanilla.banira.client.util;
+package xin.vanilla.banira.internal.client;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayList;
@@ -16,8 +14,6 @@ public final class LogoModifier {
     private LogoModifier() {
     }
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     /**
      * modId -> Supplier
      */
@@ -27,7 +23,6 @@ public final class LogoModifier {
      * Function列表, 按注册顺序执行
      */
     private static final List<Function<String, String>> FUNCTION_REGISTRY = new ArrayList<>();
-    private static String FIELD_NAME = null;
 
 
     /**

@@ -71,6 +71,14 @@ public class PublicApiBoundaryTest {
         }
     }
 
+    @Test
+    public void logoModifierDoesNotReturnToClientUtil() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
+        if (Files.exists(legacy)) {
+            fail("LogoModifier must stay internal. Runtime logo mutation is loader-specific implementation detail.");
+        }
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

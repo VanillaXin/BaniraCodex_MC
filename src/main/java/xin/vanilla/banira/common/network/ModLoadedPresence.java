@@ -27,6 +27,11 @@ public final class ModLoadedPresence {
      */
     @Nonnull
     public static ModLoadedRegistration register(@Nonnull String modid, @Nonnull Consumer<Object> onServerSync) {
+        return registerInternal(modid, onServerSync);
+    }
+
+    @Nonnull
+    public static ModLoadedRegistration registerInternal(@Nonnull String modid, @Nonnull Consumer<Object> onServerSync) {
         return REGISTRY.register(modid, onServerSync);
     }
 
@@ -43,10 +48,18 @@ public final class ModLoadedPresence {
      * 注销指定 modid 的声明，主要用于开发环境热重载或临时声明。
      */
     public static boolean unregister(@Nonnull String modid) {
+        return unregisterInternal(modid);
+    }
+
+    public static boolean unregisterInternal(@Nonnull String modid) {
         return REGISTRY.unregister(modid);
     }
 
     public static boolean hasRegistration(@Nonnull String modid) {
+        return hasRegistrationInternal(modid);
+    }
+
+    public static boolean hasRegistrationInternal(@Nonnull String modid) {
         return REGISTRY.hasRegistration(modid);
     }
 
@@ -55,6 +68,11 @@ public final class ModLoadedPresence {
      */
     @Nonnull
     public static List<String> announcedModIds() {
+        return announcedModIdsInternal();
+    }
+
+    @Nonnull
+    public static List<String> announcedModIdsInternal() {
         return REGISTRY.announcedModIds();
     }
 

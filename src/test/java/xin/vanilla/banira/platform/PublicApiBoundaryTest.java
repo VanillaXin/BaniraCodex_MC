@@ -98,6 +98,21 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void modLoadedPresenceKeepsStableApiFacade() throws IOException {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraModPresence.java"));
+        if (!Files.exists(facade)) {
+            fail("Client optional mod presence facade must stay in api.BaniraModPresence.");
+        }
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "network", "ModLoadedPresence.java"));
+        String source = new String(Files.readAllBytes(legacy), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        if (!source.contains("registerInternal") || !source.contains("announcedModIdsInternal")) {
+            violations.add("ModLoadedPresence must expose internal methods for api.BaniraModPresence delegation.");
+        }
+        assertNoViolations("Mod presence registration belongs in api.BaniraModPresence.", violations);
+    }
+
+    @Test
     public void logoModifierDoesNotReturnToClientUtil() {
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
         if (Files.exists(legacy)) {

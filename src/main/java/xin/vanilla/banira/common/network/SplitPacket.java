@@ -1,33 +1,35 @@
 package xin.vanilla.banira.common.network;
 
-import lombok.Data;
-import xin.vanilla.banira.common.util.PacketUtils;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 分包数据包
+ * 分包基类，负责把多个网络消息重新组装为完整业务包。
  */
-@Data
 public abstract class SplitPacket {
-    private static final Random random = new Random();
+    private static final long ASSEMBLY_TIMEOUT_MS = 1000L * 60L * 5L;
+    private static final Random RANDOM = new Random();
+    // 合包状态属于网络层内部实现，不再通过 PacketUtils 暴露给子 mod。
+    private static final Map<String, SplitPacketAssembly> ASSEMBLIES = new ConcurrentHashMap<>();
 
-    /**
-     * 分包ID
-     */
+    @Getter
+    @Setter
     private String id;
-    /**
-     * 总包数
-     */
+
+    @Getter
+    @Setter
     private int total;
-    /**
-     * 当前包序号
-     */
+
+    @Getter
+    @Setter
     private int sort;
 
     protected SplitPacket() {
-        this.id = String.format("%d.%d", System.currentTimeMillis(), random.nextInt(999999999));
+        this.id = String.format("%d.%d", System.currentTimeMillis(), RANDOM.nextInt(999999999));
     }
 
     protected SplitPacket(BaniraPacketBuffer buf) {
@@ -36,78 +38,36 @@ public abstract class SplitPacket {
         this.sort = buf.readInt();
     }
 
-    /**
-     * 处理接收到的分包
-     *
-     * @param packet 接收到的分包
-     * @param <T>    分包类型
-     * @return 完整的包列表，若还未接收完所有分包则返回空列表
-     */
     public static <T extends SplitPacket> List<T> handle(T packet) {
-        List<T> result = new ArrayList<>();
-        if (isInvalidPacket(packet)) {
-            return result;
+        cleanupExpiredAssemblies();
+        if (!isValidSplit(packet)) {
+            return Collections.emptyList();
         }
-        Map<String, List<? extends SplitPacket>> packetCache = PacketUtils.packetCache();
-        @SuppressWarnings("unchecked")
-        List<T> splitPackets = (List<T>) packetCache.computeIfAbsent(packet.getId(), k -> Collections.synchronizedList(new ArrayList<>()));
-        synchronized (splitPackets) {
-            boolean duplicateSort = splitPackets.stream().anyMatch(cached -> cached.getSort() == packet.getSort());
-            if (duplicateSort) {
+
+        SplitPacketAssembly assembly = ASSEMBLIES.compute(packet.getId(), (id, current) -> {
+            if (current == null || current.total != packet.getTotal() || current.isExpired()) {
+                return new SplitPacketAssembly(packet.getTotal());
+            }
+            return current;
+        });
+
+        List<T> result;
+        synchronized (assembly) {
+            if (assembly.hasSort(packet.getSort())) {
                 // 同一批次出现重复序号时丢弃整批，避免错误合并污染业务数据。
-                packetCache.remove(packet.getId());
-                return result;
+                ASSEMBLIES.remove(packet.getId(), assembly);
+                return Collections.emptyList();
             }
-            splitPackets.add(packet);
-            if (splitPackets.size() > packet.getTotal()) {
-                packetCache.remove(packet.getId());
-                return result;
+            assembly.put(packet);
+            if (!assembly.isComplete()) {
+                return Collections.emptyList();
             }
-            if (splitPackets.size() == packet.getTotal()) {
-                result = splitPackets.stream()
-                        .sorted(Comparator.comparingInt(SplitPacket::getSort))
-                        .collect(Collectors.toList());
-                packetCache.remove(packet.getId());
-                cleanupExpiredPacketCache(packetCache);
-            }
+            result = assembly.sortedPackets();
         }
+        ASSEMBLIES.remove(packet.getId(), assembly);
         return result;
     }
 
-    private static boolean isInvalidPacket(SplitPacket packet) {
-        return packet == null
-                || packet.getId() == null
-                || packet.getId().trim().isEmpty()
-                || packet.getTotal() <= 0
-                || packet.getSort() < 0
-                || packet.getSort() >= packet.getTotal();
-    }
-
-    private static void cleanupExpiredPacketCache(Map<String, List<? extends SplitPacket>> packetCache) {
-        packetCache.keySet().stream()
-                .filter(SplitPacket::isExpiredPacketCacheKey)
-                .forEach(packetCache::remove);
-    }
-
-    private static boolean isExpiredPacketCacheKey(String key) {
-        String[] parts = key.split("\\.");
-        if (parts.length == 0) {
-            return false;
-        }
-        try {
-            return Math.abs(System.currentTimeMillis() - Long.parseLong(parts[0])) > 1000 * 60 * 5;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * 合并分包
-     *
-     * @param packets 分包列表
-     * @param <T>     分包类型
-     * @return 合并后的完整数据包
-     */
     @SuppressWarnings("unchecked")
     public static <T extends SplitPacket> T merge(List<T> packets) {
         if (packets == null || packets.isEmpty()) {
@@ -123,11 +83,6 @@ public abstract class SplitPacket {
         return first;
     }
 
-    /**
-     * 拆分包
-     *
-     * @return 拆分后的分包列表
-     */
     @SuppressWarnings("unchecked")
     public <T extends SplitPacket> List<T> split() {
         if (this instanceof SplittableSplitPacket) {
@@ -142,33 +97,74 @@ public abstract class SplitPacket {
         buf.writeInt(sort);
     }
 
-    /**
-     * 获取每个分包的大小
-     */
     public abstract int getChunkSize();
 
-    /**
-     * 可合并的分包接口
-     */
+    static void clearAssembliesForTest() {
+        ASSEMBLIES.clear();
+    }
+
+    static int assemblyCountForTest() {
+        return ASSEMBLIES.size();
+    }
+
+    private static boolean isValidSplit(SplitPacket packet) {
+        return packet != null
+                && packet.getId() != null
+                && !packet.getId().trim().isEmpty()
+                && packet.getTotal() > 0
+                && packet.getSort() >= 0
+                && packet.getSort() < packet.getTotal();
+    }
+
+    private static void cleanupExpiredAssemblies() {
+        ASSEMBLIES.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
     public interface MergeableSplitPacket<T extends SplitPacket> {
-        /**
-         * 合并分包
-         *
-         * @param packets 分包列表
-         * @return 合并后的完整数据包
-         */
         T mergePackets(List<T> packets);
     }
 
-    /**
-     * 可分拆的分包接口
-     */
     public interface SplittableSplitPacket<T extends SplitPacket> {
-        /**
-         * 拆分包
-         *
-         * @return 拆分后的分包列表
-         */
         List<T> splitPacket();
+    }
+
+    private static final class SplitPacketAssembly {
+        private final int total;
+        private final Map<Integer, SplitPacket> packets = new HashMap<>();
+        private long lastUpdatedMs;
+
+        private SplitPacketAssembly(int total) {
+            this.total = total;
+            touch();
+        }
+
+        private void put(SplitPacket packet) {
+            packets.put(packet.getSort(), packet);
+            touch();
+        }
+
+        private boolean hasSort(int sort) {
+            return packets.containsKey(sort);
+        }
+
+        private boolean isComplete() {
+            return packets.size() == total;
+        }
+
+        private boolean isExpired() {
+            return System.currentTimeMillis() - lastUpdatedMs > ASSEMBLY_TIMEOUT_MS;
+        }
+
+        private void touch() {
+            lastUpdatedMs = System.currentTimeMillis();
+        }
+
+        @SuppressWarnings("unchecked")
+        private <T extends SplitPacket> List<T> sortedPackets() {
+            return packets.values().stream()
+                    .sorted(Comparator.comparingInt(SplitPacket::getSort))
+                    .map(packet -> (T) packet)
+                    .collect(Collectors.toList());
+        }
     }
 }

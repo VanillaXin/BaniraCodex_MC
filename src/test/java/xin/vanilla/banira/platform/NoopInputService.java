@@ -15,6 +15,16 @@ public enum NoopInputService implements BaniraInputService {
     }
 
     @Override
+    public boolean isKeyDown(int keyCode) {
+        return false;
+    }
+
+    @Override
+    public boolean isMouseDown(int button) {
+        return false;
+    }
+
+    @Override
     public void flushPendingRegistrations() {
     }
 }

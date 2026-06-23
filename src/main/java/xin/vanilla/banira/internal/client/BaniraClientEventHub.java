@@ -49,11 +49,6 @@ public final class BaniraClientEventHub {
                 PacketUtils.sendPacketToServer(new ModLoadedToBoth(ids));
             }
         });
-        BaniraClientEvents.Player.onClientLoggedOut(player -> {
-            if (player == null) return;
-            AdvancementUtils.clearAdvancementData();
-            PlayerUtils.removeRemoteServerDataStatus(player);
-        });
         BaniraClientEvents.Client.onGuiChanged(event -> {
             BaniraClientEvents.resetInputTrackers();
             QuickActionOverlay.get().resetInteractionState();
@@ -81,11 +76,17 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchClientPlayerLoggedIn(@Nonnull net.minecraft.world.entity.player.Player player) {
-        BaniraClientEvents.dispatchClientPlayerLoggedIn(player);
+        BaniraClientEvents.dispatchClientPlayerLoggedIn(toPlayerEvent(player));
     }
 
     public static void dispatchClientPlayerLoggedOut(@Nonnull net.minecraft.world.entity.player.Player player) {
-        BaniraClientEvents.dispatchClientPlayerLoggedOut(player);
+        AdvancementUtils.clearAdvancementData();
+        PlayerUtils.removeRemoteServerDataStatus(player);
+        BaniraClientEvents.dispatchClientPlayerLoggedOut(toPlayerEvent(player));
+    }
+
+    private static BaniraClientPlayerEvent toPlayerEvent(@Nonnull net.minecraft.world.entity.player.Player player) {
+        return new BaniraClientPlayerEvent(player.getUUID(), player.getName().getString());
     }
 
     public static void dispatchClientTick(@Nonnull BaniraClientTickEvent event) {

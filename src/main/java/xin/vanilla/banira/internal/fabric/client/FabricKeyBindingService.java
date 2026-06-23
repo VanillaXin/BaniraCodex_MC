@@ -5,6 +5,7 @@ import net.minecraft.client.KeyMapping;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
@@ -35,6 +36,16 @@ public enum FabricKeyBindingService implements BaniraInputService {
             pending.add(handle);
         }
         return handle;
+    }
+
+    @Override
+    public boolean isKeyDown(int keyCode) {
+        return InputStateManager.isKeyPressing(keyCode);
+    }
+
+    @Override
+    public boolean isMouseDown(int button) {
+        return InputStateManager.isMousePressing(button);
     }
 
     @Override

@@ -48,6 +48,20 @@ public final class BaniraInput {
         return new BaniraKeySpec().modId(modId).suffix(suffix);
     }
 
+    /**
+     * 查询当前客户端窗口中的实时按键状态；key code 使用 {@code api.client.input.BaniraKeyCodes}。
+     */
+    public static boolean isKeyDown(int keyCode) {
+        return BaniraPlatforms.get().inputService().isKeyDown(keyCode);
+    }
+
+    /**
+     * 查询当前客户端窗口中的实时鼠标状态；button code 使用 {@code api.client.input.BaniraKeyCodes}。
+     */
+    public static boolean isMouseDown(int button) {
+        return BaniraPlatforms.get().inputService().isMouseDown(button);
+    }
+
     private static void validate(@Nonnull BaniraKeySpec spec) {
         requireModId(spec.modId());
         requireSuffix(spec.suffix());

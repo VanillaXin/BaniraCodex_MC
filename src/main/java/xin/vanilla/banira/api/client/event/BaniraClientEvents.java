@@ -17,8 +17,8 @@ import java.util.function.Consumer;
 public final class BaniraClientEvents {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final List<Consumer<net.minecraft.world.entity.player.Player>> CLIENT_PLAYER_LOGGED_IN = new CopyOnWriteArrayList<>();
-    private static final List<Consumer<net.minecraft.world.entity.player.Player>> CLIENT_PLAYER_LOGGED_OUT = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraClientPlayerEvent>> CLIENT_PLAYER_LOGGED_IN = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraClientPlayerEvent>> CLIENT_PLAYER_LOGGED_OUT = new CopyOnWriteArrayList<>();
     private static final List<Consumer<BaniraScreenOpenEvent>> GUI_CHANGED = new CopyOnWriteArrayList<>();
     private static final List<Consumer<BaniraTextureReloadEvent>> TEXTURE_RELOAD = new CopyOnWriteArrayList<>();
     private static final List<Consumer<BaniraDrawScreenEvent>> DRAW_SCREEN_PRE = new CopyOnWriteArrayList<>();
@@ -55,12 +55,12 @@ public final class BaniraClientEvents {
         fire(CLIENT_SETUP, event, "mod client setup");
     }
 
-    public static void dispatchClientPlayerLoggedIn(@Nonnull net.minecraft.world.entity.player.Player player) {
-        fire(CLIENT_PLAYER_LOGGED_IN, player, "player logged in");
+    public static void dispatchClientPlayerLoggedIn(@Nonnull BaniraClientPlayerEvent event) {
+        fire(CLIENT_PLAYER_LOGGED_IN, event, "player logged in");
     }
 
-    public static void dispatchClientPlayerLoggedOut(@Nonnull net.minecraft.world.entity.player.Player player) {
-        fire(CLIENT_PLAYER_LOGGED_OUT, player, "player logged out");
+    public static void dispatchClientPlayerLoggedOut(@Nonnull BaniraClientPlayerEvent event) {
+        fire(CLIENT_PLAYER_LOGGED_OUT, event, "player logged out");
     }
 
     public static void dispatchClientTick(@Nonnull BaniraClientTickEvent event) {
@@ -121,11 +121,11 @@ public final class BaniraClientEvents {
         private Player() {
         }
 
-        public static void onClientLoggedIn(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onClientLoggedIn(@Nonnull Consumer<BaniraClientPlayerEvent> callback) {
             CLIENT_PLAYER_LOGGED_IN.add(callback);
         }
 
-        public static void onClientLoggedOut(@Nonnull Consumer<net.minecraft.world.entity.player.Player> callback) {
+        public static void onClientLoggedOut(@Nonnull Consumer<BaniraClientPlayerEvent> callback) {
             CLIENT_PLAYER_LOGGED_OUT.add(callback);
         }
     }

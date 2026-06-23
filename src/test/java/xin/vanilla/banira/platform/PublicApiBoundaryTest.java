@@ -23,9 +23,10 @@ public class PublicApiBoundaryTest {
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (int i = 0; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
-                if (line.startsWith("import net.minecraft.")
-                        || line.startsWith("import net.minecraftforge.")
-                        || line.startsWith("import xin.vanilla.banira.internal.")) {
+                if (line.contains("net.minecraft.")
+                        || line.contains("net.minecraftforge.")
+                        || line.contains("net.fabricmc.")
+                        || line.contains("xin.vanilla.banira.internal.")) {
                     violations.add(location(file, i + 1) + " " + line);
                 }
             }

@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.util.CoalescingAsyncTask;
@@ -28,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 客户端按通知类型保存的显示偏好（隐藏、时长、动画、位置）。
  */
-@Environment(EnvType.CLIENT)
 public final class NotificationTypeSettingsStore {
 
     private static final Logger LOGGER = LogManager.getLogger();

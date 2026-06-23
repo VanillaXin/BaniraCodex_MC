@@ -1,8 +1,6 @@
 package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.gui.screens.Screen;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -14,7 +12,6 @@ import javax.annotation.Nullable;
 /**
  * 客户端全局主题管理器
  */
-@Environment(EnvType.CLIENT)
 public final class ClientThemeManager {
 
     @Nullable

@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryStack;
@@ -20,7 +18,6 @@ import static org.lwjgl.system.MemoryStack.stackGet;
 /**
  * 对话框工具类
  */
-@Environment(EnvType.CLIENT)
 public final class DialogUtils {
     private DialogUtils() {
     }

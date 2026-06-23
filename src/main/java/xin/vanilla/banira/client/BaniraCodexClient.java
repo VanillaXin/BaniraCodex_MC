@@ -14,7 +14,6 @@ import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
-import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
@@ -29,6 +28,7 @@ import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.fabric.client.FabricBaniraDrawHandle;
+import xin.vanilla.banira.internal.fabric.client.FabricColorThemeReloadListener;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 public final class BaniraCodexClient implements ClientModInitializer {
@@ -45,7 +45,7 @@ public final class BaniraCodexClient implements ClientModInitializer {
         BaniraClientEventHub.registerCodexDefaults();
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
 
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(BaniraColorThemeLoader.INSTANCE);
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(FabricColorThemeReloadListener.INSTANCE);
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.player != null) {
                 BaniraClientEventHub.dispatchClientPlayerLoggedIn(client.player);

@@ -5,8 +5,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.MutableComponent;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -16,7 +14,6 @@ import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Translator;
 
-@Environment(EnvType.CLIENT)
 @Setter
 @Accessors(chain = true, fluent = true)
 public class Text implements Cloneable {

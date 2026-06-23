@@ -9,8 +9,6 @@ import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -38,7 +36,6 @@ import java.util.stream.Collectors;
 /**
  * AbstractGui工具类
  */
-@Environment(EnvType.CLIENT)
 public final class AbstractGuiUtils {
     private AbstractGuiUtils() {
     }

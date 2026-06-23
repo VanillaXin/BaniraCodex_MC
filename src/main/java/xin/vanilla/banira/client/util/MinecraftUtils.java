@@ -1,13 +1,10 @@
 package xin.vanilla.banira.client.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 /**
  * Minecraft客户端工具类
  */
-@Environment(EnvType.CLIENT)
 public final class MinecraftUtils {
     private MinecraftUtils() {
     }

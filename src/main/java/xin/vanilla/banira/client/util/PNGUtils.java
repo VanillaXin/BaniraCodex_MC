@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -17,7 +15,6 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-@Environment(EnvType.CLIENT)
 public final class PNGUtils {
     private PNGUtils() {
     }

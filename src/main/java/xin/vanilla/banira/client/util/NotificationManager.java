@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
 import net.minecraft.network.chat.Style;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
@@ -291,8 +289,6 @@ public final class NotificationManager {
         root.add("entries", arr);
         Files.writeString(path, JsonUtils.toPrettyString(root));
     }
-
-    @Environment(EnvType.CLIENT)
     public void render(PoseStack stack) {
         xin.vanilla.banira.common.data.KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getGuiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
@@ -372,7 +368,6 @@ public final class NotificationManager {
     /**
      * 事件层只持有 opaque nativeGraphics；当前 Forge 1.18.2 分支内部仍使用 PoseStack 渲染通知。
      */
-    @Environment(EnvType.CLIENT)
     public void renderNative(Object nativeGraphics) {
         if (nativeGraphics instanceof PoseStack) {
             render((PoseStack) nativeGraphics);
@@ -386,7 +381,6 @@ public final class NotificationManager {
      *
      * @return 是否已消费
      */
-    @Environment(EnvType.CLIENT)
     public boolean tryHandleHudClick(double guiMouseX, double guiMouseY, int button) {
         if (button != 0) {
             return false;
@@ -421,7 +415,6 @@ public final class NotificationManager {
     /**
      * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
      */
-    @Environment(EnvType.CLIENT)
     public void tickOutOfScreenClick() {
         if (BaniraClientRuntime.currentScreen() != null) {
             return;

@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
@@ -12,7 +10,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-@Environment(EnvType.CLIENT)
 public final class GLFWKeyUtils {
     private GLFWKeyUtils() {
     }

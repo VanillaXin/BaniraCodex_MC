@@ -4,8 +4,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;
@@ -35,7 +33,6 @@ import static java.util.Collections.emptyList;
  * }</pre>
  * <p>多 mod 注册时，展示顺序按条目 id 稳定排序：先按命名空间（首个 {@code ':'} 之前，无则视为空）、再按路径（之后子串），均按 {@link Locale#ROOT} 不区分大小写，与各 mod 客户端初始化回调的执行先后无关。</p>
  */
-@Environment(EnvType.CLIENT)
 public final class QuickActionRegistry {
     private static final Logger LOGGER = LogManager.getLogger();
 

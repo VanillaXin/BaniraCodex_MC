@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -42,7 +40,6 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.*;
  *     .showAt(mouseX, mouseY);
  * </pre>
  */
-@Environment(EnvType.CLIENT)
 @Accessors(chain = true)
 public class PopupOption extends BaseWidget {
 

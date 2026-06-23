@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.notification;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
@@ -16,7 +14,6 @@ import java.util.List;
  * 登录时服务端还会通过 {@link xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient} 下发类型列表及可选展示默认值，
  * 客户端无需再维护与服务端完全一致的硬编码列表；若你在本机 {@code register(id, mode)} 过，则优先于服务端建议。
  */
-@Environment(EnvType.CLIENT)
 public final class NotificationTypeRegistry {
 
     private static final ClientNotificationTypeRegistryState STATE = new ClientNotificationTypeRegistryState();

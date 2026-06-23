@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client;
+package xin.vanilla.banira.internal.fabric.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -26,14 +26,14 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.fabric.client.FabricBaniraDrawHandle;
-import xin.vanilla.banira.internal.fabric.client.FabricColorThemeReloadListener;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
-public final class BaniraCodexClient implements ClientModInitializer {
-    public static final BaniraKeyHandle NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
-    public static final BaniraKeyHandle BANIRA_HUB_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
+/**
+ * Fabric 客户端入口，只负责把 Fabric 事件转换成 Banira 客户端运行时回调。
+ */
+public final class FabricBaniraCodexClient implements ClientModInitializer {
+    private static final BaniraKeyHandle NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
+    private static final BaniraKeyHandle BANIRA_HUB_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
 
     @Override
     public void onInitializeClient() {

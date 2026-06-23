@@ -16,7 +16,7 @@
   "environment": "*",
   "entrypoints": {
     "client": [
-      "xin.vanilla.banira.client.BaniraCodexClient"
+      "xin.vanilla.banira.internal.fabric.client.FabricBaniraCodexClient"
     ],
     "main": [
       "xin.vanilla.banira.BaniraCodex"

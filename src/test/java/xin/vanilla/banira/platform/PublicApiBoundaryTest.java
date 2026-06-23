@@ -65,6 +65,65 @@ public class PublicApiBoundaryTest {
         assertNoViolations("BaniraPlatform should be a pure contract.", violations);
     }
 
+    @Test
+    public void legacyClientInputUtilityDoesNotReturnToPublicPackages() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "GLFWKeyUtils.java"));
+        if (Files.exists(legacy)) {
+            fail("GLFWKeyUtils must stay internal. Public key helpers belong in api.client.input.BaniraKeyCodes.");
+        }
+    }
+
+    @Test
+    public void baniraScreenDoesNotExposeInputStateManager() throws IOException {
+        Path screen = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "gui", "BaniraScreen.java"));
+        String source = new String(Files.readAllBytes(screen), StandardCharsets.UTF_8);
+        if (source.contains("protected final InputStateManager inputState")) {
+            fail("BaniraScreen.inputState() must expose BaniraInputState, not the internal InputStateManager implementation.");
+        }
+    }
+
+    @Test
+    public void inputStateManagerDoesNotReturnToClientUtil() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "InputStateManager.java"));
+        if (Files.exists(legacy)) {
+            fail("InputStateManager must stay internal. Public input state belongs in api.client.input.BaniraInputState.");
+        }
+    }
+
+    @Test
+    public void environmentUtilsStaysCompatibilityFacade() throws IOException {
+        Path environment = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "EnvironmentUtils.java"));
+        String source = new String(Files.readAllBytes(environment), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "Banira.platform()", violations, "EnvironmentUtils must delegate to api.BaniraEnvironment.");
+        addIfContains(source, "FabricLoader", violations, "EnvironmentUtils must not depend on loader APIs.");
+        assertNoViolations("New environment API belongs in api.BaniraEnvironment.", violations);
+    }
+
+    @Test
+    public void logoModifierDoesNotReturnToClientUtil() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
+        if (Files.exists(legacy)) {
+            fail("LogoModifier must stay internal. Runtime logo mutation is loader-specific implementation detail.");
+        }
+    }
+
+    @Test
+    public void fabricClientEntrypointDoesNotOwnOverlayImplementation() throws IOException {
+        Path entrypoint = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "fabric", "client", "FabricBaniraCodexClient.java"));
+        if (!Files.exists(entrypoint)) {
+            return;
+        }
+        String source = new String(Files.readAllBytes(entrypoint), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "client.util.NotificationManager", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for notifications.");
+        addIfContains(source, "client.gui.quickaction.QuickActionOverlay", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for quick actions.");
+        addIfContains(source, "InputStateManager", violations, "Fabric client entrypoint must use BaniraClientInputBridge for input state.");
+        addIfContains(source, "BaniraMouseEvent", violations, "Fabric client entrypoint must use BaniraClientInputBridge for mouse events.");
+        addIfContains(source, "BaniraKeyboardEvent", violations, "Fabric client entrypoint must use BaniraClientInputBridge for keyboard events.");
+        assertNoViolations("Loader entrypoints should only adapt native events.", violations);
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraEnvironment;
 
 /**
  * 运行环境判断
@@ -15,14 +15,14 @@ public final class EnvironmentUtils {
      * 是否为客户端分发（{@code runClient}、整合包客户端等）。
      */
     public static boolean isClient() {
-        return Banira.platform().isClient();
+        return BaniraEnvironment.isClient();
     }
 
     /**
      * 是否为专用服务端分发（{@code runServer}、无头服务端等）。
      */
     public static boolean isDedicatedServer() {
-        return Banira.platform().isDedicatedServer();
+        return BaniraEnvironment.isDedicatedServer();
     }
 
     // endregion 物理分发（Dist）
@@ -33,14 +33,14 @@ public final class EnvironmentUtils {
      * 是否为发布环境（非开发环境；与 Gradle {@code runClient}/{@code runServer} 等开发运行相对）。
      */
     public static boolean isProduction() {
-        return !isDevelopment();
+        return BaniraEnvironment.isProduction();
     }
 
     /**
      * 是否为开发环境（{@link #isProduction()} 的否定）。
      */
     public static boolean isDevelopment() {
-        return Banira.platform().isDevelopment();
+        return BaniraEnvironment.isDevelopment();
     }
 
     // endregion 发布 / 开发

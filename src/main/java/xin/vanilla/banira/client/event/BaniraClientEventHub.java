@@ -25,8 +25,8 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.fabric.client.FabricBaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -333,9 +333,9 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPostNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
-            NotificationManager.get().renderNative(nativeGraphics);
+            NotificationManager.get().render(nativeGraphics);
             if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-                QuickActionOverlay.get().renderNative(nativeGraphics, screen, mouseX, mouseY, partialTick);
+                QuickActionOverlay.get().render(nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
                 QuickActionOverlay.get().flushSaveIfNeeded();
             }
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
@@ -344,7 +344,7 @@ public final class BaniraClientEventHub {
         public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
-                NotificationManager.get().renderNative(nativeGraphics);
+                NotificationManager.get().render(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }
@@ -403,7 +403,7 @@ public final class BaniraClientEventHub {
 
     private static BaniraDrawContext drawContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
-        return new BaniraDrawContext(new FabricBaniraDrawHandle(nativeGraphics), screen.key(), screen.val(), partialTick);
+        return new BaniraDrawContext(BaniraClientDrawBridge.handle(nativeGraphics), screen.key(), screen.val(), partialTick);
     }
 
     private static BaniraHudRenderContext hudContext(@Nonnull PoseStack nativeGraphics, float partialTick) {

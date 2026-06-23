@@ -26,7 +26,9 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.fabric.client.FabricBaniraDrawHandle;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 public final class BaniraCodexClient implements ClientModInitializer {
@@ -35,6 +37,7 @@ public final class BaniraCodexClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        BaniraClientDrawBridge.install(FabricBaniraDrawHandle::new);
         FabricNetworkChannels.registerClientReceivers();
         BaniraKeyBindings.flushPendingRegistrations();
         NotificationManager.get().loadLog();

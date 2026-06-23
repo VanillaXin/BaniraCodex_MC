@@ -90,6 +90,9 @@ public class PublicApiBoundaryTest {
         List<String> violations = new ArrayList<>();
         addIfContains(source, "client.util.NotificationManager", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for notifications.");
         addIfContains(source, "client.gui.quickaction.QuickActionOverlay", violations, "Fabric client entrypoint must use BaniraClientOverlayBridge for quick actions.");
+        addIfContains(source, "InputStateManager", violations, "Fabric client entrypoint must use BaniraClientInputBridge for input state.");
+        addIfContains(source, "BaniraMouseEvent", violations, "Fabric client entrypoint must use BaniraClientInputBridge for mouse events.");
+        addIfContains(source, "BaniraKeyboardEvent", violations, "Fabric client entrypoint must use BaniraClientInputBridge for keyboard events.");
         assertNoViolations("Loader entrypoints should only adapt native events.", violations);
     }
 

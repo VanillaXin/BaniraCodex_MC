@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.Minecraft;
@@ -24,6 +25,7 @@ import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
 import xin.vanilla.banira.internal.client.BaniraClientEventBridge;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
+import xin.vanilla.banira.internal.client.BaniraClientInputBridge;
 import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
@@ -86,11 +88,13 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
                 BaniraClientEventBridge.fireDrawScreenPost(stack, scr, mouseX, mouseY, tickDelta);
             });
             ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) ->
-                    BaniraClientOverlayBridge.allowMouseClick(scr, mouseX, mouseY, button));
+                    BaniraClientInputBridge.allowMouseClick(scr, mouseX, mouseY, button));
             ScreenMouseEvents.allowMouseRelease(screen).register((scr, mouseX, mouseY, button) ->
-                    BaniraClientOverlayBridge.allowMouseRelease(scr, mouseX, mouseY, button));
+                    BaniraClientInputBridge.allowMouseRelease(scr, mouseX, mouseY, button));
             ScreenMouseEvents.allowMouseScroll(screen).register((scr, mouseX, mouseY, horizontalAmount, verticalAmount) ->
-                    BaniraClientOverlayBridge.allowMouseScroll(scr, mouseX, mouseY, verticalAmount));
+                    BaniraClientInputBridge.allowMouseScroll(scr, mouseX, mouseY, verticalAmount));
+            ScreenKeyboardEvents.allowKeyPress(screen).register(BaniraClientInputBridge::allowKeyPress);
+            ScreenKeyboardEvents.allowKeyRelease(screen).register(BaniraClientInputBridge::allowKeyRelease);
         });
     }
 }

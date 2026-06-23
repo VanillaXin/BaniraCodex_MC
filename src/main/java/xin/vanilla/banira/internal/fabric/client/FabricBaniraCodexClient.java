@@ -13,7 +13,6 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
@@ -26,6 +25,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
+import xin.vanilla.banira.internal.client.BaniraClientEventBridge;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 /**
@@ -77,16 +77,14 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         });
         ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             QuickActionOverlay.get().resetInteractionState();
-            BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(BaniraClientEventHub.screenInfo(screen)));
+            BaniraClientEventBridge.fireGuiChanged(screen);
         });
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             ScreenEvents.beforeRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
-                if (QuickActionOverlay.isSupportedInventoryScreen(scr)) {
-                    QuickActionOverlay.get().tickInteraction(scr, mouseX, mouseY);
-                }
+                BaniraClientEventBridge.fireDrawScreenPre(stack, scr, mouseX, mouseY, tickDelta);
             });
             ScreenEvents.afterRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
-                BaniraClientEventHub.Client.fireDrawScreenPostNative(stack, scr, mouseX, mouseY, tickDelta);
+                BaniraClientEventBridge.fireDrawScreenPost(stack, scr, mouseX, mouseY, tickDelta);
             });
             ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) ->
                     !QuickActionOverlay.get().handleMouseClicked(scr, mouseX, mouseY, button)

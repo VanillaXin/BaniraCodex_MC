@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -23,7 +24,7 @@ import java.util.Set;
  * 统一的输入状态管理器
  */
 @Accessors(fluent = true)
-public final class InputStateManager {
+public final class InputStateManager implements BaniraInputState {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final int KEY_HISTORY_SIZE = 5;
 

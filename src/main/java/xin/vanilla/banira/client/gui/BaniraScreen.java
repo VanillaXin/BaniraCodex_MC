@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraDragTracker;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.event.*;
@@ -67,7 +68,7 @@ public abstract class BaniraScreen extends Screen {
     private long openingTime = System.currentTimeMillis();
 
     @Getter
-    protected final InputStateManager inputState = InputStateManager.instance();
+    protected final BaniraInputState inputState = InputStateManager.instance();
     private final KeyClickTracker keyClickTracker = new KeyClickTracker();
     private final MouseClickTracker mouseClickTracker = new MouseClickTracker();
     private final BaniraDragTracker dragTracker = new BaniraDragTracker();

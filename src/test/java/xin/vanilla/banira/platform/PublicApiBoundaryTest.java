@@ -54,6 +54,15 @@ public class PublicApiBoundaryTest {
         }
     }
 
+    @Test
+    public void baniraScreenDoesNotExposeInputStateManager() throws IOException {
+        Path screen = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "gui", "BaniraScreen.java"));
+        String source = new String(Files.readAllBytes(screen), StandardCharsets.UTF_8);
+        if (source.contains("protected final InputStateManager inputState")) {
+            fail("BaniraScreen.inputState() must expose BaniraInputState, not the internal InputStateManager implementation.");
+        }
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

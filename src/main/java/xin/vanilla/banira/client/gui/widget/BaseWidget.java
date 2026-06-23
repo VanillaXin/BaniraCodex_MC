@@ -4,12 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.*;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nullable;
@@ -187,7 +187,7 @@ public abstract class BaseWidget implements IWidget {
         if (!needsSelfUpdate() || screen == null) {
             return;
         }
-        InputStateManager input = screen.inputState();
+        BaniraInputState input = screen.inputState();
         double mouseX = input.mouseX();
         double mouseY = input.mouseY();
         updateMouseHover(mouseX, mouseY);

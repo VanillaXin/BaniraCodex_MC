@@ -5,7 +5,6 @@ import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.network.ModLoadedPresence;

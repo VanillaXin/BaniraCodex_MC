@@ -63,6 +63,14 @@ public class PublicApiBoundaryTest {
         }
     }
 
+    @Test
+    public void inputStateManagerDoesNotReturnToClientUtil() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "InputStateManager.java"));
+        if (Files.exists(legacy)) {
+            fail("InputStateManager must stay internal. Public input state belongs in api.client.input.BaniraInputState.");
+        }
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.util;
+package xin.vanilla.banira.internal.client;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -11,8 +11,6 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.client.GLFWKeyUtils;
 
 import java.nio.DoubleBuffer;
 import java.util.HashMap;

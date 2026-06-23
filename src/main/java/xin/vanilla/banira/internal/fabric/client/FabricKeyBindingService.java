@@ -5,7 +5,7 @@ import net.minecraft.client.KeyMapping;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
-import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;

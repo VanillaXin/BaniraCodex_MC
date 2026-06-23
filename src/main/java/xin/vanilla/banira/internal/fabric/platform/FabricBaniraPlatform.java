@@ -6,6 +6,7 @@ import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.minecraft.SharedConstants;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.internal.common.BaniraNotificationServices;
 import xin.vanilla.banira.internal.common.BaniraPaths;
 import xin.vanilla.banira.internal.fabric.client.FabricKeyBindingService;
 import xin.vanilla.banira.internal.fabric.config.FabricBaniraConfigService;
@@ -154,6 +155,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraInputService inputService() {
         return FabricKeyBindingService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraNotificationService notificationService() {
+        return BaniraNotificationServices.INSTANCE;
     }
 
     private void refreshEntrypointClassIndex() {

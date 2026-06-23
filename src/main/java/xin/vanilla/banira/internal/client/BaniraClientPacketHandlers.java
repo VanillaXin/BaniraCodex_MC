@@ -4,11 +4,11 @@ import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.data.Component;
@@ -22,6 +22,7 @@ import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -59,7 +60,7 @@ public final class BaniraClientPacketHandlers {
                     BaniraComponent.get().transClientAuto("config_editor_fetch_apply_failed",
                             ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            BaniraNotifications.show(err);
             return;
         }
         Screen open = BaniraClientRuntime.currentScreen();
@@ -69,7 +70,7 @@ public final class BaniraClientPacketHandlers {
         Notification ok = Notification.ofComponent(
                 BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));
         ok.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-        NotificationManager.get().addNotification(ok);
+        BaniraNotifications.show(ok);
     }
 
     public static void applyNotificationTypes(NotificationTypesSyncToClient packet) {
@@ -96,8 +97,7 @@ public final class BaniraClientPacketHandlers {
             }
             EnumNotificationStyle style = EnumNotificationStyle.valueOfEx(packet.styleName());
             NotificationData data = NotificationData.of(component, position, animation, packet.durationTime(), style, packet.typeId());
-            Notification n = Notification.fromData(data, true);
-            NotificationManager.get().addNotification(n, true);
+            BaniraPlatforms.get().notificationService().show(data, true);
         } catch (Exception e) {
             LOGGER.error("Failed to handle notification packet", e);
         }

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -13,7 +14,6 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -756,7 +756,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
@@ -767,14 +767,14 @@ public class ConfigEditorScreen extends BaniraScreen {
             holder.save();
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             // if (previousScreen() != null) {
             //     onClose();
             // }
         } catch (Exception ex) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_failed", ex.getMessage()));
             n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
         }
     }
 
@@ -782,14 +782,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         Map<String, String> toSync = new LinkedHashMap<>();
@@ -807,7 +807,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            BaniraNotifications.show(err);
         }
     }
 
@@ -818,20 +818,20 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         Map<String, Object> syncPayload = collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         Map<String, String> toSync = new LinkedHashMap<>();
@@ -849,7 +849,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            BaniraNotifications.show(err);
         }
     }
 
@@ -863,7 +863,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         try {
@@ -872,7 +872,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            BaniraNotifications.show(err);
         }
     }
 

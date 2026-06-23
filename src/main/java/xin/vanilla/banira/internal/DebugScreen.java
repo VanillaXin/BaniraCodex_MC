@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -20,7 +21,6 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.PlayerTextureUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
@@ -130,7 +130,7 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.onLongPress(1000L, b -> {
             Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             int ordinal = longPressBtn.longPressProgressMode().ordinal();
             int i = (ordinal + 1) % ButtonWidget.LongPressProgressMode.values().length;
             longPressBtn.longPressProgressMode(ButtonWidget.LongPressProgressMode.values()[i]);
@@ -187,14 +187,14 @@ public class DebugScreen extends BaniraScreen {
             reg.registerIcon(id, Identifier.id().create("minecraft", "textures/item/emerald.png"), label, ctx -> {
                 Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Quick Emerald Action %s", ctx.entryId())));
                 notification.durationTime(3000);
-                NotificationManager.get().addNotification(notification);
+                BaniraNotifications.show(notification);
             });
         } else {
             ItemStack itemStack = CollectionUtils.getRandomElement(ItemUtils.getAllItems());
             reg.registerIcon(id, itemStack, label, ctx -> {
                 Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked %s: %s", ctx.entryId(), ItemUtils.getItemHoverNameString(itemStack))));
                 notification.durationTime(3000);
-                NotificationManager.get().addNotification(notification);
+                BaniraNotifications.show(notification);
             });
         }
         if (reg.menuAnchorEntryId() == null) {
@@ -289,7 +289,7 @@ public class DebugScreen extends BaniraScreen {
         n.position(position)
                 .animation(EnumMoveType.SCALE_AND_FADE)
                 .durationTime(3000);
-        NotificationManager.get().addNotification(n);
+        BaniraNotifications.show(n);
     }
 
     @Override

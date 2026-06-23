@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -14,7 +15,6 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.CustomPlayerConfigSyncToServer;
@@ -165,7 +165,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         if (!BaniraClientRuntime.hasConnection()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+            BaniraNotifications.show(n);
             return;
         }
         var player = BaniraClientRuntime.localPlayer();
@@ -190,7 +190,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
                     BaniraComponent.get().transClientAuto("custom_player_config_sync_failed",
                             ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            BaniraNotifications.show(err);
         }
     }
 

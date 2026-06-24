@@ -98,6 +98,22 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void baniraConfigDelegatesToStableApiFacade() throws IOException {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraConfigs.java"));
+        if (!Files.exists(facade)) {
+            fail("Config registration facade must stay in api.BaniraConfigs.");
+        }
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "config", "BaniraConfig.java"));
+        String source = new String(Files.readAllBytes(legacy), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "Banira.platform()", violations, "common.config.BaniraConfig must delegate to api.BaniraConfigs.");
+        if (!source.contains("BaniraConfigs.register") || !source.contains("BaniraConfigs.handle")) {
+            violations.add("common.config.BaniraConfig must remain a compatibility facade over api.BaniraConfigs.");
+        }
+        assertNoViolations("New config API belongs in api.BaniraConfigs.", violations);
+    }
+
+    @Test
     public void modLoadedPresenceKeepsStableApiFacade() throws IOException {
         Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraModPresence.java"));
         if (!Files.exists(facade)) {

@@ -12,13 +12,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 import xin.vanilla.banira.api.event.BaniraServerEvent;
 import xin.vanilla.banira.api.event.BaniraWorldEvent;
 import xin.vanilla.banira.command.BaniraCommand;
-import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.BaniraEventBus;
@@ -55,8 +55,8 @@ public class BaniraCodex implements ModInitializer {
     @Override
     public void onInitialize() {
         BaniraPlatforms.install(new FabricBaniraPlatform());
-        BaniraConfig.register(CommonConfig.class, Banira.MOD_ID);
-        BaniraConfig.register(ClientConfig.class, Banira.MOD_ID);
+        BaniraConfigs.register(CommonConfig.class, Banira.MOD_ID);
+        BaniraConfigs.register(ClientConfig.class, Banira.MOD_ID);
         NetworkInit.register();
         registerFabricEvents();
         BaniraCodexRuntime.bootstrap();

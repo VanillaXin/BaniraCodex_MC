@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.event;
+package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,8 +25,6 @@ import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
-import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

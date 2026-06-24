@@ -63,6 +63,15 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void clientEventHubStaysInternal() {
+        Path publicHub = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "event", "BaniraClientEventHub.java"));
+        Path internalHub = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "client", "BaniraClientEventHub.java"));
+        if (Files.exists(publicHub) || !Files.exists(internalHub)) {
+            fail("BaniraClientEventHub is an internal bridge; sub mods should use api.client.event.BaniraClientEvents.");
+        }
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

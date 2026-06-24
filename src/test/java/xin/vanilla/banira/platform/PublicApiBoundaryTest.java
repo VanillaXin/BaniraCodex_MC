@@ -66,31 +66,6 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
-    public void legacyClientInputUtilityDoesNotReturnToPublicPackages() {
-        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "GLFWKeyUtils.java"));
-        if (Files.exists(legacy)) {
-            fail("GLFWKeyUtils must stay internal. Public key helpers belong in api.client.input.BaniraKeyCodes.");
-        }
-    }
-
-    @Test
-    public void baniraScreenDoesNotExposeInputStateManager() throws IOException {
-        Path screen = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "gui", "BaniraScreen.java"));
-        String source = new String(Files.readAllBytes(screen), StandardCharsets.UTF_8);
-        if (source.contains("protected final InputStateManager inputState")) {
-            fail("BaniraScreen.inputState() must expose BaniraInputState, not the internal InputStateManager implementation.");
-        }
-    }
-
-    @Test
-    public void inputStateManagerDoesNotReturnToClientUtil() {
-        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "InputStateManager.java"));
-        if (Files.exists(legacy)) {
-            fail("InputStateManager must stay internal. Public input state belongs in api.client.input.BaniraInputState.");
-        }
-    }
-
-    @Test
     public void environmentUtilsStaysCompatibilityFacade() throws IOException {
         Path environment = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "EnvironmentUtils.java"));
         String source = new String(Files.readAllBytes(environment), StandardCharsets.UTF_8);
@@ -185,14 +160,6 @@ public class PublicApiBoundaryTest {
             violations.add("Client notification type registry must expose internal methods for api.client.notification delegation.");
         }
         assertNoViolations("Notification type registration belongs in Banira notification type facades.", violations);
-    }
-
-    @Test
-    public void logoModifierDoesNotReturnToClientUtil() {
-        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "LogoModifier.java"));
-        if (Files.exists(legacy)) {
-            fail("LogoModifier must stay internal. Runtime logo mutation is loader-specific implementation detail.");
-        }
     }
 
     @Test

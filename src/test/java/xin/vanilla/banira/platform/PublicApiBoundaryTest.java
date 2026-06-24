@@ -132,6 +132,26 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void virtualPermissionTypeKeepsStableApiFacade() throws IOException {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "permission", "BaniraVirtualPermission.java"));
+        if (!Files.exists(facade)) {
+            fail("Virtual permission type must stay in api.permission.BaniraVirtualPermission.");
+        }
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "api", "IVirtualPermissionType.java"));
+        String legacySource = new String(Files.readAllBytes(legacy), StandardCharsets.UTF_8);
+        Path manager = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "VirtualPermissionManager.java"));
+        String managerSource = new String(Files.readAllBytes(manager), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        if (!legacySource.contains("extends BaniraVirtualPermission")) {
+            violations.add("IVirtualPermissionType must remain a compatibility alias over api.permission.BaniraVirtualPermission.");
+        }
+        if (!managerSource.contains("BaniraVirtualPermission")) {
+            violations.add("VirtualPermissionManager must accept the stable api.permission.BaniraVirtualPermission type.");
+        }
+        assertNoViolations("Virtual permission type belongs in api.permission.", violations);
+    }
+
+    @Test
     public void modLoadedPresenceKeepsStableApiFacade() throws IOException {
         Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraModPresence.java"));
         if (!Files.exists(facade)) {

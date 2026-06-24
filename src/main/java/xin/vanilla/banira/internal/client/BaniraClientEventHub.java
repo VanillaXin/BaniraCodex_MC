@@ -15,7 +15,6 @@ import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
-import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;

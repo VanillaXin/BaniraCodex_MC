@@ -80,6 +80,14 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void legacyKeyBindingFacadeDoesNotReturn() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "BaniraKeyBindings.java"));
+        if (Files.exists(legacy)) {
+            fail("BaniraKeyBindings must stay removed. Public key registration belongs in api.client.BaniraInput.");
+        }
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

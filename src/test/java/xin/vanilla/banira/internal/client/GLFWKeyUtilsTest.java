@@ -1,4 +1,4 @@
-package xin.vanilla.banira.client.util;
+package xin.vanilla.banira.internal.client;
 
 import org.junit.Test;
 import xin.vanilla.banira.client.data.GLFWKey;

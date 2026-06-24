@@ -96,6 +96,14 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void legacyClientInputUtilityDoesNotReturnToPublicPackages() {
+        Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "client", "util", "GLFWKeyUtils.java"));
+        if (Files.exists(legacy)) {
+            fail("GLFWKeyUtils must stay internal. Public key helpers belong in api.client.input.BaniraKeyCodes.");
+        }
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

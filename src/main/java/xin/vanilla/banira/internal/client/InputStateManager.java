@@ -8,7 +8,6 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.common.data.FixedList;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.StringUtils;

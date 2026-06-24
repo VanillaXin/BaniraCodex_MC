@@ -8,6 +8,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
@@ -34,6 +35,16 @@ public final class ForgeKeyBindingService implements BaniraInputService {
         ForgeBaniraKeyHandle handle = new ForgeBaniraKeyHandle(binding, category, spec.defaultKey());
         enqueueOrRegister(handle);
         return handle;
+    }
+
+    @Override
+    public boolean isKeyDown(int keyCode) {
+        return InputStateManager.isKeyPressing(keyCode);
+    }
+
+    @Override
+    public boolean isMouseDown(int button) {
+        return InputStateManager.isMousePressing(button);
     }
 
     @Override

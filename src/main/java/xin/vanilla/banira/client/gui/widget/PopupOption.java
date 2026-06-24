@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -17,7 +18,6 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -435,7 +435,7 @@ public class PopupOption extends BaseWidget {
             return;
         }
 
-        InputStateManager inputState = screen.inputState();
+        BaniraInputState inputState = screen.inputState();
         selectedIndex = findHoveredIndex(inputState.mouseX(), inputState.mouseY());
 
         BaniraColorConfig theme = screen.getEffectiveTheme();
@@ -487,7 +487,7 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(PoseStack stack, InputStateManager inputState) {
+    public void render(PoseStack stack, BaniraInputState inputState) {
         render(stack, 0);
     }
 
@@ -520,7 +520,7 @@ public class PopupOption extends BaseWidget {
         bounds(new ScreenCoordinate(adjustedX, adjustedY, width, height));
     }
 
-    private void renderOptionTip(PoseStack stack, InputStateManager inputState) {
+    private void renderOptionTip(PoseStack stack, BaniraInputState inputState) {
         int optIdx = getSelectedIndex();
         if (optIdx < 0) return;
         Text tip = tipsMap.get(optIdx);

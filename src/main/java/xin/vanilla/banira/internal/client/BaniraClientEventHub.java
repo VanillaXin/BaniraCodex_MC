@@ -14,8 +14,6 @@ import xin.vanilla.banira.api.client.input.BaniraDragTracker;
 import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
@@ -99,7 +97,7 @@ public final class BaniraClientEventHub {
         });
         Client.onGuiChanged(event -> {
             resetInputTrackers();
-            QuickActionOverlay.get().resetInteractionState();
+            BaniraClientOverlayBridge.resetScreenInteraction();
             LogoModifier.modifyLogo();
         });
         Client.onTextureReload(event -> {
@@ -107,7 +105,7 @@ public final class BaniraClientEventHub {
             ResourceLocation atlasLocation = ResourceLocation.tryParse(event.atlasLocation());
             if (atlasLocation != null && Banira.MOD_ID.equals(atlasLocation.getNamespace())) {
                 TextureUtils.resourceReloadEvent();
-                QuickActionOverlay.resetSystemIconTextureCache();
+                BaniraClientOverlayBridge.resetTextureCaches();
             }
         });
         Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
@@ -353,18 +351,14 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPostNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
-            NotificationManager.get().render(nativeGraphics);
-            if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-                QuickActionOverlay.get().render(nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
-                QuickActionOverlay.get().flushSaveIfNeeded();
-            }
+            BaniraClientOverlayBridge.renderScreenOverlay(nativeGraphics, screen, mouseX, mouseY, partialTick);
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
         }
 
         public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
-                NotificationManager.get().render(nativeGraphics);
+                BaniraClientOverlayBridge.renderHudOverlay(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }
@@ -437,24 +431,18 @@ public final class BaniraClientEventHub {
 
     private static void handleDrawScreenPre(@Nonnull Screen screen, double mouseX, double mouseY) {
         InputStateManager.instance().handleDrawScreenPre(mouseX, mouseY);
-        if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-            QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(mouseX), (int) Math.round(mouseY));
-        }
+        BaniraClientOverlayBridge.tickScreenInteraction(screen, mouseX, mouseY);
     }
 
     private static void handleMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         InputStateManager.instance().handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
-        if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
-            event.cancel();
-            return;
-        }
-        if (NotificationManager.get().tryHandleHudClick(event.mouseX(), event.mouseY(), event.button())) {
+        if (BaniraClientOverlayBridge.handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
             event.cancel();
         }
     }
 
     private static void handleMouseReleasedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
-        if (screen != null && QuickActionOverlay.get().handleMouseReleased(screen, event.mouseX(), event.mouseY(), event.button())) {
+        if (BaniraClientOverlayBridge.handleMouseReleased(screen, event.mouseX(), event.mouseY(), event.button())) {
             event.cancel();
         }
     }
@@ -465,7 +453,7 @@ public final class BaniraClientEventHub {
 
     private static void handleMouseScrolledPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         InputStateManager.instance().handleMouseScrolled(event.mouseX(), event.mouseY(), event.scrollDelta());
-        if (screen != null && QuickActionOverlay.get().handleMouseScroll(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
+        if (BaniraClientOverlayBridge.handleMouseScrolled(screen, event.mouseX(), event.mouseY(), event.scrollDelta())) {
             event.cancel();
         }
     }

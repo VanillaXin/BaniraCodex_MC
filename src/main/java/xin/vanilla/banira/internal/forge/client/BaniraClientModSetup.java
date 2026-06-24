@@ -14,9 +14,9 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
+import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.LogoModifier;
 import xin.vanilla.banira.internal.forge.util.ForgeLogoModifier;
@@ -41,7 +41,7 @@ public final class BaniraClientModSetup {
         BaniraClientDrawBridge.install(ForgeBaniraDrawHandle::new);
         LogoModifier.installApplier(ForgeLogoModifier::modifyLogo);
         BaniraInput.flushPendingRegistrations();
-        NotificationManager.get().loadLog();
+        BaniraClientOverlayBridge.loadNotificationLog();
         NotificationTypeSettingsStore.get().load();
 
         BaniraClientEventHub.registerCodexDefaults();

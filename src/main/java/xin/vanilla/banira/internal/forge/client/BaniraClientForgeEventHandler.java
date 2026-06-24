@@ -11,9 +11,9 @@ import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
+import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 /**
@@ -45,7 +45,7 @@ public final class BaniraClientForgeEventHandler {
         if (event.phase == TickEvent.Phase.END) {
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraScheduler.dispatchClientTick();
-            NotificationManager.get().tickOutOfScreenClick();
+            BaniraClientOverlayBridge.tickOutOfScreenNotifications();
         }
     }
 

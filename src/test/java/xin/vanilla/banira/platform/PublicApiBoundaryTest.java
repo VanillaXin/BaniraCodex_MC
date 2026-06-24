@@ -229,6 +229,37 @@ public class PublicApiBoundaryTest {
         assertNoViolations("Loader entrypoints should only adapt native events.", violations);
     }
 
+    @Test
+    public void forgeClientAdaptersUseOverlayBridge() throws IOException {
+        List<Path> adapters = List.of(
+                MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "forge", "client", "BaniraClientForgeEventHandler.java")),
+                MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "forge", "client", "BaniraClientModSetup.java"))
+        );
+        List<String> violations = new ArrayList<>();
+        for (Path adapter : adapters) {
+            if (!Files.exists(adapter)) {
+                continue;
+            }
+            String source = new String(Files.readAllBytes(adapter), StandardCharsets.UTF_8);
+            addIfContains(source, "client.util.NotificationManager", violations, MAIN_SOURCE.relativize(adapter) + " must use BaniraClientOverlayBridge for notifications.");
+            addIfContains(source, "client.gui.quickaction.QuickActionOverlay", violations, MAIN_SOURCE.relativize(adapter) + " must use BaniraClientOverlayBridge for quick actions.");
+        }
+        assertNoViolations("Forge client adapters should only adapt native events.", violations);
+    }
+
+    @Test
+    public void internalClientEventHubUsesOverlayBridge() throws IOException {
+        Path hub = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "internal", "client", "BaniraClientEventHub.java"));
+        String source = new String(Files.readAllBytes(hub), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "client.util.NotificationManager", violations, "Internal client event hub must call BaniraClientOverlayBridge for notifications.");
+        addIfContains(source, "client.gui.quickaction.QuickActionOverlay", violations, "Internal client event hub must call BaniraClientOverlayBridge for quick actions.");
+        if (!source.contains("BaniraClientOverlayBridge")) {
+            violations.add("Internal client event hub must route overlay implementation through BaniraClientOverlayBridge.");
+        }
+        assertNoViolations("Client event hub should keep overlay implementation behind one internal bridge.", violations);
+    }
+
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api")), consumer);
         forEachJavaFile(MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform")), consumer);

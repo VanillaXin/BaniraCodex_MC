@@ -4,7 +4,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraCommandAdapter;
@@ -26,8 +26,8 @@ public final class ForgeBaniraCodexEntry {
         BaniraPlatforms.install(new ForgeBaniraPlatform());
 
         // 配置必须在 CONFIG 加载阶段之前注册。
-        BaniraConfig.register(CommonConfig.class, Banira.MOD_ID);
-        BaniraConfig.register(ClientConfig.class, Banira.MOD_ID);
+        BaniraConfigs.register(CommonConfig.class, Banira.MOD_ID);
+        BaniraConfigs.register(ClientConfig.class, Banira.MOD_ID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener(ForgeBaniraLifecycleAdapter::dispatchCommonSetup);

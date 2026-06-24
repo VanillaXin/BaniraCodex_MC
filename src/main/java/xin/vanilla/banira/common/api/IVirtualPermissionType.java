@@ -1,13 +1,13 @@
 package xin.vanilla.banira.common.api;
 
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+
 /**
- * 通用的虚拟指令权限类型接口
+ * 旧虚拟指令权限类型接口；子 mod 推荐实现 {@link BaniraVirtualPermission}。
  * <p>
- * 所有希望接入 {@link xin.vanilla.banira.common.util.VirtualPermissionManager}
- * 的指令枚举都应实现本接口
- * <p>
+ * 保留本接口是为了让 Banira 内部旧指令枚举继续工作。
  */
-public interface IVirtualPermissionType {
+public interface IVirtualPermissionType extends BaniraVirtualPermission {
 
     String modId();
 

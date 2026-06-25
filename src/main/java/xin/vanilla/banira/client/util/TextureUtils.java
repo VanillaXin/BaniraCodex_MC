@@ -64,6 +64,10 @@ public final class TextureUtils {
         return normalized.length() >= 2 && normalized.charAt(1) == ':' && Character.isLetter(normalized.charAt(0));
     }
 
+    private static boolean isMissingTextureLocation(ResourceLocation location) {
+        return location == null || MissingTextureAtlasSprite.getLocation().equals(location);
+    }
+
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
@@ -123,10 +127,7 @@ public final class TextureUtils {
     }
 
     public static boolean isTextureAvailable(ResourceLocation location) {
-        if (location == null) {
-            return false;
-        }
-        if (MissingTextureAtlasSprite.getLocation().equals(location)) {
+        if (isMissingTextureLocation(location)) {
             return false;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -276,6 +277,9 @@ public final class TextureUtils {
      * @param texture 纹理的 ResourceLocation
      */
     public static NativeImage getTextureImage(ResourceLocation texture) {
+        if (isMissingTextureLocation(texture)) {
+            return null;
+        }
         // 优先从缓存中获取
         if (CACHE.containsKey(texture)) {
             return CACHE.get(texture);
@@ -320,6 +324,9 @@ public final class TextureUtils {
      * 获取纹理的宽高
      */
     public static KeyValue<Integer, Integer> getTextureSize(ResourceLocation texture) {
+        if (isMissingTextureLocation(texture)) {
+            return new KeyValue<>(0, 0);
+        }
         KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
         if (cached != null && cached.key() > 0 && cached.val() > 0) {
             return cached;
@@ -345,6 +352,9 @@ public final class TextureUtils {
      * 解析用于绘制的纹理尺寸：优先资源/缓存图像，失败时从已上传的 GPU 纹理查询（适用于玩家皮肤等不在资源包中的纹理）
      */
     public static KeyValue<Integer, Integer> resolveTextureSizeForDraw(ResourceLocation texture) {
+        if (isMissingTextureLocation(texture)) {
+            return new KeyValue<>(0, 0);
+        }
         KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
         if (cached != null && cached.key() > 0 && cached.val() > 0) {
             return cached;
@@ -370,6 +380,10 @@ public final class TextureUtils {
 
     @Nullable
     private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
+        // 缺失贴图本身不做 GPU 查询，避免 TextureManager 主动加载 missingno 并刷启动警告。
+        if (isMissingTextureLocation(location)) {
+            return null;
+        }
         try {
             Minecraft mc = Minecraft.getInstance();
             if (mc == null) {

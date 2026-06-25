@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.config;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -91,7 +90,7 @@ public class ClientConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return ClientConfigAccess.root(BaniraConfig.holder(ClientConfig.class));
+        return ClientConfigAccess.root(InternalConfigHandles.holder(ClientConfig.class));
     }
 
     // region 运行时视图接口

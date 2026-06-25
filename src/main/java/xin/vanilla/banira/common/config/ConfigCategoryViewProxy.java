@@ -6,7 +6,7 @@ import java.lang.reflect.Proxy;
 
 /**
  * 将 {@link ConfigHolder} 的某一分类暴露为接口视图：path 规则为 {@code categoryPath + "." + 方法名}，
- * 与 {@link BaniraConfig} 扫描 {@link xin.vanilla.banira.common.config.annotation.Config} 类时生成的路径一致。
+ * 与 {@link xin.vanilla.banira.api.BaniraConfigs} 扫描 {@link xin.vanilla.banira.common.config.annotation.Config} 类时生成的路径一致。
  */
 public final class ConfigCategoryViewProxy {
 

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
- * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
+ * 配置编辑界面，支持可视化编辑 Banira 配置模型。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>

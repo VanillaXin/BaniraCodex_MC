@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -13,7 +12,7 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
 /**
- * 通用（Common）配置：注解结构用于构建 ForgeConfigSpec 与配置编辑器；
+ * 通用（Common）配置：注解结构用于构建 Banira 配置模型与配置编辑器；
  * <p>
  * 运行时通过 {@link #get()} 返回的 {@link RootView} 分层读 {@link ConfigHolder}（路径由代理按字段名推导，无需 Key 与手写 get/set）。
  */
@@ -48,7 +47,7 @@ public class CommonConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return CommonConfigAccess.root(BaniraConfig.holder(CommonConfig.class));
+        return CommonConfigAccess.root(InternalConfigHandles.holder(CommonConfig.class));
     }
 
     // region 运行时视图接口

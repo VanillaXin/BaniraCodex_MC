@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.config;
 
 import org.junit.Test;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -9,14 +10,14 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
-public class BaniraConfigTest {
+public class BaniraConfigsTest {
 
     @Test
     public void delegatesToInstalledPlatformService() {
         RecordingConfigService service = new RecordingConfigService();
         BaniraPlatforms.install(new TestBaniraPlatform().configService(service));
 
-        BaniraConfig.register(SampleConfig.class, "sample");
+        BaniraConfigs.register(SampleConfig.class, "sample");
 
         assertSame(SampleConfig.class, service.registeredClass);
         assertEquals("sample", service.registeredModId);
@@ -27,7 +28,7 @@ public class BaniraConfigTest {
         RecordingConfigService service = new RecordingConfigService();
         BaniraPlatforms.install(new TestBaniraPlatform().configService(service));
 
-        SampleConfigView view = BaniraConfig.view(SampleConfig.class, SampleConfigView.class);
+        SampleConfigView view = BaniraConfigs.view(SampleConfig.class, SampleConfigView.class);
 
         assertSame(service.view, view);
         assertSame(SampleConfig.class, service.viewConfigClass);

@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -36,20 +35,6 @@ public final class VirtualPermissionManager {
 
 
     /**
-     * 添加权限（合并原有权限）
-     */
-    public static void addVirtualPermission(Player player, EnumCommandType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
-    }
-
-    /**
-     * 添加虚拟权限。
-     */
-    public static void addVirtualPermission(Player player, IVirtualPermissionType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
-    }
-
-    /**
      * 添加子 mod 自定义虚拟权限。
      */
     public static void addVirtualPermission(Player player, BaniraVirtualPermission... types) {
@@ -57,38 +42,10 @@ public final class VirtualPermissionManager {
     }
 
     /**
-     * 设置权限（覆盖原有权限）
-     */
-    public static void setVirtualPermission(Player player, EnumCommandType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
-    }
-
-    /**
-     * 设置虚拟权限（覆盖原有权限）
-     */
-    public static void setVirtualPermission(Player player, IVirtualPermissionType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
-    }
-
-    /**
      * 设置子 mod 自定义虚拟权限（覆盖原有权限）
      */
     public static void setVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
-    }
-
-    /**
-     * 删除权限
-     */
-    public static void delVirtualPermission(Player player, EnumCommandType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
-    }
-
-    /**
-     * 删除虚拟权限
-     */
-    public static void delVirtualPermission(Player player, IVirtualPermissionType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
     }
 
     /**

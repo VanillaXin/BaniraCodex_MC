@@ -1,11 +1,10 @@
 package xin.vanilla.banira.api.permission;
 
 import org.junit.Test;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
 
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class BaniraVirtualPermissionsTest {
 
@@ -24,11 +23,6 @@ public class BaniraVirtualPermissionsTest {
         );
 
         assertEquals(Set.of("child_mod:OPEN_PANEL", "child_mod:EDIT_CONFIG"), keys);
-    }
-
-    @Test
-    public void legacyInterfaceExtendsStableApiType() {
-        assertTrue(BaniraVirtualPermission.class.isAssignableFrom(IVirtualPermissionType.class));
     }
 
     private enum SamplePermission implements BaniraVirtualPermission {

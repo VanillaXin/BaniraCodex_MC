@@ -206,19 +206,6 @@ public final class PlayerUtils {
     // region 玩家物品管理
 
     /**
-     * 获取玩家身上的所有物品
-     *
-     * @param player 玩家
-     * @return 玩家身上的所有物品列表副本
-     * @deprecated Use {@link ItemUtils#getAllPlayerItems}
-     */
-    @Deprecated
-    @Nonnull
-    public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
-        return ItemUtils.getAllPlayerItems(player);
-    }
-
-    /**
      * 移除玩家身上的某个指定物品
      * <p>
      * 不比较NBT

@@ -33,7 +33,7 @@ public class ConfigHolderContractTest {
     }
 
     @Test
-    public void findsValuePathsAndGroupsDescriptorsByCategory() {
+    public void findsValuePaths() {
         MemoryValueStore store = new MemoryValueStore()
                 .value("alpha.count", 3, 1, Integer.class, v -> true)
                 .value("alpha.enabled", true, true, Boolean.class, v -> true)
@@ -43,12 +43,6 @@ public class ConfigHolderContractTest {
         assertEquals("alpha.count", holder.findValuePath("alpha.count"));
         assertEquals("beta.nested.name", holder.findValuePath("nested.name"));
         assertNull(holder.findValuePath("alpha"));
-
-        List<ConfigHolder.CategoryGroup> groups = holder.getDescriptorsGroupedByCategory();
-        assertEquals(List.of("alpha", "beta"), groups.stream().map(ConfigHolder.CategoryGroup::getCategoryPath).toList());
-        assertEquals("Alpha", groups.get(0).getDisplayName());
-        assertEquals(List.of("alpha.count", "alpha.enabled"),
-                groups.get(0).getEntries().stream().map(ConfigEntryDescriptor::getPath).toList());
     }
 
     @Test

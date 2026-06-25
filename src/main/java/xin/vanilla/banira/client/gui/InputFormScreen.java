@@ -797,7 +797,7 @@ public class InputFormScreen extends BaniraScreen {
             }
         }
 
-        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.getTranslationClient(EnumI18nType.WORD, "cancel")))) {
+        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.translate(EnumI18nType.WORD, "cancel")))) {
             BaniraClientRuntime.setScreen(this.previousScreen());
             return;
         }

@@ -39,8 +39,6 @@ import java.util.function.Supplier;
 public class BaniraCodex implements ModInitializer {
 
     public static final String MODID = Banira.MOD_ID;
-    @Deprecated
-    public static final String ARTIFACT_ID = "xin.vanilla";
     public static final String VANILLA_XIN = BaniraPaths.ROOT_DIRECTORY_NAME;
 
     /**

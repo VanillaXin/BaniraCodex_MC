@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.config;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.annotation.Config;
@@ -69,7 +68,7 @@ public class TestConfig implements ConfigData {
     }
 
     public static TestConfig get() {
-        return new TestConfig(BaniraConfig.holder(TestConfig.class));
+        return new TestConfig(InternalConfigHandles.holder(TestConfig.class));
     }
 
     public ConfigHolder holder() {

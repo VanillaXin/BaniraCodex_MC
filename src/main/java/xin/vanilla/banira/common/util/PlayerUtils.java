@@ -13,8 +13,8 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -94,7 +94,7 @@ public final class PlayerUtils {
     }
 
     public static UUID getPlayerUUID() {
-        Player player = BaniraClientRuntime.localPlayer();
+        Player player = ClientRuntimeBridge.localPlayer();
         return player != null ? player.getUUID() : null;
     }
 
@@ -139,7 +139,7 @@ public final class PlayerUtils {
         if (StringUtils.isNullOrEmpty(nameString)) {
             try {
                 if (EnvironmentUtils.isClient()) {
-                    nameString = BaniraClientRuntime.onlinePlayerName(uuid);
+                    nameString = ClientRuntimeBridge.onlinePlayerName(uuid);
                 }
             } catch (Throwable ignored) {
             }
@@ -185,7 +185,7 @@ public final class PlayerUtils {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
         try {
-            entity = BaniraClientRuntime.levelPlayer(uuid);
+            entity = ClientRuntimeBridge.levelPlayer(uuid);
         } catch (Throwable ignored) {
         }
         return entity;
@@ -194,7 +194,7 @@ public final class PlayerUtils {
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
         try {
-            ResourceLocation skin = BaniraClientRuntime.onlinePlayerSkin(uuid);
+            ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
             if (skin != null) return skin;
         } catch (Throwable ignored) {
         }

@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -257,7 +257,7 @@ public final class EffectUtils {
     public static List<MobEffect> getPlayerEffects() {
         List<MobEffect> result = new ArrayList<>();
         try {
-            Player player = BaniraClientRuntime.localPlayer();
+            Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
                 Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
                 for (MobEffect e : player.getActiveEffectsMap().keySet()) {

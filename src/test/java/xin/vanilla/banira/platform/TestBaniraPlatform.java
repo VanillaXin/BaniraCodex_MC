@@ -19,6 +19,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private final Map<UUID, String> usernames = new HashMap<>();
     private BaniraConfigService configService = NoopConfigService.INSTANCE;
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
+    private BaniraInputService inputService = NoopInputService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
     private BaniraNotificationService notificationService = NoopNotificationService.INSTANCE;
     private Path configDir = Path.of("config");
@@ -100,6 +101,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform networkService(BaniraNetworkService value) {
         this.networkService = Objects.requireNonNull(value, "networkService");
+        return this;
+    }
+
+    public TestBaniraPlatform inputService(BaniraInputService value) {
+        this.inputService = Objects.requireNonNull(value, "inputService");
         return this;
     }
 
@@ -200,7 +206,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     @Override
     public @Nonnull BaniraInputService inputService() {
-        return NoopInputService.INSTANCE;
+        return inputService;
     }
 
     @Override

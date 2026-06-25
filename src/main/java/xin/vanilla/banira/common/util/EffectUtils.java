@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
@@ -10,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -255,7 +255,7 @@ public final class EffectUtils {
     public static List<MobEffect> getPlayerEffects() {
         List<MobEffect> result = new ArrayList<>();
         try {
-            Player player = Minecraft.getInstance().player;
+            Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
                 Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
                 for (MobEffect e : player.getActiveEffectsMap().keySet()) {

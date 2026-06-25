@@ -15,6 +15,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -267,11 +268,7 @@ public class Translator implements ITranslator {
 
     @Nullable
     private static ResourceManager getClientResourceManager() {
-        try {
-            return net.minecraft.client.Minecraft.getInstance().getResourceManager();
-        } catch (Exception e) {
-            return null;
-        }
+        return ClientRuntimeBridge.resourceManager();
     }
 
     private static void collectModLangJsonLocations(ResourceManager manager, Predicate<ResourceLocation> predicate, Set<ResourceLocation> result) {
@@ -312,7 +309,10 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (EnvironmentUtils.isClient()) {
-            return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().getCode());
+            String language = ClientRuntimeBridge.selectedLanguageCode();
+            if (StringUtils.isNotNullOrEmpty(language)) {
+                return normalizeLanguageCode(language);
+            }
         }
         return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
     }

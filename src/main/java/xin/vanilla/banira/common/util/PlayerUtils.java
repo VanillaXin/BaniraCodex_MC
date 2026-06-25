@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -88,10 +89,8 @@ public final class PlayerUtils {
     }
 
     public static UUID getPlayerUUID() {
-        if (net.minecraft.client.Minecraft.getInstance().player == null) {
-            return null;
-        }
-        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
+        Player player = ClientRuntimeBridge.localPlayer();
+        return player != null ? player.getUUID() : null;
     }
 
     public static UUID getPlayerUUID(@Nonnull Player player) {
@@ -135,9 +134,7 @@ public final class PlayerUtils {
         if (StringUtils.isNullOrEmpty(nameString)) {
             try {
                 if (EnvironmentUtils.isClient()) {
-                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                            .filter(info -> info.getProfile().getId().equals(uuid))
-                            .findFirst().orElse(null).getProfile().getName();
+                    nameString = ClientRuntimeBridge.onlinePlayerName(uuid);
                 }
             } catch (Throwable ignored) {
             }
@@ -180,7 +177,7 @@ public final class PlayerUtils {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
         try {
-            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
+            entity = ClientRuntimeBridge.levelPlayer(uuid);
         } catch (Throwable ignored) {
         }
         return entity;
@@ -189,10 +186,11 @@ public final class PlayerUtils {
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
         try {
-            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
-                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                        .filter(info -> info.getProfile().getId().equals(uuid))
-                        .findFirst().orElse(null).getSkinLocation();
+            if (uuid != null) {
+                ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
+                if (skin != null) {
+                    return skin;
+                }
             }
         } catch (Throwable ignored) {
         }

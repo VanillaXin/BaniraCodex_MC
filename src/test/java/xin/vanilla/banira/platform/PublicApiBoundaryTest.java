@@ -135,10 +135,13 @@ public class PublicApiBoundaryTest {
             fail("Client optional mod presence facade must stay in api.BaniraModPresence.");
         }
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "network", "ModLoadedPresence.java"));
-        String source = new String(Files.readAllBytes(legacy), StandardCharsets.UTF_8);
+        if (Files.exists(legacy)) {
+            fail("Legacy common.network.ModLoadedPresence facade must not return; sub mods should use api.BaniraModPresence.");
+        }
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
         List<String> violations = new ArrayList<>();
-        if (!source.contains("registerInternal") || !source.contains("announcedModIdsInternal")) {
-            violations.add("ModLoadedPresence must expose internal methods for api.BaniraModPresence delegation.");
+        if (!source.contains("ModLoadedPresenceStore")) {
+            violations.add("api.BaniraModPresence must delegate to the shared ModLoadedPresenceStore.");
         }
         assertNoViolations("Mod presence registration belongs in api.BaniraModPresence.", violations);
     }

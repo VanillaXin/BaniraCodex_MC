@@ -13,6 +13,8 @@
   "word.banira_codex.close": "关闭",
   "word.banira_codex.codex_navigation_title": "香草志设置",
   "word.banira_codex.codex_navigation_notification_log": "通知日志",
+  "word.banira_codex.codex_navigation_client_config": "客户端配置",
+  "word.banira_codex.codex_navigation_common_config": "通用配置",
   "word.banira_codex.custom_player_config_title": "玩家配置",
   "word.banira_codex.custom_player_config_language": "语言",
   "word.banira_codex.custom_player_config_notification_mode": "通知方式",

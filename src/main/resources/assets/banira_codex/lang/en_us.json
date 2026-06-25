@@ -13,6 +13,8 @@
   "word.banira_codex.close": "Close",
   "word.banira_codex.codex_navigation_title": "Banira Codex Hub",
   "word.banira_codex.codex_navigation_notification_log": "Notification log",
+  "word.banira_codex.codex_navigation_client_config": "Client config",
+  "word.banira_codex.codex_navigation_common_config": "Common config",
   "word.banira_codex.custom_player_config_title": "Player config",
   "word.banira_codex.custom_player_config_language": "Language",
   "word.banira_codex.custom_player_config_notification_mode": "Notification delivery",

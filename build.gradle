@@ -69,6 +69,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    testImplementation 'junit:junit:4.13.2'
 
     runtimeOnly "curse.maven:embeddium-908741:${embeddium_id}"
     runtimeOnly "curse.maven:rubidium-extra-654373:${rubidium_extra_id}"

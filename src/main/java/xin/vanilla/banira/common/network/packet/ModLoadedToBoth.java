@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.server.ServerSenderAccess;
@@ -111,9 +111,9 @@ public class ModLoadedToBoth implements NetworkPacket {
                 }
                 for (String modid : packet.modids()) {
                     ServerSenderAccess.setRemoteClientModInstalled(sender, modid, false);
-                    ModLoadedPresence.dispatchServerSync(sender, modid);
+                    ModLoadedPresenceStore.dispatchServerSync(sender, modid);
                 }
-                List<String> serverIds = ModLoadedPresence.announcedModIds();
+                List<String> serverIds = ModLoadedPresenceStore.announcedModIds();
                 if (!serverIds.isEmpty()) {
                     ServerSenderAccess.sendPacket(sender, new ModLoadedToBoth(serverIds));
                 }

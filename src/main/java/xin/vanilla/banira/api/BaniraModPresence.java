@@ -1,6 +1,6 @@
 package xin.vanilla.banira.api;
 
-import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -16,7 +16,7 @@ public final class BaniraModPresence {
 
     @Nonnull
     public static BaniraModPresenceRegistration register(@Nonnull String modId, @Nonnull Consumer<Object> onServerSync) {
-        return ModLoadedPresence.registerInternal(modId, onServerSync)::close;
+        return ModLoadedPresenceStore.register(modId, onServerSync)::close;
     }
 
     @Nonnull
@@ -26,15 +26,15 @@ public final class BaniraModPresence {
     }
 
     public static boolean unregister(@Nonnull String modId) {
-        return ModLoadedPresence.unregisterInternal(modId);
+        return ModLoadedPresenceStore.unregister(modId);
     }
 
     public static boolean hasRegistration(@Nonnull String modId) {
-        return ModLoadedPresence.hasRegistrationInternal(modId);
+        return ModLoadedPresenceStore.hasRegistration(modId);
     }
 
     @Nonnull
     public static List<String> announcedModIds() {
-        return ModLoadedPresence.announcedModIdsInternal();
+        return ModLoadedPresenceStore.announcedModIds();
     }
 }

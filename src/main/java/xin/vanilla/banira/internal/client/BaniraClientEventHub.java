@@ -16,7 +16,7 @@ import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
@@ -85,7 +85,7 @@ public final class BaniraClientEventHub {
             }
         });
         Player.onClientLoggedIn(player -> {
-            List<String> ids = ModLoadedPresence.announcedModIds();
+            List<String> ids = ModLoadedPresenceStore.announcedModIds();
             if (!ids.isEmpty()) {
                 PacketUtils.sendPacketToServer(new ModLoadedToBoth(ids));
             }

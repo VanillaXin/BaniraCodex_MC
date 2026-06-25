@@ -39,18 +39,6 @@ public final class BaniraEventBus {
     private BaniraEventBus() {
     }
 
-    /**
-     * @deprecated 使用 {@link BaniraEventRegistration}。
-     */
-    @Deprecated
-    public interface Registration {
-        void unregister();
-    }
-
-    private static Registration createRegistration(Runnable unregister) {
-        return unregister::run;
-    }
-
     public static final class Server {
         private Server() {
         }
@@ -74,14 +62,14 @@ public final class BaniraEventBus {
             serverTickCallbacks.add(callback);
         }
 
-        public static Registration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
-            return createRegistration(() -> serverStartingCallbacks.remove(callback));
+            return () -> serverStartingCallbacks.remove(callback);
         }
 
-        public static Registration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
-            return createRegistration(() -> serverStoppingCallbacks.remove(callback));
+            return () -> serverStoppingCallbacks.remove(callback);
         }
     }
 
@@ -164,9 +152,8 @@ public final class BaniraEventBus {
         private ModLifecycle() {
         }
 
-        public static Registration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
-            BaniraEventRegistration registration = BaniraLifecycle.onCommonSetup(callback);
-            return registration::unregister;
+        public static BaniraEventRegistration onCommonSetup(@Nonnull Consumer<BaniraCommonSetupEvent> callback) {
+            return BaniraLifecycle.onCommonSetup(callback);
         }
     }
 

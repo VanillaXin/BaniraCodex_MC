@@ -11,7 +11,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
@@ -125,7 +125,7 @@ public final class VirtualOpCommand {
         String[] split = input.split(",");
         String current = input.endsWith(",") ? "" : split[split.length - 1];
         Arrays.stream(EnumCommandType.values())
-                .filter(IVirtualPermissionType::op)
+                .filter(BaniraVirtualPermission::op)
                 .filter(type -> Arrays.stream(split).noneMatch(in -> in.equalsIgnoreCase(type.name())))
                 .filter(type -> (current == null || current.isEmpty()) || type.name().toLowerCase().contains(current.toLowerCase()))
                 .forEach(type -> builder.suggest(type.name()));

@@ -116,13 +116,12 @@ public class PublicApiBoundaryTest {
             fail("Virtual permission type must stay in api.permission.BaniraVirtualPermission.");
         }
         Path legacy = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "api", "IVirtualPermissionType.java"));
-        String legacySource = new String(Files.readAllBytes(legacy), StandardCharsets.UTF_8);
+        if (Files.exists(legacy)) {
+            fail("Legacy common.api.IVirtualPermissionType facade must not return; sub mods should use api.permission.BaniraVirtualPermission.");
+        }
         Path manager = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "common", "util", "VirtualPermissionManager.java"));
         String managerSource = new String(Files.readAllBytes(manager), StandardCharsets.UTF_8);
         List<String> violations = new ArrayList<>();
-        if (!legacySource.contains("extends BaniraVirtualPermission")) {
-            violations.add("IVirtualPermissionType must remain a compatibility alias over api.permission.BaniraVirtualPermission.");
-        }
         if (!managerSource.contains("BaniraVirtualPermission")) {
             violations.add("VirtualPermissionManager must accept the stable api.permission.BaniraVirtualPermission type.");
         }

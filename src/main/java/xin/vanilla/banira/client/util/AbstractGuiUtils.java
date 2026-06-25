@@ -92,8 +92,7 @@ public final class AbstractGuiUtils {
 
     // region 绘制纹理
 
-    @Deprecated
-    public static void bindTexture(ResourceLocation location) {
+    private static void bindTexture(ResourceLocation location) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, location);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
@@ -111,7 +110,7 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
-        AbstractGuiUtils.bindTexture(texture);
+        bindTexture(texture);
         GuiComponent.blit(stack, x0, y0, z, destWidth, destHeight, sprite);
     }
 
@@ -120,7 +119,7 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
-        AbstractGuiUtils.bindTexture(texture);
+        bindTexture(texture);
         GuiComponent.blit(stack, x0, y0, z, (float) u0, (float) v0, width, height, textureHeight, textureWidth);
     }
 
@@ -129,7 +128,7 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
-        AbstractGuiUtils.bindTexture(texture);
+        bindTexture(texture);
         GuiComponent.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
 
@@ -138,7 +137,7 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
-        AbstractGuiUtils.bindTexture(texture);
+        bindTexture(texture);
         GuiComponent.blit(stack, x0, y0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
     }
 

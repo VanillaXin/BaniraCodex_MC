@@ -8,9 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
-@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public class NotificationLogScreen extends BaniraScreen {
 
     private static final int LIST_ROW_HEIGHT = 24;
@@ -119,6 +117,10 @@ public class NotificationLogScreen extends BaniraScreen {
         this.args = args != null ? args : new Args();
         this.pendingSelectLogEntryId = this.args.selectLogEntryId();
         BaniraScreen.inheritThemeAndSeason(this, this.args.parentScreen(), this.args.theme(), this.args.season());
+    }
+
+    public static void register(IEventBus gameEventBus) {
+        gameEventBus.addListener(ClientTickEvent.Post.class, NotificationLogScreen::onClientTick);
     }
 
     @Data

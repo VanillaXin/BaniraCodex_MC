@@ -1,15 +1,13 @@
 package xin.vanilla.banira.client.event;
 
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -17,13 +15,29 @@ import xin.vanilla.banira.client.util.NotificationManager;
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：将事件转发至 {@link BaniraClientEventHub}，并处理本 Mod 的 GUI 逻辑（如 {@link QuickActionOverlay}）
  */
-@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class BaniraClientForgeEventHandler {
 
     private BaniraClientForgeEventHandler() {
     }
 
     // region BaniraClientEventHub Forge 转发
+
+    public static void register(IEventBus gameEventBus) {
+        gameEventBus.addListener(ClientPlayerNetworkEvent.LoggingIn.class, BaniraClientForgeEventHandler::onClientPlayerLoggedIn);
+        gameEventBus.addListener(ClientPlayerNetworkEvent.LoggingOut.class, BaniraClientForgeEventHandler::onClientPlayerLoggedOut);
+        gameEventBus.addListener(ClientTickEvent.Post.class, BaniraClientForgeEventHandler::onClientTick);
+        gameEventBus.addListener(ClientChatEvent.class, BaniraClientForgeEventHandler::onClientChat);
+        gameEventBus.addListener(AddReloadListenerEvent.class, BaniraClientForgeEventHandler::onAddReloadListener);
+        gameEventBus.addListener(ScreenEvent.Opening.class, BaniraClientForgeEventHandler::onGuiOpen);
+        gameEventBus.addListener(ScreenEvent.Init.Pre.class, BaniraClientForgeEventHandler::onInitScreenPre);
+        gameEventBus.addListener(ScreenEvent.Init.Post.class, BaniraClientForgeEventHandler::onInitScreenPost);
+        gameEventBus.addListener(ScreenEvent.Render.Pre.class, BaniraClientForgeEventHandler::onDrawScreenPre);
+        gameEventBus.addListener(ScreenEvent.Render.Post.class, BaniraClientForgeEventHandler::onDrawScreenPost);
+        gameEventBus.addListener(EventPriority.LOWEST, ScreenEvent.Render.Post.class, BaniraClientForgeEventHandler::onDrawScreenPostInventoryQuickAction);
+        gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseButtonPressed.Pre.class, BaniraClientForgeEventHandler::onGuiMouseClickedPre);
+        gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseButtonReleased.Pre.class, BaniraClientForgeEventHandler::onGuiMouseReleasedPre);
+        gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseScrolled.Pre.class, BaniraClientForgeEventHandler::onGuiMouseScrollPre);
+    }
 
     @SubscribeEvent
     public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {

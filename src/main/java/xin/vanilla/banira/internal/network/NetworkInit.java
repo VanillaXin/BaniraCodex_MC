@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.network;
 
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-@EventBusSubscriber(modid = BaniraCodex.MODID, bus = EventBusSubscriber.Bus.MOD)
 public final class NetworkInit {
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
@@ -33,7 +32,9 @@ public final class NetworkInit {
     /**
      * 在模组主类中调用：注册 {@link RequestToBoth} 等请求的分发逻辑。
      */
-    public static void register() {
+    public static void register(IEventBus modEventBus) {
+        // NeoForge 高版本逐步收紧注解总线选择，内部事件显式绑定到对应总线。
+        modEventBus.addListener(RegisterPayloadHandlersEvent.class, NetworkInit::registerPayloadHandlers);
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) ->
                 PacketUtils.sendSplitPacketToPlayer(player, new AdvancementToClient(AdvancementUtils.advancementData())));
         RequestToBoth.registerHandler(REQUEST_DIMENSION_DATA, (packet, player) ->

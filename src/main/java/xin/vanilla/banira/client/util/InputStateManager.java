@@ -3,16 +3,14 @@ package xin.vanilla.banira.client.util;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.FixedList;
@@ -29,7 +27,6 @@ import java.util.Set;
  * 统一的输入状态管理器
  */
 @Accessors(fluent = true)
-@EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class InputStateManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final int KEY_HISTORY_SIZE = 5;
@@ -70,6 +67,16 @@ public final class InputStateManager {
     // region 内部工具
 
     private InputStateManager() {
+    }
+
+    public static void register(IEventBus gameEventBus) {
+        gameEventBus.addListener(ScreenEvent.Render.Pre.class, InputStateManager::onDrawScreenPre);
+        gameEventBus.addListener(ScreenEvent.KeyPressed.Pre.class, InputStateManager::onKeyPressed);
+        gameEventBus.addListener(ScreenEvent.KeyReleased.Post.class, InputStateManager::onKeyReleased);
+        gameEventBus.addListener(ScreenEvent.MouseButtonPressed.Pre.class, InputStateManager::onMouseClicked);
+        gameEventBus.addListener(ScreenEvent.MouseButtonReleased.Post.class, InputStateManager::onMouseReleased);
+        gameEventBus.addListener(ScreenEvent.MouseScrolled.Pre.class, InputStateManager::onMouseScroll);
+        gameEventBus.addListener(ClientTickEvent.Post.class, InputStateManager::onClientTick);
     }
 
     private static long getWindowHandle() {

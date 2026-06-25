@@ -1,9 +1,8 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.KeyMapping;
-import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
@@ -16,7 +15,6 @@ import xin.vanilla.banira.client.util.NotificationManager;
 /**
  * 客户端 Mod 总线（{@code Dist.CLIENT}）：键位注册、通知日志加载、{@link BaniraClientEventHub} 默认回调与 {@link FMLClientSetupEvent} 分发。
  */
-@EventBusSubscriber(modid = BaniraCodex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class BaniraClientModSetup {
 
     public static final KeyMapping NOTIFICATION_LOG_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
@@ -24,6 +22,12 @@ public final class BaniraClientModSetup {
     public static final KeyMapping BANIRA_HUB_KEY = BaniraKeyBindings.register(BaniraCodex.MODID, "codex_navigation", GLFWKey.GLFW_KEY_UNKNOWN);
 
     private BaniraClientModSetup() {
+    }
+
+    public static void register(IEventBus modEventBus) {
+        modEventBus.addListener(RegisterKeyMappingsEvent.class, BaniraClientModSetup::onRegisterKeyMappings);
+        modEventBus.addListener(TextureAtlasStitchedEvent.class, BaniraClientModSetup::onTextureAtlasStitched);
+        modEventBus.addListener(FMLClientSetupEvent.class, BaniraClientModSetup::onClientSetup);
     }
 
     @SubscribeEvent

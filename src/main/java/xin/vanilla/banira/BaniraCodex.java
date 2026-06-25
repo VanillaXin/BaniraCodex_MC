@@ -19,9 +19,13 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.client.event.BaniraClientForgeEventHandler;
+import xin.vanilla.banira.client.event.BaniraClientModSetup;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
@@ -103,9 +107,9 @@ public class BaniraCodex {
         NeoForge.EVENT_BUS.register(BaniraScheduler.class);
         NeoForge.EVENT_BUS.register(BaniraEventBus.class);
         // 注册网络通道
-        NetworkInit.register();
+        NetworkInit.register(modEventBus);
 
-        registerBaniraEvent();
+        registerBaniraEvent(modEventBus);
     }
 
     /**
@@ -116,7 +120,7 @@ public class BaniraCodex {
         BaniraCommand.register(event.getDispatcher());
     }
 
-    private void registerBaniraEvent() {
+    private void registerBaniraEvent(IEventBus modEventBus) {
         // 通用事件
         BaniraEventBus.ModLifecycle.onCommonSetup(event -> {
             CustomConfig.loadCustomConfig(false);
@@ -157,13 +161,18 @@ public class BaniraCodex {
         });
 
         if (EnvironmentUtils.isClient()) {
-            ClientProxy.init();
+            ClientProxy.init(modEventBus);
         }
     }
 
     @OnlyIn(Dist.CLIENT)
     public static class ClientProxy {
-        public static void init() {
+        public static void init(IEventBus modEventBus) {
+            BaniraClientModSetup.register(modEventBus);
+            BaniraClientForgeEventHandler.register(NeoForge.EVENT_BUS);
+            InputStateManager.register(NeoForge.EVENT_BUS);
+            NotificationLogScreen.register(NeoForge.EVENT_BUS);
+
             BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
                 LogoModifier.register(MODID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 

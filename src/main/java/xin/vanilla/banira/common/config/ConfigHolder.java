@@ -185,31 +185,6 @@ public class ConfigHolder implements BaniraConfigHandle {
     }
 
     /**
-     * 按分类分组获取配置项，用于 GUI 层级展示（兼容旧逻辑，仅深度1）。
-     * 返回顺序：先按 categoryTooltips 中的分类顺序，再按 descriptors 中的顺序。
-     */
-    public List<CategoryGroup> getDescriptorsGroupedByCategory() {
-        Map<String, List<ConfigEntryDescriptor>> byCategory = new LinkedHashMap<>();
-        for (ConfigEntryDescriptor d : descriptors) {
-            String path = d.getPath();
-            int dot = path.indexOf('.');
-            String category = dot > 0 ? path.substring(0, dot) : "";
-            byCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(d);
-        }
-        List<CategoryGroup> result = new ArrayList<>();
-        Set<String> orderedCategories = new LinkedHashSet<>(categoryTooltips.keySet());
-        orderedCategories.addAll(byCategory.keySet());
-        for (String cat : orderedCategories) {
-            List<ConfigEntryDescriptor> entries = byCategory.get(cat);
-            if (entries != null && !entries.isEmpty()) {
-                String displayName = categoryTooltips.getOrDefault(cat, cat);
-                result.add(new CategoryGroup(cat, displayName, entries));
-            }
-        }
-        return result;
-    }
-
-    /**
      * 虚拟根节点路径，不渲染该节点本身，仅作为树的根
      */
     private static final String VIRTUAL_ROOT_PATH = "";
@@ -249,22 +224,6 @@ public class ConfigHolder implements BaniraConfigHandle {
     private static String getParentPath(String path) {
         int lastDot = path.lastIndexOf('.');
         return lastDot > 0 ? path.substring(0, lastDot) : "";
-    }
-
-    /**
-     * 配置分类组（兼容旧 API）
-     */
-    @Getter
-    public static class CategoryGroup {
-        private final String categoryPath;
-        private final String displayName;
-        private final List<ConfigEntryDescriptor> entries;
-
-        public CategoryGroup(String categoryPath, String displayName, List<ConfigEntryDescriptor> entries) {
-            this.categoryPath = categoryPath;
-            this.displayName = displayName;
-            this.entries = List.copyOf(entries);
-        }
     }
 
     /**

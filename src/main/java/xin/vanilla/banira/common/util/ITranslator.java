@@ -63,10 +63,4 @@ public interface ITranslator {
      */
     void loadLanguage(@NonNull String languageCode);
 
-    /**
-     * 获取翻译文本（客户端语言，兼容旧 API）
-     */
-    default String getTranslationClient(@NonNull EnumI18nType type, @NonNull String key) {
-        return translate(type, key);
-    }
 }

@@ -50,9 +50,6 @@ public class PopupOption extends BaseWidget {
     @RequiredArgsConstructor
     @Accessors(chain = true, fluent = true)
     public static class SelectEvent {
-        /**
-         * 选项序号，保留用于兼容
-         */
         private final int index;
         /**
          * 选项字符串 ID，未指定时使用序号字符串
@@ -110,59 +107,6 @@ public class PopupOption extends BaseWidget {
     public static PopupOption init(BaniraScreen screen) {
         return new PopupOption(screen);
     }
-
-
-    // region Deprecated
-
-    /**
-     * 添加选项
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull String text) {
-        return addOptionInternal(null, text, null, null);
-    }
-
-    /**
-     * 添加选项
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull String text, @Nullable String tip) {
-        return addOptionInternal(null, text, tip, null);
-    }
-
-    /**
-     * 添加选项，可单独设置点击回调
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
-        return addOptionInternal(null, text, tip, onClick);
-    }
-
-    /**
-     * 添加选项
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull Text text) {
-        return addOptionInternal(null, text, null, null);
-    }
-
-    /**
-     * 添加选项
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip) {
-        return addOptionInternal(null, text, tip, null);
-    }
-
-    /**
-     * 添加选项，可单独设置点击回调
-     */
-    @Deprecated
-    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
-        return addOptionInternal(null, text, tip, onClick);
-    }
-
-    // endregion Deprecated
 
 
     /**
@@ -278,15 +222,6 @@ public class PopupOption extends BaseWidget {
     }
 
     /**
-     * @deprecated 使用 {@link #showAt(double, double)} 替代
-     */
-    @Deprecated
-    public PopupOption build(Font font, double x, double y, String id) {
-        this.font = font;
-        return showAt(x, y, id);
-    }
-
-    /**
      * 清空并重置，可再次 addOption + showAt
      */
     public PopupOption clear() {
@@ -381,19 +316,6 @@ public class PopupOption extends BaseWidget {
             cb.accept(selectEvent);
         }
         return true;
-    }
-
-    /**
-     * 尝试处理选项点击。优先调用选项单独设置的回调，若无则调用全局 onSelect。
-     *
-     * @deprecated 已改为按下记录、抬起触发，请使用 {@link #tryHandleOptionPress} 和 {@link #tryHandleOptionRelease}
-     */
-    @Deprecated
-    public boolean tryHandleOptionClick(MouseEvent event) {
-        if (event != null && tryHandleOptionPress(event)) {
-            return tryHandleOptionRelease(event);
-        }
-        return false;
     }
 
     public PopupOption setMaxWidth(int maxWidth) {

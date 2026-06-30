@@ -34,7 +34,9 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -90,6 +92,8 @@ public class BaniraCodex {
     );
 
     public BaniraCodex(FMLJavaModLoadingContext context) {
+        BaniraPlatforms.install(new ForgeBaniraPlatform());
+
         // 配置必须在 CONFIG 加载阶段之前注册
         ForgeConfigAdapter.register(CommonConfig.class, MODID);
         ForgeConfigAdapter.register(ClientConfig.class, MODID);

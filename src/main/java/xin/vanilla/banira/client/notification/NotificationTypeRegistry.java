@@ -42,6 +42,10 @@ public final class NotificationTypeRegistry {
      * 显式注册类型（可在客户端 Mod 初始化时调用，便于配置界面提前列出）。
      */
     public static void register(String typeId) {
+        registerInternal(typeId);
+    }
+
+    public static void registerInternal(String typeId) {
         KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
     }
 
@@ -50,6 +54,10 @@ public final class NotificationTypeRegistry {
      * 不会覆盖 JSON 中已有条目。若在 {@link NotificationTypeSettingsStore#load()} 之后调用，则立即对「当前内存中无该键」的情况补写并异步保存。
      */
     public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
+        registerInternal(typeId, defaultIfAbsent);
+    }
+
+    public static void registerInternal(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
         String t = NotificationTypeKeys.normalizeOrDefault(typeId);
         KNOWN.add(t);
         if (defaultIfAbsent != null) {
@@ -98,6 +106,10 @@ public final class NotificationTypeRegistry {
      * 本 Mod 登记优先，否则为登录同步建议
      */
     public static EnumNotificationTypeDisplayMode resolvedDisplayDefault(String typeId) {
+        return resolvedDisplayDefaultInternal(typeId);
+    }
+
+    public static EnumNotificationTypeDisplayMode resolvedDisplayDefaultInternal(String typeId) {
         String t = NotificationTypeKeys.normalizeOrDefault(typeId);
         EnumNotificationTypeDisplayMode m = MOD_REGISTERED_DISPLAY_DEFAULT.get(t);
         if (m != null) {
@@ -118,6 +130,10 @@ public final class NotificationTypeRegistry {
     }
 
     public static List<String> knownTypesSorted() {
+        return knownTypesSortedInternal();
+    }
+
+    public static List<String> knownTypesSortedInternal() {
         Set<String> fromSettings = NotificationTypeSettingsStore.get().typeIdsFromStored();
         List<String> all = new ArrayList<>(KNOWN);
         for (String s : fromSettings) {

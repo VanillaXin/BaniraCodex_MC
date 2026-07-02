@@ -21,7 +21,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigRegistry;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -25,7 +25,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 @Getter
 @Accessors(fluent = true)

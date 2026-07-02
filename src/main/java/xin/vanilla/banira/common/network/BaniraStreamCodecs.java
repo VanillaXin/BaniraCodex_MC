@@ -1,4 +1,4 @@
-package xin.vanilla.banira.internal.network;
+package xin.vanilla.banira.common.network;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,7 +8,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * 将现有 {@link net.minecraft.network.FriendlyByteBuf} 读写方法适配为 NeoForge {@link StreamCodec}
+ * NeoForge 原生 payload 的过渡编码适配器；优先使用 {@link xin.vanilla.banira.api.BaniraNetwork#registrar}。
  */
 public final class BaniraStreamCodecs {
     private BaniraStreamCodecs() {

@@ -11,7 +11,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.ArrayList;
 import java.util.List;

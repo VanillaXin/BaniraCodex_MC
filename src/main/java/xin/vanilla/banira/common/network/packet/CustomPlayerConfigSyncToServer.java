@@ -17,7 +17,7 @@ import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 /**
  * 将 CustomConfig 中当前玩家的配置同步至服务端。

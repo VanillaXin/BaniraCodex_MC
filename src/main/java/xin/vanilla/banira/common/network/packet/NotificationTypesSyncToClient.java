@@ -15,7 +15,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.ArrayList;
 import java.util.List;

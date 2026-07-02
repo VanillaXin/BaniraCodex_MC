@@ -15,7 +15,7 @@ import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

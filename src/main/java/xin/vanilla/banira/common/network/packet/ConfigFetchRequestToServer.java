@@ -19,7 +19,7 @@ import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.util.ConfigEditPermission;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

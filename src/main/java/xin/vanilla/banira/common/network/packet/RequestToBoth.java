@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.internal.network.BaniraStreamCodecs;
+import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -2,8 +2,11 @@ package xin.vanilla.banira.internal.forge.network;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
+
+import java.util.Objects;
 
 /**
  * Forge 1.16.5 的 PacketBuffer 适配实现。
@@ -76,13 +79,14 @@ final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferA
     }
 
     @Override
-    public ResourceLocation readResourceLocation() {
-        return buffer.readResourceLocation();
+    public BaniraIdentifier readIdentifier() {
+        return BaniraIdentifier.parse(buffer.readResourceLocation().toString());
     }
 
     @Override
-    public void writeResourceLocation(ResourceLocation value) {
-        buffer.writeResourceLocation(value);
+    public void writeIdentifier(BaniraIdentifier value) {
+        BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
+        buffer.writeResourceLocation(new ResourceLocation(identifier.getNamespace(), identifier.getPath()));
     }
 
     @Override

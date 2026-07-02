@@ -10,6 +10,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
 import javax.annotation.Nonnull;
@@ -52,7 +53,7 @@ public class AdvancementData {
     }
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
-        ResourceLocation id = buffer.readResourceLocation();
+        ResourceLocation id = toResourceLocation(buffer.readIdentifier());
         return new AdvancementData(id, AdvancementBufferAccess.readDisplayInfo(buffer));
     }
 
@@ -76,8 +77,16 @@ public class AdvancementData {
     }
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
-        buffer.writeResourceLocation(id);
+        buffer.writeIdentifier(toBaniraIdentifier(id));
         AdvancementBufferAccess.writeDisplayInfo(buffer, displayInfo);
+    }
+
+    private static BaniraIdentifier toBaniraIdentifier(ResourceLocation value) {
+        return BaniraIdentifier.of(value.getNamespace(), value.getPath());
+    }
+
+    private static ResourceLocation toResourceLocation(BaniraIdentifier value) {
+        return new ResourceLocation(value.getNamespace(), value.getPath());
     }
 
 

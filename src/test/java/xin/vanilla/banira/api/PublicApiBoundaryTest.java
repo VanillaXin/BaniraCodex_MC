@@ -35,6 +35,14 @@ public class PublicApiBoundaryTest {
         }
     }
 
+    @Test
+    public void networkServiceDoesNotExposeLegacyIdentifierFactory() throws Exception {
+        Path networkService = Paths.get("src", "main", "java", "xin", "vanilla", "banira", "platform", "BaniraNetworkService.java");
+        String source = Files.readString(networkService, StandardCharsets.UTF_8);
+        assertFalse("Network service registration must use api.BaniraIdentifier.", source.contains("common.util.IIdentifier"));
+        assertFalse("Network service registration must not expose IIdentifier.", source.contains(" IIdentifier "));
+    }
+
     private static void assertRootHasNoBannedImports(Path root) throws IOException {
         if (!Files.exists(root)) {
             return;

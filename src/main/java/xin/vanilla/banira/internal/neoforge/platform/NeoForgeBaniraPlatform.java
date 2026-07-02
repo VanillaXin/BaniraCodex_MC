@@ -40,7 +40,6 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.platform.*;
 
@@ -381,7 +380,7 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
     private static final class NeoForgeNetworkService implements BaniraNetworkService {
         @Nonnull
         @Override
-        public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier) {
+        public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
             return new NeoForgeNetworkPacketRegistrar(channelName);
         }
 

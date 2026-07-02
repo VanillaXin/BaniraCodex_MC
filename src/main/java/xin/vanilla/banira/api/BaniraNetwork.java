@@ -2,7 +2,6 @@ package xin.vanilla.banira.api;
 
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 
 import javax.annotation.Nonnull;
 
@@ -15,7 +14,7 @@ public final class BaniraNetwork {
     }
 
     @Nonnull
-    public static NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier) {
+    public static NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
         return Banira.platform().networkService().registrar(channelName, identifier);
     }
 

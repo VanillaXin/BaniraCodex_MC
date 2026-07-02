@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.config;
 
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.api.ConfigScope;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,7 +22,7 @@ public final class ConfigRegistry {
      */
     public static void register(ConfigHolder holder, ModContainer modContainer) {
         String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = new ModConfig(holder.getConfigType(), holder.getSpec(), modContainer, fileName);
+        ModConfig modConfig = new ModConfig(ForgeConfigAdapter.toForgeType(holder.getConfigScope()), holder.getSpec(), modContainer, fileName);
         modContainer.addConfig(modConfig);
         holder.setModConfig(modConfig);
         HOLDERS.put(holder.getConfigName(), holder);
@@ -46,8 +47,8 @@ public final class ConfigRegistry {
     /**
      * 获取配置持有者（兼容旧 API）
      */
-    public static ConfigHolder get(String configName, ModConfig.Type type) {
-        String key = configName + "-" + type.extension();
+    public static ConfigHolder get(String configName, ConfigScope scope) {
+        String key = configName + "-" + ForgeConfigAdapter.toForgeType(scope).extension();
         return HOLDERS.get(key);
     }
 

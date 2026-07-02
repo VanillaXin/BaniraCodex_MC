@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.config.annotation;
 
-import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.api.ConfigScope;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,5 +22,5 @@ public @interface Config {
     /**
      * 配置类型
      */
-    ModConfig.Type type() default ModConfig.Type.COMMON;
+    ConfigScope scope() default ConfigScope.COMMON;
 }

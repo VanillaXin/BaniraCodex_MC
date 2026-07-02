@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.config;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
+import xin.vanilla.banira.api.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -55,7 +56,8 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ModConfig.Type configType = configAnn.type();
+        ConfigScope configScope = configAnn.scope();
+        ModConfig.Type configType = toForgeType(configScope);
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -66,7 +68,7 @@ public final class ForgeConfigAdapter {
         buildFromClass(builder, configClass, "", descriptors, valueMap, categoryTooltips, categoryTitleSpecs);
 
         ForgeConfigSpec spec = builder.build();
-        ConfigHolder holder = new ConfigHolder(modId, configName, configType, spec, descriptors, valueMap, categoryTooltips,
+        ConfigHolder holder = new ConfigHolder(modId, configName, configScope, spec, descriptors, valueMap, categoryTooltips,
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
@@ -78,6 +80,18 @@ public final class ForgeConfigAdapter {
 
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
+    }
+
+    static ModConfig.Type toForgeType(ConfigScope scope) {
+        switch (scope) {
+            case CLIENT:
+                return ModConfig.Type.CLIENT;
+            case SERVER:
+                return ModConfig.Type.SERVER;
+            case COMMON:
+            default:
+                return ModConfig.Type.COMMON;
+        }
     }
 
     /**

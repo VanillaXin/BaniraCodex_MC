@@ -1,7 +1,9 @@
 package xin.vanilla.banira.internal.network;
 
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.*;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -18,7 +20,7 @@ import java.util.function.Function;
 
 public final class NetworkInit {
     public static final ResourceLocation DEFAULT_CHANNEL_NAME = Identifier.id().create("main_network");
-    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
+    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", BaniraIdentifier.of(BaniraCodex.MODID, "main_network"));
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;

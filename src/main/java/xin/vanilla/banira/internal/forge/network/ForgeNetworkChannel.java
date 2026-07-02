@@ -7,11 +7,11 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.SplitPacket;
-import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -25,8 +25,8 @@ public final class ForgeNetworkChannel {
     private final ResourceLocation channelName;
     private final String modId;
 
-    public static ForgeNetworkChannel create(String channelName, IIdentifier identifier) {
-        ResourceLocation id = identifier.create(channelName);
+    public static ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier) {
+        ResourceLocation id = new ResourceLocation(identifier.getNamespace(), channelName);
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
                 id,
                 () -> PROTOCOL_VERSION,

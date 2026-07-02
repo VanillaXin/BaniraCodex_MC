@@ -4,12 +4,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.forge.network.ForgeNetworkChannel;
@@ -31,7 +31,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
     private NetworkRegistryAccessor networkRegistry;
 
     @Override
-    public NetworkPacketRegistrar registrar(String channelName, IIdentifier identifier) {
+    public NetworkPacketRegistrar registrar(String channelName, BaniraIdentifier identifier) {
         ForgeNetworkChannel channel = create(channelName, identifier);
         return new NetworkPacketRegistrar() {
             @Override
@@ -96,7 +96,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
         return player instanceof ServerPlayerEntity && hasLocalChannel(channelId);
     }
 
-    private ForgeNetworkChannel create(String channelName, IIdentifier identifier) {
+    private ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier) {
         ForgeNetworkChannel channel = ForgeNetworkChannel.create(channelName, identifier);
         channels.put(channel.channelName(), channel);
         return channel;

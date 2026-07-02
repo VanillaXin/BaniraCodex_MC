@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.network;
 
 import org.junit.Test;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -26,8 +26,8 @@ public class NetworkHandlerTest {
         RecordingNetworkService service = new RecordingNetworkService();
         BaniraPlatforms.install(new TestBaniraPlatform().networkService(service));
 
-        NetworkHandler alpha = NetworkHandler.create("alpha", new TestIdentifier("network_test"));
-        NetworkHandler beta = NetworkHandler.create("beta", new TestIdentifier("network_test"));
+        NetworkHandler alpha = NetworkHandler.create("alpha", BaniraIdentifier.of("network_test", "alpha"));
+        NetworkHandler beta = NetworkHandler.create("beta", BaniraIdentifier.of("network_test", "beta"));
 
         alpha.register(FirstPacket.class, noopEncoder(), FirstPacket::new, noopHandler());
         alpha.register(SecondPacket.class, noopEncoder(), SecondPacket::new, noopHandler());
@@ -44,7 +44,7 @@ public class NetworkHandlerTest {
         RecordingNetworkService service = new RecordingNetworkService();
         BaniraPlatforms.install(new TestBaniraPlatform().networkService(service));
 
-        NetworkHandler handler = NetworkHandler.create("split", new TestIdentifier("network_test"));
+        NetworkHandler handler = NetworkHandler.create("split", BaniraIdentifier.of("network_test", "split"));
 
         handler.register(FirstPacket.class, noopEncoder(), FirstPacket::new, noopHandler());
         handler.registerSplit(TestSplitPacket.class, noopEncoder(), TestSplitPacket::new, noopHandler());
@@ -71,7 +71,7 @@ public class NetworkHandlerTest {
         private final Map<String, List<Registration>> registrations = new LinkedHashMap<>();
 
         @Override
-        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier) {
+        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
             registrations.computeIfAbsent(channelName, ignored -> new ArrayList<>());
             return new RecordingRegistrar(registrations.get(channelName));
         }
@@ -120,13 +120,6 @@ public class NetworkHandlerTest {
                                                           Function<BaniraPacketBuffer, MSG> decoder,
                                                           BiConsumer<MSG, BaniraNetworkContext> handler) {
             registrations.add(new Registration(packetId, packetClass));
-        }
-    }
-
-    private record TestIdentifier(String modId) implements IIdentifier {
-        @Override
-        public IIdentifier instance() {
-            return this;
         }
     }
 

@@ -218,7 +218,7 @@ public class ChildModApiUsageContractTest {
         private BaniraNetworkPacket serverPacket;
 
         @Override
-        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull xin.vanilla.banira.common.util.IIdentifier identifier) {
+        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
             throw new UnsupportedOperationException("registrar");
         }
 

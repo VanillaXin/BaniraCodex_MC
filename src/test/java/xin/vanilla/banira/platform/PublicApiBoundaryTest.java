@@ -34,6 +34,15 @@ public class PublicApiBoundaryTest {
         assertNoViolations("Public api/platform imports must stay loader-neutral.", violations);
     }
 
+    public void networkServiceDoesNotExposeLegacyIdentifierFactory() throws IOException {
+        Path networkService = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraNetworkService.java"));
+        String source = new String(Files.readAllBytes(networkService), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "common.util.IIdentifier", violations, "Network service registration must use api.BaniraIdentifier.");
+        addIfContains(source, " IIdentifier ", violations, "Network service registration must not expose IIdentifier.");
+        assertNoViolations("Network service registration should stay loader-neutral.", violations);
+    }
+
     @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));

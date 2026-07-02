@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.network;
 
-import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;
@@ -14,7 +15,7 @@ import xin.vanilla.banira.internal.network.packet.DimensionToClient;
 import java.util.ArrayList;
 
 public final class NetworkInit {
-    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", Identifier.id());
+    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", BaniraIdentifier.of(Banira.MOD_ID, "main_network"));
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;

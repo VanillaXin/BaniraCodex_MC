@@ -1,10 +1,10 @@
 package xin.vanilla.banira.platform;
 
 import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -16,7 +16,7 @@ public enum NoopNetworkService implements BaniraNetworkService {
     INSTANCE;
 
     @Override
-    public NetworkPacketRegistrar registrar(String channelName, IIdentifier identifier) {
+    public NetworkPacketRegistrar registrar(String channelName, BaniraIdentifier identifier) {
         return new NetworkPacketRegistrar() {
             @Override
             public <MSG extends INetworkPacket> void register(int packetId,

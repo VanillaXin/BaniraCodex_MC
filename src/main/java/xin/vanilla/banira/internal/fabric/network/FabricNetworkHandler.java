@@ -5,11 +5,11 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 
 import java.util.LinkedHashMap;
@@ -31,8 +31,8 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         this.channel = channel;
     }
 
-    public static FabricNetworkHandler create(String channelName, IIdentifier identifier) {
-        FabricNetworkHandler handler = new FabricNetworkHandler(identifier.create(channelName));
+    public static FabricNetworkHandler create(String channelName, BaniraIdentifier identifier) {
+        FabricNetworkHandler handler = new FabricNetworkHandler(new ResourceLocation(identifier.getNamespace(), channelName));
         FabricNetworkChannels.installDefault(handler);
         return handler;
     }

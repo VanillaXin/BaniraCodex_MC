@@ -2,7 +2,6 @@ package xin.vanilla.banira.api;
 
 import org.junit.Test;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -63,7 +62,7 @@ public class BaniraNetworkTest {
         private String playerChannelId;
 
         @Override
-        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier) {
+        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
             throw new UnsupportedOperationException("registrar");
         }
 

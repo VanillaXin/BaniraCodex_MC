@@ -2,8 +2,8 @@ package xin.vanilla.banira.internal.fabric.network;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 
@@ -17,7 +17,7 @@ public enum FabricBaniraNetworkService implements BaniraNetworkService {
 
     @Nonnull
     @Override
-    public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull IIdentifier identifier) {
+    public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
         return FabricNetworkHandler.create(channelName, identifier);
     }
 

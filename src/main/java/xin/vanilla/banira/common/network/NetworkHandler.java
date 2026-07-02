@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.network;
 
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.util.IIdentifier;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
@@ -22,7 +22,7 @@ public class NetworkHandler {
      * @param identifier  资源工厂
      * @return NetworkHandler 实例
      */
-    public static NetworkHandler create(String channelName, IIdentifier identifier) {
+    public static NetworkHandler create(String channelName, BaniraIdentifier identifier) {
         return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(channelName, identifier));
     }
 

@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.config;
 import lombok.Getter;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import xin.vanilla.banira.api.ConfigScope;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -19,7 +20,7 @@ public class ConfigHolder {
     private final String modId;
 
     private final String configName;
-    private final ModConfig.Type configType;
+    private final ConfigScope configScope;
     private final ModConfigSpec spec;
     private final List<ConfigEntryDescriptor> descriptors;
     private final Map<String, ModConfigSpec.ConfigValue<?>> valueMap;
@@ -41,13 +42,13 @@ public class ConfigHolder {
     @Nullable
     private ModConfig modConfig;
 
-    ConfigHolder(String modId, String configName, ModConfig.Type configType, ModConfigSpec spec,
+    ConfigHolder(String modId, String configName, ConfigScope configScope, ModConfigSpec spec,
                  List<ConfigEntryDescriptor> descriptors, Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
                  Map<String, String> categoryTooltips,
                  Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
         this.configName = configName;
-        this.configType = configType;
+        this.configScope = configScope != null ? configScope : ConfigScope.COMMON;
         this.spec = spec;
         this.descriptors = Collections.unmodifiableList(descriptors);
         this.valueMap = Collections.unmodifiableMap(valueMap);
@@ -125,14 +126,14 @@ public class ConfigHolder {
      * 是否为服务端配置
      */
     public boolean isServerConfig() {
-        return configType == ModConfig.Type.SERVER;
+        return configScope == ConfigScope.SERVER;
     }
 
     /**
      * 是否可同步至服务器（Common 与 Server 配置均可）
      */
     public boolean canSyncToServer() {
-        return configType == ModConfig.Type.SERVER || configType == ModConfig.Type.COMMON;
+        return configScope == ConfigScope.SERVER || configScope == ConfigScope.COMMON;
     }
 
     /**

@@ -38,6 +38,10 @@ public final class ServerNotificationTypeRegistry {
      * 在服务端注册一种通知类型（默认位置 {@link EnumPosition#TOP_RIGHT}、动画 {@link EnumMoveType#AUTO}）
      */
     public static void register(String typeId) {
+        registerInternal(typeId);
+    }
+
+    public static void registerInternal(String typeId) {
         KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
     }
 
@@ -45,6 +49,10 @@ public final class ServerNotificationTypeRegistry {
      * 注册类型并指定：客户端配置文件无该类型条目时的建议展示方式（登录同步）
      */
     public static void register(String typeId, EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
+        registerInternal(typeId, clientDefaultDisplayIfAbsent);
+    }
+
+    public static void registerInternal(String typeId, EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
         String key = NotificationTypeKeys.normalizeOrDefault(typeId);
         KNOWN.add(key);
         if (clientDefaultDisplayIfAbsent != null) {
@@ -56,6 +64,10 @@ public final class ServerNotificationTypeRegistry {
      * 在服务端注册通知类型并指定默认布局（用于仅传类型 id 的 {@code sendNotification} 重载）
      */
     public static void register(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation) {
+        registerInternal(typeId, defaultPosition, defaultAnimation);
+    }
+
+    public static void registerInternal(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation) {
         String key = NotificationTypeKeys.normalizeOrDefault(typeId);
         KNOWN.add(key);
         EnumPosition p = defaultPosition != null ? defaultPosition : FALLBACK_LAYOUT.position();
@@ -68,7 +80,12 @@ public final class ServerNotificationTypeRegistry {
      */
     public static void register(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation,
                                 EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
-        register(typeId, defaultPosition, defaultAnimation);
+        registerInternal(typeId, defaultPosition, defaultAnimation, clientDefaultDisplayIfAbsent);
+    }
+
+    public static void registerInternal(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation,
+                                        EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
+        registerInternal(typeId, defaultPosition, defaultAnimation);
         if (clientDefaultDisplayIfAbsent != null) {
             SYNC_CLIENT_DISPLAY_IF_ABSENT.put(NotificationTypeKeys.normalizeOrDefault(typeId), clientDefaultDisplayIfAbsent);
         }
@@ -78,10 +95,24 @@ public final class ServerNotificationTypeRegistry {
         KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
     }
 
+    public static boolean unregisterInternal(String typeId) {
+        String key = NotificationTypeKeys.normalizeOrDefault(typeId);
+        if (NotificationTypeKeys.DEFAULT.equals(key)) {
+            return false;
+        }
+        LAYOUT_DEFAULTS.remove(key);
+        SYNC_CLIENT_DISPLAY_IF_ABSENT.remove(key);
+        return KNOWN.remove(key);
+    }
+
     /**
      * 未单独 {@link #register(String, EnumPosition, EnumMoveType)} 时返回 {@link EnumPosition#TOP_RIGHT}
      */
     public static EnumPosition defaultPosition(String typeId) {
+        return defaultPositionInternal(typeId);
+    }
+
+    public static EnumPosition defaultPositionInternal(String typeId) {
         TypeLayoutDefaults d = LAYOUT_DEFAULTS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
         return d != null ? d.position() : FALLBACK_LAYOUT.position();
     }
@@ -90,6 +121,10 @@ public final class ServerNotificationTypeRegistry {
      * 未单独注册布局时返回 {@link EnumMoveType#AUTO}
      */
     public static EnumMoveType defaultAnimation(String typeId) {
+        return defaultAnimationInternal(typeId);
+    }
+
+    public static EnumMoveType defaultAnimationInternal(String typeId) {
         TypeLayoutDefaults d = LAYOUT_DEFAULTS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
         return d != null ? d.animation() : FALLBACK_LAYOUT.animation();
     }
@@ -98,6 +133,10 @@ public final class ServerNotificationTypeRegistry {
      * 发往客户端的排序副本
      */
     public static List<String> sortedSnapshot() {
+        return sortedSnapshotInternal();
+    }
+
+    public static List<String> sortedSnapshotInternal() {
         List<String> list = new ArrayList<>(KNOWN);
         Collections.sort(list);
         return list;

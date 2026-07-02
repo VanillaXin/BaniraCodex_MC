@@ -12,6 +12,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BiomeUtils;
 import xin.vanilla.banira.common.util.DimensionUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.neoforge.platform.NeoForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.packet.AdvancementToClient;
 import xin.vanilla.banira.internal.network.packet.BiomeToClient;
 import xin.vanilla.banira.internal.network.packet.DimensionToClient;
@@ -61,6 +62,8 @@ public final class NetworkInit {
         reg.playToClient(AdvancementToClient.TYPE, AdvancementToClient.STREAM_CODEC, NetworkInit::onAdvancementSplitFragment);
         reg.playToClient(DimensionToClient.TYPE, DimensionToClient.STREAM_CODEC, NetworkInit::onDimensionSplitFragment);
         reg.playToClient(BiomeToClient.TYPE, BiomeToClient.STREAM_CODEC, NetworkInit::onBiomeSplitFragment);
+
+        NeoForgeBaniraPlatform.registerPendingPayloads(event);
     }
 
     private static void onAdvancementSplitFragment(AdvancementToClient payload, IPayloadContext ctx) {

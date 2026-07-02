@@ -25,6 +25,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.IModFile;
 import org.objectweb.asm.Type;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
 import xin.vanilla.banira.client.gui.component.Notification;
@@ -554,13 +555,14 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
         }
 
         @Override
-        public ResourceLocation readResourceLocation() {
-            return delegate.readResourceLocation();
+        public BaniraIdentifier readIdentifier() {
+            return BaniraIdentifier.parse(delegate.readResourceLocation().toString());
         }
 
         @Override
-        public void writeResourceLocation(ResourceLocation value) {
-            delegate.writeResourceLocation(value);
+        public void writeIdentifier(BaniraIdentifier value) {
+            BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
+            delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
         }
     }
 

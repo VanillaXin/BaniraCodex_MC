@@ -14,6 +14,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
@@ -430,13 +431,14 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         }
 
         @Override
-        public ResourceLocation readResourceLocation() {
-            return delegate.readResourceLocation();
+        public BaniraIdentifier readIdentifier() {
+            return BaniraIdentifier.parse(delegate.readResourceLocation().toString());
         }
 
         @Override
-        public void writeResourceLocation(ResourceLocation value) {
-            delegate.writeResourceLocation(value);
+        public void writeIdentifier(BaniraIdentifier value) {
+            BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
+            delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
         }
     }
 

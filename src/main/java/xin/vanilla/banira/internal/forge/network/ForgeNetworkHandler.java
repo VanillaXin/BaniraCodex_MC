@@ -2,11 +2,12 @@ package xin.vanilla.banira.internal.forge.network;
 
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -23,9 +24,9 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
         this.channel = channel;
     }
 
-    public static ForgeNetworkHandler create(String channelName, IIdentifier identifier) {
+    public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier) {
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                identifier.create(channelName),
+                new ResourceLocation(identifier.getNamespace(), channelName),
                 () -> PROTOCOL_VERSION,
                 clientVersion -> true,
                 serverVersion -> true

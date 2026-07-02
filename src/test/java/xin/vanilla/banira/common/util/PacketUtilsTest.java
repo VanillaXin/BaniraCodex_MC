@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
@@ -101,7 +102,7 @@ public class PacketUtilsTest {
 
         @Override
         public @Nonnull xin.vanilla.banira.common.network.NetworkPacketRegistrar registrar(@Nonnull String channelName,
-                                                                                           @Nonnull IIdentifier identifier) {
+                                                                                           @Nonnull BaniraIdentifier identifier) {
             throw new UnsupportedOperationException("PacketUtilsTest does not register packets");
         }
 

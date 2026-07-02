@@ -34,6 +34,28 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
+        Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
+        String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "default String minecraftVersion", violations, "minecraftVersion must be implemented per branch.");
+        addIfContains(source, "default BaniraPathService", violations, "pathService must be implemented by the loader adapter.");
+        addIfContains(source, "default BaniraInputService", violations, "inputService must be implemented by the loader adapter.");
+        addIfContains(source, "xin.vanilla.banira.internal", violations, "root platform must not depend on internal packages.");
+        assertNoViolations("BaniraPlatform should be a pure contract.", violations);
+    }
+
+    @Test
+    public void networkServiceDoesNotExposeLegacyIdentifierFactory() throws IOException {
+        Path networkService = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraNetworkService.java"));
+        String source = new String(Files.readAllBytes(networkService), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "common.util.IIdentifier", violations, "Network service registration must use api.BaniraIdentifier.");
+        addIfContains(source, " IIdentifier ", violations, "Network service registration must not expose IIdentifier.");
+        assertNoViolations("Network service registration should stay loader-neutral.", violations);
+    }
+
+    @Test
     public void sharedCommonAndClientPackagesDoNotImportLoaderApis() throws IOException {
         List<String> violations = new ArrayList<>();
         forEachSharedPackageFile(file -> {
@@ -51,18 +73,6 @@ public class PublicApiBoundaryTest {
             }
         });
         assertNoViolations("Shared common/client packages must keep loader APIs in internal adapters.", violations);
-    }
-
-    @Test
-    public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
-        Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
-        String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);
-        List<String> violations = new ArrayList<>();
-        addIfContains(source, "default String minecraftVersion", violations, "minecraftVersion must be implemented per branch.");
-        addIfContains(source, "default BaniraPathService", violations, "pathService must be implemented by the loader adapter.");
-        addIfContains(source, "default BaniraInputService", violations, "inputService must be implemented by the loader adapter.");
-        addIfContains(source, "xin.vanilla.banira.internal", violations, "root platform must not depend on internal packages.");
-        assertNoViolations("BaniraPlatform should be a pure contract.", violations);
     }
 
     private static void forEachPublicApiFile(ThrowingPathConsumer consumer) throws IOException {

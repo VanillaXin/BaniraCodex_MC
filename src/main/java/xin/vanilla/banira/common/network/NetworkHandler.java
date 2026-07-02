@@ -2,11 +2,12 @@ package xin.vanilla.banira.common.network;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.util.IIdentifier;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -14,7 +15,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * 网络处理器
+ * Forge 1.20.1 network channel wrapper kept behind Banira's neutral API boundary.
  */
 public class NetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
@@ -23,19 +24,12 @@ public class NetworkHandler {
     @Getter
     private final SimpleChannel channel;
 
-    /**
-     * 创建网络处理器实例
-     *
-     * @param channelName 通道名称
-     * @param IIdentifier 资源工厂
-     * @return NetworkHandler 实例
-     */
-    public static NetworkHandler create(String channelName, IIdentifier IIdentifier) {
+    public static NetworkHandler create(String channelName, BaniraIdentifier identifier) {
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-                IIdentifier.create(channelName),
+                new ResourceLocation(identifier.getNamespace(), channelName),
                 () -> PROTOCOL_VERSION,
-                clientVersion -> true,      // 客户端版本始终有效
-                serverVersion -> true       // 服务端版本始终有效
+                clientVersion -> true,
+                serverVersion -> true
         );
         return new NetworkHandler(channel);
     }
@@ -44,15 +38,6 @@ public class NetworkHandler {
         this.channel = channel;
     }
 
-    /**
-     * 注册网络包
-     *
-     * @param packetClass 包类
-     * @param encoder     编码器
-     * @param decoder     解码器
-     * @param handler     处理器
-     * @param <MSG>       包类型
-     */
     public <MSG extends INetworkPacket> void register(Class<MSG> packetClass,
                                                       BiConsumer<MSG, FriendlyByteBuf> encoder,
                                                       Function<FriendlyByteBuf, MSG> decoder,
@@ -66,27 +51,15 @@ public class NetworkHandler {
         );
     }
 
-    /**
-     * 注册网络包
-     *
-     * @param packetClass 包类
-     * @param encoder     编码器
-     * @param decoder     解码器
-     * @param handler     处理器
-     * @param <MSG>       包类型
-     */
     public <MSG extends SplitPacket & INetworkPacket> void registerSplit(
             Class<MSG> packetClass,
             BiConsumer<MSG, FriendlyByteBuf> encoder,
             Function<FriendlyByteBuf, MSG> decoder,
             BiConsumer<MSG, Supplier<NetworkEvent.Context>> handler) {
         BiConsumer<MSG, Supplier<NetworkEvent.Context>> wrappedHandler = (packet, ctx) -> {
-            // 保存原始上下文
-            final Supplier<NetworkEvent.Context> contextSupplier = ctx;
-            // 处理分包逻辑
+            Supplier<NetworkEvent.Context> contextSupplier = ctx;
             List<MSG> completePackets = SplitPacket.handle(packet);
             if (completePackets != null && !completePackets.isEmpty()) {
-                // 所有分包已接收完成，合并并调用处理器
                 MSG mergedPacket = SplitPacket.merge(completePackets);
                 if (mergedPacket != null) {
                     ctx.get().enqueueWork(() -> handler.accept(mergedPacket, contextSupplier));

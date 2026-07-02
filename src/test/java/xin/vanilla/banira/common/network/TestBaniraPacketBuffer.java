@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.network;
 
-import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.api.BaniraIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,12 +78,12 @@ public final class TestBaniraPacketBuffer implements BaniraPacketBuffer {
     }
 
     @Override
-    public ResourceLocation readResourceLocation() {
-        return (ResourceLocation) values.get(cursor++);
+    public BaniraIdentifier readIdentifier() {
+        return (BaniraIdentifier) values.get(cursor++);
     }
 
     @Override
-    public void writeResourceLocation(ResourceLocation value) {
+    public void writeIdentifier(BaniraIdentifier value) {
         values.add(value);
     }
 }

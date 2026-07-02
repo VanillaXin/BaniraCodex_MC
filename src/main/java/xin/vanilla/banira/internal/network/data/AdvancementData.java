@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
@@ -54,7 +55,7 @@ public class AdvancementData {
     }
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
-        ResourceLocation id = buffer.readResourceLocation();
+        ResourceLocation id = toResourceLocation(buffer.readIdentifier());
         return new AdvancementData(id, DisplayInfo.fromNetwork(nativeBuffer(buffer)));
     }
 
@@ -78,8 +79,16 @@ public class AdvancementData {
     }
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
-        buffer.writeResourceLocation(id);
+        buffer.writeIdentifier(toBaniraIdentifier(id));
         displayInfo.serializeToNetwork(nativeBuffer(buffer));
+    }
+
+    private static BaniraIdentifier toBaniraIdentifier(ResourceLocation value) {
+        return BaniraIdentifier.of(value.getNamespace(), value.getPath());
+    }
+
+    private static ResourceLocation toResourceLocation(BaniraIdentifier value) {
+        return new ResourceLocation(value.getNamespace(), value.getPath());
     }
 
     private static FriendlyByteBuf nativeBuffer(BaniraPacketBuffer buffer) {

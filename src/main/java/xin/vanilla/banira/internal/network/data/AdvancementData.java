@@ -11,6 +11,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -51,9 +54,9 @@ public class AdvancementData {
         return new AdvancementData(advancement.getId(), displayInfo);
     }
 
-    public static AdvancementData readFromBuffer(FriendlyByteBuf buffer) {
-        ResourceLocation id = buffer.readResourceLocation();
-        return new AdvancementData(id, DisplayInfo.fromNetwork(buffer));
+    public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
+        ResourceLocation id = toResourceLocation(buffer.readIdentifier());
+        return new AdvancementData(id, DisplayInfo.fromNetwork(nativeBuffer(buffer)));
     }
 
     public static DisplayInfo emptyDisplayInfo() {
@@ -75,9 +78,24 @@ public class AdvancementData {
                 , false, false, false);
     }
 
-    public void writeToBuffer(FriendlyByteBuf buffer) {
-        buffer.writeResourceLocation(id);
-        displayInfo.serializeToNetwork(buffer);
+    public void writeToBuffer(BaniraPacketBuffer buffer) {
+        buffer.writeIdentifier(toBaniraIdentifier(id));
+        displayInfo.serializeToNetwork(nativeBuffer(buffer));
+    }
+
+    private static BaniraIdentifier toBaniraIdentifier(ResourceLocation value) {
+        return BaniraIdentifier.of(value.getNamespace(), value.getPath());
+    }
+
+    private static ResourceLocation toResourceLocation(BaniraIdentifier value) {
+        return new ResourceLocation(value.getNamespace(), value.getPath());
+    }
+
+    private static FriendlyByteBuf nativeBuffer(BaniraPacketBuffer buffer) {
+        if (buffer instanceof NativePacketBufferAccess) {
+            return (FriendlyByteBuf) ((NativePacketBufferAccess<?>) buffer).nativeBuffer();
+        }
+        throw new IllegalArgumentException("BaniraPacketBuffer does not expose a native FriendlyByteBuf");
     }
 
 

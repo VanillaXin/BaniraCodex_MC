@@ -13,6 +13,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
@@ -28,7 +31,6 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.platform.*;
@@ -47,6 +49,7 @@ import java.util.function.Supplier;
  * Forge 1.20.1 的 platform 适配层；公共 API 只依赖这里，不直接触碰 Forge/FML 类型。
  */
 public final class ForgeBaniraPlatform implements BaniraPlatform {
+    private static final String NETWORK_PROTOCOL_VERSION = "1";
 
     private static final BaniraPathService PATHS = new ForgePathService();
     private static final BaniraConfigService CONFIGS = new ForgeConfigService();
@@ -304,27 +307,40 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     private static final class ForgeNetworkService implements BaniraNetworkService {
+        private static SimpleChannel defaultChannel;
+
         @Nonnull
         @Override
         public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
-            return new ForgeNetworkPacketRegistrar(NetworkHandler.create(channelName, identifier));
+            SimpleChannel channel = NetworkRegistry.newSimpleChannel(
+                    new ResourceLocation(identifier.getNamespace(), channelName),
+                    () -> NETWORK_PROTOCOL_VERSION,
+                    clientVersion -> true,
+                    serverVersion -> true
+            );
+            if (defaultChannel == null) {
+                defaultChannel = channel;
+            }
+            return new ForgeNetworkPacketRegistrar(channel);
         }
 
         @Override
         public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
-            PacketUtils.sendPacketToServer((xin.vanilla.banira.common.api.INetworkPacket) packet);
+            if (defaultChannel != null) {
+                defaultChannel.sendToServer(packet);
+            }
         }
 
         @Override
         public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                PacketUtils.sendPacketToPlayer((xin.vanilla.banira.common.api.INetworkPacket) packet, serverPlayer);
+            if (defaultChannel != null && player instanceof ServerPlayer serverPlayer) {
+                defaultChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
             }
         }
 
         @Override
         public boolean hasDefaultChannel() {
-            return true;
+            return defaultChannel != null;
         }
 
         @Override
@@ -339,10 +355,10 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     private static final class ForgeNetworkPacketRegistrar implements NetworkPacketRegistrar {
-        private final NetworkHandler delegate;
+        private final SimpleChannel channel;
 
-        private ForgeNetworkPacketRegistrar(NetworkHandler delegate) {
-            this.delegate = delegate;
+        private ForgeNetworkPacketRegistrar(SimpleChannel channel) {
+            this.channel = channel;
         }
 
         @Override
@@ -352,7 +368,9 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
                 java.util.function.BiConsumer<MSG, BaniraPacketBuffer> encoder,
                 java.util.function.Function<BaniraPacketBuffer, MSG> decoder,
                 java.util.function.BiConsumer<MSG, BaniraNetworkContext> handler) {
-            delegate.register(
+            // Forge 20.1 仍使用 SimpleChannel；转换只允许停留在 adapter 内部。
+            channel.registerMessage(
+                    packetId,
                     packetClass,
                     (packet, buffer) -> encoder.accept(packet, new ForgePacketBuffer(buffer)),
                     buffer -> decoder.apply(new ForgePacketBuffer(buffer)),

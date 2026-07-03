@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
+ * 配置编辑界面，支持可视化编辑 Banira 抽象配置模型。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
@@ -1033,13 +1033,14 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        double delta = deltaY != 0 ? deltaY : deltaX;
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
                 && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
             return true;
         }
-        if (super.mouseScrolled(mouseX, mouseY, delta)) {
+        if (super.mouseScrolled(mouseX, mouseY, deltaX, deltaY)) {
             return true;
         }
         if (scrollbar != null && delta != 0) {

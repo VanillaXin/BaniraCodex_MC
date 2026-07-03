@@ -86,7 +86,7 @@ public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacke
     @Override
     public void writeIdentifier(BaniraIdentifier value) {
         BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
-        delegate.writeResourceLocation(new ResourceLocation(identifier.getNamespace(), identifier.getPath()));
+        delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
     }
 
     @Override

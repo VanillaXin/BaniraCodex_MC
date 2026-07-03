@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -53,6 +55,17 @@ public final class EffectUtils {
         return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
     }
 
+    @Nullable
+    public static ResourceLocation getEffectRegistry(Holder<MobEffect> holder) {
+        if (holder == null) return null;
+        return holder.unwrapKey().map(ResourceKey::location).orElse(null);
+    }
+
+    public static String getEffectRegistryString(Holder<MobEffect> holder) {
+        ResourceLocation registryName = getEffectRegistry(holder);
+        return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
+    }
+
     /**
      * 获取效果实例的注册ID
      */
@@ -91,7 +104,7 @@ public final class EffectUtils {
      */
     public static String getEffectDisplayName(MobEffectInstance effectInstance) {
         if (effectInstance == null) return "";
-        return getEffectDisplayName(effectInstance.getEffect());
+        return getEffectDisplayName(effectInstance.getEffect().value());
     }
 
     // endregion
@@ -198,7 +211,7 @@ public final class EffectUtils {
         if (effect == null) {
             return new MobEffectInstance(MobEffects.LUCK, duration, amplifier);
         }
-        return new MobEffectInstance(effect, duration, amplifier);
+        return new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), duration, amplifier);
     }
 
     // endregion
@@ -258,11 +271,11 @@ public final class EffectUtils {
             Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
                 Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-                for (MobEffect e : player.getActiveEffectsMap().keySet()) {
+                for (Holder<MobEffect> e : player.getActiveEffectsMap().keySet()) {
                     if (e == null) continue;
                     ResourceLocation rl = getEffectRegistry(e);
                     if (rl == null) rl = UNKNOWN_EFFECT;
-                    byId.putIfAbsent(rl, e);
+                    byId.putIfAbsent(rl, e.value());
                 }
                 result.addAll(byId.values());
             }

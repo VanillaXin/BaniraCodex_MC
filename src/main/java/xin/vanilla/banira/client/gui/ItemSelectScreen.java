@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -563,7 +564,8 @@ public class ItemSelectScreen extends BaniraScreen {
                             .defaultValue(itemNbtJsonString)
                             .validator((input) -> {
                                 try {
-                                    if (!ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(this.selectedItem.getItem()) + input.value()).hasTag()) {
+                                    var cd = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(this.selectedItem.getItem()) + input.value()).get(DataComponents.CUSTOM_DATA);
+                                    if (cd == null || cd.isEmpty()) {
                                         throw new RuntimeException();
                                     }
                                 } catch (Exception e) {

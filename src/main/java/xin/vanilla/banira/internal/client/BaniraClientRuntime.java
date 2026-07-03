@@ -161,7 +161,7 @@ public final class BaniraClientRuntime {
         return player.connection.getOnlinePlayers().stream()
                 .filter(info -> info.getProfile().getId().equals(uuid))
                 .findFirst()
-                .map(info -> info.getSkinLocation())
+                .map(info -> info.getSkin().texture())
                 .orElse(null);
     }
 

@@ -104,7 +104,8 @@ public final class CommandUtils {
                 commandSourceStack = commandSourceStack.withSuppressedOutput();
             }
             if (server != null) {
-                result = server.getCommands().performPrefixedCommand(commandSourceStack, command) > 0;
+                server.getCommands().performPrefixedCommand(commandSourceStack, command);
+                result = true;
             }
         } catch (Exception e) {
             LOGGER.error("Failed to execute command: {}", command, e);

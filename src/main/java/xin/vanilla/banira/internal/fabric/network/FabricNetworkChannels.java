@@ -57,7 +57,7 @@ public final class FabricNetworkChannels {
                 && !PlayerUtils.isRemoteServerModInstalled(BaniraClientRuntime.localPlayer(), handler.channel().getNamespace())) {
             return;
         }
-        ClientPlayNetworking.send(handler.channel(), handler.encode(packet));
+        ClientPlayNetworking.send(handler.encodePayload(packet));
     }
 
     public static void sendToPlayer(BaniraNetworkPacket packet, ServerPlayer player) {
@@ -68,7 +68,7 @@ public final class FabricNetworkChannels {
         if (!PlayerUtils.isRemoteClientModInstalled(player, handler.channel().getNamespace())) {
             return;
         }
-        ServerPlayNetworking.send(player, handler.channel(), handler.encode(packet));
+        ServerPlayNetworking.send(player, handler.encodePayload(packet));
     }
 
     public static boolean hasDefaultChannel() {

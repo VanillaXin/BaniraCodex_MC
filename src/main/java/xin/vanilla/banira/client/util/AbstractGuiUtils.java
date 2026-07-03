@@ -128,13 +128,12 @@ public final class AbstractGuiUtils {
         RenderSystem.setShaderTexture(0, texture);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         Matrix4f matrix4f = poseStack.last().pose();
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.vertex(matrix4f, (float) x0, (float) y0, (float) z).uv(u0, v0).endVertex();
-        bufferBuilder.vertex(matrix4f, (float) x0, (float) y1, (float) z).uv(u0, v1).endVertex();
-        bufferBuilder.vertex(matrix4f, (float) x1, (float) y1, (float) z).uv(u1, v1).endVertex();
-        bufferBuilder.vertex(matrix4f, (float) x1, (float) y0, (float) z).uv(u1, v0).endVertex();
-        BufferUploader.drawWithShader(bufferBuilder.end());
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferBuilder.addVertex(matrix4f, (float) x0, (float) y0, (float) z).setUv(u0, v0);
+        bufferBuilder.addVertex(matrix4f, (float) x0, (float) y1, (float) z).setUv(u0, v1);
+        bufferBuilder.addVertex(matrix4f, (float) x1, (float) y1, (float) z).setUv(u1, v1);
+        bufferBuilder.addVertex(matrix4f, (float) x1, (float) y0, (float) z).setUv(u1, v0);
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
     private static void blitInner(
@@ -668,8 +667,7 @@ public final class AbstractGuiUtils {
         setupBlendRender();
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
         addVertexWithColor(builder, m4, x1Top, y1Top, 0, color);
         addVertexWithColor(builder, m4, x2Top, y2Top, 0, color);
@@ -679,7 +677,7 @@ public final class AbstractGuiUtils {
         addVertexWithColor(builder, m4, x2Bottom, y2Bottom, 0, color);
         addVertexWithColor(builder, m4, x1Bottom, y1Bottom, 0, color);
 
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -727,8 +725,7 @@ public final class AbstractGuiUtils {
         }
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleRange = endRad - startRad;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -743,7 +740,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -767,8 +764,7 @@ public final class AbstractGuiUtils {
         }
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleRange = endRad - startRad;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -793,7 +789,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     // endregion 绘制形状
@@ -835,15 +831,14 @@ public final class AbstractGuiUtils {
         setupBlendRender();
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         addVertexWithColor(builder, m4, x + width, y, 0, color);
         addVertexWithColor(builder, m4, x, y, 0, color);
         addVertexWithColor(builder, m4, x, y + height, 0, color);
         addVertexWithColor(builder, m4, x + width, y + height, 0, color);
 
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -870,8 +865,7 @@ public final class AbstractGuiUtils {
         float half = dotS * 0.5f;
         setupBlendRender();
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         for (int[] g : NINE_DOT_CLOSE_ICON_GRID) {
             float cx = centerX + g[0] * step;
             float cy = centerY + g[1] * step;
@@ -882,7 +876,7 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, x0, y0 + dotS, 0, argb);
             addVertexWithColor(builder, m4, x0 + dotS, y0 + dotS, 0, argb);
         }
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1338,14 +1332,8 @@ public final class AbstractGuiUtils {
 
     // region 绘制圆
 
-    private static void setColor(BufferBuilder builder, int argb) {
-        builder.color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
-    }
-
     private static void addVertexWithColor(BufferBuilder builder, Matrix4f m4, float x, float y, float z, int argb) {
-        builder.vertex(m4, x, y, z);
-        setColor(builder, argb);
-        builder.endVertex();
+        builder.addVertex(m4, x, y, z).setColor((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
     }
 
     /**
@@ -1370,8 +1358,8 @@ public final class AbstractGuiUtils {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
     }
 
-    private static void finishBlendRender() {
-        Tesselator.getInstance().end();
+    private static void finishBlendRender(BufferBuilder builder) {
+        BufferUploader.drawWithShader(builder.buildOrThrow());
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
     }
@@ -1426,10 +1414,9 @@ public final class AbstractGuiUtils {
         else verts.add(new float[]{x, y});
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
         setupBlendRender();
         RenderSystem.disableCull();
-        builder.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
         float centerX = x + w * 0.5f;
         float centerY = y + h * 0.5f;
@@ -1444,7 +1431,7 @@ public final class AbstractGuiUtils {
             }
         }
 
-        Tesselator.getInstance().end();
+        BufferUploader.drawWithShader(builder.buildOrThrow());
         RenderSystem.enableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -1484,8 +1471,7 @@ public final class AbstractGuiUtils {
         if (radius <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleStep = 2.0 * Math.PI / segments;
         float[] xCoords = new float[segments + 1];
@@ -1507,7 +1493,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1524,8 +1510,7 @@ public final class AbstractGuiUtils {
         if (radius <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         float innerRadius = Math.max(0, radius - lineWidth);
         double angleStep = 2.0 * Math.PI / segments;
@@ -1539,7 +1524,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1557,8 +1542,7 @@ public final class AbstractGuiUtils {
         if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleStep = 2.0 * Math.PI / segments;
         float[] xCoords = new float[segments + 1];
@@ -1580,7 +1564,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1598,8 +1582,7 @@ public final class AbstractGuiUtils {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         float innerRadiusX = Math.max(0, radiusX - lineWidth);
         float innerRadiusY = Math.max(0, radiusY - lineWidth);
@@ -1614,7 +1597,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1655,8 +1638,7 @@ public final class AbstractGuiUtils {
         if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleStep = 2.0 * Math.PI / segments;
         float cosRot = (float) Math.cos(rotation);
@@ -1683,7 +1665,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1724,8 +1706,7 @@ public final class AbstractGuiUtils {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         float innerRadiusX = Math.max(0, radiusX - lineWidth);
         float innerRadiusY = Math.max(0, radiusY - lineWidth);
@@ -1745,7 +1726,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1788,8 +1769,7 @@ public final class AbstractGuiUtils {
         if (radius <= 0 || segments < 2) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double angleRange = endAngle - startAngle;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -1814,7 +1794,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1857,8 +1837,7 @@ public final class AbstractGuiUtils {
         if (radius <= 0 || lineWidth <= 0 || segments < 2) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         float innerRadius = Math.max(0, radius - lineWidth);
         double angleRange = endAngle - startAngle;
@@ -1874,7 +1853,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1891,8 +1870,7 @@ public final class AbstractGuiUtils {
         if (radius <= 0 || sides < 3) return;
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         double rotationRad = Math.toRadians(rotation);
         double angleStep = 2.0 * Math.PI / sides;
@@ -1920,7 +1898,7 @@ public final class AbstractGuiUtils {
         addVertexWithColor(builder, m4, centerX, centerY, 0, color);
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     /**
@@ -1941,8 +1919,7 @@ public final class AbstractGuiUtils {
         float innerRadius = Math.max(0, radius - borderWidth);
 
         Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
         // 绘制每条边的边框
         for (int i = 0; i <= sides; i++) {
@@ -1954,7 +1931,7 @@ public final class AbstractGuiUtils {
         }
 
         setupBlendRender();
-        finishBlendRender();
+        finishBlendRender(builder);
     }
 
     // endregion 绘制圆

@@ -73,7 +73,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         });
         HudRenderCallback.EVENT.register((stack, tickDelta) -> {
             if (Minecraft.getInstance().screen == null) {
-                BaniraClientOverlayBridge.renderHud(stack, tickDelta);
+                BaniraClientOverlayBridge.renderHud(stack, tickDelta.getGameTimeDeltaPartialTick(false));
             }
         });
         ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {

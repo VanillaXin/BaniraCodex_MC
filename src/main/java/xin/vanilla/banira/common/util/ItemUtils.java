@@ -3,6 +3,8 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -12,8 +14,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.component.CustomData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
@@ -168,11 +172,15 @@ public final class ItemUtils {
         return hoverName.getString();
     }
 
+    public static net.minecraft.network.chat.Component getItemCustomName(@NonNull ItemStack itemStack) {
+        return itemStack.getComponents().get(DataComponents.CUSTOM_NAME);
+    }
+
     public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
         String result = "";
-        CompoundTag tag = itemStack.getTagElement("display");
-        if (tag != null && tag.contains("Name", 8)) {
-            result = tag.getString("Name");
+        net.minecraft.network.chat.Component name = getItemCustomName(itemStack);
+        if (name != null && BaniraCodex.serverInstance().val()) {
+            result = net.minecraft.network.chat.Component.Serializer.toJson(name, BaniraCodex.serverInstance().key().registryAccess());
         }
         return result;
     }
@@ -181,7 +189,9 @@ public final class ItemUtils {
         net.minecraft.network.chat.Component result = null;
         if (StringUtils.isNotNullOrEmpty(json)) {
             try {
-                result = net.minecraft.network.chat.Component.Serializer.fromJson(json);
+                result = BaniraCodex.serverInstance().val()
+                        ? net.minecraft.network.chat.Component.Serializer.fromJson(json, BaniraCodex.serverInstance().key().registryAccess())
+                        : null;
             } catch (Exception e) {
                 LOGGER.error("Invalid unsafe item name: {}", json, e);
             }
@@ -200,8 +210,10 @@ public final class ItemUtils {
      */
     public static boolean hasCustomTag(String modId, ItemStack item) {
         if (item == null) return false;
-        CompoundTag tag = item.getTag();
-        return tag != null && tag.contains(modId);
+        DataComponentMap components = item.getComponents();
+        return !components.isEmpty()
+                && components.has(DataComponents.CUSTOM_DATA)
+                && components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().contains(modId);
     }
 
     /**
@@ -210,14 +222,14 @@ public final class ItemUtils {
      * @param modId 模组ID
      */
     public static CompoundTag getCustomTag(String modId, @NonNull ItemStack item) {
-        CompoundTag tag = item.getTag();
-        if (tag == null) {
-            tag = new CompoundTag();
-            item.setTag(tag);
+        if (!hasCustomTag(modId, item)) {
+            CompoundTag tag = new CompoundTag();
+            CompoundTag modTag = new CompoundTag();
+            tag.put(modId, modTag);
+            item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            return modTag;
         }
-        if (!tag.contains(modId)) {
-            tag.put(modId, new CompoundTag());
-        }
+        CompoundTag tag = item.getComponents().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.getCompound(modId);
     }
 
@@ -227,12 +239,14 @@ public final class ItemUtils {
      * @param modId 模组ID
      */
     public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag customTag) {
-        CompoundTag tag = item.getTag();
-        if (tag == null) {
+        CompoundTag tag;
+        if (!hasCustomTag(modId, item)) {
             tag = new CompoundTag();
-            item.setTag(tag);
+        } else {
+            tag = item.getComponents().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         }
         tag.put(modId, customTag);
+        item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
     /**
@@ -242,11 +256,16 @@ public final class ItemUtils {
      */
     public static CompoundTag clearCustomTag(String modId, ItemStack item) {
         if (item == null) return null;
-        CompoundTag tag = item.getTag();
-        if (tag != null) {
-            tag.remove(modId);
+        DataComponentMap components = item.getComponents();
+        if (!components.isEmpty() && components.has(DataComponents.CUSTOM_DATA)) {
+            CompoundTag tag = components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+            if (!tag.isEmpty() && tag.contains(modId)) {
+                tag.remove(modId);
+                item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            }
+            return tag;
         }
-        return tag;
+        return null;
     }
 
     /**
@@ -254,9 +273,12 @@ public final class ItemUtils {
      */
     public static void trimCustomTag(ItemStack item) {
         if (item == null) return;
-        CompoundTag tag = item.getTag();
-        if (tag != null && tag.isEmpty()) {
-            item.setTag(null);
+        DataComponentMap components = item.getComponents();
+        if (!components.isEmpty() && components.has(DataComponents.CUSTOM_DATA)) {
+            CompoundTag tag = components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+            if (tag.isEmpty()) {
+                item.remove(DataComponents.CUSTOM_DATA);
+            }
         }
     }
 
@@ -267,7 +289,7 @@ public final class ItemUtils {
         if (item == null) return;
         CompoundTag tag = clearCustomTag(modId, item);
         if (tag != null && tag.isEmpty()) {
-            item.setTag(null);
+            item.remove(DataComponents.CUSTOM_DATA);
         }
     }
 
@@ -302,7 +324,7 @@ public final class ItemUtils {
         if (!areItemsEqual(stack1, stack2)) return false;
         // if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
-        return ItemStack.isSameItemSameTags(stack1, stack2);
+        return ItemStack.isSameItemSameComponents(stack1, stack2);
     }
 
     /**
@@ -434,7 +456,7 @@ public final class ItemUtils {
             ItemStack stack = new ItemStack(item);
             if (brace >= 0) {
                 CompoundTag extra = TagParser.parseTag(k.substring(brace));
-                stack.setTag(extra);
+                CustomData.set(DataComponents.CUSTOM_DATA, stack, extra);
             }
             return stack;
         } catch (CommandSyntaxException e) {
@@ -458,7 +480,7 @@ public final class ItemUtils {
         int count = root.contains("Count") ? root.getInt("Count") : (root.contains("count") ? root.getInt("count") : 1);
         ItemStack stack = new ItemStack(item, Math.max(1, count));
         if (root.contains("tag")) {
-            stack.setTag(root.getCompound("tag"));
+            CustomData.set(DataComponents.CUSTOM_DATA, stack, root.getCompound("tag"));
         }
         return stack;
     }
@@ -491,9 +513,10 @@ public final class ItemUtils {
      * 将物的的NBT序列化为字符串
      */
     public static String serializeItemStackTag(ItemStack itemStack) {
+        CustomData customData = itemStack.get(DataComponents.CUSTOM_DATA);
         String result = "";
-        if (itemStack.hasTag() && itemStack.getTag() != null) {
-            result = itemStack.getTag().toString();
+        if (customData != null && !customData.isEmpty()) {
+            result = customData.copyTag().toString();
         }
         return result;
     }
@@ -641,7 +664,9 @@ public final class ItemUtils {
             try {
                 Player player = ClientRuntimeBridge.localPlayer();
                 if (player != null) {
+                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     List<net.minecraft.network.chat.Component> tooltip = stack.getTooltipLines(
+                            ctx,
                             player,
                             TooltipFlag.Default.NORMAL
                     );
@@ -909,7 +934,7 @@ public final class ItemUtils {
             copy.setCount(stack.getCount());
 
             // 如果插槽中的物品是目标物品
-            if (ItemStack.isSameItemSameTags(stack, copy)) {
+            if (ItemStack.isSameItemSameComponents(stack, copy)) {
                 // 获取当前物品堆叠的数量
                 int stackSize = stack.getCount();
 
@@ -1086,7 +1111,9 @@ public final class ItemUtils {
                 // 获取基础tooltip
                 List<net.minecraft.network.chat.Component> baseTooltip = new ArrayList<>();
                 if (player != null) {
+                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     baseTooltip.addAll(itemStack.getTooltipLines(
+                            ctx,
                             player,
                             advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
                     ));

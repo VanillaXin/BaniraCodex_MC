@@ -11,17 +11,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
-import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -144,17 +144,17 @@ public abstract class BaniraScreen extends Screen {
     }
 
     public void renderButtons(GuiGraphics graphics, double mouseX, double mouseY, float partialTicks) {
-        this.children().forEach(child -> {
-            if (child instanceof net.minecraft.client.gui.components.Renderable renderable) {
-                renderable.render(graphics, (int) mouseX, (int) mouseY, partialTicks);
+        for (IWidget widget : widgets) {
+            if (widget.visible() && widget.enabled() && widget.parent() == null) {
+                widget.render(graphics, partialTicks);
             }
-        });
+        }
     }
 
     @Override
-    public void renderBackground(@Nonnull GuiGraphics graphics) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft != null && this.minecraft.level != null) {
-            super.renderBackground(graphics);
+            super.renderBackground(graphics, mouseX, mouseY, partialTick);
         } else {
             BaniraColorConfig t = getEffectiveTheme();
             graphics.fillGradient(0, 0, this.width, this.height, t.bgPrimary(), t.bgSecondary());
@@ -365,7 +365,8 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        double delta = deltaY != 0 ? deltaY : deltaX;
         MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
         this.cursor.mouseScrolled(scrollEvent);
 
@@ -393,7 +394,7 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .delta(delta);
         onMouseScrolled(args);
-        return args.consumed() || super.mouseScrolled(mouseX, mouseY, delta);
+        return args.consumed() || super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 
     /**

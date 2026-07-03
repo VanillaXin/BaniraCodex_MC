@@ -9,6 +9,8 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -24,7 +26,12 @@ public final class BaniraItemRenderBridge {
     }
 
     public static List<Component> tooltipLines(@Nonnull ItemStack stack, boolean advanced) {
-        return stack.getTooltipLines(BaniraClientRuntime.localPlayer(), advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+        Player player = BaniraClientRuntime.localPlayer();
+        if (player == null) {
+            return List.of(stack.getHoverName());
+        }
+        Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
+        return stack.getTooltipLines(ctx, player, advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
     }
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {

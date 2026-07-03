@@ -117,7 +117,7 @@ public final class AdvancementUtils {
         // 服务端
         if (advancementData.isEmpty() && BaniraCodex.serverInstance().val()) {
             advancementData(BaniraCodex.serverInstance().key().getAdvancements().getAllAdvancements().stream()
-                    .map(AdvancementData::fromAdvancement).collect(Collectors.toList())
+                    .map(AdvancementData::fromHolder).collect(Collectors.toList())
             );
         }
         // 客户端

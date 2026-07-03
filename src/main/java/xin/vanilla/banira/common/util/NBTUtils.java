@@ -23,7 +23,7 @@ public final class NBTUtils {
 
     public static CompoundTag readCompressed(InputStream stream) {
         try {
-            return NbtIo.readCompressed(stream);
+            return NbtIo.readCompressed(stream, NbtAccounter.unlimitedHeap());
         } catch (Exception e) {
             LOGGER.error("Failed to read compressed stream", e);
             return new CompoundTag();
@@ -32,7 +32,7 @@ public final class NBTUtils {
 
     public static CompoundTag readCompressed(File file) {
         try {
-            return NbtIo.readCompressed(file);
+            return NbtIo.readCompressed(file.toPath(), NbtAccounter.unlimitedHeap());
         } catch (Exception e) {
             LOGGER.error("Failed to read compressed file: {}", file.getAbsolutePath(), e);
             return new CompoundTag();
@@ -42,7 +42,7 @@ public final class NBTUtils {
     public static boolean writeCompressed(CompoundTag tag, File file) {
         boolean result = false;
         try {
-            NbtIo.writeCompressed(tag, file);
+            NbtIo.writeCompressed(tag, file.toPath());
             result = true;
         } catch (Exception e) {
             LOGGER.error("Failed to write compressed file: {}", file.getAbsolutePath(), e);

@@ -8,24 +8,23 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.network.chat.ChatType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.common.ReflectionAccess;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.UUID;
 
 /**
  * 客户端运行时访问点，集中隔离 Minecraft 单例和窗口句柄。
  */
 public final class BaniraClientRuntime {
-    private static Field itemColorsField;
-
     private BaniraClientRuntime() {
     }
 
@@ -58,21 +57,8 @@ public final class BaniraClientRuntime {
     }
 
     public static ItemColors itemColors() {
-        ItemRenderer renderer = itemRenderer();
-        try {
-            if (itemColorsField == null) {
-                for (Field field : ItemRenderer.class.getDeclaredFields()) {
-                    if (field.getType() == ItemColors.class) {
-                        field.setAccessible(true);
-                        itemColorsField = field;
-                        break;
-                    }
-                }
-            }
-            return itemColorsField != null ? (ItemColors) itemColorsField.get(renderer) : null;
-        } catch (IllegalAccessException e) {
-            return null;
-        }
+        // Minecraft 1.18 没有公开 ItemColors getter，只在 ItemRenderer 内保存字段。
+        return ReflectionAccess.fieldValue(itemRenderer(), "itemColors", ItemColors.class);
     }
 
     public static String serverIp() {
@@ -85,11 +71,11 @@ public final class BaniraClientRuntime {
     }
 
     public static boolean chatLinksEnabled() {
-        return Minecraft.getInstance().options.chatLinks().get();
+        return Minecraft.getInstance().options.chatLinks;
     }
 
     public static void showGameInfo(@Nonnull net.minecraft.network.chat.Component message, @Nonnull UUID sender) {
-        Minecraft.getInstance().gui.setOverlayMessage(message, false);
+        Minecraft.getInstance().gui.handleChat(ChatType.GAME_INFO, message, sender);
     }
 
     @Nullable

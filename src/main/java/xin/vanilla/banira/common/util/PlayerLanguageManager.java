@@ -18,6 +18,26 @@ public final class PlayerLanguageManager {
         return languageMap.getOrDefault(uuid, "en_us");
     }
 
+    public static String get(Object playerOrUuid) {
+        if (playerOrUuid instanceof ServerPlayer player) {
+            return get(player);
+        }
+        if (playerOrUuid instanceof UUID uuid) {
+            return get(uuid);
+        }
+        return "en_us";
+    }
+
+    public static boolean has(Object playerOrUuid) {
+        if (playerOrUuid instanceof ServerPlayer player) {
+            return languageMap.containsKey(player.getUUID());
+        }
+        if (playerOrUuid instanceof UUID uuid) {
+            return languageMap.containsKey(uuid);
+        }
+        return false;
+    }
+
     public static void set(ServerPlayer player, String language) {
         set(player.getUUID(), language);
     }

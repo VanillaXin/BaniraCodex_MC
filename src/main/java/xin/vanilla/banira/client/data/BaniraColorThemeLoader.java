@@ -63,9 +63,6 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
         return "banira_codex_color_themes";
     }
 
-    /**
-     * 由 loader adapter 在资源重载时调用；保留 public 以避免 public client 类实现加载器专有接口。
-     */
     public void reloadFrom(ResourceManager resourceManager) {
         EnumMap<EnumSeason, SeasonThemePair> next = new EnumMap<>(EnumSeason.class);
         for (EnumSeason s : new EnumSeason[]{EnumSeason.SPRING, EnumSeason.SUMMER, EnumSeason.AUTUMN, EnumSeason.WINTER}) {
@@ -101,11 +98,13 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
     private static SeasonThemePair tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
         ResourceLocation loc = themeJsonLocation(season);
         try {
-            Resource res = resourceManager.getResource(loc).orElse(null);
-            if (res == null) {
+            Resource res;
+            try {
+                res = resourceManager.getResource(loc);
+            } catch (Exception missing) {
                 return null;
             }
-            try (InputStream in = res.open();
+            try (InputStream in = res.getInputStream();
                  InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 JsonElement root = JsonUtils.parseElement(reader);
                 if (!root.isJsonObject()) {

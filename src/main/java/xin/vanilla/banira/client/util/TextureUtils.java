@@ -2,12 +2,10 @@ package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -15,11 +13,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.Texture;
-import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 public final class TextureUtils {
     private TextureUtils() {
     }
@@ -64,28 +62,20 @@ public final class TextureUtils {
         return normalized.length() >= 2 && normalized.charAt(1) == ':' && Character.isLetter(normalized.charAt(0));
     }
 
-    private static boolean isMissingTextureLocation(ResourceLocation location) {
-        return location == null || MissingTextureAtlasSprite.getLocation().equals(location);
-    }
-
     public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return factory.empty();
-        }
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
         ResourceLocation rl = factory.create(safePath);
-        ResourceManager resourceManager = mc.getResourceManager();
-        TextureManager textureManager = mc.getTextureManager();
+        ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
+        TextureManager textureManager = BaniraClientRuntime.textureManager();
 
         // region 资源包纹理
-        if (resourceManager.getResource(rl).isPresent()) {
+        if (resourceManager.hasResource(rl)) {
             return rl;
         }
         if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
             ResourceLocation parsed = ResourceLocation.tryParse(normalized);
-            if (parsed != null && resourceManager.getResource(parsed).isPresent()) {
+            if (parsed != null && resourceManager.hasResource(parsed)) {
                 return parsed;
             }
         }
@@ -127,14 +117,13 @@ public final class TextureUtils {
     }
 
     public static boolean isTextureAvailable(ResourceLocation location) {
-        if (isMissingTextureLocation(location)) {
+        if (location == null) {
             return false;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
+        if (MissingTextureAtlasSprite.getLocation().equals(location)) {
             return false;
         }
-        TextureManager textureManager = mc.getTextureManager();
+        TextureManager textureManager = BaniraClientRuntime.textureManager();
         AbstractTexture miss = MissingTextureAtlasSprite.getTexture();
 
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(location)) {
@@ -148,8 +137,8 @@ public final class TextureUtils {
             return t.getId() != -1;
         }
 
-        ResourceManager resourceManager = mc.getResourceManager();
-        if (resourceManager.getResource(location).isEmpty()) {
+        ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
+        if (!resourceManager.hasResource(location)) {
             return false;
         }
 
@@ -169,7 +158,8 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = Registry.MOB_EFFECT.getKey(effectInstance.getEffect());
+        String effectId = Banira.platform().registryService().effectKey(effectInstance.getEffect());
+        ResourceLocation registryName = effectId != null ? ResourceLocation.tryParse(effectId) : null;
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
@@ -252,12 +242,9 @@ public final class TextureUtils {
     }
 
     public static void clearAll() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null) {
-            TextureManager tm = mc.getTextureManager();
-            for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
-                tm.release(loc);
-            }
+        TextureManager tm = BaniraClientRuntime.textureManager();
+        for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
+            tm.release(loc);
         }
         REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.clear();
         for (NativeImage img : CACHE.values()) {
@@ -277,39 +264,24 @@ public final class TextureUtils {
      * @param texture 纹理的 ResourceLocation
      */
     public static NativeImage getTextureImage(ResourceLocation texture) {
-        if (isMissingTextureLocation(texture)) {
-            return null;
-        }
         // 优先从缓存中获取
         if (CACHE.containsKey(texture)) {
             return CACHE.get(texture);
         }
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(texture)) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc == null) {
-                return null;
-            }
-            TextureManager tm = mc.getTextureManager();
-            if (tm == null) {
-                return null;
-            }
-            AbstractTexture gpuTexture = tm.getTexture(texture);
+            AbstractTexture gpuTexture = BaniraClientRuntime.textureManager().getTexture(texture);
             if (gpuTexture instanceof DynamicTexture dt) {
                 return dt.getPixels();
             }
             return null;
         }
         try {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc == null) {
+            ResourceManager resourceManager = BaniraClientRuntime.resourceManager();
+            if (!resourceManager.hasResource(texture)) {
                 return null;
             }
-            ResourceManager resourceManager = mc.getResourceManager();
-            if (resourceManager == null || resourceManager.getResource(texture).isEmpty()) {
-                return null;
-            }
-            Resource resource = resourceManager.getResource(texture).get();
-            try (InputStream inputStream = resource.open()) {
+            Resource resource = resourceManager.getResource(texture);
+            try (InputStream inputStream = resource.getInputStream()) {
                 NativeImage nativeImage = NativeImage.read(inputStream);
                 CACHE.put(texture, nativeImage);
                 return nativeImage;
@@ -324,37 +296,23 @@ public final class TextureUtils {
      * 获取纹理的宽高
      */
     public static KeyValue<Integer, Integer> getTextureSize(ResourceLocation texture) {
-        if (isMissingTextureLocation(texture)) {
-            return new KeyValue<>(0, 0);
-        }
-        KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
-        if (cached != null && cached.key() > 0 && cached.val() > 0) {
-            return cached;
-        }
-
-        NativeImage textureImage = getTextureImage(texture);
-        if (textureImage != null) {
-            KeyValue<Integer, Integer> size = new KeyValue<>(textureImage.getWidth(), textureImage.getHeight());
+        KeyValue<Integer, Integer> size = new KeyValue<>(0, 0);
+        if (TEXTURE_SIZE_CACHE.containsKey(texture)) {
+            size = TEXTURE_SIZE_CACHE.get(texture);
+        } else {
+            NativeImage textureImage = getTextureImage(texture);
+            if (textureImage != null) {
+                size.key(textureImage.getWidth()).value(textureImage.getHeight());
+            }
             TEXTURE_SIZE_CACHE.put(texture, size);
-            return size;
         }
-
-        KeyValue<Integer, Integer> gpu = tryGetGpuTextureSize(texture);
-        if (gpu != null && gpu.key() > 0 && gpu.val() > 0) {
-            TEXTURE_SIZE_CACHE.put(texture, gpu);
-            return gpu;
-        }
-
-        return cached != null ? cached : new KeyValue<>(0, 0);
+        return size;
     }
 
     /**
      * 解析用于绘制的纹理尺寸：优先资源/缓存图像，失败时从已上传的 GPU 纹理查询（适用于玩家皮肤等不在资源包中的纹理）
      */
     public static KeyValue<Integer, Integer> resolveTextureSizeForDraw(ResourceLocation texture) {
-        if (isMissingTextureLocation(texture)) {
-            return new KeyValue<>(0, 0);
-        }
         KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
         if (cached != null && cached.key() > 0 && cached.val() > 0) {
             return cached;
@@ -380,42 +338,26 @@ public final class TextureUtils {
 
     @Nullable
     private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
-        // 缺失贴图本身不做 GPU 查询，避免 TextureManager 主动加载 missingno 并刷启动警告。
-        if (isMissingTextureLocation(location)) {
+        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = BaniraClientRuntime.textureManager().getTexture(location);
+        if (gpuTexture == null) {
             return null;
         }
-        try {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc == null) {
-                return null;
-            }
-            TextureManager textureManager = mc.getTextureManager();
-            if (textureManager == null) {
-                return null;
-            }
-            net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = textureManager.getTexture(location);
-            if (gpuTexture == null) {
-                return null;
-            }
-            int tid = gpuTexture.getId();
-            if (tid == -1) {
-                return null;
-            }
-            int[] prev = new int[1];
-            GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
-            try {
-                RenderSystem.bindTexture(tid);
-                int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-                int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-                if (w <= 0 || h <= 0) {
-                    return null;
-                }
-                return new KeyValue<>(w, h);
-            } finally {
-                RenderSystem.bindTexture(prev[0]);
-            }
-        } catch (Throwable ignored) {
+        int tid = gpuTexture.getId();
+        if (tid == -1) {
             return null;
+        }
+        int[] prev = new int[1];
+        GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
+        try {
+            RenderSystem.bindTexture(tid);
+            int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+            int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+            if (w <= 0 || h <= 0) {
+                return null;
+            }
+            return new KeyValue<>(w, h);
+        } finally {
+            RenderSystem.bindTexture(prev[0]);
         }
     }
 
@@ -656,7 +598,7 @@ public final class TextureUtils {
     }
 
     /**
-     * 当资源（纹理）被重载后调用，由客户端事件处理器通过 {@link BaniraClientEvents.Client} 触发。
+     * 当资源（纹理）被重载后调用，由加载器侧客户端事件处理器触发。
      */
     public static void resourceReloadEvent() {
         clearAll();

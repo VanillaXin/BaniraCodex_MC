@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
-import net.minecraft.core.Registry;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
@@ -48,7 +49,8 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return Registry.BLOCK.getKey(block);
+        String id = Banira.platform().registryService().blockKey(block);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -124,7 +126,7 @@ public final class BlockUtils {
             return BaniraComponent.get().empty();
         }
         String key = getBlockNameKey(state);
-        return BaniraComponent.get().object(net.minecraft.network.chat.Component.translatable(key));
+        return BaniraComponent.get().object(new TranslatableComponent(key));
     }
 
     /**
@@ -137,7 +139,7 @@ public final class BlockUtils {
             return BaniraComponent.get().empty();
         }
         String key = getBlockNameKey(block);
-        return BaniraComponent.get().object(net.minecraft.network.chat.Component.translatable(key));
+        return BaniraComponent.get().object(new TranslatableComponent(key));
     }
 
     /**
@@ -150,7 +152,7 @@ public final class BlockUtils {
             return "";
         }
         String key = getBlockNameKey(block);
-        return net.minecraft.network.chat.Component.translatable(key).toString();
+        return new TranslatableComponent(key).toString();
     }
 
     /**
@@ -243,7 +245,8 @@ public final class BlockUtils {
         return deserializeCache.computeIfAbsent(key, k -> {
             try {
                 StringReader reader = new StringReader(k);
-                return BlockStateParser.parseForBlock(Registry.BLOCK, reader, true).blockState();
+                BlockStateParser parser = new BlockStateParser(reader, false);
+                return parser.parse(true).getState();
             } catch (Exception e) {
                 LOGGER.error("Failed to deserialize block state from string: {}", k, e);
                 return Blocks.AIR.defaultBlockState();
@@ -263,7 +266,8 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return Registry.BLOCK.get(location);
+            Object block = Banira.platform().registryService().block(location.toString());
+            return block instanceof Block ? (Block) block : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -315,8 +319,9 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : Registry.BLOCK) {
-                        if (block == null) continue;
+                    for (Object value : Banira.platform().registryService().blocks()) {
+                        if (!(value instanceof Block)) continue;
+                        Block block = (Block) value;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;
                         byId.putIfAbsent(rl, block);

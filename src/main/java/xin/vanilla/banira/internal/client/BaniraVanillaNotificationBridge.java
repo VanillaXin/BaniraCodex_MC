@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.client;
 import net.minecraft.Util;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nonnull;
@@ -20,12 +21,12 @@ public final class BaniraVanillaNotificationBridge {
         if (player == null) {
             return false;
         }
-        player.displayClientMessage(message, false);
+        player.sendMessage(message, player.getUUID());
         return true;
     }
 
     public static void sendActionBar(@Nonnull String line) {
-        net.minecraft.network.chat.Component barMsg = net.minecraft.network.chat.Component.literal(line);
+        net.minecraft.network.chat.Component barMsg = new TextComponent(line);
         LocalPlayer player = BaniraClientRuntime.localPlayer();
         UUID sender = player != null ? player.getUUID() : Util.NIL_UUID;
         BaniraClientRuntime.execute(() -> BaniraClientRuntime.showGameInfo(barMsg, sender));
@@ -41,7 +42,7 @@ public final class BaniraVanillaNotificationBridge {
             return false;
         }
         String normalized = command.startsWith("/") ? command : "/" + command;
-        suggestCommand(normalized);
+        player.chat(normalized);
         return true;
     }
 

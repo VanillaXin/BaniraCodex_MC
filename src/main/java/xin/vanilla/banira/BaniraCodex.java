@@ -2,7 +2,7 @@ package xin.vanilla.banira;
 
 import lombok.experimental.Accessors;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -90,7 +90,7 @@ public class BaniraCodex implements ModInitializer {
                 BaniraEventBus.dispatchPlayerSave(playerEvent(player));
             }
         });
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> BaniraCommand.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> BaniraCommand.register(dispatcher));
     }
 
     private static BaniraPlayerEvent playerEvent(ServerPlayer player) {

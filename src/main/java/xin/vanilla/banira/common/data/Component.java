@@ -203,7 +203,7 @@ public final class Component implements Cloneable, Serializable {
         if (this.languageCode == null) {
             return defaultLanguage;
         }
-        String resolved = this.languageCode.get();
+        String resolved = resolveLanguageCode(defaultLanguage);
         return resolved == null ? defaultLanguage : resolved;
     }
 
@@ -214,8 +214,17 @@ public final class Component implements Cloneable, Serializable {
         if (this.languageCode == null) {
             return CustomConfig.getDefaultLanguage();
         }
-        String resolved = this.languageCode.get();
+        String resolved = resolveLanguageCode(CustomConfig.getDefaultLanguage());
         return resolved == null ? CustomConfig.getDefaultLanguage() : resolved;
+    }
+
+    private String resolveLanguageCode(String defaultLanguage) {
+        try {
+            return this.languageCode.get();
+        } catch (Throwable ignored) {
+            // 惰性语言来源可能依赖客户端状态；不可用时回落到调用方默认语言。
+            return defaultLanguage;
+        }
     }
 
     /**
@@ -603,7 +612,7 @@ public final class Component implements Cloneable, Serializable {
                     }
                     String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                     for (String s : split) {
-                        components.add(net.minecraft.network.chat.Component.literal(s).withStyle(this.getStyle()));
+                        components.add(new TextComponent(s).withStyle(this.getStyle()));
                     }
                     Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
                     Matcher matcher = pattern.matcher(text);
@@ -656,13 +665,13 @@ public final class Component implements Cloneable, Serializable {
                             arg.languageCodeIfEmpty(languageCode);
                         }
                     }
-                    components.add(net.minecraft.network.chat.Component.literal(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
+                    components.add(new TextComponent(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
                 }
             }
         }
         components.addAll(this.getChildren().stream().map(component -> (MutableComponent) component.toVanilla(languageCode)).toList());
         if (components.isEmpty()) {
-            components.add(net.minecraft.network.chat.Component.literal(""));
+            components.add(new TextComponent(""));
         }
         MutableComponent result = components.get(0);
         for (int j = 1; j < components.size(); j++) {
@@ -675,7 +684,7 @@ public final class Component implements Cloneable, Serializable {
      * 获取翻译文本组件
      */
     public net.minecraft.network.chat.Component toVanillaTrans() {
-        MutableComponent result = net.minecraft.network.chat.Component.literal("");
+        MutableComponent result = new TextComponent("");
         if (!this.color().isEmpty() || !this.bgColor().isEmpty()) {
             if (this.i18nType != EnumI18nType.PLAIN) {
                 Object[] objects = this.getArgs().stream().map(component -> {
@@ -687,18 +696,18 @@ public final class Component implements Cloneable, Serializable {
                 }).toArray();
                 if (StringUtils.isNullOrEmptyEx(this.modId)) {
                     // 未设置 modId 时，退化为直接输出 key
-                    result = net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle());
+                    result = new TextComponent(this.text).withStyle(this.getStyle());
                 } else {
                     ITranslator helper = Translator.of(this.modId);
                     String fullKey = helper.getKey(this.i18nType, this.text);
                     if (CollectionUtils.isNotNullOrEmpty(objects)) {
-                        result = net.minecraft.network.chat.Component.translatable(fullKey, objects);
+                        result = new TranslatableComponent(fullKey, objects);
                     } else {
-                        result = net.minecraft.network.chat.Component.translatable(fullKey);
+                        result = new TranslatableComponent(fullKey);
                     }
                 }
             } else {
-                result = net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle());
+                result = new TextComponent(this.text).withStyle(this.getStyle());
             }
         }
         for (Component child : this.getChildren()) {

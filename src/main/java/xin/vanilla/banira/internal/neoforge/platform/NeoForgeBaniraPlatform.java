@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.neoforge.platform;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -16,9 +17,11 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.UsernameCache;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadHandler;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -40,12 +43,11 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,6 +74,7 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
     private static final BaniraNotificationService NOTIFICATIONS = new NeoForgeNotificationService();
 
     private static final Map<String, List<PendingPayloadRegistration<?>>> PENDING_PAYLOADS = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, CustomPacketPayload.Type<? extends NeoForgePayload<?>>> PAYLOAD_TYPES = new ConcurrentHashMap<>();
 
     @Nonnull
     @Override
@@ -381,45 +384,74 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
         @Nonnull
         @Override
         public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
-            return new NeoForgeNetworkPacketRegistrar(channelName);
+            return new NeoForgeNetworkPacketRegistrar(channelName, identifier);
         }
 
         @Override
         public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
-            PacketUtils.sendPacketToServer((xin.vanilla.banira.common.api.INetworkPacket) packet);
+            if (packet instanceof xin.vanilla.banira.common.api.INetworkPacket networkPacket) {
+                NeoForgePayload<xin.vanilla.banira.common.api.INetworkPacket> payload = wrap(networkPacket);
+                if (payload != null) {
+                    PacketDistributor.sendToServer(payload);
+                }
+            }
         }
 
         @Override
         public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                PacketUtils.sendPacketToPlayer((xin.vanilla.banira.common.api.INetworkPacket) packet, serverPlayer);
+            if (player instanceof ServerPlayer serverPlayer && packet instanceof xin.vanilla.banira.common.api.INetworkPacket networkPacket) {
+                NeoForgePayload<xin.vanilla.banira.common.api.INetworkPacket> payload = wrap(networkPacket);
+                if (payload != null) {
+                    PacketDistributor.sendToPlayer(serverPlayer, payload);
+                }
             }
         }
 
         @Override
         public boolean hasDefaultChannel() {
-            return true;
+            var connection = Minecraft.getInstance().getConnection();
+            return connection != null && PAYLOAD_TYPES.values().stream()
+                    .map(CustomPacketPayload.Type::id)
+                    .anyMatch(id -> NetworkRegistry.hasChannel(connection, id));
         }
 
         @Override
         public boolean hasLocalChannel(@Nonnull String channelId) {
-            return false;
+            ResourceLocation channel = ResourceLocation.tryParse(channelId);
+            var connection = Minecraft.getInstance().getConnection();
+            return channel != null && connection != null && NetworkRegistry.hasChannel(connection, channel);
         }
 
         @Override
         public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
+            ResourceLocation channel = ResourceLocation.tryParse(channelId);
             if (player instanceof ServerPlayer serverPlayer) {
-                return PacketUtils.hasChannel(serverPlayer, ResourceLocation.parse(channelId));
+                return channel != null && NetworkRegistry.hasChannel(serverPlayer.connection, channel);
             }
             return false;
+        }
+
+        @Nullable
+        @SuppressWarnings("unchecked")
+        private static NeoForgePayload<xin.vanilla.banira.common.api.INetworkPacket> wrap(xin.vanilla.banira.common.api.INetworkPacket packet) {
+            CustomPacketPayload.Type<?> type = PAYLOAD_TYPES.get(packet.getClass());
+            if (type == null) {
+                return null;
+            }
+            return new NeoForgePayload<>(
+                    packet,
+                    (CustomPacketPayload.Type<NeoForgePayload<xin.vanilla.banira.common.api.INetworkPacket>>) type
+            );
         }
     }
 
     private static final class NeoForgeNetworkPacketRegistrar implements NetworkPacketRegistrar {
         private final String channelName;
+        private final BaniraIdentifier identifier;
 
-        private NeoForgeNetworkPacketRegistrar(String channelName) {
+        private NeoForgeNetworkPacketRegistrar(String channelName, BaniraIdentifier identifier) {
             this.channelName = channelName;
+            this.identifier = identifier;
         }
 
         @Override
@@ -429,64 +461,69 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
                 BiConsumer<MSG, BaniraPacketBuffer> encoder,
                 Function<BaniraPacketBuffer, MSG> decoder,
                 BiConsumer<MSG, BaniraNetworkContext> handler) {
-            CustomPacketPayload.Type<MSG> type = payloadType(packetClass);
+            CustomPacketPayload.Type<NeoForgePayload<MSG>> type = new CustomPacketPayload.Type<>(payloadId(identifier, channelName, packetId));
+            PAYLOAD_TYPES.put(packetClass, type);
             PendingPayloadRegistration<MSG> registration = new PendingPayloadRegistration<>(
                     type,
-                    new NeoForgeStreamCodec<>(encoder, decoder),
-                    (packet, context) -> handler.accept(packet, new NeoForgeNetworkContext(context))
+                    new NeoForgeStreamCodec<>(type, encoder, decoder),
+                    (payload, context) -> handler.accept(payload.packet(), new NeoForgeNetworkContext(context))
             );
             PENDING_PAYLOADS.computeIfAbsent(channelName, key -> Collections.synchronizedList(new ArrayList<>()))
                     .add(registration);
         }
 
-        @SuppressWarnings("unchecked")
-        private static <MSG extends xin.vanilla.banira.common.api.INetworkPacket> CustomPacketPayload.Type<MSG> payloadType(Class<MSG> packetClass) {
-            try {
-                Field field = packetClass.getField("TYPE");
-                Object value = field.get(null);
-                if (value instanceof CustomPacketPayload.Type<?> type) {
-                    return (CustomPacketPayload.Type<MSG>) type;
-                }
-            } catch (ReflectiveOperationException ignored) {
-                // 公开 registrar 约定 NeoForge payload 类提供 public static TYPE。
-            }
-            throw new IllegalArgumentException("NeoForge packet class must expose public static TYPE: " + packetClass.getName());
+        private static ResourceLocation payloadId(BaniraIdentifier identifier, String channelName, int packetId) {
+            String basePath = identifier.getPath() == null || identifier.getPath().isEmpty() ? channelName : identifier.getPath();
+            return ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), basePath + "/" + packetId);
         }
     }
 
     private record PendingPayloadRegistration<MSG extends xin.vanilla.banira.common.api.INetworkPacket>(
-            CustomPacketPayload.Type<MSG> type,
-            StreamCodec<RegistryFriendlyByteBuf, MSG> codec,
-            IPayloadHandler<MSG> handler) {
+            CustomPacketPayload.Type<NeoForgePayload<MSG>> type,
+            StreamCodec<RegistryFriendlyByteBuf, NeoForgePayload<MSG>> codec,
+            IPayloadHandler<NeoForgePayload<MSG>> handler) {
         private void register(PayloadRegistrar registrar) {
             registrar.playBidirectional(type, codec, handler);
         }
     }
 
     private static final class NeoForgeStreamCodec<MSG extends xin.vanilla.banira.common.api.INetworkPacket>
-            implements StreamCodec<RegistryFriendlyByteBuf, MSG> {
+            implements StreamCodec<RegistryFriendlyByteBuf, NeoForgePayload<MSG>> {
+        private final CustomPacketPayload.Type<NeoForgePayload<MSG>> type;
         private final BiConsumer<MSG, BaniraPacketBuffer> encoder;
         private final Function<BaniraPacketBuffer, MSG> decoder;
 
-        private NeoForgeStreamCodec(BiConsumer<MSG, BaniraPacketBuffer> encoder,
+        private NeoForgeStreamCodec(CustomPacketPayload.Type<NeoForgePayload<MSG>> type,
+                                    BiConsumer<MSG, BaniraPacketBuffer> encoder,
                                     Function<BaniraPacketBuffer, MSG> decoder) {
+            this.type = type;
             this.encoder = encoder;
             this.decoder = decoder;
         }
 
         @Nonnull
         @Override
-        public MSG decode(@Nonnull RegistryFriendlyByteBuf buffer) {
-            return decoder.apply(new NeoForgePacketBuffer(buffer));
+        public NeoForgePayload<MSG> decode(@Nonnull RegistryFriendlyByteBuf buffer) {
+            return new NeoForgePayload<>(decoder.apply(new NeoForgePacketBuffer(buffer)), type);
         }
 
         @Override
-        public void encode(@Nonnull RegistryFriendlyByteBuf buffer, @Nonnull MSG packet) {
-            encoder.accept(packet, new NeoForgePacketBuffer(buffer));
+        public void encode(@Nonnull RegistryFriendlyByteBuf buffer, @Nonnull NeoForgePayload<MSG> payload) {
+            encoder.accept(payload.packet(), new NeoForgePacketBuffer(buffer));
         }
     }
 
-    private static final class NeoForgePacketBuffer implements BaniraPacketBuffer {
+    private record NeoForgePayload<MSG extends xin.vanilla.banira.common.api.INetworkPacket>(
+            MSG packet,
+            CustomPacketPayload.Type<NeoForgePayload<MSG>> payloadType) implements CustomPacketPayload {
+        @Nonnull
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+            return payloadType;
+        }
+    }
+
+    private static final class NeoForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
         private final FriendlyByteBuf delegate;
 
         private NeoForgePacketBuffer(FriendlyByteBuf delegate) {
@@ -562,6 +599,11 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
         public void writeIdentifier(BaniraIdentifier value) {
             BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
             delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
+        }
+
+        @Override
+        public FriendlyByteBuf nativeBuffer() {
+            return delegate;
         }
     }
 

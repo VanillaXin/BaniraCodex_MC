@@ -1,36 +1,21 @@
 package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.network.BaniraStreamCodecs;
+import lombok.experimental.Accessors;
+import xin.vanilla.banira.common.network.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
  * 请求数据同步包
  */
 @Getter
+@Accessors(fluent = true)
 public class RequestToBoth implements NetworkPacket {
-
-    public static final CustomPacketPayload.Type<RequestToBoth> TYPE =
-            new CustomPacketPayload.Type<>(Identifier.id().create("request_to_both"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, RequestToBoth> STREAM_CODEC =
-            BaniraStreamCodecs.registryBuf(RequestToBoth::toBytes, RequestToBoth::new);
-
     /**
-     * 请求类型ID到处理器的映射
+     * 请求类型ID到处理器的注册表。
      */
-    private static final Map<Integer, BiConsumer<RequestToBoth, ServerPlayer>> handlers = new HashMap<>();
+    private static final RequestPacketHandlers HANDLERS = new RequestPacketHandlers();
 
     /**
      * 请求包的类型ID
@@ -44,11 +29,11 @@ public class RequestToBoth implements NetworkPacket {
         this.requestType = requestType;
     }
 
-    public RequestToBoth(FriendlyByteBuf buf) {
+    public RequestToBoth(BaniraPacketBuffer buf) {
         this.requestType = buf.readVarInt();
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeVarInt(this.requestType);
     }
 
@@ -58,8 +43,15 @@ public class RequestToBoth implements NetworkPacket {
      * @param requestType 请求类型ID
      * @param handler     处理器
      */
-    public static void registerHandler(int requestType, BiConsumer<RequestToBoth, ServerPlayer> handler) {
-        handlers.put(requestType, handler);
+    public static RequestHandlerRegistration registerHandler(int requestType, BiConsumer<RequestToBoth, Object> handler) {
+        return HANDLERS.register(requestType, handler);
+    }
+
+    /**
+     * 注销指定请求类型的当前处理器。
+     */
+    public static boolean unregisterHandler(int requestType) {
+        return HANDLERS.unregister(requestType);
     }
 
     /**
@@ -68,19 +60,13 @@ public class RequestToBoth implements NetworkPacket {
      * @param packet 请求包
      * @param ctx    网络事件上下文
      */
-    public static void handle(RequestToBoth packet, IPayloadContext ctx) {
+    public static void handle(RequestToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.flow() == PacketFlow.SERVERBOUND && ctx.player() instanceof ServerPlayer player) {
-                BiConsumer<RequestToBoth, ServerPlayer> handler = handlers.get(packet.getRequestType());
-                if (handler != null) {
-                    handler.accept(packet, player);
-                }
+            if (ctx.isServerSide()) {
+                HANDLERS.dispatch(packet, ctx.sender());
             }
         });
+        ctx.markHandled();
     }
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
 }

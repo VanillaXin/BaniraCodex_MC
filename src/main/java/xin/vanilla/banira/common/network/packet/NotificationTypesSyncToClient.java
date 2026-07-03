@@ -1,21 +1,12 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
-import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.notification.NotificationTypeSyncEntry;
-import xin.vanilla.banira.common.network.BaniraStreamCodecs;
+import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +15,6 @@ import java.util.List;
  * 将服务端当前已知的通知类型列表（及可选的「配置文件无条目时」展示方式建议）同步给刚登录的玩家客户端
  */
 public class NotificationTypesSyncToClient implements NetworkPacket {
-
-    public static final CustomPacketPayload.Type<NotificationTypesSyncToClient> TYPE =
-            new CustomPacketPayload.Type<>(Identifier.id().create("notification_types"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, NotificationTypesSyncToClient> STREAM_CODEC =
-            BaniraStreamCodecs.registryBuf(NotificationTypesSyncToClient::toBytes, NotificationTypesSyncToClient::new);
 
     private static final int MAX_TYPE_ID_LENGTH = 128;
     private static final int MAX_TYPE_COUNT = 512;
@@ -39,7 +25,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         this.entries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
     }
 
-    public NotificationTypesSyncToClient(FriendlyByteBuf buf) {
+    public NotificationTypesSyncToClient(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
         if (n < 0) {
             n = 0;
@@ -61,7 +47,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         int n = Math.min(entries.size(), MAX_TYPE_COUNT);
         buf.writeVarInt(n);
         for (int i = 0; i < n; i++) {
@@ -80,30 +66,12 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
         return entries;
     }
 
-    public static void handle(NotificationTypesSyncToClient packet, IPayloadContext ctx) {
+    public static void handle(NotificationTypesSyncToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
-                ClientSide.handle(packet);
+            if (ctx.isClientSide()) {
+                BaniraClientPacketHandlers.applyNotificationTypes(packet);
             }
         });
-    }
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private static final class ClientSide {
-        private static void handle(NotificationTypesSyncToClient packet) {
-            for (NotificationTypeSyncEntry e : packet.entries()) {
-                if (e == null) {
-                    continue;
-                }
-                NotificationTypeRegistry.ensureKnown(e.typeId());
-                NotificationTypeRegistry.acceptServerSyncedDisplayDefault(e.typeId(), e.defaultDisplayIfAbsent());
-                NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(e.typeId());
-            }
-        }
+        ctx.markHandled();
     }
 }

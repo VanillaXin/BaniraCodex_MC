@@ -116,6 +116,14 @@ public class ConfigHolder {
     }
 
     /**
+     * 校验网络同步或 GUI 写入的值是否符合当前配置项约束。
+     */
+    public boolean validate(String path, Object value) {
+        ModConfigSpec.ConfigValue<?> cv = valueMap.get(path);
+        return xin.vanilla.banira.common.util.CommandUtils.validateConfigValueWithSpec(cv, value);
+    }
+
+    /**
      * 获取配置项描述符
      */
     public ConfigEntryDescriptor getDescriptor(String path) {

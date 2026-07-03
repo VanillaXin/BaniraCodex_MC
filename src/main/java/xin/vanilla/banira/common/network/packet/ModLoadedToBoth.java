@@ -2,20 +2,12 @@ package xin.vanilla.banira.common.network.packet;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.common.network.ModLoadedPresence;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 import xin.vanilla.banira.common.network.NetworkPacket;
-import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.common.network.BaniraStreamCodecs;
+import xin.vanilla.banira.internal.server.ServerSenderAccess;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -30,11 +22,6 @@ import java.util.function.Consumer;
 @Getter
 @Accessors(chain = true, fluent = true)
 public class ModLoadedToBoth implements NetworkPacket {
-
-    public static final CustomPacketPayload.Type<ModLoadedToBoth> TYPE =
-            new CustomPacketPayload.Type<>(Identifier.id().create("mod_loaded"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, ModLoadedToBoth> STREAM_CODEC =
-            BaniraStreamCodecs.registryBuf(ModLoadedToBoth::toBytes, ModLoadedToBoth::new);
 
     /**
      * 物理客户端收到服务端回包时的处理（由客户端初始化注册，避免 common 类引用 {@code Minecraft}）。
@@ -79,7 +66,7 @@ public class ModLoadedToBoth implements NetworkPacket {
         return Collections.singletonList(modid);
     }
 
-    public ModLoadedToBoth(FriendlyByteBuf buf) {
+    public ModLoadedToBoth(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
         if (n < 0) {
             this.modids = Collections.emptyList();
@@ -99,7 +86,7 @@ public class ModLoadedToBoth implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         List<String> toWrite = new ArrayList<>();
         for (String id : modids) {
             if (!StringUtils.isNullOrEmptyEx(id)) {
@@ -115,19 +102,20 @@ public class ModLoadedToBoth implements NetworkPacket {
         }
     }
 
-    public static void handle(ModLoadedToBoth packet, IPayloadContext ctx) {
+    public static void handle(ModLoadedToBoth packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.flow() == PacketFlow.SERVERBOUND && ctx.player() instanceof ServerPlayer player) {
-                if (packet.modids().isEmpty()) {
+            if (ctx.isServerSide()) {
+                Object sender = ctx.sender();
+                if (sender == null || packet.modids().isEmpty()) {
                     return;
                 }
                 for (String modid : packet.modids()) {
-                    PlayerUtils.setRemoteClientModInstalled(player, modid, false);
-                    ModLoadedPresence.dispatchServerSync(player, modid);
+                    ServerSenderAccess.setRemoteClientModInstalled(sender, modid, false);
+                    ModLoadedPresenceStore.dispatchServerSync(sender, modid);
                 }
-                List<String> serverIds = ModLoadedPresence.announcedModIds();
+                List<String> serverIds = ModLoadedPresenceStore.announcedModIds();
                 if (!serverIds.isEmpty()) {
-                    PacketUtils.sendPacketToPlayer(new ModLoadedToBoth(serverIds), player);
+                    ServerSenderAccess.sendPacket(sender, new ModLoadedToBoth(serverIds));
                 }
             } else {
                 if (!packet.modids().isEmpty()) {
@@ -135,10 +123,6 @@ public class ModLoadedToBoth implements NetworkPacket {
                 }
             }
         });
-    }
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        ctx.markHandled();
     }
 }

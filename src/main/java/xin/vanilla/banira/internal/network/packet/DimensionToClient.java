@@ -1,17 +1,11 @@
 package xin.vanilla.banira.internal.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.common.util.DimensionUtils;
-import xin.vanilla.banira.common.network.BaniraStreamCodecs;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +18,6 @@ public class DimensionToClient extends SplitPacket
         SplitPacket.SplittableSplitPacket<DimensionToClient>,
         NetworkPacket {
 
-    public static final CustomPacketPayload.Type<DimensionToClient> TYPE =
-            new CustomPacketPayload.Type<>(Identifier.id().create("dimension_sync"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, DimensionToClient> STREAM_CODEC =
-            BaniraStreamCodecs.registryBuf(DimensionToClient::toBytes, DimensionToClient::new);
-
-
     private final List<String> dimensionIds;
 
     public DimensionToClient(List<String> dimensionIds) {
@@ -37,7 +25,7 @@ public class DimensionToClient extends SplitPacket
         this.dimensionIds = dimensionIds != null ? new ArrayList<>(dimensionIds) : new ArrayList<>();
     }
 
-    public DimensionToClient(FriendlyByteBuf buf) {
+    public DimensionToClient(BaniraPacketBuffer buf) {
         super(buf);
         int size = buf.readVarInt();
         this.dimensionIds = new ArrayList<>(size);
@@ -46,17 +34,13 @@ public class DimensionToClient extends SplitPacket
         }
     }
 
-    public static void handle(DimensionToClient packet, IPayloadContext ctx) {
+    public static void handle(DimensionToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            if (ctx.flow() == PacketFlow.CLIENTBOUND) {
+            if (ctx.isClientSide()) {
                 DimensionUtils.setClientDimensionIds(packet.getDimensionIds());
             }
         });
-    }
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        ctx.markHandled();
     }
 
     @Override
@@ -91,7 +75,7 @@ public class DimensionToClient extends SplitPacket
         return result;
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         super.toBytes(buf);
         buf.writeVarInt(dimensionIds.size());
         for (String id : dimensionIds) {

@@ -14,4 +14,10 @@ public interface NetworkPacketRegistrar {
                                                BiConsumer<MSG, BaniraPacketBuffer> encoder,
                                                Function<BaniraPacketBuffer, MSG> decoder,
                                                BiConsumer<MSG, BaniraNetworkContext> handler);
+
+    /**
+     * 完成当前 channel 的注册阶段。部分加载器需要在所有 packet 注册后锁定 channel。
+     */
+    default void complete() {
+    }
 }

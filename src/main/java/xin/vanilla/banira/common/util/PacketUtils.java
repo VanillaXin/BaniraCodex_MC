@@ -1,24 +1,14 @@
 package xin.vanilla.banira.common.util;
 
-import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
-import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 @Accessors(fluent = true)
@@ -27,30 +17,14 @@ public final class PacketUtils {
     }
 
     /**
-     * 分片网络包缓存
-     */
-    @Getter
-    private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
-
-
-    /**
      * 广播数据包至所有玩家
-     *
-     * @param packet 数据包
      */
-    public static void broadcastPacket(Packet<?> packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                player.connection.send(packet)
-        );
-    }
-
-    /**
-     * 广播自定义载荷至所有玩家
-     */
-    public static <MSG extends INetworkPacket> void broadcastPayload(MSG msg) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendPayloadToPlayer(player, msg)
-        );
+    public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
+        if (BaniraCodex.serverInstance().key() != null) {
+            BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                    BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
+            );
+        }
     }
 
     /**
@@ -59,71 +33,48 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                sendSplitPacketToPlayer(packet, player)
-        );
+        if (BaniraCodex.serverInstance().key() != null) {
+            BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
+                    sendSplitPacketToPlayer(packet, player)
+            );
+        }
     }
 
+
     /**
-     * 发送载荷至服务器
+     * 发送数据包至服务器
      */
-    @OnlyIn(Dist.CLIENT)
     public static <MSG extends INetworkPacket> void sendPacketToServer(MSG msg) {
-        if (!hasChannel(msg.type().id())) {
-            return;
-        }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        // ModLoadedToBoth 为握手首包，不依赖已记录的远程服务端状态
-        if (!(msg instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(mc.player, msg.type().id().getNamespace())) {
-            return;
-        }
-        PacketDistributor.sendToServer(msg);
+        BaniraNetwork.sendToServer(msg);
     }
 
     /**
-     * 发送载荷至玩家
+     * 发送数据包至玩家
      */
-    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, ServerPlayer player) {
-        sendPayloadToPlayer(player, msg);
+    public static <MSG extends INetworkPacket> void sendPacketToPlayer(MSG msg, Object player) {
+        BaniraNetwork.sendToPlayer(msg, player);
     }
 
     /**
-     * 发送载荷至玩家
+     * 发送分包数据包至玩家
+     *
+     * @param packet 要发送的数据包
+     * @param player 目标玩家
+     * @param <T>    分包类型
      */
-    public static <MSG extends INetworkPacket> void sendPacketToPlayer(ServerPlayer player, MSG msg) {
-        sendPayloadToPlayer(player, msg);
-    }
-
-    private static <MSG extends INetworkPacket> void sendPayloadToPlayer(ServerPlayer player, MSG msg) {
-        if (!hasChannel(player, msg.type().id())) {
-            return;
-        }
-        if (!PlayerUtils.isRemoteClientModInstalled(player, msg.type().id().getNamespace())) return;
-        PacketDistributor.sendToPlayer(player, msg);
-    }
-
-    /**
-     * 发送分包载荷至玩家
-     */
-    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, ServerPlayer player) {
-        sendSplitPacketToPlayer(player, packet);
-    }
-
-    /**
-     * 发送分包载荷至玩家
-     */
-    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(ServerPlayer player, T packet) {
+    public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToPlayer(T packet, Object player) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
-            sendPacketToPlayer(player, splitPacket);
+            sendPacketToPlayer(splitPacket, player);
         }
     }
 
     /**
-     * 发送分包载荷至服务器
+     * 发送分包数据包至服务器
+     *
+     * @param packet 要发送的数据包
+     * @param <T>    分包类型
      */
-    @OnlyIn(Dist.CLIENT)
     public static <T extends SplitPacket & INetworkPacket> void sendSplitPacketToServer(T packet) {
         List<T> splitPackets = packet.split();
         for (T splitPacket : splitPackets) {
@@ -131,29 +82,23 @@ public final class PacketUtils {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static boolean hasBaniraServer() {
-        return hasChannel(ModLoadedToBoth.TYPE.id());
+        return BaniraNetwork.hasBaniraServer();
     }
 
-    @OnlyIn(Dist.CLIENT)
-    public static boolean hasChannel(CustomPacketPayload msg) {
-        return hasChannel(msg.type().id());
+    public static boolean hasChannel(ResourceLocation channel) {
+        return channel != null && hasChannel(channel.toString());
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SuppressWarnings("UnstableApiUsage")
-    public static boolean hasChannel(ResourceLocation payloadId) {
-        var listener = Minecraft.getInstance().getConnection();
-        return listener != null && NetworkRegistry.hasChannel(listener, payloadId);
+    public static boolean hasChannel(String channelId) {
+        return BaniraNetwork.hasLocalChannel(channelId);
     }
 
-    public static boolean hasChannel(ServerPlayer player, CustomPacketPayload msg) {
-        return hasChannel(player, msg.type().id());
+    public static boolean hasChannel(Object player, ResourceLocation channel) {
+        return channel != null && hasChannel(player, channel.toString());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    public static boolean hasChannel(ServerPlayer player, ResourceLocation payloadId) {
-        return NetworkRegistry.hasChannel(player.connection, payloadId);
+    public static boolean hasChannel(Object player, String channelId) {
+        return BaniraNetwork.hasPlayerChannel(player, channelId);
     }
 }

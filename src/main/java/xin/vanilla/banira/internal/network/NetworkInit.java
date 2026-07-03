@@ -44,5 +44,7 @@ public final class NetworkInit {
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
+
+        HANDLER.completeRegistration();
     }
 }

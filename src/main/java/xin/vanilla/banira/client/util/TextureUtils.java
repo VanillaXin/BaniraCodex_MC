@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -169,7 +169,7 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = Registry.MOB_EFFECT.getKey(effectInstance.getEffect());
+        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect());
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

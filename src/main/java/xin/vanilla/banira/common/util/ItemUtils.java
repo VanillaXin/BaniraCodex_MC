@@ -3,8 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.NonNullList;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.MutableComponent;
@@ -90,7 +89,7 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return Registry.ITEM.getKey(item);
+        return BuiltInRegistries.ITEM.getKey(item);
     }
 
     /**
@@ -288,7 +287,7 @@ public final class ItemUtils {
         if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
         if (stack1.isEmpty() || stack2.isEmpty()) return false;
-        return ItemStack.isSame(stack1, stack2);
+        return ItemStack.isSameItem(stack1, stack2);
     }
 
     /**
@@ -303,7 +302,7 @@ public final class ItemUtils {
         if (!areItemsEqual(stack1, stack2)) return false;
         // if (stack1 == null || stack2 == null) return false;
         if (stack1.isEmpty() && stack2.isEmpty()) return true;
-        return ItemStack.tagMatches(stack1, stack2);
+        return ItemStack.isSameItemSameTags(stack1, stack2);
     }
 
     /**
@@ -428,7 +427,7 @@ public final class ItemUtils {
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
-            Item item = Registry.ITEM.get(rl);
+            Item item = BuiltInRegistries.ITEM.get(rl);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -452,7 +451,7 @@ public final class ItemUtils {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        Item item = Registry.ITEM.get(id);
+        Item item = BuiltInRegistries.ITEM.get(id);
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -474,7 +473,7 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return Registry.ITEM.get(location);
+            return BuiltInRegistries.ITEM.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -540,36 +539,19 @@ public final class ItemUtils {
 
         try {
             // 首先从创造模式搜索标签中获取所有物品变体
+            // 1.20 创造模式标签页由注册表驱动，先收集展示物品再补默认堆叠。
             try {
-                CreativeModeTab searchTab = CreativeModeTab.TAB_SEARCH;
-                if (searchTab != null) {
-                    NonNullList<ItemStack> creativeItems = NonNullList.create();
-                    searchTab.fillItemList(creativeItems);
-
-                    if (CollectionUtils.isNotNullOrEmpty(creativeItems)) {
-                        for (ItemStack stack : creativeItems) {
-                            if (stack != null && !stack.isEmpty()) {
-                                items.add(stack.copy());
-                                addedItems.add(stack.getItem());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get items from creative search tab", e);
-            }
-
-            // 然后添加创造模式物品栏中其他物品组的物品
-            try {
-                for (CreativeModeTab group : CreativeModeTab.TABS) {
-                    if (group == null || group == CreativeModeTab.TAB_SEARCH) continue;
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
+                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
+                    if (group == null || group == hotbarTab) continue;
                     try {
-                        NonNullList<ItemStack> groupItems = NonNullList.create();
-                        group.fillItemList(groupItems);
+                        Collection<ItemStack> groupItems = group == searchTab
+                                ? group.getSearchTabDisplayItems()
+                                : group.getDisplayItems();
                         if (CollectionUtils.isNotNullOrEmpty(groupItems)) {
                             for (ItemStack stack : groupItems) {
                                 if (stack != null && !stack.isEmpty()) {
-                                    // 检查是否已存在相同的物品，不比较NBT
                                     boolean exists = items.stream().anyMatch(existing ->
                                             areItemsEqual(existing, stack));
                                     if (!exists) {
@@ -589,7 +571,7 @@ public final class ItemUtils {
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : Registry.ITEM) {
+            for (Item item : BuiltInRegistries.ITEM) {
                 if (item == null) continue;
                 if (!addedItems.contains(item)) {
                     try {
@@ -600,7 +582,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                Registry.ITEM.getKey(item), e);
+                                BuiltInRegistries.ITEM.getKey(item), e);
                     }
                 }
             }
@@ -1167,18 +1149,19 @@ public final class ItemUtils {
 
                 // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
                 // 2. 物品组信息
-                CreativeModeTab itemGroup = item.getItemCategory();
-                if (itemGroup == null && item == Items.ENCHANTED_BOOK) {
-                    // 附魔书的特殊处理
-                    Map<net.minecraft.world.item.enchantment.Enchantment, Integer> enchantments = net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(itemStack);
-                    if (enchantments.size() == 1) {
-                        net.minecraft.world.item.enchantment.Enchantment enchantment = enchantments.keySet().iterator().next();
-                        for (CreativeModeTab group : CreativeModeTab.TABS) {
-                            if (group.hasEnchantmentCategory(enchantment.category)) {
-                                itemGroup = group;
-                                break;
-                            }
+                CreativeModeTab itemGroup = null;
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
+                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
+                    if (group == null || group == searchTab || group == hotbarTab) {
+                        continue;
+                    }
+                    try {
+                        if (group.contains(itemStack)) {
+                            itemGroup = group;
+                            break;
                         }
+                    } catch (Exception ignored) {
                     }
                 }
                 if (itemGroup != null) {

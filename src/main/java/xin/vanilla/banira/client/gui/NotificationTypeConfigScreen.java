@@ -3,6 +3,8 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
@@ -22,12 +24,9 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
@@ -438,7 +437,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     @Override
     public void onClose() {
         if (args.parentScreen() != null) {
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            Minecraft.getInstance().setScreen(args.parentScreen());
         } else {
             super.onClose();
         }
@@ -448,13 +447,14 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(PoseStack stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
         int n = bottomButtons.size();
+        PoseStack stack = graphics.pose();
 
         AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, contentH,
                 CARD_RADIUS, CARD_RADIUS, 0, 0, cardBg);
@@ -487,11 +487,11 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
-            contentRootPanel.render(stack, partialTicks);
+            contentRootPanel.render(graphics, partialTicks);
         }
         if (scrollbar != null && scrollbar.visible()) {
             if (scrollbar.enabled() && scrollbar.needsUpdate()) scrollbar.update();
-            scrollbar.render(stack, partialTicks);
+            scrollbar.render(graphics, partialTicks);
         }
 
         AbstractGuiUtils.disableScissor();
@@ -499,7 +499,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         for (ButtonWidget btn : bottomButtons) {
             if (btn.visible()) {
                 if (btn.enabled() && btn.needsUpdate()) btn.update();
-                btn.render(stack, partialTicks);
+                btn.render(graphics, partialTicks);
             }
         }
 
@@ -507,20 +507,20 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) continue;
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget.enabled() && widget.needsUpdate()) widget.update();
-            widget.render(stack, partialTicks);
+            widget.render(graphics, partialTicks);
         }
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
-        renderWidgets(stack, partialTicks);
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        renderWidgets(graphics, partialTicks);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {
@@ -626,9 +626,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
 
         @Override
-        public void render(PoseStack stack, float partialTicks) {
+        public void render(GuiGraphics graphics, float partialTicks) {
             if (!visible) return;
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
         }
     }
 }

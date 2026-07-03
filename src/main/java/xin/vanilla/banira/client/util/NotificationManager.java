@@ -3,11 +3,15 @@ package xin.vanilla.banira.client.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Style;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -22,7 +26,6 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
@@ -31,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
@@ -44,11 +48,6 @@ public final class NotificationManager {
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
     private Style frameHoverStyle;
-    private final CoalescingAsyncTask logSaveTask = new CoalescingAsyncTask(
-            "BaniraCodex-NotificationLogSave",
-            this::saveLogSnapshot,
-            e -> LOGGER.warn("Failed to save notification log: {}", e.getMessage())
-    );
 
     private static boolean prevLeftDown;
 
@@ -260,51 +259,58 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        logSaveTask.request();
+        new Thread(() -> {
+            try {
+                Path dir = CustomConfig.getConfigDirectory();
+                Files.createDirectories(dir);
+                Path path = dir.resolve(LOG_FILE_NAME);
+                JsonObject root = new JsonObject();
+                JsonArray arr = new JsonArray();
+                List<NotificationLogEntry> snapshot;
+                synchronized (log) {
+                    snapshot = new ArrayList<>(log);
+                }
+                for (NotificationLogEntry e : snapshot) {
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("id", e.id());
+                    obj.addProperty("timestamp", e.timestamp());
+                    obj.addProperty("componentJson", e.componentJson());
+                    obj.addProperty("positionName", e.positionName());
+                    obj.addProperty("animationName", e.animationName());
+                    obj.addProperty("durationTime", e.durationTime());
+                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
+                    obj.addProperty("source", e.source());
+                    arr.add(obj);
+                }
+                root.add("entries", arr);
+                Files.writeString(path, JsonUtils.toPrettyString(root));
+            } catch (Exception e) {
+                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
+            }
+        }).start();
     }
 
-    private void saveLogSnapshot() throws Exception {
-        Path dir = CustomConfig.getConfigDirectory();
-        Files.createDirectories(dir);
-        Path path = dir.resolve(LOG_FILE_NAME);
-        JsonObject root = new JsonObject();
-        JsonArray arr = new JsonArray();
-        List<NotificationLogEntry> snapshot;
-        synchronized (log) {
-            snapshot = new ArrayList<>(log);
-        }
-        for (NotificationLogEntry e : snapshot) {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("id", e.id());
-            obj.addProperty("timestamp", e.timestamp());
-            obj.addProperty("componentJson", e.componentJson());
-            obj.addProperty("positionName", e.positionName());
-            obj.addProperty("animationName", e.animationName());
-            obj.addProperty("durationTime", e.durationTime());
-            obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-            obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-            obj.addProperty("source", e.source());
-            arr.add(obj);
-        }
-        root.add("entries", arr);
-        Files.writeString(path, JsonUtils.toPrettyString(root));
-    }
-    public void render(PoseStack stack) {
-        xin.vanilla.banira.common.data.KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getGuiScaledSize();
+    public void render(GuiGraphics graphics) {
+        Minecraft mc = Minecraft.getInstance();
+        PoseStack stack = graphics.pose();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
-                .width(screenSize.key())
-                .height(screenSize.val());
+                .width(mc.getWindow().getGuiScaledWidth())
+                .height(mc.getWindow().getGuiScaledHeight());
         long currentTime = System.currentTimeMillis();
 
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        double mx = BaniraClientRuntime.scaledMouseX();
-        double my = BaniraClientRuntime.scaledMouseY();
+        double[] mouse = scaledMouse(mc);
+        double mx = mouse[0];
+        double my = mouse[1];
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
+            entry.getValue().removeIf(Notification::finished);
+
             EnumPosition pos = entry.getKey();
-            List<Notification> list = entry.getValue();
+            List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
 
             boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
                     || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
@@ -321,9 +327,6 @@ public final class NotificationManager {
                     iter.remove();
                     continue;
                 }
-                if (n.scheduledTime() > currentTime) {
-                    continue;
-                }
 
                 if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
                     preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
@@ -336,7 +339,7 @@ public final class NotificationManager {
                 }
 
                 frameDrawOrder.add(n);
-                n.index(i++).renderAt(stack, preInfo, screenInfo, currentTime, lastInfo);
+                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
 
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());
@@ -360,9 +363,16 @@ public final class NotificationManager {
         }
 
         if (frameHoverStyle != null) {
-            NotificationStyleInteractionHelper.renderHoverTooltip(stack, (int) mx, (int) my,
+            NotificationStyleInteractionHelper.renderHoverTooltip(graphics, (int) mx, (int) my,
                     (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle);
         }
+    }
+
+    private static double[] scaledMouse(Minecraft mc) {
+        Window win = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
+        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
+        return new double[]{mx, my};
     }
 
     /**
@@ -374,6 +384,7 @@ public final class NotificationManager {
         if (button != 0) {
             return false;
         }
+        Minecraft mc = Minecraft.getInstance();
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
@@ -388,12 +399,12 @@ public final class NotificationManager {
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);
-            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(st)) {
+            if (st != null && NotificationStyleInteractionHelper.tryClickStyle(mc, st)) {
                 return true;
             }
             if (n.isBodyHit(guiMouseX, guiMouseY)) {
-                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
-                        .parentScreen(BaniraClientRuntime.currentScreen())
+                mc.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
+                        .parentScreen(mc.screen)
                         .selectLogEntryId(n.logEntryId())));
                 return true;
             }
@@ -405,12 +416,15 @@ public final class NotificationManager {
      * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
      */
     public void tickOutOfScreenClick() {
-        if (BaniraClientRuntime.currentScreen() != null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
             return;
         }
-        boolean down = BaniraClientRuntime.leftMouseDown();
+        Window win = mc.getWindow();
+        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (down && !prevLeftDown) {
-            tryHandleHudClick(BaniraClientRuntime.scaledMouseX(), BaniraClientRuntime.scaledMouseY(), 0);
+            double[] m = scaledMouse(mc);
+            tryHandleHudClick(m[0], m[1], 0);
         }
         prevLeftDown = down;
     }

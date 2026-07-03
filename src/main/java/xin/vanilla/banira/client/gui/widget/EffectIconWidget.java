@@ -4,7 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import xin.vanilla.banira.BaniraComponent;
@@ -34,18 +37,6 @@ public class EffectIconWidget extends BaseWidget {
 
     @Getter
     private MobEffectInstance effectInstance;
-    /**
-     * effectId 模式的解析结果稳定，缓存后避免选择列表每帧重复解析字符串。
-     */
-    private String cachedEffectId;
-    private MobEffectInstance cachedEffectIdInstance;
-    /**
-     * tooltip 随效果、等级、持续时间变化；同一游戏 tick 内通常可复用多帧。
-     */
-    private String cachedTooltipKey;
-    private String cachedTooltipString;
-    private Text cachedTooltipText;
-    private net.minecraft.network.chat.Component cachedVanillaTooltip;
 
     @Getter
     @Setter
@@ -78,13 +69,14 @@ public class EffectIconWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         if (renderCoordinate == null) return;
 
         MobEffectInstance current = getCurrentMobEffectInstance();
         if (current == null || EffectUtils.isEffectNull(current)) {
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
             return;
         }
 
@@ -94,17 +86,27 @@ public class EffectIconWidget extends BaseWidget {
         int h = (int) renderCoordinate.height();
         drawEffectIcon(stack, screen.getFont(), current, x, y, w, h, showText);
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
 
         if (enableTooltip && mouseInside) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
-            renderTooltip(stack, mouseX, mouseY, current);
+            renderTooltip(graphics, stack, mouseX, mouseY, current);
         }
     }
 
-    private void renderTooltip(PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
-        String tip = tooltipString(effectInstance);
+    private void renderTooltip(GuiGraphics graphics, PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
+        String displayName = EffectUtils.getEffectDisplayName(effectInstance);
+        String duration = effectInstance.getDuration() > 0
+                ? DateUtils.toMaxUnitString(effectInstance.getDuration(),
+                DateUtils.DateUnit.SECOND, 0, 1)
+                : "";
+        String amplifier = effectInstance.getAmplifier() >= 0
+                ? NumberUtils.intToRoman(effectInstance.getAmplifier() + 1)
+                : "";
+        StringBuilder tip = new StringBuilder(displayName);
+        if (!amplifier.isEmpty()) tip.append(" ").append(amplifier);
+        if (!duration.isEmpty()) tip.append("\n").append(duration);
         if (!tip.isEmpty()) {
             stack.pushPose();
             stack.translate(-absoluteX(), -absoluteY(), 0);
@@ -112,12 +114,12 @@ public class EffectIconWidget extends BaseWidget {
                 if (seasonTooltip) {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     TooltipWidget.drawPopupMessage(stack,
-                            FontDrawArgs.ofPopo(tooltipText(tip).stack(stack).font(screen.getFont()))
+                            FontDrawArgs.ofPopo(Text.literal(tip.toString()).stack(stack).font(screen.getFont()))
                                     .x(mouseX).y(mouseY)
                                     .popupUseTexture(theme.tooltipUseTexture()),
                             theme, screen.season());
                 } else {
-                    screen.renderTooltip(stack, vanillaTooltip(tip), mouseX, mouseY);
+                    graphics.renderTooltip(screen.getFont(), BaniraComponent.get().literal(tip.toString()).toVanilla(), mouseX, mouseY);
                 }
             }
             stack.popPose();
@@ -126,83 +128,40 @@ public class EffectIconWidget extends BaseWidget {
 
     @Nullable
     private MobEffectInstance getCurrentMobEffectInstance() {
-        if (effectInstance != null) return effectInstance;
+        if (effectInstance != null) return EffectUtils.copyMobEffectInstance(effectInstance);
         if (effectId == null || effectId.isEmpty()) return null;
-        if (!effectId.equals(cachedEffectId) || cachedEffectIdInstance == null) {
-            cachedEffectId = effectId;
-            cachedEffectIdInstance = EffectUtils.deserializeMobEffectInstance(effectId);
-        }
-        return cachedEffectIdInstance;
+        return EffectUtils.deserializeMobEffectInstance(effectId);
     }
 
     public EffectIconWidget effectId(@Nullable String effectId) {
         this.effectId = effectId;
         this.effectInstance = null;
-        invalidateEffectCaches();
         return this;
     }
 
     public EffectIconWidget effectInstance(@Nullable MobEffectInstance effectInstance) {
         this.effectInstance = effectInstance;
         this.effectId = null;
-        invalidateEffectCaches();
         return this;
     }
 
-    private void invalidateEffectCaches() {
-        cachedEffectId = null;
-        cachedEffectIdInstance = null;
-        cachedTooltipKey = null;
-        cachedTooltipString = null;
-        cachedTooltipText = null;
-        cachedVanillaTooltip = null;
-    }
 
-    private String tooltipString(MobEffectInstance effectInstance) {
-        String key = tooltipKey(effectInstance);
-        if (!key.equals(cachedTooltipKey)) {
-            cachedTooltipKey = key;
-            cachedTooltipString = buildTooltipString(effectInstance);
-            cachedTooltipText = null;
-            cachedVanillaTooltip = null;
-        }
-        return cachedTooltipString != null ? cachedTooltipString : "";
+    private static void drawEffectIconText(Font font, PoseStack stack, net.minecraft.network.chat.Component vanilla, float x, float y, int color) {
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        font.drawInBatch(
+                vanilla.getVisualOrderText(),
+                x,
+                y,
+                color,
+                false,
+                stack.last().pose(),
+                bufferSource,
+                Font.DisplayMode.NORMAL,
+                0,
+                15728880
+        );
+        bufferSource.endBatch();
     }
-
-    private static String tooltipKey(MobEffectInstance effectInstance) {
-        return EffectUtils.getEffectRegistryString(effectInstance) + "|"
-                + effectInstance.getAmplifier() + "|"
-                + effectInstance.getDuration();
-    }
-
-    private static String buildTooltipString(MobEffectInstance effectInstance) {
-        String displayName = EffectUtils.getEffectDisplayName(effectInstance);
-        String duration = effectInstance.getDuration() > 0
-                ? DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1)
-                : "";
-        String amplifier = effectInstance.getAmplifier() >= 0
-                ? NumberUtils.intToRoman(effectInstance.getAmplifier() + 1)
-                : "";
-        StringBuilder tip = new StringBuilder(displayName);
-        if (!amplifier.isEmpty()) tip.append(" ").append(amplifier);
-        if (!duration.isEmpty()) tip.append("\n").append(duration);
-        return tip.toString();
-    }
-
-    private Text tooltipText(String tip) {
-        if (cachedTooltipText == null || !tip.equals(cachedTooltipText.content())) {
-            cachedTooltipText = Text.literal(tip);
-        }
-        return cachedTooltipText;
-    }
-
-    private net.minecraft.network.chat.Component vanillaTooltip(String tip) {
-        if (cachedVanillaTooltip == null || !tip.equals(cachedVanillaTooltip.getString())) {
-            cachedVanillaTooltip = BaniraComponent.get().literal(tip).toVanilla();
-        }
-        return cachedVanillaTooltip;
-    }
-
 
     /**
      * 绘制效果图标
@@ -241,7 +200,7 @@ public class EffectIconWidget extends BaseWidget {
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
                 int argb = 0xFFFFFFFF;
-                font.draw(stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
+                drawEffectIconText(font, stack, amplifierString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
@@ -250,7 +209,7 @@ public class EffectIconWidget extends BaseWidget {
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
                 int argb = 0xFFFFFFFF;
-                font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
+                drawEffectIconText(font, stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
             }
         }
     }

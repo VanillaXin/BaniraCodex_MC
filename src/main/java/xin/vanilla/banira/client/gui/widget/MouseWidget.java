@@ -1,6 +1,8 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -11,7 +13,6 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 /**
  * 自定义的鼠标光标
@@ -93,18 +94,21 @@ public class MouseWidget extends BaseWidget {
     }
 
     private void hideSystemCursor() {
-        GLFW.glfwSetInputMode(BaniraClientRuntime.windowHandle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
+        long windowHandle = Minecraft.getInstance().getWindow().getWindow();
+        GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
     }
 
     /**
      * Screen 关闭时恢复系统鼠标
      */
     public void removed() {
-        GLFW.glfwSetInputMode(BaniraClientRuntime.windowHandle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        long windowHandle = Minecraft.getInstance().getWindow().getWindow();
+        GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         int mouseX = (int) screen.inputState().mouseX();
         int mouseY = (int) screen.inputState().mouseY();

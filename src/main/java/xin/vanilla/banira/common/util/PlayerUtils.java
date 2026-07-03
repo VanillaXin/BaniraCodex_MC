@@ -520,7 +520,7 @@ public final class PlayerUtils {
      */
     public static boolean isPlayerDataSynced(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return true;
-        if (player.level.isClientSide()) {
+        if (player.level().isClientSide()) {
             return remoteServerModInstalled.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);
         }
         return remoteClientModInstalled.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);

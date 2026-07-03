@@ -2,23 +2,22 @@ package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 import java.net.URI;
 
@@ -30,24 +29,24 @@ public final class NotificationStyleInteractionHelper {
     private NotificationStyleInteractionHelper() {
     }
 
-    public static boolean tryClickStyle(Style style) {
+    public static boolean tryClickStyle(Minecraft mc, Style style) {
         if (style == null || style.getClickEvent() == null) {
             return false;
         }
-        Screen screen = BaniraClientRuntime.currentScreen();
+        Screen screen = mc.screen;
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(style.getClickEvent());
+        return handleClickInGame(mc, style.getClickEvent());
     }
 
-    private static boolean handleClickInGame(ClickEvent event) {
-        if (BaniraInput.isShiftDown()) {
+    private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
+        if (Screen.hasShiftDown()) {
             return false;
         }
         switch (event.getAction()) {
             case OPEN_URL:
-                if (!BaniraVanillaNotificationBridge.chatLinksEnabled()) {
+                if (!mc.options.chatLinks().get()) {
                     return false;
                 }
                 try {
@@ -58,19 +57,33 @@ public final class NotificationStyleInteractionHelper {
                     return false;
                 }
             case RUN_COMMAND:
-                return BaniraVanillaNotificationBridge.runCommand(event.getValue());
+                if (mc.player == null) {
+                    return false;
+                }
+                String cmd = event.getValue();
+                if (!cmd.startsWith("/")) {
+                    cmd = "/" + cmd;
+                }
+                String commandLine = cmd.startsWith("/") ? cmd.substring(1) : cmd;
+                if (!mc.player.connection.sendUnsignedCommand(commandLine)) {
+                    mc.player.connection.sendCommand(commandLine);
+                }
+                return true;
             case SUGGEST_COMMAND:
-                BaniraVanillaNotificationBridge.suggestCommand(event.getValue());
+                mc.setScreen(new ChatScreen(event.getValue()));
                 return true;
             case COPY_TO_CLIPBOARD:
-                AbstractGuiUtils.setClipboard(event.getValue());
+                mc.keyboardHandler.setClipboard(event.getValue());
                 return true;
             default:
                 return false;
         }
     }
 
-    public static void renderHoverTooltip(PoseStack stack, int mouseX, int mouseY, int screenW, int screenH, Style style) {
+    /**
+     * @param screenW screenH 预留与布局相关扩展，当前由 {@link GuiGraphics} 自行处理提示框位置
+     */
+    public static void renderHoverTooltip(GuiGraphics graphics, int mouseX, int mouseY, int screenW, int screenH, Style style) {
         if (style == null) {
             return;
         }
@@ -85,19 +98,20 @@ public final class NotificationStyleInteractionHelper {
         if (tip == null) {
             return;
         }
+        PoseStack stack = graphics.pose();
+        Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        Screen screen = BaniraClientRuntime.currentScreen();
-        EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
+        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
         boolean useTexture = theme.tooltipUseTexture();
 
         xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
         Text tipText = new Text(wrapped);
 
         stack.pushPose();
-        stack.last().pose().setIdentity();
+        stack.last().pose().identity();
         try {
             TooltipWidget.drawPopupMessage(stack,
-                    FontDrawArgs.ofPopo(tipText.stack(stack).font(AbstractGuiUtils.getFont())).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, season);
         } finally {
             stack.popPose();

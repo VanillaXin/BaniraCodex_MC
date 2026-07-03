@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -48,7 +48,7 @@ public final class BlockUtils {
         if (block == null) {
             return null;
         }
-        return Registry.BLOCK.getKey(block);
+        return BuiltInRegistries.BLOCK.getKey(block);
     }
 
     /**
@@ -243,7 +243,7 @@ public final class BlockUtils {
         return deserializeCache.computeIfAbsent(key, k -> {
             try {
                 StringReader reader = new StringReader(k);
-                return BlockStateParser.parseForBlock(Registry.BLOCK, reader, true).blockState();
+                return BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), reader, true).blockState();
             } catch (Exception e) {
                 LOGGER.error("Failed to deserialize block state from string: {}", k, e);
                 return Blocks.AIR.defaultBlockState();
@@ -263,7 +263,7 @@ public final class BlockUtils {
             return null;
         }
         try {
-            return Registry.BLOCK.get(location);
+            return BuiltInRegistries.BLOCK.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find block by registry name: {}", location, e);
             return null;
@@ -315,7 +315,7 @@ public final class BlockUtils {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
                     Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
-                    for (Block block : Registry.BLOCK) {
+                    for (Block block : BuiltInRegistries.BLOCK) {
                         if (block == null) continue;
                         ResourceLocation rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;

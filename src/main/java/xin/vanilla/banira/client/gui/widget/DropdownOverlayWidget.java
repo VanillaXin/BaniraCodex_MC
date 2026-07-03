@@ -1,7 +1,10 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -11,13 +14,9 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
 
 import java.util.List;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 下拉选择框的浮层，用于渲染下拉列表并拦截点击/滚动，防止穿透到下方控件。
@@ -43,35 +42,36 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private static ScreenCoordinate createFullScreenBounds() {
-        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
-        int w = screenSize.key();
-        int h = screenSize.val();
+        Screen mcScreen = Minecraft.getInstance().screen;
+        int w = mcScreen != null ? mcScreen.width : 400;
+        int h = mcScreen != null ? mcScreen.height : 300;
         return new ScreenCoordinate(0, 0, w, h);
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!parent.dropdownOpen()) return;
 
         ScreenCoordinate db = parent.getDropdownBounds();
         if (db == null) return;
 
-        List<DropdownOption> options = parent.filteredOptionEntriesView();
+        List<DropdownOption> options = parent.getFilteredOptionEntries();
         if (options.isEmpty()) return;
 
-        Font font = AbstractGuiUtils.getFont();
+        Font font = Minecraft.getInstance().font;
         BaniraScreen scr = screen;
         if (scr == null) return;
         BaniraColorConfig theme = scr.getEffectiveTheme();
-        int popupBg = theme.color(POPUP_BG);
-        int popupBorder = theme.color(POPUP_BORDER);
-        int popupSelected = theme.color(POPUP_ITEM_SELECTED);
-        int popupSelectedBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
-        int textColorUnselected = theme.color(POPUP_ITEM_TEXT);
-        int textColorSelected = theme.color(POPUP_ITEM_TEXT_SELECTED);
-        int scrollbarBg = theme.color(SCROLLBAR_BG);
-        int scrollbarThumb = theme.color(SCROLLBAR_THUMB);
-        int scrollbarThumbHover = theme.color(SCROLLBAR_THUMB_HOVER);
+        int popupBg = theme.popupBg();
+        int popupBorder = theme.popupBorder();
+        int popupSelected = theme.popupItemSelected();
+        int popupSelectedBorder = theme.popupItemSelectedBorder();
+        int textColorUnselected = theme.popupItemText();
+        int textColorSelected = theme.popupItemTextSelected();
+        int scrollbarBg = theme.scrollbarBg();
+        int scrollbarThumb = theme.scrollbarThumb();
+        int scrollbarThumbHover = theme.scrollbarThumbHover();
 
         double mouseX = scr.inputState().mouseX();
         double mouseY = scr.inputState().mouseY();
@@ -135,11 +135,11 @@ class DropdownOverlayWidget extends BaseWidget {
                     int iconX = (int) (db.x() + PAD + leftOffset + DropdownSelectWidget.DROPDOWN_ICON_INSET);
                     int sz = DropdownSelectWidget.DROPDOWN_ICON_DRAW_SIZE;
                     int iconY = itemY + (ITEM_HEIGHT - sz) / 2;
-                    BaniraItemRenderBridge.renderFlatIcon(s, optEntry.icon(), iconX, iconY, sz);
+                    ItemWidget.renderGuiItemFlatBlit(s, Minecraft.getInstance(), optEntry.icon(), iconX, iconY, sz);
                 }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;
-                font.draw(s, display, textX, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor);
+                graphics.drawString(font, display, textX, (int) Math.round(itemY + (ITEM_HEIGHT - font.lineHeight) / 2f), textColor, false);
             }
 
             AbstractGuiUtils.disableScissor();
@@ -159,10 +159,10 @@ class DropdownOverlayWidget extends BaseWidget {
                 int tipY = (int) scr.inputState().mouseY();
                 EnumSeason season = scr.season();
                 scr.addDeferredTooltipRender(t -> {
-                    t.pushPose();
-                    t.last().pose().setIdentity();
-                    TooltipWidget.drawPopupMessage(t, FontDrawArgs.ofPopo(textToDraw.stack(t)).x(tipX).y(tipY).popupUseTexture(useTexture), theme, season);
-                    t.popPose();
+                    t.pose().pushPose();
+                    t.pose().last().pose().identity();
+                    TooltipWidget.drawPopupMessage(t.pose(), FontDrawArgs.ofPopo(textToDraw.stack(t.pose())).x(tipX).y(tipY).popupUseTexture(useTexture), theme, season);
+                    t.pose().popPose();
                 });
             }
         }
@@ -206,7 +206,7 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     private boolean isMouseOverScrollbarThumb(ScreenCoordinate db, double mouseX, double mouseY) {
-        List<DropdownOption> options = parent.filteredOptionEntriesView();
+        List<DropdownOption> options = parent.getFilteredOptionEntries();
         int contentHeight = options.size() * ITEM_HEIGHT;
         int visibleHeight = (int) db.height() - PAD * 2;
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
@@ -242,7 +242,7 @@ class DropdownOverlayWidget extends BaseWidget {
         if (parent.isInDropdownOptions(mouseX, mouseY)) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                List<DropdownOption> options = parent.filteredOptionEntriesView();
+                List<DropdownOption> options = parent.getFilteredOptionEntries();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;
@@ -299,7 +299,7 @@ class DropdownOverlayWidget extends BaseWidget {
         if (event.button() == 0 && pressedOptionIndex >= 0) {
             ScreenCoordinate db = parent.getDropdownBounds();
             if (db != null) {
-                List<DropdownOption> options = parent.filteredOptionEntriesView();
+                List<DropdownOption> options = parent.getFilteredOptionEntries();
                 int contentHeight = options.size() * ITEM_HEIGHT;
                 int visibleHeight = (int) db.height() - PAD * 2;
                 boolean scrollable = contentHeight > visibleHeight;

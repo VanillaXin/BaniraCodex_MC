@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -49,7 +49,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return Registry.ENTITY_TYPE.getKey(entityType);
+        return BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
     }
 
     /**
@@ -242,7 +242,7 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return Registry.ENTITY_TYPE.get(location);
+            return BuiltInRegistries.ENTITY_TYPE.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -286,7 +286,7 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : Registry.ENTITY_TYPE) {
+                    for (EntityType<?> entityType : BuiltInRegistries.ENTITY_TYPE) {
                         if (entityType == null) continue;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;

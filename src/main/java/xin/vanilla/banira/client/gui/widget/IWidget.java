@@ -1,9 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.gui.event.*;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -28,10 +31,10 @@ public interface IWidget {
     /**
      * 渲染本组件。
      *
-     * @param stack        矩阵栈
+     * @param graphics     当前帧 GUI 绘制上下文（与 {@link PoseStack} 通过 {@link GuiGraphics#pose()} 对应）
      * @param partialTicks 部分 tick（用于动画插值）
      */
-    void render(PoseStack stack, float partialTicks);
+    void render(GuiGraphics graphics, float partialTicks);
 
     /**
      * 每帧更新，用于动画、光标闪烁等。
@@ -64,20 +67,22 @@ public interface IWidget {
     /**
      * 处理按键按下事件。
      *
-     * @param event 键盘事件
+     * @param keyCode   GLFW 键码
+     * @param scanCode  扫描码
+     * @param modifiers 修饰键
      * @return 若已消费则返回 true
      */
-    boolean handleKeyPress(KeyEvent event);
+    boolean handleKeyPress(int keyCode, int scanCode, int modifiers);
 
     /**
      * 处理按键释放事件。
      */
-    boolean handleKeyRelease(KeyEvent event);
+    boolean handleKeyRelease(int keyCode, int scanCode, int modifiers);
 
     /**
      * 处理字符输入（用于文本输入框）。
      */
-    boolean handleCharTyped(CharInputEvent event);
+    boolean handleCharTyped(char codePoint, int modifiers);
 
     /**
      * 处理鼠标拖拽事件。

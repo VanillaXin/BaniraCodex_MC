@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -42,7 +42,7 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return Registry.MOB_EFFECT.getKey(effect);
+        return BuiltInRegistries.MOB_EFFECT.getKey(effect);
     }
 
     /**
@@ -216,7 +216,7 @@ public final class EffectUtils {
     public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return Registry.MOB_EFFECT.get(location);
+            return BuiltInRegistries.MOB_EFFECT.get(location);
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -276,7 +276,7 @@ public final class EffectUtils {
      */
     private static List<MobEffect> buildUniqueEffectsList() {
         Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-        for (MobEffect effect : Registry.MOB_EFFECT) {
+        for (MobEffect effect : BuiltInRegistries.MOB_EFFECT) {
             if (effect == null) continue;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;

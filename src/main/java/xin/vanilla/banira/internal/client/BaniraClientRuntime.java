@@ -103,7 +103,7 @@ public final class BaniraClientRuntime {
                 || Minecraft.getInstance().getLanguageManager().getSelected() == null) {
             return null;
         }
-        return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+        return Minecraft.getInstance().getLanguageManager().getSelected();
     }
 
     public static String clipboard() {

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.fabric.platform;
 
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffect;
@@ -25,36 +25,36 @@ public enum FabricBaniraRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nullable String blockKey(@Nullable Object block) {
-        ResourceLocation key = block instanceof Block ? Registry.BLOCK.getKey((Block) block) : null;
+        ResourceLocation key = block instanceof Block ? BuiltInRegistries.BLOCK.getKey((Block) block) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object block(@Nullable String id) {
         ResourceLocation location = parse(id);
-        return location != null ? Registry.BLOCK.get(location) : null;
+        return location != null ? BuiltInRegistries.BLOCK.get(location) : null;
     }
 
     @Override
     public @Nonnull Collection<?> blocks() {
-        return values(Registry.BLOCK);
+        return values(BuiltInRegistries.BLOCK);
     }
 
     @Override
     public @Nullable String itemKey(@Nullable Object item) {
-        ResourceLocation key = item instanceof Item ? Registry.ITEM.getKey((Item) item) : null;
+        ResourceLocation key = item instanceof Item ? BuiltInRegistries.ITEM.getKey((Item) item) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object item(@Nullable String id) {
         ResourceLocation location = parse(id);
-        return location != null ? Registry.ITEM.get(location) : null;
+        return location != null ? BuiltInRegistries.ITEM.get(location) : null;
     }
 
     @Override
     public @Nonnull Collection<?> items() {
-        return values(Registry.ITEM);
+        return values(BuiltInRegistries.ITEM);
     }
 
     @Override
@@ -71,36 +71,36 @@ public enum FabricBaniraRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nullable String entityTypeKey(@Nullable Object entityType) {
-        ResourceLocation key = entityType instanceof EntityType ? Registry.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
+        ResourceLocation key = entityType instanceof EntityType ? BuiltInRegistries.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object entityType(@Nullable String id) {
         ResourceLocation location = parse(id);
-        return location != null ? Registry.ENTITY_TYPE.get(location) : null;
+        return location != null ? BuiltInRegistries.ENTITY_TYPE.get(location) : null;
     }
 
     @Override
     public @Nonnull Collection<?> entityTypes() {
-        return values(Registry.ENTITY_TYPE);
+        return values(BuiltInRegistries.ENTITY_TYPE);
     }
 
     @Override
     public @Nullable String effectKey(@Nullable Object effect) {
-        ResourceLocation key = effect instanceof MobEffect ? Registry.MOB_EFFECT.getKey((MobEffect) effect) : null;
+        ResourceLocation key = effect instanceof MobEffect ? BuiltInRegistries.MOB_EFFECT.getKey((MobEffect) effect) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object effect(@Nullable String id) {
         ResourceLocation location = parse(id);
-        return location != null ? Registry.MOB_EFFECT.get(location) : null;
+        return location != null ? BuiltInRegistries.MOB_EFFECT.get(location) : null;
     }
 
     @Override
     public @Nonnull Collection<?> effects() {
-        return values(Registry.MOB_EFFECT);
+        return values(BuiltInRegistries.MOB_EFFECT);
     }
 
     @Override

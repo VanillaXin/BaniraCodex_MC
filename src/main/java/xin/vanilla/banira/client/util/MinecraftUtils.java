@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.util;
 
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
 
 /**
  * Minecraft客户端工具类
@@ -16,6 +17,8 @@ public final class MinecraftUtils {
      * @return 若未连接服务器则返回空字符串
      */
     public static String getServerIp() {
-        return BaniraClientRuntime.serverIp();
+        Minecraft minecraft = Minecraft.getInstance();
+        ServerData currentServer = minecraft.getCurrentServer();
+        return currentServer != null ? currentServer.ip : "";
     }
 }

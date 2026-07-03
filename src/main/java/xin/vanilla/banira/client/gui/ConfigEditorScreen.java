@@ -1,10 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -14,25 +15,22 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
-
 /**
- * 配置编辑界面，支持可视化编辑 Banira 配置模型。
+ * 配置编辑界面，支持可视化编辑 ForgeConfigSpec 配置。
  * <ul>
  *   <li>单击「同步至服务端」仅发送本会话内改动过的配置项；长按发送全部项。</li>
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
@@ -80,7 +78,6 @@ public class ConfigEditorScreen extends BaniraScreen {
     private int contentW;
     private int btnY;
     private int contentTotalW;
-    private final ScreenCoordinate contentViewport = new ScreenCoordinate();
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
 
     /**
@@ -104,9 +101,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
-        if (EnvironmentUtils.isClient()) {
-            BaniraClientRuntime.setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
-        }
+        Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
     }
 
     @Override
@@ -254,7 +249,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.maxValue(0);
             scrollbar.value(0);
             scrollbar.visible(false);
-            scrollbar.clearScrollHoverAreas();
+            scrollbar.scrollingCoordinates(new ArrayList<>());
         } else {
             listAreaHeight = maxListHeight;
             btnY = centeredBtnY;
@@ -264,7 +259,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
             scrollOffset = scrollbar.value();
             scrollbar.visibleSize(listAreaHeight);
-            scrollbar.clearScrollHoverAreas();
+            scrollbar.scrollingCoordinates(new ArrayList<>());
             scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, contentTotalW, listAreaHeight));
         }
 
@@ -323,23 +318,11 @@ public class ConfigEditorScreen extends BaniraScreen {
                 tip.bounds(new ScreenCoordinate(0, 0, bc.width(), bc.height()));
             }
         }
-        refreshContentViewport();
     }
 
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
-            contentRootPanel.renderViewport(contentViewport);
-        }
-    }
-
-    private void refreshContentViewport() {
-        contentViewport.x(contentLeft)
-                .y(listTop)
-                .width(contentTotalW)
-                .height(Math.max(1, listAreaHeight));
-        if (contentRootPanel != null) {
-            contentRootPanel.renderViewport(contentViewport);
         }
     }
 
@@ -413,7 +396,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private String configModId() {
         String id = holder.getModId();
-        return id == null || id.isEmpty() ? Banira.MOD_ID : id;
+        return id == null || id.isEmpty() ? BaniraCodex.MODID : id;
     }
 
     // region 行内标签列 / 值区宽度（随窗口宽度按比例伸缩）
@@ -756,7 +739,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
@@ -767,14 +750,14 @@ public class ConfigEditorScreen extends BaniraScreen {
             holder.save();
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             // if (previousScreen() != null) {
             //     onClose();
             // }
         } catch (Exception ex) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_failed", ex.getMessage()));
             n.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
         }
     }
 
@@ -782,14 +765,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectTouchedPathsForSync();
         if (syncPayload.isEmpty()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, String> toSync = new LinkedHashMap<>();
@@ -807,7 +790,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(err);
+            NotificationManager.get().addNotification(err);
         }
     }
 
@@ -818,20 +801,20 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (hasInvalidEntryWidgets()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
-        if (!BaniraClientRuntime.hasConnection()) {
+        if (Minecraft.getInstance().getConnection() == null) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, Object> syncPayload = collectAllEntryValuesForSync();
         if (syncPayload.isEmpty()) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_sync_nothing"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2500);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         Map<String, String> toSync = new LinkedHashMap<>();
@@ -849,7 +832,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(err);
+            NotificationManager.get().addNotification(err);
         }
     }
 
@@ -860,10 +843,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.canSyncToServer()) {
             return;
         }
-        if (!BaniraClientRuntime.hasConnection()) {
+        if (Minecraft.getInstance().getConnection() == null) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_fetch_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
         try {
@@ -872,7 +855,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_fetch_send_failed", ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(err);
+            NotificationManager.get().addNotification(err);
         }
     }
 
@@ -982,9 +965,10 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(PoseStack stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), CARD_ALPHA);
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
@@ -1014,16 +998,15 @@ public class ConfigEditorScreen extends BaniraScreen {
                     0, 0, 0, CARD_RADIUS, cardBg);
         }
 
-        refreshContentViewport();
-        AbstractGuiUtils.enableScissor(contentViewport.xInt(), contentViewport.yInt(), contentViewport.widthInt(), contentViewport.heightInt());
+        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
 
         if (contentRootPanel != null && contentRootPanel.visible()) {
             if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) contentRootPanel.update();
-            contentRootPanel.render(stack, partialTicks);
+            contentRootPanel.render(graphics, partialTicks);
         }
         if (scrollbar != null && scrollbar.visible()) {
             if (scrollbar.enabled() && scrollbar.needsUpdate()) scrollbar.update();
-            scrollbar.render(stack, partialTicks);
+            scrollbar.render(graphics, partialTicks);
         }
 
         AbstractGuiUtils.disableScissor();
@@ -1031,7 +1014,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         for (ButtonWidget btn : bottomButtons) {
             if (btn.visible()) {
                 if (btn.enabled() && btn.needsUpdate()) btn.update();
-                btn.render(stack, partialTicks);
+                btn.render(graphics, partialTicks);
             }
         }
 
@@ -1040,20 +1023,20 @@ public class ConfigEditorScreen extends BaniraScreen {
             if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) continue;
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget.enabled() && widget.needsUpdate()) widget.update();
-            widget.render(stack, partialTicks);
+            widget.render(graphics, partialTicks);
         }
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
-        renderWidgets(stack, partialTicks);
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        renderWidgets(graphics, partialTicks);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {
@@ -1190,9 +1173,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
 
         @Override
-        public void render(PoseStack stack, float partialTicks) {
+        public void render(GuiGraphics graphics, float partialTicks) {
+            PoseStack stack = graphics.pose();
             if (!visible) return;
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
         }
     }
 }

@@ -1,8 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -12,13 +13,10 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.DebugScreen;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
 import javax.annotation.Nullable;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 香草志功能导航
@@ -61,7 +59,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
         addNavButton(cx, y, btnW, "codex_navigation_notification_log",
-                () -> BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
+                () -> Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "codex_navigation_client_config",
@@ -73,7 +71,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",
-                () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
+                () -> Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
@@ -82,7 +80,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         closeBtn.radius(CLOSE_BTN_SIZE / 3f);
         closeBtn.padding(1);
         closeBtn.onClick(b -> onClose());
-        closeBtn.onLongPress(b -> BaniraClientRuntime.setScreen(new DebugScreen().previousScreen(this)));
+        closeBtn.onLongPress(b -> Minecraft.getInstance().setScreen(new DebugScreen().previousScreen(this)));
         addWidget(closeBtn);
     }
 
@@ -101,11 +99,11 @@ public class CodexNavigationScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), 0xFF);
-        AbstractGuiUtils.drawRoundedRect(stack, CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
+        AbstractGuiUtils.drawRoundedRect(graphics.pose(), CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
                 CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
     }
 }

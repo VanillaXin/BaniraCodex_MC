@@ -91,14 +91,17 @@ public final class VirtualOpCommand {
             }
             Set<EnumCommandType> permissions = VirtualPermissionManager.getVirtualPermission(target);
             String permissionsStr = VirtualPermissionManager.buildPermissionsString(permissions);
-            MessageUtils.sendMessage(target, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+            String targetName = target.getDisplayName().getString();
+            String languageFinal = language;
+            String permissionsStrFinal = permissionsStr;
+            MessageUtils.sendMessage(target, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", targetName, permissionsStrFinal));
             if (source.getEntity() != null && source.getEntity() instanceof ServerPlayer) {
                 ServerPlayer player = source.getPlayerOrException();
                 if (!target.getStringUUID().equalsIgnoreCase(player.getStringUUID())) {
-                    MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+                    MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", targetName, permissionsStrFinal));
                 }
             } else {
-                source.sendSuccess(BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language).toChat(language), true);
+                source.sendSuccess(() -> BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", targetName, permissionsStrFinal).languageCode(languageFinal).toChat(languageFinal), true);
             }
             CommandUtils.refreshPermission(target);
         }

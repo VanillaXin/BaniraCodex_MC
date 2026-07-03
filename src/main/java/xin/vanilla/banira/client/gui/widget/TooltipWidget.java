@@ -5,11 +5,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -28,9 +30,6 @@ import xin.vanilla.banira.common.util.ItemUtils;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.POPUP_BG;
-import static xin.vanilla.banira.client.data.BaniraColorToken.POPUP_BORDER;
 
 /**
  * 提示Widget。提供 drawPopupMessage 等静态绘制方法。
@@ -94,10 +93,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
-            renderChildren(stack, partialTicks);
+            renderChildren(graphics, partialTicks);
             return;
         }
         if (mouseInside) {
@@ -109,17 +109,19 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 EnumSeason season = screen.season();
                 Text textToDraw = text;
                 boolean useTexture = resolvePopupUseTexture(theme);
-                screen.addDeferredTooltipRender(s -> {
-                    s.pushPose();
-                    s.last().pose().setIdentity();
+                screen.addDeferredTooltipRender(g -> {
+                    g.pose().pushPose();
+                    g.pose().last().pose().identity();
                     if (itemStack != null && !itemStack.isEmpty()) {
-                        drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
+                        drawItemTooltip(g.pose(), itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {
-                        screen.renderComponentTooltip(s, vanillaTooltipLines(), mouseX, mouseY);
+                        List<net.minecraft.network.chat.Component> tip = new ArrayList<>();
+                        tip.add(textToDraw.toComponent().toChat());
+                        g.renderTooltip(screen.getFont(), tip, java.util.Optional.empty(), mouseX, mouseY);
                     } else {
-                        drawPopupMessage(s, FontDrawArgs.ofPopo(textToDraw.stack(s)).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
+                        drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(textToDraw.stack(g.pose())).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
                     }
-                    s.popPose();
+                    g.pose().popPose();
                 });
             } else {
                 stack.pushPose();
@@ -129,7 +131,10 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 if (itemStack != null && !itemStack.isEmpty()) {
                     drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                 } else if (vanillaTooltip) {
-                    screen.renderComponentTooltip(stack, vanillaTooltipLines(), mouseX, mouseY);
+                    if (tooltip.isEmpty()) {
+                        tooltip.add(text.toComponent().toChat());
+                    }
+                    graphics.renderTooltip(screen.getFont(), tooltip, java.util.Optional.empty(), mouseX, mouseY);
                 } else {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     EnumSeason season = screen.season();
@@ -138,7 +143,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 stack.popPose();
             }
         }
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
     }
 
     private boolean resolvePopupUseTexture(BaniraColorConfig theme) {
@@ -150,16 +155,6 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             default:
                 return theme != null && theme.tooltipUseTexture();
         }
-    }
-
-    /**
-     * 原版 tooltip 的 Component 转换较稳定，文本变化时由 text(...) 统一清空缓存。
-     */
-    private List<net.minecraft.network.chat.Component> vanillaTooltipLines() {
-        if (tooltip.isEmpty()) {
-            tooltip.add(text.toComponent().toChat());
-        }
-        return tooltip;
     }
 
     /**
@@ -254,31 +249,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
      */
     public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
-        boolean advanced = BaniraInput.isShiftDown();
-        List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, advanced);
-        drawItemTooltipComponents(stack, tooltipList, x, y, season);
-    }
-
-    /**
-     * 使用调用方已取得的原版 tooltip 行绘制 Banira 样式，避免同一帧重复解析物品提示。
-     */
-    public static void drawItemTooltipLines(PoseStack stack, List<net.minecraft.network.chat.Component> tooltipList,
-                                            double x, double y, @Nullable EnumSeason season) {
-        if (tooltipList == null || tooltipList.isEmpty()) {
-            return;
-        }
-        List<Component> converted = new ArrayList<>(tooltipList.size());
-        for (net.minecraft.network.chat.Component component : tooltipList) {
-            converted.add(BaniraComponent.get().object(component));
-        }
-        drawItemTooltipComponents(stack, converted, x, y, season);
-    }
-
-    private static void drawItemTooltipComponents(PoseStack stack, List<Component> tooltipList,
-                                                  double x, double y, @Nullable EnumSeason season) {
-        if (tooltipList == null || tooltipList.isEmpty()) {
-            return;
-        }
+        boolean advanced = Screen.hasShiftDown();
+        List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
         Component tooltipComponent = BaniraComponent.get().empty();
         for (int idx = 0; idx < tooltipList.size(); idx++) {
             Component component = tooltipList.get(idx);
@@ -286,7 +258,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             tooltipComponent = tooltipComponent.append(component);
         }
         Text tooltipText = new Text(tooltipComponent);
-        Font font = AbstractGuiUtils.getFont();
+        Font font = Minecraft.getInstance().font;
         FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font)).x(x).y(y);
         if (season != null) {
             drawPopupMessageWithSeasonTexture(stack, drawArgs, season);
@@ -328,6 +300,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             calculatedPaddingBottom = args.paddingBottom();
         }
 
+        FontDrawArgs calcArgs = args.clone()
+                .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
+                .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
+        KeyValue<Integer, Integer> textSize = LabelWidget.calculateLimitedTextSize(calcArgs);
+        int textWidth = textSize.key();
+        int textHeight = textSize.val();
+
         final TextureUtils.NinePatchInfo ninePatchInfo = args.texture() != null ? TextureUtils.parseNinePatch(args.texture()) : null;
 
         if (ninePatchInfo != null) {
@@ -346,14 +325,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 calculatedPaddingTop += (int) (ninePatchInfo.rightGuideTopPadding * calculatedTextureScale);
             if (ninePatchInfo.rightGuideBottomPadding > 0)
                 calculatedPaddingBottom += (int) (ninePatchInfo.rightGuideBottomPadding * calculatedTextureScale);
+            FontDrawArgs recalcArgs = args.clone()
+                    .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
+                    .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
+            textSize = LabelWidget.calculateLimitedTextSize(recalcArgs);
+            textWidth = textSize.key();
+            textHeight = textSize.val();
         }
-
-        FontDrawArgs calcArgs = args.clone()
-                .paddingLeft(calculatedPaddingLeft).paddingRight(calculatedPaddingRight)
-                .paddingTop(calculatedPaddingTop).paddingBottom(calculatedPaddingBottom);
-        KeyValue<Integer, Integer> textSize = LabelWidget.calculateLimitedTextSize(calcArgs);
-        int textWidth = textSize.key();
-        int textHeight = textSize.val();
 
         final int finalCalculatedPaddingLeft = calculatedPaddingLeft;
         final int finalCalculatedPaddingRight = calculatedPaddingRight;
@@ -433,11 +411,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 int radius = args.bgBorderRadius();
                 int borderThickness = args.bgBorderThickness();
                 ShapeDrawArgs.RoundedCornerMode cornerMode = args.popupCornerMode() != null ? args.popupCornerMode() : ShapeDrawArgs.RoundedCornerMode.FINE;
-                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.color(POPUP_BG));
+                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBg());
                 fillArgs.rect().radius(radius).cornerMode(cornerMode);
                 BaseShapeWidget.drawShape(fillArgs);
                 if (borderThickness > 0) {
-                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.color(POPUP_BORDER));
+                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBorder());
                     borderArgs.rect().radius(radius).border(borderThickness).cornerMode(cornerMode);
                     BaseShapeWidget.drawShape(borderArgs);
                 }

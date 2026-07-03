@@ -1,12 +1,12 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.network.packet.CustomPlayerConfigSyncToServer;
@@ -22,14 +23,11 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
 
 /**
  * 编辑 CustomConfig 中当前玩家的配置
@@ -93,10 +91,10 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         languageOptions = new ArrayList<>();
         languageOptions.add("client");
         languageOptions.add("server");
-        Translator tr = (Translator) Translator.of(Banira.MOD_ID);
+        Translator tr = (Translator) Translator.of(BaniraCodex.MODID);
         languageOptions.addAll(tr.getI18nFiles());
 
-        var player = BaniraClientRuntime.localPlayer();
+        var player = Minecraft.getInstance().player;
         String uuid = player != null ? PlayerUtils.getPlayerUUIDString(player) : "";
 
         LabelWidget langLabel = new LabelWidget(this);
@@ -162,13 +160,13 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
-        if (!BaniraClientRuntime.hasConnection()) {
+        if (Minecraft.getInstance().getConnection() == null) {
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             return;
         }
-        var player = BaniraClientRuntime.localPlayer();
+        var player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }
@@ -190,7 +188,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
                     BaniraComponent.get().transClientAuto("custom_player_config_sync_failed",
                             ex.getMessage() != null ? ex.getMessage() : ""));
             err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(err);
+            NotificationManager.get().addNotification(err);
         }
     }
 
@@ -200,11 +198,11 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.color(BG_SURFACE), 0xFF);
-        AbstractGuiUtils.drawRoundedRect(stack, CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
+        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
+        AbstractGuiUtils.drawRoundedRect(graphics.pose(), CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
                 CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
     }
 }

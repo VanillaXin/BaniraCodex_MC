@@ -4,7 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
@@ -29,8 +31,6 @@ import xin.vanilla.banira.common.util.Translator;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.TEXT_SECONDARY;
 
 
 @Data
@@ -217,7 +217,11 @@ public class Notification extends NotificationData {
 
     private void updateRichLayout() {
         Font font = AbstractGuiUtils.getFont();
-        int sw = AbstractGuiUtils.getGuiScaledSize().key();
+        Minecraft mc = Minecraft.getInstance();
+        int sw = 320;
+        if (mc != null && mc.getWindow() != null) {
+            sw = mc.getWindow().getGuiScaledWidth();
+        }
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
@@ -232,14 +236,8 @@ public class Notification extends NotificationData {
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
-    public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
-        renderAt(stack, preInfo, screenInfo, currentTime, this.calculatePosition(screenInfo, preInfo));
-    }
 
-    /**
-     * 使用调用方已计算好的基础坐标渲染，避免通知管理器每帧重复计算位置。
-     */
-    public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime, ScreenCoordinate coordinate) {
+    public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
@@ -250,6 +248,7 @@ public class Notification extends NotificationData {
             return;
         }
 
+        ScreenCoordinate coordinate = this.calculatePosition(screenInfo, preInfo);
         this.applyAnimationEffect(coordinate, progress);
         this.handlePositionTransition(coordinate, currentTime);
 
@@ -468,7 +467,7 @@ public class Notification extends NotificationData {
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
 
-                Font font = AbstractGuiUtils.getFont();
+                Font font = Minecraft.getInstance().font;
                 float pad = (float) this.padding();
                 float lineH = font.lineHeight;
                 float textBlockH = this.richDrawLines.size() * lineH;
@@ -476,10 +475,22 @@ public class Notification extends NotificationData {
                 float textTopLocal = y + pad + Math.max(0f, (innerH - textBlockH) * 0.5f);
                 float textX = x + pad;
                 float textY = textTopLocal;
+                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
                 for (FormattedCharSequence line : this.richDrawLines) {
-                    font.draw(drawArgs.stack(), line, textX, textY, textArgb);
+                    font.drawInBatch(
+                            line,
+                            textX,
+                            textY,
+                            textArgb,
+                            false,
+                            drawArgs.stack().last().pose(),
+                            bufferSource,
+                            Font.DisplayMode.NORMAL,
+                            0,
+                            15728880);
                     textY += lineH;
                 }
+                bufferSource.endBatch();
 
                 float cbSize = CLOSE_BTN;
                 float closeX = x + w - pad - cbSize;
@@ -490,7 +501,7 @@ public class Notification extends NotificationData {
                 if (drawAlpha < 0xFF) {
                     closeBg = ColorUtils.applyAlphaToArgb(closeBg, drawAlpha);
                 }
-                int closeIconArgb = theme.color(TEXT_SECONDARY);
+                int closeIconArgb = theme.textSecondary();
                 if (drawAlpha < 0xFF) {
                     closeIconArgb = ColorUtils.applyAlphaToArgb(closeIconArgb, drawAlpha);
                 }
@@ -541,7 +552,7 @@ public class Notification extends NotificationData {
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }
-        Font font = AbstractGuiUtils.getFont();
+        Font font = Minecraft.getInstance().font;
         double rx = guiMouseX - this.bodyLeft;
         double ry = guiMouseY - this.bodyTextTop;
         if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {

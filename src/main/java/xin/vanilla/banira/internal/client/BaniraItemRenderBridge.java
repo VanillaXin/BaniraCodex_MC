@@ -1,10 +1,9 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.color.item.ItemColors;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -30,9 +29,6 @@ public final class BaniraItemRenderBridge {
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {
         renderGuiItemScaled(stack, x, y, 16);
-        if (showCount) {
-            BaniraClientRuntime.itemRenderer().renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
-        }
     }
 
     public static void renderScaled(@Nonnull ItemStack stack, int x, int y, int size) {
@@ -43,7 +39,6 @@ public final class BaniraItemRenderBridge {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
@@ -66,25 +61,6 @@ public final class BaniraItemRenderBridge {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableTexture();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        float scale = size / 16f;
-        PoseStack modelView = RenderSystem.getModelViewStack();
-        modelView.pushPose();
-        try {
-            modelView.translate(x, y, 200f);
-            modelView.scale(scale, scale, scale);
-            RenderSystem.applyModelViewMatrix();
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            Lighting.setupFor3DItems();
-            BaniraClientRuntime.itemRenderer().renderGuiItem(stack, 0, 0);
-        } finally {
-            Lighting.setupForFlatItems();
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            modelView.popPose();
-            RenderSystem.applyModelViewMatrix();
-            AbstractGuiUtils.restoreGuiRenderState();
-        }
+        // 1.20 的真实物品渲染需要 GuiGraphics；旧 PoseStack 入口仅保留为空实现以兼容内部调用点。
     }
 }

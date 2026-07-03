@@ -10,8 +10,8 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 
@@ -22,14 +22,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/themes/&lt;season&gt;.json），
- * 推荐格式为 {@code day}/{@code night} 双层配色；旧版根对象日间配色仍兼容读取。
+ * 根对象为日间配色；可选 {@code night} 子对象为夜间配色。
  * 资源缺失或解析失败时回退 {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
  * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}；当前是否用夜间由 {@link BaniraGuiNightMode} 与客户端配置决定。
  * <p>
- * 具体加载器的资源重载事件由内部适配层注册。
+ * 通过加载器侧资源重载事件注册。
  */
 public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {
 
@@ -63,9 +64,6 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
         return "banira_codex_color_themes";
     }
 
-    /**
-     * 由 loader adapter 在资源重载时调用；保留 public 以避免 public client 类实现加载器专有接口。
-     */
     public void reloadFrom(ResourceManager resourceManager) {
         EnumMap<EnumSeason, SeasonThemePair> next = new EnumMap<>(EnumSeason.class);
         for (EnumSeason s : new EnumSeason[]{EnumSeason.SPRING, EnumSeason.SUMMER, EnumSeason.AUTUMN, EnumSeason.WINTER}) {
@@ -88,7 +86,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
                 : BaniraColorConfig.builtinForConcreteSeason(concreteSeason);
     }
 
-    static final class SeasonThemePair {
+    private static final class SeasonThemePair {
         final BaniraColorConfig day;
         final BaniraColorConfig night;
 
@@ -101,10 +99,11 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
     private static SeasonThemePair tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
         ResourceLocation loc = themeJsonLocation(season);
         try {
-            Resource res = resourceManager.getResource(loc).orElse(null);
-            if (res == null) {
+            Optional<Resource> opt = resourceManager.getResource(loc);
+            if (opt.isEmpty()) {
                 return null;
             }
+            Resource res = opt.get();
             try (InputStream in = res.open();
                  InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 JsonElement root = JsonUtils.parseElement(reader);
@@ -112,7 +111,15 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
                     LOGGER.warn("Theme JSON root must be object: {}", loc);
                     return null;
                 }
-                return parseThemeRoot(season, root.getAsJsonObject());
+                JsonObject rootObj = root.getAsJsonObject();
+                BaniraColorConfig day = BaniraColorConfig.builtinForConcreteSeason(season);
+                applyThemeJsonOverlay(day, rootObj);
+                BaniraColorConfig night = BaniraColorConfig.builtinNightForConcreteSeason(season);
+                JsonElement nightEl = rootObj.get("night");
+                if (nightEl != null && nightEl.isJsonObject()) {
+                    applyThemeJsonOverlay(night, nightEl.getAsJsonObject());
+                }
+                return new SeasonThemePair(day, night);
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to load Banira theme {}: {}", loc, e.getMessage());
@@ -122,23 +129,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
 
     static ResourceLocation themeJsonLocation(EnumSeason season) {
         String name = season.name().toLowerCase() + ".json";
-        return Identifier.id().create(Banira.MOD_ID, "themes/" + name);
-    }
-
-    static SeasonThemePair parseThemeRoot(EnumSeason season, JsonObject rootObj) {
-        BaniraColorConfig day = BaniraColorConfig.builtinForConcreteSeason(season);
-        JsonElement dayEl = rootObj.get("day");
-        if (dayEl != null && dayEl.isJsonObject()) {
-            applyThemeJsonOverlay(day, dayEl.getAsJsonObject());
-        } else {
-            applyThemeJsonOverlay(day, rootObj);
-        }
-        BaniraColorConfig night = BaniraColorConfig.builtinNightForConcreteSeason(season);
-        JsonElement nightEl = rootObj.get("night");
-        if (nightEl != null && nightEl.isJsonObject()) {
-            applyThemeJsonOverlay(night, nightEl.getAsJsonObject());
-        }
-        return new SeasonThemePair(day, night);
+        return Identifier.id().create(BaniraCodex.MODID, "themes/" + name);
     }
 
     static void applyThemeJsonOverlay(BaniraColorConfig c, JsonObject o) {
@@ -161,9 +152,6 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
         applyColor(o, "borderFocused", c::borderFocused);
         applyColor(o, "borderDisabled", c::borderDisabled);
         applyColor(o, "error", c::error);
-        applyColor(o, "warning", c::warning);
-        applyColor(o, "success", c::success);
-        applyColor(o, "info", c::info);
         applyColor(o, "listItemTextOverride", c::listItemTextOverride);
         applyColor(o, "inputBgOverride", c::inputBgOverride);
         applyColor(o, "inputBgErrorOverride", c::inputBgErrorOverride);

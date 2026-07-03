@@ -1,10 +1,11 @@
 package xin.vanilla.banira.client.notification;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 /**
  * 按玩家在「通知类型配置」中的选择，将网络通知改道至原版聊天或操作栏
@@ -24,8 +25,13 @@ public final class NotificationClientDisplay {
             return false;
         }
         String lang = Translator.getClientLanguage();
+        Minecraft mc = Minecraft.getInstance();
         if (mode == EnumNotificationTypeDisplayMode.VANILLA_CHAT) {
-            BaniraVanillaNotificationBridge.sendChat(component.toChat(lang));
+            Player player = mc.player;
+            if (player == null) {
+                return false;
+            }
+            player.displayClientMessage(component.toChat(lang), false);
             return true;
         }
         if (mode == EnumNotificationTypeDisplayMode.ACTION_BAR) {
@@ -36,7 +42,12 @@ public final class NotificationClientDisplay {
             if (line.trim().isEmpty()) {
                 return false;
             }
-            BaniraVanillaNotificationBridge.sendActionBar(line);
+            net.minecraft.network.chat.Component barMsg = net.minecraft.network.chat.Component.literal(line);
+            Player player = mc.player;
+            if (player == null) {
+                return false;
+            }
+            mc.execute(() -> player.displayClientMessage(barMsg, true));
             return true;
         }
         return false;

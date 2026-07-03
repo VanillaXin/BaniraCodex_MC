@@ -1,14 +1,15 @@
 package xin.vanilla.banira.client.util;
 
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -25,7 +26,6 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -92,26 +92,96 @@ public final class AbstractGuiUtils {
 
     // region 绘制纹理
 
-    private static void bindTexture(ResourceLocation location) {
+    @Deprecated
+    public static void bindTexture(ResourceLocation location) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, location);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
     }
 
     /**
-     * 恢复与 {@link GuiComponent} 一致的常见 GUI 状态，供自定义绘制链结束后调用。
+     * 恢复与 {@link net.minecraft.client.gui.GuiGraphics} 绘制链常见的 GUI 状态，供自定义绘制链结束后调用。
      */
     public static void restoreGuiRenderState() {
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
     }
 
+    /**
+     * 与 {@link net.minecraft.client.gui.GuiGraphics} 中 {@code innerBlit(ResourceLocation,...)} 等价的纹理四边形绘制（使用当前 PoseStack）。
+     */
+    private static void innerBlitTexture(
+            PoseStack poseStack,
+            ResourceLocation texture,
+            int x0,
+            int x1,
+            int y0,
+            int y1,
+            int z,
+            float u0,
+            float u1,
+            float v0,
+            float v1
+    ) {
+        RenderSystem.setShaderTexture(0, texture);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        Matrix4f matrix4f = poseStack.last().pose();
+        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferBuilder.vertex(matrix4f, (float) x0, (float) y0, (float) z).uv(u0, v0).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x0, (float) y1, (float) z).uv(u0, v1).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x1, (float) y1, (float) z).uv(u1, v1).endVertex();
+        bufferBuilder.vertex(matrix4f, (float) x1, (float) y0, (float) z).uv(u1, v0).endVertex();
+        BufferUploader.drawWithShader(bufferBuilder.end());
+    }
+
+    private static void blitInner(
+            PoseStack poseStack,
+            ResourceLocation texture,
+            int x0,
+            int x1,
+            int y0,
+            int y1,
+            int z,
+            float uOffset,
+            float vOffset,
+            int regionWidth,
+            int regionHeight,
+            int textureWidth,
+            int textureHeight
+    ) {
+        innerBlitTexture(
+                poseStack,
+                texture,
+                x0,
+                x1,
+                y0,
+                y1,
+                z,
+                (uOffset + 0.0F) / (float) textureWidth,
+                (uOffset + (float) regionWidth) / (float) textureWidth,
+                (vOffset + 0.0F) / (float) textureHeight,
+                (vOffset + (float) regionHeight) / (float) textureHeight
+        );
+    }
+
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
-        bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, z, destWidth, destHeight, sprite);
+        AbstractGuiUtils.bindTexture(texture);
+        innerBlitTexture(
+                stack,
+                sprite.atlasLocation(),
+                x0,
+                x0 + destWidth,
+                y0,
+                y0 + destHeight,
+                z,
+                sprite.getU0(),
+                sprite.getU1(),
+                sprite.getV0(),
+                sprite.getV1()
+        );
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
@@ -119,8 +189,8 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
-        bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, z, (float) u0, (float) v0, width, height, textureHeight, textureWidth);
+        AbstractGuiUtils.bindTexture(texture);
+        blitInner(stack, texture, x0, x0 + width, y0, y0 + height, z, (float) u0, (float) v0, width, height, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
@@ -128,8 +198,8 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
-        bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, destWidth, destHeight, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
+        AbstractGuiUtils.bindTexture(texture);
+        blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
@@ -137,8 +207,8 @@ public final class AbstractGuiUtils {
     }
 
     public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
-        bindTexture(texture);
-        GuiComponent.blit(stack, x0, y0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
+        AbstractGuiUtils.bindTexture(texture);
+        blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
     }
 
     public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
@@ -224,15 +294,15 @@ public final class AbstractGuiUtils {
 
         // 旋转
         if (args.angle() % 360 != 0) {
-            args.stack().mulPose(Vector3f.ZP.rotationDegrees((float) args.angle()));
+            args.stack().mulPose(new Quaternionf().rotationZ((float) Math.toRadians(args.angle())));
         }
 
         // 翻转
         if (args.flipHorizontal()) {
-            args.stack().mulPose(Vector3f.YP.rotationDegrees(180));
+            args.stack().mulPose(new Quaternionf().rotationY((float) Math.PI));
         }
         if (args.flipVertical()) {
-            args.stack().mulPose(Vector3f.XP.rotationDegrees(180));
+            args.stack().mulPose(new Quaternionf().rotationX((float) Math.PI));
         }
 
         // 返回原点
@@ -739,7 +809,7 @@ public final class AbstractGuiUtils {
      * @param argb 像素的颜色
      */
     public static void drawPixel(PoseStack stack, int x, int y, int argb) {
-        GuiComponent.fill(stack, x, y, x + 1, y + 1, argb);
+        fillEx(stack, x, y, 1f, 1f, argb);
     }
 
     /**
@@ -844,7 +914,7 @@ public final class AbstractGuiUtils {
      */
     public static void drawRoundedRect(PoseStack stack, int x, int y, int width, int height, int argb, int radius) {
         if (radius <= 0) {
-            GuiComponent.fill(stack, x, y, x + width, y + height, argb);
+            fillEx(stack, x, y, width, height, argb);
             return;
         }
 
@@ -1297,13 +1367,11 @@ public final class AbstractGuiUtils {
     private static void setupBlendRender() {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableTexture();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
     }
 
     private static void finishBlendRender() {
         Tesselator.getInstance().end();
-        RenderSystem.enableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
     }
@@ -1377,7 +1445,6 @@ public final class AbstractGuiUtils {
         }
 
         Tesselator.getInstance().end();
-        RenderSystem.enableTexture();
         RenderSystem.enableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -1899,13 +1966,13 @@ public final class AbstractGuiUtils {
      * 获取指定坐标点像素颜色
      */
     public static int getPixelArgb(double guiX, double guiY) {
-        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
-        double scale = BaniraClientRuntime.guiScale();
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
 
         // 将 GUI 坐标（左上为原点）转换为物理屏幕坐标（左下为原点）
-        int pixelX = (int) (guiX * scale);
-        int pixelY = (int) (guiY * scale);
-        int glY = window.val() - pixelY - 1;
+        int pixelX = (int) (guiX * window.getGuiScale());
+        int pixelY = (int) (guiY * window.getGuiScale());
+        int glY = window.getHeight() - pixelY - 1;
 
         // 创建 ByteBuffer 存储像素数据（RGBA）
         ByteBuffer buffer = BufferUtils.createByteBuffer(4);
@@ -1920,33 +1987,23 @@ public final class AbstractGuiUtils {
     }
 
     public static Font getFont() {
-        return BaniraClientRuntime.font();
-    }
-
-    /**
-     * 统一剪贴板读取入口，后续高版本/加载器差异集中在这里处理。
-     */
-    public static String getClipboard() {
-        return BaniraClientRuntime.clipboard();
-    }
-
-    /**
-     * 统一剪贴板写入入口。
-     */
-    public static void setClipboard(String text) {
-        BaniraClientRuntime.clipboard(text);
+        return Minecraft.getInstance().font;
     }
 
     public static KeyValue<Integer, Integer> getScreenSize() {
-        return BaniraClientRuntime.screenSize();
+        if (Minecraft.getInstance().screen != null) {
+            return new KeyValue<>(Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+        } else {
+            return getGuiScaledSize();
+        }
     }
 
     public static KeyValue<Integer, Integer> getGuiScaledSize() {
-        return BaniraClientRuntime.guiScaledSize();
+        return new KeyValue<>(Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight());
     }
 
     public static KeyValue<Integer, Integer> getGuiSize() {
-        return BaniraClientRuntime.windowSize();
+        return new KeyValue<>(Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight());
     }
 
     /**
@@ -1954,10 +2011,11 @@ public final class AbstractGuiUtils {
      * 使用 GUI 坐标（左上角为原点）。
      */
     public static void enableScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
-        int scale = Math.max(1, (int) BaniraClientRuntime.guiScale());
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+        int scale = (int) window.getGuiScale();
         int x = guiX * scale;
-        int y = window.val() - (guiY + guiHeight) * scale;
+        int y = window.getHeight() - (guiY + guiHeight) * scale;
         int w = Math.max(0, guiWidth * scale);
         int h = Math.max(0, guiHeight * scale);
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -1978,17 +2036,18 @@ public final class AbstractGuiUtils {
      * 使用后必须调用 {@link #popScissor()} 恢复。
      */
     public static void pushScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
-        int scale = Math.max(1, (int) BaniraClientRuntime.guiScale());
-        int winW = window.key() / scale;
-        int winH = window.val() / scale;
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+        int scale = (int) window.getGuiScale();
+        int winW = window.getWidth() / scale;
+        int winH = window.getHeight() / scale;
         int[] prev = new int[5];
         prev[0] = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST) ? 1 : 0;
         if (prev[0] == 1) {
             int[] box = new int[4];
             GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
             prev[1] = box[0] / scale;
-            prev[2] = (window.val() - box[1] - box[3]) / scale;
+            prev[2] = (window.getHeight() - box[1] - box[3]) / scale;
             prev[3] = box[2] / scale;
             prev[4] = box[3] / scale;
         } else {

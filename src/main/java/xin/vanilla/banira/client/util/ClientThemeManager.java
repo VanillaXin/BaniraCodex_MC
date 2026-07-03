@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.util;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.common.enums.EnumSeason;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -41,7 +41,8 @@ public final class ClientThemeManager {
      */
     @Nonnull
     public static BaniraColorConfig getEffectiveTheme() {
-        Screen screen = BaniraClientRuntime.currentScreen();
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
         if (screen instanceof BaniraScreen baniraScreen) {
             return baniraScreen.getEffectiveTheme();
         }

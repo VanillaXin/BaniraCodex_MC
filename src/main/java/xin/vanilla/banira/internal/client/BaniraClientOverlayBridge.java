@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
@@ -24,7 +24,7 @@ public final class BaniraClientOverlayBridge {
         NotificationManager.get().tickOutOfScreenClick();
     }
 
-    public static void renderHud(@Nonnull PoseStack stack, float tickDelta) {
+    public static void renderHud(@Nonnull GuiGraphics stack, float tickDelta) {
         BaniraClientEventBridge.fireRenderOverlayPost(HudOverlayElement.ALL, stack, tickDelta, false);
     }
 

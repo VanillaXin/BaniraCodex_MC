@@ -11,9 +11,6 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
-import static xin.vanilla.banira.client.data.BaniraColorToken.BG_SURFACE;
-import static xin.vanilla.banira.client.data.BaniraColorToken.BORDER;
-
 /**
  * 基础形状
  */
@@ -21,11 +18,11 @@ import static xin.vanilla.banira.client.data.BaniraColorToken.BORDER;
 public abstract class BaseShapeWidget extends BaseWidget {
     @Getter
     @Setter
-    protected int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BG_SURFACE);
+    protected int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).bgSurface();
 
     @Getter
     @Setter
-    protected int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BORDER);
+    protected int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).border();
 
     @Getter
     @Setter
@@ -40,17 +37,13 @@ public abstract class BaseShapeWidget extends BaseWidget {
     }
 
     @Override
-    public void applyTheme(BaniraColorConfig theme) {
-        super.applyTheme(theme);
-        if (theme != null) {
-            bgColor(theme.color(BG_SURFACE));
-            borderColor(theme.color(BORDER));
-        }
+    public boolean needsUpdate() {
+        return false;
     }
 
     @Override
-    protected boolean needsSelfUpdate() {
-        return false;
+    public void update() {
+        super.update();
     }
 
     /**

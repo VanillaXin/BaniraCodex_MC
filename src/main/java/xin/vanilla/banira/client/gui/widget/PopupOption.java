@@ -5,8 +5,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import xin.vanilla.banira.api.client.input.BaniraInputState;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -17,8 +18,8 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -26,8 +27,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 弹出层选项框。支持链式调用，默认 FINE 模式绘制。
@@ -50,6 +49,9 @@ public class PopupOption extends BaseWidget {
     @RequiredArgsConstructor
     @Accessors(chain = true, fluent = true)
     public static class SelectEvent {
+        /**
+         * 选项序号，保留用于兼容
+         */
         private final int index;
         /**
          * 选项字符串 ID，未指定时使用序号字符串
@@ -66,7 +68,6 @@ public class PopupOption extends BaseWidget {
     private final List<String> optionIds = new ArrayList<>();
     @Getter
     private final List<Text> renderList = new ArrayList<>();
-    private final List<Integer> renderLineCounts = new ArrayList<>();
     private final Map<Integer, Integer> relationMap = new HashMap<>();
     private final Map<Integer, Text> tipsMap = new HashMap<>();
     private final List<Consumer<SelectEvent>> optionCallbacks = new ArrayList<>();
@@ -83,7 +84,6 @@ public class PopupOption extends BaseWidget {
     private int maxWidth = -1, maxHeight = -1;
     private int selectedIndex = -1;
     private int scrollOffset, maxLines;
-    private int scrollUnit = 1;
     private int pressedOptionIndex = -1;
 
     @Setter
@@ -107,6 +107,59 @@ public class PopupOption extends BaseWidget {
     public static PopupOption init(BaniraScreen screen) {
         return new PopupOption(screen);
     }
+
+
+    // region Deprecated
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text) {
+        return addOptionInternal(null, text, null, null);
+    }
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text, @Nullable String tip) {
+        return addOptionInternal(null, text, tip, null);
+    }
+
+    /**
+     * 添加选项，可单独设置点击回调
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull String text, @Nullable String tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(null, text, tip, onClick);
+    }
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text) {
+        return addOptionInternal(null, text, null, null);
+    }
+
+    /**
+     * 添加选项
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip) {
+        return addOptionInternal(null, text, tip, null);
+    }
+
+    /**
+     * 添加选项，可单独设置点击回调
+     */
+    @Deprecated
+    public PopupOption addOption(@Nonnull Text text, @Nullable Text tip, @Nullable Consumer<SelectEvent> onClick) {
+        return addOptionInternal(null, text, tip, onClick);
+    }
+
+    // endregion Deprecated
 
 
     /**
@@ -160,7 +213,6 @@ public class PopupOption extends BaseWidget {
                 .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
-            renderLineCounts.add(lineCount(lines.get(i)));
         }
         optionList.add(literal);
         optionIds.add(resolvedId);
@@ -180,7 +232,6 @@ public class PopupOption extends BaseWidget {
                 .toList();
         for (int i = 0; i < lines.size(); i++) {
             relationMap.put(renderList.size() + i, optionList.size());
-            renderLineCounts.add(lineCount(lines.get(i)));
         }
         optionList.add(text);
         optionIds.add(resolvedId);
@@ -222,13 +273,21 @@ public class PopupOption extends BaseWidget {
     }
 
     /**
+     * @deprecated 使用 {@link #showAt(double, double)} 替代
+     */
+    @Deprecated
+    public PopupOption build(Font font, double x, double y, String id) {
+        this.font = font;
+        return showAt(x, y, id);
+    }
+
+    /**
      * 清空并重置，可再次 addOption + showAt
      */
     public PopupOption clear() {
         optionList.clear();
         optionIds.clear();
         renderList.clear();
-        renderLineCounts.clear();
         tipsMap.clear();
         relationMap.clear();
         optionCallbacks.clear();
@@ -238,7 +297,6 @@ public class PopupOption extends BaseWidget {
         selectedIndex = -1;
         pressedOptionIndex = -1;
         scrollOffset = maxLines = 0;
-        scrollUnit = 1;
         built = false;
         bounds(new ScreenCoordinate(0, 0, 0, 0));
         return this;
@@ -318,6 +376,19 @@ public class PopupOption extends BaseWidget {
         return true;
     }
 
+    /**
+     * 尝试处理选项点击。优先调用选项单独设置的回调，若无则调用全局 onSelect。
+     *
+     * @deprecated 已改为按下记录、抬起触发，请使用 {@link #tryHandleOptionPress} 和 {@link #tryHandleOptionRelease}
+     */
+    @Deprecated
+    public boolean tryHandleOptionClick(MouseEvent event) {
+        if (event != null && tryHandleOptionPress(event)) {
+            return tryHandleOptionRelease(event);
+        }
+        return false;
+    }
+
     public PopupOption setMaxWidth(int maxWidth) {
         ensureNotBuilt();
         this.maxWidth = maxWidth + PAD_LEFT + PAD_RIGHT;
@@ -337,8 +408,10 @@ public class PopupOption extends BaseWidget {
     }
 
     public boolean addScrollOffset(double delta) {
-        if (!isHovered() || maxLines <= 0) return false;
-        int unit = Math.max(1, scrollUnit);
+        if (!isHovered()) return false;
+        int unit = renderList.size() / maxLines > 25
+                ? Math.max(1, maxLines - 1)
+                : Math.min(Math.max(1, (int) Math.ceil(Math.sqrt(renderList.size() / (double) maxLines))), Math.max(1, maxLines - 1));
         if (delta > 0) {
             scrollOffset = Math.max(scrollOffset - unit, 0);
             return true;
@@ -350,9 +423,10 @@ public class PopupOption extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (beforeRender != null) beforeRender.accept(this);
-        if (CollectionUtils.isNullOrEmpty(optionList) || screen == null) {
+        if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
             if (afterRender != null) afterRender.accept(this);
             return;
         }
@@ -361,11 +435,11 @@ public class PopupOption extends BaseWidget {
         selectedIndex = findHoveredIndex(inputState.mouseX(), inputState.mouseY());
 
         BaniraColorConfig theme = screen.getEffectiveTheme();
-        int popupBg = theme.color(POPUP_BG);
-        int popupBorder = theme.color(POPUP_BORDER);
-        int popupItemHover = theme.color(POPUP_ITEM_HOVER);
-        int textColorUnselected = theme.color(POPUP_ITEM_TEXT);
-        int textColorSelected = theme.color(POPUP_ITEM_TEXT_SELECTED);
+        int popupBg = theme.popupBg();
+        int popupBorder = theme.popupBorder();
+        int popupItemHover = theme.popupItemHover();
+        int textColorUnselected = theme.popupItemText();
+        int textColorSelected = theme.popupItemTextSelected();
 
         AbstractGuiUtils.renderByDepth(stack, renderDepth(), s -> {
             ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, adjustedX, adjustedY, width, height, popupBg);
@@ -380,17 +454,16 @@ public class PopupOption extends BaseWidget {
                 if (index >= 0 && index < renderList.size()) {
                     Text text = renderList.get(index);
                     boolean isSelected = selectedIndex == index;
-                    int lineCount = renderLineCount(index);
                     if (isSelected) {
-                        int lineH = font.lineHeight * lineCount;
+                        int lineH = font.lineHeight * StringUtils.getLineCount(text.content());
                         AbstractGuiUtils.fill(stack, adjustedX + 1, adjustedY + PAD_TOP + lineOffset * (font.lineHeight + 1), width - 2, lineH, popupItemHover);
                     }
                     int textColor = isSelected ? textColorSelected : textColorUnselected;
                     FontDrawArgs args = FontDrawArgs.of(text.stack(stack).font(font).color(textColor))
-                            .x(adjustedX + PAD_LEFT).y(adjustedY + PAD_TOP + lineOffset * (font.lineHeight + 1));
+                            .x(adjustedX + PAD_LEFT).y(adjustedY + PAD_TOP + i * (font.lineHeight + 1));
                     if (maxWidth > 0) args.maxWidth(maxWidth).position(EnumEllipsisPosition.MIDDLE);
-                    LabelWidget.drawLimitedText(args);
-                    lineOffset += lineCount;
+                    LabelWidget.drawLimitedText(graphics, args);
+                    lineOffset += StringUtils.getLineCount(text.content());
                 }
             }
         });
@@ -409,8 +482,8 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(PoseStack stack, BaniraInputState inputState) {
-        render(stack, 0);
+    public void render(GuiGraphics graphics, BaniraInputState inputState) {
+        render(graphics, 0);
     }
 
     private void ensureNotBuilt() {
@@ -420,16 +493,15 @@ public class PopupOption extends BaseWidget {
     }
 
     private void layout(int px, int py) {
-        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
-        int screenWidth = screenSize.key();
-        int screenHeight = screenSize.val();
+        Objects.requireNonNull(Minecraft.getInstance().screen);
+        int screenWidth = Minecraft.getInstance().screen.width;
+        int screenHeight = Minecraft.getInstance().screen.height;
         if (maxWidth <= 0) maxWidth = screenWidth - MARGIN * 2;
         if (maxHeight <= 0) maxHeight = screenHeight - MARGIN * 2;
 
         width = Math.min(AbstractGuiUtils.getTextWidth(font, renderList) + PAD_LEFT + PAD_RIGHT, maxWidth);
         height = Math.min(AbstractGuiUtils.getTextHeight(font, renderList) + renderList.size() - 1 + PAD_TOP + PAD_BOTTOM, maxHeight);
         maxLines = ((height - PAD_TOP - PAD_BOTTOM) + 1) / (font.lineHeight + 1);
-        scrollUnit = computeScrollUnit();
 
         adjustedX = px + MARGIN;
         adjustedY = py + MARGIN;
@@ -465,39 +537,13 @@ public class PopupOption extends BaseWidget {
 
         int lines = 0;
         for (int i = 0; i < maxLines && scrollOffset + i < renderList.size(); i++) {
-            int curLines = renderLineCount(scrollOffset + i);
+            Text t = renderList.get(scrollOffset + i);
+            int curLines = StringUtils.getLineCount(t.content());
             if (relativeY >= lines * (font.lineHeight + 1) && relativeY < (lines + curLines) * (font.lineHeight + 1) - 1) {
                 return scrollOffset + i;
             }
             lines += curLines;
         }
         return -1;
-    }
-
-    private int computeScrollUnit() {
-        if (maxLines <= 0 || renderList.isEmpty()) {
-            return 1;
-        }
-        if (renderList.size() / maxLines > 25) {
-            return Math.max(1, maxLines - 1);
-        }
-        return Math.min(Math.max(1, (int) Math.ceil(Math.sqrt(renderList.size() / (double) maxLines))), Math.max(1, maxLines - 1));
-    }
-
-    /**
-     * renderList 通常已按换行拆开；保留行数缓存是为了兼容 Text 内容后续可能带来的多行。
-     */
-    private int renderLineCount(int index) {
-        if (index >= 0 && index < renderLineCounts.size()) {
-            return renderLineCounts.get(index);
-        }
-        if (index >= 0 && index < renderList.size()) {
-            return lineCount(renderList.get(index));
-        }
-        return 1;
-    }
-
-    private static int lineCount(Text text) {
-        return text == null ? 1 : Math.max(1, StringUtils.getLineCount(text.content()));
     }
 }

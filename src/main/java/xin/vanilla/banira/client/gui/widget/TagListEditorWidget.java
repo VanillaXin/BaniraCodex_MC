@@ -4,9 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.client.notification.BaniraNotifications;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -15,10 +16,10 @@ import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -29,8 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 可折叠标签列表编辑控件。
@@ -157,7 +156,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private final List<Object> items = new ArrayList<>();
 
     private double listScrollOffset = 0;
-    private final VisibleTagRange cachedVisibleTagRange = new VisibleTagRange();
     private boolean addingMode = false;
     private int hoveredDeleteIndex = -1;
     private int pressedDeleteIndex = -1;
@@ -239,39 +237,6 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private boolean listShowsScrollbar() {
         return tagsContentHeight() > maxListViewportHeight() + 1e-6 && maxListViewportHeight() > 1e-6;
-    }
-
-    private int firstVisibleTagIndex(double viewportHeight) {
-        if (items.isEmpty()) {
-            return 0;
-        }
-        return Math.max(0, (int) Math.floor(listScrollOffset / tagRowStride()));
-    }
-
-    private int lastVisibleTagIndex(double viewportHeight) {
-        if (items.isEmpty()) {
-            return -1;
-        }
-        double bottom = listScrollOffset + Math.max(0, viewportHeight);
-        return Math.min(items.size() - 1, (int) Math.ceil(bottom / tagRowStride()));
-    }
-
-    /**
-     * 当前滚动窗口内的标签行范围。渲染、hover 和删除命中共用，避免一帧内分散计算。
-     */
-    private VisibleTagRange visibleTagRange(double viewportHeight) {
-        cachedVisibleTagRange.set(firstVisibleTagIndex(viewportHeight), lastVisibleTagIndex(viewportHeight));
-        return cachedVisibleTagRange;
-    }
-
-    private static final class VisibleTagRange {
-        int first;
-        int last;
-
-        private void set(int first, int last) {
-            this.first = first;
-            this.last = last;
-        }
     }
 
     private double listInnerWidth(double widgetWidth) {
@@ -689,9 +654,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private void copyRowToClipboard(int index) {
         if (index < 0 || index >= items.size()) return;
         String s = formatItemLabel(items.get(index));
-        AbstractGuiUtils.setClipboard(s);
+        Minecraft.getInstance().keyboardHandler.setClipboard(s);
         Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("tag_list_copied"));
-        BaniraNotifications.show(n);
+        NotificationManager.get().addNotification(n);
     }
 
     /**
@@ -784,7 +749,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         if (!visible) return;
         ensureChildren();
 
@@ -802,10 +768,10 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.translate(ox, oy, 0);
 
         // region 绘制标题栏
-        int headerBg = mouseInside ? theme.color(BG_TERTIARY) : theme.color(BG_SECONDARY);
+        int headerBg = mouseInside ? theme.bgTertiary() : theme.bgSecondary();
         AbstractGuiUtils.fill(stack, 0, 0, (int) w, HEADER_HEIGHT, headerBg);
 
-        int headerTextColor = theme.color(TEXT_PRIMARY);
+        int headerTextColor = theme.textPrimary();
         int arrowX = 4;
         int arrowY = (HEADER_HEIGHT - ARROW_SIZE) / 2;
         if (expanded) {
@@ -821,7 +787,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         FontDrawArgs args = FontDrawArgs.of(
                 Text.literal(displayTitle).stack(stack).font(screen != null ? screen.getFont() : AbstractGuiUtils.getFont()).color(headerTextColor));
         args.x(textX).y(textY).maxWidth((int) Math.max(0, titleBtnLeft - textX - 4)).wrap(false).inScreen(false);
-        LabelWidget.drawLimitedText(args);
+        LabelWidget.drawLimitedText(graphics, args);
 
         stack.popPose();
         // endregion 标题栏
@@ -862,15 +828,15 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         double listAbsX = absX;
         double listAbsY = absY + listContentTop;
-        scrollbar.clearScrollHoverAreas();
+        scrollbar.scrollingCoordinates(new ArrayList<>());
         if (showScrollbar) {
             scrollbar.addScrollHoverArea(new ScreenCoordinate(listAbsX, listAbsY, listW, listAreaHeight));
         }
 
         // region 绘制标签列表
-        int tagBg = theme.color(POPUP_ITEM_SELECTED);
-        int tagBorder = theme.color(POPUP_ITEM_SELECTED_BORDER);
-        int textColor = theme.color(LIST_ITEM_TEXT);
+        int tagBg = theme.popupItemSelected();
+        int tagBorder = theme.popupItemSelectedBorder();
+        int textColor = theme.listItemText();
 
         int listAreaAbsX = (int) listAbsX;
         int listAreaAbsY = (int) listAbsY;
@@ -881,12 +847,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
 
-        Font font = AbstractGuiUtils.getFont();
+        Font font = Minecraft.getInstance().font;
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
-        VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
-        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
+        for (int i = 0; i < items.size(); i++) {
             Object item = items.get(i);
             String label = formatItemLabel(item);
             String display = font.plainSubstrByWidth(label, textMaxW);
@@ -898,7 +863,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
             AbstractGuiUtils.fill(stack, 0, (int) tagY, tagW, TAG_HEIGHT, tagBg);
             AbstractGuiUtils.fill(stack, 0, (int) tagY, 2, TAG_HEIGHT, tagBorder);
-            font.draw(stack, display, TAG_PAD, (float) (tagY + (TAG_HEIGHT - font.lineHeight) / 2), textColor);
+            graphics.drawString(font, display, TAG_PAD, (int) Math.round(tagY + (TAG_HEIGHT - font.lineHeight) / 2.0), textColor, false);
 
             int closeColor = closePressed ? 0xFFE53935 : (closeHovered ? 0xFFE53935 : 0xFF999999);
             AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, closeColor);
@@ -919,7 +884,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             editWidget.visible(true);
         }
 
-        renderChildren(stack, partialTicks);
+        renderChildren(graphics, partialTicks);
 
         if (expanded && editingIndex < 0 && hoveredTagBodyIndex >= 0 && screen != null
                 && !(screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen())) {
@@ -928,11 +893,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             final EnumSeason rowSeason = screen.season() != null ? screen.season() : EnumSeason.AUTO;
             Text rowHint = Text.from(BaniraComponent.get().transClientAuto("tag_list_row_hint"));
             final BaniraColorConfig tooltipTheme = theme;
-            screen.addDeferredTooltipRender(s -> {
-                s.pushPose();
-                s.last().pose().setIdentity();
-                TooltipWidget.drawPopupMessage(s, FontDrawArgs.ofPopo(rowHint.stack(s)).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
-                s.popPose();
+            screen.addDeferredTooltipRender(g -> {
+                g.pose().pushPose();
+                g.pose().last().pose().identity();
+                TooltipWidget.drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(rowHint.stack(g.pose())).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
+                g.pose().popPose();
             });
         }
     }
@@ -982,27 +947,29 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled) return;
         ensureChildren();
         updateBoundsHeight();
-        updateInteractiveState();
+        if (screen != null) {
+            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
+        }
         double absX = absoluteX();
         double absY = absoluteY();
         double listContentTop = HEADER_HEIGHT + (addingMode ? ADD_INPUT_HEIGHT + 4 : 0);
         int closeX = getDeleteButtonX();
-        double listAreaHeight = visibleListViewportHeight();
         hoveredDeleteIndex = -1;
         hoveredTagBodyIndex = -1;
-        double mx = screen != null ? screen.inputState().mouseX() : 0;
-        double my = screen != null ? screen.inputState().mouseY() : 0;
         if (expanded && editingIndex < 0 && screen != null) {
+            double mx = screen.inputState().mouseX();
+            double my = screen.inputState().mouseY();
             int bodyIdx = hitTagBodyIndex(mx, my);
             if (bodyIdx >= 0) {
                 hoveredTagBodyIndex = bodyIdx;
             }
         }
-        VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
-        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
+        for (int i = 0; i < items.size(); i++) {
             double tagY = listContentTop - listScrollOffset + i * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
+            double mx = screen != null ? screen.inputState().mouseX() : 0;
+            double my = screen != null ? screen.inputState().mouseY() : 0;
             if (mx >= delX && mx < delX + TAG_CLOSE_SIZE && my >= delY && my < delY + TAG_CLOSE_SIZE) {
                 hoveredDeleteIndex = i;
                 break;
@@ -1010,7 +977,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
 
         if (expanded) {
-            updateChildren();
+            for (IWidget child : children) {
+                if (child != null && child.visible() && child.enabled() && child.needsUpdate()) {
+                    child.update();
+                }
+            }
         }
 
         // region 行内编辑失焦则取消（恢复原列表显示，等同 Esc，不提交）
@@ -1056,14 +1027,18 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         double relY = mouseY - absY;
 
         if (expanded) {
-            IWidget handlingChild = findHandlingChild(child -> child.handleMouseClick(event));
-            if (handlingChild != null) {
-                if (handlingChild == addInputWidget || handlingChild == addConfirmButton) {
-                    lastClickFocusTarget = handlingChild == addConfirmButton ? addConfirmButton : addInputWidget.getFocusTarget();
-                } else if (handlingChild == editWidget) {
-                    lastClickFocusTarget = editWidget.getFocusTarget();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                IWidget child = children.get(i);
+                if (child != null && child.visible() && child.enabled()) {
+                    if (child.handleMouseClick(event)) {
+                        if (child == addInputWidget || child == addConfirmButton) {
+                            lastClickFocusTarget = child == addConfirmButton ? addConfirmButton : addInputWidget.getFocusTarget();
+                        } else if (child == editWidget) {
+                            lastClickFocusTarget = editWidget.getFocusTarget();
+                        }
+                        return true;
+                    }
                 }
-                return true;
             }
         }
 
@@ -1098,9 +1073,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
-            VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
-            int closeX = getDeleteButtonX();
-            for (int i = visibleRange.first; i <= visibleRange.last; i++) {
+            for (int i = 0; i < items.size(); i++) {
+                int closeX = getDeleteButtonX();
                 double tagY = listContentTop - listScrollOffset + i * tagRowStride();
                 double delX = absX + closeX;
                 double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
@@ -1119,8 +1093,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (!visible || !enabled || event == null) return false;
 
         if (expanded) {
-            if (findHandlingChild(child -> child.handleMouseRelease(event)) != null) {
-                return true;
+            for (int i = children.size() - 1; i >= 0; i--) {
+                IWidget child = children.get(i);
+                if (child != null && child.visible() && child.enabled()) {
+                    if (child.handleMouseRelease(event)) return true;
+                }
             }
         }
 
@@ -1155,17 +1132,19 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     public boolean handleMouseScroll(MouseScrollEvent event) {
         if (!visible || !enabled || event == null) return false;
         if (expanded) {
-            if (findHandlingChild(child -> child.handleMouseScroll(event)) != null) {
-                return true;
+            for (int i = children.size() - 1; i >= 0; i--) {
+                IWidget child = children.get(i);
+                if (child != null && child.visible() && child.enabled()) {
+                    if (child.handleMouseScroll(event)) return true;
+                }
             }
         }
         return false;
     }
 
     @Override
-    public boolean handleKeyPress(KeyEvent event) {
-        if (!visible || !enabled || event == null) return false;
-        int keyCode = event.keyCode();
+    public boolean handleKeyPress(int keyCode, int scanCode, int modifiers) {
+        if (!visible || !enabled) return false;
         if (editingIndex >= 0 && editWidget != null && editWidget instanceof BaseWidget baseWidget && baseWidget.focused()) {
             if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
                 cancelInlineEdit();
@@ -1188,8 +1167,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (expanded) {
-            if (findHandlingChild(child -> child.handleKeyPress(event)) != null) {
-                return true;
+            for (int i = children.size() - 1; i >= 0; i--) {
+                IWidget child = children.get(i);
+                if (child != null && child.visible() && child.enabled()) {
+                    if (child.handleKeyPress(keyCode, scanCode, modifiers)) return true;
+                }
             }
         }
         return false;

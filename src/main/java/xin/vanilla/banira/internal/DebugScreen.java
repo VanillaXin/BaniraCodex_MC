@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -293,7 +294,8 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width / 3f, this.height - 20, 0x88E8F4FF);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -345,7 +347,7 @@ public class DebugScreen extends BaniraScreen {
 
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("ButtonWidget 预置样式")).x(280).y(20).padding(4).margin(0).inScreen(false));
 
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
 
         int hudY = 1;
         LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容行数：" + contentLines)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));

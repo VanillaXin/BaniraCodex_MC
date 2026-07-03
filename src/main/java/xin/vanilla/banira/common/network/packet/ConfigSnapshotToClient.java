@@ -1,21 +1,9 @@
 package xin.vanilla.banira.common.network.packet;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.gui.ConfigEditorScreen;
-import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigRegistry;
-import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,8 +13,6 @@ import java.util.Map;
  */
 public class ConfigSnapshotToClient implements NetworkPacket {
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private final String configName;
     private final Map<String, String> snapshot;
 
@@ -35,7 +21,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
     }
 
-    public ConfigSnapshotToClient(FriendlyByteBuf buf) {
+    public ConfigSnapshotToClient(BaniraPacketBuffer buf) {
         this.configName = buf.readUtf(256);
         int size = buf.readVarInt();
         this.snapshot = new HashMap<>(size);
@@ -46,7 +32,7 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         }
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(configName, 256);
         buf.writeVarInt(snapshot.size());
         for (Map.Entry<String, String> e : snapshot.entrySet()) {
@@ -63,52 +49,13 @@ public class ConfigSnapshotToClient implements NetworkPacket {
         return snapshot;
     }
 
-    public static void handle(ConfigSnapshotToClient packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             if (!ctx.isClientSide()) {
                 return;
             }
-            ClientSide.apply(packet);
+            BaniraClientPacketHandlers.applyConfigSnapshot(packet);
         });
-        ctx.setPacketHandled(true);
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private static final class ClientSide {
-
-        private ClientSide() {
-        }
-
-        private static void apply(ConfigSnapshotToClient packet) {
-            ConfigHolder holder = ConfigRegistry.get(packet.configName());
-            if (holder == null) {
-                return;
-            }
-            try {
-                for (Map.Entry<String, String> e : packet.snapshot().entrySet()) {
-                    Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
-                    if (parsed != null) {
-                        holder.set(e.getKey(), parsed);
-                    }
-                }
-                holder.save();
-            } catch (Exception ex) {
-                LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
-                Notification err = Notification.ofComponent(
-                        BaniraComponent.get().transClientAuto("config_editor_fetch_apply_failed",
-                                ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
-                err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-                NotificationManager.get().addNotification(err);
-                return;
-            }
-            Screen open = Minecraft.getInstance().screen;
-            if (open instanceof ConfigEditorScreen screen) {
-                screen.refreshUIFromHolderAfterRemoteFetch(packet.configName());
-            }
-            Notification ok = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));
-            ok.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-            NotificationManager.get().addNotification(ok);
-        }
+        ctx.markHandled();
     }
 }

@@ -80,4 +80,11 @@ public class NetworkHandler {
         };
         register(packetClass, encoder, decoder, wrappedHandler);
     }
+
+    /**
+     * 结束当前 channel 的 packet 注册。调用方注册完全部 packet 后调用一次即可。
+     */
+    public void completeRegistration() {
+        registrar.complete();
+    }
 }

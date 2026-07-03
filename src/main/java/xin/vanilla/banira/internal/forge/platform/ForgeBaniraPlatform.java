@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +14,10 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.network.ChannelBuilder;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
@@ -28,9 +33,9 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
@@ -43,9 +48,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Forge 1.21.1 的 platform 适配层；公共 API 只依赖这里，不直接触碰 Forge/FML 类型。
+ * Forge 1.21.1 鐨?platform 閫傞厤灞傦紱鍏叡 API 鍙緷璧栬繖閲岋紝涓嶇洿鎺ヨЕ纰?Forge/FML 绫诲瀷銆?
  */
 public final class ForgeBaniraPlatform implements BaniraPlatform {
+    private static final String NETWORK_PROTOCOL_VERSION = "1";
 
     private static final BaniraPathService PATHS = new ForgePathService();
     private static final BaniraConfigService CONFIGS = new ForgeConfigService();
@@ -303,45 +309,58 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     private static final class ForgeNetworkService implements BaniraNetworkService {
+        private static SimpleChannel defaultChannel;
+
         @Nonnull
         @Override
         public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
-            return new ForgeNetworkPacketRegistrar(NetworkHandler.create(channelName, identifier));
+            SimpleChannel channel = ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), channelName))
+                    .networkProtocolVersion(Integer.parseInt(NETWORK_PROTOCOL_VERSION))
+                    .acceptedVersions((status, version) -> true)
+                    .simpleChannel();
+            if (defaultChannel == null) {
+                defaultChannel = channel;
+            }
+            return new ForgeNetworkPacketRegistrar(channel);
         }
 
         @Override
         public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
-            PacketUtils.sendPacketToServer((xin.vanilla.banira.common.api.INetworkPacket) packet);
+            if (defaultChannel != null && Minecraft.getInstance().getConnection() != null) {
+                defaultChannel.send(packet, Minecraft.getInstance().getConnection().getConnection());
+            }
         }
 
         @Override
         public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                PacketUtils.sendPacketToPlayer((xin.vanilla.banira.common.api.INetworkPacket) packet, serverPlayer);
+            if (defaultChannel != null && player instanceof ServerPlayer serverPlayer) {
+                defaultChannel.send(packet, PacketDistributor.PLAYER.with(serverPlayer));
             }
         }
 
         @Override
         public boolean hasDefaultChannel() {
-            return true;
+            return defaultChannel != null;
         }
 
         @Override
         public boolean hasLocalChannel(@Nonnull String channelId) {
-            return false;
+            ResourceLocation channel = ResourceLocation.tryParse(channelId);
+            return channel != null && NetworkRegistry.findTarget(channel) != null;
         }
 
         @Override
         public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
-            return player instanceof ServerPlayer;
+            ResourceLocation channel = ResourceLocation.tryParse(channelId);
+            return player instanceof ServerPlayer && channel != null && NetworkRegistry.findTarget(channel) != null;
         }
     }
 
     private static final class ForgeNetworkPacketRegistrar implements NetworkPacketRegistrar {
-        private final NetworkHandler delegate;
+        private final SimpleChannel channel;
 
-        private ForgeNetworkPacketRegistrar(NetworkHandler delegate) {
-            this.delegate = delegate;
+        private ForgeNetworkPacketRegistrar(SimpleChannel channel) {
+            this.channel = channel;
         }
 
         @Override
@@ -351,18 +370,21 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
                 java.util.function.BiConsumer<MSG, BaniraPacketBuffer> encoder,
                 java.util.function.Function<BaniraPacketBuffer, MSG> decoder,
                 java.util.function.BiConsumer<MSG, BaniraNetworkContext> handler) {
-            delegate.register(
-                    packetClass,
-                    (packet, buffer) -> encoder.accept(packet, new ForgePacketBuffer(buffer)),
-                    buffer -> decoder.apply(new ForgePacketBuffer(buffer)),
-                    (packet, context) -> handler.accept(packet, new ForgeNetworkContext(context))
-            );
-            // 1.21.x SimpleChannel 需要 build；当前公共 registrar 尚无 finish 钩子，因此按注册调用后即时构建。
-            delegate.build();
+            // Forge 1.21.1 的 SimpleChannel 注册细节留在 adapter 内部。
+            channel.messageBuilder(packetClass, packetId)
+                    .encoder((packet, buffer) -> encoder.accept(packet, new ForgePacketBuffer(buffer)))
+                    .decoder(buffer -> decoder.apply(new ForgePacketBuffer(buffer)))
+                    .consumerMainThread((packet, context) -> handler.accept(packet, new ForgeNetworkContext(context)))
+                    .add();
+        }
+
+        @Override
+        public void complete() {
+            channel.build();
         }
     }
 
-    private static final class ForgePacketBuffer implements BaniraPacketBuffer {
+    private static final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
         private final FriendlyByteBuf delegate;
 
         private ForgePacketBuffer(FriendlyByteBuf delegate) {
@@ -438,6 +460,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         public void writeIdentifier(BaniraIdentifier value) {
             BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
             delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
+        }
+
+        @Override
+        public FriendlyByteBuf nativeBuffer() {
+            return delegate;
         }
     }
 
@@ -625,7 +652,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
 
         @Override
         public void flushPendingRegistrations() {
-            // Forge 的 RegisterKeyMappingsEvent 事件会调用 BaniraKeyBindings.flushPendingRegistrations(event)。
+            // Forge 鐨?RegisterKeyMappingsEvent 浜嬩欢浼氳皟鐢?BaniraKeyBindings.flushPendingRegistrations(event)銆?
         }
     }
 

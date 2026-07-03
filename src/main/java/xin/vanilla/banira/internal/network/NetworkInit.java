@@ -45,6 +45,6 @@ public final class NetworkInit {
             PacketUtils.sendSplitPacketToPlayer(new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
 
-        HANDLER.build();
+        HANDLER.completeRegistration();
     }
 }

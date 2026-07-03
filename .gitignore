@@ -120,3 +120,11 @@ runs/
 !gradle-wrapper.jar
 
 bin/
+
+# Local Codex / editor working files
+AGENTS.md
+.cursor/
+docs/
+logs/
+__pycache__/
+publish.bat

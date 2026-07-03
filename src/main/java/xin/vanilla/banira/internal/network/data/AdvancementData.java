@@ -12,6 +12,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraIdentifier;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -55,10 +58,10 @@ public class AdvancementData {
                 .orElseGet(() -> new AdvancementData(holder.id(), createDisplayInfo(holder.id().toString())));
     }
 
-    public static AdvancementData readFromBuffer(RegistryFriendlyByteBuf buffer) {
-        ResourceLocation id = buffer.readResourceLocation();
+    public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
+        ResourceLocation id = toResourceLocation(buffer.readIdentifier());
         boolean hasTabListIcon = buffer.readBoolean();
-        DisplayInfo decoded = DisplayInfo.STREAM_CODEC.decode(buffer);
+        DisplayInfo decoded = DisplayInfo.STREAM_CODEC.decode(nativeBuffer(buffer));
         DisplayInfo display = hasTabListIcon ? decoded : copyDisplayWithIcon(decoded, ItemStack.EMPTY);
         return new AdvancementData(id, display);
     }
@@ -97,20 +100,35 @@ public class AdvancementData {
         return fromDisplayInfo.copy();
     }
 
-    public void writeToBuffer(RegistryFriendlyByteBuf buffer) {
-        buffer.writeResourceLocation(id);
+    public void writeToBuffer(BaniraPacketBuffer buffer) {
+        buffer.writeIdentifier(toBaniraIdentifier(id));
         DisplayInfo src = displayInfo();
         boolean hasIcon = hasTabListIcon(src.getIcon());
         buffer.writeBoolean(hasIcon);
         ItemStack wireIcon = hasIcon ? src.getIcon().copy() : WIRE_NO_ICON_PLACEHOLDER.copy();
         DisplayInfo wire = copyDisplayWithIcon(src, wireIcon);
-        DisplayInfo.STREAM_CODEC.encode(buffer, wire);
+        DisplayInfo.STREAM_CODEC.encode(nativeBuffer(buffer), wire);
     }
 
     private static DisplayInfo copyDisplayWithIcon(DisplayInfo d, ItemStack icon) {
         return new DisplayInfo(icon,
                 d.getTitle(), d.getDescription(), d.getBackground(), d.getType(),
                 d.shouldShowToast(), d.shouldAnnounceChat(), d.isHidden());
+    }
+
+    private static BaniraIdentifier toBaniraIdentifier(ResourceLocation value) {
+        return BaniraIdentifier.of(value.getNamespace(), value.getPath());
+    }
+
+    private static ResourceLocation toResourceLocation(BaniraIdentifier value) {
+        return ResourceLocation.fromNamespaceAndPath(value.getNamespace(), value.getPath());
+    }
+
+    private static RegistryFriendlyByteBuf nativeBuffer(BaniraPacketBuffer buffer) {
+        if (buffer instanceof NativePacketBufferAccess) {
+            return (RegistryFriendlyByteBuf) ((NativePacketBufferAccess<?>) buffer).nativeBuffer();
+        }
+        throw new IllegalArgumentException("BaniraPacketBuffer does not expose a native RegistryFriendlyByteBuf");
     }
 
 

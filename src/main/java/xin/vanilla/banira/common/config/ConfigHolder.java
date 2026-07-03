@@ -113,6 +113,14 @@ public class ConfigHolder {
     }
 
     /**
+     * 校验网络同步或 GUI 写入的值是否符合 Forge config spec。
+     */
+    public boolean validate(String path, Object value) {
+        ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
+        return xin.vanilla.banira.common.util.CommandUtils.validateConfigValueWithSpec(cv, value);
+    }
+
+    /**
      * 获取配置项描述符
      */
     public ConfigEntryDescriptor getDescriptor(String path) {

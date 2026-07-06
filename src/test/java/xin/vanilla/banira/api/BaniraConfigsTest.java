@@ -7,6 +7,8 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -39,6 +41,23 @@ public class BaniraConfigsTest {
         assertSame(SampleConfig.class, service.handleConfigClass);
     }
 
+    @Test
+    public void helperMethodsDelegateToRequiredHandle() {
+        RecordingConfigService service = new RecordingConfigService();
+        BaniraPlatforms.install(new TestBaniraPlatform().configService(service));
+
+        BaniraConfigs.set(SampleConfig.class, "general.enabled", true);
+        BaniraConfigs.setAndSave(SampleConfig.class, "general.count", 3);
+
+        assertTrue(BaniraConfigs.get(SampleConfig.class, "general.enabled"));
+        assertEquals(Integer.valueOf(3), BaniraConfigs.get(SampleConfig.class, "general.count"));
+        assertEquals("general.count", BaniraConfigs.findValuePath(SampleConfig.class, "general.count"));
+        assertTrue(BaniraConfigs.hasValue(SampleConfig.class, "general.enabled"));
+        assertTrue(BaniraConfigs.setIfValid(SampleConfig.class, "general.enabled", false));
+        assertEquals(Boolean.FALSE, BaniraConfigs.get(SampleConfig.class, "general.enabled"));
+        assertTrue(service.handle.saved);
+    }
+
     private static final class SampleConfig {
     }
 
@@ -53,7 +72,7 @@ public class BaniraConfigsTest {
         private Class<?> handleConfigClass;
         private final SampleView sampleView = new SampleView() {
         };
-        private final BaniraConfigHandle handle = new NoopHandle();
+        private final NoopHandle handle = new NoopHandle();
 
         @Override
         public <T> void register(Class<T> configClass, String modId) {
@@ -76,6 +95,9 @@ public class BaniraConfigsTest {
     }
 
     private static final class NoopHandle implements BaniraConfigHandle {
+        private final Map<String, Object> values = new LinkedHashMap<>();
+        private boolean saved;
+
         @Override
         public String getModId() {
             return "sample";
@@ -88,30 +110,33 @@ public class BaniraConfigsTest {
 
         @Override
         public void save() {
+            saved = true;
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T> T get(String path) {
-            return null;
+            return (T) values.get(path);
         }
 
         @Override
         public void set(String path, Object value) {
+            values.put(path, value);
         }
 
         @Override
         public Set<String> valuePaths() {
-            return Collections.emptySet();
+            return Collections.unmodifiableSet(values.keySet());
         }
 
         @Override
         public boolean hasValue(String path) {
-            return false;
+            return values.containsKey(path);
         }
 
         @Override
         public String findValuePath(String key) {
-            return null;
+            return values.containsKey(key) ? key : null;
         }
 
         @Override
@@ -131,7 +156,8 @@ public class BaniraConfigsTest {
 
         @Override
         public boolean setIfValid(String path, Object value) {
-            return false;
+            set(path, value);
+            return true;
         }
     }
 }

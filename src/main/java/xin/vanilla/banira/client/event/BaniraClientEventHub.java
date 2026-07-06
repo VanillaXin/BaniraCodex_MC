@@ -314,7 +314,7 @@ public final class BaniraClientEventHub {
         );
     }
 
-    private static void resetInputTrackers() {
+    public static void resetInputTrackers() {
         mouseClickTracker.reset();
         dragTracker.reset();
         keyPressTracker.reset();

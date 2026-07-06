@@ -2,19 +2,35 @@ package xin.vanilla.banira.api.client.event;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
  * 子 mod 注册客户端事件的稳定入口；低版本 Forge 分支转调既有的客户端事件 Hub。
  */
 public final class BaniraClientEvents {
+    private static final List<Consumer<BaniraClientPlayerEvent>> CLIENT_PLAYER_LOGGED_IN = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraClientPlayerEvent>> CLIENT_PLAYER_LOGGED_OUT = new CopyOnWriteArrayList<>();
 
     private BaniraClientEvents() {
     }
 
+    public static void resetInputTrackers() {
+        xin.vanilla.banira.client.event.BaniraClientEventHub.resetInputTrackers();
+    }
+
     public static void dispatchModClientSetup(@Nonnull BaniraClientSetupEvent event) {
         xin.vanilla.banira.client.event.BaniraClientEventHub.dispatchModClientSetup(event);
+    }
+
+    public static void dispatchClientPlayerLoggedIn(@Nonnull BaniraClientPlayerEvent event) {
+        fire(CLIENT_PLAYER_LOGGED_IN, event);
+    }
+
+    public static void dispatchClientPlayerLoggedOut(@Nonnull BaniraClientPlayerEvent event) {
+        fire(CLIENT_PLAYER_LOGGED_OUT, event);
     }
 
     public static void dispatchClientTick(@Nonnull BaniraClientTickEvent event) {
@@ -70,10 +86,12 @@ public final class BaniraClientEvents {
         }
 
         public static void onClientLoggedIn(@Nonnull Consumer<BaniraClientPlayerEvent> callback) {
+            CLIENT_PLAYER_LOGGED_IN.add(callback);
             xin.vanilla.banira.client.event.BaniraClientEventHub.Player.onClientLoggedIn(player -> callback.accept(playerEvent(player)));
         }
 
         public static void onClientLoggedOut(@Nonnull Consumer<BaniraClientPlayerEvent> callback) {
+            CLIENT_PLAYER_LOGGED_OUT.add(callback);
             xin.vanilla.banira.client.event.BaniraClientEventHub.Player.onClientLoggedOut(player -> callback.accept(playerEvent(player)));
         }
     }
@@ -187,6 +205,12 @@ public final class BaniraClientEvents {
         UUID uuid = invokeUuid(player);
         String name = invokeName(player);
         return new BaniraClientPlayerEvent(uuid, name);
+    }
+
+    private static void fire(List<Consumer<BaniraClientPlayerEvent>> callbacks, BaniraClientPlayerEvent event) {
+        for (Consumer<BaniraClientPlayerEvent> callback : callbacks) {
+            callback.accept(event);
+        }
     }
 
     private static UUID invokeUuid(Object player) {

@@ -386,7 +386,7 @@ public final class BaniraClientEventHub {
         return new BaniraScreenInfo(screen.getClass().getName(), title, screen.width, screen.height, true);
     }
 
-    private static void resetInputTrackers() {
+    public static void resetInputTrackers() {
         mouseClickTracker.reset();
         dragTracker.reset();
         keyPressTracker.reset();

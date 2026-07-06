@@ -15,25 +15,32 @@ public final class BaniraClientInputService {
     }
 
     public static boolean isKeyDown(int key) {
-        return clientReady() && GLFW.glfwGetKey(windowHandle(), key) == GLFW.GLFW_PRESS;
+        long window = safeWindowHandle();
+        return window != 0L && GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
     }
 
     public static boolean isMouseDown(int mouseButton) {
-        return clientReady() && GLFW.glfwGetMouseButton(windowHandle(), mouseButton) == GLFW.GLFW_PRESS;
+        long window = safeWindowHandle();
+        return window != 0L && GLFW.glfwGetMouseButton(window, mouseButton) == GLFW.GLFW_PRESS;
     }
 
     public static boolean isWindowActive() {
-        return clientReady() && BaniraClientAccess.isWindowActive();
+        try {
+            return clientReady() && BaniraClientAccess.isWindowActive();
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     public static KeyValue<Double, Double> rawCursorPos() {
-        if (!clientReady()) {
+        long window = safeWindowHandle();
+        if (window == 0L) {
             return new KeyValue<>(0.0D, 0.0D);
         }
         try (MemoryStack stack = MemoryStack.stackPush()) {
             DoubleBuffer x = stack.mallocDouble(1);
             DoubleBuffer y = stack.mallocDouble(1);
-            GLFW.glfwGetCursorPos(windowHandle(), x, y);
+            GLFW.glfwGetCursorPos(window, x, y);
             return new KeyValue<>(x.get(0), y.get(0));
         }
     }
@@ -77,8 +84,9 @@ public final class BaniraClientInputService {
     }
 
     public static void setRawCursorPos(double rawX, double rawY) {
-        if (clientReady()) {
-            GLFW.glfwSetCursorPos(windowHandle(), rawX, rawY);
+        long window = safeWindowHandle();
+        if (window != 0L) {
+            GLFW.glfwSetCursorPos(window, rawX, rawY);
         }
     }
 
@@ -95,11 +103,36 @@ public final class BaniraClientInputService {
         return BaniraClientAccess.windowHandle();
     }
 
+    private static long safeWindowHandle() {
+        if (!clientReady()) {
+            return 0L;
+        }
+        try {
+            return windowHandle();
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
     private static KeyValue<Integer, Integer> guiPixelSize() {
-        return clientReady() ? BaniraClientAccess.guiPixelSize() : new KeyValue<>(1, 1);
+        if (!clientReady()) {
+            return new KeyValue<>(1, 1);
+        }
+        try {
+            return BaniraClientAccess.guiPixelSize();
+        } catch (Throwable ignored) {
+            return new KeyValue<>(1, 1);
+        }
     }
 
     private static KeyValue<Integer, Integer> guiScaledSize() {
-        return clientReady() ? BaniraClientAccess.guiScaledSize() : new KeyValue<>(1, 1);
+        if (!clientReady()) {
+            return new KeyValue<>(1, 1);
+        }
+        try {
+            return BaniraClientAccess.guiScaledSize();
+        } catch (Throwable ignored) {
+            return new KeyValue<>(1, 1);
+        }
     }
 }

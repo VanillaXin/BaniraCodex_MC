@@ -66,4 +66,10 @@ public interface BaniraPlatform {
     @Nonnull
     BaniraInputService inputService();
 
+    /**
+     * 当前加载器的客户端通知服务；服务端环境应保持 no-op。
+     */
+    @Nonnull
+    BaniraNotificationService notificationService();
+
 }

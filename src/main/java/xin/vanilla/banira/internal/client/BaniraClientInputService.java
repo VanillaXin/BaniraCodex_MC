@@ -83,7 +83,12 @@ public final class BaniraClientInputService {
     }
 
     private static boolean clientReady() {
-        return BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient();
+        try {
+            return BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient();
+        } catch (Throwable ignored) {
+            // 单元测试或早期启动阶段可能没有完整 Forge 客户端环境，输入查询应安全降级。
+            return false;
+        }
     }
 
     private static long windowHandle() {

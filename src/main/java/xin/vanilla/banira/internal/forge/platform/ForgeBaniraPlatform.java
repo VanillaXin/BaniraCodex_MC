@@ -7,8 +7,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
+import xin.vanilla.banira.internal.common.BaniraNotificationServices;
 import xin.vanilla.banira.platform.*;
 
+import javax.annotation.Nonnull;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,6 +21,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
+    private final BaniraNotificationService notification = BaniraNotificationServices.INSTANCE;
 
     @Override
     public String loaderType() {
@@ -108,5 +111,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraRegistryService registryService() {
         return registry;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraNotificationService notificationService() {
+        return notification;
     }
 }

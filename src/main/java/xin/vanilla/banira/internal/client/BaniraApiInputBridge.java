@@ -67,6 +67,11 @@ public final class BaniraApiInputBridge {
         }
 
         @Override
+        public int currentKey() {
+            return delegate.currentKey();
+        }
+
+        @Override
         public boolean isDown() {
             return delegate.isDown();
         }

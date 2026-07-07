@@ -15,6 +15,11 @@ public interface BaniraKeyHandle {
 
     int defaultKey();
 
+    /**
+     * 当前实际绑定键码；用于 GUI 内按键事件与用户改键后的配置保持一致。
+     */
+    int currentKey();
+
     boolean isDown();
 
     boolean consumeClick();

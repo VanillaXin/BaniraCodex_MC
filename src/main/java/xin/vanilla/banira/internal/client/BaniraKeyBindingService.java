@@ -44,6 +44,11 @@ public final class BaniraKeyBindingService {
         return binding != null && binding.isDown();
     }
 
+    public static int currentKey(@Nonnull BaniraKeyHandle handle) {
+        KeyBinding binding = handle.nativeBinding(KeyBinding.class);
+        return binding != null ? binding.getKey().getValue() : handle.defaultKey();
+    }
+
     public static boolean consumeClick(@Nonnull BaniraKeyHandle handle) {
         KeyBinding binding = handle.nativeBinding(KeyBinding.class);
         return binding != null && binding.consumeClick();

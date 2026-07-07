@@ -26,6 +26,13 @@ public final class BaniraKeyHandle {
         return BaniraKeyBindingService.isDown(this);
     }
 
+    /**
+     * 当前实际绑定键码；不同 MC 版本的读取细节由服务层处理。
+     */
+    public int currentKey() {
+        return BaniraKeyBindingService.currentKey(this);
+    }
+
     public boolean consumeClick() {
         return BaniraKeyBindingService.consumeClick(this);
     }

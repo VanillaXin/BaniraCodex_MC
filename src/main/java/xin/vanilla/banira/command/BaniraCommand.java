@@ -1,6 +1,8 @@
 package xin.vanilla.banira.command;
 
 import xin.vanilla.banira.command.impl.HelpCommand;
+import xin.vanilla.banira.command.impl.LanguageCommand;
+import xin.vanilla.banira.command.impl.VirtualOpCommand;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
@@ -11,6 +13,15 @@ import java.util.stream.Collectors;
 
 
 public class BaniraCommand {
+    /**
+     * 可挂载到子 mod 命令树下的语言子命令节点。
+     */
+    public static final Object LANGUAGE = LanguageCommand.create();
+
+    /**
+     * 可挂载到子 mod 命令树下的虚拟权限子命令节点。
+     */
+    public static final Object VIRTUAL_OP = VirtualOpCommand.create();
 
     /**
      * 帮助信息列表

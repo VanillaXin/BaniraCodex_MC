@@ -49,7 +49,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
     @Override
     public void sendToServer(BaniraNetworkPacket packet) {
         INetworkPacket networkPacket = asNetworkPacket(packet);
-        ForgeNetworkChannel channel = defaultChannel();
+        ForgeNetworkChannel channel = channelFor(networkPacket);
         if (channel == null || !hasLocalChannel(channel.channelName().toString())) {
             return;
         }
@@ -70,7 +70,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         INetworkPacket networkPacket = asNetworkPacket(packet);
-        ForgeNetworkChannel channel = defaultChannel();
+        ForgeNetworkChannel channel = channelFor(networkPacket);
         if (channel == null || !hasPlayerChannel(serverPlayer, channel.channelName().toString())) {
             return;
         }
@@ -104,6 +104,15 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
 
     private ForgeNetworkChannel defaultChannel() {
         return channels.get(NetworkInit.DEFAULT_CHANNEL_NAME);
+    }
+
+    private ForgeNetworkChannel channelFor(INetworkPacket packet) {
+        String channelId = packet.channelId();
+        if (channelId == null || channelId.isEmpty()) {
+            return defaultChannel();
+        }
+        ResourceLocation parsed = parseChannel(channelId);
+        return parsed != null ? channels.get(parsed) : null;
     }
 
     private static INetworkPacket asNetworkPacket(BaniraNetworkPacket packet) {

@@ -37,6 +37,11 @@ final class ForgeBaniraKeyHandle implements BaniraKeyHandle {
     }
 
     @Override
+    public int currentKey() {
+        return binding.getKey().getValue();
+    }
+
+    @Override
     public boolean isDown() {
         return binding.isDown();
     }

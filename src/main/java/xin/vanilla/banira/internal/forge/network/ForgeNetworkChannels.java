@@ -15,10 +15,14 @@ import xin.vanilla.banira.internal.mixin.accessors.NetworkRegistryAccessor;
 import xin.vanilla.banira.internal.mixin.accessors.SimpleChannelAccessor;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Forge 分支的通道适配器；公共层只处理 Banira 网络包语义。
  */
 public final class ForgeNetworkChannels {
+    private static final Map<Class<?>, SimpleChannel> PACKET_CHANNELS = new ConcurrentHashMap<>();
     private static NetworkRegistryAccessor networkRegistry;
     private static SimpleChannel defaultChannel;
 
@@ -26,7 +30,11 @@ public final class ForgeNetworkChannels {
     }
 
     public static SimpleChannel resolve(BaniraNetworkPacket packet) {
-        return defaultChannel;
+        return PACKET_CHANNELS.getOrDefault(packet.getClass(), defaultChannel);
+    }
+
+    static void bind(Class<?> packetClass, SimpleChannel channel) {
+        PACKET_CHANNELS.put(packetClass, channel);
     }
 
     static void installDefault(SimpleChannel channel) {

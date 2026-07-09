@@ -41,6 +41,8 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
                                                       BiConsumer<MSG, BaniraPacketBuffer> encoder,
                                                       Function<BaniraPacketBuffer, MSG> decoder,
                                                       BiConsumer<MSG, BaniraNetworkContext> handler) {
+        // 子 mod 可拥有独立 channel，发送时必须按包类型找回注册通道。
+        ForgeNetworkChannels.bind(packetClass, channel);
         channel.registerMessage(
                 packetId,
                 packetClass,

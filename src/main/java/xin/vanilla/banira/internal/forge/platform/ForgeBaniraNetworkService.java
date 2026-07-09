@@ -28,6 +28,7 @@ import java.util.function.Function;
  */
 final class ForgeBaniraNetworkService implements BaniraNetworkService {
     private final Map<ResourceLocation, ForgeNetworkChannel> channels = new ConcurrentHashMap<>();
+    private final Map<Class<?>, ForgeNetworkChannel> packetChannels = new ConcurrentHashMap<>();
     private NetworkRegistryAccessor networkRegistry;
 
     @Override
@@ -41,6 +42,8 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
                     BiConsumer<MSG, BaniraPacketBuffer> encoder,
                     Function<BaniraPacketBuffer, MSG> decoder,
                     BiConsumer<MSG, BaniraNetworkContext> handler) {
+                // 子 mod 包按注册类型绑定 channel，调用方无需携带加载器专用路由信息。
+                packetChannels.put(packetClass, channel);
                 channel.register(packetId, packetClass, encoder, decoder, handler);
             }
         };
@@ -107,12 +110,7 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
     }
 
     private ForgeNetworkChannel channelFor(INetworkPacket packet) {
-        String channelId = packet.channelId();
-        if (channelId == null || channelId.isEmpty()) {
-            return defaultChannel();
-        }
-        ResourceLocation parsed = parseChannel(channelId);
-        return parsed != null ? channels.get(parsed) : null;
+        return packetChannels.getOrDefault(packet.getClass(), defaultChannel());
     }
 
     private static INetworkPacket asNetworkPacket(BaniraNetworkPacket packet) {

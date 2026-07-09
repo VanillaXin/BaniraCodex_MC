@@ -294,6 +294,11 @@ public class ChildModApiUsageContractTest {
         }
 
         @Override
+        public int currentKey() {
+            return spec.defaultKey();
+        }
+
+        @Override
         public boolean isDown() {
             return true;
         }

@@ -6,7 +6,7 @@ import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import javax.annotation.Nonnull;
 
 /**
- * Forge 1.18.2 的按键句柄适配，公共 API 不暴露 KeyMapping。
+ * Forge 1.19.2 的按键句柄适配，公共 API 不暴露 KeyMapping。
  */
 final class ForgeBaniraKeyHandle implements BaniraKeyHandle {
     private final KeyMapping binding;

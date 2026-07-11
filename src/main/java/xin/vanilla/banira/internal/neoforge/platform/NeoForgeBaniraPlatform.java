@@ -35,7 +35,6 @@ import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
@@ -55,7 +54,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -283,100 +281,7 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
         @Nullable
         @Override
         public BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
-            ConfigHolder holder = ForgeConfigAdapter.getHolder(configClass);
-            return holder == null ? null : new NeoForgeConfigHandle(holder);
-        }
-    }
-
-    private static final class NeoForgeConfigHandle implements BaniraConfigHandle {
-        private final ConfigHolder holder;
-
-        private NeoForgeConfigHandle(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        @Override
-        public String getModId() {
-            return holder.getModId();
-        }
-
-        @Override
-        public String getConfigName() {
-            return holder.getConfigName();
-        }
-
-        @Override
-        public void save() {
-            holder.save();
-        }
-
-        @Override
-        public <T> T get(String path) {
-            return holder.get(path);
-        }
-
-        @Override
-        public void set(String path, Object value) {
-            holder.set(path, value);
-        }
-
-        @Override
-        public Set<String> valuePaths() {
-            return holder.getValueMap().keySet();
-        }
-
-        @Override
-        public boolean hasValue(String path) {
-            return holder.getValueMap().containsKey(path);
-        }
-
-        @Nullable
-        @Override
-        public String findValuePath(String key) {
-            if (key == null || key.isEmpty()) {
-                return null;
-            }
-            if (hasValue(key)) {
-                return key;
-            }
-            for (String path : holder.getValueMap().keySet()) {
-                if (path.endsWith("." + key) || path.equals(key)) {
-                    return path;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public Class<?> valueClass(String path) {
-            Object value = get(path);
-            if (value != null) {
-                return value.getClass();
-            }
-            Object def = defaultValue(path);
-            return def != null ? def.getClass() : Object.class;
-        }
-
-        @Nullable
-        @Override
-        public Object defaultValue(String path) {
-            ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
-            return descriptor == null ? null : descriptor.getDefaultValue();
-        }
-
-        @Override
-        public boolean validate(String path, Object value) {
-            ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
-            return descriptor != null && holder.getValueMap().containsKey(path);
-        }
-
-        @Override
-        public boolean setIfValid(String path, Object value) {
-            if (!validate(path, value)) {
-                return false;
-            }
-            set(path, value);
-            return true;
+            return ForgeConfigAdapter.getHolder(configClass);
         }
     }
 

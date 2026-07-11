@@ -767,6 +767,11 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
                 }
 
                 @Override
+                public int currentKey() {
+                    return mapping.getKey().getValue();
+                }
+
+                @Override
                 public boolean isDown() {
                     return mapping.isDown();
                 }

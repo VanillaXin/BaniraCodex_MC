@@ -22,6 +22,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 import xin.vanilla.banira.common.api.ICommandNotify;
 import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -72,10 +74,27 @@ public final class CommandUtils {
      * @param type   指令类型
      */
     public static boolean hasVirtualPermission(Entity source, IVirtualPermissionType type) {
+        return hasVirtualPermission(source, (BaniraVirtualPermission) type);
+    }
+
+    /**
+     * 判断是否拥有某个虚拟指令权限。
+     */
+    public static boolean hasVirtualPermission(Entity source, BaniraVirtualPermission type) {
         if (!(source instanceof Player player)) {
             return false;
         }
-        return VirtualPermissionManager.getRawVirtualPermission(player).contains(type.modId() + ":" + type.id());
+        return hasVirtualPermission(player, type);
+    }
+
+    /**
+     * 判断玩家是否拥有某个虚拟指令权限。
+     */
+    public static boolean hasVirtualPermission(Player player, BaniraVirtualPermission type) {
+        if (type == null) {
+            return false;
+        }
+        return hasVirtualPermission(player, BaniraVirtualPermissions.key(type));
     }
 
     /**

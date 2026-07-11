@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.config;
 
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.config.ModConfig;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

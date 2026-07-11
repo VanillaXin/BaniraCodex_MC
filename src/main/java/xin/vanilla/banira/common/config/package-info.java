@@ -7,7 +7,7 @@
  * 备选：使用 {@link xin.vanilla.banira.common.config.ConfigSpecBuilder} 流式 API：
  * <pre>{@code
  * // 1. 使用 ConfigSpecBuilder 定义配置
- * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", xin.vanilla.banira.api.ConfigScope.SERVER)
+ * ConfigHolder holder = ConfigSpecBuilder.create("mymod-server", xin.vanilla.banira.common.config.ConfigScope.SERVER)
  *   .category("base", "基础设置")
  *     .define("helpHeader", "-----==== Help ====-----", "帮助头部")
  *     .defineInRange("helpNumPerPage", 5, 1, 9999, "每页数量")

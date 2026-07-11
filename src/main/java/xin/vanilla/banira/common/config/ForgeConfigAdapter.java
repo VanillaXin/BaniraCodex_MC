@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.config;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -56,7 +56,7 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ConfigScope configScope = configAnn.scope();
+        ConfigScope configScope = configAnn.type();
         ModConfig.Type configType = toForgeType(configScope);
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();

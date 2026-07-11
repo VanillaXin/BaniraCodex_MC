@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.util.*;
 import java.util.function.Predicate;

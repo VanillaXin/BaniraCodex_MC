@@ -24,7 +24,6 @@ import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
@@ -32,7 +31,6 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
@@ -40,9 +38,10 @@ import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -209,104 +208,12 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         @Nullable
         @Override
         public BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
-            ConfigHolder holder = ForgeConfigAdapter.getHolder(configClass);
-            return holder == null ? null : new ForgeConfigHandle(holder);
-        }
-    }
-
-    private static final class ForgeConfigHandle implements BaniraConfigHandle {
-        private final ConfigHolder holder;
-
-        private ForgeConfigHandle(ConfigHolder holder) {
-            this.holder = holder;
-        }
-
-        @Override
-        public String getModId() {
-            return holder.getModId();
-        }
-
-        @Override
-        public String getConfigName() {
-            return holder.getConfigName();
-        }
-
-        @Override
-        public void save() {
-            holder.save();
-        }
-
-        @Override
-        public <T> T get(String path) {
-            return holder.get(path);
-        }
-
-        @Override
-        public void set(String path, Object value) {
-            holder.set(path, value);
-        }
-
-        @Override
-        public Set<String> valuePaths() {
-            return holder.getValueMap().keySet();
-        }
-
-        @Override
-        public boolean hasValue(String path) {
-            return holder.getValueMap().containsKey(path);
-        }
-
-        @Nullable
-        @Override
-        public String findValuePath(String key) {
-            if (key == null || key.isEmpty()) {
-                return null;
-            }
-            if (hasValue(key)) {
-                return key;
-            }
-            for (String path : holder.getValueMap().keySet()) {
-                if (path.endsWith("." + key) || path.equals(key)) {
-                    return path;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public Class<?> valueClass(String path) {
-            Object value = get(path);
-            if (value != null) {
-                return value.getClass();
-            }
-            Object def = defaultValue(path);
-            return def != null ? def.getClass() : Object.class;
-        }
-
-        @Nullable
-        @Override
-        public Object defaultValue(String path) {
-            ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
-            return descriptor == null ? null : descriptor.getDefaultValue();
-        }
-
-        @Override
-        public boolean validate(String path, Object value) {
-            ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
-            return descriptor != null && holder.getValueMap().containsKey(path);
-        }
-
-        @Override
-        public boolean setIfValid(String path, Object value) {
-            if (!validate(path, value)) {
-                return false;
-            }
-            set(path, value);
-            return true;
+            return ForgeConfigAdapter.getHolder(configClass);
         }
     }
 
     private static final class ForgeNetworkService implements BaniraNetworkService {
+        private static final Map<Class<?>, SimpleChannel> PACKET_CHANNELS = new ConcurrentHashMap<>();
         private static SimpleChannel defaultChannel;
 
         @Nonnull
@@ -326,15 +233,17 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
 
         @Override
         public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
-            if (defaultChannel != null) {
-                defaultChannel.sendToServer(packet);
+            SimpleChannel channel = resolve(packet);
+            if (channel != null) {
+                channel.sendToServer(packet);
             }
         }
 
         @Override
         public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
-            if (defaultChannel != null && player instanceof ServerPlayer serverPlayer) {
-                defaultChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+            SimpleChannel channel = resolve(packet);
+            if (channel != null && player instanceof ServerPlayer serverPlayer) {
+                channel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
             }
         }
 
@@ -351,6 +260,10 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         @Override
         public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
             return player instanceof ServerPlayer;
+        }
+
+        private static SimpleChannel resolve(BaniraNetworkPacket packet) {
+            return PACKET_CHANNELS.getOrDefault(packet.getClass(), defaultChannel);
         }
     }
 
@@ -369,6 +282,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
                 java.util.function.Function<BaniraPacketBuffer, MSG> decoder,
                 java.util.function.BiConsumer<MSG, BaniraNetworkContext> handler) {
             // Forge 20.1 仍使用 SimpleChannel；转换只允许停留在 adapter 内部。
+            ForgeNetworkService.PACKET_CHANNELS.put(packetClass, channel);
             channel.registerMessage(
                     packetId,
                     packetClass,
@@ -619,6 +533,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
                 @Override
                 public int defaultKey() {
                     return defaultKey;
+                }
+
+                @Override
+                public int currentKey() {
+                    return mapping.getKey().getValue();
                 }
 
                 @Override

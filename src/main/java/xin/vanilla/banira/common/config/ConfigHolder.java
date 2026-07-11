@@ -3,7 +3,8 @@ package xin.vanilla.banira.common.config;
 import lombok.Getter;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -12,7 +13,7 @@ import java.util.*;
  * 配置持有者，封装 ForgeConfigSpec 与元数据，提供统一访问接口
  */
 @Getter
-public class ConfigHolder {
+public class ConfigHolder implements BaniraConfigHandle {
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
@@ -118,6 +119,59 @@ public class ConfigHolder {
     public boolean validate(String path, Object value) {
         ForgeConfigSpec.ConfigValue<?> cv = valueMap.get(path);
         return xin.vanilla.banira.common.util.CommandUtils.validateConfigValueWithSpec(cv, value);
+    }
+
+    @Override
+    public Set<String> valuePaths() {
+        return valueMap.keySet();
+    }
+
+    @Override
+    public boolean hasValue(String path) {
+        return valueMap.containsKey(path);
+    }
+
+    @Nullable
+    @Override
+    public String findValuePath(String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+        if (hasValue(key)) {
+            return key;
+        }
+        for (String path : valueMap.keySet()) {
+            if (path.endsWith("." + key) || path.equals(key)) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Class<?> valueClass(String path) {
+        Object value = get(path);
+        if (value != null) {
+            return value.getClass();
+        }
+        Object def = defaultValue(path);
+        return def != null ? def.getClass() : Object.class;
+    }
+
+    @Nullable
+    @Override
+    public Object defaultValue(String path) {
+        ConfigEntryDescriptor descriptor = getDescriptor(path);
+        return descriptor == null ? null : descriptor.getDefaultValue();
+    }
+
+    @Override
+    public boolean setIfValid(String path, Object value) {
+        if (!validate(path, value)) {
+            return false;
+        }
+        set(path, value);
+        return true;
     }
 
     /**

@@ -3,7 +3,7 @@ package xin.vanilla.banira.internal.config;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
@@ -17,7 +17,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
  * <p>
  * 运行时通过 {@link #get()} 返回的 {@link RootView} 读写 {@link ConfigHolder}（路径由代理按字段名推导）。
  */
-@Config(name = "banira_codex-client", scope = ConfigScope.CLIENT)
+@Config(name = "banira_codex-client", type = ConfigScope.CLIENT)
 public class ClientConfig implements ConfigData {
 
     @Getter(AccessLevel.NONE)

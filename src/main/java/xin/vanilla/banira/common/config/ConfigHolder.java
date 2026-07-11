@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.config;
 import lombok.Getter;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import javax.annotation.Nullable;
 import java.util.*;

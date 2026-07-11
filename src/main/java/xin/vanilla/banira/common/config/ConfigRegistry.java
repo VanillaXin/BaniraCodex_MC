@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.config;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

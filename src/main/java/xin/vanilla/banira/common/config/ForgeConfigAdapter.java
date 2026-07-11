@@ -4,7 +4,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import xin.vanilla.banira.api.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -57,7 +57,7 @@ public final class ForgeConfigAdapter {
             throw new IllegalArgumentException("Config class must be annotated with @Config: " + configClass.getName());
         }
         String configName = configAnn.name();
-        ConfigScope configScope = configAnn.scope();
+        ConfigScope configScope = configAnn.type();
         ModConfig.Type configType = toForgeType(configScope);
 
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();

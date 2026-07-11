@@ -92,6 +92,10 @@ public final class LogoModifier {
         }
 
         try {
+            if (ModInfo.class.isRecord()) {
+                LOGGER.debug("Skip dynamic logo modification because Forge ModInfo is a record on this version");
+                return;
+            }
             if (StringUtils.isNullOrEmpty(FIELD_NAME)) {
                 List<? extends IModInfo> mods = ModList.get().getMods();
                 if (mods.isEmpty()) {
@@ -126,7 +130,7 @@ public final class LogoModifier {
                     continue;
                 }
 
-                FieldUtils.setPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo);
+                FieldUtils.trySetPrivateFieldValue(ModInfo.class, info, FIELD_NAME, customLogo, false);
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to modify mod logos", e);

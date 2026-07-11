@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * 子 mod 可用的普通反射工具；当前 1.20.1 分支先委托旧 FieldUtils 实现。
+ * 子 mod 可用的普通反射工具；底层由当前分支的 FieldUtils 适配。
  */
 public final class ReflectionUtils {
     private ReflectionUtils() {
@@ -61,6 +61,10 @@ public final class ReflectionUtils {
 
     public static void setPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
         FieldUtils.setPrivateFieldValue(clazz, instance, fieldName, value, parent);
+    }
+
+    public static boolean trySetPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
+        return FieldUtils.trySetPrivateFieldValue(clazz, instance, fieldName, value, parent);
     }
 
     @Nullable

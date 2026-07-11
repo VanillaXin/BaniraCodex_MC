@@ -185,17 +185,24 @@ public final class FieldUtils {
      * @param value     字段值
      */
     public static void setPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value) {
-        setPrivateFieldValue(clazz, instance, fieldName, value, false);
+        trySetPrivateFieldValue(clazz, instance, fieldName, value, false);
     }
 
     /**
      * 设置 类中声明的私有 target 字段值 (支持private+final+static) 并可选向上查找父类
      */
     public static void setPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
+        trySetPrivateFieldValue(clazz, instance, fieldName, value, parent);
+    }
+
+    /**
+     * 尝试设置私有字段；record 的 final 实例字段在 Java 21+ 无法通过 Unsafe 修改。
+     */
+    public static boolean trySetPrivateFieldValue(Class<?> clazz, Object instance, String fieldName, Object value, boolean parent) {
         Field field = findField(clazz, fieldName, parent);
         if (field == null) {
             LOGGER.error("Failed to locate private field {} on {}", fieldName, clazz.getName());
-            return;
+            return false;
         }
         try {
             field.setAccessible(true);
@@ -203,10 +210,19 @@ public final class FieldUtils {
             if (Modifier.isStatic(field.getModifiers())) {
                 setStaticFieldByUnsafe(field, value);
             } else {
+                if (field.getDeclaringClass().isRecord() && Modifier.isFinal(field.getModifiers())) {
+                    LOGGER.debug("Skip setting record final field {} from {}", fieldName, clazz.getName());
+                    return false;
+                }
                 setInstanceFieldByUnsafe(instance, field, value);
             }
+            return true;
+        } catch (UnsupportedOperationException e) {
+            LOGGER.debug("Unsupported private field write {} from {}", fieldName, clazz.getName(), e);
+            return false;
         } catch (Exception e) {
             LOGGER.error("Failed to set private field {} from {}", fieldName, clazz.getName(), e);
+            return false;
         }
     }
 

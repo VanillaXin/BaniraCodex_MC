@@ -28,6 +28,8 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -72,10 +74,27 @@ public final class CommandUtils {
      * @param type   指令类型
      */
     public static boolean hasVirtualPermission(Entity source, IVirtualPermissionType type) {
+        return hasVirtualPermission(source, (BaniraVirtualPermission) type);
+    }
+
+    /**
+     * 判断是否拥有某个虚拟指令权限。
+     */
+    public static boolean hasVirtualPermission(Entity source, BaniraVirtualPermission type) {
         if (!(source instanceof Player player)) {
             return false;
         }
-        return VirtualPermissionManager.getRawVirtualPermission(player).contains(type.modId() + ":" + type.id());
+        return hasVirtualPermission(player, type);
+    }
+
+    /**
+     * 判断玩家是否拥有某个虚拟指令权限。
+     */
+    public static boolean hasVirtualPermission(Player player, BaniraVirtualPermission type) {
+        if (type == null) {
+            return false;
+        }
+        return hasVirtualPermission(player, BaniraVirtualPermissions.key(type));
     }
 
     /**

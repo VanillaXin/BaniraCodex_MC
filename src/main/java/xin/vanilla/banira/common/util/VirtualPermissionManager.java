@@ -3,7 +3,8 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.world.entity.player.Player;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -33,45 +34,18 @@ public final class VirtualPermissionManager {
     private static final Map<String, Set<String>> OP_MAP_CLIENT = deserializeClient();
 
 
-    /**
-     * 添加权限（合并原有权限）
-     */
-    public static void addVirtualPermission(Player player, EnumCommandType... types) {
+    /** 添加子 mod 自定义虚拟权限。 */
+    public static void addVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
     }
 
-    /**
-     * 添加虚拟权限。
-     */
-    public static void addVirtualPermission(Player player, IVirtualPermissionType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
-    }
-
-    /**
-     * 设置权限（覆盖原有权限）
-     */
-    public static void setVirtualPermission(Player player, EnumCommandType... types) {
+    /** 设置子 mod 自定义虚拟权限（覆盖原有权限）。 */
+    public static void setVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
     }
 
-    /**
-     * 设置虚拟权限（覆盖原有权限）
-     */
-    public static void setVirtualPermission(Player player, IVirtualPermissionType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
-    }
-
-    /**
-     * 删除权限
-     */
-    public static void delVirtualPermission(Player player, EnumCommandType... types) {
-        modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
-    }
-
-    /**
-     * 删除虚拟权限
-     */
-    public static void delVirtualPermission(Player player, IVirtualPermissionType... types) {
+    /** 删除子 mod 自定义虚拟权限。 */
+    public static void delVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
     }
 
@@ -96,9 +70,9 @@ public final class VirtualPermissionManager {
      * 获取某个 Mod 自己的虚拟权限列表
      *
      * @param player    玩家
-     * @param enumClass 该 Mod 自己的指令枚举（需实现 {@link IVirtualPermissionType}）
+     * @param enumClass 该 Mod 自己的指令枚举（需实现 {@link BaniraVirtualPermission}）
      */
-    public static <T extends Enum<T> & IVirtualPermissionType> Set<T> getVirtualPermission(Player player, Class<T> enumClass) {
+    public static <T extends Enum<T> & BaniraVirtualPermission> Set<T> getVirtualPermission(Player player, Class<T> enumClass) {
         Set<String> raw = player.isLocalPlayer()
                 ? getExistingPermissionsClient(player.getStringUUID())
                 : getExistingPermissions(player.getStringUUID());
@@ -216,40 +190,30 @@ public final class VirtualPermissionManager {
 
     // region 辅助方法
 
-    private static String toKey(IVirtualPermissionType type) {
-        return type.modId() + ":" + type.id();
+    private static String toKey(BaniraVirtualPermission type) {
+        return BaniraVirtualPermissions.key(type);
     }
 
-    private static Set<String> toKeys(IVirtualPermissionType... types) {
-        return Arrays.stream(types)
-                .filter(Objects::nonNull)
-                .filter(IVirtualPermissionType::op)
-                .map(VirtualPermissionManager::toKey)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+    private static Set<String> toKeys(BaniraVirtualPermission... types) {
+        return BaniraVirtualPermissions.keys(types);
     }
 
-    private static <T extends Enum<T> & IVirtualPermissionType> Set<T> mapToEnum(Set<String> raw, Class<T> enumClass) {
+    private static <T extends Enum<T> & BaniraVirtualPermission> Set<T> mapToEnum(Set<String> raw, Class<T> enumClass) {
         if (raw == null || raw.isEmpty()) return Collections.emptySet();
         Map<String, T> index = Arrays.stream(enumClass.getEnumConstants())
                 .collect(Collectors.toMap(VirtualPermissionManager::toKey, e -> e, (a, b) -> a));
         return raw.stream()
                 .map(index::get)
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparingInt(IVirtualPermissionType::sort))
+                .sorted(Comparator.comparingInt(BaniraVirtualPermission::sort))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
      * 构建权限列表的显示字符串
      */
-    public static String buildPermissionsString(Set<? extends IVirtualPermissionType> permissions) {
-        if (permissions == null || permissions.isEmpty()) {
-            return "(empty)";
-        }
-        return permissions.stream()
-                .map(t -> t.modId() + ":" + t.id())
-                .sorted()
-                .collect(Collectors.joining(", "));
+    public static String buildPermissionsString(Set<? extends BaniraVirtualPermission> permissions) {
+        return BaniraVirtualPermissions.format(permissions);
     }
 
     // endregion 辅助方法

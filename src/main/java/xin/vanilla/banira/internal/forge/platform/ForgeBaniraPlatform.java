@@ -31,6 +31,7 @@ import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
+import xin.vanilla.banira.internal.forge.client.ForgeLogoService;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
@@ -623,5 +624,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         public void show(@Nonnull NotificationData notification, boolean fromNetwork) {
             NotificationManager.get().addNotification(Notification.fromData(notification, fromNetwork), fromNetwork);
         }
+    }
+
+    @Nonnull
+    @Override
+    public BaniraLogoService logoService() {
+        return ForgeLogoService.INSTANCE;
     }
 }

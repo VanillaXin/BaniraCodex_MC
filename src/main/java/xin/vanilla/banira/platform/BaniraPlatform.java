@@ -72,4 +72,10 @@ public interface BaniraPlatform {
     @Nonnull
     BaniraNotificationService notificationService();
 
+    /**
+     * 当前加载器的 mod logo 服务；仅客户端初始化阶段调用。
+     */
+    @Nonnull
+    BaniraLogoService logoService();
+
 }

@@ -21,7 +21,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.PlayerTextureUtils;
+import xin.vanilla.banira.client.util.PlayerSkinTextureUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 import xin.vanilla.banira.common.enums.EnumMoveType;
@@ -159,7 +159,7 @@ public class DebugScreen extends BaniraScreen {
         quickActionMinusBtn.onClick(b -> debugQuickActionRemove());
         addWidget(quickActionMinusBtn);
 
-        Texture[] skin = PlayerTextureUtils.getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerUUID());
+        Texture[] skin = PlayerSkinTextureUtils.headFaceTextures(PlayerUtils.getPlayerUUID());
         if (skin != null && skin.length == 2) {
             ImageWidget face = new ImageWidget(this);
             face.texture(skin[0]);

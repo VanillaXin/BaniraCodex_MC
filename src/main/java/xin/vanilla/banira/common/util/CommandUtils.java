@@ -15,8 +15,9 @@ import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 import xin.vanilla.banira.common.api.ICommandNotify;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigListSpecHelper;
@@ -83,7 +84,7 @@ public final class CommandUtils {
         return BaniraCommandAccess.hasPermission(source, permission);
     }
 
-    public static boolean hasVirtualPermission(CommandSource source, IVirtualPermissionType type) {
+    public static boolean hasVirtualPermission(CommandSource source, BaniraVirtualPermission type) {
         return hasVirtualPermission(getSourceEntity(source), type);
     }
 
@@ -93,12 +94,12 @@ public final class CommandUtils {
      * @param source 指令来源实体
      * @param type   指令类型
      */
-    public static boolean hasVirtualPermission(Entity source, IVirtualPermissionType type) {
+    public static boolean hasVirtualPermission(Entity source, BaniraVirtualPermission type) {
         if (!(source instanceof PlayerEntity)) {
             return false;
         }
         PlayerEntity player = (PlayerEntity) source;
-        return VirtualPermissionManager.getRawVirtualPermission(player).contains(type.modId() + ":" + type.id());
+        return VirtualPermissionManager.getRawVirtualPermission(player).contains(BaniraVirtualPermissions.key(type));
     }
 
     /**

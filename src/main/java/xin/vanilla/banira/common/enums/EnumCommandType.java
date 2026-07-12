@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.command.impl.HelpCommand;
 import xin.vanilla.banira.command.impl.LanguageCommand;
 import xin.vanilla.banira.command.impl.VirtualOpCommand;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
-public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable {
+public enum EnumCommandType implements BaniraVirtualPermission, IEnumDescribable {
     HELP(HelpCommand::create, false, false),
     LANGUAGE(LanguageCommand::create, false, false),
     LANGUAGE_CONCISE(),
@@ -75,7 +75,7 @@ public enum EnumCommandType implements IVirtualPermissionType, IEnumDescribable 
         return this.ordinal();
     }
 
-    // region IVirtualPermissionType 实现
+    // region BaniraVirtualPermission 实现
 
     @Override
     public String modId() {

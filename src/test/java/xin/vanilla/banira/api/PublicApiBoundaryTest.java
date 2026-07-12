@@ -1,6 +1,10 @@
 package xin.vanilla.banira.api;
 
 import org.junit.Test;
+import xin.vanilla.banira.api.client.BaniraLogos;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.platform.BaniraLogoService;
+import xin.vanilla.banira.platform.BaniraPlatform;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,7 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -25,7 +31,8 @@ public class PublicApiBoundaryTest {
             "import com.mojang.",
             "import net.minecraft.",
             "import net.minecraftforge.",
-            "import net.neoforged."
+            "import net.neoforged.",
+            "import xin.vanilla.banira.internal."
     );
 
     @Test
@@ -41,6 +48,13 @@ public class PublicApiBoundaryTest {
         String source = Files.readString(networkService, StandardCharsets.UTF_8);
         assertFalse("Network service registration must use api.BaniraIdentifier.", source.contains("common.util.IIdentifier"));
         assertFalse("Network service registration must not expose IIdentifier.", source.contains(" IIdentifier "));
+    }
+
+    @Test
+    public void stableChildFacadesExposeConfigHolderAndLogoService() throws Exception {
+        assertEquals(ConfigHolder.class, BaniraConfigs.class.getMethod("holder", Class.class).getReturnType());
+        assertEquals(BaniraLogoService.class, BaniraPlatform.class.getMethod("logoService").getReturnType());
+        BaniraLogos.class.getMethod("register", String.class, Supplier.class);
     }
 
     private static void assertRootHasNoBannedImports(Path root) throws IOException {

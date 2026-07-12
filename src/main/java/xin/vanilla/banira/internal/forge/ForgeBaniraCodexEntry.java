@@ -21,7 +21,7 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 @Mod(BaniraCodex.MODID)
 public final class ForgeBaniraCodexEntry {
     public ForgeBaniraCodexEntry() {
-        BaniraPlatforms.install(new ForgeBaniraPlatform());
+        BaniraPlatforms.installIfAbsent(new ForgeBaniraPlatform());
 
         // Config specs must be registered before Forge finishes loading CONFIG specs.
         BaniraPlatforms.get().configService().register(CommonConfig.class, BaniraCodex.MODID);

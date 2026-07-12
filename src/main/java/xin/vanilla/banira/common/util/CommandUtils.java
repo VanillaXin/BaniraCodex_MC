@@ -25,7 +25,6 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 import xin.vanilla.banira.common.api.ICommandNotify;
-import xin.vanilla.banira.common.api.IVirtualPermissionType;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -72,13 +71,6 @@ public final class CommandUtils {
      *
      * @param source 指令来源实体
      * @param type   指令类型
-     */
-    public static boolean hasVirtualPermission(Entity source, IVirtualPermissionType type) {
-        return hasVirtualPermission(source, (BaniraVirtualPermission) type);
-    }
-
-    /**
-     * 判断是否拥有某个虚拟指令权限。
      */
     public static boolean hasVirtualPermission(Entity source, BaniraVirtualPermission type) {
         if (!(source instanceof Player player)) {

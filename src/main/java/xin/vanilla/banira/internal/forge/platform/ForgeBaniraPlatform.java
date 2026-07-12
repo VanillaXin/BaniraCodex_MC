@@ -366,6 +366,46 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
         }
 
         @Override
+        public byte readByte() {
+            return delegate.readByte();
+        }
+
+        @Override
+        public void writeByte(int value) {
+            delegate.writeByte(value);
+        }
+
+        @Override
+        public double readDouble() {
+            return delegate.readDouble();
+        }
+
+        @Override
+        public void writeDouble(double value) {
+            delegate.writeDouble(value);
+        }
+
+        @Override
+        public UUID readUuid() {
+            return delegate.readUUID();
+        }
+
+        @Override
+        public void writeUuid(UUID value) {
+            delegate.writeUUID(Objects.requireNonNull(value, "value"));
+        }
+
+        @Override
+        public <T extends Enum<T>> T readEnum(Class<T> enumClass) {
+            return delegate.readEnum(Objects.requireNonNull(enumClass, "enumClass"));
+        }
+
+        @Override
+        public void writeEnum(Enum<?> value) {
+            delegate.writeEnum(Objects.requireNonNull(value, "value"));
+        }
+
+        @Override
         public BaniraIdentifier readIdentifier() {
             return BaniraIdentifier.parse(delegate.readResourceLocation().toString());
         }

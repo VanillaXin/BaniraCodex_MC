@@ -2,6 +2,8 @@ package xin.vanilla.banira.common.network;
 
 import xin.vanilla.banira.api.BaniraIdentifier;
 
+import java.util.UUID;
+
 /**
  * Banira 网络缓冲区抽象；只暴露公共协议当前需要的稳定读写操作。
  */
@@ -29,6 +31,22 @@ public interface BaniraPacketBuffer {
     boolean readBoolean();
 
     void writeBoolean(boolean value);
+
+    byte readByte();
+
+    void writeByte(int value);
+
+    double readDouble();
+
+    void writeDouble(double value);
+
+    UUID readUuid();
+
+    void writeUuid(UUID value);
+
+    <T extends Enum<T>> T readEnum(Class<T> enumClass);
+
+    void writeEnum(Enum<?> value);
 
     BaniraIdentifier readIdentifier();
 

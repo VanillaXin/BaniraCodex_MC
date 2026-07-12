@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Forge FriendlyByteBuf 适配实现。
@@ -76,6 +77,46 @@ public final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacket
     @Override
     public void writeBoolean(boolean value) {
         delegate.writeBoolean(value);
+    }
+
+    @Override
+    public byte readByte() {
+        return delegate.readByte();
+    }
+
+    @Override
+    public void writeByte(int value) {
+        delegate.writeByte(value);
+    }
+
+    @Override
+    public double readDouble() {
+        return delegate.readDouble();
+    }
+
+    @Override
+    public void writeDouble(double value) {
+        delegate.writeDouble(value);
+    }
+
+    @Override
+    public UUID readUuid() {
+        return delegate.readUUID();
+    }
+
+    @Override
+    public void writeUuid(UUID value) {
+        delegate.writeUUID(Objects.requireNonNull(value, "value"));
+    }
+
+    @Override
+    public <T extends Enum<T>> T readEnum(Class<T> enumClass) {
+        return delegate.readEnum(Objects.requireNonNull(enumClass, "enumClass"));
+    }
+
+    @Override
+    public void writeEnum(Enum<?> value) {
+        delegate.writeEnum(Objects.requireNonNull(value, "value"));
     }
 
     @Override

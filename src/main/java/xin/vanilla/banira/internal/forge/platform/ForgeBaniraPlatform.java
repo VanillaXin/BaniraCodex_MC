@@ -10,6 +10,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
 import xin.vanilla.banira.internal.common.BaniraPaths;
 import xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService;
+import xin.vanilla.banira.internal.forge.client.ForgeLogoService;
 import xin.vanilla.banira.internal.forge.config.ForgeBaniraConfigService;
 import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
 import xin.vanilla.banira.platform.*;
@@ -131,5 +132,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNotificationService notificationService() {
         return BaniraNotificationServices.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraLogoService logoService() {
+        return ForgeLogoService.INSTANCE;
     }
 }

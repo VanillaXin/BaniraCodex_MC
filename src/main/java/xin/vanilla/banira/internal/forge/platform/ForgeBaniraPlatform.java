@@ -8,6 +8,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
+import xin.vanilla.banira.internal.forge.client.ForgeLogoService;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
@@ -117,5 +118,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNotificationService notificationService() {
         return notification;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraLogoService logoService() {
+        return ForgeLogoService.INSTANCE;
     }
 }

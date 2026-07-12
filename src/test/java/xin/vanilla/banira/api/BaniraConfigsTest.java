@@ -1,6 +1,7 @@
 package xin.vanilla.banira.api;
 
 import org.junit.Test;
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 import xin.vanilla.banira.platform.BaniraConfigService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -14,6 +15,11 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class BaniraConfigsTest {
+
+    @Test
+    public void holderFacadeKeepsGuiConfigAccessExplicit() throws Exception {
+        assertEquals(ConfigHolder.class, BaniraConfigs.class.getMethod("holder", Class.class).getReturnType());
+    }
 
     @Test
     public void registerDelegatesToPlatformService() {

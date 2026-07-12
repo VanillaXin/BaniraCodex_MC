@@ -23,7 +23,7 @@ public final class ForgeBaniraCodexEntry {
     }
 
     public static void bootstrap() {
-        BaniraPlatforms.install(new ForgeBaniraPlatform());
+        BaniraPlatforms.installIfAbsent(new ForgeBaniraPlatform());
 
         // 配置必须在 CONFIG 加载阶段之前注册。
         BaniraConfigs.register(CommonConfig.class, Banira.MOD_ID);

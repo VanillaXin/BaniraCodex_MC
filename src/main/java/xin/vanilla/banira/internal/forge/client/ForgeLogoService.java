@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.forge.client;
 
-import xin.vanilla.banira.internal.client.LogoModifier;
+import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.platform.BaniraLogoService;
 
 import javax.annotation.Nonnull;

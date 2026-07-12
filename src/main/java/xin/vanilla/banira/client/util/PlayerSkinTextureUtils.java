@@ -9,17 +9,15 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * 玩家皮肤到 GUI 纹理片段的客户端转换工具。
+ * 将玩家皮肤切分为 GUI 可绘制的头部纹理。
  */
-public final class PlayerTextureUtils {
-    private PlayerTextureUtils() {
+public final class PlayerSkinTextureUtils {
+    private PlayerSkinTextureUtils() {
     }
 
-    /**
-     * 玩家皮肤「头部正面」两层纹理：{@code [0]} 底层脸，{@code [1]} 头盔/外层。
-     */
+    /** 返回脸部底层与帽子外层纹理。 */
     @Nullable
-    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable ResourceLocation skin) {
+    public static Texture[] headFaceTextures(@Nullable ResourceLocation skin) {
         if (skin == null) {
             return null;
         }
@@ -40,8 +38,8 @@ public final class PlayerTextureUtils {
     }
 
     @Nullable
-    public static Texture[] getPlayerSkinHeadFaceTextures(@Nullable UUID uuid) {
-        return getPlayerSkinHeadFaceTextures(PlayerUtils.getPlayerSkin(uuid));
+    public static Texture[] headFaceTextures(@Nullable UUID uuid) {
+        return headFaceTextures(PlayerUtils.getPlayerSkin(uuid));
     }
 
     private static int skinTemplateU(int uStd, int texW) {
@@ -49,10 +47,7 @@ public final class PlayerTextureUtils {
     }
 
     private static int skinTemplateV(int vStd, int texH) {
-        if (texH < 64) {
-            return vStd;
-        }
-        return Math.round(vStd * (texH / 64f));
+        return texH < 64 ? vStd : Math.round(vStd * (texH / 64f));
     }
 
     private static int skinTemplateSize(int sizeStd, int texW) {

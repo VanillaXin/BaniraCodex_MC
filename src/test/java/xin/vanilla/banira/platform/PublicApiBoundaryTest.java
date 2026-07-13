@@ -34,6 +34,24 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void stableServerRuntimeFacadeDoesNotExposeMinecraftTypes() throws Exception {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraServer.java"));
+        if (!Files.exists(facade)) {
+            fail("Server runtime access must stay in api.BaniraServer.");
+        }
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "net.minecraft.", violations, "BaniraServer must use neutral server handles.");
+        addIfContains(source, "xin.vanilla.banira.internal.", violations, "BaniraServer must delegate through the platform contract.");
+        assertNoViolations("Server runtime access should stay loader-neutral.", violations);
+
+        Class<?> service = Class.forName("xin.vanilla.banira.platform.BaniraServerService");
+        if (!service.equals(BaniraPlatform.class.getMethod("serverService").getReturnType())) {
+            fail("BaniraPlatform.serverService must expose BaniraServerService.");
+        }
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

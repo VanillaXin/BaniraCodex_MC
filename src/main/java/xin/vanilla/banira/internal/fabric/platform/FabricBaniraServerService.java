@@ -22,7 +22,20 @@ import java.util.List;
 import java.util.UUID;
 
 /** Fabric 1.16 服务端访问适配。 */
-public final class FabricBaniraServerService implements BaniraServerService {
+public final class FabricBaniraServerService implements BaniraServerService,
+        xin.vanilla.banira.platform.BaniraServerService {
+    public static final FabricBaniraServerService INSTANCE = new FabricBaniraServerService();
+
+    @Override
+    public Object current() {
+        return currentServer();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return BaniraCodex.serverInstance().val();
+    }
+
     @Override
     public MinecraftServer currentServer() { return BaniraCodex.serverInstance().key(); }
 

@@ -116,12 +116,16 @@ public final class BaniraClientEventHub {
 
     public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
-        BaniraClientEvents.dispatchClientPlayerLoggedIn(playerEvent(event.getPlayer()));
+        if (event.getPlayer() != null) {
+            BaniraClientEvents.dispatchClientPlayerLoggedIn(playerEvent(event.getPlayer()));
+        }
     }
 
     public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
-        BaniraClientEvents.dispatchClientPlayerLoggedOut(playerEvent(event.getPlayer()));
+        if (event.getPlayer() != null) {
+            BaniraClientEvents.dispatchClientPlayerLoggedOut(playerEvent(event.getPlayer()));
+        }
     }
 
     public static void dispatchClientTick(TickEvent.ClientTickEvent.Post event) {

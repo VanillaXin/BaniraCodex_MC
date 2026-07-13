@@ -22,6 +22,7 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -243,21 +245,59 @@ public class Translator implements ITranslator {
     }
 
     private void loadFromClasspath() {
+        int languageCount = languages.size();
         try {
             URL url = resourceAnchorClass.getResource(getLangPath());
-            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
-                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
-                return;
-            }
-            try (Stream<Path> files = Files.list(Path.of(url.toURI()))) {
-                files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
-                        .forEach(this::loadKnownClasspathLanguage);
+            if (url != null && "file".equalsIgnoreCase(url.getProtocol())) {
+                loadLanguageDirectory(Path.of(url.toURI()));
+            } else {
+                loadLanguageArchive(url);
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+        }
+        if (languages.size() == languageCount) {
             loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
         }
+    }
+
+    private void loadLanguageDirectory(Path directory) throws Exception {
+        try (Stream<Path> files = Files.list(directory)) {
+            files.filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".json"))
+                    .map(Translator::languageCodeFromFileName)
+                    .forEach(this::loadKnownClasspathLanguage);
+        }
+    }
+
+    private void loadLanguageArchive(@Nullable URL languageDirectory) throws Exception {
+        URL archiveResource = languageDirectory;
+        if (archiveResource == null || !"jar".equalsIgnoreCase(archiveResource.getProtocol())) {
+            // JAR 通常没有显式目录项，使用锚点类本身定位所属归档。
+            archiveResource = resourceAnchorClass.getResource(resourceAnchorClass.getSimpleName() + ".class");
+        }
+        if (archiveResource == null || !"jar".equalsIgnoreCase(archiveResource.getProtocol())) {
+            return;
+        }
+
+        JarURLConnection connection = (JarURLConnection) archiveResource.openConnection();
+        connection.setUseCaches(false);
+        String prefix = "assets/" + modId + "/lang/";
+        try (JarFile jar = connection.getJarFile()) {
+            jar.stream()
+                    .map(entry -> entry.getName())
+                    .filter(name -> name.startsWith(prefix) && name.endsWith(".json"))
+                    .map(name -> name.substring(prefix.length()))
+                    .filter(name -> !name.contains("/"))
+                    .map(Translator::languageCodeFromFileName)
+                    .sorted()
+                    .forEach(this::loadKnownClasspathLanguage);
+        }
+    }
+
+    private static String languageCodeFromFileName(String fileName) {
+        return fileName.substring(0, fileName.length() - ".json".length()).toLowerCase(Locale.ROOT);
     }
 
     private void loadKnownClasspathLanguage(String languageCode) {

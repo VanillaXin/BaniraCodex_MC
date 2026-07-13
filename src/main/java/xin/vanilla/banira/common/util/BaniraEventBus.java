@@ -39,6 +39,10 @@ public final class BaniraEventBus {
     private BaniraEventBus() {
     }
 
+    private static BaniraEventRegistration createRegistration(Runnable unregister) {
+        return unregister::run;
+    }
+
     public static final class Server {
         private Server() {
         }

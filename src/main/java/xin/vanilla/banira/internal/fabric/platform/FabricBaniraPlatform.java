@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Fabric 1.19.2 的 platform 实现。
+ * Fabric 1.21.1 的 platform 实现。
  */
 public final class FabricBaniraPlatform implements BaniraPlatform {
     private static final List<String> COMMON_ENTRYPOINT_KEYS = List.of("main");
@@ -143,6 +143,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraServerService serverService() {
         return FabricBaniraServerService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraPlayerDataService playerDataService() {
+        return FabricBaniraPlayerDataService.INSTANCE;
     }
 
     @Nonnull

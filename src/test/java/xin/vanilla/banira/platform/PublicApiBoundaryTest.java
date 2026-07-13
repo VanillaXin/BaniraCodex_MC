@@ -1,6 +1,9 @@
 package xin.vanilla.banira.platform;
 
 import org.junit.Test;
+import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.BaniraLogos;
+import xin.vanilla.banira.common.config.ConfigHolder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +13,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.function.Supplier;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class PublicApiBoundaryTest {
@@ -34,6 +39,7 @@ public class PublicApiBoundaryTest {
         assertNoViolations("Public api/platform imports must stay loader-neutral.", violations);
     }
 
+    @Test
     public void networkServiceDoesNotExposeLegacyIdentifierFactory() throws IOException {
         Path networkService = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraNetworkService.java"));
         String source = new String(Files.readAllBytes(networkService), StandardCharsets.UTF_8);
@@ -41,6 +47,13 @@ public class PublicApiBoundaryTest {
         addIfContains(source, "common.util.IIdentifier", violations, "Network service registration must use api.BaniraIdentifier.");
         addIfContains(source, " IIdentifier ", violations, "Network service registration must not expose IIdentifier.");
         assertNoViolations("Network service registration should stay loader-neutral.", violations);
+    }
+
+    @Test
+    public void stableChildFacadesExposeConfigHolderAndLogoService() throws Exception {
+        assertEquals(ConfigHolder.class, BaniraConfigs.class.getMethod("holder", Class.class).getReturnType());
+        assertEquals(BaniraLogoService.class, BaniraPlatform.class.getMethod("logoService").getReturnType());
+        BaniraLogos.class.getMethod("register", String.class, Supplier.class);
     }
 
     @Test

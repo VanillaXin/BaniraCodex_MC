@@ -72,4 +72,10 @@ public interface BaniraPlatform {
     @Nonnull
     BaniraNotificationService notificationService();
 
+    /**
+     * 当前加载器的 mod logo 注册服务。
+     */
+    @Nonnull
+    BaniraLogoService logoService();
+
 }

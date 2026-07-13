@@ -22,6 +22,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private BaniraInputService inputService = NoopInputService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
     private BaniraNotificationService notificationService = NoopNotificationService.INSTANCE;
+    private BaniraLogoService logoService = NoopLogoService.INSTANCE;
     private Path configDir = Path.of("config");
     private BaniraPathService pathService = new BaniraPathService() {
         @Override
@@ -119,6 +120,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         return this;
     }
 
+    public TestBaniraPlatform logoService(BaniraLogoService value) {
+        this.logoService = Objects.requireNonNull(value, "logoService");
+        return this;
+    }
+
     public TestBaniraPlatform configDir(Path value) {
         this.configDir = Objects.requireNonNull(value, "configDir");
         return this;
@@ -212,5 +218,10 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull BaniraNotificationService notificationService() {
         return notificationService;
+    }
+
+    @Override
+    public @Nonnull BaniraLogoService logoService() {
+        return logoService;
     }
 }

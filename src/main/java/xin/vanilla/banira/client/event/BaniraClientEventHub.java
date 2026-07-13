@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.event;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ClientChatEvent;
@@ -12,6 +13,15 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.client.event.BaniraChatEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
+import xin.vanilla.banira.api.client.event.BaniraClientPlayerEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
+import xin.vanilla.banira.api.client.event.BaniraScreenEvent;
+import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
+import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
+import xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -23,6 +33,7 @@ import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -100,27 +111,33 @@ public final class BaniraClientEventHub {
 
     public static void dispatchModClientSetup(FMLClientSetupEvent event) {
         fire(modClientSetupCallbacks, event, "mod client setup");
+        BaniraClientEvents.dispatchModClientSetup(new BaniraClientSetupEvent());
     }
 
     public static void dispatchClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         fire(clientPlayerLoggedInCallbacks, event.getPlayer(), "player logged in");
+        BaniraClientEvents.dispatchClientPlayerLoggedIn(playerEvent(event.getPlayer()));
     }
 
     public static void dispatchClientPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         fire(clientPlayerLoggedOutCallbacks, event.getPlayer(), "player logged out");
+        BaniraClientEvents.dispatchClientPlayerLoggedOut(playerEvent(event.getPlayer()));
     }
 
     public static void dispatchClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         fire(clientTickCallbacks, event, "client tick");
+        BaniraClientEvents.dispatchClientTick(BaniraClientTickEvent.END);
     }
 
     public static void dispatchClientChat(ClientChatEvent event) {
         fire(clientChatCallbacks, event, "client chat");
+        BaniraClientEvents.dispatchClientChat(new BaniraChatEvent(event.getMessage()));
     }
 
     public static void dispatchGuiScreen(ScreenEvent event) {
         fire(clientGuiScreenCallbacks, event, "client gui screen");
+        BaniraClientEvents.dispatchGuiScreen(new BaniraScreenEvent(screenInfo(event.getScreen())));
     }
 
     // region 分类 API：Player（客户端网络登录/登出）
@@ -152,6 +169,7 @@ public final class BaniraClientEventHub {
 
         public static void fireGuiChanged(ScreenEvent.Opening event) {
             fire(clientGuiChangedCallbacks, event, "client gui changed");
+            BaniraClientEvents.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(event.getNewScreen())));
         }
 
         public static void onTextureReload(@Nonnull Consumer<TextureStitchEvent.Post> callback) {
@@ -184,6 +202,8 @@ public final class BaniraClientEventHub {
 
         public static void fireTextureReload(TextureStitchEvent.Post event) {
             fire(clientTextureReloadCallbacks, event, "client texture reload");
+            BaniraClientEvents.Client.fireTextureReload(
+                    new BaniraTextureReloadEvent(event.getAtlas().location().toString()));
         }
 
         public static void fireDrawScreenPost(ScreenEvent.Render.Post event) {
@@ -215,6 +235,18 @@ public final class BaniraClientEventHub {
     // endregion
 
     // region 内部回调执行
+
+    private static BaniraClientPlayerEvent playerEvent(net.minecraft.world.entity.player.Player player) {
+        return new BaniraClientPlayerEvent(player.getUUID(), player.getName().getString());
+    }
+
+    private static BaniraScreenInfo screenInfo(@Nullable Screen screen) {
+        if (screen == null) {
+            return BaniraScreenInfo.closed();
+        }
+        return new BaniraScreenInfo(screen.getClass().getName(), screen.getTitle().getString(),
+                screen.width, screen.height, true);
+    }
 
     private static <T> void fire(List<Consumer<T>> callbacks, T parameter, String eventName) {
         for (Consumer<T> callback : callbacks) {

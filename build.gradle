@@ -155,11 +155,16 @@ publishing {
 
 afterEvaluate {
     publishing.publications.named('mavenJava', MavenPublication) {
-        artifact tasks.jar
+        // 子 mod 必须消费经过 Loom remap 的正式模组 JAR，开发 jar 只包含命名空间中间产物。
+        artifact tasks.named('remapJar')
         artifact tasks.named('sourcesJar')
     }
     tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
         dependsOn 'remapJar', 'sourcesJar'
     }
+}
+
+tasks.withType(PublishToMavenLocal).configureEach {
+    dependsOn 'remapJar', 'sourcesJar'
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）

@@ -4,6 +4,7 @@ import xin.vanilla.banira.api.BaniraIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 测试用内存 buffer，只验证 Banira 公共协议的读写顺序。
@@ -74,6 +75,46 @@ public final class TestBaniraPacketBuffer implements BaniraPacketBuffer {
 
     @Override
     public void writeBoolean(boolean value) {
+        values.add(value);
+    }
+
+    @Override
+    public byte readByte() {
+        return (Byte) values.get(cursor++);
+    }
+
+    @Override
+    public void writeByte(int value) {
+        values.add((byte) value);
+    }
+
+    @Override
+    public double readDouble() {
+        return (Double) values.get(cursor++);
+    }
+
+    @Override
+    public void writeDouble(double value) {
+        values.add(value);
+    }
+
+    @Override
+    public UUID readUuid() {
+        return (UUID) values.get(cursor++);
+    }
+
+    @Override
+    public void writeUuid(UUID value) {
+        values.add(value);
+    }
+
+    @Override
+    public <T extends Enum<T>> T readEnum(Class<T> enumClass) {
+        return enumClass.cast(values.get(cursor++));
+    }
+
+    @Override
+    public void writeEnum(Enum<?> value) {
         values.add(value);
     }
 

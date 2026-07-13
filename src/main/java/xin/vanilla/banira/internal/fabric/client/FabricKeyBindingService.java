@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.fabric.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import xin.vanilla.banira.api.client.BaniraInput;
@@ -81,6 +82,11 @@ public enum FabricKeyBindingService implements BaniraInputService {
         @Override
         public int defaultKey() {
             return defaultKey;
+        }
+
+        @Override
+        public int currentKey() {
+            return InputConstants.getKey(mapping.saveString()).getValue();
         }
 
         @Override

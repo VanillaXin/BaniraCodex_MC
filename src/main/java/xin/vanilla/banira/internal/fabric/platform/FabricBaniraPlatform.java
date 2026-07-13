@@ -142,6 +142,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
+    public BaniraServerService serverService() {
+        return FabricBaniraServerService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
     public BaniraNetworkService networkService() {
         return FabricBaniraNetworkService.INSTANCE;
     }

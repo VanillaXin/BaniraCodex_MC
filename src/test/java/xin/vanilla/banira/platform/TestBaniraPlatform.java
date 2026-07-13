@@ -18,6 +18,17 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private final Map<Class<?>, String> modIdsByMainClass = new HashMap<>();
     private final Map<UUID, String> usernames = new HashMap<>();
     private BaniraConfigService configService = NoopConfigService.INSTANCE;
+    private BaniraServerService serverService = new BaniraServerService() {
+        @Override
+        public Object current() {
+            return null;
+        }
+
+        @Override
+        public boolean isRunning() {
+            return false;
+        }
+    };
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraInputService inputService = NoopInputService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
@@ -97,6 +108,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform configService(BaniraConfigService value) {
         this.configService = Objects.requireNonNull(value, "configService");
+        return this;
+    }
+
+    public TestBaniraPlatform serverService(BaniraServerService value) {
+        this.serverService = Objects.requireNonNull(value, "serverService");
         return this;
     }
 
@@ -198,6 +214,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull BaniraConfigService configService() {
         return configService;
+    }
+
+    @Override
+    public @Nonnull BaniraServerService serverService() {
+        return serverService;
     }
 
     @Override

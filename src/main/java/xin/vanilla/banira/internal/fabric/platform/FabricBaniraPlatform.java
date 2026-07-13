@@ -18,6 +18,7 @@ import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.security.CodeSource;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -95,7 +96,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
         if (cached != null) {
             return cached;
         }
-        throw new IllegalArgumentException("No Fabric entrypoint class is registered for: " + modMainClass.getName());
+        cached = findOwningModId(modMainClass);
+        if (cached != null) {
+            modIdsByMainClass.putIfAbsent(modMainClass, cached);
+            return cached;
+        }
+        throw new IllegalArgumentException("No loaded Fabric mod owns class: " + modMainClass.getName());
     }
 
     @Nonnull
@@ -193,5 +199,49 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
         // Fabric 没有 Forge @Mod 那样的主类注解，只能用当前环境已注册的 entrypoint 做映射。
         mainClassesByModId.putIfAbsent(modId, entrypointClass);
         modIdsByMainClass.putIfAbsent(entrypointClass, modId);
+    }
+
+    @Nullable
+    private String findOwningModId(Class<?> ownedClass) {
+        String classPath = ownedClass.getName().replace('.', '/') + ".class";
+        String owner = null;
+        for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
+            if (!container.findPath(classPath).isPresent()) {
+                continue;
+            }
+            String candidate = container.getMetadata().getId();
+            if (owner != null && !owner.equals(candidate)) {
+                throw new IllegalArgumentException("Multiple Fabric mods contain class " + ownedClass.getName()
+                        + ": " + owner + ", " + candidate);
+            }
+            owner = candidate;
+        }
+        if (owner != null) {
+            return owner;
+        }
+
+        // Loom 开发运行会分离 classes/resources 根，此时用入口类的同源位置判定所属 mod。
+        String ownedLocation = codeSourceLocation(ownedClass);
+        if (ownedLocation == null) {
+            return null;
+        }
+        for (Map.Entry<Class<?>, String> entry : modIdsByMainClass.entrySet()) {
+            if (!ownedLocation.equals(codeSourceLocation(entry.getKey()))) {
+                continue;
+            }
+            String candidate = entry.getValue();
+            if (owner != null && !owner.equals(candidate)) {
+                throw new IllegalArgumentException("Multiple Fabric mods share class source for " + ownedClass.getName()
+                        + ": " + owner + ", " + candidate);
+            }
+            owner = candidate;
+        }
+        return owner;
+    }
+
+    @Nullable
+    private static String codeSourceLocation(Class<?> type) {
+        CodeSource source = type.getProtectionDomain() == null ? null : type.getProtectionDomain().getCodeSource();
+        return source == null || source.getLocation() == null ? null : source.getLocation().toExternalForm();
     }
 }

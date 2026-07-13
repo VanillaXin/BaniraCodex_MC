@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入 loader mod 主类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
+ * 构造时传入 mod 所属类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
@@ -59,7 +59,7 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass loader mod 主类
+     * @param modMainClass mod 入口类或公共 bootstrap 类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
         this.modId = modIdFromModMainClass(modMainClass);

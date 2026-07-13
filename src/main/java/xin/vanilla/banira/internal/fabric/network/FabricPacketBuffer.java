@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Fabric 1.18.2 的 FriendlyByteBuf 适配；公共协议只依赖 BaniraPacketBuffer。
+ * Fabric 1.19.2 的 FriendlyByteBuf 适配；公共协议只依赖 BaniraPacketBuffer。
  */
 public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;

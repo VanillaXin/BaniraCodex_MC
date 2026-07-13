@@ -29,6 +29,7 @@ public final class TestBaniraPlatform implements BaniraPlatform {
             return false;
         }
     };
+    private BaniraPlayerDataService playerDataService;
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraInputService inputService = NoopInputService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
@@ -112,6 +113,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform serverService(BaniraServerService value) {
         this.serverService = Objects.requireNonNull(value, "serverService");
+        return this;
+    }
+
+    public TestBaniraPlatform playerDataService(BaniraPlayerDataService value) {
+        this.playerDataService = Objects.requireNonNull(value, "playerDataService");
         return this;
     }
 
@@ -213,6 +219,14 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull BaniraServerService serverService() {
         return serverService;
+    }
+
+    @Override
+    public @Nonnull BaniraPlayerDataService playerDataService() {
+        if (playerDataService == null) {
+            throw new IllegalStateException("No player data service configured for this test");
+        }
+        return playerDataService;
     }
 
     @Override

@@ -5,7 +5,7 @@ import xin.vanilla.banira.platform.BaniraServerService;
 
 import javax.annotation.Nullable;
 
-/** Fabric 1.18.2 的服务器运行时适配。 */
+/** Fabric 1.20.1 的服务器运行时适配。 */
 public final class FabricBaniraServerService implements BaniraServerService {
     public static final FabricBaniraServerService INSTANCE = new FabricBaniraServerService();
 

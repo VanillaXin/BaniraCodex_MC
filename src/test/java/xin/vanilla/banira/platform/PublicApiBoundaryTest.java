@@ -62,6 +62,22 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void stablePlayerDataFacadeDoesNotExposeNbtTypes() throws Exception {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraPlayerData.java"));
+        if (!Files.exists(facade)) {
+            fail("Player data access must stay in api.BaniraPlayerData.");
+        }
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "net.minecraft.", violations, "BaniraPlayerData must use neutral data handles.");
+        addIfContains(source, "xin.vanilla.banira.internal.", violations, "BaniraPlayerData must delegate through the platform contract.");
+        assertNoViolations("Player data access should stay version-neutral.", violations);
+
+        Class<?> service = Class.forName("xin.vanilla.banira.platform.BaniraPlayerDataService");
+        assertEquals(service, BaniraPlatform.class.getMethod("playerDataService").getReturnType());
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

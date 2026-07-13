@@ -1,5 +1,6 @@
 package xin.vanilla.banira.api;
 
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nonnull;
@@ -29,6 +30,21 @@ public final class BaniraConfigs {
     @Nullable
     public static BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
         return Banira.platform().configService().handle(configClass);
+    }
+
+    /**
+     * 返回配置编辑器需要的完整公共模型；普通读写优先使用 {@link #handle(Class)}。
+     */
+    @Nullable
+    public static ConfigHolder holder(@Nonnull Class<?> configClass) {
+        BaniraConfigHandle handle = handle(configClass);
+        if (handle == null) {
+            return null;
+        }
+        if (handle instanceof ConfigHolder) {
+            return (ConfigHolder) handle;
+        }
+        throw new IllegalStateException("Config handle is not a ConfigHolder: " + handle.getClass().getName());
     }
 
     /**

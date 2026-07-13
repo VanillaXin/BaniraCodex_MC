@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 服务端已登记的通知类型 id。请在服务端通用初始化时 {@link #register} 声明本 Mod 会发送的类型；
- * 此外 {@link xin.vanilla.banira.common.util.MessageUtils#sendNotification(net.minecraft.entity.player.ServerPlayerEntity, xin.vanilla.banira.common.data.Component, String)} 在发包时也会自动 {@link #ensureKnown}。
+ * 此外 {@link xin.vanilla.banira.common.util.MessageUtils#sendNotification(net.minecraft.server.level.ServerPlayer, xin.vanilla.banira.common.data.Component, String)} 在发包时也会自动 {@link #ensureKnown}。
  * <p>
  * 可通过 {@link #register(String, EnumPosition, EnumMoveType)} 为类型指定默认位置与动画；未指定时使用 {@link EnumPosition#TOP_RIGHT} 与 {@link EnumMoveType#AUTO}。
  * <p>

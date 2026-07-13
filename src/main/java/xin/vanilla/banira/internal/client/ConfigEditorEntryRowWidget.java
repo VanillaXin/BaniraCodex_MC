@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -39,7 +39,7 @@ public final class ConfigEditorEntryRowWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }

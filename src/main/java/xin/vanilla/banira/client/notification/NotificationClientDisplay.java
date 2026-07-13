@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.notification;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.ChatType;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.Util;
+import net.minecraft.network.chat.ChatType;
+
+import net.minecraft.network.chat.TextComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -33,7 +33,7 @@ public final class NotificationClientDisplay {
         String lang = Translator.getClientLanguage();
         Minecraft mc = Minecraft.getInstance();
         if (mode == EnumNotificationTypeDisplayMode.VANILLA_CHAT) {
-            PlayerEntity player = mc.player;
+            Player player = mc.player;
             if (player != null) {
                 player.sendMessage(component.toChat(lang), player.getUUID());
             }
@@ -47,7 +47,7 @@ public final class NotificationClientDisplay {
             if (line.trim().isEmpty()) {
                 return false;
             }
-            ITextComponent barMsg = new StringTextComponent(line);
+            net.minecraft.network.chat.Component barMsg = new TextComponent(line);
             UUID sender = mc.player != null ? mc.player.getUUID() : Util.NIL_UUID;
             mc.execute(() -> mc.gui.handleChat(ChatType.GAME_INFO, barMsg, sender));
             return true;

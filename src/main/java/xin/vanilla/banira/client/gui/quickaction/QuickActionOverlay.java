@@ -1,18 +1,18 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.inventory.CreativeScreen;
-import net.minecraft.client.gui.screen.inventory.InventoryScreen;
-import net.minecraft.item.Items;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.TextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -253,7 +253,7 @@ public final class QuickActionOverlay {
     }
 
     public static boolean isSupportedInventoryScreen(@Nullable Screen screen) {
-        return screen instanceof InventoryScreen || screen instanceof CreativeScreen;
+        return screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen;
     }
 
     /**
@@ -420,7 +420,7 @@ public final class QuickActionOverlay {
         RenderSystem.color4f(1f, 1f, 1f, 1f);
     }
 
-    private void drawSlotBorder(MatrixStack stack, int gx, int gy, int cell, int argbBorder) {
+    private void drawSlotBorder(PoseStack stack, int gx, int gy, int cell, int argbBorder) {
         int t = 1;
         AbstractGuiUtils.fill(stack, gx, gy, cell, t, argbBorder);
         AbstractGuiUtils.fill(stack, gx, gy + cell - t, cell, t, argbBorder);
@@ -431,7 +431,7 @@ public final class QuickActionOverlay {
     /**
      * 编辑模式下悬停用描边高亮，避免半透明底与 3D 物品混合导致物品消失
      */
-    private void drawEditModeSlotHoverOutline(MatrixStack stack, int gx, int gy, int cell, int accentRgb) {
+    private void drawEditModeSlotHoverOutline(PoseStack stack, int gx, int gy, int cell, int accentRgb) {
         int c = accentRgb | 0xFF000000;
         int inset = 1;
         int x0 = gx + inset;
@@ -618,7 +618,7 @@ public final class QuickActionOverlay {
         }
     }
 
-    public void render(MatrixStack stack, Screen screen, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack stack, Screen screen, int mouseX, int mouseY, float partialTicks) {
         if (!isSupportedInventoryScreen(screen)) {
             closeUi();
             return;
@@ -742,7 +742,7 @@ public final class QuickActionOverlay {
         stack.popPose();
 
         if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
-            screen.renderTooltip(stack, new StringTextComponent(contextTooltipLine), mouseX, mouseY);
+            screen.renderTooltip(stack, new TextComponent(contextTooltipLine), mouseX, mouseY);
         }
 
         renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);
@@ -751,7 +751,7 @@ public final class QuickActionOverlay {
     /**
      * 悬停于带 label 的快捷图标时，使用主题 Tooltip 样式绘制说明。
      */
-    private void renderQuickActionEntryIconTooltipIfHovered(MatrixStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderQuickActionEntryIconTooltipIfHovered(PoseStack stack, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
         if (contextOpen) {
             return;
         }
@@ -1285,19 +1285,19 @@ public final class QuickActionOverlay {
         layout.groupAnchor(DEFAULT.groupAnchor());
     }
 
-    private String ellipsizeText(FontRenderer font, String s, int maxW) {
+    private String ellipsizeText(Font font, String s, int maxW) {
         if (s == null || s.isEmpty()) {
             return "";
         }
-        if (font.width(new StringTextComponent(s)) <= maxW) {
+        if (font.width(new TextComponent(s)) <= maxW) {
             return s;
         }
         String ell = "...";
-        if (font.width(new StringTextComponent(ell)) > maxW) {
+        if (font.width(new TextComponent(ell)) > maxW) {
             return "";
         }
         String t = s;
-        while (!t.isEmpty() && font.width(new StringTextComponent(t + ell)) > maxW) {
+        while (!t.isEmpty() && font.width(new TextComponent(t + ell)) > maxW) {
             t = t.substring(0, t.length() - 1);
         }
         return t + ell;
@@ -1318,7 +1318,7 @@ public final class QuickActionOverlay {
         int innerPad = 3;
         int maxTextInner = 0;
         for (CtxRow r : rows) {
-            int tw = AbstractGuiUtils.getFont().width(new StringTextComponent(r.text));
+            int tw = AbstractGuiUtils.getFont().width(new TextComponent(r.text));
             int rowW = r.menuIcon != null
                     ? MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP + tw + MENU_TEXT_PAD_X
                     : MENU_TEXT_PAD_X + tw + MENU_TEXT_PAD_X;
@@ -1341,7 +1341,7 @@ public final class QuickActionOverlay {
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }
 
-    private void renderContextMenu(MatrixStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
+    private void renderContextMenu(PoseStack stack, Screen screen, Minecraft mc, int mouseX, int mouseY, BaniraColorConfig theme) {
         List<CtxRow> rows = buildContextRows();
         layoutContextMenu(rows, mc);
 
@@ -1376,7 +1376,7 @@ public final class QuickActionOverlay {
             AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
         }
 
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         for (int i = 0; i < rows.size(); i++) {
             int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
             int rh = MENU_ROW_H;
@@ -1404,7 +1404,7 @@ public final class QuickActionOverlay {
                     ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
                     : x + MENU_TEXT_PAD_X;
             float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
-            font.draw(stack, new StringTextComponent(shown), textX, textY, textColor);
+            font.draw(stack, new TextComponent(shown), textX, textY, textColor);
             if (hi && !shown.equals(full)) {
                 contextTooltipLine = full;
             }

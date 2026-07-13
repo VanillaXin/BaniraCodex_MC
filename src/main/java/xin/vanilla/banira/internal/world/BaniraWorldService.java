@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.world;
 
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.feature.structure.Structure;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.feature.StructureFeature;
+import net.minecraft.server.level.ServerLevel;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 
 import java.util.Collection;
@@ -17,30 +17,30 @@ import java.util.Set;
 public interface BaniraWorldService {
     Biome biome(ResourceLocation id);
 
-    Biome biome(ServerWorld world, ResourceLocation id);
+    Biome biome(ServerLevel world, ResourceLocation id);
 
     Set<String> biomeIds();
 
-    Structure<?> structure(ResourceLocation id);
+    StructureFeature<?> structure(ResourceLocation id);
 
     Set<String> structureIds();
 
-    WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance);
+    WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance);
 
-    ServerWorld level(RegistryKey<World> dimension);
+    ServerLevel level(ResourceKey<Level> dimension);
 
     /**
      * 当前服务端已加载世界的快照列表；各版本的 server world 遍历差异留在 adapter 内。
      */
-    Collection<ServerWorld> loadedServerWorlds();
+    Collection<ServerLevel> loadedServerWorlds();
 
-    RegistryKey<World> dimensionKey(ResourceLocation dimension);
+    ResourceKey<Level> dimensionKey(ResourceLocation dimension);
 
     Set<String> dimensionIds();
 
-    int minBuildHeight(World world);
+    int minBuildHeight(Level world);
 
-    int maxBuildHeight(World world);
+    int maxBuildHeight(Level world);
 
-    WorldCoordinate findNearestStructure(ServerWorld world, WorldCoordinate start, Structure<?> structure, int radius);
+    WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, StructureFeature<?> structure, int radius);
 }

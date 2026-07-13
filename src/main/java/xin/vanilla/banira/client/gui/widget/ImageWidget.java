@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -51,7 +51,7 @@ public class ImageWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -84,11 +84,11 @@ public class ImageWidget extends BaseWidget {
     }
 
 
-    public static void blit(MatrixStack stack, Texture texture, int x, int y, int width, int height) {
+    public static void blit(PoseStack stack, Texture texture, int x, int y, int width, int height) {
         AbstractGuiUtils.blit(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
     }
 
-    public static void blitBlend(MatrixStack stack, Texture texture, int x, int y, int width, int height) {
+    public static void blitBlend(PoseStack stack, Texture texture, int x, int y, int width, int height) {
         AbstractGuiUtils.blitBlend(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
     }
 

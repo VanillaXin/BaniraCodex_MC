@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.event.*;
@@ -31,7 +31,7 @@ public interface IWidget {
      * @param stack        矩阵栈
      * @param partialTicks 部分 tick（用于动画插值）
      */
-    void render(MatrixStack stack, float partialTicks);
+    void render(PoseStack stack, float partialTicks);
 
     /**
      * 每帧更新，用于动画、光标闪烁等。

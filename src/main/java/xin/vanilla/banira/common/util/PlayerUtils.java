@@ -2,19 +2,18 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
-import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -58,11 +57,8 @@ public final class PlayerUtils {
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
-    public static void cloneClientSettings(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
-
-        target.banira$language(original.banira$language());
+    public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
+        PlayerLanguageManager.set(targetPlayer, PlayerLanguageManager.get(originalPlayer));
     }
 
     // region 玩家信息
@@ -70,16 +66,16 @@ public final class PlayerUtils {
     /**
      * 获取所有玩家
      */
-    public static List<ServerPlayerEntity> getAllPlayers() {
+    public static List<ServerPlayer> getAllPlayers() {
         return BaniraPlatforms.isInstalled() ? BaniraServerAccess.players() : java.util.Collections.emptyList();
     }
 
     /**
      * 获取随机玩家
      */
-    public static ServerPlayerEntity getRandomPlayer() {
+    public static ServerPlayer getRandomPlayer() {
         try {
-            List<ServerPlayerEntity> players = getAllPlayers();
+            List<ServerPlayer> players = getAllPlayers();
             return players.get(ThreadLocalRandom.current().nextInt(players.size()));
         } catch (Exception ignored) {
             return null;
@@ -90,7 +86,7 @@ public final class PlayerUtils {
      * 获取随机玩家UUID
      */
     public static UUID getRandomPlayerUUID() {
-        PlayerEntity randomPlayer = getRandomPlayer();
+        Player randomPlayer = getRandomPlayer();
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
@@ -101,36 +97,36 @@ public final class PlayerUtils {
         return BaniraClientAccess.localPlayerUuid();
     }
 
-    public static UUID getPlayerUUID(@Nonnull PlayerEntity player) {
+    public static UUID getPlayerUUID(@Nonnull Player player) {
         return player.getUUID();
     }
 
-    public static String getPlayerUUIDString(@Nonnull PlayerEntity player) {
+    public static String getPlayerUUIDString(@Nonnull Player player) {
         return player.getUUID().toString();
     }
 
-    public static ITextComponent getPlayerName(PlayerEntity player) {
+    public static Component getPlayerName(Player player) {
         return player == null
                 ? BaniraComponent.get().empty().toVanilla()
                 : player.getName();
     }
 
     @Nonnull
-    public static String getPlayerNameString(PlayerEntity player) {
+    public static String getPlayerNameString(Player player) {
         return player == null
                 ? ""
                 : player.getName().getString();
     }
 
     @Nonnull
-    public static ITextComponent getPlayerDisplayName(PlayerEntity player) {
+    public static Component getPlayerDisplayName(Player player) {
         return player == null
                 ? BaniraComponent.get().empty().toVanilla()
                 : player.getDisplayName();
     }
 
     @Nonnull
-    public static String getPlayerDisplayNameString(PlayerEntity player) {
+    public static String getPlayerDisplayNameString(Player player) {
         return player == null
                 ? ""
                 : player.getDisplayName().getString();
@@ -157,7 +153,7 @@ public final class PlayerUtils {
      * 通过UUID获取对应的玩家
      */
     @Nullable
-    public static PlayerEntity getPlayerByUUID(String uuid) {
+    public static Player getPlayerByUUID(String uuid) {
         try {
             return getPlayerByUUID(UUID.fromString(uuid));
         } catch (Throwable ignored) {
@@ -169,7 +165,7 @@ public final class PlayerUtils {
      * 通过UUID获取对应的玩家
      */
     @Nullable
-    public static ServerPlayerEntity getServerPlayerByUUID(UUID uuid) {
+    public static ServerPlayer getServerPlayerByUUID(UUID uuid) {
         return BaniraPlatforms.isInstalled() ? BaniraServerAccess.player(uuid) : null;
     }
 
@@ -177,8 +173,8 @@ public final class PlayerUtils {
      * 通过UUID获取对应的玩家
      */
     @Nullable
-    public static PlayerEntity getPlayerByUUID(UUID uuid) {
-        PlayerEntity entity = getServerPlayerByUUID(uuid);
+    public static Player getPlayerByUUID(UUID uuid) {
+        Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
         if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
             entity = BaniraClientAccess.playerByUuid(uuid);
@@ -208,7 +204,7 @@ public final class PlayerUtils {
      */
     @Deprecated
     @Nonnull
-    public static List<ItemStack> getAllPlayerItems(@Nonnull PlayerEntity player) {
+    public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
         return ItemUtils.getAllPlayerItems(player);
     }
 
@@ -221,7 +217,7 @@ public final class PlayerUtils {
      * @param itemStack 物品
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         return removePlayerItem(player, itemStack, false);
     }
 
@@ -233,11 +229,11 @@ public final class PlayerUtils {
      * @param compareNBT 是否比较NBT
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack, boolean compareNBT) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack, boolean compareNBT) {
         if (itemStack.isEmpty()) {
             return 0;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.inventory;
         if (inventory == null) {
             return 0;
         }
@@ -282,7 +278,7 @@ public final class PlayerUtils {
      * @param count  数量
      * @return 实际移除的物品数量
      */
-    public static int removePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static int removePlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         if (count <= 0) {
             return 0;
         }
@@ -297,11 +293,11 @@ public final class PlayerUtils {
      * @param player    玩家
      * @param itemStack 要检查的物品
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         if (itemStack.isEmpty()) {
             return false;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.inventory;
         if (inventory == null) {
             return false;
         }
@@ -322,11 +318,11 @@ public final class PlayerUtils {
      * @param item   物品类型
      * @param count  最小数量
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         if (count <= 0) {
             return false;
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.inventory;
         if (inventory == null) {
             return false;
         }
@@ -350,7 +346,7 @@ public final class PlayerUtils {
      * @param player 玩家
      * @param item   物品类型\
      */
-    public static boolean hasPlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item) {
+    public static boolean hasPlayerItem(@Nonnull Player player, @Nonnull Item item) {
         return hasPlayerItem(player, item, 1);
     }
 
@@ -364,11 +360,11 @@ public final class PlayerUtils {
      * @return 给予结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack, boolean dropOnGround, boolean abortIfNoSpace) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack, boolean dropOnGround, boolean abortIfNoSpace) {
         if (itemStack.isEmpty()) {
             return GiveItemResult.success(0, 0);
         }
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.inventory;
         if (inventory == null) {
             return GiveItemResult.failure(0, 0, itemStack.getCount());
         }
@@ -418,7 +414,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull ItemStack itemStack) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull ItemStack itemStack) {
         return givePlayerItem(player, itemStack, false, true);
     }
 
@@ -433,7 +429,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count, boolean dropOnGround, boolean abortIfNoSpace) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull Item item, int count, boolean dropOnGround, boolean abortIfNoSpace) {
         if (count <= 0) {
             return GiveItemResult.success(0, 0);
         }
@@ -449,7 +445,7 @@ public final class PlayerUtils {
      * @return 给予物品结果
      */
     @Nonnull
-    public static GiveItemResult givePlayerItem(@Nonnull PlayerEntity player, @Nonnull Item item, int count) {
+    public static GiveItemResult givePlayerItem(@Nonnull Player player, @Nonnull Item item, int count) {
         return givePlayerItem(player, item, count, false, true);
     }
 
@@ -463,7 +459,7 @@ public final class PlayerUtils {
      * @param player 服务端玩家实体
      * @param synced 数据是否已同步
      */
-    public static void setRemoteClientModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
+    public static void setRemoteClientModInstalled(@Nonnull Player player, @Nonnull String modid, boolean synced) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         remoteClientModInstalled.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
@@ -471,7 +467,7 @@ public final class PlayerUtils {
     /**
      * 客户端：设置<strong>远程服务端</strong>已声明安装该 mod 及数据同步状态。
      */
-    public static void setRemoteServerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid, boolean synced) {
+    public static void setRemoteServerModInstalled(@Nonnull Player player, @Nonnull String modid, boolean synced) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         remoteServerModInstalled.put(makeKey(modid, getPlayerUUIDString(player)), synced);
     }
@@ -479,7 +475,7 @@ public final class PlayerUtils {
     /**
      * 服务端：远程客户端是否已声明安装指定 mod。
      */
-    public static boolean isRemoteClientModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isRemoteClientModInstalled(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return false;
         return remoteClientModInstalled.containsKey(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -487,7 +483,7 @@ public final class PlayerUtils {
     /**
      * 客户端：远程服务端是否已声明安装指定 mod。
      */
-    public static boolean isRemoteServerModInstalled(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isRemoteServerModInstalled(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return false;
         return remoteServerModInstalled.containsKey(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -495,7 +491,7 @@ public final class PlayerUtils {
     /**
      * 服务端：移除该玩家在「远程客户端 mod」侧的全部状态。
      */
-    public static void removeRemoteClientDataStatus(@Nonnull PlayerEntity player) {
+    public static void removeRemoteClientDataStatus(@Nonnull Player player) {
         String uuid = getPlayerUUIDString(player);
         remoteClientModInstalled.keySet().removeIf(key -> key.endsWith(":" + uuid));
     }
@@ -503,7 +499,7 @@ public final class PlayerUtils {
     /**
      * 客户端：移除该玩家在「远程服务端 mod」侧的全部状态。
      */
-    public static void removeRemoteServerDataStatus(@Nonnull PlayerEntity player) {
+    public static void removeRemoteServerDataStatus(@Nonnull Player player) {
         String uuid = getPlayerUUIDString(player);
         remoteServerModInstalled.keySet().removeIf(key -> key.endsWith(":" + uuid));
     }
@@ -511,7 +507,7 @@ public final class PlayerUtils {
     /**
      * 服务端：移除该玩家指定 mod 的远程客户端状态。
      */
-    public static void removeRemoteClientDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static void removeRemoteClientDataStatus(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         remoteClientModInstalled.remove(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -519,7 +515,7 @@ public final class PlayerUtils {
     /**
      * 客户端：移除该玩家指定 mod 的远程服务端状态。
      */
-    public static void removeRemoteServerDataStatus(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static void removeRemoteServerDataStatus(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return;
         remoteServerModInstalled.remove(makeKey(modid, getPlayerUUIDString(player)));
     }
@@ -529,7 +525,7 @@ public final class PlayerUtils {
      *
      * @return 未记录对端 mod 或已同步
      */
-    public static boolean isPlayerDataSynced(@Nonnull PlayerEntity player, @Nonnull String modid) {
+    public static boolean isPlayerDataSynced(@Nonnull Player player, @Nonnull String modid) {
         if (StringUtils.isNullOrEmptyEx(modid)) return true;
         if (player.level.isClientSide()) {
             return remoteServerModInstalled.getOrDefault(makeKey(modid, getPlayerUUIDString(player)), true);

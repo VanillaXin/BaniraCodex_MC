@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.server;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.data.Component;
@@ -26,8 +26,8 @@ public final class ServerSenderAccess {
     }
 
     @Nullable
-    private static ServerPlayerEntity asServerPlayer(Object sender) {
-        return sender instanceof ServerPlayerEntity ? (ServerPlayerEntity) sender : null;
+    private static ServerPlayer asServerPlayer(Object sender) {
+        return sender instanceof ServerPlayer ? (ServerPlayer) sender : null;
     }
 
     public static boolean canAccessServerConfigEditor(Object sender) {
@@ -39,13 +39,13 @@ public final class ServerSenderAccess {
     }
 
     public static String language(Object sender) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         return player != null ? Translator.getPlayerLanguage(player) : Translator.getServerLanguage();
     }
 
     @Nullable
     public static UUID uuid(Object sender) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         return player != null ? PlayerUtils.getPlayerUUID(player) : null;
     }
 
@@ -57,7 +57,7 @@ public final class ServerSenderAccess {
 
     public static void sendDefaultNotification(Object sender, Component component, EnumPosition position,
                                                EnumMoveType animation, long durationTimeMs) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         if (player != null) {
             MessageUtils.sendDefaultNotification(player, component, position, animation, durationTimeMs);
         }
@@ -67,28 +67,28 @@ public final class ServerSenderAccess {
                                                EnumMoveType animation, long durationTimeMs,
                                                EnumNotificationStyle style,
                                                EnumNotificationVanillaFallback vanillaFallback) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         if (player != null) {
             MessageUtils.sendDefaultNotification(player, component, position, animation, durationTimeMs, style, vanillaFallback);
         }
     }
 
     public static void sendPacket(Object sender, INetworkPacket packet) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         if (player != null) {
             PacketUtils.sendPacketToPlayer(packet, player);
         }
     }
 
     public static void setRemoteClientModInstalled(Object sender, String modid, boolean synced) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         if (player != null) {
             PlayerUtils.setRemoteClientModInstalled(player, modid, synced);
         }
     }
 
     public static void removeRemoteClientDataStatus(Object sender) {
-        ServerPlayerEntity player = asServerPlayer(sender);
+        ServerPlayer player = asServerPlayer(sender);
         if (player != null) {
             PlayerUtils.removeRemoteClientDataStatus(player);
         }

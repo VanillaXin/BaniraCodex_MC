@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.player;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
 /**
@@ -18,9 +18,9 @@ public interface IPlayerData<T extends IPlayerData<T>> {
 
     void readFromBuffer(BaniraPacketBuffer buffer);
 
-    CompoundNBT serializeNBT();
+    CompoundTag serializeNBT();
 
-    void deserializeNBT(CompoundNBT nbt, boolean dirty);
+    void deserializeNBT(CompoundTag nbt, boolean dirty);
 
     void copyFrom(T playerData);
 

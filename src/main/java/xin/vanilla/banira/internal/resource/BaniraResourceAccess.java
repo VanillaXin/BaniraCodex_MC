@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.resource;
 
 import com.google.gson.JsonObject;
-import xin.vanilla.banira.internal.forge.platform.ForgeBaniraResourceService;
+import xin.vanilla.banira.internal.fabric.platform.FabricBaniraResourceService;
 
 import java.util.Map;
 
@@ -13,6 +13,6 @@ public final class BaniraResourceAccess {
     }
 
     public static Map<String, JsonObject> modLanguageFiles(String modId) {
-        return ForgeBaniraResourceService.modLanguageFiles(modId);
+        return FabricBaniraResourceService.modLanguageFiles(modId);
     }
 }

@@ -1,13 +1,13 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.Style;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.util.FormattedCharSequence;
+
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
@@ -83,7 +83,7 @@ public class NotificationLogScreen extends BaniraScreen {
      * 详情正文：原版组件换行后的行，用于绘制与 Hover/Click 命中（与 {@link xin.vanilla.banira.client.gui.component.Notification} 一致）
      */
     @Nonnull
-    private List<IReorderingProcessor> detailContentLines = Collections.emptyList();
+    private List<FormattedCharSequence> detailContentLines = Collections.emptyList();
     private double detailContentLeft;
     private double detailContentTop;
     private int detailContentMaxLineW;
@@ -370,7 +370,7 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
 
         ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
@@ -416,7 +416,7 @@ public class NotificationLogScreen extends BaniraScreen {
         super.renderWidgets(stack, partialTicks);
     }
 
-    private void renderListRow(MatrixStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
+    private void renderListRow(PoseStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
         boolean selected = index == selectedIndex;
         boolean hovered = index == listHoverIndex && !selected;
         int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x40)
@@ -446,7 +446,7 @@ public class NotificationLogScreen extends BaniraScreen {
         LabelWidget.drawLimitedText(args);
     }
 
-    private void renderDetailPane(MatrixStack stack, BaniraColorConfig theme) {
+    private void renderDetailPane(PoseStack stack, BaniraColorConfig theme) {
         detailContentLines = Collections.emptyList();
 
         int pad = 16;
@@ -479,7 +479,7 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += renderDetailMetaRows(stack, x, curY, w, entry, theme);
         curY += DETAIL_AFTER_META_GAP;
 
-        ITextComponent contentVanilla = entry.component().toVanilla(Translator.getClientLanguage());
+        net.minecraft.network.chat.Component contentVanilla = entry.component().toVanilla(Translator.getClientLanguage());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;
@@ -487,14 +487,14 @@ public class NotificationLogScreen extends BaniraScreen {
             detailContentMaxLineW = w;
             float lineY = curY;
             int textColor = theme.textPrimary();
-            for (IReorderingProcessor line : detailContentLines) {
+            for (FormattedCharSequence line : detailContentLines) {
                 font.draw(stack, line, x, lineY, textColor);
                 lineY += font.lineHeight;
             }
             if (!isAnyDropdownSelectOpen()) {
                 Style hoverSt = styleAtDetailContentPoint(inputState.mouseX(), inputState.mouseY());
                 if (hoverSt != null && hoverSt.getHoverEvent() != null) {
-                    ITextComponent tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
+                    net.minecraft.network.chat.Component tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
                     if (tipVanilla != null) {
                         deferThemedTooltipWidget(theme, (int) inputState.mouseX(), (int) inputState.mouseY(),
                                 new Text(BaniraComponent.get().object(tipVanilla)));
@@ -539,7 +539,7 @@ public class NotificationLogScreen extends BaniraScreen {
         }
     }
 
-    private int renderDetailMetaRows(MatrixStack stack, int x, int y, int w, NotificationLogEntry entry, BaniraColorConfig theme) {
+    private int renderDetailMetaRows(PoseStack stack, int x, int y, int w, NotificationLogEntry entry, BaniraColorConfig theme) {
         metaHoverRegions.clear();
         BaniraComponent tr = BaniraComponent.get();
         String sourceVal = "network".equals(entry.source())
@@ -565,7 +565,7 @@ public class NotificationLogScreen extends BaniraScreen {
         return h;
     }
 
-    private boolean metaLineTruncated(MatrixStack stack, String line, int colW, BaniraColorConfig theme) {
+    private boolean metaLineTruncated(PoseStack stack, String line, int colW, BaniraColorConfig theme) {
         if (StringUtils.isNullOrEmptyEx(line)) {
             return false;
         }
@@ -580,7 +580,7 @@ public class NotificationLogScreen extends BaniraScreen {
         return wNatural > wFitted;
     }
 
-    private int drawMetaPairRow(MatrixStack stack, int x, int y, int colW, BaniraColorConfig theme,
+    private int drawMetaPairRow(PoseStack stack, int x, int y, int colW, BaniraColorConfig theme,
                                 String label1, String value1, String label2, String value2) {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
@@ -626,7 +626,7 @@ public class NotificationLogScreen extends BaniraScreen {
         if (lineIndex < 0 || lineIndex >= lineCount) {
             return null;
         }
-        IReorderingProcessor proc = detailContentLines.get(lineIndex);
+        FormattedCharSequence proc = detailContentLines.get(lineIndex);
         int rx = (int) (guiMouseX - detailContentLeft);
         return font.getSplitter().componentStyleAtWidth(proc, rx);
     }

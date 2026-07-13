@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.client.KeyMapping;
+import com.mojang.blaze3d.platform.InputConstants;
 import xin.vanilla.banira.client.util.BaniraKeyHandle;
 
 import javax.annotation.Nonnull;
@@ -11,28 +12,28 @@ import java.util.function.Consumer;
  * Loader adapter hook for registering Minecraft key bindings.
  */
 public final class BaniraKeyBindingService {
-    private static Consumer<KeyBinding> registrar = binding -> {
+    private static Consumer<KeyMapping> registrar = binding -> {
         throw new IllegalStateException("No Banira key binding registrar has been installed");
     };
 
     private BaniraKeyBindingService() {
     }
 
-    public static void installRegistrar(@Nonnull Consumer<KeyBinding> value) {
+    public static void installRegistrar(@Nonnull Consumer<KeyMapping> value) {
         registrar = Objects.requireNonNull(value, "value");
     }
 
-    public static void register(@Nonnull KeyBinding binding) {
+    public static void register(@Nonnull KeyMapping binding) {
         registrar.accept(Objects.requireNonNull(binding, "binding"));
     }
 
     public static BaniraKeyHandle create(@Nonnull String descriptionId, int defaultKey, @Nonnull String categoryId) {
-        KeyBinding binding = new KeyBinding(descriptionId, defaultKey, categoryId);
+        KeyMapping binding = new KeyMapping(descriptionId, defaultKey, categoryId);
         return new BaniraKeyHandle(descriptionId, categoryId, defaultKey, binding);
     }
 
     public static void register(@Nonnull BaniraKeyHandle handle) {
-        KeyBinding binding = handle.nativeBinding(KeyBinding.class);
+        KeyMapping binding = handle.nativeBinding(KeyMapping.class);
         if (binding == null) {
             throw new IllegalArgumentException("Unsupported key binding handle: " + handle);
         }
@@ -40,17 +41,17 @@ public final class BaniraKeyBindingService {
     }
 
     public static boolean isDown(@Nonnull BaniraKeyHandle handle) {
-        KeyBinding binding = handle.nativeBinding(KeyBinding.class);
+        KeyMapping binding = handle.nativeBinding(KeyMapping.class);
         return binding != null && binding.isDown();
     }
 
     public static int currentKey(@Nonnull BaniraKeyHandle handle) {
-        KeyBinding binding = handle.nativeBinding(KeyBinding.class);
-        return binding != null ? binding.getKey().getValue() : handle.defaultKey();
+        KeyMapping binding = handle.nativeBinding(KeyMapping.class);
+        return binding != null ? InputConstants.getKey(binding.saveString()).getValue() : handle.defaultKey();
     }
 
     public static boolean consumeClick(@Nonnull BaniraKeyHandle handle) {
-        KeyBinding binding = handle.nativeBinding(KeyBinding.class);
+        KeyMapping binding = handle.nativeBinding(KeyMapping.class);
         return binding != null && binding.consumeClick();
     }
 }

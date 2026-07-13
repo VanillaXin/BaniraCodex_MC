@@ -1,14 +1,14 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -244,7 +244,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             ScreenCoordinate tooltipBounds = new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE);
             if (opCode == ButtonType.TYPE.code()) {
                 typeButtonItemWidget = iconWidget;
-                iconWidget.itemStack(new net.minecraft.item.ItemStack(this.displayMode ? Items.MAP : Items.BOOK));
+                iconWidget.itemStack(new net.minecraft.world.item.ItemStack(this.displayMode ? Items.MAP : Items.BOOK));
                 iconWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, tooltipBounds);
                 typeTooltip.seasonTooltip(useSeasonTooltip);
@@ -255,7 +255,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             } else {
                 advancementButtonItemWidget = iconWidget;
                 AdvancementData sel = findAdvancementData(currentAdvancement);
-                iconWidget.itemStack(sel != null ? sel.displayInfo().getIcon().copy() : new net.minecraft.item.ItemStack(Items.END_CRYSTAL));
+                iconWidget.itemStack(sel != null ? sel.displayInfo().getIcon().copy() : new net.minecraft.world.item.ItemStack(Items.END_CRYSTAL));
                 iconWidget.enableTooltip(false);
                 advancementTooltip = new TooltipWidget(this, tooltipBounds);
                 advancementTooltip.seasonTooltip(useSeasonTooltip);
@@ -371,7 +371,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);

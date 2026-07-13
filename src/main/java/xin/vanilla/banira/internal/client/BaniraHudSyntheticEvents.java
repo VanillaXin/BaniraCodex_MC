@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.api.client.hud.BaniraHudEvents;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent;
@@ -18,7 +18,7 @@ public final class BaniraHudSyntheticEvents {
     private BaniraHudSyntheticEvents() {
     }
 
-    public static boolean beforeExperienceText(MatrixStack stack, int x) {
+    public static boolean beforeExperienceText(PoseStack stack, int x) {
         BaniraDrawContext draw = drawContext(stack);
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
                 HudRenderPhase.PRE,
@@ -40,7 +40,7 @@ public final class BaniraHudSyntheticEvents {
         return event.canceled();
     }
 
-    public static void afterExperienceText(MatrixStack stack, int x) {
+    public static void afterExperienceText(PoseStack stack, int x) {
         BaniraDrawContext draw = drawContext(stack);
         BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
                 HudRenderPhase.POST,
@@ -51,7 +51,7 @@ public final class BaniraHudSyntheticEvents {
         ));
     }
 
-    private static BaniraDrawContext drawContext(MatrixStack stack) {
+    private static BaniraDrawContext drawContext(PoseStack stack) {
         return new BaniraDrawContext(new BaniraLegacyDrawHandle(stack), screenWidth(), screenHeight(), 0.0F);
     }
 

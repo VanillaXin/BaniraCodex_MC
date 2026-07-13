@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public interface IIdentifier {
 

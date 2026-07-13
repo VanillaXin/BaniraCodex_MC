@@ -1,15 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.*;
@@ -72,7 +72,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     @Setter
     private boolean popupAtScreenCoords = false;
 
-    private transient final List<ITextComponent> tooltip = new ArrayList<>();
+    private transient final List<net.minecraft.network.chat.Component> tooltip = new ArrayList<>();
 
     public TooltipWidget(BaniraScreen screen) {
         super(screen);
@@ -93,7 +93,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
         if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
             renderChildren(stack, partialTicks);
@@ -114,7 +114,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                     if (itemStack != null && !itemStack.isEmpty()) {
                         drawItemTooltip(s, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {
-                        List<ITextComponent> tip = new ArrayList<>();
+                        List<net.minecraft.network.chat.Component> tip = new ArrayList<>();
                         tip.add(textToDraw.toComponent().toChat());
                         screen.renderComponentTooltip(s, tip, mouseX, mouseY);
                     } else {
@@ -180,7 +180,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * @param theme  主题配置，颜色绘制时使用（非空时直接使用，否则按 season 解析季节预设）
      * @param season 季节，纹理绘制时选择季节纹理，颜色绘制时解析季节主题
      */
-    public static void drawPopupMessage(MatrixStack stack, FontDrawArgs args,
+    public static void drawPopupMessage(PoseStack stack, FontDrawArgs args,
                                         @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         FontDrawArgs drawArgs = args.clone();
         boolean useTextureMode = drawArgs.popupUseTexture();
@@ -216,21 +216,21 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 使用当前季节颜色绘制
      */
-    public static void drawPopupMessageWithSeason(MatrixStack stack, FontDrawArgs args) {
+    public static void drawPopupMessageWithSeason(PoseStack stack, FontDrawArgs args) {
         drawPopupMessage(stack, args.clone(), null, null);
     }
 
     /**
      * 使用当前季节纹理绘制
      */
-    public static void drawPopupMessageWithSeasonTexture(MatrixStack stack, FontDrawArgs args) {
+    public static void drawPopupMessageWithSeasonTexture(PoseStack stack, FontDrawArgs args) {
         drawPopupMessageWithSeasonTexture(stack, args, EnumSeason.AUTO);
     }
 
     /**
      * 使用指定季节纹理绘制
      */
-    public static void drawPopupMessageWithSeasonTexture(MatrixStack stack, FontDrawArgs args, EnumSeason season) {
+    public static void drawPopupMessageWithSeasonTexture(PoseStack stack, FontDrawArgs args, EnumSeason season) {
         FontDrawArgs drawArgs = args.clone().popupUseTexture(true);
         drawPopupMessage(stack, drawArgs, null, season);
     }
@@ -238,7 +238,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 使用默认样式绘制
      */
-    public static void drawPopupMessage(MatrixStack stack, FontDrawArgs args) {
+    public static void drawPopupMessage(PoseStack stack, FontDrawArgs args) {
         drawPopupMessage(stack, args.clone(), null, null);
     }
 
@@ -247,7 +247,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      *
      * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
      */
-    public static void drawItemTooltip(MatrixStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
+    public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
         boolean advanced = Screen.hasShiftDown();
         List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
         Component tooltipComponent = BaniraComponent.get().empty();
@@ -257,7 +257,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             tooltipComponent = tooltipComponent.append(component);
         }
         Text tooltipText = new Text(tooltipComponent);
-        FontRenderer font = itemStack.getItem().getFontRenderer(itemStack);
+        Font font = Minecraft.getInstance().font;
         FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font)).x(x).y(y);
         if (season != null) {
             drawPopupMessageWithSeasonTexture(stack, drawArgs, season);
@@ -269,11 +269,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 绘制物品提示
      */
-    public static void drawItemTooltip(MatrixStack stack, ItemStack itemStack, double x, double y, boolean season) {
+    public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, boolean season) {
         drawItemTooltip(stack, itemStack, x, y, season ? EnumSeason.AUTO : null);
     }
 
-    private static void drawPopupMessageInternal(MatrixStack stack, FontDrawArgs args, @Nullable BaniraColorConfig theme) {
+    private static void drawPopupMessageInternal(PoseStack stack, FontDrawArgs args, @Nullable BaniraColorConfig theme) {
         boolean useThemeColor = (theme != null);
         float calculatedTextureScale = 1.0f;
         int calculatedPaddingLeft;
@@ -311,7 +311,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         if (ninePatchInfo != null) {
             Color color = Color.argb(ninePatchInfo.textColor);
             if (!color.isEmpty()) args.text().color(color);
-            FontRenderer font = args.text().font();
+            Font font = args.text().font();
             float targetFontSize = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
             if (ninePatchInfo.rightGuideHeight > 0) {
                 calculatedTextureScale = targetFontSize / ninePatchInfo.rightGuideHeight;

@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -446,7 +446,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(MatrixStack stack, float partialTicks) {
+    protected void renderWidgets(PoseStack stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
@@ -510,7 +510,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         renderWidgets(stack, partialTicks);
     }
 
@@ -624,7 +624,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
 
         @Override
-        public void render(MatrixStack stack, float partialTicks) {
+        public void render(PoseStack stack, float partialTicks) {
             if (!visible) return;
             renderChildren(stack, partialTicks);
         }

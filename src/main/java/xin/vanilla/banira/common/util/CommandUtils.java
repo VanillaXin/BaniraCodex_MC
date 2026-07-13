@@ -5,15 +5,15 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import lombok.NonNull;
-import net.minecraft.command.CommandSource;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
@@ -40,21 +40,21 @@ public final class CommandUtils {
     private CommandUtils() {
     }
 
-    public static boolean checkModStatus(CommandContext<CommandSource> context, Supplier<Boolean> modDisabled) {
+    public static boolean checkModStatus(CommandContext<CommandSourceStack> context, Supplier<Boolean> modDisabled) {
         if (modDisabled.get()) {
-            CommandSource source = context.getSource();
+            CommandSourceStack source = context.getSource();
             Entity entity = BaniraCommandAccess.sourceEntity(source);
-            if (entity instanceof ServerPlayerEntity) {
-                MessageUtils.sendMessage((ServerPlayerEntity) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
+            if (entity instanceof ServerPlayer) {
+                MessageUtils.sendMessage((ServerPlayer) entity, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
             }
         }
         return modDisabled.get();
     }
 
-    public static String getLanguage(CommandSource source) {
+    public static String getLanguage(CommandSourceStack source) {
         String lang = Translator.getServerLanguage();
         Entity entity = BaniraCommandAccess.sourceEntity(source);
-        if (entity instanceof ServerPlayerEntity) {
+        if (entity instanceof ServerPlayer) {
             try {
                 lang = Translator.getPlayerLanguage(BaniraCommandAccess.sourcePlayer(source));
             } catch (Exception ignored) {
@@ -63,12 +63,12 @@ public final class CommandUtils {
         return lang;
     }
 
-    public static Entity getSourceEntity(CommandSource source) {
+    public static Entity getSourceEntity(CommandSourceStack source) {
         return BaniraCommandAccess.sourceEntity(source);
     }
 
     @Nullable
-    public static ServerPlayerEntity getSourcePlayer(CommandSource source) {
+    public static ServerPlayer getSourcePlayer(CommandSourceStack source) {
         try {
             return BaniraCommandAccess.sourcePlayer(source);
         } catch (CommandSyntaxException ignored) {
@@ -76,15 +76,15 @@ public final class CommandUtils {
         }
     }
 
-    public static ServerPlayerEntity requireSourcePlayer(CommandSource source) throws CommandSyntaxException {
+    public static ServerPlayer requireSourcePlayer(CommandSourceStack source) throws CommandSyntaxException {
         return BaniraCommandAccess.sourcePlayer(source);
     }
 
-    public static boolean hasPermission(CommandSource source, int permission) {
+    public static boolean hasPermission(CommandSourceStack source, int permission) {
         return BaniraCommandAccess.hasPermission(source, permission);
     }
 
-    public static boolean hasVirtualPermission(CommandSource source, BaniraVirtualPermission type) {
+    public static boolean hasVirtualPermission(CommandSourceStack source, BaniraVirtualPermission type) {
         return hasVirtualPermission(getSourceEntity(source), type);
     }
 
@@ -95,10 +95,10 @@ public final class CommandUtils {
      * @param type   指令类型
      */
     public static boolean hasVirtualPermission(Entity source, BaniraVirtualPermission type) {
-        if (!(source instanceof PlayerEntity)) {
+        if (!(source instanceof Player)) {
             return false;
         }
-        PlayerEntity player = (PlayerEntity) source;
+        Player player = (Player) source;
         return VirtualPermissionManager.getRawVirtualPermission(player).contains(BaniraVirtualPermissions.key(type));
     }
 
@@ -106,13 +106,13 @@ public final class CommandUtils {
      * 对中立玩家句柄判断指定完整虚拟权限键（{@code modId:id}）。
      */
     public static boolean hasVirtualPermission(Object player, String fullPermissionKey) {
-        return player instanceof PlayerEntity && hasVirtualPermission((PlayerEntity) player, fullPermissionKey);
+        return player instanceof Player && hasVirtualPermission((Player) player, fullPermissionKey);
     }
 
     /**
      * 是否拥有指定完整虚拟权限键（{@code modId:id}）。
      */
-    public static boolean hasVirtualPermission(PlayerEntity player, String fullPermissionKey) {
+    public static boolean hasVirtualPermission(Player player, String fullPermissionKey) {
         if (player == null || fullPermissionKey == null || fullPermissionKey.isEmpty()) {
             return false;
         }
@@ -122,7 +122,7 @@ public final class CommandUtils {
     /**
      * 执行指令
      */
-    public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command, int permission, boolean suppressedOutput) {
+    public static boolean executeCommand(@NonNull ServerPlayer player, @NonNull String command, int permission, boolean suppressedOutput) {
         return BaniraPlatforms.isInstalled()
                 && BaniraCommandAccess.executePlayerCommand(player, command, permission, suppressedOutput);
     }
@@ -130,28 +130,28 @@ public final class CommandUtils {
     /**
      * 执行指令
      */
-    public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command) {
+    public static boolean executeCommand(@NonNull ServerPlayer player, @NonNull String command) {
         return executeCommand(player, command, 0, false);
     }
 
     /**
      * 执行指令
      */
-    public static boolean executeCommandNoOutput(@NonNull ServerPlayerEntity player, @NonNull String command) {
+    public static boolean executeCommandNoOutput(@NonNull ServerPlayer player, @NonNull String command) {
         return executeCommandNoOutput(player, command, 0);
     }
 
     /**
      * 执行指令
      */
-    public static boolean executeCommandNoOutput(@NonNull ServerPlayerEntity player, @NonNull String command, int permission) {
+    public static boolean executeCommandNoOutput(@NonNull ServerPlayer player, @NonNull String command, int permission) {
         return executeCommand(player, command, permission, true);
     }
 
     /**
      * 刷新玩家权限
      */
-    public static void refreshPermission(@NonNull ServerPlayerEntity player) {
+    public static void refreshPermission(@NonNull ServerPlayer player) {
         if (BaniraPlatforms.isInstalled()) {
             BaniraServerAccess.refreshPlayerPermission(player);
         }
@@ -225,7 +225,7 @@ public final class CommandUtils {
         return result;
     }
 
-    public static ServerWorld getDimensionDefault(CommandContext<CommandSource> context, String name, ServerWorld defaultValue) {
+    public static ServerLevel getDimensionDefault(CommandContext<CommandSourceStack> context, String name, ServerLevel defaultValue) {
         try {
             return BaniraCommandAccess.dimension(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException e) {
@@ -260,7 +260,7 @@ public final class CommandUtils {
     /**
      * 尝试获取玩家参数，若无则返回执行者自身（若执行者为玩家），否则抛出 CommandSyntaxException
      */
-    public static ServerPlayerEntity getPlayerOrSelf(CommandContext<CommandSource> context, String name) throws CommandSyntaxException {
+    public static ServerPlayer getPlayerOrSelf(CommandContext<CommandSourceStack> context, String name) throws CommandSyntaxException {
         return BaniraCommandAccess.playerOrSelf(context, name);
     }
 
@@ -268,7 +268,7 @@ public final class CommandUtils {
      * 尝试获取玩家参数，若无则返回 null
      */
     @Nullable
-    public static ServerPlayerEntity getPlayerOptional(CommandContext<CommandSource> context, String name) {
+    public static ServerPlayer getPlayerOptional(CommandContext<CommandSourceStack> context, String name) {
         try {
             return BaniraCommandAccess.player(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
@@ -279,7 +279,7 @@ public final class CommandUtils {
     /**
      * 尝试获取玩家列表参数，若无则返回 fallback
      */
-    public static Collection<ServerPlayerEntity> getPlayersOptional(CommandContext<CommandSource> context, String name, Collection<ServerPlayerEntity> fallback) {
+    public static Collection<ServerPlayer> getPlayersOptional(CommandContext<CommandSourceStack> context, String name, Collection<ServerPlayer> fallback) {
         try {
             return BaniraCommandAccess.players(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
@@ -288,9 +288,9 @@ public final class CommandUtils {
     }
 
     /**
-     * 尝试获取维度参数，若无则返回 defaultValue 对应的 RegistryKey
+     * 尝试获取维度参数，若无则返回 defaultValue 对应的 ResourceKey
      */
-    public static RegistryKey<World> getDimensionKeyDefault(CommandContext<CommandSource> context, String name, RegistryKey<World> defaultValue) {
+    public static ResourceKey<Level> getDimensionKeyDefault(CommandContext<CommandSourceStack> context, String name, ResourceKey<Level> defaultValue) {
         try {
             return BaniraCommandAccess.dimensionKey(context, name);
         } catch (IllegalArgumentException | CommandSyntaxException ignored) {
@@ -301,11 +301,11 @@ public final class CommandUtils {
     /**
      * 若为第一次使用指令则进行提示
      */
-    public static void notifyHelp(CommandContext<CommandSource> context, ICommandNotify playerData, Component modName, String command) {
-        CommandSource source = context.getSource();
+    public static void notifyHelp(CommandContext<CommandSourceStack> context, ICommandNotify playerData, Component modName, String command) {
+        CommandSourceStack source = context.getSource();
         Entity entity = BaniraCommandAccess.sourceEntity(source);
-        if (entity instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) entity;
+        if (entity instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) entity;
             if (!playerData.isNotified()) {
                 Component button = BaniraComponent.get().literal(command)
                         .color(EnumMCColor.AQUA.getColor())
@@ -406,8 +406,8 @@ public final class CommandUtils {
         }
     }
 
-    public static int executeModifyConfig(ConfigHolder holder, CommandContext<CommandSource> context) {
-        CommandSource source = context.getSource();
+    public static int executeModifyConfig(ConfigHolder holder, CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
         String configKey = StringArgumentType.getString(context, "configKey");
         String configValue = StringArgumentType.getString(context, "configValue");
 

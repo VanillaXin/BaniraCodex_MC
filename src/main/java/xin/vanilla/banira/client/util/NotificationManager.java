@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.util;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.Style;
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -223,7 +223,7 @@ public final class NotificationManager {
         NotificationLogStore.saveAsync(snapshot);
     }
 
-    public void render(MatrixStack stack) {
+    public void render(PoseStack stack) {
         KeyValue<Integer, Integer> scaledSize = BaniraClientAccess.guiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
                 .width(scaledSize.key())

@@ -1,10 +1,10 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
@@ -31,9 +31,9 @@ public final class DimensionUtils {
     private static final List<String> CLIENT_DIMENSION_IDS = new CopyOnWriteArrayList<>();
 
     private static final List<String> DEFAULT_DIMENSION_IDS = Collections.unmodifiableList(Arrays.asList(
-            World.OVERWORLD.location().toString(),
-            World.NETHER.location().toString(),
-            World.END.location().toString()
+            Level.OVERWORLD.location().toString(),
+            Level.NETHER.location().toString(),
+            Level.END.location().toString()
     ));
 
     /**
@@ -42,23 +42,23 @@ public final class DimensionUtils {
     private static boolean requestedData = false;
 
 
-    public static RegistryKey<World> parse(String dimension) {
+    public static ResourceKey<Level> parse(String dimension) {
         return parse(Identifier.id().parse(dimension));
     }
 
-    public static RegistryKey<World> parse(ResourceLocation dimension) {
-        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.dimensionKey(dimension) : World.OVERWORLD;
+    public static ResourceKey<Level> parse(ResourceLocation dimension) {
+        return dimension != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.dimensionKey(dimension) : Level.OVERWORLD;
     }
 
-    public static ServerWorld getLevel(RegistryKey<World> dimension) {
+    public static ServerLevel getLevel(ResourceKey<Level> dimension) {
         return dimension != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.level(dimension) : null;
     }
 
-    public static ServerWorld getLevel(ResourceLocation dimension) {
+    public static ServerLevel getLevel(ResourceLocation dimension) {
         return getLevel(parse(dimension));
     }
 
-    public static ServerWorld getLevel(String dimension) {
+    public static ServerLevel getLevel(String dimension) {
         return getLevel(parse(dimension));
     }
 
@@ -66,11 +66,11 @@ public final class DimensionUtils {
         return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.dimensionIds() : Collections.emptySet();
     }
 
-    public static int getWorldMinY(World world) {
+    public static int getWorldMinY(Level world) {
         return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.minBuildHeight(world) : 0;
     }
 
-    public static int getWorldMaxY(World world) {
+    public static int getWorldMaxY(Level world) {
         return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.maxBuildHeight(world) : 0;
     }
 
@@ -79,12 +79,12 @@ public final class DimensionUtils {
         return getDimensionId(entity.level);
     }
 
-    public static String getDimensionId(World world) {
+    public static String getDimensionId(Level world) {
         if (world == null) return null;
         return getDimensionId(world.dimension());
     }
 
-    public static String getDimensionId(RegistryKey<World> dimension) {
+    public static String getDimensionId(ResourceKey<Level> dimension) {
         if (dimension == null) return null;
         return dimension.location().toString();
     }

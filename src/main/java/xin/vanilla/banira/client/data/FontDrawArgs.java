@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.data;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -166,11 +166,11 @@ public class FontDrawArgs implements Cloneable {
         return new FontDrawArgs(Text.literal(text));
     }
 
-    public static FontDrawArgs of(String text, MatrixStack stack) {
+    public static FontDrawArgs of(String text, PoseStack stack) {
         return new FontDrawArgs(Text.literal(text).stack(stack));
     }
 
-    public static FontDrawArgs of(String text, MatrixStack stack, FontRenderer font) {
+    public static FontDrawArgs of(String text, PoseStack stack, Font font) {
         return new FontDrawArgs(Text.literal(text).stack(stack).font(font));
     }
 
@@ -182,11 +182,11 @@ public class FontDrawArgs implements Cloneable {
         return new FontDrawArgs(Text.literal(text)).defaultPopoStyle();
     }
 
-    public static FontDrawArgs ofPopo(String text, MatrixStack stack) {
+    public static FontDrawArgs ofPopo(String text, PoseStack stack) {
         return new FontDrawArgs(Text.literal(text).stack(stack)).defaultPopoStyle();
     }
 
-    public static FontDrawArgs ofPopo(String text, MatrixStack stack, FontRenderer font) {
+    public static FontDrawArgs ofPopo(String text, PoseStack stack, Font font) {
         return new FontDrawArgs(Text.literal(text).stack(stack).font(font)).defaultPopoStyle();
     }
 

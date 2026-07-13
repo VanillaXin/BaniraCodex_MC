@@ -1,16 +1,16 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -63,13 +63,13 @@ public class EffectSelectScreen extends BaniraScreen {
     private static final Component TITLE = BaniraComponent.get().literal("EffectSelectScreen");
 
     private String inputFieldText = "";
-    private final List<Effect> effectList = new ArrayList<>();
+    private final List<MobEffect> effectList = new ArrayList<>();
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> effectButtonWidgets = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
-    private EffectInstance currentEffect;
+    private MobEffectInstance currentEffect;
     private boolean playerMode = false;
 
     private BaseWidget selectedEffectWidget;
@@ -110,7 +110,7 @@ public class EffectSelectScreen extends BaniraScreen {
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
-        this.currentEffect = args.defaultEffect() != null ? EffectUtils.copyEffectInstance(args.defaultEffect()) : new EffectInstance(Effects.LUCK, 600, 0);
+        this.currentEffect = args.defaultEffect() != null ? EffectUtils.copyEffectInstance(args.defaultEffect()) : new MobEffectInstance(MobEffects.LUCK, 600, 0);
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
@@ -118,21 +118,21 @@ public class EffectSelectScreen extends BaniraScreen {
     @Accessors(chain = true, fluent = true)
     public static final class Args {
         private Screen parentScreen;
-        private EffectInstance defaultEffect = new EffectInstance(Effects.LUCK, 600, 0);
-        private Consumer<EffectInstance> onDataReceived1;
-        private Function<EffectInstance, String> onDataReceived2;
+        private MobEffectInstance defaultEffect = new MobEffectInstance(MobEffects.LUCK, 600, 0);
+        private Consumer<MobEffectInstance> onDataReceived1;
+        private Function<MobEffectInstance, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
         @Nullable
         private EnumSeason season;
         @Nullable
         private BaniraColorConfig theme;
 
-        public Args onDataReceived(Consumer<EffectInstance> onDataReceived) {
+        public Args onDataReceived(Consumer<MobEffectInstance> onDataReceived) {
             this.onDataReceived1 = onDataReceived;
             return this;
         }
 
-        public Args onDataReceived(Function<EffectInstance, String> onDataReceived) {
+        public Args onDataReceived(Function<MobEffectInstance, String> onDataReceived) {
             this.onDataReceived2 = onDataReceived;
             return this;
         }
@@ -269,15 +269,15 @@ public class EffectSelectScreen extends BaniraScreen {
             if (this.currentEffect == null) {
                 Minecraft.getInstance().setScreen(args.parentScreen());
             } else {
-                EffectInstance effectInstance = EffectUtils.copyEffectInstance(this.currentEffect);
+                MobEffectInstance effectInstance = EffectUtils.copyEffectInstance(this.currentEffect);
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(effectInstance);
-                    LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
+                    LOGGER.debug("MobEffect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
                     Minecraft.getInstance().setScreen(args.parentScreen());
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(effectInstance);
                     if (StringUtils.isNullOrEmpty(result)) {
-                        LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
+                        LOGGER.debug("MobEffect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
                         Minecraft.getInstance().setScreen(args.parentScreen());
                     }
                 }
@@ -299,7 +299,7 @@ public class EffectSelectScreen extends BaniraScreen {
             int opCode = parseOperationButtonType(btnId);
             if (opCode == ButtonType.TYPE.code()) {
                 typeButtonItemWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
-                typeButtonItemWidget.itemStack(new net.minecraft.item.ItemStack(this.playerMode ? Items.CHEST : Items.COMPASS));
+                typeButtonItemWidget.itemStack(new net.minecraft.world.item.ItemStack(this.playerMode ? Items.CHEST : Items.COMPASS));
                 typeButtonItemWidget.showCountText(false);
                 typeButtonItemWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
@@ -321,7 +321,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 btn.addChild(effectButtonIconWidget);
             } else if (opCode == ButtonType.DURATION.code()) {
                 ItemWidget iconWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
-                iconWidget.itemStack(new net.minecraft.item.ItemStack(Items.CLOCK));
+                iconWidget.itemStack(new net.minecraft.world.item.ItemStack(Items.CLOCK));
                 iconWidget.showCountText(false);
                 iconWidget.enableTooltip(false);
                 durationTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
@@ -331,7 +331,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 btn.addChild(iconWidget);
             } else if (opCode == ButtonType.AMPLIFIER.code()) {
                 ItemWidget iconWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
-                iconWidget.itemStack(new net.minecraft.item.ItemStack(Items.ANVIL));
+                iconWidget.itemStack(new net.minecraft.world.item.ItemStack(Items.ANVIL));
                 iconWidget.showCountText(false);
                 iconWidget.enableTooltip(false);
                 amplifierTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
@@ -348,7 +348,7 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
@@ -421,10 +421,10 @@ public class EffectSelectScreen extends BaniraScreen {
             if (ew == null || lw == null) continue;
 
             if (index >= 0 && index < effectList.size()) {
-                Effect effect = effectList.get(index);
+                MobEffect effect = effectList.get(index);
                 String effectId = EffectUtils.getEffectRegistryString(effect);
                 String displayName = EffectUtils.getEffectDisplayName(effect);
-                EffectInstance instance = new EffectInstance(effect, currentEffect.getDuration(), currentEffect.getAmplifier());
+                MobEffectInstance instance = new MobEffectInstance(effect, currentEffect.getDuration(), currentEffect.getAmplifier());
                 ew.effectInstance(instance);
                 ew.visible(true);
                 lw.text(Text.literal(displayName).color(Color.argb(getEffectiveTheme().listItemText())));
@@ -497,9 +497,9 @@ public class EffectSelectScreen extends BaniraScreen {
         if (this.playerMode) {
             this.effectList.addAll(EffectUtils.getPlayerEffects());
             if (StringUtils.isNotNullOrEmpty(s)) {
-                List<Effect> filtered = new ArrayList<>();
+                List<MobEffect> filtered = new ArrayList<>();
                 String lower = s.trim().toLowerCase();
-                for (Effect e : this.effectList) {
+                for (MobEffect e : this.effectList) {
                     if (EffectUtils.getEffectRegistryString(e).toLowerCase().contains(lower)
                             || EffectUtils.getEffectDisplayName(e).toLowerCase().contains(lower)) {
                         filtered.add(e);
@@ -520,14 +520,14 @@ public class EffectSelectScreen extends BaniraScreen {
         }
 
         refreshEffectButtons();
-        LOGGER.debug("Effect search results updated: count={}, query={}", effectList.size(), s);
+        LOGGER.debug("MobEffect search results updated: count={}, query={}", effectList.size(), s);
     }
 
     private void handleEffect(String effectId) {
         if (StringUtils.isNotNullOrEmpty(effectId)) {
-            Effect effect = EffectUtils.getEffectFromRegistry(effectId);
+            MobEffect effect = EffectUtils.getEffectFromRegistry(effectId);
             if (effect != null) {
-                this.currentEffect = new EffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                 LOGGER.debug("Select effect: {}", EffectUtils.getEffectDisplayName(effect));
                 refreshEffectButtons();
             }
@@ -559,7 +559,7 @@ public class EffectSelectScreen extends BaniraScreen {
                             .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
                             .defaultValue(EffectUtils.getEffectRegistryString(this.currentEffect))
                             .validator((input) -> {
-                                Effect e = EffectUtils.getEffectFromRegistry(input.value());
+                                MobEffect e = EffectUtils.getEffectFromRegistry(input.value());
                                 if (e == null) {
                                     return BaniraComponent.get().transClientAuto("enter_effect_id_error", input.value()).toString();
                                 }
@@ -568,9 +568,9 @@ public class EffectSelectScreen extends BaniraScreen {
                     )
                     .setCallback(input -> {
                         String id = input.firstValue();
-                        Effect effect = EffectUtils.getEffectFromRegistry(id);
+                        MobEffect effect = EffectUtils.getEffectFromRegistry(id);
                         if (effect != null) {
-                            this.currentEffect = new EffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                            this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
                         }
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
@@ -591,7 +591,7 @@ public class EffectSelectScreen extends BaniraScreen {
                     )
                     .setCallback(input -> {
                         int duration = NumberUtils.toInt(input.firstValue());
-                        this.currentEffect = new EffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
+                        this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
@@ -611,7 +611,7 @@ public class EffectSelectScreen extends BaniraScreen {
                     )
                     .setCallback(input -> {
                         int amplifier = NumberUtils.toInt(input.firstValue());
-                        this.currentEffect = new EffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
+                        this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         }

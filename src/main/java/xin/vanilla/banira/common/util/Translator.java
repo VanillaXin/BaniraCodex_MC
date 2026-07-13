@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;
@@ -74,7 +74,7 @@ public class Translator implements ITranslator {
         getI18nFiles();
     }
 
-    // region mod 主类与 modId（@Mod）
+    // region mod 主入口与 modId
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
@@ -96,7 +96,7 @@ public class Translator implements ITranslator {
         }
     }
 
-    // endregion mod 主类与 modId（@Mod）
+    // endregion mod 主入口与 modId
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -325,7 +325,7 @@ public class Translator implements ITranslator {
     /**
      * 获取玩家语言
      */
-    public static String getPlayerLanguage(@NonNull PlayerEntity player) {
+    public static String getPlayerLanguage(@NonNull Player player) {
         try {
             String lang = player.isLocalPlayer()
                     ? CustomConfig.getPlayerLanguageClient(PlayerUtils.getPlayerUUIDString(player))

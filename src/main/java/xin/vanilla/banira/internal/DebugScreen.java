@@ -1,12 +1,12 @@
 package xin.vanilla.banira.internal;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -295,7 +295,7 @@ public class DebugScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(MatrixStack stack, float partialTicks) {
+    public void onRender(PoseStack stack, float partialTicks) {
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width / 3f, this.height - 20, 0x88E8F4FF);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -453,10 +453,10 @@ public class DebugScreen extends BaniraScreen {
                 Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
                 break;
             case "opt_effect":
-                Consumer<EffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
+                Consumer<MobEffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
                 EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                         .parentScreen(this)
-                        .defaultEffect(new EffectInstance(Effects.LUCK, 600, 0))
+                        .defaultEffect(new MobEffectInstance(MobEffects.LUCK, 600, 0))
                         .onDataReceived(onEffectSelect);
                 Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
                 break;
@@ -563,8 +563,8 @@ public class DebugScreen extends BaniraScreen {
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
             EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                     .parentScreen(this)
-                    .defaultEffect(new net.minecraft.potion.EffectInstance(net.minecraft.potion.Effects.LUCK, 600, 0));
-            effectArgs.onDataReceived((Consumer<net.minecraft.potion.EffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
+                    .defaultEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.LUCK, 600, 0));
+            effectArgs.onDataReceived((Consumer<net.minecraft.world.effect.MobEffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
             Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
         }
     }

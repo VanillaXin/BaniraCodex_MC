@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.server.level.ServerLevel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
@@ -47,7 +47,7 @@ public final class BiomeUtils {
         return id != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.biome(id) : null;
     }
 
-    public static Biome getBiome(ServerWorld world, ResourceLocation id) {
+    public static Biome getBiome(ServerLevel world, ResourceLocation id) {
         return id != null && BaniraPlatforms.isInstalled() ? BaniraWorldAccess.biome(world, id) : null;
     }
 
@@ -58,7 +58,7 @@ public final class BiomeUtils {
     /**
      * 在指定范围内查找最近的生物群系位置
      */
-    public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
+    public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         return BaniraPlatforms.isInstalled() ? BaniraWorldAccess.findNearestBiome(world, start, biome, radius, minDistance) : null;
     }
 

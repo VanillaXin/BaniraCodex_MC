@@ -1,12 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.Font;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -162,7 +162,7 @@ public class DropdownSelectWidget extends InputWidget {
             tagScrollOffset = 0;
             return;
         }
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         int totalWidth = 0;
         for (String item : selectedValues) {
             totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;
@@ -589,7 +589,7 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
         if (renderCoordinate == null) return;
 
@@ -681,7 +681,7 @@ public class DropdownSelectWidget extends InputWidget {
                 && my >= absY && my < absY + h;
     }
 
-    private static void drawClearIcon(MatrixStack stack, int centerX, int centerY, int color) {
+    private static void drawClearIcon(PoseStack stack, int centerX, int centerY, int color) {
         float r = CLEAR_BUTTON_RADIUS * 0.4f; // x 略小于圆的 1/2
         AbstractGuiUtils.drawLine(stack, centerX - r, centerY - r, centerX + r, centerY + r, 1f, color);
         AbstractGuiUtils.drawLine(stack, centerX + r, centerY - r, centerX - r, centerY + r, 1f, color);
@@ -700,11 +700,11 @@ public class DropdownSelectWidget extends InputWidget {
         return mx >= absX && mx < absX + w && my >= absY && my < absY + renderCoordinate.height();
     }
 
-    private void renderTags(MatrixStack stack, int contentLeft, int drawY, int contentWidth, int drawHeight) {
+    private void renderTags(PoseStack stack, int contentLeft, int drawY, int contentWidth, int drawHeight) {
         if (selectedValues.isEmpty()) return;
         if (screen == null) return;
 
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         BaniraColorConfig theme = screen.getEffectiveTheme();
         int tagBg = theme.popupItemSelected();
         int tagBorder = theme.popupItemSelectedBorder();
@@ -896,7 +896,7 @@ public class DropdownSelectWidget extends InputWidget {
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         if (mouseY < tagY || mouseY >= tagY + TAG_MIN_HEIGHT) return -1;
         int currentX = contentLeft - tagScrollOffset;
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
             int textW = font.width(selectedValues.get(i));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
@@ -916,7 +916,7 @@ public class DropdownSelectWidget extends InputWidget {
         int drawHeight = (int) height() - marginTop() - marginBottom();
         int tagY = (int) absY + marginTop() + (drawHeight - TAG_MIN_HEIGHT) / 2;
         int currentX = contentLeft - tagScrollOffset;
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
             int textW = font.width(selectedValues.get(i));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
@@ -944,7 +944,7 @@ public class DropdownSelectWidget extends InputWidget {
             }
         }
         if (multiSelect && !dropdownOpen && !selectedValues.isEmpty() && isMouseInside(mx, my)) {
-            FontRenderer font = AbstractGuiUtils.getFont();
+            Font font = AbstractGuiUtils.getFont();
             int totalWidth = 0;
             for (String item : selectedValues) {
                 totalWidth += TAG_PAD + font.width(item) + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD + TAG_GAP;

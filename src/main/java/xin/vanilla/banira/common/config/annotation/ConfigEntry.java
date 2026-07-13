@@ -58,7 +58,7 @@ public @interface ConfigEntry {
         EditPermissionPolicy policy() default EditPermissionPolicy.INHERIT;
 
         /**
-         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.command.CommandSource#hasPermission(int)} 一致；
+         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.commands.CommandSourceStack#hasPermission(int)} 一致；
          * {@code -1} 表示 FIELD_OVERRIDE 时仍沿用全局「修改服务端配置」的权限等级
          */
         int permissionLevel() default -1;

@@ -3,11 +3,11 @@ package xin.vanilla.banira.client.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.client.resources.ReloadListener;
-import net.minecraft.profiler.IProfiler;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
@@ -24,14 +24,13 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * 浠庤祫婧愬寘鍔犺浇 {@link BaniraColorConfig}锛坅ssets/&lt;namespace&gt;/themes/&lt;season&gt;.json锛夛紝
- * 鏍瑰璞′负鏃ラ棿閰嶈壊锛涘彲閫?{@code night} 瀛愬璞′负澶滈棿閰嶈壊銆?
- * 璧勬簮缂哄け鎴栬В鏋愬け璐ユ椂鍥為€€ {@link BaniraColorConfig#builtinForConcreteSeason(EnumSeason)} /
- * {@link BaniraColorConfig#builtinNightForConcreteSeason(EnumSeason)}锛涘綋鍓嶆槸鍚︾敤澶滈棿鐢?{@link BaniraGuiNightMode} 涓庡鎴风閰嶇疆鍐冲畾銆?
+ * 从资源包加载 {@link BaniraColorConfig}（assets/&lt;namespace&gt;/themes/&lt;season&gt;.json）。
+ * 根对象为日间配色，可选 {@code night} 子对象为夜间配色。
+ * 资源缺失或解析失败时回退到内置主题；当前是否使用夜间配色由 {@link BaniraGuiNightMode} 与客户端配置决定。
  * <p>
  * Registered by the active loader adapter.
  */
-public final class BaniraColorThemeLoader extends ReloadListener<Void> {
+public final class BaniraColorThemeLoader extends SimplePreparableReloadListener<Void> {
 
     public static final BaniraColorThemeLoader INSTANCE = new BaniraColorThemeLoader();
 
@@ -53,16 +52,16 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
     }
 
     @Override
-    protected Void prepare(@Nonnull IResourceManager resourceManagerIn, @Nonnull IProfiler profilerIn) {
+    protected Void prepare(@Nonnull ResourceManager resourceManagerIn, @Nonnull ProfilerFiller profilerIn) {
         return null;
     }
 
     @Override
-    protected void apply(@Nonnull Void objectIn, @Nonnull IResourceManager resourceManagerIn, @Nonnull IProfiler profilerIn) {
+    protected void apply(@Nonnull Void objectIn, @Nonnull ResourceManager resourceManagerIn, @Nonnull ProfilerFiller profilerIn) {
         reloadFrom(resourceManagerIn);
     }
 
-    private void reloadFrom(IResourceManager resourceManager) {
+    public void reloadFrom(ResourceManager resourceManager) {
         EnumMap<EnumSeason, SeasonThemePair> next = new EnumMap<>(EnumSeason.class);
         for (EnumSeason s : new EnumSeason[]{EnumSeason.SPRING, EnumSeason.SUMMER, EnumSeason.AUTUMN, EnumSeason.WINTER}) {
             SeasonThemePair parsed = tryLoadSeason(resourceManager, s);
@@ -94,10 +93,10 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
         }
     }
 
-    private static SeasonThemePair tryLoadSeason(IResourceManager resourceManager, EnumSeason season) {
+    private static SeasonThemePair tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
         ResourceLocation loc = themeJsonLocation(season);
         try {
-            IResource res;
+            Resource res;
             try {
                 res = resourceManager.getResource(loc);
             } catch (Exception missing) {
@@ -196,7 +195,7 @@ public final class BaniraColorThemeLoader extends ReloadListener<Void> {
     }
 
     /**
-     * 瑙ｆ瀽 ARGB锛氭敮鎸佸崄鍏繘鍒跺瓧绗︿覆锛堝彲閫?# / 0x锛夈€佸崄杩涘埗鏁存暟锛? 琛ㄧず鏈寚瀹氥€?
+     * 解析 ARGB：支持带可选 {@code #}/{@code 0x} 前缀的十六进制字符串和十进制整数，0 表示未指定。
      */
     public static int parseColorElement(JsonElement el) {
         if (el == null || el.isJsonNull()) {

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.platform.BaniraPlatforms;

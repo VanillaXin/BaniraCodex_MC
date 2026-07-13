@@ -1,13 +1,13 @@
 package xin.vanilla.banira.client.gui.component;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.Style;
+import net.minecraft.client.gui.Font;
+import net.minecraft.util.FormattedCharSequence;
+
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -81,8 +81,8 @@ public class Notification extends NotificationData {
     // 缓存字段
     private transient double cachedWidth = -1;
     private transient double cachedHeight = -1;
-    private transient ITextComponent vanillaDrawText;
-    private transient List<IReorderingProcessor> richDrawLines = new ArrayList<>();
+    private transient net.minecraft.network.chat.Component vanillaDrawText;
+    private transient List<FormattedCharSequence> richDrawLines = new ArrayList<>();
     private transient int richTextMaxLineW;
     /**
      * 最近一次绘制在 GUI 坐标下的外接矩形（用于点击检测）
@@ -216,7 +216,7 @@ public class Notification extends NotificationData {
     }
 
     private void updateRichLayout() {
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         int sw = Math.max(320, BaniraClientAccess.guiScaledSize().key());
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
@@ -224,7 +224,7 @@ public class Notification extends NotificationData {
         this.vanillaDrawText = this.component().toVanilla(lang);
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         this.richTextMaxLineW = 0;
-        for (IReorderingProcessor line : this.richDrawLines) {
+        for (FormattedCharSequence line : this.richDrawLines) {
             this.richTextMaxLineW = Math.max(this.richTextMaxLineW, font.width(line));
         }
         float lineH = font.lineHeight;
@@ -233,7 +233,7 @@ public class Notification extends NotificationData {
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
 
-    public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+    public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
@@ -430,7 +430,7 @@ public class Notification extends NotificationData {
                 info.y() < screenInfo.height();
     }
 
-    private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
+    private void doRender(PoseStack stack, ScreenCoordinate coordinate) {
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
@@ -463,7 +463,7 @@ public class Notification extends NotificationData {
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
 
-                FontRenderer font = AbstractGuiUtils.getFont();
+                Font font = AbstractGuiUtils.getFont();
                 float pad = (float) this.padding();
                 float lineH = font.lineHeight;
                 float textBlockH = this.richDrawLines.size() * lineH;
@@ -471,7 +471,7 @@ public class Notification extends NotificationData {
                 float textTopLocal = y + pad + Math.max(0f, (innerH - textBlockH) * 0.5f);
                 float textX = x + pad;
                 float textY = textTopLocal;
-                for (IReorderingProcessor line : this.richDrawLines) {
+                for (FormattedCharSequence line : this.richDrawLines) {
                     font.draw(drawArgs.stack(), line, textX, textY, textArgb);
                     textY += lineH;
                 }
@@ -536,7 +536,7 @@ public class Notification extends NotificationData {
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         double rx = guiMouseX - this.bodyLeft;
         double ry = guiMouseY - this.bodyTextTop;
         if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {
@@ -546,7 +546,7 @@ public class Notification extends NotificationData {
         if (lineIndex < 0 || lineIndex >= richDrawLines.size()) {
             return null;
         }
-        IReorderingProcessor proc = richDrawLines.get(lineIndex);
+        FormattedCharSequence proc = richDrawLines.get(lineIndex);
         return font.getSplitter().componentStyleAtWidth(proc, (int) rx);
     }
 

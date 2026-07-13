@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -184,7 +184,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -251,14 +251,14 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         // endregion 绘制边框线
     }
 
-    private void drawArrowDown(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
     }
 
-    private void drawArrowRight(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowRight(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;

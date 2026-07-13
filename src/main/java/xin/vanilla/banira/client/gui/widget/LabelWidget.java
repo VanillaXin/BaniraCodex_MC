@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -89,7 +89,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -113,7 +113,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     /**
      * 当前标签在给定宽度与换行/省略设置下是否发生了可见截断。
      */
-    private boolean isLabelTextTruncated(MatrixStack stack) {
+    private boolean isLabelTextTruncated(PoseStack stack) {
         int mw = (int) width();
         if (mw <= 0 || StringUtils.isNullOrEmpty(text.content())) {
             return false;
@@ -126,7 +126,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return wNatural > wFitted;
     }
 
-    private void maybeDeferTruncationTooltip(MatrixStack stack) {
+    private void maybeDeferTruncationTooltip(PoseStack stack) {
         if (!showFullTextTooltipWhenTruncated || screen == null || !enabled) {
             return;
         }
@@ -144,7 +144,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason tipSeason = screen.season();
         boolean useTexture = theme.tooltipUseTexture();
-        FontRenderer fontForTip = text.font() != null ? text.font() : screen.getFont();
+        Font fontForTip = text.font() != null ? text.font() : screen.getFont();
         Text tipText = text.clone();
         int mouseX = (int) mx;
         int mouseY = (int) my;
@@ -168,7 +168,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
 
         String ellipsis = "...";
-        FontRenderer font = text.font();
+        Font font = text.font();
         int ellipsisWidth = font.width(ellipsis);
 
         float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
@@ -260,7 +260,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         Text text = args.text();
         if (StringUtils.isNotNullOrEmpty(text.content())) {
             String ellipsis = "...";
-            FontRenderer font = text.font();
+            Font font = text.font();
             int ellipsisWidth = font.width(ellipsis);
 
             float scale = args.fontSize() > 0 ? args.fontSize() / font.lineHeight : 1.0f;
@@ -350,7 +350,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 maxLineWidth = Math.min(maxLineWidth, availableWidth);
             }
 
-            MatrixStack stack = text.stack();
+            PoseStack stack = text.stack();
             if (args.bgArgb() != 0) {
                 int bgX = (int) args.x();
                 int bgY = (int) args.y();
@@ -428,7 +428,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    private static List<String> wrapText(FontRenderer font, String text, int maxWidth) {
+    private static List<String> wrapText(Font font, String text, int maxWidth) {
         List<String> wrappedLines = new ArrayList<>();
         if (maxWidth <= 0 || text == null || text.isEmpty()) {
             if (text != null && !text.isEmpty()) {
@@ -510,7 +510,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return finalLines.isEmpty() ? wrappedLines : finalLines;
     }
 
-    private static List<String> splitLongSegment(FontRenderer font, String segment, int maxWidth) {
+    private static List<String> splitLongSegment(Font font, String segment, int maxWidth) {
         List<String> lines = new ArrayList<>();
         if (segment == null || segment.isEmpty() || maxWidth <= 0) {
             if (segment != null && !segment.isEmpty()) {
@@ -569,7 +569,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return lines;
     }
 
-    private static String ellipsisString(@Nonnull FontDrawArgs args, String ellipsis, FontRenderer font, int ellipsisWidth, int availableWidth, String line) {
+    private static String ellipsisString(@Nonnull FontDrawArgs args, String ellipsis, Font font, int ellipsisWidth, int availableWidth, String line) {
         if (availableWidth <= 0) {
             return line;
         }

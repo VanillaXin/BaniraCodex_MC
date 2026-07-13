@@ -1,12 +1,12 @@
 package xin.vanilla.banira.internal.server;
 
 import net.minecraft.advancements.Advancement;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.IPacket;
-import net.minecraft.resources.IResourceManager;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -19,29 +19,29 @@ import java.util.UUID;
 public interface BaniraServerService {
     MinecraftServer currentServer();
 
-    List<ServerPlayerEntity> players();
+    List<ServerPlayer> players();
 
-    ServerPlayerEntity player(UUID uuid);
+    ServerPlayer player(UUID uuid);
 
-    void broadcastRawPacket(IPacket<?> packet);
+    void broadcastRawPacket(Packet<?> packet);
 
-    void broadcastSystemMessage(MinecraftServer server, ITextComponent message);
+    void broadcastSystemMessage(MinecraftServer server, Component message);
 
     /**
      * 向玩家发送普通系统/聊天消息；各版本的 sendMessage/sendSystemMessage 差异由 adapter 处理。
      */
-    void sendPlayerMessage(PlayerEntity player, ITextComponent message);
+    void sendPlayerMessage(Player player, Component message);
 
     /**
      * 向服务端玩家发送 actionbar 消息；packet 类型和 ChatType 差异由 adapter 处理。
      */
-    void sendActionBarMessage(ServerPlayerEntity player, ITextComponent message);
+    void sendActionBarMessage(ServerPlayer player, Component message);
 
-    void refreshPlayerPermission(ServerPlayerEntity player);
+    void refreshPlayerPermission(ServerPlayer player);
 
     Collection<Advancement> advancements();
 
-    IResourceManager serverResourceManager();
+    ResourceManager serverResourceManager();
 
     Path worldDataPath(String directoryName);
 

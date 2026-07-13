@@ -1,10 +1,10 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerLevel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -128,7 +128,7 @@ public final class EntityUtils {
             return BaniraComponent.get().empty();
         }
         String key = getEntityNameKey(entityType);
-        return BaniraComponent.get().object(new TranslationTextComponent(key));
+        return BaniraComponent.get().object(new TranslatableComponent(key));
     }
 
     /**
@@ -153,7 +153,7 @@ public final class EntityUtils {
             return "";
         }
         String key = getEntityNameKey(entityType);
-        return new TranslationTextComponent(key).getString();
+        return new TranslatableComponent(key).getString();
     }
 
     /**
@@ -261,12 +261,12 @@ public final class EntityUtils {
         List<Entity> entities = new ArrayList<>();
         if (BaniraPlatforms.isInstalled()) {
             BaniraWorldAccess.loadedServerWorlds()
-                    .forEach(level -> level.getEntities().forEach(entities::add));
+                    .forEach(level -> level.getAllEntities().forEach(entities::add));
         }
         return entities;
     }
 
-    public static List<Entity> getAllEntities(ServerWorld level) {
+    public static List<Entity> getAllEntities(ServerLevel level) {
         List<Entity> entities = new ArrayList<>();
         level.getAllEntities().forEach(entities::add);
         return entities;

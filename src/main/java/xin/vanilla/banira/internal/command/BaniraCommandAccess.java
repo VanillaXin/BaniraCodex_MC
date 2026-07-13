@@ -2,13 +2,13 @@ package xin.vanilla.banira.internal.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import xin.vanilla.banira.internal.forge.platform.ForgeBaniraCommandService;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import xin.vanilla.banira.internal.fabric.platform.FabricBaniraCommandService;
 
 import java.util.Collection;
 import java.util.function.Consumer;
@@ -17,12 +17,12 @@ import java.util.function.Consumer;
  * 内部命令门面；common 工具类只依赖这里，加载器差异交给具体实现。
  */
 public final class BaniraCommandAccess {
-    private static final BaniraCommandService SERVICE = new ForgeBaniraCommandService();
+    private static final BaniraCommandService SERVICE = new FabricBaniraCommandService();
 
     private BaniraCommandAccess() {
     }
 
-    public static boolean executePlayerCommand(ServerPlayerEntity player, String command, int permission, boolean suppressedOutput) {
+    public static boolean executePlayerCommand(ServerPlayer player, String command, int permission, boolean suppressedOutput) {
         return SERVICE.executePlayerCommand(player, command, permission, suppressedOutput);
     }
 
@@ -34,35 +34,35 @@ public final class BaniraCommandAccess {
         return SERVICE.sourceEntity(source);
     }
 
-    public static ServerPlayerEntity sourcePlayer(Object source) throws CommandSyntaxException {
+    public static ServerPlayer sourcePlayer(Object source) throws CommandSyntaxException {
         return SERVICE.sourcePlayer(source);
     }
 
-    public static ServerWorld dimension(CommandContext<?> context, String name) throws CommandSyntaxException {
+    public static ServerLevel dimension(CommandContext<?> context, String name) throws CommandSyntaxException {
         return SERVICE.dimension(context, name);
     }
 
-    public static RegistryKey<World> dimensionKey(CommandContext<?> context, String name) throws CommandSyntaxException {
+    public static ResourceKey<Level> dimensionKey(CommandContext<?> context, String name) throws CommandSyntaxException {
         return SERVICE.dimensionKey(context, name);
     }
 
-    public static ServerPlayerEntity player(CommandContext<?> context, String name) throws CommandSyntaxException {
+    public static ServerPlayer player(CommandContext<?> context, String name) throws CommandSyntaxException {
         return SERVICE.player(context, name);
     }
 
-    public static ServerPlayerEntity playerOrSelf(CommandContext<?> context, String name) throws CommandSyntaxException {
+    public static ServerPlayer playerOrSelf(CommandContext<?> context, String name) throws CommandSyntaxException {
         return SERVICE.playerOrSelf(context, name);
     }
 
-    public static Collection<ServerPlayerEntity> players(CommandContext<?> context, String name) throws CommandSyntaxException {
+    public static Collection<ServerPlayer> players(CommandContext<?> context, String name) throws CommandSyntaxException {
         return SERVICE.players(context, name);
     }
 
-    public static void sendSuccess(Object source, ITextComponent message, boolean notifyAdmins) {
+    public static void sendSuccess(Object source, Component message, boolean notifyAdmins) {
         SERVICE.sendSuccess(source, message, notifyAdmins);
     }
 
-    public static void sendFailure(Object source, ITextComponent message) {
+    public static void sendFailure(Object source, Component message) {
         SERVICE.sendFailure(source, message);
     }
 

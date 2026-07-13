@@ -1,13 +1,13 @@
 package xin.vanilla.banira.internal.world;
 
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.feature.structure.Structure;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.feature.StructureFeature;
+import net.minecraft.server.level.ServerLevel;
 import xin.vanilla.banira.common.data.WorldCoordinate;
-import xin.vanilla.banira.internal.forge.platform.ForgeBaniraWorldService;
+import xin.vanilla.banira.internal.fabric.platform.FabricBaniraWorldService;
 
 import java.util.Collection;
 import java.util.Set;
@@ -16,7 +16,7 @@ import java.util.Set;
  * Internal world facade. Biome, dimension, and structure API churn stays behind this boundary.
  */
 public final class BaniraWorldAccess {
-    private static final BaniraWorldService SERVICE = new ForgeBaniraWorldService();
+    private static final BaniraWorldService SERVICE = new FabricBaniraWorldService();
 
     private BaniraWorldAccess() {
     }
@@ -25,7 +25,7 @@ public final class BaniraWorldAccess {
         return SERVICE.biome(id);
     }
 
-    public static Biome biome(ServerWorld world, ResourceLocation id) {
+    public static Biome biome(ServerLevel world, ResourceLocation id) {
         return SERVICE.biome(world, id);
     }
 
@@ -33,7 +33,7 @@ public final class BaniraWorldAccess {
         return SERVICE.biomeIds();
     }
 
-    public static Structure<?> structure(ResourceLocation id) {
+    public static StructureFeature<?> structure(ResourceLocation id) {
         return SERVICE.structure(id);
     }
 
@@ -41,19 +41,19 @@ public final class BaniraWorldAccess {
         return SERVICE.structureIds();
     }
 
-    public static WorldCoordinate findNearestBiome(ServerWorld world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
+    public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         return SERVICE.findNearestBiome(world, start, biome, radius, minDistance);
     }
 
-    public static ServerWorld level(RegistryKey<World> dimension) {
+    public static ServerLevel level(ResourceKey<Level> dimension) {
         return SERVICE.level(dimension);
     }
 
-    public static Collection<ServerWorld> loadedServerWorlds() {
+    public static Collection<ServerLevel> loadedServerWorlds() {
         return SERVICE.loadedServerWorlds();
     }
 
-    public static RegistryKey<World> dimensionKey(ResourceLocation dimension) {
+    public static ResourceKey<Level> dimensionKey(ResourceLocation dimension) {
         return SERVICE.dimensionKey(dimension);
     }
 
@@ -61,15 +61,15 @@ public final class BaniraWorldAccess {
         return SERVICE.dimensionIds();
     }
 
-    public static int minBuildHeight(World world) {
+    public static int minBuildHeight(Level world) {
         return SERVICE.minBuildHeight(world);
     }
 
-    public static int maxBuildHeight(World world) {
+    public static int maxBuildHeight(Level world) {
         return SERVICE.maxBuildHeight(world);
     }
 
-    public static WorldCoordinate findNearestStructure(ServerWorld world, WorldCoordinate start, Structure<?> structure, int radius) {
+    public static WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, StructureFeature<?> structure, int radius) {
         return SERVICE.findNearestStructure(world, start, structure, radius);
     }
 }

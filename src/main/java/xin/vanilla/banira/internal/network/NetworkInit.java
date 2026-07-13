@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.network;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.BaniraIdentifier;

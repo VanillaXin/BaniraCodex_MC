@@ -3,8 +3,8 @@ package xin.vanilla.banira.client.data;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.client.renderer.texture.MissingTextureSprite;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -18,7 +18,7 @@ import java.util.Objects;
 @Accessors(chain = true, fluent = true)
 public class Texture {
 
-    private static final Texture EMPTY = new Texture(MissingTextureSprite.getLocation());
+    private static final Texture EMPTY = new Texture(MissingTextureAtlasSprite.getLocation());
 
     /**
      * 材质资源

@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
 import xin.vanilla.banira.common.enums.EnumCommandType;
@@ -35,31 +35,31 @@ public final class VirtualPermissionManager {
 
 
     /** 添加子 mod 自定义虚拟权限。 */
-    public static void addVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
+    public static void addVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
     }
 
     /** 设置子 mod 自定义虚拟权限（覆盖原有权限）。 */
-    public static void setVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
+    public static void setVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
     }
 
     /** 删除子 mod 自定义虚拟权限。 */
-    public static void delVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
+    public static void delVirtualPermission(Player player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
     }
 
     /**
      * 清空所有权限
      */
-    public static void clearVirtualPermission(PlayerEntity player) {
+    public static void clearVirtualPermission(Player player) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.CLEAR, Collections.emptySet());
     }
 
     /**
      * 获取当前权限列表
      */
-    public static Set<EnumCommandType> getVirtualPermission(PlayerEntity player) {
+    public static Set<EnumCommandType> getVirtualPermission(Player player) {
         Set<String> raw = player.isLocalPlayer()
                 ? getExistingPermissionsClient(player.getStringUUID())
                 : getExistingPermissions(player.getStringUUID());
@@ -72,7 +72,7 @@ public final class VirtualPermissionManager {
      * @param player    玩家
      * @param enumClass 该 Mod 自己的指令枚举（需实现 {@link BaniraVirtualPermission}）
      */
-    public static <T extends Enum<T> & BaniraVirtualPermission> Set<T> getVirtualPermission(PlayerEntity player, Class<T> enumClass) {
+    public static <T extends Enum<T> & BaniraVirtualPermission> Set<T> getVirtualPermission(Player player, Class<T> enumClass) {
         Set<String> raw = player.isLocalPlayer()
                 ? getExistingPermissionsClient(player.getStringUUID())
                 : getExistingPermissions(player.getStringUUID());
@@ -82,7 +82,7 @@ public final class VirtualPermissionManager {
     /**
      * 返回所有 Mod 的原始权限键（uuid -> Set&lt;modId:id&gt;）。
      */
-    public static Set<String> getRawVirtualPermission(PlayerEntity player) {
+    public static Set<String> getRawVirtualPermission(Player player) {
         return player.isLocalPlayer()
                 ? getExistingPermissionsClient(player.getStringUUID())
                 : getExistingPermissions(player.getStringUUID());

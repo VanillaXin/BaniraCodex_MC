@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 
 import java.util.Collections;
@@ -14,20 +14,20 @@ import java.util.UUID;
  * Loader/version-neutral access to client-only player state.
  */
 public interface BaniraClientService {
-    PlayerEntity localPlayer();
+    Player localPlayer();
 
     UUID localPlayerUuid();
 
     String onlinePlayerName(UUID uuid);
 
-    PlayerEntity playerByUuid(UUID uuid);
+    Player playerByUuid(UUID uuid);
 
     ResourceLocation playerSkin(UUID uuid);
 
     /**
      * Builds vanilla item tooltip lines using the active client version's tooltip flag API.
      */
-    List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced);
+    List<Component> itemTooltip(ItemStack stack, Player player, boolean advanced);
 
     String selectedLanguageCode();
 
@@ -105,7 +105,7 @@ public interface BaniraClientService {
         }
 
         @Override
-        public PlayerEntity localPlayer() {
+        public Player localPlayer() {
             return null;
         }
 
@@ -120,7 +120,7 @@ public interface BaniraClientService {
         }
 
         @Override
-        public PlayerEntity playerByUuid(UUID uuid) {
+        public Player playerByUuid(UUID uuid) {
             return null;
         }
 
@@ -130,7 +130,7 @@ public interface BaniraClientService {
         }
 
         @Override
-        public List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced) {
+        public List<Component> itemTooltip(ItemStack stack, Player player, boolean advanced) {
             return stack != null ? Collections.singletonList(stack.getHoverName()) : Collections.emptyList();
         }
 

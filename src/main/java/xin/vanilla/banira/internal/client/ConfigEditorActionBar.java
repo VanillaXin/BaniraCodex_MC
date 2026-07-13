@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraComponent;
@@ -96,9 +96,9 @@ public final class ConfigEditorActionBar {
     }
 
     /**
-     * 绘制操作区和内容区背景，实际按钮由 {@link #renderButtons(MatrixStack, float)} 渲染。
+     * 绘制操作区和内容区背景，实际按钮由 {@link #renderButtons(PoseStack, float)} 渲染。
      */
-    public void renderChrome(MatrixStack stack, BaniraColorConfig theme, int cardX, int cardY, int cardW, int cardH,
+    public void renderChrome(PoseStack stack, BaniraColorConfig theme, int cardX, int cardY, int cardW, int cardH,
                              int cardInner) {
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + cardInner;
@@ -134,7 +134,7 @@ public final class ConfigEditorActionBar {
     /**
      * 渲染当前 action bar 管理的按钮。
      */
-    public void renderButtons(MatrixStack stack, float partialTicks) {
+    public void renderButtons(PoseStack stack, float partialTicks) {
         for (ButtonWidget btn : buttons) {
             if (btn.visible()) {
                 if (btn.enabled() && btn.needsUpdate()) {

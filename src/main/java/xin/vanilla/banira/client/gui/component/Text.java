@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.gui.component;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.MutableComponent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -20,11 +20,11 @@ public class Text implements Cloneable {
     /**
      * 矩阵栈
      */
-    private MatrixStack stack;
+    private PoseStack stack;
     /**
      * 字体渲染器
      */
-    private FontRenderer font;
+    private Font font;
     /**
      * 是否悬浮(需手动设置状态)
      */
@@ -130,11 +130,11 @@ public class Text implements Cloneable {
         return (this.text == null || this.text.isEmpty()) && (this.hoverText == null || this.hoverText.isEmpty());
     }
 
-    public MatrixStack stack() {
-        return stack == null ? new MatrixStack() : this.stack;
+    public PoseStack stack() {
+        return stack == null ? new PoseStack() : this.stack;
     }
 
-    public FontRenderer font() {
+    public Font font() {
         return font == null ? AbstractGuiUtils.getFont() : this.font;
     }
 
@@ -315,16 +315,16 @@ public class Text implements Cloneable {
         return this.hovered ? this.hoverText : this.text;
     }
 
-    public static Color getTextComponentColor(IFormattableTextComponent textComponent) {
+    public static Color getTextComponentColor(MutableComponent textComponent) {
         return getTextComponentColor(textComponent, Color.white());
     }
 
-    public static Color getTextComponentColor(IFormattableTextComponent textComponent, Color defaultColor) {
-        net.minecraft.util.text.Color mcColor = textComponent.getStyle().getColor();
+    public static Color getTextComponentColor(MutableComponent textComponent, Color defaultColor) {
+        net.minecraft.network.chat.TextColor mcColor = textComponent.getStyle().getColor();
         return mcColor == null ? defaultColor : Color.rgb(mcColor.getValue());
     }
 
-    public static Text from(IFormattableTextComponent component) {
+    public static Text from(MutableComponent component) {
         return Text.literal(component.getString())
                 .color(getTextComponentColor(component))
                 .bold(component.getStyle().isBold())

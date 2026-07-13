@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.MainWindow;
+import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
 
@@ -17,7 +17,7 @@ public final class GuiScissorStack {
     }
 
     public static void enable(int guiX, int guiY, int guiWidth, int guiHeight) {
-        MainWindow window = Minecraft.getInstance().getWindow();
+        Window window = Minecraft.getInstance().getWindow();
         int scale = (int) window.getGuiScale();
         int x = guiX * scale;
         int y = window.getHeight() - (guiY + guiHeight) * scale;
@@ -32,7 +32,7 @@ public final class GuiScissorStack {
     }
 
     public static void push(int guiX, int guiY, int guiWidth, int guiHeight) {
-        MainWindow window = Minecraft.getInstance().getWindow();
+        Window window = Minecraft.getInstance().getWindow();
         int scale = (int) window.getGuiScale();
         int winW = window.getWidth() / scale;
         int winH = window.getHeight() / scale;

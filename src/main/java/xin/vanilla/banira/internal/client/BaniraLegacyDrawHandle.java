@@ -1,14 +1,14 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.util.ResourceLocation;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.client.render.BaniraDrawHandle;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
 import javax.annotation.Nonnull;
 
 /**
- * 1.16.5 MatrixStack 绘制适配器；子 mod 只接触 api.client.render。
+ * 1.16.5 PoseStack 绘制适配器；子 mod 只接触 api.client.render。
  */
 public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
     private final Object nativeContext;
@@ -24,7 +24,7 @@ public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
 
     @Override
     public void line(float x1, float y1, float x2, float y2, float lineWidth, int argb) {
-        MatrixStack stack = matrixStack();
+        PoseStack stack = matrixStack();
         if (stack != null) {
             AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, lineWidth, argb);
         }
@@ -32,7 +32,7 @@ public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
 
     @Override
     public void roundedRect(int x, int y, int width, int height, int argb, int radius) {
-        MatrixStack stack = matrixStack();
+        PoseStack stack = matrixStack();
         if (stack != null) {
             AbstractGuiUtils.drawRoundedRect(stack, x, y, width, height, argb, radius);
         }
@@ -52,7 +52,7 @@ public final class BaniraLegacyDrawHandle implements BaniraDrawHandle {
         }
     }
 
-    private MatrixStack matrixStack() {
-        return nativeContext instanceof MatrixStack ? (MatrixStack) nativeContext : null;
+    private PoseStack matrixStack() {
+        return nativeContext instanceof PoseStack ? (PoseStack) nativeContext : null;
     }
 }

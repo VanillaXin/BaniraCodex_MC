@@ -7,7 +7,7 @@ import xin.vanilla.banira.common.enums.EnumI18nType;
 /**
  * 语言助手接口。
  * <p>
- * 每个 Mod 只需实现一个子类并传入 {@code @Mod} 主类即可使用：
+ * 每个 Mod 只需实现一个子类并传入加载器主入口类即可使用：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();

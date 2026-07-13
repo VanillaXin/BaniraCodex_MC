@@ -3,11 +3,11 @@ package xin.vanilla.banira.internal.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.renderer.texture.MissingTextureSprite;
-import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.IResource;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.common.data.KeyValue;
 
@@ -36,10 +36,10 @@ public final class BaniraClientTextureService {
     }
 
     public static boolean isTextureAvailable(ResourceLocation location, boolean hasResource) {
-        if (!isClientReady() || location == null || MissingTextureSprite.getLocation().equals(location)) {
+        if (!isClientReady() || location == null || MissingTextureAtlasSprite.getLocation().equals(location)) {
             return false;
         }
-        net.minecraft.client.renderer.texture.Texture texture = Minecraft.getInstance().getTextureManager().getTexture(location);
+        net.minecraft.client.renderer.texture.AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(location);
         return texture != null ? texture.getId() != -1 : hasResource;
     }
 
@@ -47,7 +47,7 @@ public final class BaniraClientTextureService {
         if (!isClientReady() || texture == null) {
             return null;
         }
-        net.minecraft.client.renderer.texture.Texture gpuTexture = Minecraft.getInstance().getTextureManager().getTexture(texture);
+        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = Minecraft.getInstance().getTextureManager().getTexture(texture);
         return gpuTexture instanceof DynamicTexture ? ((DynamicTexture) gpuTexture).getPixels() : null;
     }
 
@@ -56,7 +56,7 @@ public final class BaniraClientTextureService {
             return null;
         }
         try {
-            IResource resource = Minecraft.getInstance().getResourceManager().getResource(texture);
+            Resource resource = Minecraft.getInstance().getResourceManager().getResource(texture);
             try (InputStream inputStream = resource.getInputStream()) {
                 return NativeImage.read(inputStream);
             }
@@ -69,7 +69,7 @@ public final class BaniraClientTextureService {
         if (!isClientReady() || location == null) {
             return null;
         }
-        net.minecraft.client.renderer.texture.Texture gpuTexture = Minecraft.getInstance().getTextureManager().getTexture(location);
+        net.minecraft.client.renderer.texture.AbstractTexture gpuTexture = Minecraft.getInstance().getTextureManager().getTexture(location);
         if (gpuTexture == null) {
             return null;
         }

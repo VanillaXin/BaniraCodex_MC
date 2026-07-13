@@ -6,9 +6,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
@@ -29,8 +29,8 @@ public final class LanguageCommand {
     private LanguageCommand() {
     }
 
-    private static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = CommandUtils.requireSourcePlayer(context.getSource());
+    private static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = CommandUtils.requireSourcePlayer(context.getSource());
         String language = StringArgumentType.getString(context, "language");
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
         if (translator.getI18nFiles().contains(language)) {
@@ -45,7 +45,7 @@ public final class LanguageCommand {
         return 1;
     }
 
-    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String lang = CommandUtils.getLanguage(context.getSource());
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
         Component clientTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_client");
@@ -56,7 +56,7 @@ public final class LanguageCommand {
         return builder.buildFuture();
     }
 
-    public static LiteralArgumentBuilder<CommandSource> create() {
+    public static LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal(CommonConfig.get().command().commandLanguage())
                 .then(Commands.argument("language", StringArgumentType.word())
                         .suggests(LanguageCommand::suggestion)

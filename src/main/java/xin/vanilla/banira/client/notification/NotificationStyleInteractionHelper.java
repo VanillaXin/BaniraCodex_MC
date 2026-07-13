@@ -1,14 +1,14 @@
 package xin.vanilla.banira.client.notification;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.Util;
+
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -79,7 +79,7 @@ public final class NotificationStyleInteractionHelper {
         }
     }
 
-    public static void renderHoverTooltip(MatrixStack stack, int mouseX, int mouseY, int screenW, int screenH, Style style) {
+    public static void renderHoverTooltip(PoseStack stack, int mouseX, int mouseY, int screenW, int screenH, Style style) {
         if (style == null) {
             return;
         }
@@ -90,7 +90,7 @@ public final class NotificationStyleInteractionHelper {
         if (hover.getAction() != HoverEvent.Action.SHOW_TEXT) {
             return;
         }
-        ITextComponent tip = hover.getValue(HoverEvent.Action.SHOW_TEXT);
+        net.minecraft.network.chat.Component tip = hover.getValue(HoverEvent.Action.SHOW_TEXT);
         if (tip == null) {
             return;
         }
@@ -114,9 +114,9 @@ public final class NotificationStyleInteractionHelper {
     }
 
     /**
-     * 从悬停事件中提取 ITextComponent（兼容部分实现）
+     * 从悬停事件中提取 net.minecraft.network.chat.Component（兼容部分实现）
      */
-    public static ITextComponent hoverTextOrNull(Style style) {
+    public static net.minecraft.network.chat.Component hoverTextOrNull(Style style) {
         if (style == null) {
             return null;
         }

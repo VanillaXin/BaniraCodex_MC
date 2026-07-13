@@ -1,12 +1,11 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.DistExecutor;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.internal.forge.client.ForgeBaniraClientService;
+import xin.vanilla.banira.internal.fabric.client.FabricBaniraClientService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
@@ -28,7 +27,7 @@ public final class BaniraClientAccess {
         return ClientServiceHolder.SERVICE;
     }
 
-    public static PlayerEntity localPlayer() {
+    public static Player localPlayer() {
         return service().localPlayer();
     }
 
@@ -40,7 +39,7 @@ public final class BaniraClientAccess {
         return service().onlinePlayerName(uuid);
     }
 
-    public static PlayerEntity playerByUuid(UUID uuid) {
+    public static Player playerByUuid(UUID uuid) {
         return service().playerByUuid(uuid);
     }
 
@@ -48,7 +47,7 @@ public final class BaniraClientAccess {
         return service().playerSkin(uuid);
     }
 
-    public static List<ITextComponent> itemTooltip(ItemStack stack, PlayerEntity player, boolean advanced) {
+    public static List<Component> itemTooltip(ItemStack stack, Player player, boolean advanced) {
         return service().itemTooltip(stack, player, advanced);
     }
 
@@ -141,9 +140,6 @@ public final class BaniraClientAccess {
     }
 
     private static final class ClientServiceHolder {
-        private static final BaniraClientService SERVICE = DistExecutor.safeRunForDist(
-                () -> ForgeBaniraClientService::new,
-                () -> BaniraClientService::noop
-        );
+        private static final BaniraClientService SERVICE = new FabricBaniraClientService();
     }
 }

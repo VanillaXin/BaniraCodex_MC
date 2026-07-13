@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.banira.platform.BaniraPlatforms;

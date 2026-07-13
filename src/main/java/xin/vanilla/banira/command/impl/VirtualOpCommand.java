@@ -6,10 +6,10 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.command.arguments.EntityArgument;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.common.enums.EnumCommandType;
@@ -34,8 +34,8 @@ public final class VirtualOpCommand {
     private VirtualOpCommand() {
     }
 
-    private static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        CommandSource source = context.getSource();
+    private static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
         EnumOperationType type = EnumOperationType.valueOfEx(StringArgumentType.getString(context, "operation"));
         if (type == null) {
             MessageUtils.sendMessage(source, false, BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation"));
@@ -57,14 +57,14 @@ public final class VirtualOpCommand {
         } catch (IllegalArgumentException ignored) {
             rules = new EnumCommandType[]{};
         }
-        List<ServerPlayerEntity> targetList = new ArrayList<>();
+        List<ServerPlayer> targetList = new ArrayList<>();
         targetList.addAll(CommandUtils.getPlayersOptional(context, "player", java.util.Collections.emptyList()));
         String language = CommonConfig.get().language().defaultLanguage();
-        ServerPlayerEntity sourcePlayer = CommandUtils.getSourcePlayer(source);
+        ServerPlayer sourcePlayer = CommandUtils.getSourcePlayer(source);
         if (sourcePlayer != null) {
             language = Translator.getPlayerLanguage(sourcePlayer);
         }
-        for (ServerPlayerEntity target : targetList) {
+        for (ServerPlayer target : targetList) {
             switch (type) {
                 case ADD:
                     VirtualPermissionManager.addVirtualPermission(target, rules);
@@ -100,7 +100,7 @@ public final class VirtualOpCommand {
         return 1;
     }
 
-    private static CompletableFuture<Suggestions> operationSuggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> operationSuggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         builder.suggest(EnumOperationType.ADD.name().toLowerCase());
         builder.suggest(EnumOperationType.SET.name().toLowerCase());
         builder.suggest(EnumOperationType.DEL.name().toLowerCase());
@@ -109,7 +109,7 @@ public final class VirtualOpCommand {
         return builder.buildFuture();
     }
 
-    private static CompletableFuture<Suggestions> rulesSuggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> rulesSuggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String operation = StringArgumentType.getString(context, "operation");
         if (operation.equalsIgnoreCase(EnumOperationType.GET.name())
                 || operation.equalsIgnoreCase(EnumOperationType.CLEAR.name())
@@ -127,7 +127,7 @@ public final class VirtualOpCommand {
         return builder.buildFuture();
     }
 
-    public static LiteralArgumentBuilder<CommandSource> create() {
+    public static LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal(CommonConfig.get().command().commandVirtualOp())
                 .requires(source -> CommandUtils.hasVirtualPermission(source, EnumCommandType.VIRTUAL_OP)
                         || CommandUtils.hasPermission(source, CommonConfig.get().permission().virtualOpPermission()))

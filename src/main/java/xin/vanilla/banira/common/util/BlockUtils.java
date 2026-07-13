@@ -1,12 +1,12 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.command.arguments.BlockStateParser;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.commands.arguments.blocks.BlockStateParser;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.TranslatableComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -129,7 +129,7 @@ public final class BlockUtils {
             return BaniraComponent.get().empty();
         }
         String key = getBlockNameKey(state);
-        return BaniraComponent.get().object(new TranslationTextComponent(key));
+        return BaniraComponent.get().object(new TranslatableComponent(key));
     }
 
     /**
@@ -142,7 +142,7 @@ public final class BlockUtils {
             return BaniraComponent.get().empty();
         }
         String key = getBlockNameKey(block);
-        return BaniraComponent.get().object(new TranslationTextComponent(key));
+        return BaniraComponent.get().object(new TranslatableComponent(key));
     }
 
     /**
@@ -155,7 +155,7 @@ public final class BlockUtils {
             return "";
         }
         String key = getBlockNameKey(block);
-        return new TranslationTextComponent(key).toString();
+        return new TranslatableComponent(key).toString();
     }
 
     /**

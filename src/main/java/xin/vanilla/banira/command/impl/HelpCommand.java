@@ -6,11 +6,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.Component;
@@ -30,8 +30,8 @@ public final class HelpCommand {
     private HelpCommand() {
     }
 
-    public static int execute(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = CommandUtils.requireSourcePlayer(context.getSource());
+    public static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = CommandUtils.requireSourcePlayer(context.getSource());
         String command;
         int page;
         try {
@@ -126,7 +126,7 @@ public final class HelpCommand {
 
     @SuppressWarnings("unchecked")
     public static int executeRaw(Object context) throws CommandSyntaxException {
-        return execute((CommandContext<CommandSource>) context);
+        return execute((CommandContext<CommandSourceStack>) context);
     }
 
     private static Component commandDetailLine(EnumCommandType baseType, String lang) {
@@ -156,7 +156,7 @@ public final class HelpCommand {
         }
     }
 
-    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String input = CommandUtils.getStringEmpty(context, "command");
         boolean isInputEmpty = input == null || input.isEmpty();
         int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / CommonConfig.get().help().helpInfoNumPerPage());
@@ -176,7 +176,7 @@ public final class HelpCommand {
         return builder.buildFuture();
     }
 
-    public static LiteralArgumentBuilder<CommandSource> create() {
+    public static LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal(CommonConfig.get().command().commandHelp())
                 .executes(HelpCommand::execute)
                 .then(Commands.argument("command", StringArgumentType.word())

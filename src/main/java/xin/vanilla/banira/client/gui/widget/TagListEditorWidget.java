@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -752,7 +752,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible) return;
         ensureChildren();
 
@@ -849,7 +849,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         stack.pushPose();
         stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
 
-        FontRenderer font = AbstractGuiUtils.getFont();
+        Font font = AbstractGuiUtils.getFont();
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
@@ -916,14 +916,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         return String.valueOf(item);
     }
 
-    private void drawArrowDown(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
     }
 
-    private void drawArrowRight(MatrixStack stack, int x, int y, int size, int color) {
+    private void drawArrowRight(PoseStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;

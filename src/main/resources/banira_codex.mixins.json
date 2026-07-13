@@ -5,13 +5,13 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "banira_codex.refmap.json",
   "mixins": [
-    "accessors.NetworkRegistryAccessor",
+    "accessors.ClientInformationPacketAccessor",
+    "accessors.MinecraftServerAccessor",
     "accessors.ResourceManagerAccessor",
-    "accessors.ServerPlayerAccessor",
-    "accessors.SimpleChannelAccessor",
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "accessors.MinecraftAccessor",
     "injections.IngameGuiExperienceMixin",
     "injections.MinecraftClientMixin"
   ],

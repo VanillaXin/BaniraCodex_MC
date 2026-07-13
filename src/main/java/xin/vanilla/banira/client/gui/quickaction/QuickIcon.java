@@ -1,18 +1,18 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
@@ -49,7 +49,7 @@ public class QuickIcon {
     @Getter
     @Setter
     @Nullable
-    private Effect mobEffect;
+    private MobEffect mobEffect;
 
     @Getter
     @Setter
@@ -84,10 +84,10 @@ public class QuickIcon {
     }
 
     @Nonnull
-    public static QuickIcon effect(@Nonnull Effect effectType) {
+    public static QuickIcon effect(@Nonnull MobEffect effectType) {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.EFFECT);
-        q.mobEffect(effectType != null ? effectType : Effects.LUCK);
+        q.mobEffect(effectType != null ? effectType : MobEffects.LUCK);
         return q;
     }
 
@@ -108,9 +108,9 @@ public class QuickIcon {
     }
 
     /**
-     * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 MatrixStack 一致，避免 3D GUI 物品不显示。
+     * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
      */
-    public void renderForMenu(@Nonnull MatrixStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void renderForMenu(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
@@ -124,7 +124,7 @@ public class QuickIcon {
     /**
      * 在 GUI 坐标系下绘制图标，尺寸为 {@code size}×{@code size}。
      */
-    public void render(@Nonnull MatrixStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void render(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
@@ -134,8 +134,8 @@ public class QuickIcon {
                 break;
             }
             case EFFECT: {
-                Effect e = mobEffect != null ? mobEffect : Effects.LUCK;
-                EffectInstance inst = new EffectInstance(e, 1, 0);
+                MobEffect e = mobEffect != null ? mobEffect : MobEffects.LUCK;
+                MobEffectInstance inst = new MobEffectInstance(e, 1, 0);
                 EffectIconWidget.drawEffectIcon(stack, AbstractGuiUtils.getFont(), inst, x, y, size, size, false);
                 break;
             }

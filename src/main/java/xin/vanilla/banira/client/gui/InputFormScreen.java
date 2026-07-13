@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.EditBox;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.BaniraLang;
@@ -191,12 +191,12 @@ public class InputFormScreen extends BaniraScreen {
     @Data
     @Accessors(chain = true, fluent = true)
     public static class Inputs {
-        private Map<String, TextFieldWidget> nameMap = new HashMap<>();
-        private Map<Integer, TextFieldWidget> indexMap = new HashMap<>();
+        private Map<String, EditBox> nameMap = new HashMap<>();
+        private Map<Integer, EditBox> indexMap = new HashMap<>();
         private String curName = "";
         private int curIndex = -1;
 
-        public TextFieldWidget value() {
+        public EditBox value() {
             if (!StringUtils.isNullOrEmptyEx(this.curName)) {
                 return this.nameMap.get(this.curName);
             } else if (this.curIndex >= 0) {
@@ -210,15 +210,15 @@ public class InputFormScreen extends BaniraScreen {
             }
         }
 
-        public TextFieldWidget value(String name) {
+        public EditBox value(String name) {
             return this.nameMap.getOrDefault(name, null);
         }
 
-        public TextFieldWidget value(int index) {
+        public EditBox value(int index) {
             return this.indexMap.getOrDefault(index, null);
         }
 
-        public Inputs value(String name, int index, TextFieldWidget value) {
+        public Inputs value(String name, int index, EditBox value) {
             if (!StringUtils.isNullOrEmptyEx(name)) {
                 this.nameMap.put(name, value);
             }
@@ -839,7 +839,7 @@ public class InputFormScreen extends BaniraScreen {
     }
 
     @Override
-    protected void renderWidgets(MatrixStack stack, float partialTicks) {
+    protected void renderWidgets(PoseStack stack, float partialTicks) {
         if (scrollMode) {
             AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH,
                     Math.max(1, listAreaHeight));
@@ -887,7 +887,7 @@ public class InputFormScreen extends BaniraScreen {
 
     // region 背景与表单面板
 
-    private void renderFormPanel(MatrixStack stack) {
+    private void renderFormPanel(PoseStack stack) {
         int panelLeft = contentLeft - FORM_PANEL_PAD;
         int panelTopInset = args.getHeaderTitle() != null ? HEADER_PANEL_TOP_INSET : FORM_PANEL_PAD;
         int panelTop = formHeaderAreaTop - panelTopInset;
@@ -904,7 +904,7 @@ public class InputFormScreen extends BaniraScreen {
     // endregion 背景与表单面板
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             return;

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.server;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.util.CommandUtils;
 
 /**
@@ -11,16 +11,16 @@ public final class ServerPermissionAccess {
     }
 
     public static boolean hasPermission(Object player, int permissionLevel) {
-        ServerPlayerEntity serverPlayer = asServerPlayer(player);
+        ServerPlayer serverPlayer = asServerPlayer(player);
         return serverPlayer != null && serverPlayer.createCommandSourceStack().hasPermission(permissionLevel);
     }
 
     public static boolean hasVirtualPermission(Object player, String fullPermissionKey) {
-        ServerPlayerEntity serverPlayer = asServerPlayer(player);
+        ServerPlayer serverPlayer = asServerPlayer(player);
         return serverPlayer != null && CommandUtils.hasVirtualPermission(serverPlayer, fullPermissionKey);
     }
 
-    private static ServerPlayerEntity asServerPlayer(Object player) {
-        return player instanceof ServerPlayerEntity ? (ServerPlayerEntity) player : null;
+    private static ServerPlayer asServerPlayer(Object player) {
+        return player instanceof ServerPlayer ? (ServerPlayer) player : null;
     }
 }

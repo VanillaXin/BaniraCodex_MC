@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.player.PlayerDataManager;
@@ -28,13 +28,13 @@ public final class BaniraServerUtils {
     }
 
     @Nonnull
-    public static List<ServerPlayerEntity> players() {
+    public static List<ServerPlayer> players() {
         MinecraftServer server = currentServer();
         return server == null ? Collections.emptyList() : server.getPlayerList().getPlayers();
     }
 
     @Nullable
-    public static ServerPlayerEntity player(@Nonnull UUID uuid) {
+    public static ServerPlayer player(@Nonnull UUID uuid) {
         MinecraftServer server = currentServer();
         return server == null ? null : server.getPlayerList().getPlayer(uuid);
     }

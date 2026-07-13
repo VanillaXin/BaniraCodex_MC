@@ -2,24 +2,24 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import lombok.NonNull;
-import net.minecraft.command.arguments.ItemInput;
-import net.minecraft.command.arguments.ItemParser;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.commands.arguments.item.ItemInput;
+import net.minecraft.commands.arguments.item.ItemParser;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.MutableComponent;
+
+import net.minecraft.ChatFormatting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -176,24 +176,24 @@ public final class ItemUtils {
      */
     public static String getItemHoverNameString(ItemStack itemStack) {
         if (isItemNull(itemStack)) return "";
-        ITextComponent hoverName = itemStack.getHoverName();
+        net.minecraft.network.chat.Component hoverName = itemStack.getHoverName();
         return hoverName.getString();
     }
 
     public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
         String result = "";
-        CompoundNBT compoundnbt = itemStack.getTagElement("display");
+        CompoundTag compoundnbt = itemStack.getTagElement("display");
         if (compoundnbt != null && compoundnbt.contains("Name", 8)) {
             result = compoundnbt.getString("Name");
         }
         return result;
     }
 
-    public static ITextComponent getItemCustomNameFromJson(String json) {
-        ITextComponent result = null;
+    public static net.minecraft.network.chat.Component getItemCustomNameFromJson(String json) {
+        net.minecraft.network.chat.Component result = null;
         if (StringUtils.isNotNullOrEmpty(json)) {
             try {
-                result = ITextComponent.Serializer.fromJson(json);
+                result = net.minecraft.network.chat.Component.Serializer.fromJson(json);
             } catch (Exception e) {
                 LOGGER.error("Invalid unsafe item name: {}", json, e);
             }
@@ -212,7 +212,7 @@ public final class ItemUtils {
      */
     public static boolean hasCustomTag(String modId, ItemStack item) {
         if (item == null) return false;
-        CompoundNBT tag = item.getTag();
+        CompoundTag tag = item.getTag();
         return tag != null && tag.contains(modId);
     }
 
@@ -221,14 +221,14 @@ public final class ItemUtils {
      *
      * @param modId 模组ID
      */
-    public static CompoundNBT getCustomTag(String modId, @NonNull ItemStack item) {
-        CompoundNBT tag = item.getTag();
+    public static CompoundTag getCustomTag(String modId, @NonNull ItemStack item) {
+        CompoundTag tag = item.getTag();
         if (tag == null) {
-            tag = new CompoundNBT();
+            tag = new CompoundTag();
             item.setTag(tag);
         }
         if (!tag.contains(modId)) {
-            tag.put(modId, new CompoundNBT());
+            tag.put(modId, new CompoundTag());
         }
         return tag.getCompound(modId);
     }
@@ -238,10 +238,10 @@ public final class ItemUtils {
      *
      * @param modId 模组ID
      */
-    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundNBT customTag) {
-        CompoundNBT tag = item.getTag();
+    public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag customTag) {
+        CompoundTag tag = item.getTag();
         if (tag == null) {
-            tag = new CompoundNBT();
+            tag = new CompoundTag();
             item.setTag(tag);
         }
         tag.put(modId, customTag);
@@ -252,9 +252,9 @@ public final class ItemUtils {
      *
      * @param modId 模组ID
      */
-    public static CompoundNBT clearCustomTag(String modId, ItemStack item) {
+    public static CompoundTag clearCustomTag(String modId, ItemStack item) {
         if (item == null) return null;
-        CompoundNBT tag = item.getTag();
+        CompoundTag tag = item.getTag();
         if (tag != null) {
             tag.remove(modId);
         }
@@ -266,7 +266,7 @@ public final class ItemUtils {
      */
     public static void trimCustomTag(ItemStack item) {
         if (item == null) return;
-        CompoundNBT tag = item.getTag();
+        CompoundTag tag = item.getTag();
         if (tag != null && tag.isEmpty()) {
             item.setTag(null);
         }
@@ -277,7 +277,7 @@ public final class ItemUtils {
      */
     public static void clearCustomTagEx(String modId, ItemStack item) {
         if (item == null) return;
-        CompoundNBT tag = clearCustomTag(modId, item);
+        CompoundTag tag = clearCustomTag(modId, item);
         if (tag != null && tag.isEmpty()) {
             item.setTag(null);
         }
@@ -515,7 +515,7 @@ public final class ItemUtils {
         try {
             // 首先从创造模式搜索标签中获取所有物品变体
             try {
-                ItemGroup searchTab = ItemGroup.TAB_SEARCH;
+                CreativeModeTab searchTab = CreativeModeTab.TAB_SEARCH;
                 if (searchTab != null) {
                     NonNullList<ItemStack> creativeItems = NonNullList.create();
                     searchTab.fillItemList(creativeItems);
@@ -535,8 +535,8 @@ public final class ItemUtils {
 
             // 然后添加创造模式物品栏中其他物品组的物品
             try {
-                for (ItemGroup group : ItemGroup.TABS) {
-                    if (group == null || group == ItemGroup.TAB_SEARCH) continue;
+                for (CreativeModeTab group : CreativeModeTab.TABS) {
+                    if (group == null || group == CreativeModeTab.TAB_SEARCH) continue;
                     try {
                         NonNullList<ItemStack> groupItems = NonNullList.create();
                         group.fillItemList(groupItems);
@@ -636,15 +636,15 @@ public final class ItemUtils {
             // 获取描述, 仅客户端
             try {
                 // Tooltip description can only be read safely on a physical client.
-                PlayerEntity clientPlayer = BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
+                Player clientPlayer = BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()
                         ? BaniraClientAccess.localPlayer()
                         : null;
                 if (clientPlayer != null) {
-                    List<ITextComponent> tooltip = BaniraClientAccess.itemTooltip(stack, clientPlayer, false);
+                    List<net.minecraft.network.chat.Component> tooltip = BaniraClientAccess.itemTooltip(stack, clientPlayer, false);
                     if (CollectionUtils.isNotNullOrEmpty(tooltip)) {
                         description = tooltip.stream()
                                 .skip(1)
-                                .map(ITextComponent::getString)
+                                .map(net.minecraft.network.chat.Component::getString)
                                 .collect(Collectors.joining(" "))
                                 .toLowerCase();
                     }
@@ -657,9 +657,10 @@ public final class ItemUtils {
                 ResourceLocation itemId = getItemRegistry(item);
                 if (itemId != null) {
                     // 获取物品的所有标签
-                    item.getTags().forEach(tag -> {
-                        tags.add(tag.toString().toLowerCase());
-                        tags.add(tag.getPath().toLowerCase());
+                    BaniraPlatforms.get().registryService().itemTagIds(item).forEach(tag -> {
+                        tags.add(tag.toLowerCase());
+                        ResourceLocation tagId = ResourceLocation.tryParse(tag);
+                        if (tagId != null) tags.add(tagId.getPath().toLowerCase());
                     });
                 }
             } catch (Exception e) {
@@ -864,7 +865,7 @@ public final class ItemUtils {
     public static List<ItemStack> getAllPlayerItems() {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return new ArrayList<>();
         try {
-            PlayerEntity player = BaniraClientAccess.localPlayer();
+            Player player = BaniraClientAccess.localPlayer();
             if (player != null) {
                 return getAllPlayerItems(player);
             }
@@ -880,11 +881,11 @@ public final class ItemUtils {
      * @return 玩家身上的所有物品列表副本
      */
     @Nonnull
-    public static List<ItemStack> getAllPlayerItems(@Nonnull PlayerEntity player) {
+    public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
         Set<ItemStack> items = new HashSet<>();
         items.add(new ItemStack(Items.AIR));
 
-        PlayerInventory inventory = player.inventory;
+        Inventory inventory = player.inventory;
         if (inventory == null) {
             return new ArrayList<>(items);
         }
@@ -904,8 +905,8 @@ public final class ItemUtils {
      * @param toRemove 要移除的物品
      * @return 是否全部移除成功
      */
-    public static boolean removePlayerItem(ServerPlayerEntity player, ItemStack toRemove) {
-        IInventory inventory = player.inventory;
+    public static boolean removePlayerItem(ServerPlayer player, ItemStack toRemove) {
+        Container inventory = player.inventory;
 
         // 剩余要移除的数量
         int remainingAmount = toRemove.getCount();
@@ -920,7 +921,7 @@ public final class ItemUtils {
             copy.setCount(stack.getCount());
 
             // 如果插槽中的物品是目标物品
-            if (stack.equals(copy, false)) {
+            if (ItemStack.matches(stack, copy)) {
                 // 获取当前物品堆叠的数量
                 int stackSize = stack.getCount();
 
@@ -970,7 +971,7 @@ public final class ItemUtils {
      * @param keyword 搜索关键字
      * @return 匹配的物品列表
      */
-    public static List<ItemStack> searchPlayerItems(@Nonnull PlayerEntity player, String keyword) {
+    public static List<ItemStack> searchPlayerItems(@Nonnull Player player, String keyword) {
         List<ItemStack> playerItems = getAllPlayerItems(player);
         if (StringUtils.isNullOrEmpty(keyword)) {
             return playerItems;
@@ -1004,7 +1005,7 @@ public final class ItemUtils {
      * @param keywords 搜索关键字数组
      * @return 匹配的物品列表
      */
-    public static List<ItemStack> searchPlayerItems(@Nonnull PlayerEntity player, String... keywords) {
+    public static List<ItemStack> searchPlayerItems(@Nonnull Player player, String... keywords) {
         List<ItemStack> playerItems = getAllPlayerItems(player);
         if (keywords == null || keywords.length == 0) {
             return playerItems;
@@ -1065,11 +1066,11 @@ public final class ItemUtils {
      * @return Tooltip列表
      */
     @Nonnull
-    public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable PlayerEntity player, boolean advanced) {
+    public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, @Nullable Player player, boolean advanced) {
         if (isItemNull(itemStack)) {
             List<Component> tooltip = new ArrayList<>();
-            ITextComponent hoverName = itemStack.getHoverName();
-            if (hoverName instanceof IFormattableTextComponent) {
+            net.minecraft.network.chat.Component hoverName = itemStack.getHoverName();
+            if (hoverName instanceof MutableComponent) {
                 tooltip.add(BaniraComponent.get().object(hoverName));
             } else {
                 tooltip.add(BaniraComponent.get().literal(hoverName.getString()));
@@ -1095,7 +1096,7 @@ public final class ItemUtils {
 
             try {
                 // 获取基础 tooltip；具体版本的 tooltip flag 由 client adapter 处理。
-                List<ITextComponent> baseTooltip = new ArrayList<>();
+                List<net.minecraft.network.chat.Component> baseTooltip = new ArrayList<>();
                 if (player != null && BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
                     baseTooltip.addAll(BaniraClientAccess.itemTooltip(itemStack, player, advanced));
                 } else {
@@ -1112,9 +1113,9 @@ public final class ItemUtils {
                 boolean baseTooltipContainsRegistry = false;
 
                 // 1. 物品名称
-                ITextComponent nameComponent = baseTooltip.get(0);
+                net.minecraft.network.chat.Component nameComponent = baseTooltip.get(0);
                 Component name;
-                if (nameComponent instanceof IFormattableTextComponent) {
+                if (nameComponent instanceof MutableComponent) {
                     name = BaniraComponent.get().object(nameComponent);
                 } else {
                     name = BaniraComponent.get().literal(nameComponent.getString());
@@ -1122,7 +1123,7 @@ public final class ItemUtils {
                 result.add(name);
 
                 // 检查基础tooltip是否包含注册ID
-                for (ITextComponent textComponent : baseTooltip) {
+                for (net.minecraft.network.chat.Component textComponent : baseTooltip) {
                     String text = textComponent.getString();
                     if (registryString != null && text.contains(registryString)) {
                         baseTooltipContainsRegistry = true;
@@ -1134,9 +1135,9 @@ public final class ItemUtils {
                 if (!advanced) {
                     // 2. 描述
                     for (int i = 1; i < baseTooltip.size(); i++) {
-                        ITextComponent textComponent = baseTooltip.get(i);
-                        if (textComponent instanceof IFormattableTextComponent) {
-                            IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
+                        net.minecraft.network.chat.Component textComponent = baseTooltip.get(i);
+                        if (textComponent instanceof MutableComponent) {
+                            MutableComponent c = (MutableComponent) textComponent;
                             if (StringUtils.isNotNullOrEmpty(c.getString())) {
                                 result.add(BaniraComponent.get().object(textComponent));
                             }
@@ -1158,13 +1159,13 @@ public final class ItemUtils {
 
                 // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
                 // 2. 物品组信息
-                ItemGroup itemGroup = item.getItemCategory();
+                CreativeModeTab itemGroup = item.getItemCategory();
                 if (itemGroup == null && item == Items.ENCHANTED_BOOK) {
                     // 附魔书的特殊处理
                     Map<Enchantment, Integer> enchantments = EnchantmentHelper.getEnchantments(itemStack);
                     if (enchantments.size() == 1) {
                         Enchantment enchantment = enchantments.keySet().iterator().next();
-                        for (ItemGroup group : ItemGroup.TABS) {
+                        for (CreativeModeTab group : CreativeModeTab.TABS) {
                             if (group.hasEnchantmentCategory(enchantment.category)) {
                                 itemGroup = group;
                                 break;
@@ -1173,17 +1174,17 @@ public final class ItemUtils {
                     }
                 }
                 if (itemGroup != null) {
-                    IFormattableTextComponent groupName = itemGroup.getDisplayName().copy();
-                    groupName.withStyle(TextFormatting.BLUE);
+                    MutableComponent groupName = itemGroup.getDisplayName().copy();
+                    groupName.withStyle(ChatFormatting.BLUE);
                     Component groupComponent = BaniraComponent.get().object(groupName);
                     result.add(groupComponent);
                 }
 
                 // 3. 描述
                 for (int i = 1; i < baseTooltip.size(); i++) {
-                    ITextComponent textComponent = baseTooltip.get(i);
-                    if (textComponent instanceof IFormattableTextComponent) {
-                        IFormattableTextComponent c = (IFormattableTextComponent) textComponent;
+                    net.minecraft.network.chat.Component textComponent = baseTooltip.get(i);
+                    if (textComponent instanceof MutableComponent) {
+                        MutableComponent c = (MutableComponent) textComponent;
                         if (StringUtils.isNotNullOrEmpty(c.getString())) {
                             result.add(BaniraComponent.get().object(textComponent));
                         }
@@ -1197,9 +1198,9 @@ public final class ItemUtils {
 
                 // 5. 标签列表
                 try {
-                    List<ResourceLocation> tagIds = new ArrayList<>(item.getTags());
-                    tagIds.sort(Comparator.comparing(ResourceLocation::toString));
-                    for (ResourceLocation tagId : tagIds) {
+                    List<String> tagIds = new ArrayList<>(BaniraPlatforms.get().registryService().itemTagIds(item));
+                    Collections.sort(tagIds);
+                    for (String tagId : tagIds) {
                         Component tagComponent = BaniraComponent.get().literal("#" + tagId)
                                 .color(Color.argb(0xFF8A2BE2));
                         result.add(tagComponent);
@@ -1227,8 +1228,8 @@ public final class ItemUtils {
             } catch (Exception e) {
                 LOGGER.debug("Failed to get tooltip for item: {}", getItemRegistryString(itemStack), e);
                 if (result.isEmpty()) {
-                    ITextComponent hoverName = itemStack.getHoverName();
-                    if (hoverName instanceof IFormattableTextComponent) {
+                    net.minecraft.network.chat.Component hoverName = itemStack.getHoverName();
+                    if (hoverName instanceof MutableComponent) {
                         result.add(BaniraComponent.get().object(hoverName));
                     } else {
                         result.add(BaniraComponent.get().literal(hoverName.getString()));
@@ -1250,7 +1251,7 @@ public final class ItemUtils {
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return getItemTooltip(itemStack, null, advanced);
         try {
-            PlayerEntity player = BaniraClientAccess.localPlayer();
+            Player player = BaniraClientAccess.localPlayer();
             return getItemTooltip(itemStack, player, advanced);
         } catch (Exception e) {
             LOGGER.debug("Failed to get client player for tooltip", e);

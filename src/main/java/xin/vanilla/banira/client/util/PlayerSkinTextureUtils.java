@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.EnvironmentUtils;

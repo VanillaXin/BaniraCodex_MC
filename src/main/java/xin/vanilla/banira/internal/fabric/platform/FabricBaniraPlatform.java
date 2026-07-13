@@ -1,5 +1,8 @@
 package xin.vanilla.banira.internal.fabric.platform;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
@@ -16,8 +19,6 @@ import xin.vanilla.banira.platform.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,10 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Fabric 1.16.5 的 platform 实现。
  */
 public final class FabricBaniraPlatform implements BaniraPlatform {
-    private static final List<String> COMMON_ENTRYPOINT_KEYS = Arrays.asList("main");
-    private static final List<String> CLIENT_ENTRYPOINT_KEYS = Arrays.asList("main", "client");
-    private static final List<String> SERVER_ENTRYPOINT_KEYS = Arrays.asList("main", "server");
-
     private final Map<String, Class<?>> mainClassesByModId = new ConcurrentHashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new ConcurrentHashMap<>();
     private final BaniraPathService path = new FabricBaniraPathService(this::configDir);
@@ -173,25 +170,23 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
 
     private void refreshEntrypointClassIndex() {
         FabricLoader loader = FabricLoader.getInstance();
-        for (String key : entrypointKeys()) {
-            for (EntrypointContainer<Object> container : loader.getEntrypointContainers(key, Object.class)) {
-                ModContainer provider = container.getProvider();
-                Object entrypoint = container.getEntrypoint();
-                if (provider != null && entrypoint != null) {
-                    cacheEntrypoint(provider.getMetadata().getId(), entrypoint.getClass());
-                }
-            }
+        indexEntrypoints(loader, "main", ModInitializer.class);
+        if (isClient()) {
+            indexEntrypoints(loader, "client", ClientModInitializer.class);
+        } else if (isDedicatedServer()) {
+            indexEntrypoints(loader, "server", DedicatedServerModInitializer.class);
         }
     }
 
-    private List<String> entrypointKeys() {
-        if (isClient()) {
-            return CLIENT_ENTRYPOINT_KEYS;
+    private <T> void indexEntrypoints(FabricLoader loader, String key, Class<T> entrypointType) {
+        // Object 不是函数式接口，无法承接 Fabric 的 Class::method 入口；必须使用加载器规定的接口类型。
+        for (EntrypointContainer<T> container : loader.getEntrypointContainers(key, entrypointType)) {
+            ModContainer provider = container.getProvider();
+            T entrypoint = container.getEntrypoint();
+            if (provider != null && entrypoint != null) {
+                cacheEntrypoint(provider.getMetadata().getId(), entrypoint.getClass());
+            }
         }
-        if (isDedicatedServer()) {
-            return SERVER_ENTRYPOINT_KEYS;
-        }
-        return COMMON_ENTRYPOINT_KEYS;
     }
 
     private void cacheEntrypoint(String modId, Class<?> entrypointClass) {

@@ -9,6 +9,7 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
 import xin.vanilla.banira.internal.common.BaniraPaths;
 import xin.vanilla.banira.internal.fabric.client.FabricKeyBindingService;
+import xin.vanilla.banira.internal.fabric.client.FabricLogoService;
 import xin.vanilla.banira.internal.fabric.config.FabricBaniraConfigService;
 import xin.vanilla.banira.internal.fabric.network.FabricBaniraNetworkService;
 import xin.vanilla.banira.platform.*;
@@ -161,6 +162,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNotificationService notificationService() {
         return BaniraNotificationServices.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraLogoService logoService() {
+        return FabricLogoService.INSTANCE;
     }
 
     private void refreshEntrypointClassIndex() {

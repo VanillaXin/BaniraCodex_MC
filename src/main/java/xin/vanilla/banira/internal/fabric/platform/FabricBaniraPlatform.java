@@ -1,8 +1,9 @@
 package xin.vanilla.banira.internal.fabric.platform;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.minecraft.SharedConstants;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
@@ -16,6 +17,10 @@ import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -184,14 +189,26 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
 
     private void refreshEntrypointClassIndex() {
         FabricLoader loader = FabricLoader.getInstance();
-        for (String key : entrypointKeys()) {
-            for (EntrypointContainer<Object> container : loader.getEntrypointContainers(key, Object.class)) {
-                ModContainer provider = container.getProvider();
-                Object entrypoint = container.getEntrypoint();
-                if (provider != null && entrypoint != null) {
-                    cacheEntrypoint(provider.getMetadata().getId(), entrypoint.getClass());
+        for (ModContainer container : loader.getAllMods()) {
+            Path metadataPath = container.findPath("fabric.mod.json").orElse(null);
+            if (metadataPath == null) continue;
+            try (Reader reader = Files.newBufferedReader(metadataPath, StandardCharsets.UTF_8)) {
+                JsonObject metadata = JsonParser.parseReader(reader).getAsJsonObject();
+                for (String className : FabricEntrypointClassNames.read(metadata, entrypointKeys())) {
+                    cacheEntrypointClass(container.getMetadata().getId(), className);
                 }
+            } catch (IOException | RuntimeException ignored) {
+                // 单个第三方元数据异常不应阻断其他 mod 的主类映射。
             }
+        }
+    }
+
+    private void cacheEntrypointClass(String modId, String className) {
+        try {
+            Class<?> entrypointClass = Class.forName(className, false, FabricBaniraPlatform.class.getClassLoader());
+            cacheEntrypoint(modId, entrypointClass);
+        } catch (ClassNotFoundException | LinkageError ignored) {
+            // 自定义语言适配器的值不一定是 Java 类名，无法解析时跳过。
         }
     }
 

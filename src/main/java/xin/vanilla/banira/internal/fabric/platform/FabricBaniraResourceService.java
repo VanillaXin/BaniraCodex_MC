@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.fabric.platform;
 
 import com.google.gson.JsonObject;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
@@ -14,10 +15,13 @@ import xin.vanilla.banira.internal.mixin.accessors.MinecraftServerAccessor;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /** 1.16 资源包遍历适配，供服务端语言解析使用。 */
 public final class FabricBaniraResourceService {
@@ -28,15 +32,46 @@ public final class FabricBaniraResourceService {
     public static Map<String, JsonObject> modLanguageFiles(String modId) {
         Map<String, JsonObject> result = new LinkedHashMap<>();
         if (modId == null || modId.trim().isEmpty()) return result;
-        ResourceManager manager = activeResourceManager();
-        if (manager == null) return result;
+
+        // Translator 可能早于客户端资源管理器创建，先从 mod 容器读取基础语言文件。
+        collectModContainerLanguageFiles(modId, result);
         Predicate<String> jsonLang = path -> path.endsWith(".json");
-        try {
-            ((ResourceManagerAccessor) manager).banira$packs().forEach(pack -> collectLanguageFiles(pack, modId, jsonLang, result));
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from resource packs", e);
+        ResourceManager manager = activeResourceManager();
+        if (manager != null) {
+            try {
+                ((ResourceManagerAccessor) manager).banira$packs()
+                        .forEach(pack -> collectLanguageFiles(pack, modId, jsonLang, result));
+            } catch (Exception e) {
+                LOGGER.debug("Failed to list lang from resource packs", e);
+            }
         }
         return result;
+    }
+
+    private static void collectModContainerLanguageFiles(String modId, Map<String, JsonObject> result) {
+        FabricLoader.getInstance().getModContainer(modId)
+                .flatMap(container -> container.findPath("assets/" + modId + "/lang"))
+                .filter(Files::isDirectory)
+                .ifPresent(path -> {
+                    try (Stream<Path> files = Files.list(path)) {
+                        files.filter(Files::isRegularFile)
+                                .filter(file -> file.getFileName().toString().endsWith(".json"))
+                                .sorted()
+                                .forEach(file -> loadLanguage(file, result));
+                    } catch (Exception e) {
+                        LOGGER.debug("Failed to list bundled lang for mod {}", modId, e);
+                    }
+                });
+    }
+
+    private static void loadLanguage(Path file, Map<String, JsonObject> result) {
+        try (InputStreamReader reader = new InputStreamReader(Files.newInputStream(file), StandardCharsets.UTF_8)) {
+            String name = file.getFileName().toString();
+            mergeLanguage(name.substring(0, name.length() - ".json".length()).toLowerCase(),
+                    JsonUtils.parseObject(reader), result);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to load bundled language file {}", file, e);
+        }
     }
 
     private static ResourceManager activeResourceManager() {
@@ -68,11 +103,15 @@ public final class FabricBaniraResourceService {
         try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, location), StandardCharsets.UTF_8)) {
             String languageCode = languageCode(location);
             JsonObject json = JsonUtils.parseObject(reader);
-            JsonObject existing = result.get(languageCode);
-            if (existing == null) result.put(languageCode, json); else JsonUtils.mergeInPlace(existing, json);
+            mergeLanguage(languageCode, json, result);
         } catch (Throwable t) {
             LOGGER.debug("Failed to load language file: {}", t.getMessage());
         }
+    }
+
+    private static void mergeLanguage(String languageCode, JsonObject json, Map<String, JsonObject> result) {
+        JsonObject existing = result.get(languageCode);
+        if (existing == null) result.put(languageCode, json); else JsonUtils.mergeInPlace(existing, json);
     }
 
     private static String languageCode(ResourceLocation location) {

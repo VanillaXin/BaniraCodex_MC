@@ -30,7 +30,9 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 public final class FabricBaniraCodexEntry implements ModInitializer {
     @Override
     public void onInitialize() {
-        BaniraPlatforms.installIfAbsent(new FabricBaniraPlatform());
+        if (!BaniraPlatforms.isInstalled()) {
+            BaniraPlatforms.install(new FabricBaniraPlatform());
+        }
         BaniraPlatforms.get().configService().register(CommonConfig.class, BaniraCodex.MODID);
         BaniraPlatforms.get().configService().register(ClientConfig.class, BaniraCodex.MODID);
 

@@ -42,7 +42,7 @@ public final class BaniraNotificationTypes {
     }
 
     public static boolean unregister(@Nonnull String typeId) {
-        return false;
+        return ServerNotificationTypeRegistry.unregister(typeId);
     }
 
     @Nonnull

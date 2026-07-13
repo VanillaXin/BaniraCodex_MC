@@ -6,6 +6,8 @@ import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.event.BaniraChatEvent;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
+import xin.vanilla.banira.api.client.event.BaniraClientPlayerEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent;
@@ -82,30 +84,37 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchModClientSetup(@Nonnull BaniraClientSetupEvent event) {
+        BaniraClientEvents.dispatchModClientSetup(event);
         fire(modClientSetupCallbacks, event, "mod client setup");
     }
 
     public static void dispatchClientPlayerLoggedIn(net.minecraft.world.entity.player.Player player) {
+        BaniraClientEvents.dispatchClientPlayerLoggedIn(playerEvent(player));
         fire(clientPlayerLoggedInCallbacks, player, "player logged in");
     }
 
     public static void dispatchClientPlayerLoggedOut(net.minecraft.world.entity.player.Player player) {
+        BaniraClientEvents.dispatchClientPlayerLoggedOut(playerEvent(player));
         fire(clientPlayerLoggedOutCallbacks, player, "player logged out");
     }
 
     public static void dispatchClientTick(@Nonnull BaniraClientTickEvent event) {
+        BaniraClientEvents.dispatchClientTick(event);
         fire(clientTickCallbacks, event, "client tick");
     }
 
     public static void dispatchClientChat(@Nonnull BaniraChatEvent event) {
+        BaniraClientEvents.dispatchClientChat(event);
         fire(clientChatCallbacks, event, "client chat");
     }
 
     public static void dispatchGuiScreen(@Nonnull BaniraScreenEvent event) {
+        BaniraClientEvents.dispatchGuiScreen(event);
         fire(clientGuiScreenCallbacks, event, "client gui screen");
     }
 
     public static void dispatchRenderOverlayPre(@Nonnull BaniraOverlayRenderEvent event) {
+        BaniraClientEvents.dispatchRenderOverlayPre(event);
         fire(clientRenderOverlayPreCallbacks, event, "client render overlay pre");
     }
 
@@ -117,38 +126,46 @@ public final class BaniraClientEventHub {
     public static void dispatchMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         dragTracker.press(event.mouseX(), event.mouseY(), event.button());
         event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
+        BaniraClientEvents.dispatchMouseClickedPre(event);
         fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
     }
 
     public static void dispatchMouseReleasedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         event.withDragMetadata(dragTracker.release(event.mouseX(), event.mouseY(), event.button()));
+        BaniraClientEvents.dispatchMouseReleasedPre(event);
         fire(clientMouseReleasedPreCallbacks, event, "client mouse released pre");
     }
 
     public static void dispatchMouseReleasedPost(@Nonnull BaniraMouseEvent event) {
+        BaniraClientEvents.dispatchMouseReleasedPost(event);
         fire(clientMouseReleasedPostCallbacks, event, "client mouse released post");
     }
 
     public static void dispatchMouseScrolledPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        BaniraClientEvents.dispatchMouseScrolledPre(event);
         fire(clientMouseScrolledPreCallbacks, event, "client mouse scrolled pre");
     }
 
     public static void dispatchMouseDraggedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         event.withDragMetadata(dragTracker.drag(event.mouseX(), event.mouseY(), event.button(), event.dragX(), event.dragY()));
+        BaniraClientEvents.dispatchMouseDraggedPre(event);
         fire(clientMouseDraggedPreCallbacks, event, "client mouse dragged pre");
     }
 
     public static void dispatchKeyPressedPre(@Nonnull BaniraKeyboardEvent event) {
         event.withPressMetadata(keyPressTracker.recordPress(event.keyCode(), event.scanCode(), event.modifiers()));
+        BaniraClientEvents.dispatchKeyPressedPre(event);
         fire(clientKeyPressedPreCallbacks, event, "client key pressed pre");
     }
 
     public static void dispatchKeyReleasedPost(@Nonnull BaniraKeyboardEvent event) {
         keyPressTracker.recordRelease(event.keyCode(), event.scanCode());
+        BaniraClientEvents.dispatchKeyReleasedPost(event);
         fire(clientKeyReleasedPostCallbacks, event, "client key released post");
     }
 
     public static void dispatchCharTypedPre(@Nonnull BaniraKeyboardEvent event) {
+        BaniraClientEvents.dispatchCharTypedPre(event);
         fire(clientCharTypedPreCallbacks, event, "client char typed pre");
     }
 
@@ -175,6 +192,7 @@ public final class BaniraClientEventHub {
 
         public static void fireGuiChanged(@Nonnull BaniraScreenOpenEvent event) {
             resetInputTrackers();
+            BaniraClientEvents.Client.fireGuiChanged(event);
             fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
 
@@ -243,18 +261,22 @@ public final class BaniraClientEventHub {
         }
 
         public static void fireTextureReload(@Nonnull BaniraTextureReloadEvent event) {
+            BaniraClientEvents.Client.fireTextureReload(event);
             fire(clientTextureReloadCallbacks, event, "client texture reload");
         }
 
         public static void fireDrawScreenPre(@Nonnull BaniraDrawScreenEvent event) {
+            BaniraClientEvents.Client.fireDrawScreenPre(event);
             fire(clientDrawScreenPreCallbacks, event, "client draw screen pre");
         }
 
         public static void fireDrawScreenPost(@Nonnull BaniraDrawScreenEvent event) {
+            BaniraClientEvents.Client.fireDrawScreenPost(event);
             fire(clientDrawScreenPostCallbacks, event, "client draw screen post");
         }
 
         public static void fireRenderOverlayPost(@Nonnull BaniraOverlayRenderEvent event) {
+            BaniraClientEvents.Client.fireRenderOverlayPost(event);
             fire(clientRenderOverlayPostCallbacks, event, "client render overlay post");
         }
 
@@ -318,6 +340,13 @@ public final class BaniraClientEventHub {
         mouseClickTracker.reset();
         dragTracker.reset();
         keyPressTracker.reset();
+        BaniraClientEvents.resetInputTrackers();
+    }
+
+    private static BaniraClientPlayerEvent playerEvent(net.minecraft.world.entity.player.Player player) {
+        return player == null
+                ? new BaniraClientPlayerEvent(new java.util.UUID(0L, 0L), "")
+                : new BaniraClientPlayerEvent(player.getUUID(), player.getName().getString());
     }
 
     private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,

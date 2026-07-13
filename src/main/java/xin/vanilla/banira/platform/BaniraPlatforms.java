@@ -16,16 +16,6 @@ public final class BaniraPlatforms {
         platform = Objects.requireNonNull(value, "platform");
     }
 
-    /**
-     * 供加载器入口使用；若依赖 mod 已触发惰性发现，则保留同一平台实例及其注册状态。
-     */
-    public static synchronized BaniraPlatform installIfAbsent(BaniraPlatform value) {
-        if (platform == null) {
-            platform = Objects.requireNonNull(value, "platform");
-        }
-        return platform;
-    }
-
     public static BaniraPlatform get() {
         BaniraPlatform current = platform;
         if (current == null) {

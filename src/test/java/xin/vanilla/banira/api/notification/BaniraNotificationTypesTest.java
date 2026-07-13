@@ -38,6 +38,22 @@ public class BaniraNotificationTypesTest {
     }
 
     @Test
+    public void unregistersServerTypeAndItsLayoutDefaults() {
+        BaniraNotificationTypes.register(TYPE_ID, EnumPosition.BOTTOM_CENTER, EnumMoveType.FADE_IN);
+
+        assertTrue(BaniraNotificationTypes.unregister(TYPE_ID));
+        assertFalse(BaniraNotificationTypes.sortedSnapshot().contains(TYPE_ID));
+        assertEquals(EnumPosition.TOP_RIGHT, BaniraNotificationTypes.defaultPosition(TYPE_ID));
+        assertEquals(EnumMoveType.AUTO, BaniraNotificationTypes.defaultAnimation(TYPE_ID));
+    }
+
+    @Test
+    public void keepsBuiltInDefaultTypeRegistered() {
+        assertFalse(BaniraNotificationTypes.unregister(BaniraNotificationTypes.DEFAULT));
+        assertTrue(BaniraNotificationTypes.sortedSnapshot().contains(BaniraNotificationTypes.DEFAULT));
+    }
+
+    @Test
     public void registersClientTypeDisplayDefault() {
         BaniraClientNotificationTypes.register(" " + TYPE_ID + " ", EnumNotificationTypeDisplayMode.VANILLA_CHAT);
 

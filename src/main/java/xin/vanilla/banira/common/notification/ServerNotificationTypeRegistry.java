@@ -79,6 +79,20 @@ public final class ServerNotificationTypeRegistry {
     }
 
     /**
+     * 注销通知类型及其默认值；内置默认类型始终保留。
+     */
+    public static boolean unregister(String typeId) {
+        String key = NotificationTypeKeys.normalizeOrDefault(typeId);
+        if (NotificationTypeKeys.DEFAULT.equals(key)) {
+            return false;
+        }
+        boolean removed = KNOWN.remove(key);
+        LAYOUT_DEFAULTS.remove(key);
+        SYNC_CLIENT_DISPLAY_IF_ABSENT.remove(key);
+        return removed;
+    }
+
+    /**
      * 未单独 {@link #register(String, EnumPosition, EnumMoveType)} 时返回 {@link EnumPosition#TOP_RIGHT}
      */
     public static EnumPosition defaultPosition(String typeId) {

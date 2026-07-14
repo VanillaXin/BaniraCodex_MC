@@ -140,6 +140,8 @@ tasks.named('remapJar') {
 }
 
 // region 发布到 Maven 仓库（含本地 ~/.m2/repository）
+def publicationContractRepository = layout.buildDirectory.dir('publication-contract-repository')
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
@@ -150,6 +152,10 @@ publishing {
     }
     repositories {
         mavenLocal()
+        maven {
+            name = 'publicationContract'
+            url = publicationContractRepository
+        }
     }
 }
 
@@ -166,5 +172,26 @@ afterEvaluate {
 
 tasks.withType(PublishToMavenLocal).configureEach {
     dependsOn 'remapJar', 'sourcesJar'
+}
+
+tasks.named('publishMavenJavaPublicationToPublicationContractRepository') {
+    // 隔离仓库只验证本次发布，避免旧分类 JAR 污染契约结果。
+    doFirst {
+        project.delete(publicationContractRepository)
+    }
+}
+
+tasks.named('test') {
+    dependsOn 'publishMavenJavaPublicationToPublicationContractRepository'
+    doFirst {
+        systemProperty 'banira.publication.repository',
+                publicationContractRepository.get().asFile.absolutePath
+        systemProperty 'banira.publication.group', project.group.toString()
+        systemProperty 'banira.publication.artifact', base.archivesName.get()
+        systemProperty 'banira.publication.version',
+                "${loader_type}-${minecraft_version}-${mod_version}"
+        systemProperty 'banira.publication.remapJar',
+                tasks.named('remapJar').get().archiveFile.get().asFile.absolutePath
+    }
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）

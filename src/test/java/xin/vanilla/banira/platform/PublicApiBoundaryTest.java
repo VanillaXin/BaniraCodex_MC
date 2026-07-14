@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class PublicApiBoundaryTest {
@@ -31,6 +32,38 @@ public class PublicApiBoundaryTest {
             }
         });
         assertNoViolations("Public api/platform imports must stay loader-neutral.", violations);
+    }
+
+    @Test
+    public void stableServerRuntimeFacadeDoesNotExposeMinecraftTypes() throws Exception {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraServer.java"));
+        if (!Files.exists(facade)) {
+            fail("Server runtime access must stay in api.BaniraServer.");
+        }
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "net.minecraft.", violations, "BaniraServer must use neutral server handles.");
+        addIfContains(source, "xin.vanilla.banira.internal.", violations, "BaniraServer must delegate through the platform contract.");
+        assertNoViolations("Server runtime access should stay loader-neutral.", violations);
+
+        Class<?> service = Class.forName("xin.vanilla.banira.platform.BaniraServerService");
+        assertEquals(service, BaniraPlatform.class.getMethod("serverService").getReturnType());
+    }
+
+    @Test
+    public void stablePlayerDataFacadeDoesNotExposeMinecraftTypes() throws Exception {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "BaniraPlayerData.java"));
+        if (!Files.exists(facade)) {
+            fail("Player data access must stay in api.BaniraPlayerData.");
+        }
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "net.minecraft.", violations, "BaniraPlayerData must use neutral data handles.");
+        addIfContains(source, "xin.vanilla.banira.internal.", violations, "BaniraPlayerData must delegate through the platform contract.");
+        assertNoViolations("Player data access should stay loader-neutral.", violations);
+
+        Class<?> service = Class.forName("xin.vanilla.banira.platform.BaniraPlayerDataService");
+        assertEquals(service, BaniraPlatform.class.getMethod("playerDataService").getReturnType());
     }
 
     @Test

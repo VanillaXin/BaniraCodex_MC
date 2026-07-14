@@ -18,6 +18,18 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     private final Map<Class<?>, String> modIdsByMainClass = new HashMap<>();
     private final Map<UUID, String> usernames = new HashMap<>();
     private BaniraConfigService configService = NoopConfigService.INSTANCE;
+    private BaniraServerService serverService = new BaniraServerService() {
+        @Override
+        public Object current() {
+            return null;
+        }
+
+        @Override
+        public boolean isRunning() {
+            return false;
+        }
+    };
+    private BaniraPlayerDataService playerDataService;
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraInputService inputService = NoopInputService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
@@ -97,6 +109,16 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform configService(BaniraConfigService value) {
         this.configService = Objects.requireNonNull(value, "configService");
+        return this;
+    }
+
+    public TestBaniraPlatform serverService(BaniraServerService value) {
+        this.serverService = Objects.requireNonNull(value, "serverService");
+        return this;
+    }
+
+    public TestBaniraPlatform playerDataService(BaniraPlayerDataService value) {
+        this.playerDataService = Objects.requireNonNull(value, "playerDataService");
         return this;
     }
 
@@ -198,6 +220,19 @@ public final class TestBaniraPlatform implements BaniraPlatform {
     @Override
     public @Nonnull BaniraConfigService configService() {
         return configService;
+    }
+
+    @Override
+    public @Nonnull BaniraServerService serverService() {
+        return serverService;
+    }
+
+    @Override
+    public @Nonnull BaniraPlayerDataService playerDataService() {
+        if (playerDataService == null) {
+            throw new IllegalStateException("No player data service configured for this test");
+        }
+        return playerDataService;
     }
 
     @Override

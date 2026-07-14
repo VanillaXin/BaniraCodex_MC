@@ -146,6 +146,18 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
+    public BaniraServerService serverService() {
+        return ForgeBaniraServerService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraPlayerDataService playerDataService() {
+        return ForgeBaniraPlayerDataService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
     public BaniraNetworkService networkService() {
         return NETWORK;
     }

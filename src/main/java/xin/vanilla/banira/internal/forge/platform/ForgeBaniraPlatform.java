@@ -20,6 +20,8 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraPathService path = new ForgeBaniraPathService(this::configDir);
     private final BaniraInputService input = BaniraApiInputBridge.service();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
+    private final ForgeBaniraServerService server = new ForgeBaniraServerService();
+    private final BaniraPlayerDataService playerData = ForgeBaniraPlayerDataService.INSTANCE;
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraNotificationService notification = BaniraNotificationServices.INSTANCE;
@@ -102,6 +104,16 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraConfigService configService() {
         return config;
+    }
+
+    @Override
+    public BaniraServerService serverService() {
+        return server;
+    }
+
+    @Override
+    public BaniraPlayerDataService playerDataService() {
+        return playerData;
     }
 
     @Override

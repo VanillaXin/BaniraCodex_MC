@@ -23,7 +23,17 @@ import java.util.UUID;
 /**
  * Forge 1.16.5 server/player access. Player-list API churn stays in this adapter.
  */
-public final class ForgeBaniraServerService implements BaniraServerService {
+public final class ForgeBaniraServerService implements BaniraServerService, xin.vanilla.banira.platform.BaniraServerService {
+    @Override
+    public Object current() {
+        return currentServer();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return BaniraCodex.serverInstance().val();
+    }
+
     @Override
     public MinecraftServer currentServer() {
         return BaniraCodex.serverInstance().key();

@@ -34,6 +34,7 @@ import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -78,18 +79,12 @@ public class BaniraCodex {
      * 服务端实例
      */
     @Getter
-    private final static KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
+    private final static KeyValue<MinecraftServer, Boolean> serverInstance = BaniraServerRuntime.serverInstance();
 
     /**
      * 玩家数据管理器
      */
-    public static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
-            BANIRA_PLAYER_DATA_PATH,
-            () -> serverInstance().key().getWorldPath(LevelResource.PLAYER_DATA_DIR),
-            MODID,
-            "",
-            StringUtils.reverseBySeparatorElegant(ARTIFACT_ID, ".")
-    );
+    public static final PlayerDataManager playerDataManager = BaniraServerRuntime.playerDataManager();
 
     public BaniraCodex(FMLJavaModLoadingContext context) {
         BaniraPlatforms.install(new ForgeBaniraPlatform());
@@ -127,10 +122,10 @@ public class BaniraCodex {
         });
 
         // 服务器事件
-        BaniraEventBus.Server.onStarting(server -> serverInstance().key(server).value(true));
+        BaniraEventBus.Server.onStarting(BaniraServerRuntime::markStarting);
         BaniraEventBus.Server.onStarting(server -> playerDataManager.clearCache());
         BaniraEventBus.Server.onStarting(server -> AdvancementUtils.clearAdvancementData());
-        BaniraEventBus.Server.onStopping(server -> serverInstance().value(false));
+        BaniraEventBus.Server.onStopping(server -> BaniraServerRuntime.markStopping());
 
         final int CONFIG_SAVE_INTERVAL_TICKS = 6000;
         BaniraEventBus.Server.onTick(event -> {

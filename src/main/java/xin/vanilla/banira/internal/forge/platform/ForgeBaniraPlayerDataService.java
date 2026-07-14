@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-/** Forge 1.19.2 的玩家 NBT 数据适配。 */
+/** Forge 1.20.1 的玩家 NBT 数据适配。 */
 public final class ForgeBaniraPlayerDataService implements BaniraPlayerDataService {
     public static final ForgeBaniraPlayerDataService INSTANCE = new ForgeBaniraPlayerDataService();
 
@@ -24,7 +24,7 @@ public final class ForgeBaniraPlayerDataService implements BaniraPlayerDataServi
     @Override
     public void put(@Nonnull UUID playerUuid, @Nonnull String modId, @Nullable Object data) {
         if (data != null && !(data instanceof CompoundTag)) {
-            throw new IllegalArgumentException("Forge 1.19 player data must be a CompoundTag");
+            throw new IllegalArgumentException("Forge 1.20 player data must be a CompoundTag");
         }
         BaniraServerRuntime.playerDataManager().put(playerUuid, modId, (CompoundTag) data);
     }

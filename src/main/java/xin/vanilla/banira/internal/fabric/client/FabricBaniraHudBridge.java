@@ -37,7 +37,7 @@ public final class FabricBaniraHudBridge {
 
     private static BaniraHudRenderContext context(PoseStack stack) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
-        float partialTick = Minecraft.getInstance().getFrameTime();
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         BaniraDrawContext draw = new BaniraDrawContext(
                 BaniraClientDrawBridge.handle(stack), screen.key(), screen.val(), partialTick);
         return new BaniraHudRenderContext(draw, screen.key(), screen.val(), partialTick);

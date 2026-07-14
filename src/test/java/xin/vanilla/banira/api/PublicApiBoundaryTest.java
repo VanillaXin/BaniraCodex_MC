@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * 公共 API 不能直接暴露 MC / loader 类型；版本差异必须留在 platform adapter 内部。
@@ -55,6 +56,28 @@ public class PublicApiBoundaryTest {
         assertEquals(ConfigHolder.class, BaniraConfigs.class.getMethod("holder", Class.class).getReturnType());
         assertEquals(BaniraLogoService.class, BaniraPlatform.class.getMethod("logoService").getReturnType());
         BaniraLogos.class.getMethod("register", String.class, Supplier.class);
+    }
+
+    @Test
+    public void stableServerAndPlayerDataFacadesRemainLoaderNeutral() throws Exception {
+        Class.forName("xin.vanilla.banira.api.BaniraServer");
+        Class.forName("xin.vanilla.banira.api.BaniraPlayerData");
+
+        Class<?> serverService = Class.forName("xin.vanilla.banira.platform.BaniraServerService");
+        Class<?> playerDataService = Class.forName("xin.vanilla.banira.platform.BaniraPlayerDataService");
+        assertEquals(Object.class, serverService.getMethod("current").getReturnType());
+        assertEquals(Object.class, playerDataService.getMethod("getOrCreate", java.util.UUID.class, String.class).getReturnType());
+    }
+
+    @Test
+    public void rootEntrypointDelegatesServerStateToInternalRuntime() throws Exception {
+        Path runtime = Paths.get("src", "main", "java", "xin", "vanilla", "banira", "internal", "common", "BaniraServerRuntime.java");
+        Path entrypoint = Paths.get("src", "main", "java", "xin", "vanilla", "banira", "BaniraCodex.java");
+        assertTrue("Server state must live in internal.common.BaniraServerRuntime.", Files.exists(runtime));
+
+        String source = Files.readString(entrypoint, StandardCharsets.UTF_8);
+        assertTrue(source.contains("BaniraServerRuntime.serverInstance()"));
+        assertTrue(source.contains("BaniraServerRuntime.playerDataManager()"));
     }
 
     private static void assertRootHasNoBannedImports(Path root) throws IOException {

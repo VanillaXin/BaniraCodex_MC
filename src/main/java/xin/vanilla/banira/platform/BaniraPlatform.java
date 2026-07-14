@@ -49,6 +49,18 @@ public interface BaniraPlatform {
     BaniraConfigService configService();
 
     /**
+     * 当前 MC 版本的服务器运行时服务。
+     */
+    @Nonnull
+    BaniraServerService serverService();
+
+    /**
+     * 当前 MC 版本的玩家持久数据服务。
+     */
+    @Nonnull
+    BaniraPlayerDataService playerDataService();
+
+    /**
      * 当前加载器的网络服务。
      */
     @Nonnull

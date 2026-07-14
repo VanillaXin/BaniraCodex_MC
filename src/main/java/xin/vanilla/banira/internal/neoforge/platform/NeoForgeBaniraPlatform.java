@@ -157,6 +157,18 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
+    public BaniraServerService serverService() {
+        return NeoForgeBaniraServerService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraPlayerDataService playerDataService() {
+        return NeoForgeBaniraPlayerDataService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
     public BaniraNetworkService networkService() {
         return NETWORK;
     }

@@ -3,7 +3,7 @@ package xin.vanilla.banira.internal.forge.platform;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.platform.BaniraServerService;
 
-/** Forge 1.19.2 的活动服务器句柄适配。 */
+/** Forge 1.21.1 的活动服务器句柄适配。 */
 public final class ForgeBaniraServerService implements BaniraServerService {
     public static final ForgeBaniraServerService INSTANCE = new ForgeBaniraServerService();
 

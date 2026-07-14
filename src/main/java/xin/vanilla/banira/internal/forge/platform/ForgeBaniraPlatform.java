@@ -48,7 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Forge 1.21.1 鐨?platform 閫傞厤灞傦紱鍏叡 API 鍙緷璧栬繖閲岋紝涓嶇洿鎺ヨЕ纰?Forge/FML 绫诲瀷銆?
+ * Forge 1.21.1 的 platform 适配层；公共 API 不直接暴露 Forge/FML 类型。
  */
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private static final String NETWORK_PROTOCOL_VERSION = "1";
@@ -624,7 +624,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
 
         @Override
         public void flushPendingRegistrations() {
-            // Forge 鐨?RegisterKeyMappingsEvent 浜嬩欢浼氳皟鐢?BaniraKeyBindings.flushPendingRegistrations(event)銆?
+            // Forge 的 RegisterKeyMappingsEvent 会调用 BaniraKeyBindings.flushPendingRegistrations(event)。
         }
     }
 

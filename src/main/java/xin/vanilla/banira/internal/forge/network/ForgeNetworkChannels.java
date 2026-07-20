@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.forge.network;
 
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkRegistry;
@@ -47,7 +47,7 @@ public final class ForgeNetworkChannels {
     public static void sendToServer(BaniraNetworkPacket packet) {
         SimpleChannel channel = resolve(packet);
         if (!hasLocalChannel(channel)) return;
-        LocalPlayer player = BaniraClientRuntime.localPlayer();
+        Player player = BaniraClientRuntime.player();
         if (player == null) return;
         // 握手首包需要在远端状态建立前放行。
         if (!(packet instanceof ModLoadedToBoth) && !PlayerUtils.isRemoteServerModInstalled(player, modId(channel))) {

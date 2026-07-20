@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.config;
 
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
@@ -73,10 +74,10 @@ public final class ForgeConfigAdapter {
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
-        ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(configType, spec, container, fileName);
-            holder.setModConfig(modConfig);
-        });
+        ModContainer container = ModList.get().getModContainerById(modId)
+                .orElseThrow(() -> new IllegalStateException("Config container is unavailable: " + modId));
+        ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(configType, spec, container, fileName);
+        holder.setModConfig(modConfig);
 
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);

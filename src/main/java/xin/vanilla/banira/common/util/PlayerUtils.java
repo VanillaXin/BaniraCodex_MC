@@ -94,7 +94,8 @@ public final class PlayerUtils {
     }
 
     public static UUID getPlayerUUID() {
-        Player player = BaniraClientRuntime.localPlayer();
+        if (!EnvironmentUtils.isClient()) return null;
+        Player player = BaniraClientRuntime.player();
         return player != null ? player.getUUID() : null;
     }
 
@@ -184,19 +185,23 @@ public final class PlayerUtils {
     public static Player getPlayerByUUID(UUID uuid) {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
-        try {
-            entity = BaniraClientRuntime.levelPlayer(uuid);
-        } catch (Throwable ignored) {
+        if (EnvironmentUtils.isClient()) {
+            try {
+                entity = BaniraClientRuntime.levelPlayer(uuid);
+            } catch (Throwable ignored) {
+            }
         }
         return entity;
     }
 
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
-        try {
-            ResourceLocation skin = BaniraClientRuntime.onlinePlayerSkin(uuid);
-            if (skin != null) return skin;
-        } catch (Throwable ignored) {
+        if (EnvironmentUtils.isClient()) {
+            try {
+                ResourceLocation skin = BaniraClientRuntime.onlinePlayerSkin(uuid);
+                if (skin != null) return skin;
+            } catch (Throwable ignored) {
+            }
         }
         return Identifier.id().create("minecraft", "textures/entity/steve.png");
     }

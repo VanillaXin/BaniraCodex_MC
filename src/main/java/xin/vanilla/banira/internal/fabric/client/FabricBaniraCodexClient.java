@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.client.event.BaniraMouseEvent;
@@ -34,6 +35,8 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         FabricNetworkChannels.registerClientReceivers();
         BaniraKeyBindingService.installRegistrar(KeyBindingHelper::registerKeyBinding);
         BaniraClientModSetup.initOnClientSetup();
+        // 新公共输入服务使用独立队列；flush 后子 mod 的晚注册键位会立即交给 Fabric。
+        BaniraInput.flushPendingRegistrations();
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(FabricColorThemeReloadListener.INSTANCE);
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {

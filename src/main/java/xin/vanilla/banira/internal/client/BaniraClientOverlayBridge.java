@@ -34,11 +34,11 @@ public final class BaniraClientOverlayBridge {
 
     public static void renderScreenOverlay(@Nonnull PoseStack stack, @Nonnull Screen screen,
                                            double mouseX, double mouseY, float partialTick) {
-        NotificationManager.get().render(stack);
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().render(stack, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
+        NotificationManager.get().render(stack);
     }
 
     public static void renderHudOverlay(@Nonnull PoseStack stack) {

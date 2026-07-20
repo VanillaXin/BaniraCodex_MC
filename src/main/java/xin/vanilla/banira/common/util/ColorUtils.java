@@ -6,6 +6,8 @@ import xin.vanilla.banira.common.enums.EnumMCColor;
 import javax.annotation.Nullable;
 
 public final class ColorUtils {
+    private static final double MIN_READABLE_CONTRAST = 4.5;
+
     private ColorUtils() {
     }
 
@@ -153,6 +155,37 @@ public final class ColorUtils {
         int b = argb & 0xFF;
         // 使用ITU-R BT.709标准权重
         return (0.2126f * r + 0.7152f * g + 0.0722f * b) / 255f;
+    }
+
+    /**
+     * 保留可读的原文字色；对比度不足时改用黑色或白色中更清晰的一种。
+     */
+    public static int ensureReadableTextArgb(int textArgb, int backgroundArgb) {
+        if (contrastRatio(textArgb, backgroundArgb) >= MIN_READABLE_CONTRAST) {
+            return textArgb;
+        }
+        int alpha = textArgb & 0xFF000000;
+        int black = alpha;
+        int white = alpha | 0x00FFFFFF;
+        return contrastRatio(black, backgroundArgb) >= contrastRatio(white, backgroundArgb) ? black : white;
+    }
+
+    static double contrastRatio(int firstArgb, int secondArgb) {
+        double first = relativeLuminance(firstArgb);
+        double second = relativeLuminance(secondArgb);
+        return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+    }
+
+    private static double relativeLuminance(int argb) {
+        double r = linearChannel((argb >> 16) & 0xFF);
+        double g = linearChannel((argb >> 8) & 0xFF);
+        double b = linearChannel(argb & 0xFF);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    private static double linearChannel(int value) {
+        double channel = value / 255.0;
+        return channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
     }
 
     /**

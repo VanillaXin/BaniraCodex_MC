@@ -94,6 +94,7 @@ public final class BaniraClientForgeEventHandler {
             QuickActionOverlay.get().render(event.getGuiGraphics(), event.getScreen(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
+        NotificationManager.get().render(event.getGuiGraphics());
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

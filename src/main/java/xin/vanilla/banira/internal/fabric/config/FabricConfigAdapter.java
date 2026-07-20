@@ -70,8 +70,10 @@ final class FabricConfigAdapter {
             field.setAccessible(true);
             String path = prefix.isEmpty() ? field.getName() : prefix + "." + field.getName();
             if (isNested(field)) {
-                categoryTooltips.put(path, field.getName());
-                categoryTitleSpecs.put(path, ConfigCategoryTitleSpec.literal(field.getName()));
+                TooltipResolution tooltip = resolveTooltip(field);
+                categoryTooltips.put(path, tooltip.fileLines.isEmpty()
+                        ? field.getName() : tooltip.fileLines.get(0));
+                categoryTitleSpecs.put(path, tooltip.toCategoryTitleSpec(field.getName()));
                 buildFromClass(field.getType(), path, descriptors, categoryTooltips, categoryTitleSpecs);
                 continue;
             }
@@ -126,19 +128,190 @@ final class FabricConfigAdapter {
             } else {
                 return null;
             }
-            return ConfigEntryDescriptor.builder()
+            TooltipResolution tooltip = resolveTooltip(field);
+            ConfigEntryDescriptor.ConfigEntryDescriptorBuilder builder = ConfigEntryDescriptor.builder()
                     .path(path)
                     .displayName(field.getName())
-                    .tooltip(Collections.emptyList())
+                    .tooltip(tooltip.fileLines)
+                    .tooltipGuiKind(tooltip.guiKind)
+                    .tooltipTranslationKey(tooltip.translationKey)
+                    .tooltipLocalizedByLang(tooltip.localizedByLang)
                     .valueType(valueType)
                     .defaultValue(defaultValue)
                     .minValue(min)
                     .maxValue(max)
                     .decimalPlaces(decimalPlaces)
-                    .enumClass(enumClass)
-                    .build();
+                    .enumClass(enumClass);
+            applyRequiresEditPermission(field, builder);
+            return builder.build();
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("Failed to build config descriptor: " + path, e);
+        }
+    }
+
+    /** 将公共配置注解转换为编辑器和配置文件共用的描述元数据。 */
+    private static TooltipResolution resolveTooltip(Field field) {
+        ConfigEntry.Gui.Tooltip annotation = field.getAnnotation(ConfigEntry.Gui.Tooltip.class);
+        if (annotation != null) {
+            String translationKey = trimmed(annotation.translationKey());
+            if (!translationKey.isEmpty()) {
+                return TooltipResolution.translationKey(translationKey);
+            }
+            Map<String, String> localized = localizedTooltip(annotation);
+            if (!localized.isEmpty()) {
+                return TooltipResolution.localized(localized, localizedFileLines(localized));
+            }
+            List<String> literalLines = nonNullLines(annotation.value());
+            if (!literalLines.isEmpty()) {
+                return TooltipResolution.multiline(literalLines);
+            }
+        }
+        ConfigEntry entry = field.getAnnotation(ConfigEntry.class);
+        if (entry != null && entry.tooltip().length > 0) {
+            return TooltipResolution.multiline(nonNullLines(entry.tooltip()));
+        }
+        return TooltipResolution.multiline(Collections.singletonList(field.getName()));
+    }
+
+    private static Map<String, String> localizedTooltip(ConfigEntry.Gui.Tooltip tooltip) {
+        Map<String, String> localized = new LinkedHashMap<>();
+        putLocalized(localized, "en_us", tooltip.en_us());
+        putLocalized(localized, "en_gb", tooltip.en_gb());
+        putLocalized(localized, "zh_cn", tooltip.zh_cn());
+        putLocalized(localized, "zh_tw", tooltip.zh_tw());
+        putLocalized(localized, "zh_hk", tooltip.zh_hk());
+        putLocalized(localized, "ja_jp", tooltip.ja_jp());
+        putLocalized(localized, "ko_kr", tooltip.ko_kr());
+        putLocalized(localized, "ru_ru", tooltip.ru_ru());
+        putLocalized(localized, "de_de", tooltip.de_de());
+        putLocalized(localized, "fr_fr", tooltip.fr_fr());
+        putLocalized(localized, "fr_ca", tooltip.fr_ca());
+        putLocalized(localized, "es_es", tooltip.es_es());
+        putLocalized(localized, "es_mx", tooltip.es_mx());
+        putLocalized(localized, "pt_br", tooltip.pt_br());
+        putLocalized(localized, "pt_pt", tooltip.pt_pt());
+        putLocalized(localized, "it_it", tooltip.it_it());
+        putLocalized(localized, "pl_pl", tooltip.pl_pl());
+        return localized;
+    }
+
+    private static void putLocalized(Map<String, String> localized, String language, String text) {
+        if (!trimmed(text).isEmpty()) {
+            localized.put(language, text);
+        }
+    }
+
+    private static List<String> localizedFileLines(Map<String, String> localized) {
+        String[] preferredOrder = {
+                "zh_cn", "zh_tw", "zh_hk", "ja_jp", "ko_kr", "en_us", "en_gb",
+                "de_de", "es_es", "es_mx", "fr_fr", "fr_ca", "it_it", "pl_pl",
+                "pt_br", "pt_pt", "ru_ru"
+        };
+        List<String> lines = new ArrayList<>();
+        Set<String> emitted = new HashSet<>();
+        for (String language : preferredOrder) {
+            addLocalizedLines(lines, emitted, localized, language);
+        }
+        List<String> remaining = new ArrayList<>(localized.keySet());
+        remaining.removeAll(emitted);
+        Collections.sort(remaining);
+        for (String language : remaining) {
+            addLocalizedLines(lines, emitted, localized, language);
+        }
+        return lines;
+    }
+
+    private static void addLocalizedLines(List<String> lines, Set<String> emitted,
+                                          Map<String, String> localized, String language) {
+        String text = localized.get(language);
+        if (text == null || !emitted.add(language)) {
+            return;
+        }
+        for (String line : text.split("\\n", -1)) {
+            String value = line.trim();
+            if (!value.isEmpty()) {
+                lines.add(value);
+            }
+        }
+    }
+
+    private static List<String> nonNullLines(String[] values) {
+        List<String> lines = new ArrayList<>();
+        if (values != null) {
+            for (String value : values) {
+                if (value != null) {
+                    lines.add(value);
+                }
+            }
+        }
+        return lines;
+    }
+
+    private static String trimmed(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static void applyRequiresEditPermission(
+            Field field, ConfigEntryDescriptor.ConfigEntryDescriptorBuilder builder) {
+        ConfigEntry.RequiresEditPermission permission = field.getAnnotation(ConfigEntry.RequiresEditPermission.class);
+        if (permission == null || permission.policy() != ConfigEntry.EditPermissionPolicy.FIELD_OVERRIDE) {
+            return;
+        }
+        boolean hasLevel = permission.permissionLevel() >= 0;
+        boolean hasKey = !trimmed(permission.virtualPermissionKey()).isEmpty();
+        if (!hasLevel && !hasKey) {
+            return;
+        }
+        builder.editPermissionPolicy(ConfigEntry.EditPermissionPolicy.FIELD_OVERRIDE);
+        if (hasLevel) {
+            builder.fieldEditPermissionLevel(permission.permissionLevel());
+        }
+        if (hasKey) {
+            builder.fieldEditVirtualPermissionKey(permission.virtualPermissionKey());
+        }
+    }
+
+    private static final class TooltipResolution {
+        private final List<String> fileLines;
+        private final ConfigEntryDescriptor.ConfigTooltipGuiKind guiKind;
+        private final String translationKey;
+        private final Map<String, String> localizedByLang;
+
+        private TooltipResolution(List<String> fileLines, ConfigEntryDescriptor.ConfigTooltipGuiKind guiKind,
+                                  String translationKey, Map<String, String> localizedByLang) {
+            this.fileLines = Collections.unmodifiableList(new ArrayList<>(fileLines));
+            this.guiKind = guiKind;
+            this.translationKey = translationKey;
+            this.localizedByLang = Collections.unmodifiableMap(new LinkedHashMap<>(localizedByLang));
+        }
+
+        private static TooltipResolution translationKey(String key) {
+            return new TooltipResolution(Collections.emptyList(),
+                    ConfigEntryDescriptor.ConfigTooltipGuiKind.TRANSLATION_KEY, key, Collections.emptyMap());
+        }
+
+        private static TooltipResolution localized(Map<String, String> localized, List<String> fileLines) {
+            return new TooltipResolution(fileLines,
+                    ConfigEntryDescriptor.ConfigTooltipGuiKind.LOCALIZED_STATIC, "", localized);
+        }
+
+        private static TooltipResolution multiline(List<String> lines) {
+            return new TooltipResolution(lines,
+                    ConfigEntryDescriptor.ConfigTooltipGuiKind.MULTILINE_LITERAL, "", Collections.emptyMap());
+        }
+
+        private ConfigCategoryTitleSpec toCategoryTitleSpec(String fallback) {
+            switch (guiKind) {
+                case TRANSLATION_KEY:
+                    return ConfigCategoryTitleSpec.translationKey(translationKey);
+                case LOCALIZED_STATIC:
+                    return localizedByLang.isEmpty()
+                            ? ConfigCategoryTitleSpec.literal(fallback)
+                            : ConfigCategoryTitleSpec.localized(localizedByLang);
+                case MULTILINE_LITERAL:
+                default:
+                    return ConfigCategoryTitleSpec.literal(fileLines.isEmpty() ? fallback : fileLines.get(0));
+            }
         }
     }
 

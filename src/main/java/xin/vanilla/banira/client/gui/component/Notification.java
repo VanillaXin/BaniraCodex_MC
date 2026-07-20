@@ -119,6 +119,7 @@ public class Notification extends NotificationData {
         Notification n = new Notification(c);
         n.bgColor(Color.argb(ClientThemeManager.getEffectiveTheme().popupBg()));
         n.borderColor(Color.argb(ClientThemeManager.getEffectiveTheme().popupBorder()));
+        n.ensureReadableComponentColors();
         return n;
     }
 
@@ -151,6 +152,7 @@ public class Notification extends NotificationData {
         } else {
             n.bgColor(data.bgColor());
             n.borderColor(data.borderColor());
+            n.ensureReadableComponentColors();
         }
         n.themedFromNetwork(fromNetwork);
         return n;
@@ -210,7 +212,25 @@ public class Notification extends NotificationData {
         Component c = this.component().clone();
         c.color(Color.argb(textArgb));
         this.component(c);
+        this.ensureReadableComponentColors();
+    }
+
+    private void ensureReadableComponentColors() {
+        ensureReadableComponentColors(this.component(), this.bgColor().argb());
         this.updateRichLayout();
+    }
+
+    private static void ensureReadableComponentColors(@Nullable Component component, int backgroundArgb) {
+        if (component == null) {
+            return;
+        }
+        component.color(Color.argb(ColorUtils.ensureReadableTextArgb(component.color().argb(), backgroundArgb)));
+        for (Component child : component.getChildren()) {
+            ensureReadableComponentColors(child, backgroundArgb);
+        }
+        for (Component arg : component.getArgs()) {
+            ensureReadableComponentColors(arg, backgroundArgb);
+        }
     }
 
     private void updateRichLayout() {

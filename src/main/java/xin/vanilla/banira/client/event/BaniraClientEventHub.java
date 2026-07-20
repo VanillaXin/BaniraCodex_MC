@@ -333,12 +333,12 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPostNative(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
-            NotificationManager.get().render(nativeGraphics);
             if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
                 QuickActionOverlay.get().render(nativeGraphics, screen,
                         (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
                 QuickActionOverlay.get().flushSaveIfNeeded();
             }
+            NotificationManager.get().render(nativeGraphics);
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
         }
 

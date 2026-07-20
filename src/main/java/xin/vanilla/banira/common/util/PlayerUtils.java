@@ -9,13 +9,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.UsernameCache;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.internal.common.ClientPlayerRuntimeBridge;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -94,12 +93,9 @@ public final class PlayerUtils {
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static UUID getPlayerUUID() {
-        if (net.minecraft.client.Minecraft.getInstance().player == null) {
-            return null;
-        }
-        return net.minecraft.client.Minecraft.getInstance().player.getUUID();
+        Player player = ClientPlayerRuntimeBridge.localPlayer();
+        return player != null ? player.getUUID() : null;
     }
 
     public static UUID getPlayerUUID(@Nonnull Player player) {
@@ -141,14 +137,7 @@ public final class PlayerUtils {
     public static String getPlayerNameString(UUID uuid) {
         String nameString = getPlayerNameString(getPlayerByUUID(uuid));
         if (StringUtils.isNullOrEmpty(nameString)) {
-            try {
-                if (EnvironmentUtils.isClient()) {
-                    nameString = net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                            .filter(info -> info.getProfile().getId().equals(uuid))
-                            .findFirst().orElse(null).getProfile().getName();
-                }
-            } catch (Throwable ignored) {
-            }
+            nameString = ClientPlayerRuntimeBridge.onlinePlayerName(uuid);
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
             nameString = UsernameCache.getLastKnownUsername(uuid);
@@ -190,24 +179,13 @@ public final class PlayerUtils {
     public static Player getPlayerByUUID(UUID uuid) {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
-        try {
-            entity = net.minecraft.client.Minecraft.getInstance().level.getPlayerByUUID(uuid);
-        } catch (Throwable ignored) {
-        }
-        return entity;
+        return ClientPlayerRuntimeBridge.levelPlayer(uuid);
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
-        try {
-            if (net.minecraft.client.Minecraft.getInstance().player != null && uuid != null) {
-                return net.minecraft.client.Minecraft.getInstance().player.connection.getOnlinePlayers().stream()
-                        .filter(info -> info.getProfile().getId().equals(uuid))
-                        .findFirst().orElse(null).getSkin().texture();
-            }
-        } catch (Throwable ignored) {
-        }
+        ResourceLocation skin = ClientPlayerRuntimeBridge.onlinePlayerSkin(uuid);
+        if (skin != null) return skin;
         return Identifier.id().create("minecraft", "textures/entity/steve.png");
     }
 

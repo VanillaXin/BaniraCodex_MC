@@ -1,7 +1,9 @@
 package xin.vanilla.banira.internal.forge.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
@@ -72,14 +74,22 @@ public final class ForgeConfigAdapter {
                 categoryTitleSpecs);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
-        ModList.get().getModContainerById(modId).ifPresent(container -> {
-            ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
-            container.addConfig(modConfig);
-            backend.setModConfig(modConfig);
-        });
+        ModContainer container = resolveContainer(modId);
+        ModConfig modConfig = new ModConfig(configType, spec, container, fileName);
+        container.addConfig(modConfig);
+        backend.setModConfig(modConfig);
 
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
+    }
+
+    private static ModContainer resolveContainer(String modId) {
+        ModContainer activeContainer = ModLoadingContext.get().getActiveContainer();
+        if (activeContainer != null && modId.equals(activeContainer.getModId())) {
+            return activeContainer;
+        }
+        return ModList.get().getModContainerById(modId)
+                .orElseThrow(() -> new IllegalStateException("Config container is unavailable: " + modId));
     }
 
     private static ModConfig.Type toForgeType(ConfigScope scope) {

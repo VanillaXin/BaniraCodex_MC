@@ -415,7 +415,8 @@ public final class CommandUtils {
         if (path == null) {
             return;
         }
-        builder.suggest(String.valueOf(holder.get(path)));
+        Object currentValue = holder.get(path);
+        builder.suggest(String.valueOf(currentValue));
         Object defaultValue = holder.defaultValue(path);
         if (defaultValue != null) {
             builder.suggest(String.valueOf(defaultValue));

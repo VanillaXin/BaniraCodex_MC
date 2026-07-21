@@ -484,11 +484,11 @@ public final class Component implements Cloneable, Serializable {
         Style style = Style.EMPTY;
         if (!this.color().isEmpty() && this.color().rgb() != 0xFFFFFF)
             style = style.withColor(net.minecraft.network.chat.TextColor.fromRgb(color().rgb()));
-        style = style.withUnderlined(this.underlined())
-                .withBold(this.bold())
+        style = style.withBold(this.bold())
                 .withItalic(this.italic())
                 .withClickEvent(this.clickEvent)
                 .withHoverEvent(this.hoverEvent);
+        if (this.underlined()) style = style.applyFormat(net.minecraft.ChatFormatting.UNDERLINE);
         if (this.strikethrough()) style = style.applyFormat(net.minecraft.ChatFormatting.STRIKETHROUGH);
         if (this.obfuscated()) style = style.applyFormat(net.minecraft.ChatFormatting.OBFUSCATED);
         return style;

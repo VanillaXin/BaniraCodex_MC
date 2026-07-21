@@ -80,8 +80,11 @@ public class BaniraCodex implements ModInitializer {
                 BaniraEventBus.dispatchWorldTick(worldEvent(world)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 BaniraEventBus.dispatchPlayerLoggedIn(playerEvent(handler.player)));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                BaniraEventBus.dispatchPlayerLoggedOut(playerEvent(handler.player)));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            BaniraPlayerEvent event = playerEvent(handler.player);
+            BaniraEventBus.dispatchPlayerSave(event);
+            BaniraEventBus.dispatchPlayerLoggedOut(event);
+        });
         ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) ->
                 BaniraEventBus.dispatchWorldUnload(worldEvent(world)));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {

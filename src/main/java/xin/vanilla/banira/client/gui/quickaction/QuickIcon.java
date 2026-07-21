@@ -18,6 +18,8 @@ import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -108,6 +110,21 @@ public class QuickIcon {
     }
 
     /**
+     * Fabric 1.16 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
+     */
+    @Nullable
+    private Texture resolvedResourceTexture() {
+        if (texture == null || (texture.uvWidth() > 0 && texture.uvHeight() > 0)) {
+            return texture;
+        }
+        KeyValue<Integer, Integer> size = TextureUtils.resolveTextureSizeForDraw(texture.location());
+        if (size.key() > 0 && size.val() > 0) {
+            texture = Texture.of(texture.location(), size.key(), size.val());
+        }
+        return texture;
+    }
+
+    /**
      * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
      */
     public void renderForMenu(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
@@ -140,7 +157,8 @@ public class QuickIcon {
                 break;
             }
             case RESOURCE: {
-                if (texture == null) {
+                Texture resourceTexture = resolvedResourceTexture();
+                if (resourceTexture == null || resourceTexture.uvWidth() <= 0 || resourceTexture.uvHeight() <= 0) {
                     item(new ItemStack(Items.PAPER)).render(stack, mc, x, y, size);
                     return;
                 }
@@ -150,7 +168,7 @@ public class QuickIcon {
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.disableAlphaTest();
                 RenderSystem.color4f(1f, 1f, 1f, 1f);
-                ImageWidget.blit(stack, texture, x, y, size, size);
+                ImageWidget.blit(stack, resourceTexture, x, y, size, size);
                 RenderSystem.color4f(1f, 1f, 1f, 1f);
                 break;
             }

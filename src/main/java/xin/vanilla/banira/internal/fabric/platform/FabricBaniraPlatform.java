@@ -4,6 +4,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.minecraft.SharedConstants;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Fabric 1.19.2 的 platform 实现。
  */
 public final class FabricBaniraPlatform implements BaniraPlatform {
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final List<String> COMMON_ENTRYPOINT_KEYS = List.of("main");
     private static final List<String> CLIENT_ENTRYPOINT_KEYS = List.of("main", "client");
     private static final List<String> SERVER_ENTRYPOINT_KEYS = List.of("main", "server");
@@ -92,7 +95,7 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
         if (cached != null) {
             return cached;
         }
-        refreshEntrypointClassIndex();
+        refreshEntrypointClassIndex(null);
         cached = modIdsByMainClass.get(modMainClass);
         if (cached != null) {
             return cached;
@@ -114,7 +117,7 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
         if (cached != null) {
             return cached;
         }
-        refreshEntrypointClassIndex();
+        refreshEntrypointClassIndex(modId);
         cached = mainClassesByModId.get(modId);
         if (cached != null) {
             return cached;
@@ -182,14 +185,26 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
         return FabricLogoService.INSTANCE;
     }
 
-    private void refreshEntrypointClassIndex() {
+    private void refreshEntrypointClassIndex(@Nullable String targetModId) {
         FabricLoader loader = FabricLoader.getInstance();
         for (String key : entrypointKeys()) {
             for (EntrypointContainer<Object> container : loader.getEntrypointContainers(key, Object.class)) {
                 ModContainer provider = container.getProvider();
-                Object entrypoint = container.getEntrypoint();
-                if (provider != null && entrypoint != null) {
-                    cacheEntrypoint(provider.getMetadata().getId(), entrypoint.getClass());
+                if (provider == null) {
+                    continue;
+                }
+                String providerModId = provider.getMetadata().getId();
+                if (targetModId != null && !targetModId.equals(providerModId)) {
+                    continue;
+                }
+                try {
+                    Object entrypoint = container.getEntrypoint();
+                    if (entrypoint != null) {
+                        cacheEntrypoint(providerModId, entrypoint.getClass());
+                    }
+                } catch (RuntimeException error) {
+                    // Fabric API 也会声明方法入口；单个不兼容入口不应阻断其他 mod 的元数据查询。
+                    LOGGER.debug("Skipping incompatible Fabric {} entrypoint from {}", key, providerModId, error);
                 }
             }
         }

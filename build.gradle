@@ -31,7 +31,7 @@ loom {
 repositories {
     maven {
         name = "Terraformers Maven"
-        url = "https://maven.terraformersmc.com/"
+        url = "https://maven.terraformersmc.com/releases/"
     }
     maven {
         name = "Curse Maven"

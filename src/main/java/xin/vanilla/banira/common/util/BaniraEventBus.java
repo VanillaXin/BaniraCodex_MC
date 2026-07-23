@@ -39,37 +39,43 @@ public final class BaniraEventBus {
     private BaniraEventBus() {
     }
 
+    private static BaniraEventRegistration createRegistration(Runnable unregister) {
+        return unregister::run;
+    }
+
     public static final class Server {
         private Server() {
         }
 
-        public static void onStarting(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStarting(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartingCallbacks.add(callback);
+            return createRegistration(() -> serverStartingCallbacks.remove(callback));
         }
 
-        public static void onStarted(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStarted(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStartedCallbacks.add(callback);
+            return createRegistration(() -> serverStartedCallbacks.remove(callback));
         }
 
-        public static void onStopping(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onStopping(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverStoppingCallbacks.add(callback);
+            return createRegistration(() -> serverStoppingCallbacks.remove(callback));
         }
 
         /**
          * 服务器 tick 回调；各加载器 adapter 只在 END 阶段派发。
          */
-        public static void onTick(@Nonnull Consumer<BaniraServerEvent> callback) {
+        public static BaniraEventRegistration onTick(@Nonnull Consumer<BaniraServerEvent> callback) {
             serverTickCallbacks.add(callback);
+            return createRegistration(() -> serverTickCallbacks.remove(callback));
         }
 
         public static BaniraEventRegistration onStartingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
-            serverStartingCallbacks.add(callback);
-            return () -> serverStartingCallbacks.remove(callback);
+            return onStarting(callback);
         }
 
         public static BaniraEventRegistration onStoppingWithRegistration(@Nonnull Consumer<BaniraServerEvent> callback) {
-            serverStoppingCallbacks.add(callback);
-            return () -> serverStoppingCallbacks.remove(callback);
+            return onStopping(callback);
         }
     }
 
@@ -77,20 +83,24 @@ public final class BaniraEventBus {
         private PlayerEvents() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+        public static BaniraEventRegistration onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedInCallbacks.add(callback);
+            return createRegistration(() -> playerLoggedInCallbacks.remove(callback));
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+        public static BaniraEventRegistration onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerLoggedOutCallbacks.add(callback);
+            return createRegistration(() -> playerLoggedOutCallbacks.remove(callback));
         }
 
-        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
+        public static BaniraEventRegistration onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
             playerChangedDimensionCallbacks.add(callback);
+            return createRegistration(() -> playerChangedDimensionCallbacks.remove(callback));
         }
 
-        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+        public static BaniraEventRegistration onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
+            return createRegistration(() -> playerSaveCallbacks.remove(callback));
         }
     }
 
@@ -101,20 +111,20 @@ public final class BaniraEventBus {
         private Player() {
         }
 
-        public static void onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
-            PlayerEvents.onLoggedIn(callback);
+        public static BaniraEventRegistration onLoggedIn(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            return PlayerEvents.onLoggedIn(callback);
         }
 
-        public static void onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
-            PlayerEvents.onLoggedOut(callback);
+        public static BaniraEventRegistration onLoggedOut(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            return PlayerEvents.onLoggedOut(callback);
         }
 
-        public static void onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
-            PlayerEvents.onChangedDimension(callback);
+        public static BaniraEventRegistration onChangedDimension(@Nonnull Consumer<BaniraPlayerDimensionEvent> callback) {
+            return PlayerEvents.onChangedDimension(callback);
         }
 
-        public static void onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
-            PlayerEvents.onSave(callback);
+        public static BaniraEventRegistration onSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+            return PlayerEvents.onSave(callback);
         }
     }
 
@@ -122,16 +132,19 @@ public final class BaniraEventBus {
         private Save() {
         }
 
-        public static void onWorldSave(@Nonnull Runnable callback) {
+        public static BaniraEventRegistration onWorldSave(@Nonnull Runnable callback) {
             worldSaveCallbacks.add(callback);
+            return createRegistration(() -> worldSaveCallbacks.remove(callback));
         }
 
-        public static void onChunkSave(@Nonnull Runnable callback) {
+        public static BaniraEventRegistration onChunkSave(@Nonnull Runnable callback) {
             chunkSaveCallbacks.add(callback);
+            return createRegistration(() -> chunkSaveCallbacks.remove(callback));
         }
 
-        public static void onPlayerSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
+        public static BaniraEventRegistration onPlayerSave(@Nonnull Consumer<BaniraPlayerEvent> callback) {
             playerSaveCallbacks.add(callback);
+            return createRegistration(() -> playerSaveCallbacks.remove(callback));
         }
     }
 
@@ -139,12 +152,14 @@ public final class BaniraEventBus {
         private WorldEvents() {
         }
 
-        public static void onUnload(@Nonnull Consumer<BaniraWorldEvent> callback) {
+        public static BaniraEventRegistration onUnload(@Nonnull Consumer<BaniraWorldEvent> callback) {
             worldUnloadCallbacks.add(callback);
+            return createRegistration(() -> worldUnloadCallbacks.remove(callback));
         }
 
-        public static void onTick(@Nonnull Consumer<BaniraWorldEvent> callback) {
+        public static BaniraEventRegistration onTick(@Nonnull Consumer<BaniraWorldEvent> callback) {
             worldTickCallbacks.add(callback);
+            return createRegistration(() -> worldTickCallbacks.remove(callback));
         }
     }
 

@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.common;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ import java.util.UUID;
  */
 public final class ClientRuntimeBridge {
     private static volatile Method localPlayerMethod;
+    private static volatile Method levelMethod;
     private static volatile Method levelPlayerMethod;
     private static volatile Method onlinePlayerNameMethod;
     private static volatile Method onlinePlayerSkinMethod;
@@ -30,6 +32,13 @@ public final class ClientRuntimeBridge {
     public static Player localPlayer() {
         Object value = invoke("localPlayer");
         return value instanceof Player ? (Player) value : null;
+    }
+
+    /** 返回当前客户端世界；服务端或世界尚未建立时返回 null。 */
+    @Nullable
+    public static Level level() {
+        Object value = invoke("level");
+        return value instanceof Level ? (Level) value : null;
     }
 
     @Nullable
@@ -92,6 +101,7 @@ public final class ClientRuntimeBridge {
     private static Method cachedMethod(String methodName) {
         return switch (methodName) {
             case "localPlayer" -> localPlayerMethod;
+            case "level" -> levelMethod;
             case "levelPlayer" -> levelPlayerMethod;
             case "onlinePlayerName" -> onlinePlayerNameMethod;
             case "onlinePlayerSkin" -> onlinePlayerSkinMethod;
@@ -104,6 +114,7 @@ public final class ClientRuntimeBridge {
     private static void cacheMethod(String methodName, Method method) {
         switch (methodName) {
             case "localPlayer" -> localPlayerMethod = method;
+            case "level" -> levelMethod = method;
             case "levelPlayer" -> levelPlayerMethod = method;
             case "onlinePlayerName" -> onlinePlayerNameMethod = method;
             case "onlinePlayerSkin" -> onlinePlayerSkinMethod = method;

@@ -6,10 +6,11 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
 import xin.vanilla.banira.common.util.PlayerUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 
 import java.util.Map;
@@ -50,11 +51,12 @@ public final class FabricNetworkChannels {
         if (handler == null || !hasLocalChannel(handler.channel())) {
             return;
         }
-        if (BaniraClientRuntime.localPlayer() == null) {
+        Player player = ClientRuntimeBridge.localPlayer();
+        if (player == null) {
             return;
         }
         if (!(packet instanceof ModLoadedToBoth)
-                && !PlayerUtils.isRemoteServerModInstalled(BaniraClientRuntime.localPlayer(), handler.channel().getNamespace())) {
+                && !PlayerUtils.isRemoteServerModInstalled(player, handler.channel().getNamespace())) {
             return;
         }
         ClientPlayNetworking.send(handler.encodePayload(packet));

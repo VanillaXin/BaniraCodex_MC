@@ -18,7 +18,7 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 
 import java.util.LinkedHashMap;
@@ -136,7 +136,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
             return BaniraCodex.serverInstance().key().registryAccess();
         }
         try {
-            Level level = BaniraClientRuntime.level();
+            Level level = ClientRuntimeBridge.level();
             if (level != null) {
                 return level.registryAccess();
             }

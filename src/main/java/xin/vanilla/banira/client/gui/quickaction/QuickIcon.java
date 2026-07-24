@@ -16,6 +16,8 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
 
 import javax.annotation.Nonnull;
@@ -107,6 +109,21 @@ public class QuickIcon {
     }
 
     /**
+     * 子 mod 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
+     */
+    @Nullable
+    private Texture resolvedResourceTexture() {
+        if (texture == null || (texture.uvWidth() > 0 && texture.uvHeight() > 0)) {
+            return texture;
+        }
+        KeyValue<Integer, Integer> size = TextureUtils.resolveTextureSizeForDraw(texture.location());
+        if (size.key() > 0 && size.val() > 0) {
+            texture = Texture.of(texture.location(), size.key(), size.val());
+        }
+        return texture;
+    }
+
+    /**
      * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
      */
     public void renderForMenu(@Nonnull PoseStack stack, int x, int y, int size) {
@@ -140,7 +157,8 @@ public class QuickIcon {
                 break;
             }
             case RESOURCE: {
-                if (texture == null) {
+                Texture resourceTexture = resolvedResourceTexture();
+                if (resourceTexture == null || resourceTexture.uvWidth() <= 0 || resourceTexture.uvHeight() <= 0) {
                     item(new ItemStack(Items.PAPER)).render(stack, x, y, size);
                     return;
                 }
@@ -149,7 +167,7 @@ public class QuickIcon {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-                ImageWidget.blit(stack, texture, x, y, size, size);
+                ImageWidget.blit(stack, resourceTexture, x, y, size, size);
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;

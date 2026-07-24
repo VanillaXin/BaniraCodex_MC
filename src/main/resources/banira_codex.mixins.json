@@ -9,6 +9,7 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "injections.GuiMixin",
     "injections.MinecraftClientMixin",
     "injections.PlayerTabOverlayMixin"
   ],

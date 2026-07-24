@@ -445,7 +445,11 @@ public class NotificationLogScreen extends BaniraScreen {
             contentStr = "-";
         }
 
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(selected ? theme.textPrimary() : theme.textSecondary()).stack(stack).font(font))
+        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
+        int rowTextColor = rowComponent != null && !rowComponent.color().isEmpty()
+                ? rowComponent.color().argb()
+                : selected ? theme.textPrimary() : theme.textSecondary();
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(rowTextColor).stack(stack).font(font))
                 .x(textX).y(y + (h - 9) / 2).fontSize(9).maxWidth(textW)
                 .position(EnumEllipsisPosition.END).wrap(false)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
@@ -485,7 +489,11 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += renderDetailMetaRows(stack, x, curY, w, entry, theme);
         curY += DETAIL_AFTER_META_GAP;
 
-        net.minecraft.network.chat.Component contentVanilla = entry.component().toVanilla(Translator.getClientLanguage());
+        Component readableContent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
+        String language = Translator.getClientLanguage();
+        net.minecraft.network.chat.Component contentVanilla = readableContent.toVanilla(language);
+        boolean detailNeedsContrastShadow = ColorUtils.hasLowContrastMinecraftFormatting(
+                entry.component().getString(language, false, false), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;
@@ -494,7 +502,7 @@ public class NotificationLogScreen extends BaniraScreen {
             float lineY = curY;
             int textColor = theme.textPrimary();
             for (FormattedCharSequence line : detailContentLines) {
-                graphics.drawString(font, line, x, lineY, textColor, false);
+                graphics.drawString(font, line, x, lineY, textColor, detailNeedsContrastShadow);
                 lineY += font.lineHeight;
             }
             if (!isAnyDropdownSelectOpen()) {

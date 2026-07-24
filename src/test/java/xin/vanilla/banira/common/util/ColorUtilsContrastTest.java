@@ -19,4 +19,12 @@ public class ColorUtilsContrastTest {
 
         assertEquals(0xFF7A1F1F, result);
     }
+
+    @Test
+    public void embeddedYellowFormattingIsRewrittenForPaleBackground() {
+        String result = ColorUtils.ensureReadableMinecraftFormatting(
+                "\u00A7r\u00A7eCountdown: 3", 0xFFFFF4C2);
+
+        assertEquals("\u00A7r\u00A70Countdown: 3", result);
+    }
 }

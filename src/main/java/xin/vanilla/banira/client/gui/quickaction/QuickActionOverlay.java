@@ -22,6 +22,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
@@ -682,7 +683,7 @@ public final class QuickActionOverlay {
         hoveredSlot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, allowEmptyHover);
 
         stack.pushPose();
-        stack.translate(0, 0, 4000);
+        stack.translate(0, 0, EnumRenderDepth.OVERLAY.depth());
 
         RenderSystem.enableBlend();
 

@@ -11,6 +11,7 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "injections.GuiMixin",
     "injections.MinecraftClientMixin"
   ],
   "injectors": {

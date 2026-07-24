@@ -357,9 +357,6 @@ public final class BaniraClientEventHub {
 
         public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
-            if (element == HudOverlayElement.ALL && !screenOpen) {
-                BaniraClientOverlayBridge.renderHudOverlay(nativeGraphics);
-            }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }
     }

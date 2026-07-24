@@ -24,7 +24,6 @@ import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
 import xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.LogoModifier;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
@@ -99,11 +98,6 @@ public final class BaniraClientEventHub {
             if (BaniraCodex.MODID.equals(event.getAtlas().location().getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 QuickActionOverlay.resetSystemIconTextureCache();
-            }
-        });
-        Client.onRenderOverlayPost(event -> {
-            if (BaniraGuiOverlayEvent.PLAYER_LIST.equals(event.overlayId()) && Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(event.guiGraphics());
             }
         });
     }

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import xin.vanilla.banira.common.data.Color;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 
 import javax.annotation.Nullable;
@@ -158,16 +159,87 @@ public final class ColorUtils {
     }
 
     /**
-     * 保留可读的原文字色；对比度不足时改用黑色或白色中更清晰的一种。
+     * 保留原文字色的色相；对比度不足时，仅向黑色或白色做达到阈值所需的最小混合。
      */
     public static int ensureReadableTextArgb(int textArgb, int backgroundArgb) {
         if (contrastRatio(textArgb, backgroundArgb) >= MIN_READABLE_CONTRAST) {
             return textArgb;
         }
-        int alpha = textArgb & 0xFF000000;
-        int black = alpha;
-        int white = alpha | 0x00FFFFFF;
-        return contrastRatio(black, backgroundArgb) >= contrastRatio(white, backgroundArgb) ? black : white;
+        int darkened = blendUntilReadable(textArgb, backgroundArgb, 0x000000);
+        int lightened = blendUntilReadable(textArgb, backgroundArgb, 0xFFFFFF);
+        if (darkened == -1) {
+            return lightened;
+        }
+        if (lightened == -1) {
+            return darkened;
+        }
+        return colorDistanceSquared(textArgb, darkened) <= colorDistanceSquared(textArgb, lightened)
+                ? darkened
+                : lightened;
+    }
+
+    /**
+     * 创建只用于绘制的可读副本，不污染通知日志中保存的原始颜色。
+     */
+    public static Component readableComponentCopy(Component component, int backgroundArgb) {
+        if (component == null) {
+            return null;
+        }
+        Component result = component.clone();
+        adjustComponentColors(result, backgroundArgb);
+        return result;
+    }
+
+    private static void adjustComponentColors(Component component, int backgroundArgb) {
+        if (!component.color().isEmpty()) {
+            component.color(Color.argb(ensureReadableTextArgb(component.color().argb(), backgroundArgb)));
+        }
+        for (Component child : component.getChildren()) {
+            adjustComponentColors(child, backgroundArgb);
+        }
+        for (Component arg : component.getArgs()) {
+            if (arg != null) {
+                adjustComponentColors(arg, backgroundArgb);
+            }
+        }
+    }
+
+    private static int blendUntilReadable(int textArgb, int backgroundArgb, int targetRgb) {
+        int target = (textArgb & 0xFF000000) | targetRgb;
+        if (contrastRatio(target, backgroundArgb) < MIN_READABLE_CONTRAST) {
+            return -1;
+        }
+        double low = 0.0;
+        double high = 1.0;
+        for (int i = 0; i < 24; i++) {
+            double mid = (low + high) * 0.5;
+            int candidate = blendRgb(textArgb, targetRgb, mid);
+            if (contrastRatio(candidate, backgroundArgb) >= MIN_READABLE_CONTRAST) {
+                high = mid;
+            } else {
+                low = mid;
+            }
+        }
+        return blendRgb(textArgb, targetRgb, high);
+    }
+
+    private static int blendRgb(int argb, int targetRgb, double amount) {
+        int alpha = argb & 0xFF000000;
+        int red = blendChannel((argb >> 16) & 0xFF, (targetRgb >> 16) & 0xFF, amount);
+        int green = blendChannel((argb >> 8) & 0xFF, (targetRgb >> 8) & 0xFF, amount);
+        int blue = blendChannel(argb & 0xFF, targetRgb & 0xFF, amount);
+        return alpha | (red << 16) | (green << 8) | blue;
+    }
+
+    private static int blendChannel(int from, int to, double amount) {
+        return (int) Math.round(from + (to - from) * amount);
+    }
+
+    private static long colorDistanceSquared(int firstArgb, int secondArgb) {
+        long red = ((firstArgb >> 16) & 0xFF) - ((secondArgb >> 16) & 0xFF);
+        long green = ((firstArgb >> 8) & 0xFF) - ((secondArgb >> 8) & 0xFF);
+        long blue = (firstArgb & 0xFF) - (secondArgb & 0xFF);
+        return red * red + green * green + blue * blue;
     }
 
     /**
@@ -200,6 +272,25 @@ public final class ColorUtils {
         return result.toString();
     }
 
+    /**
+     * 检查旧式颜色码是否需要额外阴影；阴影可以保留原格式色，不必将其替换成另一种色相。
+     */
+    public static boolean hasLowContrastMinecraftFormatting(String text, int backgroundArgb) {
+        if (text == null || text.indexOf('\u00A7') < 0) {
+            return false;
+        }
+        for (int i = 0; i + 1 < text.length(); i++) {
+            if (text.charAt(i) != '\u00A7') {
+                continue;
+            }
+            Integer color = legacyColorArgb(Character.toLowerCase(text.charAt(++i)));
+            if (color != null && contrastRatio(color, backgroundArgb) < MIN_READABLE_CONTRAST) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean hasFollowingLegacyColor(String text, int index) {
         return index + 1 < text.length()
                 && text.charAt(index) == '\u00A7'
@@ -207,11 +298,38 @@ public final class ColorUtils {
     }
 
     private static char readableLegacyCode(int textArgb, int backgroundArgb) {
-        int readable = ensureReadableTextArgb(textArgb, backgroundArgb);
-        if (readable == textArgb) {
-            return legacyCodeForRgb(textArgb & 0x00FFFFFF);
+        char original = legacyCodeForRgb(textArgb & 0x00FFFFFF);
+        if (contrastRatio(textArgb, backgroundArgb) >= MIN_READABLE_CONTRAST) {
+            return original;
         }
-        return (readable & 0x00FFFFFF) == 0 ? '0' : 'f';
+        int readable = ensureReadableTextArgb(textArgb, backgroundArgb);
+        char bestCode = original;
+        long bestScore = Long.MAX_VALUE;
+        double originalSaturation = saturation(textArgb);
+        for (char code : "0123456789abcdef".toCharArray()) {
+            Integer candidate = legacyColorArgb(code);
+            if (candidate == null || contrastRatio(candidate, backgroundArgb) < MIN_READABLE_CONTRAST) {
+                continue;
+            }
+            long score = colorDistanceSquared(readable, candidate);
+            if (originalSaturation >= 0.2 && saturation(candidate) < 0.15) {
+                score += 250_000;
+            }
+            if (score < bestScore) {
+                bestScore = score;
+                bestCode = code;
+            }
+        }
+        return bestCode;
+    }
+
+    private static double saturation(int argb) {
+        int red = (argb >> 16) & 0xFF;
+        int green = (argb >> 8) & 0xFF;
+        int blue = argb & 0xFF;
+        int max = Math.max(red, Math.max(green, blue));
+        int min = Math.min(red, Math.min(green, blue));
+        return max == 0 ? 0.0 : (max - min) / (double) max;
     }
 
     private static Integer legacyColorArgb(char code) {

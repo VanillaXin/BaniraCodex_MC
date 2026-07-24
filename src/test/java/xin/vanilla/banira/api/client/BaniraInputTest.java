@@ -2,8 +2,11 @@ package xin.vanilla.banira.api.client;
 
 import org.junit.Test;
 import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class BaniraInputTest {
 
@@ -20,6 +23,14 @@ public class BaniraInputTest {
         assertEquals("example", spec.modId());
         assertEquals("open_panel", spec.suffix());
         assertEquals(BaniraKeyCodes.KEY_UNKNOWN, spec.defaultKey());
+    }
+
+    @Test
+    public void inputStateQueriesUsePlatformService() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+
+        assertFalse(BaniraInput.isKeyDown(BaniraKeyCodes.KEY_K));
+        assertFalse(BaniraInput.isMouseDown(BaniraKeyCodes.MOUSE_LEFT));
     }
 
     @Test(expected = IllegalArgumentException.class)

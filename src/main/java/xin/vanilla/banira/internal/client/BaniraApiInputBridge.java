@@ -21,6 +21,16 @@ public final class BaniraApiInputBridge {
         }
 
         @Override
+        public boolean isKeyDown(int keyCode) {
+            return BaniraClientInputService.isKeyDown(keyCode);
+        }
+
+        @Override
+        public boolean isMouseDown(int button) {
+            return BaniraClientInputService.isMouseDown(button);
+        }
+
+        @Override
         public void flushPendingRegistrations() {
             BaniraApiInputBridge.flushPendingRegistrations();
         }

@@ -12,6 +12,10 @@ public interface BaniraInputService {
     @Nonnull
     BaniraKeyHandle register(@Nonnull BaniraKeySpec spec);
 
+    boolean isKeyDown(int keyCode);
+
+    boolean isMouseDown(int button);
+
     /**
      * 将静态初始化期间暂存的按键提交给加载器。
      */

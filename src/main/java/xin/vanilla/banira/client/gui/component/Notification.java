@@ -112,6 +112,26 @@ public class Notification extends NotificationData {
         this.updateRichLayout();
     }
 
+    @Override
+    public Notification component(Component component) {
+        super.component(component);
+        refreshReadableLayout();
+        return this;
+    }
+
+    @Override
+    public Notification bgColor(Color bgColor) {
+        super.bgColor(bgColor);
+        refreshReadableLayout();
+        return this;
+    }
+
+    private void refreshReadableLayout() {
+        if (component() != null && bgColor() != null) {
+            ensureReadableComponentColors();
+        }
+    }
+
     public static Notification ofComponentWithBlack(Component component) {
         return new Notification(component.color(0xFF000000));
     }
@@ -248,7 +268,9 @@ public class Notification extends NotificationData {
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
-        this.vanillaDrawText = this.component().toVanilla(lang);
+        String formatted = this.component().getString(lang, false, false);
+        String readable = ColorUtils.ensureReadableMinecraftFormatting(formatted, this.bgColor().argb());
+        this.vanillaDrawText = BaniraComponent.get().literal(readable).toVanilla(lang);
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         this.richTextMaxLineW = 0;
         for (FormattedCharSequence line : this.richDrawLines) {

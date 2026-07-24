@@ -170,6 +170,88 @@ public final class ColorUtils {
         return contrastRatio(black, backgroundArgb) >= contrastRatio(white, backgroundArgb) ? black : white;
     }
 
+    /**
+     * 修正旧式 Minecraft 格式码中的低对比度颜色。重置码后没有显式颜色时才补回可读前景色。
+     */
+    public static String ensureReadableMinecraftFormatting(String text, int backgroundArgb) {
+        if (text == null || text.indexOf('\u00A7') < 0) {
+            return text;
+        }
+        StringBuilder result = new StringBuilder(text.length() + 4);
+        for (int i = 0; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (current != '\u00A7' || i + 1 >= text.length()) {
+                result.append(current);
+                continue;
+            }
+            char code = Character.toLowerCase(text.charAt(++i));
+            if (code == 'r') {
+                result.append('\u00A7').append('r');
+                if (!hasFollowingLegacyColor(text, i + 1)) {
+                    result.append('\u00A7').append(readableLegacyCode(0xFFFFFFFF, backgroundArgb));
+                }
+                continue;
+            }
+            Integer color = legacyColorArgb(code);
+            result.append('\u00A7').append(color == null
+                    ? code
+                    : readableLegacyCode(color, backgroundArgb));
+        }
+        return result.toString();
+    }
+
+    private static boolean hasFollowingLegacyColor(String text, int index) {
+        return index + 1 < text.length()
+                && text.charAt(index) == '\u00A7'
+                && legacyColorArgb(Character.toLowerCase(text.charAt(index + 1))) != null;
+    }
+
+    private static char readableLegacyCode(int textArgb, int backgroundArgb) {
+        int readable = ensureReadableTextArgb(textArgb, backgroundArgb);
+        if (readable == textArgb) {
+            return legacyCodeForRgb(textArgb & 0x00FFFFFF);
+        }
+        return (readable & 0x00FFFFFF) == 0 ? '0' : 'f';
+    }
+
+    private static Integer legacyColorArgb(char code) {
+        switch (code) {
+            case '0': return 0xFF000000;
+            case '1': return 0xFF0000AA;
+            case '2': return 0xFF00AA00;
+            case '3': return 0xFF00AAAA;
+            case '4': return 0xFFAA0000;
+            case '5': return 0xFFAA00AA;
+            case '6': return 0xFFFFAA00;
+            case '7': return 0xFFAAAAAA;
+            case '8': return 0xFF555555;
+            case '9': return 0xFF5555FF;
+            case 'a': return 0xFF55FF55;
+            case 'b': return 0xFF55FFFF;
+            case 'c': return 0xFFFF5555;
+            case 'd': return 0xFFFF55FF;
+            case 'e': return 0xFFFFFF55;
+            case 'f': return 0xFFFFFFFF;
+            default: return null;
+        }
+    }
+
+    private static char legacyCodeForRgb(int rgb) {
+        final String codes = "0123456789abcdef";
+        final int[] colors = {
+                0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,
+                0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+                0x555555, 0x5555FF, 0x55FF55, 0x55FFFF,
+                0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+        };
+        for (int i = 0; i < colors.length; i++) {
+            if (colors[i] == rgb) {
+                return codes.charAt(i);
+            }
+        }
+        return 'f';
+    }
+
     static double contrastRatio(int firstArgb, int secondArgb) {
         double first = relativeLuminance(firstArgb);
         double second = relativeLuminance(secondArgb);

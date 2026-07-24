@@ -87,6 +87,8 @@ public class Notification extends NotificationData {
     private transient net.minecraft.network.chat.Component vanillaDrawText;
     private transient List<FormattedCharSequence> richDrawLines = new ArrayList<>();
     private transient int richTextMaxLineW;
+    private transient int richDefaultTextArgb = 0xFFFFFFFF;
+    private transient boolean richNeedsContrastShadow;
     /**
      * 最近一次绘制在 GUI 坐标下的外接矩形（用于点击检测）
      */
@@ -235,27 +237,16 @@ public class Notification extends NotificationData {
         this.bgColor(Color.argb(bg));
         this.borderColor(Color.argb(border));
         Component c = this.component().clone();
-        c.color(Color.argb(textArgb));
+        // 白色是 Component 的默认前景色；显式语义色由调用方保留，只在绘制副本上修正对比度。
+        if (c.color().isEmpty() || c.color().rgb() == 0xFFFFFF) {
+            c.color(Color.argb(textArgb));
+        }
         this.component(c);
         this.ensureReadableComponentColors();
     }
 
     private void ensureReadableComponentColors() {
-        ensureReadableComponentColors(this.component(), this.bgColor().argb());
         this.updateRichLayout();
-    }
-
-    private static void ensureReadableComponentColors(@Nullable Component component, int backgroundArgb) {
-        if (component == null) {
-            return;
-        }
-        component.color(Color.argb(ColorUtils.ensureReadableTextArgb(component.color().argb(), backgroundArgb)));
-        for (Component child : component.getChildren()) {
-            ensureReadableComponentColors(child, backgroundArgb);
-        }
-        for (Component arg : component.getArgs()) {
-            ensureReadableComponentColors(arg, backgroundArgb);
-        }
     }
 
     private void updateRichLayout() {
@@ -268,9 +259,12 @@ public class Notification extends NotificationData {
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
-        String formatted = this.component().getString(lang, false, false);
-        String readable = ColorUtils.ensureReadableMinecraftFormatting(formatted, this.bgColor().argb());
-        this.vanillaDrawText = BaniraComponent.get().literal(readable).toVanilla(lang);
+        Component readable = ColorUtils.readableComponentCopy(this.component(), this.bgColor().argb());
+        this.vanillaDrawText = readable.toVanilla(lang);
+        int sourceTextArgb = readable.color().isEmpty() ? 0xFFFFFFFF : readable.color().argb();
+        this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
+        this.richNeedsContrastShadow = ColorUtils.hasLowContrastMinecraftFormatting(
+                this.component().getString(lang, false, false), this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         this.richTextMaxLineW = 0;
         for (FormattedCharSequence line : this.richDrawLines) {
@@ -498,12 +492,9 @@ public class Notification extends NotificationData {
                 int drawAlpha = drawArgs.alpha();
                 int bgArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.bgColor().argb(), drawAlpha) : this.bgColor().argb();
                 int borderArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.borderColor().argb(), drawAlpha) : this.borderColor().argb();
-                int textArgb;
-                if (this.component().color().isEmpty()) {
-                    textArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(0xFFFFFFFF, drawAlpha) : 0xFFFFFFFF;
-                } else {
-                    textArgb = drawAlpha < 0xFF ? ColorUtils.applyAlphaToArgb(this.component().color().argb(), drawAlpha) : this.component().color().argb();
-                }
+                int textArgb = drawAlpha < 0xFF
+                        ? ColorUtils.applyAlphaToArgb(this.richDefaultTextArgb, drawAlpha)
+                        : this.richDefaultTextArgb;
 
                 ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
                 rect.rect().radius(this.radius());
@@ -528,7 +519,7 @@ public class Notification extends NotificationData {
                             textX,
                             textY,
                             textArgb,
-                            false,
+                            this.richNeedsContrastShadow,
                             drawArgs.stack().last().pose(),
                             bufferSource,
                             Font.DisplayMode.NORMAL,

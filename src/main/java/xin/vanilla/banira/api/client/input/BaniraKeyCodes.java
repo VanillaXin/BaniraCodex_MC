@@ -73,6 +73,10 @@ public final class BaniraKeyCodes {
     public static final int KEY_RIGHT_ALT = 346;
     public static final int KEY_RIGHT_SUPER = 347;
 
+    public static final int MOUSE_LEFT = 0;
+    public static final int MOUSE_RIGHT = 1;
+    public static final int MOUSE_MIDDLE = 2;
+
     public static final int MOD_SHIFT = 0x1;
     public static final int MOD_CONTROL = 0x2;
     public static final int MOD_ALT = 0x4;

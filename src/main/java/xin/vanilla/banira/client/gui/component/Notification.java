@@ -251,9 +251,10 @@ public class Notification extends NotificationData {
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
-        Component readable = ColorUtils.readableComponentCopy(this.component(), this.bgColor().argb());
-        this.vanillaDrawText = readable.toVanilla(lang);
-        int sourceTextArgb = readable.color().isEmpty() ? 0xFFFFFFFF : readable.color().argb();
+        this.vanillaDrawText = ColorUtils.readableVanillaComponentCopy(
+                this.component().toVanilla(lang), this.bgColor().argb());
+        int sourceTextArgb = this.component().color().isEmpty()
+                ? 0xFFFFFFFF : this.component().color().argb();
         this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         this.richTextMaxLineW = 0;

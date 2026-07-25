@@ -1,10 +1,16 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 public final class ColorUtils {
     private static final double MIN_READABLE_CONTRAST = 4.5;
@@ -190,10 +196,72 @@ public final class ColorUtils {
         return result;
     }
 
-    private static void adjustComponentColors(Component component, int backgroundArgb) {
-        if (component.i18nType() == xin.vanilla.banira.common.enums.EnumI18nType.PLAIN) {
-            component.text(ensureReadableMinecraftFormatting(component.text(), backgroundArgb));
+    /**
+     * 在翻译和参数展开后修正每个文本片段的颜色，避免旧式颜色码只能跳到另一种色相。
+     */
+    public static ITextComponent readableVanillaComponentCopy(
+            ITextComponent component, int backgroundArgb) {
+        if (component == null) {
+            return new StringTextComponent("");
         }
+        IFormattableTextComponent result = new StringTextComponent("");
+        component.visit((style, text) -> {
+            appendReadableVanillaSegments(result, style, text, backgroundArgb);
+            return Optional.empty();
+        }, Style.EMPTY);
+        return result;
+    }
+
+    private static void appendReadableVanillaSegments(IFormattableTextComponent target, Style sourceStyle,
+                                                      String text, int backgroundArgb) {
+        Style baseStyle = readableStyle(sourceStyle, backgroundArgb);
+        Style currentStyle = baseStyle;
+        StringBuilder segment = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (current != '\u00A7' || i + 1 >= text.length()) {
+                segment.append(current);
+                continue;
+            }
+            appendVanillaSegment(target, segment, currentStyle);
+            char code = Character.toLowerCase(text.charAt(++i));
+            TextFormatting formatting = TextFormatting.getByCode(code);
+            if (formatting == null) {
+                segment.append('\u00A7').append(code);
+                continue;
+            }
+            if (formatting == TextFormatting.RESET) {
+                currentStyle = baseStyle;
+                continue;
+            }
+            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            Integer legacyColor = legacyColorArgb(code);
+            if (legacyColor != null) {
+                int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
+                currentStyle = currentStyle.withColor(
+                        net.minecraft.util.text.Color.fromRgb(readable & 0x00FFFFFF));
+            }
+        }
+        appendVanillaSegment(target, segment, currentStyle);
+    }
+
+    private static void appendVanillaSegment(IFormattableTextComponent target, StringBuilder segment, Style style) {
+        if (segment.length() == 0) {
+            return;
+        }
+        target.append(new StringTextComponent(segment.toString()).setStyle(style));
+        segment.setLength(0);
+    }
+
+    private static Style readableStyle(Style style, int backgroundArgb) {
+        if (style == null || style.getColor() == null) {
+            return style != null ? style : Style.EMPTY;
+        }
+        int readable = ensureReadableTextArgb(0xFF000000 | style.getColor().getValue(), backgroundArgb);
+        return style.withColor(net.minecraft.util.text.Color.fromRgb(readable & 0x00FFFFFF));
+    }
+
+    private static void adjustComponentColors(Component component, int backgroundArgb) {
         if (!component.color().isEmpty()) {
             component.color(Color.argb(ensureReadableTextArgb(component.color().argb(), backgroundArgb)));
         }

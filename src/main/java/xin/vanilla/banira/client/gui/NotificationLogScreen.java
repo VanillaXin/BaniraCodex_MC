@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.Style;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
@@ -434,20 +435,17 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
-        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
-        String contentStr = componentPlainSingleLineForLog(rowComponent);
-        if (StringUtils.isNullOrEmptyEx(contentStr)) {
-            contentStr = "-";
+        String language = Translator.getClientLanguage();
+        ITextComponent rowComponent = ColorUtils.readableVanillaComponentCopy(
+                entry.component().toVanilla(language), theme.panelBg());
+        if (StringUtils.isNullOrEmptyEx(rowComponent.getString())) {
+            rowComponent = new StringTextComponent("-");
         }
-
-        int rowTextColor = rowComponent != null && !rowComponent.color().isEmpty()
-                ? rowComponent.color().argb()
-                : selected ? theme.textPrimary() : theme.textSecondary();
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(rowTextColor).stack(stack).font(font))
-                .x(textX).y(y + (h - 9) / 2).fontSize(9).maxWidth(textW)
-                .position(EnumEllipsisPosition.END).wrap(false)
-                .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        LabelWidget.drawLimitedText(args);
+        List<IReorderingProcessor> rowLines = font.split(rowComponent, Math.max(1, textW));
+        if (!rowLines.isEmpty()) {
+            font.draw(stack, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
+                    selected ? theme.textPrimary() : theme.textSecondary());
+        }
     }
 
     private void renderDetailPane(MatrixStack stack, BaniraColorConfig theme) {
@@ -483,9 +481,9 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += renderDetailMetaRows(stack, x, curY, w, entry, theme);
         curY += DETAIL_AFTER_META_GAP;
 
-        Component readableContent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
         String language = Translator.getClientLanguage();
-        ITextComponent contentVanilla = readableContent.toVanilla(language);
+        ITextComponent contentVanilla = ColorUtils.readableVanillaComponentCopy(
+                entry.component().toVanilla(language), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;

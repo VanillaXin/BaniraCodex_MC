@@ -40,11 +40,16 @@ public class ColorUtilsContrastTest {
     }
 
     @Test
-    public void lowContrastLegacyColorRequestsShadowWithoutChangingTheSource() {
+    public void readableComponentCopyRewritesLegacyColorWithoutChangingTheSource() {
         String source = "\u00A7eCountdown: 3";
+        Component component = BaniraComponent.get().literal(source);
 
-        assertTrue(ColorUtils.hasLowContrastMinecraftFormatting(source, 0xFFFFF4C2));
+        Component readable = ColorUtils.readableComponentCopy(component, 0xFFFFF4C2);
+
         assertEquals("\u00A7eCountdown: 3", source);
+        assertEquals("\u00A7eCountdown: 3", component.text());
+        assertNotEquals(component.text(), readable.text());
+        assertTrue(readable.text().startsWith("\u00A7"));
     }
 
     @Test

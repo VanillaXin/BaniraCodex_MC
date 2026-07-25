@@ -442,12 +442,12 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
-        String contentStr = componentPlainSingleLineForLog(entry.component());
+        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
+        String contentStr = componentPlainSingleLineForLog(rowComponent);
         if (StringUtils.isNullOrEmptyEx(contentStr)) {
             contentStr = "-";
         }
 
-        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
         int rowTextColor = rowComponent != null && !rowComponent.color().isEmpty()
                 ? rowComponent.color().argb()
                 : selected ? theme.textPrimary() : theme.textSecondary();
@@ -494,8 +494,6 @@ public class NotificationLogScreen extends BaniraScreen {
         Component readableContent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
         String language = Translator.getClientLanguage();
         net.minecraft.network.chat.Component contentVanilla = readableContent.toVanilla(language);
-        boolean detailNeedsContrastShadow = ColorUtils.hasLowContrastMinecraftFormatting(
-                entry.component().getString(language, false, false), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;
@@ -504,7 +502,7 @@ public class NotificationLogScreen extends BaniraScreen {
             float lineY = curY;
             int textColor = theme.textPrimary();
             for (FormattedCharSequence line : detailContentLines) {
-                graphics.drawString(font, line, x, lineY, textColor, detailNeedsContrastShadow);
+                graphics.drawString(font, line, x, lineY, textColor, false);
                 lineY += font.lineHeight;
             }
             if (!isAnyDropdownSelectOpen()) {

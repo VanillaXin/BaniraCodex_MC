@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -24,6 +25,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -69,6 +71,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private int btnY;
     private int contentTotalW;
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
+    private Map<String, NotificationTypeSettingsStore.TypeSettings> baselineSettings;
+    private Map<String, NotificationTypeSettingsStore.TypeSettings> draftSettings;
 
     public NotificationTypeConfigScreen(Args args) {
         super(BaniraComponent.get().transClientAuto("notification_type_config_title").toVanilla());
@@ -90,6 +94,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
     @Override
     protected void initWidgets() {
+        ensureDraftInitialized();
         int w = width;
         int h = height;
         cardX = CARD_MARGIN;
@@ -115,6 +120,12 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             updateWidgetPositions();
         });
         addWidget(scrollbar);
+
+        ButtonWidget saveBtn = new ButtonWidget(this);
+        saveBtn.id("save");
+        saveBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_save").toString());
+        saveBtn.onClick(b -> saveDraft());
+        bottomButtons.add(saveBtn);
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
@@ -235,7 +246,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         child.headerHeight(ROW_HEIGHT);
         child.onExpandChanged(p -> syncContentHeight());
 
-        NotificationTypeSettingsStore.TypeSettings st = NotificationTypeSettingsStore.get().getOrCreate(typeId);
+        NotificationTypeSettingsStore.TypeSettings st = draftSettings(typeId);
         double cw = child.getContentWidth();
 
         addTypeToggleRow(child, cw, typeId, st);
@@ -253,9 +264,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         LabelWidget label = row.label(BaniraComponent.get().transClientAuto("notification_type_config_hidden").toString());
         ButtonWidget btn = row.toggleButton(st.hidden());
         btn.onClick(b -> {
-            boolean next = !NotificationTypeSettingsStore.get().getOrCreate(typeId).hidden();
-            NotificationTypeSettingsStore.TypeSettings nextSt = copySettings(typeId).hidden(next);
-            NotificationTypeSettingsStore.get().put(typeId, nextSt);
+            boolean next = !draftSettings(typeId).hidden();
+            updateDraft(typeId, copySettings(typeId).hidden(next));
             btn.text(toggleText(next));
         });
         panel.addChildAuto(row, ROW_HEIGHT);
@@ -274,7 +284,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 .valueFormatter(v -> durationLabelForSlider(Math.round(v)));
         slider.onValueChanged(v -> {
             long ms = Math.round(v);
-            NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).durationMs(ms));
+            updateDraft(typeId, copySettings(typeId).durationMs(ms));
         });
         panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
@@ -296,7 +306,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             if (vals.isEmpty()) return;
             String v = vals.get(0);
             String anim = inherit.equals(v) ? "" : v;
-            NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).animationName(anim));
+            updateDraft(typeId, copySettings(typeId).animationName(anim));
         });
         panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
@@ -318,7 +328,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             if (vals.isEmpty()) return;
             String v = vals.get(0);
             String pos = inherit.equals(v) ? "" : v;
-            NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).positionName(pos));
+            updateDraft(typeId, copySettings(typeId).positionName(pos));
         });
         panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
@@ -337,7 +347,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 return;
             }
             EnumNotificationTypeDisplayMode m = EnumNotificationTypeDisplayMode.parseOrDefault(vals.get(0));
-            NotificationTypeSettingsStore.get().put(typeId, copySettings(typeId).displayMode(m));
+            updateDraft(typeId, copySettings(typeId).displayMode(m));
         });
         panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
@@ -357,13 +367,50 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     private NotificationTypeSettingsStore.TypeSettings copySettings(String typeId) {
-        NotificationTypeSettingsStore.TypeSettings s = NotificationTypeSettingsStore.get().getOrCreate(typeId);
-        return new NotificationTypeSettingsStore.TypeSettings()
-                .hidden(s.hidden())
-                .durationMs(s.durationMs())
-                .positionName(s.positionName() != null ? s.positionName() : "")
-                .animationName(s.animationName() != null ? s.animationName() : "")
-                .displayMode(s.displayMode() != null ? s.displayMode() : EnumNotificationTypeDisplayMode.OVERLAY);
+        return NotificationTypeSettingsStore.copyOf(draftSettings(typeId));
+    }
+
+    private void ensureDraftInitialized() {
+        if (baselineSettings != null) return;
+        baselineSettings = NotificationTypeSettingsStore.get().snapshot();
+        draftSettings = copySettingsMap(baselineSettings);
+    }
+
+    private NotificationTypeSettingsStore.TypeSettings draftSettings(String typeId) {
+        NotificationTypeSettingsStore.TypeSettings settings = draftSettings.get(typeId);
+        return settings != null ? settings : new NotificationTypeSettingsStore.TypeSettings();
+    }
+
+    private void updateDraft(String typeId, NotificationTypeSettingsStore.TypeSettings settings) {
+        if (!Objects.equals(draftSettings(typeId), settings)) {
+            draftSettings.put(typeId, NotificationTypeSettingsStore.copyOf(settings));
+        }
+    }
+
+    private void saveDraft() {
+        NotificationTypeSettingsStore.get().replaceAllAndSave(draftSettings);
+        baselineSettings = copySettingsMap(draftSettings);
+    }
+
+    private int changedSettingCount() {
+        Set<String> typeIds = new HashSet<>(baselineSettings.keySet());
+        typeIds.addAll(draftSettings.keySet());
+        int changed = 0;
+        for (String typeId : typeIds) {
+            NotificationTypeSettingsStore.TypeSettings baseline = baselineSettings.get(typeId);
+            NotificationTypeSettingsStore.TypeSettings draft = draftSettings.get(typeId);
+            if (!Objects.equals(baseline != null ? baseline : new NotificationTypeSettingsStore.TypeSettings(),
+                    draft != null ? draft : new NotificationTypeSettingsStore.TypeSettings())) changed++;
+        }
+        return changed;
+    }
+
+    private static Map<String, NotificationTypeSettingsStore.TypeSettings> copySettingsMap(
+            Map<String, NotificationTypeSettingsStore.TypeSettings> source) {
+        Map<String, NotificationTypeSettingsStore.TypeSettings> result = new LinkedHashMap<>();
+        source.forEach((typeId, settings) ->
+                result.put(typeId, NotificationTypeSettingsStore.copyOf(settings)));
+        return result;
     }
 
     private String durationLabelForSlider(long durationMs) {
@@ -421,10 +468,16 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         for (int i = 0; i < n; i++) {
             btnWidths[i] = font.width(bottomButtons.get(i).text().content()) + BUTTON_PADDING * 2;
         }
-        if (n >= 1) {
+        if (n == 1) {
             int bw = Math.max(48, btnWidths[0]);
             int cx = cardX + (cardW - bw) / 2;
             bottomButtons.get(0).bounds(new ScreenCoordinate(cx, btnY, bw, BUTTON_HEIGHT));
+        } else if (n == 2) {
+            int available = cardW - CARD_INNER * 2 - BUTTON_GAP;
+            int bw = Math.max(48, available / 2);
+            bottomButtons.get(0).bounds(new ScreenCoordinate(cardX + CARD_INNER, btnY, bw, BUTTON_HEIGHT));
+            bottomButtons.get(1).bounds(new ScreenCoordinate(
+                    cardX + CARD_INNER + bw + BUTTON_GAP, btnY, available - bw, BUTTON_HEIGHT));
         }
     }
 
@@ -441,6 +494,18 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         } else {
             super.onClose();
         }
+    }
+
+    @Override
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) return;
+        int changedCount = changedSettingCount();
+        if (changedCount == 0) {
+            onClose();
+        } else {
+            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
+        }
+        eventArgs.consumed(true);
     }
 
     private static final int CARD_RADIUS = 8;

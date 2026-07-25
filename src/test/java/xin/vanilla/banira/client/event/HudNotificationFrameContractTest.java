@@ -10,19 +10,19 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** Forge 1.21.1 必须在真实 HUD 帧末绘制通知，不能依赖玩家列表实际出现。 */
+/** Forge 1.21.1 必须使用官方 HUD 分层系统绘制无界面通知。 */
 public class HudNotificationFrameContractTest {
     @Test
-    public void guiRenderReturnOwnsScreenlessNotificationRendering() throws IOException {
-        String mixin = read("src/main/java/xin/vanilla/banira/internal/mixin/injections/GuiMixin.java");
+    public void forgeHudLayerOwnsScreenlessNotificationRendering() throws IOException {
+        String registrar = read("src/main/java/xin/vanilla/banira/internal/forge/client/ForgeNotificationLayerRegistrar.java");
         String config = read("src/main/resources/banira_codex.mixins.json");
         String hub = read("src/main/java/xin/vanilla/banira/client/event/BaniraClientEventHub.java");
 
-        assertTrue(mixin.contains("@Mixin(Gui.class)"));
-        assertTrue(mixin.contains("@At(\"RETURN\")"));
-        assertTrue(mixin.contains("Minecraft.getInstance().screen != null"));
-        assertTrue(mixin.contains("NotificationManager.get().render"));
-        assertTrue(config.contains("\"injections.GuiMixin\""));
+        assertTrue(registrar.contains("AddGuiOverlayLayersEvent"));
+        assertTrue(registrar.contains("event.getLayeredDraw().add"));
+        assertTrue(registrar.contains("Minecraft.getInstance().screen == null"));
+        assertTrue(registrar.contains("NotificationManager.get().render(graphics)"));
+        assertFalse(config.contains("\"injections.GuiMixin\""));
         assertFalse(hub.contains("NotificationManager.get().render(event.guiGraphics())"));
     }
 

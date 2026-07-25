@@ -211,6 +211,14 @@ public final class BaniraClientForgeEventHandler {
 
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
+    public static void onRenderGuiPost(RenderGuiEvent.Post event) {
+        if (BaniraClientRuntime.currentScreen() == null) {
+            BaniraClientOverlayBridge.renderHudOverlay(event.getPoseStack());
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
     public static void onRenderOverlayPost(RenderGuiOverlayEvent.Post event) {
         ForgeHudOverlayAdapter.dispatchPost(event);
         BaniraClientEventHub.Client.fireRenderOverlayPostNative(

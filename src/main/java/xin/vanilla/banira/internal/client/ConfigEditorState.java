@@ -10,6 +10,7 @@ public final class ConfigEditorState {
     private final Map<String, Object> modifiedValues = new LinkedHashMap<>();
     private final Map<String, ConfigEditorEntryWidget> entryWidgets = new LinkedHashMap<>();
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
+    private final Map<String, Object> baselineValues = new LinkedHashMap<>();
 
     public ConfigEditorState(ConfigHolder holder) {
         this.holder = holder;
@@ -17,6 +18,7 @@ public final class ConfigEditorState {
 
     public void clearEntries() {
         entryWidgets.clear();
+        baselineValues.clear();
         syncTouchedPaths.clear();
     }
 
@@ -25,32 +27,61 @@ public final class ConfigEditorState {
         syncTouchedPaths.clear();
     }
 
-    public void clearModifiedValues() {
-        modifiedValues.clear();
-    }
-
     public void registerEntry(String path, ConfigEditorEntryWidget widget) {
         if (path != null && widget != null) {
             entryWidgets.put(path, widget);
+            baselineValues.put(path, snapshot(widget.getValue()));
         }
     }
 
     public void markModified(String path, Object value) {
         if (path != null) {
-            modifiedValues.put(path, value);
-            syncTouchedPaths.add(path);
+            if (Objects.deepEquals(baselineValues.get(path), value)) {
+                modifiedValues.remove(path);
+                syncTouchedPaths.remove(path);
+            } else {
+                modifiedValues.put(path, value);
+                syncTouchedPaths.add(path);
+            }
         }
     }
 
     public void collectModifiedFromWidgets() {
+        modifiedValues.clear();
         for (Map.Entry<String, ConfigEditorEntryWidget> e : entryWidgets.entrySet()) {
             if (!e.getValue().isValid()) {
                 continue;
             }
             Object v = e.getValue().getValue();
-            if (v != null && !Objects.equals(v, holder.get(e.getKey()))) {
+            if (v != null && !Objects.deepEquals(v, baselineValues.get(e.getKey()))) {
                 modifiedValues.put(e.getKey(), v);
             }
+        }
+    }
+
+    /**
+     * 返回相对打开界面时基线的真实改动项数；无效但已操作的输入同样计入。
+     */
+    public int pendingChangeCount() {
+        Set<String> paths = new LinkedHashSet<>(syncTouchedPaths);
+        for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
+            Object value = entry.getValue().getValue();
+            if (!entry.getValue().isValid()) {
+                continue;
+            }
+            if (value != null && !Objects.deepEquals(value, baselineValues.get(entry.getKey()))) {
+                paths.add(entry.getKey());
+            } else {
+                paths.remove(entry.getKey());
+            }
+        }
+        return paths.size();
+    }
+
+    public void markClean() {
+        clearPendingChanges();
+        for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
+            baselineValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
         }
     }
 
@@ -106,7 +137,6 @@ public final class ConfigEditorState {
         if (!holder.getConfigName().equals(configName)) {
             return;
         }
-        clearPendingChanges();
         for (Map.Entry<String, ConfigEditorEntryWidget> e : entryWidgets.entrySet()) {
             Object v = holder.get(e.getKey());
             if (v == null) {
@@ -119,5 +149,19 @@ public final class ConfigEditorState {
                 e.getValue().setValue(v);
             }
         }
+        markClean();
+    }
+
+    private static Object snapshot(Object value) {
+        if (value instanceof List) {
+            return new ArrayList<>((List<?>) value);
+        }
+        if (value instanceof Set) {
+            return new LinkedHashSet<>((Set<?>) value);
+        }
+        if (value instanceof Map) {
+            return new LinkedHashMap<>((Map<?, ?>) value);
+        }
+        return value;
     }
 }

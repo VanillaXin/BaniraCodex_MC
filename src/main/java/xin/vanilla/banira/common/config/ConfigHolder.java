@@ -1,15 +1,21 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /**
  * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
 public class ConfigHolder implements BaniraConfigHandle {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等。
@@ -42,6 +48,9 @@ public class ConfigHolder implements BaniraConfigHandle {
      * 配置路径 -> 描述符，用于 GUI 和列表运行时归一化。
      */
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
+
+    private final Set<String> pendingChangedPaths = new LinkedHashSet<>();
+    private final List<Consumer<Set<String>>> savedListeners = new CopyOnWriteArrayList<>();
 
     /**
      * 供各加载器配置服务创建统一 holder。
@@ -90,8 +99,29 @@ public class ConfigHolder implements BaniraConfigHandle {
         return categoryTitleSpecs.get(categoryPath);
     }
 
-    public void save() {
+    public synchronized void save() {
         valueStore.save();
+        if (pendingChangedPaths.isEmpty()) {
+            return;
+        }
+        Set<String> changedPaths = Collections.unmodifiableSet(new LinkedHashSet<>(pendingChangedPaths));
+        pendingChangedPaths.clear();
+        for (Consumer<Set<String>> listener : savedListeners) {
+            try {
+                listener.accept(changedPaths);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Config saved listener failed for {}", configName, ex);
+            }
+        }
+    }
+
+    /**
+     * 保存成功且存在实际写入时触发；返回值用于注销监听。
+     */
+    public Runnable onSaved(Consumer<Set<String>> listener) {
+        Objects.requireNonNull(listener, "listener");
+        savedListeners.add(listener);
+        return () -> savedListeners.remove(listener);
     }
 
     @Override
@@ -109,9 +139,13 @@ public class ConfigHolder implements BaniraConfigHandle {
     }
 
     @Override
-    public void set(String path, Object value) {
+    public synchronized void set(String path, Object value) {
         if (valueStore.paths().contains(path)) {
+            Object previous = valueStore.get(path);
             valueStore.set(path, value);
+            if (!Objects.deepEquals(previous, valueStore.get(path))) {
+                pendingChangedPaths.add(path);
+            }
         }
     }
 

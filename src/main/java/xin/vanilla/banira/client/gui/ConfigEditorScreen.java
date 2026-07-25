@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
@@ -119,9 +120,9 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         editorState.applyModifiedToHolder();
-        editorState.clearModifiedValues();
         try {
             holder.save();
+            editorState.markClean();
             ConfigEditorNotifier.show("config_editor_save_success", 2000);
             // if (previousScreen() != null) {
             //     onClose();
@@ -144,8 +145,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            editorState.clearPendingChanges();
             ConfigEditorSyncService.applyEncodedValues(holder, toSync);
+            editorState.markClean();
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
         }
@@ -171,8 +172,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            editorState.clearPendingChanges();
             ConfigEditorSyncService.applyEncodedValues(holder, toSync);
+            editorState.markClean();
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_full_failed", 4000, ex.getMessage() != null ? ex.getMessage() : "");
         }
@@ -204,6 +205,20 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         editorState.refreshEntriesFromHolder(configName);
+    }
+
+    @Override
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) {
+            return;
+        }
+        int changedCount = editorState.pendingChangeCount();
+        if (changedCount == 0) {
+            onClose();
+        } else {
+            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
+        }
+        eventArgs.consumed(true);
     }
 
     @Override

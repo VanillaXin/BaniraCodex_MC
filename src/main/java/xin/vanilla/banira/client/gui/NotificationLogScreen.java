@@ -434,20 +434,17 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
-        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
-        String contentStr = componentPlainSingleLineForLog(rowComponent);
-        if (StringUtils.isNullOrEmptyEx(contentStr)) {
-            contentStr = "-";
+        String language = Translator.getClientLanguage();
+        net.minecraft.network.chat.Component rowComponent = ColorUtils.readableVanillaComponentCopy(
+                entry.component().toVanilla(language), theme.panelBg());
+        if (StringUtils.isNullOrEmptyEx(rowComponent.getString())) {
+            rowComponent = new net.minecraft.network.chat.TextComponent("-");
         }
-
-        int rowTextColor = rowComponent != null && !rowComponent.color().isEmpty()
-                ? rowComponent.color().argb()
-                : selected ? theme.textPrimary() : theme.textSecondary();
-        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contentStr).color(rowTextColor).stack(stack).font(font))
-                .x(textX).y(y + (h - 9) / 2).fontSize(9).maxWidth(textW)
-                .position(EnumEllipsisPosition.END).wrap(false)
-                .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        LabelWidget.drawLimitedText(args);
+        List<FormattedCharSequence> rowLines = font.split(rowComponent, Math.max(1, textW));
+        if (!rowLines.isEmpty()) {
+            font.draw(stack, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
+                    selected ? theme.textPrimary() : theme.textSecondary());
+        }
     }
 
     private void renderDetailPane(PoseStack stack, BaniraColorConfig theme) {
@@ -483,9 +480,9 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += renderDetailMetaRows(stack, x, curY, w, entry, theme);
         curY += DETAIL_AFTER_META_GAP;
 
-        Component readableContent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
         String language = Translator.getClientLanguage();
-        net.minecraft.network.chat.Component contentVanilla = readableContent.toVanilla(language);
+        net.minecraft.network.chat.Component contentVanilla = ColorUtils.readableVanillaComponentCopy(
+                entry.component().toVanilla(language), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;

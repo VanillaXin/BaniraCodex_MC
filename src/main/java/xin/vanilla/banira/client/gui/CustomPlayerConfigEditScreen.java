@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -10,10 +11,18 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Notification;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
+import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
+import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -27,25 +36,30 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * 编辑 CustomConfig 中当前玩家的配置
+ * 编辑当前玩家的语言与通知偏好。
  */
 public class CustomPlayerConfigEditScreen extends BaniraScreen {
 
-    private static final int CARD_MARGIN = 16;
-    /**
-     * 表单区与面板（圆角矩形）左右留白
-     */
-    private static final int PANEL_INNER_PAD_X = 28;
-    private static final int MAX_FORM_W = 400;
-    private static final int ROW_H = 22;
-    private static final int ROW_GAP = 8;
-    private static final int LABEL_H = 14;
+    private static final int CARD_MARGIN = 10;
+    private static final int CARD_INNER = 10;
+    private static final int ROW_HEIGHT = 20;
+    private static final int ROW_GAP = 2;
+    private static final double LABEL_COLUMN_WIDTH_RATIO = 0.32;
+    private static final double LABEL_COLUMN_MIN_WIDTH = 64;
+    private static final int GAP_LABEL_TO_VALUE = 4;
+    private static final double VALUE_AREA_MIN_WIDTH = 56;
+    private static final int SCROLL_WIDTH = 6;
+    private static final int SCROLL_GAP = 2;
+    private static final int BUTTON_HEIGHT = 18;
+    private static final int BUTTON_PADDING = 12;
+    private static final int BUTTON_GAP = 8;
+    private static final int CARD_GAP = 1;
     private static final int CARD_RADIUS = 8;
-    private static final float CLOSE_BTN_SIZE = 10f;
-    private static final float CLOSE_BTN_PAD = 6f;
+    private static final int CARD_ALPHA = 0xFF;
 
     private final Args args;
     private DropdownSelectWidget languageDropdown;
@@ -53,6 +67,23 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     private List<String> languageOptions = new ArrayList<>();
     private String labelBaniraMode;
     private String labelVanillaMode;
+
+    private CollapsiblePanelWidget contentRootPanel;
+    private ScrollbarWidget scrollbar;
+    private double scrollOffset;
+    private int contentHeight;
+    private int cardX;
+    private int cardY;
+    private int cardW;
+    private int cardH;
+    private int listTop;
+    private int listAreaHeight;
+    private int maxListHeight;
+    private int contentLeft;
+    private int contentW;
+    private int btnY;
+    private int contentTotalW;
+    private final List<ButtonWidget> bottomButtons = new ArrayList<>();
 
     public CustomPlayerConfigEditScreen(@Nullable Args args) {
         super(BaniraComponent.get().transClientAuto("custom_player_config_title").toVanilla());
@@ -73,136 +104,399 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     @Override
+    public boolean shouldCloseOnEsc() {
+        return true;
+    }
+
+    @Override
     protected void initWidgets() {
-        int innerW = width - CARD_MARGIN * 2;
-        int availableFormW = Math.max(120, innerW - PANEL_INNER_PAD_X * 2);
-        int panelW = Math.min(MAX_FORM_W, availableFormW);
-        int cx = CARD_MARGIN + (innerW - panelW) / 2;
+        cardX = CARD_MARGIN;
+        cardY = CARD_MARGIN;
+        cardW = width - CARD_MARGIN * 2;
+        cardH = height - CARD_MARGIN * 2;
+        contentLeft = cardX + CARD_INNER;
+        contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
+        contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
+        listTop = cardY + CARD_INNER;
+        bottomButtons.clear();
 
-        int innerH = height - CARD_MARGIN * 2;
-        int contentH = (LABEL_H + 4) + ROW_H + (ROW_GAP + 4)
-                + (LABEL_H + 4) + ROW_H + (ROW_GAP + 12)
-                + ROW_H;
-        int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
+        initializeOptions();
+        contentRootPanel = buildContentPanel();
+        contentHeight = (int) contentRootPanel.height();
+        addWidget(contentRootPanel);
 
+        scrollbar = new ScrollbarWidget(this);
+        scrollbar.id("custom_player_config_scroll");
+        scrollbar.orientation(EnumOrientation.VERTICAL);
+        scrollbar.minValue(0);
+        scrollbar.onValueChanged(v -> {
+            scrollOffset = v;
+            updateWidgetPositions();
+        });
+        addWidget(scrollbar);
+
+        ButtonWidget saveBtn = new ButtonWidget(this);
+        saveBtn.id("custom_player_config_save");
+        saveBtn.text(BaniraComponent.get().transClientAuto("config_editor_save").toString());
+        saveBtn.onClick(b -> syncToServer());
+        bottomButtons.add(saveBtn);
+
+        ButtonWidget closeBtn = new ButtonWidget(this);
+        closeBtn.id("custom_player_config_close");
+        closeBtn.text(BaniraComponent.get().transClientAuto("config_editor_close").toString());
+        closeBtn.onClick(b -> onClose());
+        bottomButtons.add(closeBtn);
+
+        for (ButtonWidget button : bottomButtons) {
+            addWidget(button);
+        }
+
+        updateLayout();
+        updateWidgetPositions();
+    }
+
+    private void initializeOptions() {
         labelBaniraMode = BaniraComponent.get().transClientAuto("custom_player_config_mode_banira").toString();
         labelVanillaMode = BaniraComponent.get().transClientAuto("custom_player_config_mode_vanilla").toString();
 
         languageOptions = new ArrayList<>();
         languageOptions.add("client");
         languageOptions.add("server");
-        Translator tr = (Translator) Translator.of(BaniraCodex.MODID);
-        languageOptions.addAll(tr.getI18nFiles());
+        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        languageOptions.addAll(translator.getI18nFiles());
+    }
 
-        var player = Minecraft.getInstance().player;
-        String uuid = player != null ? PlayerUtils.getPlayerUUIDString(player) : "";
+    private CollapsiblePanelWidget buildContentPanel() {
+        CollapsiblePanelWidget root = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, contentW);
+        root.text(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_title")));
+        root.expanded(true);
+        root.contentGap(ROW_GAP);
+        root.headerHeight(ROW_HEIGHT);
+        root.onExpandChanged(panel -> syncContentHeight());
 
-        LabelWidget langLabel = new LabelWidget(this);
-        langLabel.id("lbl_language");
-        langLabel.bounds(new ScreenCoordinate(cx, y, panelW, LABEL_H));
-        langLabel.text(BaniraComponent.get().transClientAuto("custom_player_config_language"));
-        langLabel.textWrap(false);
-        langLabel.textVerticalAlign(EnumAlignment.CENTER);
-        addWidget(langLabel);
-        y += LABEL_H + 4;
+        double rowWidth = root.getContentWidth();
+        root.addChildAuto(createLanguageRow(rowWidth), ROW_HEIGHT);
+        root.addChildAuto(createNotificationModeRow(rowWidth), ROW_HEIGHT);
+        root.refreshLayout();
+        return root;
+    }
+
+    private EntryRowWidget createLanguageRow(double rowWidth) {
+        EntryRowWidget row = createRow(rowWidth);
+        row.addChild(createLabel("custom_player_config_language_label",
+                BaniraComponent.get().transClientAuto("custom_player_config_language"), rowWidth));
 
         languageDropdown = new DropdownSelectWidget(this);
-        languageDropdown.id("dropdown_language");
-        languageDropdown.bounds(new ScreenCoordinate(cx, y, panelW, ROW_H));
+        languageDropdown.id("custom_player_config_language");
+        languageDropdown.bounds(new ScreenCoordinate(valueStartX(rowWidth), 0,
+                valueWidgetWidth(rowWidth), ROW_HEIGHT));
         languageDropdown.options(languageOptions);
-        String currentLang = uuid.isEmpty() ? "client" : CustomConfig.getPlayerLanguageClient(uuid);
-        if (!languageOptions.contains(currentLang)) {
-            currentLang = languageOptions.get(0);
-        }
-        languageDropdown.selectedValues(java.util.Collections.singletonList(currentLang));
-        addWidget(languageDropdown);
-        y += ROW_H + ROW_GAP + 4;
 
-        LabelWidget modeLabel = new LabelWidget(this);
-        modeLabel.id("lbl_mode");
-        modeLabel.bounds(new ScreenCoordinate(cx, y, panelW, LABEL_H));
-        modeLabel.text(BaniraComponent.get().transClientAuto("custom_player_config_notification_mode"));
-        modeLabel.textWrap(false);
-        modeLabel.textVerticalAlign(EnumAlignment.CENTER);
-        addWidget(modeLabel);
-        y += LABEL_H + 4;
+        String uuid = currentPlayerUuid();
+        String selected = uuid.isEmpty() ? "client" : CustomConfig.getPlayerLanguageClient(uuid);
+        if (!languageOptions.contains(selected)) {
+            selected = languageOptions.get(0);
+        }
+        languageDropdown.selectedValues(Collections.singletonList(selected));
+        row.addChild(languageDropdown);
+        return row;
+    }
+
+    private EntryRowWidget createNotificationModeRow(double rowWidth) {
+        EntryRowWidget row = createRow(rowWidth);
+        row.addChild(createLabel("custom_player_config_mode_label",
+                BaniraComponent.get().transClientAuto("custom_player_config_notification_mode"), rowWidth));
 
         List<String> modeLabels = new ArrayList<>();
         modeLabels.add(labelBaniraMode);
         modeLabels.add(labelVanillaMode);
+
         modeDropdown = new DropdownSelectWidget(this);
-        modeDropdown.id("dropdown_mode");
-        modeDropdown.bounds(new ScreenCoordinate(cx, y, panelW, ROW_H));
+        modeDropdown.id("custom_player_config_mode");
+        modeDropdown.bounds(new ScreenCoordinate(valueStartX(rowWidth), 0,
+                valueWidgetWidth(rowWidth), ROW_HEIGHT));
         modeDropdown.options(modeLabels);
+
+        String uuid = currentPlayerUuid();
         String currentMode = uuid.isEmpty()
                 ? CustomConfig.notificationReceiveModeNotification
                 : CustomConfig.getPlayerNotificationReceiveModeClient(uuid);
-        String selectedLabel = CustomConfig.notificationReceiveModeVanillaMessage.equals(currentMode) ? labelVanillaMode : labelBaniraMode;
-        modeDropdown.selectedValues(java.util.Collections.singletonList(selectedLabel));
-        addWidget(modeDropdown);
-        y += ROW_H + ROW_GAP + 12;
+        String selected = CustomConfig.notificationReceiveModeVanillaMessage.equals(currentMode)
+                ? labelVanillaMode : labelBaniraMode;
+        modeDropdown.selectedValues(Collections.singletonList(selected));
+        row.addChild(modeDropdown);
+        return row;
+    }
 
-        ButtonWidget syncBtn = new ButtonWidget(this);
-        syncBtn.id("sync");
-        syncBtn.bounds(new ScreenCoordinate(cx, y, panelW, ROW_H));
-        syncBtn.text(BaniraComponent.get().transClientAuto("custom_player_config_sync").toString());
-        syncBtn.onClick(b -> syncToServer());
-        addWidget(syncBtn);
+    private EntryRowWidget createRow(double rowWidth) {
+        EntryRowWidget row = new EntryRowWidget(this);
+        row.bounds(new ScreenCoordinate(0, 0, rowWidth, ROW_HEIGHT));
+        return row;
+    }
 
-        ButtonWidget closeBtn = new ButtonWidget(this);
-        closeBtn.id("close");
-        closeBtn.bounds(new ScreenCoordinate(width - CARD_MARGIN - CLOSE_BTN_PAD - CLOSE_BTN_SIZE, CARD_MARGIN + CLOSE_BTN_PAD, CLOSE_BTN_SIZE, CLOSE_BTN_SIZE));
-        closeBtn.presetStyleClose();
-        closeBtn.radius(CLOSE_BTN_SIZE / 3f);
-        closeBtn.padding(1);
-        closeBtn.onClick(b -> onClose());
-        addWidget(closeBtn);
+    private LabelWidget createLabel(String id, xin.vanilla.banira.common.data.Component text, double rowWidth) {
+        LabelWidget label = new LabelWidget(this);
+        label.id(id);
+        label.bounds(new ScreenCoordinate(0, 0, labelTextWidth(rowWidth), ROW_HEIGHT));
+        label.text(Text.from(text));
+        label.textWrap(false);
+        label.textVerticalAlign(EnumAlignment.CENTER);
+        return label;
+    }
+
+    private double labelColumnEndX(double rowWidth) {
+        if (rowWidth <= 1) {
+            return 1;
+        }
+        double maxEnd = rowWidth - VALUE_AREA_MIN_WIDTH;
+        if (maxEnd < 1) {
+            return Math.max(1, rowWidth * 0.2);
+        }
+        double fromRatio = rowWidth * LABEL_COLUMN_WIDTH_RATIO;
+        return Math.min(Math.max(LABEL_COLUMN_MIN_WIDTH, Math.min(fromRatio, maxEnd)), maxEnd);
+    }
+
+    private double labelTextWidth(double rowWidth) {
+        return Math.max(1, labelColumnEndX(rowWidth) - GAP_LABEL_TO_VALUE);
+    }
+
+    private double valueStartX(double rowWidth) {
+        return labelColumnEndX(rowWidth);
+    }
+
+    private double valueWidgetWidth(double rowWidth) {
+        return Math.max(1, rowWidth - labelColumnEndX(rowWidth));
     }
 
     private void syncToServer() {
-        if (Minecraft.getInstance().getConnection() == null) {
-            Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected"));
-            n.position(EnumPosition.TOP_RIGHT).durationTime(3500);
-            NotificationManager.get().addNotification(n);
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.getConnection() == null) {
+            notifySyncFailure("custom_player_config_sync_not_connected", "");
             return;
         }
-        var player = Minecraft.getInstance().player;
-        if (player == null) {
+        if (minecraft.player == null) {
             return;
         }
-        String uuid = PlayerUtils.getPlayerUUIDString(player);
-        List<String> langSel = languageDropdown.getSelectedValues();
-        String lang = langSel.isEmpty() ? "client" : langSel.get(0);
-        List<String> modeSel = modeDropdown.getSelectedValues();
-        String modeLabel = modeSel.isEmpty() ? labelBaniraMode : modeSel.get(0);
-        String modeValue = labelVanillaMode.equals(modeLabel)
+
+        String uuid = PlayerUtils.getPlayerUUIDString(minecraft.player);
+        List<String> languageSelection = languageDropdown.getSelectedValues();
+        String language = languageSelection.isEmpty() ? "client" : languageSelection.get(0);
+        List<String> modeSelection = modeDropdown.getSelectedValues();
+        String modeLabel = modeSelection.isEmpty() ? labelBaniraMode : modeSelection.get(0);
+        String mode = labelVanillaMode.equals(modeLabel)
                 ? CustomConfig.notificationReceiveModeVanillaMessage
                 : CustomConfig.notificationReceiveModeNotification;
 
         try {
-            PacketUtils.sendPacketToServer(new CustomPlayerConfigSyncToServer(lang, modeValue));
-            CustomConfig.setPlayerLanguageClient(uuid, lang);
-            CustomConfig.setPlayerNotificationReceiveModeClient(uuid, modeValue);
-        } catch (Exception ex) {
-            Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("custom_player_config_sync_failed",
-                            ex.getMessage() != null ? ex.getMessage() : ""));
-            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            NotificationManager.get().addNotification(err);
+            PacketUtils.sendPacketToServer(new CustomPlayerConfigSyncToServer(language, mode));
+            CustomConfig.setPlayerLanguageClient(uuid, language);
+            CustomConfig.setPlayerNotificationReceiveModeClient(uuid, mode);
+            onClose();
+        } catch (Exception exception) {
+            notifySyncFailure("custom_player_config_sync_failed",
+                    exception.getMessage() != null ? exception.getMessage() : "");
+        }
+    }
+
+    private void notifySyncFailure(String key, String detail) {
+        Notification notification = detail.isEmpty()
+                ? Notification.ofComponent(BaniraComponent.get().transClientAuto(key))
+                : Notification.ofComponent(BaniraComponent.get().transClientAuto(key, detail));
+        notification.position(EnumPosition.TOP_RIGHT).durationTime(4000);
+        NotificationManager.get().addNotification(notification);
+    }
+
+    private String currentPlayerUuid() {
+        return Minecraft.getInstance().player != null
+                ? PlayerUtils.getPlayerUUIDString(Minecraft.getInstance().player)
+                : "";
+    }
+
+    private void syncContentHeight() {
+        if (contentRootPanel != null) {
+            contentRootPanel.refreshLayout();
+            contentHeight = (int) contentRootPanel.height();
+            updateLayout();
+            updateWidgetPositions();
+        }
+    }
+
+    private void updateLayout() {
+        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
+        int buttonAreaHeight = BUTTON_HEIGHT + CARD_INNER;
+        int buttonAreaTop = cardY + cardH - buttonAreaHeight;
+        btnY = buttonAreaTop + (buttonAreaHeight - BUTTON_HEIGHT) / 2;
+
+        if (contentHeight <= maxListHeight) {
+            listAreaHeight = Math.max(1, contentHeight);
+            scrollOffset = 0;
+            scrollbar.maxValue(0);
+            scrollbar.value(0);
+            scrollbar.visible(false);
+            scrollbar.scrollingCoordinates(new ArrayList<>());
+        } else {
+            listAreaHeight = maxListHeight;
+            scrollbar.visible(true);
+            scrollbar.bounds(new ScreenCoordinate(contentLeft + contentW + SCROLL_GAP,
+                    listTop, SCROLL_WIDTH, listAreaHeight));
+            scrollbar.maxValue(Math.max(0, contentHeight - listAreaHeight));
+            scrollbar.value(Math.min(scrollOffset, scrollbar.maxValue()));
+            scrollOffset = scrollbar.value();
+            scrollbar.visibleSize(listAreaHeight);
+            scrollbar.scrollingCoordinates(new ArrayList<>());
+            scrollbar.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop,
+                    contentTotalW, listAreaHeight));
+        }
+
+        int[] buttonWidths = new int[bottomButtons.size()];
+        for (int i = 0; i < bottomButtons.size(); i++) {
+            buttonWidths[i] = font.width(bottomButtons.get(i).text().toString()) + BUTTON_PADDING * 2;
+        }
+
+        int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
+        int zoneWidth = contentTotal / 2;
+        int leftRectWidth = CARD_INNER + zoneWidth;
+        int rightRectWidth = cardW - leftRectWidth - CARD_GAP;
+        int rightRectX = cardX + leftRectWidth + CARD_GAP;
+        int leftWidth = Math.min(buttonWidths[0], Math.max(20, zoneWidth));
+        int rightWidth = Math.min(buttonWidths[1], Math.max(20, zoneWidth));
+        bottomButtons.get(0).bounds(new ScreenCoordinate(
+                cardX + (leftRectWidth - leftWidth) / 2, btnY, leftWidth, BUTTON_HEIGHT));
+        bottomButtons.get(1).bounds(new ScreenCoordinate(
+                rightRectX + (rightRectWidth - rightWidth) / 2, btnY, rightWidth, BUTTON_HEIGHT));
+    }
+
+    private void updateWidgetPositions() {
+        if (contentRootPanel != null) {
+            contentRootPanel.bounds(new ScreenCoordinate(contentLeft,
+                    listTop - (int) scrollOffset, contentW, contentHeight));
         }
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return true;
+    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+        BaniraColorConfig theme = getEffectiveTheme();
+        int cardBackground = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
+        int buttonAreaHeight = BUTTON_HEIGHT + CARD_INNER;
+        int buttonAreaTop = cardY + cardH - buttonAreaHeight;
+        int contentDrawHeight = buttonAreaTop - cardY - CARD_GAP;
+        PoseStack stack = graphics.pose();
+
+        AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, contentDrawHeight,
+                CARD_RADIUS, CARD_RADIUS, 0, 0, cardBackground);
+
+        int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
+        int zoneWidth = contentTotal / 2;
+        int leftRectWidth = CARD_INNER + zoneWidth;
+        int rightRectWidth = cardW - leftRectWidth - CARD_GAP;
+        AbstractGuiUtils.drawRoundedRect(stack, cardX, buttonAreaTop, leftRectWidth, buttonAreaHeight,
+                0, 0, CARD_RADIUS, 0, cardBackground);
+        AbstractGuiUtils.drawRoundedRect(stack, cardX + leftRectWidth + CARD_GAP,
+                buttonAreaTop, rightRectWidth, buttonAreaHeight,
+                0, 0, 0, CARD_RADIUS, cardBackground);
+
+        AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
+        if (contentRootPanel != null && contentRootPanel.visible()) {
+            if (contentRootPanel.enabled() && contentRootPanel.needsUpdate()) {
+                contentRootPanel.update();
+            }
+            contentRootPanel.render(graphics, partialTicks);
+        }
+        if (scrollbar != null && scrollbar.visible()) {
+            if (scrollbar.enabled() && scrollbar.needsUpdate()) {
+                scrollbar.update();
+            }
+            scrollbar.render(graphics, partialTicks);
+        }
+        AbstractGuiUtils.disableScissor();
+
+        for (ButtonWidget button : bottomButtons) {
+            if (button.visible()) {
+                if (button.enabled() && button.needsUpdate()) {
+                    button.update();
+                }
+                button.render(graphics, partialTicks);
+            }
+        }
+        for (IWidget widget : widgets()) {
+            if (widget == contentRootPanel || widget == scrollbar || bottomButtons.contains(widget)) {
+                continue;
+            }
+            if (widget.parent() != null || !widget.visible()) {
+                continue;
+            }
+            if (widget.enabled() && widget.needsUpdate()) {
+                widget.update();
+            }
+            widget.render(graphics, partialTicks);
+        }
     }
 
     @Override
     protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        BaniraColorConfig theme = getEffectiveTheme();
-        int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
-        AbstractGuiUtils.drawRoundedRect(graphics.pose(), CARD_MARGIN, CARD_MARGIN, width - CARD_MARGIN * 2, height - CARD_MARGIN * 2,
-                CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, CARD_RADIUS, cardBg);
-        super.renderWidgets(graphics, partialTicks);
+        renderWidgets(graphics, partialTicks);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
+                && contentRootPanel.isMouseInside(mouseX, mouseY)
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+            return true;
+        }
+        if (super.mouseScrolled(mouseX, mouseY, delta)) {
+            return true;
+        }
+        if (scrollbar != null && delta != 0) {
+            double newValue = Math.max(scrollbar.minValue(),
+                    Math.min(scrollbar.maxValue(), scrollbar.value() - delta * 20));
+            scrollbar.value(newValue);
+            scrollOffset = newValue;
+            updateWidgetPositions();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onClose() {
+        if (args.parentScreen() != null) {
+            Minecraft.getInstance().setScreen(args.parentScreen());
+        } else {
+            super.onClose();
+        }
+    }
+
+    private static final class EntryRowWidget extends BaseWidget {
+        private EntryRowWidget(BaniraScreen screen) {
+            super(screen);
+        }
+
+        @Override
+        public double effectiveHeight() {
+            double maxBottom = 0;
+            for (IWidget child : children()) {
+                if (child == null || !child.visible()) {
+                    continue;
+                }
+                ScreenCoordinate bounds = child.bounds();
+                if (bounds != null) {
+                    maxBottom = Math.max(maxBottom, bounds.y() + child.effectiveHeight());
+                }
+            }
+            return maxBottom > 0 ? maxBottom : (bounds() != null ? bounds().height() : 0);
+        }
+
+        @Override
+        protected boolean onMouseClick(MouseEvent event) {
+            return true;
+        }
+
+        @Override
+        public void render(GuiGraphics graphics, float partialTicks) {
+            if (visible()) {
+                renderChildren(graphics, partialTicks);
+            }
+        }
     }
 }

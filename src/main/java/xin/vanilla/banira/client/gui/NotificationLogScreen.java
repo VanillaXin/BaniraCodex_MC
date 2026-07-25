@@ -423,12 +423,12 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
-        String contentStr = componentPlainSingleLineForLog(entry.component());
+        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.panelBg());
+        String contentStr = componentPlainSingleLineForLog(rowComponent);
         if (StringUtils.isNullOrEmptyEx(contentStr)) {
             contentStr = "-";
         }
 
-        Component rowComponent = ColorUtils.readableComponentCopy(entry.component(), theme.color(PANEL_BG));
         int rowTextColor = rowComponent != null && !rowComponent.color().isEmpty()
                 ? rowComponent.color().argb()
                 : selected ? theme.color(TEXT_PRIMARY) : theme.color(TEXT_SECONDARY);
@@ -474,8 +474,6 @@ public class NotificationLogScreen extends BaniraScreen {
         Component readableContent = ColorUtils.readableComponentCopy(entry.component(), theme.color(PANEL_BG));
         String language = Translator.getClientLanguage();
         net.minecraft.network.chat.Component contentVanilla = readableContent.toVanilla(language);
-        boolean detailNeedsContrastShadow = ColorUtils.hasLowContrastMinecraftFormatting(
-                entry.component().getString(language, false, false), theme.color(PANEL_BG));
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
             detailContentLeft = x;
@@ -484,11 +482,7 @@ public class NotificationLogScreen extends BaniraScreen {
             float lineY = curY;
             int textColor = theme.color(TEXT_PRIMARY);
             for (FormattedCharSequence line : detailContentLines) {
-                if (detailNeedsContrastShadow) {
-                    font.drawShadow(stack, line, x, lineY, textColor);
-                } else {
-                    font.draw(stack, line, x, lineY, textColor);
-                }
+                font.draw(stack, line, x, lineY, textColor);
                 lineY += font.lineHeight;
             }
             if (!isAnyDropdownSelectOpen()) {

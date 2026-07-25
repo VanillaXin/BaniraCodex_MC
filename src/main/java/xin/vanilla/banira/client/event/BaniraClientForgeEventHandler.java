@@ -1,11 +1,13 @@
 package xin.vanilla.banira.client.event;
 
+import net.minecraft.client.Minecraft;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
@@ -34,6 +36,7 @@ public final class BaniraClientForgeEventHandler {
         gameEventBus.addListener(ScreenEvent.Render.Pre.class, BaniraClientForgeEventHandler::onDrawScreenPre);
         gameEventBus.addListener(ScreenEvent.Render.Post.class, BaniraClientForgeEventHandler::onDrawScreenPost);
         gameEventBus.addListener(EventPriority.LOWEST, ScreenEvent.Render.Post.class, BaniraClientForgeEventHandler::onDrawScreenPostInventoryQuickAction);
+        gameEventBus.addListener(RenderGuiEvent.Post.class, BaniraClientForgeEventHandler::onRenderGuiPost);
         gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseButtonPressed.Pre.class, BaniraClientForgeEventHandler::onGuiMouseClickedPre);
         gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseButtonReleased.Pre.class, BaniraClientForgeEventHandler::onGuiMouseReleasedPre);
         gameEventBus.addListener(EventPriority.HIGHEST, ScreenEvent.MouseScrolled.Pre.class, BaniraClientForgeEventHandler::onGuiMouseScrollPre);
@@ -111,6 +114,12 @@ public final class BaniraClientForgeEventHandler {
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
         NotificationManager.get().render(event.getGuiGraphics());
+    }
+
+    public static void onRenderGuiPost(RenderGuiEvent.Post event) {
+        if (Minecraft.getInstance().screen == null) {
+            NotificationManager.get().render(event.getGuiGraphics());
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

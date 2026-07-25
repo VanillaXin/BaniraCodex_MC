@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -146,7 +147,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Getter
     private long longPressDurationMs = 2000L;
 
-    private boolean longPressHandlerFired;
+    private final BaniraPressGestureState longPressState = new BaniraPressGestureState();
 
     @Getter
     @Setter
@@ -479,7 +480,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int drawWidth = width - marginLeft - marginRight;
         int drawHeight = height - marginTop - marginBottom;
 
-        boolean longPressProgress = enabled && longPressHandler != null && mousePressed && pressedMouseButton == 0;
+        boolean longPressProgress = enabled && longPressHandler != null && longPressState.pressing(0);
 
         int currentBgColor;
         int currentBorderColor;
@@ -487,9 +488,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         int currentIconColor;
 
         if (longPressProgress) {
-            float progress = longPressHandlerFired
-                    ? 1f
-                    : Math.min(1f, (System.currentTimeMillis() - mousePressStartMillis()) / (float) longPressDurationMs);
+            float progress = longPressState.progress(longPressDurationMs);
             int absClipX = (int) Math.round(absoluteX()) + marginLeft;
             int absClipY = (int) Math.round(absoluteY()) + marginTop;
 
@@ -1015,21 +1014,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         super.update();
         if (!visible || !enabled) {
             longPressBurstParticles.clear();
+            longPressState.release();
             return;
         }
         tickLongPressBurstParticles();
         if (longPressHandler == null) {
+            longPressState.release();
             return;
         }
-        if (mousePressed && pressedMouseButton == 0 && !longPressHandlerFired) {
-            if (System.currentTimeMillis() - mousePressStartMillis() >= longPressDurationMs) {
-                int dw = (int) width() - marginLeft - marginRight;
-                int dh = (int) height() - marginTop - marginBottom;
-                spawnLongPressBurst(Math.max(1, dw), Math.max(1, dh));
-                longPressHandlerFired = true;
-                longPressHandler.accept(this);
-                LOGGER.debug("Button long-pressed: id={}", id);
-            }
+        if (longPressState.ready(longPressDurationMs)) {
+            int dw = (int) width() - marginLeft - marginRight;
+            int dh = (int) height() - marginTop - marginBottom;
+            spawnLongPressBurst(Math.max(1, dw), Math.max(1, dh));
+            longPressState.fire();
+            longPressHandler.accept(this);
+            LOGGER.debug("Button long-pressed: id={}", id);
         }
     }
 
@@ -1038,7 +1037,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         boolean result = super.onMouseClick(event);
         if (event != null && event.button() == 0 && enabled) {
             if (longPressHandler != null) {
-                longPressHandlerFired = false;
+                longPressState.press(0);
                 longPressBurstParticles.clear();
             }
             result = true;
@@ -1049,7 +1048,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     protected boolean onMouseRelease(MouseEvent event, boolean inside) {
         boolean result = super.onMouseRelease(event, inside);
-        if (event != null && event.button() == 0 && enabled && inside && !longPressHandlerFired && onClick != null) {
+        boolean longPressFired = longPressState.fired();
+        if (event != null && event.button() == 0) {
+            longPressState.release();
+        }
+        if (event != null && event.button() == 0 && enabled && inside && !longPressFired && onClick != null) {
             onClick.accept(this);
             LOGGER.debug("Button clicked: id={}", id);
             result = true;

@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.event;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -97,6 +98,16 @@ public final class BaniraClientForgeEventHandler {
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
         NotificationManager.get().render(event.getGuiGraphics());
+    }
+
+    /**
+     * 世界内没有打开 Screen 时，通知仍应位于完整 HUD 之后。
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onRenderGuiPost(RenderGuiEvent.Post event) {
+        if (net.minecraft.client.Minecraft.getInstance().screen == null) {
+            NotificationManager.get().render(event.getGuiGraphics());
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

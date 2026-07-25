@@ -487,20 +487,6 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
     }
 
-    @Override
-    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) {
-            return;
-        }
-        int changedCount = changedSettingCount();
-        if (changedCount == 0) {
-            onClose();
-        } else {
-            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
-        }
-        eventArgs.consumed(true);
-    }
-
     private void updateWidgetPositions() {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
@@ -514,6 +500,23 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         } else {
             super.onClose();
         }
+    }
+
+    /**
+     * ESC 属于界面级命令，需要先于折叠面板和下拉框处理。
+     */
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode != GLFWKey.GLFW_KEY_ESCAPE) {
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+        int changedCount = changedSettingCount();
+        if (changedCount == 0) {
+            onClose();
+        } else {
+            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
+        }
+        return true;
     }
 
     private static final int CARD_RADIUS = 8;

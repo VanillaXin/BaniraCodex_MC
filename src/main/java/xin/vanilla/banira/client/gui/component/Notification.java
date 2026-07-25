@@ -85,7 +85,6 @@ public class Notification extends NotificationData {
     private transient List<FormattedCharSequence> richDrawLines = new ArrayList<>();
     private transient int richTextMaxLineW;
     private transient int richDefaultTextArgb = 0xFFFFFFFF;
-    private transient boolean richNeedsContrastShadow;
     /**
      * 最近一次绘制在 GUI 坐标下的外接矩形（用于点击检测）
      */
@@ -256,8 +255,6 @@ public class Notification extends NotificationData {
         this.vanillaDrawText = readable.toVanilla(lang);
         int sourceTextArgb = readable.color().isEmpty() ? 0xFFFFFFFF : readable.color().argb();
         this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
-        this.richNeedsContrastShadow = ColorUtils.hasLowContrastMinecraftFormatting(
-                this.component().getString(lang, false, false), this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         this.richTextMaxLineW = 0;
         for (FormattedCharSequence line : this.richDrawLines) {
@@ -505,11 +502,7 @@ public class Notification extends NotificationData {
                 float textX = x + pad;
                 float textY = textTopLocal;
                 for (FormattedCharSequence line : this.richDrawLines) {
-                    if (this.richNeedsContrastShadow) {
-                        font.drawShadow(drawArgs.stack(), line, textX, textY, textArgb);
-                    } else {
-                        font.draw(drawArgs.stack(), line, textX, textY, textArgb);
-                    }
+                    font.draw(drawArgs.stack(), line, textX, textY, textArgb);
                     textY += lineH;
                 }
 

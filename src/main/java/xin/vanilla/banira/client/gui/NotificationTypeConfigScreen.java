@@ -497,16 +497,21 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
     }
 
+    /**
+     * ESC 属于界面级命令，需要先于折叠面板和下拉框处理。
+     */
     @Override
-    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) return;
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode != GLFWKey.GLFW_KEY_ESCAPE) {
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
         int changedCount = changedSettingCount();
         if (changedCount == 0) {
             onClose();
         } else {
             ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
         }
-        eventArgs.consumed(true);
+        return true;
     }
 
     private static final int CARD_RADIUS = 8;

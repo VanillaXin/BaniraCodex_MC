@@ -6,6 +6,8 @@ import xin.vanilla.banira.platform.BaniraConfigHandle;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * 子 mod 推荐使用的配置注册与访问入口。
@@ -88,6 +90,19 @@ public final class BaniraConfigs {
 
     public static void save(@Nonnull Class<?> configClass) {
         requireHandle(configClass).save();
+    }
+
+    /**
+     * 监听指定配置保存成功后的变更路径；返回值用于注销监听。
+     */
+    @Nonnull
+    public static Runnable onSaved(@Nonnull Class<?> configClass,
+                                   @Nonnull Consumer<Set<String>> listener) {
+        ConfigHolder holder = holder(configClass);
+        if (holder == null) {
+            throw new IllegalStateException("Config not registered: " + configClass.getName());
+        }
+        return holder.onSaved(listener);
     }
 
     public static void setAndSave(@Nonnull Class<?> configClass, @Nonnull String path, @Nullable Object value) {

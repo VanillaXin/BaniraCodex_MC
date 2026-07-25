@@ -142,8 +142,45 @@ public final class NotificationTypeSettingsStore {
     }
 
     public void put(String typeId, TypeSettings settings) {
-        byType.put(NotificationTypeKeys.normalizeOrDefault(typeId), settings != null ? settings : new TypeSettings());
+        byType.put(NotificationTypeKeys.normalizeOrDefault(typeId), copyOf(settings));
         saveAsync();
+    }
+
+    /**
+     * 返回与存储解耦的快照，供配置界面在保存前编辑草稿。
+     */
+    public Map<String, TypeSettings> snapshot() {
+        Map<String, TypeSettings> snapshot = new LinkedHashMap<>();
+        synchronized (byType) {
+            byType.forEach((typeId, settings) -> snapshot.put(typeId, copyOf(settings)));
+        }
+        return snapshot;
+    }
+
+    /**
+     * 用一次完整提交替换当前配置，避免每改一个控件就异步写盘。
+     */
+    public void replaceAllAndSave(Map<String, TypeSettings> settingsByType) {
+        synchronized (byType) {
+            byType.clear();
+            if (settingsByType != null) {
+                settingsByType.forEach((typeId, settings) ->
+                        byType.put(NotificationTypeKeys.normalizeOrDefault(typeId), copyOf(settings)));
+            }
+        }
+        saveAsync();
+    }
+
+    public static TypeSettings copyOf(TypeSettings settings) {
+        TypeSettings source = settings != null ? settings : new TypeSettings();
+        return new TypeSettings()
+                .hidden(source.hidden())
+                .durationMs(source.durationMs())
+                .positionName(source.positionName() != null ? source.positionName() : "")
+                .animationName(source.animationName() != null ? source.animationName() : "")
+                .displayMode(source.displayMode() != null
+                        ? source.displayMode()
+                        : EnumNotificationTypeDisplayMode.OVERLAY);
     }
 
     public Set<String> typeIdsFromStored() {

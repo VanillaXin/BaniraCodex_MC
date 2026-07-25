@@ -165,7 +165,7 @@ public final class ColorUtils {
     }
 
     /**
-     * 保留原文字色的色相；对比度不足时，仅向黑色或白色做达到阈值所需的最小混合。
+     * 保留任意原文字色的色相；对比度不足时，仅向黑色或白色做达到阈值所需的最小混合。
      */
     public static int ensureReadableTextArgb(int textArgb, int backgroundArgb) {
         if (contrastRatio(textArgb, backgroundArgb) >= MIN_READABLE_CONTRAST) {
@@ -197,7 +197,8 @@ public final class ColorUtils {
     }
 
     /**
-     * 在翻译和参数展开后修正每个文本片段的颜色，避免旧式颜色码只能跳到另一种色相。
+     * 在翻译和参数展开后修正每个文本片段的颜色。
+     * 显式 RGB 与全部 {@code §0-§f} 传统颜色都使用相同的对比度规则。
      */
     public static ITextComponent readableVanillaComponentCopy(
             ITextComponent component, int backgroundArgb) {

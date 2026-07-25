@@ -3,16 +3,22 @@ package xin.vanilla.banira.common.config;
 import lombok.Getter;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /**
  * 配置持有者，封装 ModConfigSpec 与元数据，提供统一访问接口
  */
 @Getter
 public class ConfigHolder implements BaniraConfigHandle {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
@@ -41,6 +47,8 @@ public class ConfigHolder implements BaniraConfigHandle {
 
     @Nullable
     private ModConfig modConfig;
+    private final Set<String> pendingChangedPaths = new LinkedHashSet<>();
+    private final List<Consumer<Set<String>>> savedListeners = new CopyOnWriteArrayList<>();
 
     ConfigHolder(String modId, String configName, ConfigScope configScope, ModConfigSpec spec,
                  List<ConfigEntryDescriptor> descriptors, Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
@@ -78,13 +86,36 @@ public class ConfigHolder implements BaniraConfigHandle {
     /**
      * 保存配置到文件
      */
-    public void save() {
-        if (modConfig != null) {
-            var loaded = modConfig.getLoadedConfig();
-            if (loaded != null) {
-                loaded.save();
+    public synchronized void save() {
+        if (modConfig == null) {
+            return;
+        }
+        var loaded = modConfig.getLoadedConfig();
+        if (loaded == null) {
+            return;
+        }
+        loaded.save();
+        if (pendingChangedPaths.isEmpty()) {
+            return;
+        }
+        Set<String> changedPaths = Collections.unmodifiableSet(new LinkedHashSet<>(pendingChangedPaths));
+        pendingChangedPaths.clear();
+        for (Consumer<Set<String>> listener : savedListeners) {
+            try {
+                listener.accept(changedPaths);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Config saved listener failed for {}", configName, ex);
             }
         }
+    }
+
+    /**
+     * 保存成功且存在实际写入时触发；返回值用于注销监听。
+     */
+    public Runnable onSaved(Consumer<Set<String>> listener) {
+        Objects.requireNonNull(listener, "listener");
+        savedListeners.add(listener);
+        return () -> savedListeners.remove(listener);
     }
 
     /**
@@ -108,10 +139,14 @@ public class ConfigHolder implements BaniraConfigHandle {
      * 设置配置值（仅内存，需调用 save 持久化）
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void set(String path, Object value) {
+    public synchronized void set(String path, Object value) {
         ModConfigSpec.ConfigValue cv = valueMap.get(path);
         if (cv != null) {
+            Object previous = cv.get();
             cv.set(value);
+            if (!Objects.deepEquals(previous, cv.get())) {
+                pendingChangedPaths.add(path);
+            }
         }
     }
 

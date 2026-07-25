@@ -346,6 +346,7 @@
   "word.banira_codex.config_editor_fetch_not_connected": "Not connected to a server; cannot fetch config",
   "word.banira_codex.config_editor_sync_not_connected": "Not connected to a server; cannot sync",
   "word.banira_codex.config_editor_sync_nothing": "No pending changes to sync",
+  "word.banira_codex.config_editor_unsaved_changes": "%s config entries have been changed.\nUse the Close button to discard them and close this screen.",
   "word.banira_codex.config_editor_sync_server_empty": "Server rejected: empty sync payload",
   "word.banira_codex.config_editor_sync_server_no_permission": "Server rejected: insufficient permissions",
   "word.banira_codex.config_editor_sync_server_not_applicable": "Server rejected: this config cannot be synced to the server",

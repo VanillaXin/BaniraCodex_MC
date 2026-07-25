@@ -346,6 +346,7 @@
   "word.banira_codex.config_editor_fetch_not_connected": "未连接服务端，无法从服务端拉取配置",
   "word.banira_codex.config_editor_sync_not_connected": "未连接服务端，无法同步至服务端",
   "word.banira_codex.config_editor_sync_nothing": "当前没有待同步的修改",
+  "word.banira_codex.config_editor_unsaved_changes": "当前已有%s项配置被修改，\n取消并关闭界面请点击关闭按钮",
   "word.banira_codex.config_editor_sync_server_empty": "服务端拒绝：同步数据为空",
   "word.banira_codex.config_editor_sync_server_no_permission": "服务端拒绝：权限不足",
   "word.banira_codex.config_editor_sync_server_not_applicable": "服务端拒绝：该配置不允许同步至服务端",

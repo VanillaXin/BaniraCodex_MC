@@ -372,7 +372,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     private void ensureDraftInitialized() {
-        if (baselineSettings != null) return;
+        if (baselineSettings != null) {
+            return;
+        }
         baselineSettings = NotificationTypeSettingsStore.get().snapshot();
         draftSettings = copySettingsMap(baselineSettings);
     }
@@ -383,7 +385,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     private void updateDraft(String typeId, NotificationTypeSettingsStore.TypeSettings settings) {
-        if (!Objects.equals(draftSettings(typeId), settings)) {
+        NotificationTypeSettingsStore.TypeSettings previous = draftSettings(typeId);
+        if (!Objects.equals(previous, settings)) {
             draftSettings.put(typeId, NotificationTypeSettingsStore.copyOf(settings));
         }
     }
@@ -401,7 +404,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             NotificationTypeSettingsStore.TypeSettings baseline = baselineSettings.get(typeId);
             NotificationTypeSettingsStore.TypeSettings draft = draftSettings.get(typeId);
             if (!Objects.equals(baseline != null ? baseline : new NotificationTypeSettingsStore.TypeSettings(),
-                    draft != null ? draft : new NotificationTypeSettingsStore.TypeSettings())) changed++;
+                    draft != null ? draft : new NotificationTypeSettingsStore.TypeSettings())) {
+                changed++;
+            }
         }
         return changed;
     }
@@ -467,18 +472,33 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         int n = bottomButtons.size();
         int[] btnWidths = new int[n];
         for (int i = 0; i < n; i++) {
-            btnWidths[i] = font.width(bottomButtons.get(i).text().content()) + BUTTON_PADDING * 2;
+            btnWidths[i] = font.width(bottomButtons.get(i).text().toString()) + BUTTON_PADDING * 2;
         }
-        if (n == 1) {
-            int bw = Math.max(48, btnWidths[0]);
-            int cx = cardX + (cardW - bw) / 2;
-            bottomButtons.get(0).bounds(new ScreenCoordinate(cx, btnY, bw, BUTTON_HEIGHT));
-        } else if (n == 2) {
-            int available = cardW - CARD_INNER * 2 - BUTTON_GAP;
-            int bw = Math.max(48, available / 2);
-            bottomButtons.get(0).bounds(new ScreenCoordinate(cardX + CARD_INNER, btnY, bw, BUTTON_HEIGHT));
-            bottomButtons.get(1).bounds(new ScreenCoordinate(
-                    cardX + CARD_INNER + bw + BUTTON_GAP, btnY, available - bw, BUTTON_HEIGHT));
+
+        int contentTotal = cardW - CARD_INNER * 2 - CARD_GAP;
+        int zoneW = contentTotal / 2;
+        int leftRectW = CARD_INNER + zoneW;
+        int rightRectW = cardW - leftRectW - CARD_GAP;
+        int rightRectX = cardX + leftRectW + CARD_GAP;
+        int lastIdx = n - 1;
+        int leftTotalW = 0;
+        for (int i = 0; i < lastIdx; i++) {
+            leftTotalW += btnWidths[i] + (i > 0 ? BUTTON_GAP : 0);
+        }
+        int rightTotalW = btnWidths[lastIdx];
+        double leftScale = leftTotalW > zoneW ? (double) zoneW / leftTotalW : 1.0;
+        double rightScale = rightTotalW > zoneW ? (double) zoneW / rightTotalW : 1.0;
+        int leftTotalScaled = (int) (leftTotalW * leftScale);
+        int curX = cardX + (leftRectW - leftTotalScaled) / 2;
+        for (int i = 0; i < n; i++) {
+            ButtonWidget btn = bottomButtons.get(i);
+            double scale = i < lastIdx ? leftScale : rightScale;
+            int bw = Math.max(20, (int) (btnWidths[i] * scale));
+            if (i == lastIdx) {
+                curX = rightRectX + (rightRectW - bw) / 2;
+            }
+            btn.bounds(new ScreenCoordinate(curX, btnY, bw, BUTTON_HEIGHT));
+            curX += bw + BUTTON_GAP;
         }
     }
 

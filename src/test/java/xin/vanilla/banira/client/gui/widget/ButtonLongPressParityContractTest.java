@@ -11,13 +11,14 @@ import static org.junit.Assert.assertTrue;
 public class ButtonLongPressParityContractTest {
 
     @Test
-    public void usesTheSharedBurstCompletionFeedback() throws Exception {
+    public void usesTheSharedCheckmarkCompletionFeedback() throws Exception {
         String source = Files.readString(Path.of(
                 "src/main/java/xin/vanilla/banira/client/gui/widget/ButtonWidget.java"));
 
-        assertTrue(source.contains("LONG_PRESS_BURST_DURATION_MS"));
-        assertTrue(source.contains("spawnLongPressBurst"));
-        assertTrue(source.contains("LongPressBurstParticle"));
-        assertFalse(source.contains("LongPressCompletionEffect"));
+        assertTrue(source.contains("COMPLETION_KIND_CHECK"));
+        assertTrue(source.contains("spawnLongPressCompletionFeedback"));
+        assertTrue(source.contains("drawLongPressCompletionCheck"));
+        assertTrue(source.contains("LongPressCompletionEffect"));
+        assertFalse(source.contains("spawnLongPressBurst"));
     }
 }

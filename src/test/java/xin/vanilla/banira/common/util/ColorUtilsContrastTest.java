@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.data.Component;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** 验证通知等浅色浮层上的文字始终保有足够对比度。 */
@@ -40,7 +41,7 @@ public class ColorUtilsContrastTest {
     }
 
     @Test
-    public void readableComponentCopyRewritesLegacyColorWithoutChangingTheSource() {
+    public void readableComponentCopyLeavesLegacyCodesForPostTranslationProcessing() {
         String source = "\u00A7eCountdown: 3";
         Component component = BaniraComponent.get().literal(source);
 
@@ -48,8 +49,28 @@ public class ColorUtilsContrastTest {
 
         assertEquals("\u00A7eCountdown: 3", source);
         assertEquals("\u00A7eCountdown: 3", component.text());
-        assertNotEquals(component.text(), readable.text());
-        assertTrue(readable.text().startsWith("\u00A7"));
+        assertEquals(component.text(), readable.text());
+    }
+
+    @Test
+    public void postTranslationLegacyYellowBecomesReadableDarkYellow() {
+        net.minecraft.network.chat.Component source =
+                new net.minecraft.network.chat.TextComponent("\u00A7eCountdown: 3");
+
+        net.minecraft.network.chat.Component readable =
+                ColorUtils.readableVanillaComponentCopy(source, 0xFFFFF4C2);
+
+        assertEquals("Countdown: 3", readable.getString());
+        assertTrue(!readable.getSiblings().isEmpty());
+        net.minecraft.network.chat.TextColor color = readable.getSiblings().get(0).getStyle().getColor();
+        assertNotNull(color);
+        int rgb = color.getValue();
+        int red = (rgb >> 16) & 0xFF;
+        int green = (rgb >> 8) & 0xFF;
+        int blue = rgb & 0xFF;
+        assertTrue(Math.abs(red - green) <= 2);
+        assertTrue(green > blue);
+        assertTrue(ColorUtils.contrastRatio(0xFF000000 | rgb, 0xFFFFF4C2) >= 4.5);
     }
 
     @Test

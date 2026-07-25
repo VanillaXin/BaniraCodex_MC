@@ -15,12 +15,12 @@ public class NotificationColorPreservationContractTest {
         String notification = read("src/main/java/xin/vanilla/banira/client/gui/component/Notification.java");
         String logScreen = read("src/main/java/xin/vanilla/banira/client/gui/NotificationLogScreen.java");
 
-        assertTrue(notification.contains("ColorUtils.readableComponentCopy"));
-        assertTrue(notification.contains("readable.toVanilla(lang)"));
+        assertTrue(notification.contains("ColorUtils.readableVanillaComponentCopy"));
+        assertTrue(notification.contains("this.component().toVanilla(lang)"));
         assertTrue(notification.contains("c.color().isEmpty() || c.color().rgb() == 0xFFFFFF"));
         assertTrue(!notification.contains("richNeedsContrastShadow"));
-        assertTrue(logScreen.contains("ColorUtils.readableComponentCopy(entry.component(),"));
-        assertTrue(logScreen.contains("rowTextColor"));
+        assertTrue(logScreen.contains("ColorUtils.readableVanillaComponentCopy("));
+        assertTrue(logScreen.contains("entry.component().toVanilla(language)"));
         assertTrue(!logScreen.contains("detailNeedsContrastShadow"));
         assertTrue(!logScreen.contains("font.drawShadow(stack, line"));
     }

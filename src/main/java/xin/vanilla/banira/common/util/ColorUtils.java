@@ -191,6 +191,9 @@ public final class ColorUtils {
     }
 
     private static void adjustComponentColors(Component component, int backgroundArgb) {
+        if (component.i18nType() == xin.vanilla.banira.common.enums.EnumI18nType.PLAIN) {
+            component.text(ensureReadableMinecraftFormatting(component.text(), backgroundArgb));
+        }
         if (!component.color().isEmpty()) {
             component.color(Color.argb(ensureReadableTextArgb(component.color().argb(), backgroundArgb)));
         }

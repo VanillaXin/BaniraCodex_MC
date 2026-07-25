@@ -8,6 +8,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
@@ -93,6 +94,7 @@ public class ConfigEditorScreen extends BaniraScreen {
      * 本会话内用户曾改动过的配置路径（含重置、保存后仍保留），同步至服务端时仅发送这些项。
      */
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
+    private final Map<String, Object> baselineValues = new LinkedHashMap<>();
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
@@ -120,6 +122,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
         listTop = cardY + CARD_INNER;
         entryWidgets.clear();
+        baselineValues.clear();
         syncTouchedPaths.clear();
         bottomButtons.clear();
 
@@ -212,6 +215,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             IConfigEntryWidget adapter = createEntryRow(desc, cw, ROW_HEIGHT);
             if (adapter != null) {
                 entryWidgets.put(desc.getPath(), adapter);
+                baselineValues.put(desc.getPath(), snapshot(adapter.getValue()));
                 double rowHeight = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : ROW_HEIGHT;
                 panel.addChildAuto(adapter.getWidget(), rowHeight);
             }
@@ -748,9 +752,9 @@ public class ConfigEditorScreen extends BaniraScreen {
         for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
             holder.set(e.getKey(), e.getValue());
         }
-        modifiedValues.clear();
         try {
             holder.save();
+            markClean();
             Notification n = Notification.ofComponent(BaniraComponent.get().transClientAuto("config_editor_save_success"));
             n.position(EnumPosition.TOP_RIGHT).durationTime(2000);
             NotificationManager.get().addNotification(n);
@@ -784,11 +788,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
         try {
             PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
-            modifiedValues.clear();
-            syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
                 holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
             }
+            markClean();
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_failed", ex.getMessage() != null ? ex.getMessage() : ""));
@@ -826,11 +829,10 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
         try {
             PacketUtils.sendPacketToServer(new ConfigSyncToServer(holder.getConfigName(), toSync));
-            modifiedValues.clear();
-            syncTouchedPaths.clear();
             for (Map.Entry<String, String> e : toSync.entrySet()) {
                 holder.set(e.getKey(), parseValue(e.getKey(), e.getValue()));
             }
+            markClean();
         } catch (Exception ex) {
             Notification err = Notification.ofComponent(
                     BaniraComponent.get().transClientAuto("config_editor_sync_full_failed", ex.getMessage() != null ? ex.getMessage() : ""));
@@ -869,8 +871,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.getConfigName().equals(configName)) {
             return;
         }
-        modifiedValues.clear();
-        syncTouchedPaths.clear();
         for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
             Object v = holder.get(e.getKey());
             if (v == null) {
@@ -883,6 +883,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                 e.getValue().setValue(v);
             }
         }
+        markClean();
     }
 
     private Object parseValue(String path, String value) {
@@ -901,17 +902,63 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void collectModifiedFromWidgets() {
+        modifiedValues.clear();
         for (Map.Entry<String, IConfigEntryWidget> e : entryWidgets.entrySet()) {
             if (!e.getValue().isValid()) continue;
             Object v = e.getValue().getValue();
-            if (v != null && !Objects.equals(v, holder.get(e.getKey()))) {
+            if (v != null && !Objects.deepEquals(v, baselineValues.get(e.getKey()))) {
                 modifiedValues.put(e.getKey(), v);
             }
         }
     }
 
+    private int pendingChangeCount() {
+        Set<String> paths = new LinkedHashSet<>(syncTouchedPaths);
+        for (Map.Entry<String, IConfigEntryWidget> entry : entryWidgets.entrySet()) {
+            if (!entry.getValue().isValid()) {
+                continue;
+            }
+            Object value = entry.getValue().getValue();
+            if (value != null && !Objects.deepEquals(value, baselineValues.get(entry.getKey()))) {
+                paths.add(entry.getKey());
+            } else {
+                paths.remove(entry.getKey());
+            }
+        }
+        return paths.size();
+    }
+
+    private void markClean() {
+        modifiedValues.clear();
+        syncTouchedPaths.clear();
+        for (Map.Entry<String, IConfigEntryWidget> entry : entryWidgets.entrySet()) {
+            baselineValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
+        }
+    }
+
+    private static Object snapshot(Object value) {
+        if (value instanceof List) {
+            return new ArrayList<>((List<?>) value);
+        }
+        if (value instanceof Set) {
+            return new LinkedHashSet<>((Set<?>) value);
+        }
+        if (value instanceof Map) {
+            return new LinkedHashMap<>((Map<?, ?>) value);
+        }
+        return value;
+    }
+
     private void markConfigTouched(String path) {
-        if (path != null) {
+        if (path == null) {
+            return;
+        }
+        IConfigEntryWidget widget = entryWidgets.get(path);
+        if (widget != null && widget.isValid()
+                && Objects.deepEquals(widget.getValue(), baselineValues.get(path))) {
+            syncTouchedPaths.remove(path);
+            modifiedValues.remove(path);
+        } else {
             syncTouchedPaths.add(path);
         }
     }
@@ -966,6 +1013,23 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private static final int CARD_RADIUS = 8;
     private static final int CARD_ALPHA = 0xFF;
+
+    @Override
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) {
+            return;
+        }
+        int changedCount = pendingChangeCount();
+        if (changedCount == 0) {
+            onClose();
+        } else {
+            Notification notification = Notification.ofComponent(
+                    BaniraComponent.get().transClientAuto("config_editor_unsaved_changes", changedCount));
+            notification.position(EnumPosition.TOP_RIGHT).durationTime(4500);
+            NotificationManager.get().addNotification(notification);
+        }
+        eventArgs.consumed(true);
+    }
 
     @Override
     protected void renderWidgets(GuiGraphics graphics, float partialTicks) {

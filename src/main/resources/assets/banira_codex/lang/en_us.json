@@ -358,5 +358,6 @@
   "text.autoconfig.banira_codex-common.option.command.commandVirtualOp": "Virtual OP subcommand name",
   "text.autoconfig.banira_codex-common.option.permission.virtualOpPermission": "Permission level for virtual OP management",
   "text.autoconfig.banira_codex-common.option.permission.editServerConfigPermission": "Permission level required to edit server config",
-  "text.autoconfig.banira_codex-common.option.permission.editServerConfigVirtualPermissionKey": "Virtual permission key for editing server config (full key)"
+  "text.autoconfig.banira_codex-common.option.permission.editServerConfigVirtualPermissionKey": "Virtual permission key for editing server config (full key)",
+  "word.banira_codex.config_editor_unsaved_changes": "%s config entries have been changed.\nUse the Close button to discard them and close this screen."
 }

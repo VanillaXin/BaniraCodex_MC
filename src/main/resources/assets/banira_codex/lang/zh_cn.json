@@ -358,5 +358,6 @@
   "text.autoconfig.banira_codex-common.option.command.commandVirtualOp": "虚拟 OP 子指令名称",
   "text.autoconfig.banira_codex-common.option.permission.virtualOpPermission": "虚拟 OP 管理所需权限等级",
   "text.autoconfig.banira_codex-common.option.permission.editServerConfigPermission": "编辑服务端配置所需权限等级",
-  "text.autoconfig.banira_codex-common.option.permission.editServerConfigVirtualPermissionKey": "编辑服务端配置虚拟权限键（完整键）"
+  "text.autoconfig.banira_codex-common.option.permission.editServerConfigVirtualPermissionKey": "编辑服务端配置虚拟权限键（完整键）",
+  "word.banira_codex.config_editor_unsaved_changes": "当前已有%s项配置被修改，\n取消并关闭界面请点击关闭按钮"
 }

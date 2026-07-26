@@ -13,7 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.internal.fabric.client.FabricBaniraHudBridge;
 
-/** Fabric 1.20.1 将经验条与经验文本拆成可独立取消的 Banira 事件。 */
+/**
+ * Fabric 1.20.1 将经验条与经验文本拆成可独立取消的 Banira 事件。
+ */
 @Mixin(Gui.class)
 public abstract class GuiExperienceMixin {
     @Unique

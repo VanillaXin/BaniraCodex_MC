@@ -2,13 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
-import xin.vanilla.banira.api.event.BaniraEventRegistration;
-import xin.vanilla.banira.api.event.BaniraLifecycle;
-import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
-import xin.vanilla.banira.api.event.BaniraPlayerEvent;
-import xin.vanilla.banira.api.event.BaniraServerEvent;
-import xin.vanilla.banira.api.event.BaniraWorldEvent;
+import xin.vanilla.banira.api.event.*;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

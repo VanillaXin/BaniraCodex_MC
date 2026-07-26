@@ -9,7 +9,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -22,7 +21,6 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;

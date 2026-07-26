@@ -273,10 +273,14 @@ public final class ReflectionAccess {
         if (to == boolean.class) return from == Boolean.class;
         if (to == byte.class) return from == Byte.class;
         if (to == short.class) return from == Short.class || from == Byte.class;
-        if (to == int.class) return from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
-        if (to == long.class) return from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
-        if (to == float.class) return from == Float.class || from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
-        if (to == double.class) return from == Double.class || from == Float.class || from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
+        if (to == int.class)
+            return from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
+        if (to == long.class)
+            return from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
+        if (to == float.class)
+            return from == Float.class || from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
+        if (to == double.class)
+            return from == Double.class || from == Float.class || from == Long.class || from == Integer.class || from == Short.class || from == Byte.class || from == Character.class;
         return to == char.class && from == Character.class;
     }
 
@@ -364,7 +368,8 @@ public final class ReflectionAccess {
         if (to == double.class) return from == Double.class || from == Integer.class || from == Float.class;
         if (to == float.class) return from == Float.class || from == Double.class || from == Integer.class;
         if (to == boolean.class) return from == Boolean.class;
-        if (to == long.class) return from == Long.class || from == Double.class || from == Float.class || from == Integer.class;
+        if (to == long.class)
+            return from == Long.class || from == Double.class || from == Float.class || from == Integer.class;
         if (to == char.class) return from == Character.class || from == Integer.class;
         if (to == byte.class) return from == Byte.class || from == Integer.class;
         if (to == short.class) return from == Short.class || from == Integer.class;

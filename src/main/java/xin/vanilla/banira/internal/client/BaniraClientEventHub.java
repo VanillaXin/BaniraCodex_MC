@@ -412,7 +412,7 @@ public final class BaniraClientEventHub {
     }
 
     private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
-                                                        float partialTick, boolean screenOpen) {
+                                                         float partialTick, boolean screenOpen) {
         return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 

@@ -1,4 +1,5 @@
 package xin.vanilla.banira.common.network;
+
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nonnull;

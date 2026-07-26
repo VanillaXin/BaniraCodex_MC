@@ -9,10 +9,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.banira.internal.client.BaniraItemRenderBridge;
+import xin.vanilla.banira.internal.client.InputStateManager;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

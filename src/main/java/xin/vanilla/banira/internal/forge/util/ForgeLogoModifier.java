@@ -5,8 +5,8 @@ import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.internal.client.LogoModifier;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.LogoModifier;
 import xin.vanilla.banira.internal.common.ReflectionAccess;
 
 import java.util.List;

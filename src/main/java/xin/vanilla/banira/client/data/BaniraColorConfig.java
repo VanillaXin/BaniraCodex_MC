@@ -444,101 +444,196 @@ public final class BaniraColorConfig {
      */
     public int color(@Nonnull BaniraColorToken token) {
         switch (token) {
-            case ACCENT: return accent();
-            case ACCENT_HOVER: return accentHover();
-            case ACCENT_FOCUSED: return accentFocused();
-            case ACCENT_PRESSED: return accentPressed();
-            case BG_PRIMARY: return bgPrimary();
-            case BG_SECONDARY: return bgSecondary();
-            case BG_SURFACE: return bgSurface();
-            case BG_TERTIARY: return bgTertiary();
-            case BG_QUATERNARY: return bgQuaternary();
-            case BG_DISABLED: return bgDisabled();
-            case TEXT_PRIMARY: return textPrimary();
-            case TEXT_SECONDARY: return textSecondary();
-            case TEXT_HINT: return textHint();
-            case TEXT_DISABLED: return textDisabled();
-            case BORDER: return border();
-            case BORDER_HOVER: return borderHover();
-            case BORDER_FOCUSED: return borderFocused();
-            case BORDER_DISABLED: return borderDisabled();
-            case STATUS_ERROR: return error();
-            case STATUS_WARNING: return warning();
-            case STATUS_SUCCESS: return success();
-            case STATUS_INFO: return info();
-            case STATUS_ERROR_BG: return statusErrorBg();
-            case STATUS_ERROR_BORDER: return statusErrorBorder();
-            case STATUS_ERROR_TEXT: return statusErrorText();
-            case STATUS_WARNING_BG: return statusWarningBg();
-            case STATUS_WARNING_BORDER: return statusWarningBorder();
-            case STATUS_WARNING_TEXT: return statusWarningText();
-            case STATUS_SUCCESS_BG: return statusSuccessBg();
-            case STATUS_SUCCESS_BORDER: return statusSuccessBorder();
-            case STATUS_SUCCESS_TEXT: return statusSuccessText();
-            case STATUS_INFO_BG: return statusInfoBg();
-            case STATUS_INFO_BORDER: return statusInfoBorder();
-            case STATUS_INFO_TEXT: return statusInfoText();
-            case PANEL_BG: return panelBg();
-            case LIST_ITEM_TEXT: return listItemText();
-            case BUTTON_BG: return buttonBg();
-            case BUTTON_BG_HOVER: return buttonBgHover();
-            case BUTTON_BG_FOCUSED: return buttonBgFocused();
-            case BUTTON_BG_PRESSED: return buttonBgPressed();
-            case BUTTON_BG_DISABLED: return buttonBgDisabled();
-            case BUTTON_BORDER: return buttonBorder();
-            case BUTTON_BORDER_HOVER: return buttonBorderHover();
-            case BUTTON_BORDER_FOCUSED: return buttonBorderFocused();
-            case BUTTON_BORDER_PRESSED: return buttonBorderPressed();
-            case BUTTON_BORDER_DISABLED: return buttonBorderDisabled();
-            case BUTTON_TEXT: return buttonText();
-            case BUTTON_TEXT_HOVER: return buttonTextHover();
-            case BUTTON_TEXT_FOCUSED: return buttonTextFocused();
-            case BUTTON_TEXT_PRESSED: return buttonTextPressed();
-            case BUTTON_TEXT_DISABLED: return buttonTextDisabled();
-            case BUTTON_ICON: return buttonPresetIconColor();
-            case BUTTON_ICON_HOVER: return buttonPresetIconHoverColor();
-            case BUTTON_ICON_FOCUSED: return buttonPresetIconFocusedColor();
-            case BUTTON_ICON_PRESSED: return buttonPresetIconPressedColor();
-            case BUTTON_ICON_DISABLED: return buttonPresetIconDisabledColor();
-            case BUTTON_LONG_PRESS_PROGRESS_FILL: return buttonLongPressProgressFill();
-            case INPUT_BG: return inputBg();
-            case INPUT_BG_ERROR: return inputBgError();
-            case INPUT_TEXT: return inputText();
-            case INPUT_TEXT_UNEDITABLE: return inputTextUneditable();
-            case INPUT_HINT: return inputHint();
-            case INPUT_CURSOR: return inputCursor();
-            case INPUT_BORDER: return inputBorder();
-            case INPUT_BORDER_FOCUSED: return inputBorderFocused();
-            case INPUT_BORDER_DISABLED: return inputBorderDisabled();
-            case POPUP_BG: return popupBg();
-            case POPUP_BORDER: return popupBorder();
-            case POPUP_ITEM_TEXT: return popupItemText();
-            case POPUP_ITEM_TEXT_SELECTED: return popupItemTextSelected();
-            case POPUP_ITEM_HOVER: return popupItemHover();
-            case POPUP_ITEM_SELECTED: return popupItemSelected();
-            case POPUP_ITEM_SELECTED_BORDER: return popupItemSelectedBorder();
-            case SCROLLBAR_BG: return scrollbarBg();
-            case SCROLLBAR_THUMB: return scrollbarThumb();
-            case SCROLLBAR_THUMB_HOVER: return scrollbarThumbHover();
-            case NOTIFICATION_NORMAL_BG: return notificationNormalBg();
-            case NOTIFICATION_NORMAL_BORDER: return notificationNormalBorder();
-            case NOTIFICATION_NORMAL_TEXT: return notificationNormalText();
-            case NOTIFICATION_WARNING_BG: return notificationWarningBg();
-            case NOTIFICATION_WARNING_BORDER: return notificationWarningBorder();
-            case NOTIFICATION_WARNING_TEXT: return notificationWarningText();
-            case NOTIFICATION_ERROR_BG: return notificationErrorBg();
-            case NOTIFICATION_ERROR_BORDER: return notificationErrorBorder();
-            case NOTIFICATION_ERROR_TEXT: return notificationErrorText();
-            case NOTIFICATION_SUCCESS_BG: return notificationSuccessBg();
-            case NOTIFICATION_SUCCESS_BORDER: return notificationSuccessBorder();
-            case NOTIFICATION_SUCCESS_TEXT: return notificationSuccessText();
-            case CURSOR_LIGHT_MAIN: return cursorLightMain();
-            case CURSOR_LIGHT_SUB: return cursorLightSub();
-            case CURSOR_LIGHT_PRESSED: return cursorLightPressed();
-            case CURSOR_DARK_MAIN: return cursorDarkMain();
-            case CURSOR_DARK_SUB: return cursorDarkSub();
-            case CURSOR_DARK_PRESSED: return cursorDarkPressed();
-            default: throw new IllegalArgumentException("Unsupported Banira color token: " + token);
+            case ACCENT:
+                return accent();
+            case ACCENT_HOVER:
+                return accentHover();
+            case ACCENT_FOCUSED:
+                return accentFocused();
+            case ACCENT_PRESSED:
+                return accentPressed();
+            case BG_PRIMARY:
+                return bgPrimary();
+            case BG_SECONDARY:
+                return bgSecondary();
+            case BG_SURFACE:
+                return bgSurface();
+            case BG_TERTIARY:
+                return bgTertiary();
+            case BG_QUATERNARY:
+                return bgQuaternary();
+            case BG_DISABLED:
+                return bgDisabled();
+            case TEXT_PRIMARY:
+                return textPrimary();
+            case TEXT_SECONDARY:
+                return textSecondary();
+            case TEXT_HINT:
+                return textHint();
+            case TEXT_DISABLED:
+                return textDisabled();
+            case BORDER:
+                return border();
+            case BORDER_HOVER:
+                return borderHover();
+            case BORDER_FOCUSED:
+                return borderFocused();
+            case BORDER_DISABLED:
+                return borderDisabled();
+            case STATUS_ERROR:
+                return error();
+            case STATUS_WARNING:
+                return warning();
+            case STATUS_SUCCESS:
+                return success();
+            case STATUS_INFO:
+                return info();
+            case STATUS_ERROR_BG:
+                return statusErrorBg();
+            case STATUS_ERROR_BORDER:
+                return statusErrorBorder();
+            case STATUS_ERROR_TEXT:
+                return statusErrorText();
+            case STATUS_WARNING_BG:
+                return statusWarningBg();
+            case STATUS_WARNING_BORDER:
+                return statusWarningBorder();
+            case STATUS_WARNING_TEXT:
+                return statusWarningText();
+            case STATUS_SUCCESS_BG:
+                return statusSuccessBg();
+            case STATUS_SUCCESS_BORDER:
+                return statusSuccessBorder();
+            case STATUS_SUCCESS_TEXT:
+                return statusSuccessText();
+            case STATUS_INFO_BG:
+                return statusInfoBg();
+            case STATUS_INFO_BORDER:
+                return statusInfoBorder();
+            case STATUS_INFO_TEXT:
+                return statusInfoText();
+            case PANEL_BG:
+                return panelBg();
+            case LIST_ITEM_TEXT:
+                return listItemText();
+            case BUTTON_BG:
+                return buttonBg();
+            case BUTTON_BG_HOVER:
+                return buttonBgHover();
+            case BUTTON_BG_FOCUSED:
+                return buttonBgFocused();
+            case BUTTON_BG_PRESSED:
+                return buttonBgPressed();
+            case BUTTON_BG_DISABLED:
+                return buttonBgDisabled();
+            case BUTTON_BORDER:
+                return buttonBorder();
+            case BUTTON_BORDER_HOVER:
+                return buttonBorderHover();
+            case BUTTON_BORDER_FOCUSED:
+                return buttonBorderFocused();
+            case BUTTON_BORDER_PRESSED:
+                return buttonBorderPressed();
+            case BUTTON_BORDER_DISABLED:
+                return buttonBorderDisabled();
+            case BUTTON_TEXT:
+                return buttonText();
+            case BUTTON_TEXT_HOVER:
+                return buttonTextHover();
+            case BUTTON_TEXT_FOCUSED:
+                return buttonTextFocused();
+            case BUTTON_TEXT_PRESSED:
+                return buttonTextPressed();
+            case BUTTON_TEXT_DISABLED:
+                return buttonTextDisabled();
+            case BUTTON_ICON:
+                return buttonPresetIconColor();
+            case BUTTON_ICON_HOVER:
+                return buttonPresetIconHoverColor();
+            case BUTTON_ICON_FOCUSED:
+                return buttonPresetIconFocusedColor();
+            case BUTTON_ICON_PRESSED:
+                return buttonPresetIconPressedColor();
+            case BUTTON_ICON_DISABLED:
+                return buttonPresetIconDisabledColor();
+            case BUTTON_LONG_PRESS_PROGRESS_FILL:
+                return buttonLongPressProgressFill();
+            case INPUT_BG:
+                return inputBg();
+            case INPUT_BG_ERROR:
+                return inputBgError();
+            case INPUT_TEXT:
+                return inputText();
+            case INPUT_TEXT_UNEDITABLE:
+                return inputTextUneditable();
+            case INPUT_HINT:
+                return inputHint();
+            case INPUT_CURSOR:
+                return inputCursor();
+            case INPUT_BORDER:
+                return inputBorder();
+            case INPUT_BORDER_FOCUSED:
+                return inputBorderFocused();
+            case INPUT_BORDER_DISABLED:
+                return inputBorderDisabled();
+            case POPUP_BG:
+                return popupBg();
+            case POPUP_BORDER:
+                return popupBorder();
+            case POPUP_ITEM_TEXT:
+                return popupItemText();
+            case POPUP_ITEM_TEXT_SELECTED:
+                return popupItemTextSelected();
+            case POPUP_ITEM_HOVER:
+                return popupItemHover();
+            case POPUP_ITEM_SELECTED:
+                return popupItemSelected();
+            case POPUP_ITEM_SELECTED_BORDER:
+                return popupItemSelectedBorder();
+            case SCROLLBAR_BG:
+                return scrollbarBg();
+            case SCROLLBAR_THUMB:
+                return scrollbarThumb();
+            case SCROLLBAR_THUMB_HOVER:
+                return scrollbarThumbHover();
+            case NOTIFICATION_NORMAL_BG:
+                return notificationNormalBg();
+            case NOTIFICATION_NORMAL_BORDER:
+                return notificationNormalBorder();
+            case NOTIFICATION_NORMAL_TEXT:
+                return notificationNormalText();
+            case NOTIFICATION_WARNING_BG:
+                return notificationWarningBg();
+            case NOTIFICATION_WARNING_BORDER:
+                return notificationWarningBorder();
+            case NOTIFICATION_WARNING_TEXT:
+                return notificationWarningText();
+            case NOTIFICATION_ERROR_BG:
+                return notificationErrorBg();
+            case NOTIFICATION_ERROR_BORDER:
+                return notificationErrorBorder();
+            case NOTIFICATION_ERROR_TEXT:
+                return notificationErrorText();
+            case NOTIFICATION_SUCCESS_BG:
+                return notificationSuccessBg();
+            case NOTIFICATION_SUCCESS_BORDER:
+                return notificationSuccessBorder();
+            case NOTIFICATION_SUCCESS_TEXT:
+                return notificationSuccessText();
+            case CURSOR_LIGHT_MAIN:
+                return cursorLightMain();
+            case CURSOR_LIGHT_SUB:
+                return cursorLightSub();
+            case CURSOR_LIGHT_PRESSED:
+                return cursorLightPressed();
+            case CURSOR_DARK_MAIN:
+                return cursorDarkMain();
+            case CURSOR_DARK_SUB:
+                return cursorDarkSub();
+            case CURSOR_DARK_PRESSED:
+                return cursorDarkPressed();
+            default:
+                throw new IllegalArgumentException("Unsupported Banira color token: " + token);
         }
     }
 

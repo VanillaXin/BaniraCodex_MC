@@ -84,6 +84,7 @@ public final class ForgeConfigAdapter {
         ConfigRegistry.registerHolder(holder);
     }
 
+    @SuppressWarnings("removal")
     private static ModContainer resolveContainer(String modId) {
         ModContainer activeContainer = ModLoadingContext.get().getActiveContainer();
         if (activeContainer != null && modId.equals(activeContainer.getModId())) {

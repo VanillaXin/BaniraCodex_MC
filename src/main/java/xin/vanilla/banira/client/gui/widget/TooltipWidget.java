@@ -16,7 +16,6 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
@@ -24,6 +23,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.ItemUtils;
+import xin.vanilla.banira.internal.client.InputStateManager;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

@@ -29,6 +29,7 @@ public final class ForgeBaniraCodexEntry {
         BaniraConfigs.register(CommonConfig.class, Banira.MOD_ID);
         BaniraConfigs.register(ClientConfig.class, Banira.MOD_ID);
 
+        @SuppressWarnings("removal")
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener(ForgeBaniraLifecycleAdapter::dispatchCommonSetup);
 

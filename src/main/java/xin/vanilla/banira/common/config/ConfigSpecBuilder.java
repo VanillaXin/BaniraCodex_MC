@@ -2,7 +2,6 @@ package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.util.*;
 import java.util.function.Predicate;

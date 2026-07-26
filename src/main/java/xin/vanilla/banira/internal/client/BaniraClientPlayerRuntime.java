@@ -8,7 +8,9 @@ import net.minecraft.world.entity.player.Player;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-/** 客户端玩家状态实现；只能由 common 侧反射桥接调用。 */
+/**
+ * 客户端玩家状态实现；只能由 common 侧反射桥接调用。
+ */
 public final class BaniraClientPlayerRuntime {
     private BaniraClientPlayerRuntime() {
     }

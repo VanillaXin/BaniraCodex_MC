@@ -9,15 +9,7 @@ import net.neoforged.neoforge.client.event.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.api.client.event.BaniraChatEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientEvents;
-import xin.vanilla.banira.api.client.event.BaniraClientPlayerEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
-import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
-import xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent;
+import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -243,7 +235,9 @@ public final class BaniraClientEventHub {
         return new BaniraClientPlayerEvent(player.getUUID(), player.getName().getString());
     }
 
-    /** 原生 Screen 只在 NeoForge 客户端边界转换为稳定快照。 */
+    /**
+     * 原生 Screen 只在 NeoForge 客户端边界转换为稳定快照。
+     */
     private static BaniraScreenInfo screenInfo(@Nullable Screen screen) {
         if (screen == null) {
             return BaniraScreenInfo.closed();

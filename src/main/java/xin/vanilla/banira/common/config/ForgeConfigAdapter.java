@@ -5,7 +5,6 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.util.StringUtils;

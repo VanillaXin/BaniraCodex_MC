@@ -1,10 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.*;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
@@ -406,23 +402,40 @@ public final class ColorUtils {
 
     private static Integer legacyColorArgb(char code) {
         switch (code) {
-            case '0': return 0xFF000000;
-            case '1': return 0xFF0000AA;
-            case '2': return 0xFF00AA00;
-            case '3': return 0xFF00AAAA;
-            case '4': return 0xFFAA0000;
-            case '5': return 0xFFAA00AA;
-            case '6': return 0xFFFFAA00;
-            case '7': return 0xFFAAAAAA;
-            case '8': return 0xFF555555;
-            case '9': return 0xFF5555FF;
-            case 'a': return 0xFF55FF55;
-            case 'b': return 0xFF55FFFF;
-            case 'c': return 0xFFFF5555;
-            case 'd': return 0xFFFF55FF;
-            case 'e': return 0xFFFFFF55;
-            case 'f': return 0xFFFFFFFF;
-            default: return null;
+            case '0':
+                return 0xFF000000;
+            case '1':
+                return 0xFF0000AA;
+            case '2':
+                return 0xFF00AA00;
+            case '3':
+                return 0xFF00AAAA;
+            case '4':
+                return 0xFFAA0000;
+            case '5':
+                return 0xFFAA00AA;
+            case '6':
+                return 0xFFFFAA00;
+            case '7':
+                return 0xFFAAAAAA;
+            case '8':
+                return 0xFF555555;
+            case '9':
+                return 0xFF5555FF;
+            case 'a':
+                return 0xFF55FF55;
+            case 'b':
+                return 0xFF55FFFF;
+            case 'c':
+                return 0xFFFF5555;
+            case 'd':
+                return 0xFFFF55FF;
+            case 'e':
+                return 0xFFFFFF55;
+            case 'f':
+                return 0xFFFFFFFF;
+            default:
+                return null;
         }
     }
 

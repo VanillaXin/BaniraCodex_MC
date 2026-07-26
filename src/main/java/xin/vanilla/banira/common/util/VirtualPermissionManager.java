@@ -34,17 +34,23 @@ public final class VirtualPermissionManager {
     private static final Map<String, Set<String>> OP_MAP_CLIENT = deserializeClient();
 
 
-    /** 添加子 mod 自定义虚拟权限。 */
+    /**
+     * 添加子 mod 自定义虚拟权限。
+     */
     public static void addVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.ADD, toKeys(types));
     }
 
-    /** 设置子 mod 自定义虚拟权限（覆盖原有权限）。 */
+    /**
+     * 设置子 mod 自定义虚拟权限（覆盖原有权限）。
+     */
     public static void setVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.SET, toKeys(types));
     }
 
-    /** 删除子 mod 自定义虚拟权限。 */
+    /**
+     * 删除子 mod 自定义虚拟权限。
+     */
     public static void delVirtualPermission(PlayerEntity player, BaniraVirtualPermission... types) {
         modifyPermissions(player.getStringUUID(), EnumOperationType.REMOVE, toKeys(types));
     }

@@ -1248,7 +1248,8 @@ public final class ItemUtils {
      */
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
-        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return getItemTooltip(itemStack, null, advanced);
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient())
+            return getItemTooltip(itemStack, null, advanced);
         try {
             PlayerEntity player = BaniraClientAccess.localPlayer();
             return getItemTooltip(itemStack, player, advanced);

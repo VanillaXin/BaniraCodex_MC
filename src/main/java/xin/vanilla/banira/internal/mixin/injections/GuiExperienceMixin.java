@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.internal.fabric.client.FabricBaniraHudBridge;
 
-/** Fabric 1.21.1 在两个独立原版方法上派发经验条与经验文本事件。 */
+/**
+ * Fabric 1.21.1 在两个独立原版方法上派发经验条与经验文本事件。
+ */
 @Mixin(Gui.class)
 public abstract class GuiExperienceMixin {
     @Unique

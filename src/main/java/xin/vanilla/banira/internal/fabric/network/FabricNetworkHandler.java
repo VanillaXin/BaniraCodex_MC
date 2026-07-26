@@ -184,7 +184,8 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
     }
 
-    private record FabricPayload(CustomPacketPayload.Type<FabricPayload> type, FriendlyByteBuf buffer) implements CustomPacketPayload {
+    private record FabricPayload(CustomPacketPayload.Type<FabricPayload> type,
+                                 FriendlyByteBuf buffer) implements CustomPacketPayload {
         private FriendlyByteBuf copyBuffer() {
             return FabricNetworkHandler.copyBuffer(buffer);
         }

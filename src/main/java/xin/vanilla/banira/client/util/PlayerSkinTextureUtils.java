@@ -15,7 +15,9 @@ public final class PlayerSkinTextureUtils {
     private PlayerSkinTextureUtils() {
     }
 
-    /** 返回脸部底层与帽子外层纹理。 */
+    /**
+     * 返回脸部底层与帽子外层纹理。
+     */
     @Nullable
     public static Texture[] headFaceTextures(@Nullable ResourceLocation skin) {
         if (skin == null) {

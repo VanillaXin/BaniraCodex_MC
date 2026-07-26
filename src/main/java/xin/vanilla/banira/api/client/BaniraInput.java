@@ -1,7 +1,7 @@
 package xin.vanilla.banira.api.client;
 
-import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 

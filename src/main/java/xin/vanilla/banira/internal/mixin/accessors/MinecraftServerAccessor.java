@@ -5,7 +5,9 @@ import net.minecraft.server.ServerResources;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** 1.16 服务端资源容器没有公开 getter。 */
+/**
+ * 1.16 服务端资源容器没有公开 getter。
+ */
 @Mixin(MinecraftServer.class)
 public interface MinecraftServerAccessor {
     @Accessor("resources")

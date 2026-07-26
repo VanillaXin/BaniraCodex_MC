@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.internal.world.BaniraWorldAccess;

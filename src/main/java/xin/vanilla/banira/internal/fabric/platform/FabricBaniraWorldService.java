@@ -13,21 +13,19 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.internal.world.BaniraWorldService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-/** Fabric 1.16 世界与注册表适配。 */
+/**
+ * Fabric 1.16 世界与注册表适配。
+ */
 public final class FabricBaniraWorldService implements BaniraWorldService {
     @Override
     public Biome biome(ResourceLocation id) {
         if (id == null) return null;
         MinecraftServer server = BaniraCodex.serverInstance().key();
-        if (server != null) return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
+        if (server != null)
+            return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getOptional(id).orElse(null);
         return null;
     }
 
@@ -46,10 +44,14 @@ public final class FabricBaniraWorldService implements BaniraWorldService {
     }
 
     @Override
-    public StructureFeature<?> structure(ResourceLocation id) { return id != null ? Registry.STRUCTURE_FEATURE.getOptional(id).orElse(null) : null; }
+    public StructureFeature<?> structure(ResourceLocation id) {
+        return id != null ? Registry.STRUCTURE_FEATURE.getOptional(id).orElse(null) : null;
+    }
 
     @Override
-    public Set<String> structureIds() { return Registry.STRUCTURE_FEATURE.keySet().stream().map(ResourceLocation::toString).collect(Collectors.toSet()); }
+    public Set<String> structureIds() {
+        return Registry.STRUCTURE_FEATURE.keySet().stream().map(ResourceLocation::toString).collect(Collectors.toSet());
+    }
 
     @Override
     public WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
@@ -88,10 +90,14 @@ public final class FabricBaniraWorldService implements BaniraWorldService {
     }
 
     @Override
-    public int minBuildHeight(Level world) { return 0; }
+    public int minBuildHeight(Level world) {
+        return 0;
+    }
 
     @Override
-    public int maxBuildHeight(Level world) { return world != null ? world.getMaxBuildHeight() : 0; }
+    public int maxBuildHeight(Level world) {
+        return world != null ? world.getMaxBuildHeight() : 0;
+    }
 
     @Override
     public WorldCoordinate findNearestStructure(ServerLevel world, WorldCoordinate start, StructureFeature<?> structure, int radius) {

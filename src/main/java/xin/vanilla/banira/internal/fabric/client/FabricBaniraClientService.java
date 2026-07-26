@@ -2,11 +2,11 @@ package xin.vanilla.banira.internal.fabric.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientService;
@@ -15,7 +15,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-/** Fabric 1.16 客户端状态适配，避免公共门面加载 Fabric 或客户端类型。 */
+/**
+ * Fabric 1.16 客户端状态适配，避免公共门面加载 Fabric 或客户端类型。
+ */
 public final class FabricBaniraClientService implements BaniraClientService {
     @Override
     public Player localPlayer() {

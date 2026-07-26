@@ -2,8 +2,8 @@ package xin.vanilla.banira.client.gui.widget;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.Component;
 

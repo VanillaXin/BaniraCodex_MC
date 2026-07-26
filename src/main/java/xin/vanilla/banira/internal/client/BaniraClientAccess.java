@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.client;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.fabric.client.FabricBaniraClientService;
 import xin.vanilla.banira.platform.BaniraPlatforms;

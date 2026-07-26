@@ -10,8 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
-import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 import xin.vanilla.banira.internal.mixin.accessors.MinecraftServerAccessor;
+import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -23,11 +23,14 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** 1.16 资源包遍历适配，供服务端语言解析使用。 */
+/**
+ * 1.16 资源包遍历适配，供服务端语言解析使用。
+ */
 public final class FabricBaniraResourceService {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private FabricBaniraResourceService() { }
+    private FabricBaniraResourceService() {
+    }
 
     public static Map<String, JsonObject> modLanguageFiles(String modId) {
         Map<String, JsonObject> result = new LinkedHashMap<>();
@@ -111,7 +114,8 @@ public final class FabricBaniraResourceService {
 
     private static void mergeLanguage(String languageCode, JsonObject json, Map<String, JsonObject> result) {
         JsonObject existing = result.get(languageCode);
-        if (existing == null) result.put(languageCode, json); else JsonUtils.mergeInPlace(existing, json);
+        if (existing == null) result.put(languageCode, json);
+        else JsonUtils.mergeInPlace(existing, json);
     }
 
     private static String languageCode(ResourceLocation location) {

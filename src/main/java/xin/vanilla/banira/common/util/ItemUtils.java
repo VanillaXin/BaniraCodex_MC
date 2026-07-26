@@ -2,24 +2,23 @@ package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.StringReader;
 import lombok.NonNull;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.commands.arguments.item.ItemParser;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.network.chat.MutableComponent;
-
-import net.minecraft.ChatFormatting;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -1249,7 +1248,8 @@ public final class ItemUtils {
      */
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
-        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient()) return getItemTooltip(itemStack, null, advanced);
+        if (!BaniraPlatforms.isInstalled() || !BaniraPlatforms.get().isClient())
+            return getItemTooltip(itemStack, null, advanced);
         try {
             Player player = BaniraClientAccess.localPlayer();
             return getItemTooltip(itemStack, player, advanced);

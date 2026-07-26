@@ -1,11 +1,10 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ChatType;
-
 import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;

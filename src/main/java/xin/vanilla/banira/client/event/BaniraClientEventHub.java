@@ -2,22 +2,9 @@ package xin.vanilla.banira.client.event;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.client.event.BaniraChatEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientEvents;
-import xin.vanilla.banira.api.client.event.BaniraClientPlayerEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
-import xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent;
-import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
-import xin.vanilla.banira.api.client.event.BaniraMouseEvent;
-import xin.vanilla.banira.api.client.event.BaniraOverlayRenderEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
-import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
-import xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent;
+import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.input.BaniraDragTracker;
@@ -355,7 +342,7 @@ public final class BaniraClientEventHub {
     }
 
     private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
-                                                        float partialTick, boolean screenOpen) {
+                                                         float partialTick, boolean screenOpen) {
         return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 

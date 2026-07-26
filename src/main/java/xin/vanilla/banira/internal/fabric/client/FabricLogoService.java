@@ -7,7 +7,9 @@ import javax.annotation.Nonnull;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Fabric 动态 logo 注册适配；实际图标仍由 fabric.mod.json 决定。 */
+/**
+ * Fabric 动态 logo 注册适配；实际图标仍由 fabric.mod.json 决定。
+ */
 public enum FabricLogoService implements BaniraLogoService {
     INSTANCE;
 

@@ -12,8 +12,8 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.LevelResource;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.internal.server.BaniraServerService;
 import xin.vanilla.banira.internal.mixin.accessors.MinecraftServerAccessor;
+import xin.vanilla.banira.internal.server.BaniraServerService;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-/** Fabric 1.16 服务端访问适配。 */
+/**
+ * Fabric 1.16 服务端访问适配。
+ */
 public final class FabricBaniraServerService implements BaniraServerService,
         xin.vanilla.banira.platform.BaniraServerService {
     public static final FabricBaniraServerService INSTANCE = new FabricBaniraServerService();
@@ -37,7 +39,9 @@ public final class FabricBaniraServerService implements BaniraServerService,
     }
 
     @Override
-    public MinecraftServer currentServer() { return BaniraCodex.serverInstance().key(); }
+    public MinecraftServer currentServer() {
+        return BaniraCodex.serverInstance().key();
+    }
 
     @Override
     public List<ServerPlayer> players() {
@@ -59,7 +63,8 @@ public final class FabricBaniraServerService implements BaniraServerService,
     @Override
     public void broadcastSystemMessage(MinecraftServer server, Component message) {
         MinecraftServer target = server != null ? server : currentServer();
-        if (target != null && message != null) target.getPlayerList().broadcastMessage(message, ChatType.SYSTEM, Util.NIL_UUID);
+        if (target != null && message != null)
+            target.getPlayerList().broadcastMessage(message, ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     @Override
@@ -69,7 +74,8 @@ public final class FabricBaniraServerService implements BaniraServerService,
 
     @Override
     public void sendActionBarMessage(ServerPlayer player, Component message) {
-        if (player != null && message != null) player.connection.send(new ClientboundChatPacket(message, ChatType.GAME_INFO, player.getUUID()));
+        if (player != null && message != null)
+            player.connection.send(new ClientboundChatPacket(message, ChatType.GAME_INFO, player.getUUID()));
     }
 
     @Override

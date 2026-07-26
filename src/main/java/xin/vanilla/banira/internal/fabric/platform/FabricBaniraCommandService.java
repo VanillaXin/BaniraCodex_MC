@@ -25,7 +25,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** 1.16 Brigadier 命令适配；命令语义不依赖具体加载器。 */
+/**
+ * 1.16 Brigadier 命令适配；命令语义不依赖具体加载器。
+ */
 public final class FabricBaniraCommandService implements BaniraCommandService {
     private static final Logger LOGGER = LogManager.getLogger();
     private final List<Consumer<Object>> dispatcherCallbacks = new ArrayList<>();
@@ -48,12 +50,15 @@ public final class FabricBaniraCommandService implements BaniraCommandService {
     @Override
     public boolean hasPermission(Object source, int permission) {
         if (source instanceof CommandSourceStack) return ((CommandSourceStack) source).hasPermission(permission);
-        if (source instanceof ServerPlayer) return ((ServerPlayer) source).createCommandSourceStack().hasPermission(permission);
+        if (source instanceof ServerPlayer)
+            return ((ServerPlayer) source).createCommandSourceStack().hasPermission(permission);
         return false;
     }
 
     @Override
-    public Entity sourceEntity(Object source) { return source instanceof CommandSourceStack ? ((CommandSourceStack) source).getEntity() : null; }
+    public Entity sourceEntity(Object source) {
+        return source instanceof CommandSourceStack ? ((CommandSourceStack) source).getEntity() : null;
+    }
 
     @Override
     public ServerPlayer sourcePlayer(Object source) throws CommandSyntaxException {
@@ -62,25 +67,38 @@ public final class FabricBaniraCommandService implements BaniraCommandService {
     }
 
     @Override
-    public ServerLevel dimension(CommandContext<?> context, String name) throws CommandSyntaxException { return DimensionArgument.getDimension(cast(context), name); }
-
-    @Override
-    public ResourceKey<Level> dimensionKey(CommandContext<?> context, String name) throws CommandSyntaxException { return dimension(context, name).dimension(); }
-
-    @Override
-    public ServerPlayer player(CommandContext<?> context, String name) throws CommandSyntaxException { return EntityArgument.getPlayer(cast(context), name); }
-
-    @Override
-    public ServerPlayer playerOrSelf(CommandContext<?> context, String name) throws CommandSyntaxException {
-        try { return player(context, name); } catch (IllegalArgumentException | CommandSyntaxException ignored) { return sourcePlayer(context.getSource()); }
+    public ServerLevel dimension(CommandContext<?> context, String name) throws CommandSyntaxException {
+        return DimensionArgument.getDimension(cast(context), name);
     }
 
     @Override
-    public Collection<ServerPlayer> players(CommandContext<?> context, String name) throws CommandSyntaxException { return EntityArgument.getPlayers(cast(context), name); }
+    public ResourceKey<Level> dimensionKey(CommandContext<?> context, String name) throws CommandSyntaxException {
+        return dimension(context, name).dimension();
+    }
+
+    @Override
+    public ServerPlayer player(CommandContext<?> context, String name) throws CommandSyntaxException {
+        return EntityArgument.getPlayer(cast(context), name);
+    }
+
+    @Override
+    public ServerPlayer playerOrSelf(CommandContext<?> context, String name) throws CommandSyntaxException {
+        try {
+            return player(context, name);
+        } catch (IllegalArgumentException | CommandSyntaxException ignored) {
+            return sourcePlayer(context.getSource());
+        }
+    }
+
+    @Override
+    public Collection<ServerPlayer> players(CommandContext<?> context, String name) throws CommandSyntaxException {
+        return EntityArgument.getPlayers(cast(context), name);
+    }
 
     @Override
     public void sendSuccess(Object source, Component message, boolean notifyAdmins) {
-        if (source instanceof CommandSourceStack && message != null) ((CommandSourceStack) source).sendSuccess(message, notifyAdmins);
+        if (source instanceof CommandSourceStack && message != null)
+            ((CommandSourceStack) source).sendSuccess(message, notifyAdmins);
     }
 
     @Override
@@ -89,36 +107,49 @@ public final class FabricBaniraCommandService implements BaniraCommandService {
     }
 
     @Override
-    public Object literal(String name) { return Commands.literal(name); }
+    public Object literal(String name) {
+        return Commands.literal(name);
+    }
 
     @Override
     @SuppressWarnings("unchecked")
     public void executes(Object commandNode, BaniraCommandExecutor executor) {
-        if (commandNode instanceof LiteralArgumentBuilder && executor != null) ((LiteralArgumentBuilder<CommandSourceStack>) commandNode).executes(executor::run);
+        if (commandNode instanceof LiteralArgumentBuilder && executor != null)
+            ((LiteralArgumentBuilder<CommandSourceStack>) commandNode).executes(executor::run);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void then(Object parentNode, Object childNode) {
-        if (parentNode instanceof LiteralArgumentBuilder && childNode instanceof LiteralArgumentBuilder) ((LiteralArgumentBuilder<CommandSourceStack>) parentNode).then((LiteralArgumentBuilder<CommandSourceStack>) childNode);
+        if (parentNode instanceof LiteralArgumentBuilder && childNode instanceof LiteralArgumentBuilder)
+            ((LiteralArgumentBuilder<CommandSourceStack>) parentNode).then((LiteralArgumentBuilder<CommandSourceStack>) childNode);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void register(Object dispatcher, Object commandNode) {
-        if (dispatcher instanceof CommandDispatcher && commandNode instanceof LiteralArgumentBuilder) ((CommandDispatcher<CommandSourceStack>) dispatcher).register((LiteralArgumentBuilder<CommandSourceStack>) commandNode);
+        if (dispatcher instanceof CommandDispatcher && commandNode instanceof LiteralArgumentBuilder)
+            ((CommandDispatcher<CommandSourceStack>) dispatcher).register((LiteralArgumentBuilder<CommandSourceStack>) commandNode);
     }
 
     @Override
-    public void onRegisterDispatcher(Consumer<Object> callback) { if (callback != null) dispatcherCallbacks.add(callback); }
+    public void onRegisterDispatcher(Consumer<Object> callback) {
+        if (callback != null) dispatcherCallbacks.add(callback);
+    }
 
     @Override
     public void dispatchRegisterDispatcher(Object dispatcher) {
         for (Consumer<Object> callback : dispatcherCallbacks) {
-            try { callback.accept(dispatcher); } catch (Throwable t) { LOGGER.warn("Error executing command dispatcher registration callback", t); }
+            try {
+                callback.accept(dispatcher);
+            } catch (Throwable t) {
+                LOGGER.warn("Error executing command dispatcher registration callback", t);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static CommandContext<CommandSourceStack> cast(CommandContext<?> context) { return (CommandContext<CommandSourceStack>) context; }
+    private static CommandContext<CommandSourceStack> cast(CommandContext<?> context) {
+        return (CommandContext<CommandSourceStack>) context;
+    }
 }

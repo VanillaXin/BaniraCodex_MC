@@ -1,12 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import xin.vanilla.banira.api.client.hud.BaniraHudEvents;
-import xin.vanilla.banira.api.client.hud.BaniraHudBounds;
-import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
-import xin.vanilla.banira.api.client.hud.BaniraHudRenderEvent;
-import xin.vanilla.banira.api.client.hud.HudOverlayElement;
-import xin.vanilla.banira.api.client.hud.HudRenderPhase;
+import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -60,7 +55,7 @@ public final class BaniraHudSyntheticEvents {
     }
 
     private static BaniraHudRenderEvent preEvent(HudOverlayElement element, BaniraDrawContext draw,
-                                                  BaniraHudBounds bounds) {
+                                                 BaniraHudBounds bounds) {
         return new BaniraHudRenderEvent(HudRenderPhase.PRE, element, hudContext(draw), bounds, true);
     }
 

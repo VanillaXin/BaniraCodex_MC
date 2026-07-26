@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 

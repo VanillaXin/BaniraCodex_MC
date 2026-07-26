@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import xin.vanilla.banira.client.util.BaniraKeyHandle;
 
 import javax.annotation.Nonnull;

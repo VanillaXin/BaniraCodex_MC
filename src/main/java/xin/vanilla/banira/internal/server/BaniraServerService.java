@@ -1,12 +1,12 @@
 package xin.vanilla.banira.internal.server;
 
 import net.minecraft.advancements.Advancement;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.entity.player.Player;
 
 import java.nio.file.Path;
 import java.util.Collection;

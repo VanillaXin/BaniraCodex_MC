@@ -1,8 +1,8 @@
 package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffectInstance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.Texture;

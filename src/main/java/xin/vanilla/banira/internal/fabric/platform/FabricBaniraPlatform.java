@@ -18,8 +18,8 @@ import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.security.CodeSource;
 import java.nio.file.Path;
+import java.security.CodeSource;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;

@@ -12,11 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.api.event.BaniraCommonSetupEvent;
-import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
-import xin.vanilla.banira.api.event.BaniraPlayerEvent;
-import xin.vanilla.banira.api.event.BaniraServerEvent;
-import xin.vanilla.banira.api.event.BaniraWorldEvent;
+import xin.vanilla.banira.api.event.*;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
@@ -26,7 +22,9 @@ import xin.vanilla.banira.internal.fabric.platform.FabricBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
-/** Fabric 1.16 公共入口，只负责安装平台并桥接加载器生命周期。 */
+/**
+ * Fabric 1.16 公共入口，只负责安装平台并桥接加载器生命周期。
+ */
 public final class FabricBaniraCodexEntry implements ModInitializer {
     @Override
     public void onInitialize() {

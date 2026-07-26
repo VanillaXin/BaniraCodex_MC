@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.fabric.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -25,9 +26,10 @@ import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
-/** Fabric 客户端入口，将 1.16 回调转换为稳定的 Banira 客户端事件。 */
+/**
+ * Fabric 客户端入口，将 1.16 回调转换为稳定的 Banira 客户端事件。
+ */
 public final class FabricBaniraCodexClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {

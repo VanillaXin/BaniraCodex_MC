@@ -5,9 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.util.FormattedCharSequence;
-
 import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;

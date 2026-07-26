@@ -233,6 +233,10 @@ public abstract class BaniraScreen extends Screen {
             this.renderCount++;
         }
         cachedTheme = getEffectiveTheme();
+        // 标题界面没有世界帧负责清屏，Mod Menu 打开的独立页面必须先覆盖上一帧。
+        if (this.minecraft == null || this.minecraft.level == null) {
+            this.renderBackground(stack);
+        }
 
         this.onRender(stack, partialTicks);
         this.flushDeferredTooltipRenders(stack);

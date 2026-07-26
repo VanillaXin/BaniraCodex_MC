@@ -7,7 +7,9 @@ import javax.annotation.Nonnull;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Forge mod 元数据 logo 注册适配。 */
+/**
+ * Forge mod 元数据 logo 注册适配。
+ */
 public enum ForgeLogoService implements BaniraLogoService {
     INSTANCE;
 

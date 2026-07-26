@@ -22,11 +22,10 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
+import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.util.BaniraKeyBindings;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
@@ -40,11 +39,7 @@ import xin.vanilla.banira.platform.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

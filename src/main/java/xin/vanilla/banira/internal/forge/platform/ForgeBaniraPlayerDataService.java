@@ -8,7 +8,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-/** Forge 1.21.1 的玩家 NBT 数据适配。 */
+/**
+ * Forge 1.21.1 的玩家 NBT 数据适配。
+ */
 public final class ForgeBaniraPlayerDataService implements BaniraPlayerDataService {
     public static final ForgeBaniraPlayerDataService INSTANCE = new ForgeBaniraPlayerDataService();
 

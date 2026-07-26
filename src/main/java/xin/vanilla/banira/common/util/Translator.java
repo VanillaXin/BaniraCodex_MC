@@ -74,6 +74,15 @@ public class Translator implements ITranslator {
         getI18nFiles();
     }
 
+    /**
+     * 显式指定子 mod 身份，避免依赖加载器入口类发现。
+     * 1.16.5 的资源管理器直接按 modId 查找，因此锚点仅用于保持跨版本 API 一致。
+     */
+    protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
+        this(modId);
+        Objects.requireNonNull(resourceAnchorClass, "resourceAnchorClass");
+    }
+
     // region mod 主入口与 modId
 
     @NonNull

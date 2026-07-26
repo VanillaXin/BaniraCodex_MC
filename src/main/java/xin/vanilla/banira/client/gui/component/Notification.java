@@ -266,6 +266,7 @@ public class Notification extends NotificationData {
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
     }
+
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         renderAt(stack, preInfo, screenInfo, currentTime, this.calculatePosition(screenInfo, preInfo));
     }

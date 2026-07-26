@@ -1,4 +1,5 @@
 package xin.vanilla.banira.common.network;
+
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 
 import javax.annotation.Nonnull;

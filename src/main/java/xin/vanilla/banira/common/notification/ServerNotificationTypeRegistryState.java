@@ -5,11 +5,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 服务端通知类型注册状态；调用入口保留在 {@link ServerNotificationTypeRegistry}。

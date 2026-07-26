@@ -149,7 +149,9 @@ final class FabricConfigAdapter {
         }
     }
 
-    /** 将公共配置注解转换为编辑器和配置文件共用的描述元数据。 */
+    /**
+     * 将公共配置注解转换为编辑器和配置文件共用的描述元数据。
+     */
     private static TooltipResolution resolveTooltip(Field field) {
         ConfigEntry.Gui.Tooltip annotation = field.getAnnotation(ConfigEntry.Gui.Tooltip.class);
         if (annotation != null) {
@@ -351,7 +353,8 @@ final class FabricConfigAdapter {
             String name = method.getName();
             if ("equals".equals(name)) return proxy == args[0];
             if ("hashCode".equals(name)) return System.identityHashCode(proxy);
-            if ("toString".equals(name)) return "FabricConfigProxy@" + viewInterface.getSimpleName() + "(" + prefix + ")";
+            if ("toString".equals(name))
+                return "FabricConfigProxy@" + viewInterface.getSimpleName() + "(" + prefix + ")";
             throw new UnsupportedOperationException(method.toString());
         }
 

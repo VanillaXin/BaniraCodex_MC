@@ -22,11 +22,7 @@ import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
-import xin.vanilla.banira.internal.client.BaniraClientDrawBridge;
-import xin.vanilla.banira.internal.client.BaniraClientEventBridge;
-import xin.vanilla.banira.internal.client.BaniraClientEventHub;
-import xin.vanilla.banira.internal.client.BaniraClientInputBridge;
-import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
+import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 /**

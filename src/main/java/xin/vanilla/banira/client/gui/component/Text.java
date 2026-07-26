@@ -13,6 +13,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Translator;
+
 @Setter
 @Accessors(chain = true, fluent = true)
 public class Text implements Cloneable {

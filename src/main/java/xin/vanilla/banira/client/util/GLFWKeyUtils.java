@@ -8,6 +8,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
+
 public final class GLFWKeyUtils {
     private GLFWKeyUtils() {
     }

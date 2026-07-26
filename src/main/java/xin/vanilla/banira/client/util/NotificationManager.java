@@ -289,6 +289,7 @@ public final class NotificationManager {
         root.add("entries", arr);
         Files.writeString(path, JsonUtils.toPrettyString(root));
     }
+
     public void render(PoseStack stack) {
         xin.vanilla.banira.common.data.KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getGuiScaledSize();
         ScreenCoordinate screenInfo = new ScreenCoordinate()

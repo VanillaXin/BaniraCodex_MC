@@ -85,6 +85,8 @@ mixin {
     config "${mod_id}.mixins.json"
 }
 
+apply from: 'gradle/mixin-runtime.gradle'
+
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.network;
 
-import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.NetworkHandler;
 import xin.vanilla.banira.common.network.packet.*;
 import xin.vanilla.banira.common.util.AdvancementUtils;

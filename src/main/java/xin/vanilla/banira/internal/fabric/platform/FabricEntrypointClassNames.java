@@ -9,7 +9,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** 从 Fabric 元数据提取普通类入口；方法入口不能用于主类反查。 */
+/**
+ * 从 Fabric 元数据提取普通类入口；方法入口不能用于主类反查。
+ */
 final class FabricEntrypointClassNames {
     private FabricEntrypointClassNames() {
     }

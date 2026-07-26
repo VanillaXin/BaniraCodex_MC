@@ -2,11 +2,7 @@ package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.api.client.event.BaniraDrawScreenEvent;
-import xin.vanilla.banira.api.client.event.BaniraClientEvents;
-import xin.vanilla.banira.api.client.event.BaniraOverlayRenderEvent;
-import xin.vanilla.banira.api.client.event.BaniraScreenInfo;
-import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
+import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
@@ -73,7 +69,7 @@ public final class BaniraClientEventBridge {
     }
 
     private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
-                                                        float partialTick, boolean screenOpen) {
+                                                         float partialTick, boolean screenOpen) {
         return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 

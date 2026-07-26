@@ -8,7 +8,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-/** Fabric 1.18.2 的玩家 NBT 数据适配。 */
+/**
+ * Fabric 1.18.2 的玩家 NBT 数据适配。
+ */
 public final class FabricBaniraPlayerDataService implements BaniraPlayerDataService {
     public static final FabricBaniraPlayerDataService INSTANCE = new FabricBaniraPlayerDataService();
 

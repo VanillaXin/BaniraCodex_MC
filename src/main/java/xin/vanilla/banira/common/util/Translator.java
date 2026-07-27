@@ -11,6 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -377,14 +378,14 @@ public class Translator implements ITranslator {
                 // 测试环境或客户端早期启动时语言管理器可能尚未就绪。
             }
         }
-        return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
+        return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());
     }
 
     /**
      * 获取服务端默认语言
      */
     public static String getServerLanguage() {
-        return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
+        return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());
     }
 
     /**
@@ -404,7 +405,7 @@ public class Translator implements ITranslator {
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {
-            return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
+            return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());
         }
         return normalizeLanguageCode(language);
     }
@@ -419,7 +420,7 @@ public class Translator implements ITranslator {
                     : CustomConfig.getPlayerLanguage(PlayerUtils.getPlayerUUIDString(player));
             return getValidLanguage(player, lang);
         } catch (IllegalArgumentException e) {
-            return normalizeLanguageCode(CustomConfig.getDefaultLanguage());
+            return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());
         }
     }
 

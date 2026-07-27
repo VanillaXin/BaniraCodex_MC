@@ -3,9 +3,11 @@ package xin.vanilla.banira.client.notification;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,6 +32,8 @@ public final class NotificationTypeRegistry {
      * 登录包下发的展示方式建议（不与本 Mod 显式登记冲突）
      */
     private static final ConcurrentHashMap<String, EnumNotificationTypeDisplayMode> SERVER_SYNCED_DISPLAY_DEFAULT = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Component> TYPE_TOOLTIPS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Component> MOD_DISPLAY_NAMES = new ConcurrentHashMap<>();
 
     static {
         KNOWN.add(NotificationTypeKeys.DEFAULT);
@@ -58,6 +62,18 @@ public final class NotificationTypeRegistry {
     }
 
     public static void registerInternal(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
+        registerInternal(typeId, defaultIfAbsent, null);
+    }
+
+    public static void registerInternal(String typeId, @Nullable Component tooltip) {
+        registerInternal(typeId, null, tooltip);
+    }
+
+    /**
+     * 登记类型默认值及其本地配置界面说明。
+     */
+    public static void registerInternal(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent,
+                                        @Nullable Component tooltip) {
         String t = NotificationTypeKeys.normalizeOrDefault(typeId);
         KNOWN.add(t);
         if (defaultIfAbsent != null) {
@@ -65,9 +81,41 @@ public final class NotificationTypeRegistry {
         } else {
             MOD_REGISTERED_DISPLAY_DEFAULT.remove(t);
         }
+        if (tooltip != null && !tooltip.isEmpty()) {
+            TYPE_TOOLTIPS.put(t, tooltip.clone());
+        } else {
+            TYPE_TOOLTIPS.remove(t);
+        }
         if (NotificationTypeSettingsStore.get().isSettingsLoadedFromDisk()) {
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(t);
         }
+    }
+
+    public static void registerModDisplayNameInternal(String modId, @Nullable Component displayName) {
+        if (modId == null || modId.trim().isEmpty()) {
+            return;
+        }
+        String normalized = modId.trim().toLowerCase(Locale.ROOT);
+        if (displayName != null && !displayName.isEmpty()) {
+            MOD_DISPLAY_NAMES.put(normalized, displayName.clone());
+        } else {
+            MOD_DISPLAY_NAMES.remove(normalized);
+        }
+    }
+
+    @Nullable
+    public static Component tooltipInternal(String typeId) {
+        Component tooltip = TYPE_TOOLTIPS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
+        return tooltip != null ? tooltip.clone() : null;
+    }
+
+    @Nullable
+    public static Component modDisplayNameInternal(String modId) {
+        if (modId == null) {
+            return null;
+        }
+        Component displayName = MOD_DISPLAY_NAMES.get(modId.trim().toLowerCase(Locale.ROOT));
+        return displayName != null ? displayName.clone() : null;
     }
 
     public static void ensureKnown(String typeId) {

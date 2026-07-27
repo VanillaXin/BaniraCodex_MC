@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -23,9 +24,11 @@ import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.*;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -207,7 +210,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 continue;
             }
             CollapsiblePanelWidget group = parent.createChildPanel();
-            group.text(Text.literal(segment)).expanded(false);
+            group.text(groupTitle(segment, pathFromRoot)).expanded(false);
             group.contentGap(ROW_GAP);
             group.headerHeight(ROW_HEIGHT);
             group.onExpandChanged(p -> syncContentHeight());
@@ -241,7 +244,11 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
     private CollapsiblePanelWidget createTypeLeafPanel(CollapsiblePanelWidget parent, String typeId, String trieNodePathForTitle) {
         CollapsiblePanelWidget child = parent.createChildPanel();
-        child.text(Text.literal(leafTitleStripPrefix(typeId, trieNodePathForTitle))).expanded(false);
+        child.text(typeTitle(typeId, trieNodePathForTitle)).expanded(false);
+        Component tooltip = NotificationTypeRegistry.tooltipInternal(typeId);
+        if (tooltip != null && !tooltip.isEmpty()) {
+            child.tooltip(tooltip);
+        }
         child.contentGap(ROW_GAP);
         child.headerHeight(ROW_HEIGHT);
         child.onExpandChanged(p -> syncContentHeight());
@@ -257,6 +264,30 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
         child.refreshLayout();
         return child;
+    }
+
+    private Text groupTitle(String segment, String pathFromRoot) {
+        if (!pathFromRoot.isEmpty()) {
+            return Text.literal(segment);
+        }
+        Component registered = NotificationTypeRegistry.modDisplayNameInternal(segment);
+        if (registered != null && !registered.isEmpty()) {
+            return Text.from(registered);
+        }
+        if (BaniraPlatforms.isInstalled()) {
+            String loaderName = Banira.platform().modDisplayName(segment);
+            if (loaderName != null && !loaderName.trim().isEmpty()) {
+                return Text.literal(loaderName);
+            }
+        }
+        return Text.literal(segment);
+    }
+
+    private Text typeTitle(String typeId, String trieNodePathForTitle) {
+        if (NotificationTypeKeys.DEFAULT.equals(typeId)) {
+            return Text.from(BaniraComponent.get().transClientAuto("notification_type_default"));
+        }
+        return Text.literal(leafTitleStripPrefix(typeId, trieNodePathForTitle));
     }
 
     private void addTypeToggleRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {
@@ -393,6 +424,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private void saveDraft() {
         NotificationTypeSettingsStore.get().replaceAllAndSave(draftSettings);
         baselineSettings = copySettingsMap(draftSettings);
+        ConfigEditorNotifier.show("config_editor_save_success", 2000);
     }
 
     private int changedSettingCount() {

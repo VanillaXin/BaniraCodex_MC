@@ -1,7 +1,7 @@
 <div align="center">
 
 | [中文](../README.md) | [English](README_en.md) | [日本語](README_ja.md) |
-|:-------------------:|:-----------------------:|:-------------------:|
+|:------------------:|:-----------------------:|:-------------------:|
 
 <img src="../assets/logo.png" alt="Banira Codex" width="240" />
 
@@ -34,39 +34,47 @@
 
 ## Meaning
 
-- **Vanilla (香草)**: Refers to unmodified Minecraft and reflects the project's aim to preserve vanilla style and compatibility.
+- **Vanilla (香草)**: Refers to unmodified Minecraft and reflects the project's aim to preserve vanilla style and
+  compatibility.
 - **Codex (志)**: A record that collects and organizes knowledge.
-- **Banira Codex (香草志)**: A collection of shared cross-version modding capabilities that lets dependent mods use a stable interface across loaders.
+- **Banira Codex (香草志)**: A collection of shared cross-version modding capabilities that lets dependent mods use a
+  stable interface across loaders.
 
 ## Introduction
 
-Banira Codex provides configuration, networking, events, player data, notifications, input, HUD, and GUI facilities for other Minecraft mods.
+Banira Codex provides configuration, networking, events, player data, notifications, input, HUD, and GUI facilities for
+other Minecraft mods.
 
-The project does not attempt to support every Minecraft version and loader with one jar. Each supported combination has its own branch and artifact, while dependent mods use public APIs with consistent names, semantics, and structure. Switching Minecraft versions or loaders should therefore require little or no loader-specific change in business code.
-
-Mod ID: `banira_codex`.
+The project does not attempt to support every Minecraft version and loader with one jar. Each supported combination has
+its own branch and artifact, while dependent mods use public APIs with consistent names, semantics, and structure.
+Switching Minecraft versions or loaders should therefore require little or no loader-specific change in business code.
 
 ## Supported Versions
 
-| Loader   | Minecraft versions                         | Branch format      |
-|----------|--------------------------------------------|--------------------|
-| Forge    | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `forge/<version>`  |
-| Fabric   | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `fabric/<version>` |
-| NeoForge | 1.21.1                                     | `neoforge/<version>` |
+| Loader   | Minecraft versions                     | Branch format        |
+|----------|----------------------------------------|----------------------|
+| Forge    | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `forge/<version>`    |
+| Fabric   | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `fabric/<version>`   |
+| NeoForge | 1.21.1                                 | `neoforge/<version>` |
 
 Banira Codex and the dependent mod must use the same Minecraft version and loader.
 
 ## Features
 
-- **Stable caller API**: Dependent mods use `xin.vanilla.banira.api` instead of loader event, network context, or configuration types.
+- **Stable caller API**: Dependent mods use `xin.vanilla.banira.api` instead of loader event, network context, or
+  configuration types.
 - **Version-specific releases**: Each loader and Minecraft version has its own branch, artifact, and Maven version.
-- **Explicit loader boundary**: Forge, Fabric, and NeoForge implementations live under `xin.vanilla.banira.internal.<loader>`.
-- **Client-safe separation**: Client events, input, HUD, and GUI APIs live under `xin.vanilla.banira.api.client`; dedicated servers do not load client classes.
-- **Evidence-based adaptation**: Public semantics stay stable while real loader or Minecraft API differences remain inside each branch.
+- **Explicit loader boundary**: Forge, Fabric, and NeoForge implementations live under
+  `xin.vanilla.banira.internal.<loader>`.
+- **Client-safe separation**: Client events, input, HUD, and GUI APIs live under `xin.vanilla.banira.api.client`;
+  dedicated servers do not load client classes.
+- **Evidence-based adaptation**: Public semantics stay stable while real loader or Minecraft API differences remain
+  inside each branch.
 
 ## Configuration
 
-Configuration can be changed through the Banira configuration editor or by editing the files below. Refer to in-game tooltips and generated comments for the meaning and valid range of each option.
+Configuration can be changed through the Banira configuration editor or by editing the files below. Refer to in-game
+tooltips and generated comments for the meaning and valid range of each option.
 
 ### Shared Files
 
@@ -100,7 +108,8 @@ ConfigScope.CLIENT
 ConfigScope.SERVER
 ```
 
-Dependent mods can register, save, synchronize, and display their own configuration through `BaniraConfigs`, `BaniraConfigViews`, and public configuration holders without exposing loader configuration types to business code.
+Dependent mods can register, save, synchronize, and display their own configuration through `BaniraConfigs`,
+`BaniraConfigViews`, and public configuration holders without exposing loader configuration types to business code.
 
 ## Using Banira as a Dependency
 
@@ -159,21 +168,22 @@ The declared version range must match the Banira Codex version in use.
 
 Dependent mods should prefer `xin.vanilla.banira.api` and its subpackages:
 
-| Entry point                                | Purpose |
-|--------------------------------------------|---------|
-| `Banira`                                   | Current platform and core service entry point |
-| `BaniraConfigs` / `BaniraConfigViews`      | Configuration registration, lookup, and screens |
-| `BaniraNetwork`                            | Loader-neutral packet registration and sending |
-| `BaniraEvents` / `BaniraLifecycle`         | Server, world, player, and lifecycle events |
-| `BaniraServer`                             | Safe access to current server state |
-| `BaniraPlayerData`                         | Persistent player data |
-| `BaniraDataPaths`                          | Mod, configuration, and world data paths |
-| `BaniraEnvironment`                        | Physical side and runtime environment checks |
-| `BaniraModPresence`                        | Optional mod presence and integration state |
-| `BaniraVirtualPermissions`                 | Virtual permission registration and checks |
-| `BaniraNotificationTypes`                  | Server notification type registration |
+| Entry point                           | Purpose                                         |
+|---------------------------------------|-------------------------------------------------|
+| `Banira`                              | Current platform and core service entry point   |
+| `BaniraConfigs` / `BaniraConfigViews` | Configuration registration, lookup, and screens |
+| `BaniraNetwork`                       | Loader-neutral packet registration and sending  |
+| `BaniraEvents` / `BaniraLifecycle`    | Server, world, player, and lifecycle events     |
+| `BaniraServer`                        | Safe access to current server state             |
+| `BaniraPlayerData`                    | Persistent player data                          |
+| `BaniraDataPaths`                     | Mod, configuration, and world data paths        |
+| `BaniraEnvironment`                   | Physical side and runtime environment checks    |
+| `BaniraModPresence`                   | Optional mod presence and integration state     |
+| `BaniraVirtualPermissions`            | Virtual permission registration and checks      |
+| `BaniraNotificationTypes`             | Server notification type registration           |
 
-`xin.vanilla.banira.internal` contains loader adapters and implementation details. It is not a stable API and must not be imported by dependent mods.
+`xin.vanilla.banira.internal` contains loader adapters and implementation details. It is not a stable API and must not
+be imported by dependent mods.
 
 ## Events and Lifecycle
 
@@ -193,11 +203,13 @@ Client events live separately under `xin.vanilla.banira.api.client.event` and in
 - HUD overlay rendering
 - texture reload
 
-Registrations can be used to unregister listeners. Loader-native event objects are not exposed through the recommended public API.
+Registrations can be used to unregister listeners. Loader-native event objects are not exposed through the recommended
+public API.
 
 ## Networking
 
-`BaniraNetwork` provides common channels, packet registration, directions, and context models. Packet handlers do not need `SimpleChannel`, Fabric receivers, or loader-native buffers.
+`BaniraNetwork` provides common channels, packet registration, directions, and context models. Packet handlers do not
+need `SimpleChannel`, Fabric receivers, or loader-native buffers.
 
 The networking layer supports:
 
@@ -221,7 +233,8 @@ Dependent mods should use their own mod ID and channel names to avoid collisions
 - `BaniraLogos`: mod logo lookup and overrides
 - `BaniraDrawContext`: cross-version drawing context
 
-GUI infrastructure lives under `xin.vanilla.banira.client.gui`. Client mods may use it, while loader and Minecraft differences remain the responsibility of the corresponding Banira branch.
+GUI infrastructure lives under `xin.vanilla.banira.client.gui`. Client mods may use it, while loader and Minecraft
+differences remain the responsibility of the corresponding Banira branch.
 
 ## Data and Paths
 
@@ -233,7 +246,8 @@ Do not depend on removed static directory fields. Use `BaniraDataPaths` to obtai
 - player data directories
 - client or server configuration paths
 
-Use `BaniraPlayerData` to load and save persistent player data. Dependent mods should isolate their data with their own mod ID or data suffix.
+Use `BaniraPlayerData` to load and save persistent player data. Dependent mods should isolate their data with their own
+mod ID or data suffix.
 
 ## Version Migration
 
@@ -253,7 +267,9 @@ The docs branch provides a shared batch build entry:
 scripts\build-all.bat
 ```
 
-By default, it dynamically builds all local `forge/*`, `fabric/*`, and `neoforge/*` branches. Other namespaces such as `dev/*` and `maintenance/*` are excluded. Each branch is built in a detached temporary worktree without switching the current checkout. Banira builds also run `publishToMavenLocal`.
+By default, it dynamically builds all local `forge/*`, `fabric/*`, and `neoforge/*` branches. Other namespaces such as
+`dev/*` and `maintenance/*` are excluded. Each branch is built in a detached temporary worktree without switching the
+current checkout. Banira builds also run `publishToMavenLocal`.
 
 List selected branches and validate JDK discovery without running Gradle:
 
@@ -270,7 +286,8 @@ scripts\build-all.bat -BranchExpression "forge/*,!forge/16.5"
 scripts\build-all.bat -BranchExpression "fabric/18.2"
 ```
 
-Expressions beginning with `!` exclude matching branches. The previous parameter name `-Branches` remains available as an alias.
+Expressions beginning with `!` exclude matching branches. The previous parameter name `-Branches` remains available as
+an alias.
 
 A single code branch can still be built directly:
 

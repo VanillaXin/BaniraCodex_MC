@@ -1,7 +1,7 @@
 <div align="center">
 
 | [中文](../README.md) | [English](README_en.md) | [日本語](README_ja.md) |
-|:-------------------:|:-----------------------:|:-------------------:|
+|:------------------:|:-----------------------:|:-------------------:|
 
 <img src="../assets/logo.png" alt="Banira Codex" width="240" />
 
@@ -42,26 +42,28 @@
 
 Banira Codex は、他の Minecraft MOD に設定、ネットワーク、イベント、プレイヤーデータ、通知、入力、HUD、GUI などの共通機能を提供します。
 
-1 つの jar ですべての Minecraft バージョンとローダーを同時に支えることは目的としていません。対応する組み合わせごとに独立したブランチと成果物を用意し、依存 MOD には同じ名前、意味、構造の公開 API を提供します。Minecraft バージョンやローダーを切り替えても、通常は業務ロジックで Forge、Fabric、NeoForge の型を置き換える必要はありません。
-
-MOD ID：`banira_codex`
+1 つの jar ですべての Minecraft バージョンとローダーを同時に支えることは目的としていません。対応する組み合わせごとに独立したブランチと成果物を用意し、依存
+MOD には同じ名前、意味、構造の公開 API を提供します。Minecraft バージョンやローダーを切り替えても、通常は業務ロジックで
+Forge、Fabric、NeoForge の型を置き換える必要はありません。
 
 ## 対応範囲
 
-| ローダー | Minecraft バージョン | ブランチ形式 |
-|----------|------------------------|--------------|
-| Forge | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `forge/<バージョン>` |
-| Fabric | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `fabric/<バージョン>` |
-| NeoForge | 1.21.1 | `neoforge/<バージョン>` |
+| ローダー     | Minecraft バージョン                    | ブランチ形式             |
+|----------|------------------------------------|--------------------|
+| Forge    | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `forge/<バージョン>`    |
+| Fabric   | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `fabric/<バージョン>`   |
+| NeoForge | 1.21.1                             | `neoforge/<バージョン>` |
 
 Banira Codex と依存 MOD は、同じ Minecraft バージョンとローダーを使用する必要があります。
 
 ## 特徴
 
-- **呼び出し側 API の安定性**: 依存 MOD はローダー固有のイベント、ネットワークコンテキスト、設定型ではなく `xin.vanilla.banira.api` を使用します。
+- **呼び出し側 API の安定性**: 依存 MOD はローダー固有のイベント、ネットワークコンテキスト、設定型ではなく
+  `xin.vanilla.banira.api` を使用します。
 - **バージョン別リリース**: ローダーと Minecraft バージョンごとに独立したブランチ、成果物、Maven バージョンを持ちます。
 - **明確なローダー境界**: Forge、Fabric、NeoForge の実装は `xin.vanilla.banira.internal.<loader>` に配置されます。
-- **安全なクライアント分離**: クライアントイベント、入力、HUD、GUI API は `xin.vanilla.banira.api.client` に分離され、専用サーバーはクライアントクラスを読み込みません。
+- **安全なクライアント分離**: クライアントイベント、入力、HUD、GUI API は `xin.vanilla.banira.api.client`
+  に分離され、専用サーバーはクライアントクラスを読み込みません。
 - **実際の差異だけを吸収**: 公開する意味は統一し、ローダーや Minecraft API の実差分だけを各ブランチ内部で処理します。
 
 ## 設定
@@ -159,21 +161,22 @@ dependencies {
 
 依存 MOD は `xin.vanilla.banira.api` とそのサブパッケージを優先して使用してください。
 
-| エントリ | 用途 |
-|----------|------|
-| `Banira` | 現在のプラットフォームとコアサービスの入口 |
-| `BaniraConfigs` / `BaniraConfigViews` | 設定の登録、検索、設定画面 |
-| `BaniraNetwork` | ローダー非依存のパケット登録と送信 |
-| `BaniraEvents` / `BaniraLifecycle` | サーバー、ワールド、プレイヤー、ライフサイクルイベント |
-| `BaniraServer` | 現在のサーバー状態への安全なアクセス |
-| `BaniraPlayerData` | プレイヤー永続データ |
-| `BaniraDataPaths` | MOD、設定、ワールドのデータパス |
-| `BaniraEnvironment` | 物理サイドと実行環境の判定 |
-| `BaniraModPresence` | 任意 MOD の存在と連携状態 |
-| `BaniraVirtualPermissions` | 仮想権限の登録と確認 |
-| `BaniraNotificationTypes` | サーバー通知タイプの登録 |
+| エントリ                                  | 用途                          |
+|---------------------------------------|-----------------------------|
+| `Banira`                              | 現在のプラットフォームとコアサービスの入口       |
+| `BaniraConfigs` / `BaniraConfigViews` | 設定の登録、検索、設定画面               |
+| `BaniraNetwork`                       | ローダー非依存のパケット登録と送信           |
+| `BaniraEvents` / `BaniraLifecycle`    | サーバー、ワールド、プレイヤー、ライフサイクルイベント |
+| `BaniraServer`                        | 現在のサーバー状態への安全なアクセス          |
+| `BaniraPlayerData`                    | プレイヤー永続データ                  |
+| `BaniraDataPaths`                     | MOD、設定、ワールドのデータパス           |
+| `BaniraEnvironment`                   | 物理サイドと実行環境の判定               |
+| `BaniraModPresence`                   | 任意 MOD の存在と連携状態             |
+| `BaniraVirtualPermissions`            | 仮想権限の登録と確認                  |
+| `BaniraNotificationTypes`             | サーバー通知タイプの登録                |
 
-`xin.vanilla.banira.internal` はローダーアダプターと実装詳細です。安定した API ではないため、依存 MOD から import しないでください。
+`xin.vanilla.banira.internal` はローダーアダプターと実装詳細です。安定した API ではないため、依存 MOD から import
+しないでください。
 
 ## イベントとライフサイクル
 
@@ -197,7 +200,8 @@ dependencies {
 
 ## ネットワーク
 
-`BaniraNetwork` は共通チャンネル、パケット登録、方向、コンテキストモデルを提供します。パケットハンドラーは `SimpleChannel`、Fabric receiver、ローダー固有 buffer に依存する必要がありません。
+`BaniraNetwork` は共通チャンネル、パケット登録、方向、コンテキストモデルを提供します。パケットハンドラーは `SimpleChannel`
+、Fabric receiver、ローダー固有 buffer に依存する必要がありません。
 
 ネットワーク層は次をサポートします。
 
@@ -221,7 +225,8 @@ dependencies {
 - `BaniraLogos`：MOD ロゴの検索と上書き
 - `BaniraDrawContext`：クロスバージョン描画コンテキスト
 
-GUI 基盤は `xin.vanilla.banira.client.gui` にあります。クライアント MOD から利用できますが、ローダーと Minecraft の差分は対応する Banira ブランチが吸収します。
+GUI 基盤は `xin.vanilla.banira.client.gui` にあります。クライアント MOD から利用できますが、ローダーと Minecraft の差分は対応する
+Banira ブランチが吸収します。
 
 ## データとパス
 
@@ -253,7 +258,9 @@ docs ブランチには共通バッチビルド入口があります。
 scripts\build-all.bat
 ```
 
-デフォルトでは、ローカルの `forge/*`、`fabric/*`、`neoforge/*` ブランチを動的にすべて構築します。`dev/*`、`maintenance/*` など他の名前空間は含みません。各ブランチは現在の作業ツリーを切り替えず、detached 一時 worktree で構築されます。Banira のビルドでは `publishToMavenLocal` も実行します。
+デフォルトでは、ローカルの `forge/*`、`fabric/*`、`neoforge/*` ブランチを動的にすべて構築します。`dev/*`、`maintenance/*`
+など他の名前空間は含みません。各ブランチは現在の作業ツリーを切り替えず、detached 一時 worktree で構築されます。Banira
+のビルドでは `publishToMavenLocal` も実行します。
 
 Gradle を実行せず、選択されたブランチと JDK 検出だけを確認します。
 

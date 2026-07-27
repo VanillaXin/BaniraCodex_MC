@@ -45,8 +45,6 @@ Banira Codex 为其他 Minecraft 模组提供配置、网络、事件、玩家�
 项目不追求用一个 jar 同时兼容所有 Minecraft 版本和加载器，而是为每个受支持组合维护独立分支与产物，并让依赖方尽可能使用同名、同语义、同结构的公共
 API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需跟着替换 Forge、Fabric 或 NeoForge 类型。
 
-模组 ID：`banira_codex`。
-
 ## 支持范围
 
 | 加载器      | Minecraft 版本                       | 分支格式            |

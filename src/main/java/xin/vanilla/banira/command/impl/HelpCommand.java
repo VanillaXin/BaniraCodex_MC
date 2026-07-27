@@ -12,6 +12,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -43,13 +44,10 @@ public final class HelpCommand {
         String lang = Translator.getPlayerLanguage(player);
         Component helpInfo;
         if (page > 0) {
-            int helpNumPerPage = CommonConfig.get().help().helpInfoNumPerPage();
+            int helpNumPerPage = BaniraCommonSettings.helpInfoNumPerPage();
             int pages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / helpNumPerPage);
-            String headerTemplate = CommonConfig.get().help().helpHeader();
-            if (headerTemplate == null || headerTemplate.isEmpty()) {
-                headerTemplate = "-----==== Banira Codex Help (%d/%d) ====-----";
-            }
-            helpInfo = BaniraComponent.get().literal(String.format(headerTemplate, page, pages) + "\n");
+            helpInfo = BaniraComponent.get().literal(
+                    BaniraCommonSettings.formatHelpHeader("Banira Codex", page, pages) + "\n");
             for (int i = 0; (page - 1) * helpNumPerPage + i < BaniraCommand.HELP_MESSAGE.size() && i < helpNumPerPage; i++) {
                 KeyValue<String, EnumCommandType> keyValue = BaniraCommand.HELP_MESSAGE.get((page - 1) * helpNumPerPage + i);
                 Component commandTips;
@@ -153,7 +151,8 @@ public final class HelpCommand {
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String input = CommandUtils.getStringEmpty(context, "command");
         boolean isInputEmpty = input == null || input.isEmpty();
-        int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size() / CommonConfig.get().help().helpInfoNumPerPage());
+        int totalPages = (int) Math.ceil((double) BaniraCommand.HELP_MESSAGE.size()
+                / BaniraCommonSettings.helpInfoNumPerPage());
         for (int i = 0; i < totalPages && isInputEmpty; i++) {
             builder.suggest(i + 1);
         }

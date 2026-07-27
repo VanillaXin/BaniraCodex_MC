@@ -87,6 +87,7 @@
   "word.banira_codex.notification_log_meta_duration": "Duration",
   "word.banira_codex.notification_type_config_title": "Notification type settings",
   "word.banira_codex.notification_type_config_root_title": "Registered notification types",
+  "word.banira_codex.notification_type_default": "Default notifications",
   "word.banira_codex.notification_type_config_close": "Close",
   "word.banira_codex.notification_type_config_save": "Save",
   "word.banira_codex.notification_type_config_open": "Notification type settings",

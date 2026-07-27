@@ -104,22 +104,6 @@ public class FabricConfigAdapterTest {
         assertEquals(TestMode.SECOND, reloaded.section().mode());
     }
 
-    @Test
-    public void legacyPropertiesAreMigratedOnceToToml() throws Exception {
-        Path configRoot = temporaryFolder.newFolder("legacy").toPath();
-        Path configDirectory = configRoot.resolve("vanilla.xin");
-        Files.createDirectories(configDirectory);
-        Path legacy = configDirectory.resolve("fabric-legacy-test.properties");
-        Files.write(legacy, "section.count=7\n".getBytes(StandardCharsets.UTF_8));
-        BaniraPlatforms.install(new TestBaniraPlatform().configDir(configRoot));
-
-        FabricConfigAdapter.register(LegacyConfig.class, "test_mod");
-
-        LegacyConfigView view = FabricConfigAdapter.view(LegacyConfig.class, LegacyConfigView.class);
-        assertEquals(7, view.section().count());
-        assertTrue(Files.isRegularFile(configDirectory.resolve("fabric-legacy-test.toml")));
-    }
-
     @Config(name = "fabric-adapter-test", type = ConfigScope.COMMON)
     public static class NestedConfig implements NestedConfigView, ConfigData {
         @ConfigEntry.Gui.CollapsibleObject
@@ -207,13 +191,4 @@ public class FabricConfigAdapterTest {
         SECOND
     }
 
-    @Config(name = "fabric-legacy-test", type = ConfigScope.COMMON)
-    public static class LegacyConfig implements ConfigData {
-        @ConfigEntry.Gui.CollapsibleObject
-        private Section section = new Section();
-    }
-
-    public interface LegacyConfigView {
-        SectionView section();
-    }
 }

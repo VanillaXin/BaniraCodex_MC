@@ -1,9 +1,11 @@
 package xin.vanilla.banira.client.notification;
 
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +27,14 @@ public final class NotificationTypeRegistry {
      * 登录包下发的展示方式建议（不与本 Mod 显式登记冲突）
      */
     private static final ConcurrentHashMap<String, EnumNotificationTypeDisplayMode> SERVER_SYNCED_DISPLAY_DEFAULT = new ConcurrentHashMap<>();
+    /**
+     * 子 Mod 提供的本地化类型说明，仅用于客户端配置界面。
+     */
+    private static final ConcurrentHashMap<String, Component> TYPE_TOOLTIPS = new ConcurrentHashMap<>();
+    /**
+     * 子 Mod 提供的本地化名称，作为通知类型树的根分组标题。
+     */
+    private static final ConcurrentHashMap<String, Component> MOD_DISPLAY_NAMES = new ConcurrentHashMap<>();
 
     static {
         KNOWN.add(NotificationTypeKeys.DEFAULT);
@@ -45,6 +55,14 @@ public final class NotificationTypeRegistry {
      * 不会覆盖 JSON 中已有条目。若在 {@link NotificationTypeSettingsStore#load()} 之后调用，则立即对「当前内存中无该键」的情况补写并异步保存。
      */
     public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
+        register(typeId, defaultIfAbsent, null);
+    }
+
+    /**
+     * 显式注册类型、默认展示方式和配置界面说明。
+     */
+    public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent,
+                                @Nullable Component tooltip) {
         String t = NotificationTypeKeys.normalizeOrDefault(typeId);
         KNOWN.add(t);
         if (defaultIfAbsent != null) {
@@ -52,9 +70,48 @@ public final class NotificationTypeRegistry {
         } else {
             MOD_REGISTERED_DISPLAY_DEFAULT.remove(t);
         }
+        if (tooltip != null && !tooltip.isEmpty()) {
+            TYPE_TOOLTIPS.put(t, tooltip.clone());
+        } else {
+            TYPE_TOOLTIPS.remove(t);
+        }
         if (NotificationTypeSettingsStore.get().isSettingsLoadedFromDisk()) {
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(t);
         }
+    }
+
+    public static void register(String typeId, @Nullable Component tooltip) {
+        register(typeId, null, tooltip);
+    }
+
+    /**
+     * 登记通知类型树中 modId 根分组使用的本地化名称。
+     */
+    public static void registerModDisplayName(String modId, @Nullable Component displayName) {
+        if (modId == null || modId.trim().isEmpty()) {
+            return;
+        }
+        String normalized = modId.trim().toLowerCase(Locale.ROOT);
+        if (displayName != null && !displayName.isEmpty()) {
+            MOD_DISPLAY_NAMES.put(normalized, displayName.clone());
+        } else {
+            MOD_DISPLAY_NAMES.remove(normalized);
+        }
+    }
+
+    @Nullable
+    public static Component tooltip(String typeId) {
+        Component tooltip = TYPE_TOOLTIPS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
+        return tooltip != null ? tooltip.clone() : null;
+    }
+
+    @Nullable
+    public static Component modDisplayName(String modId) {
+        if (modId == null) {
+            return null;
+        }
+        Component displayName = MOD_DISPLAY_NAMES.get(modId.trim().toLowerCase(Locale.ROOT));
+        return displayName != null ? displayName.clone() : null;
     }
 
     public static void ensureKnown(String typeId) {

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -119,7 +120,7 @@ public class CommonConfig implements ConfigData {
     @Accessors(chain = true, fluent = true)
     public static class HelpCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "帮助头部", en_us = "Header line for paginated help output (format string)")
-        private String helpHeader = "-----==== Banira Codex Help (%d/%d) ====-----";
+        private String helpHeader = BaniraCommonSettings.DEFAULT_HELP_HEADER;
 
         @ConfigEntry.Gui.Tooltip(zh_cn = "每页帮助数量", en_us = "Number of help lines per page")
         @ConfigEntry.BoundedDiscrete(min = 1, max = 100)

@@ -13,9 +13,18 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class FabricConfigAdapterTest {
     @Rule
@@ -64,6 +73,51 @@ public class FabricConfigAdapterTest {
         ConfigCategoryTitleSpec category = holder.getCategoryTitleSpec("section");
         assertEquals(ConfigCategoryTitleSpec.Kind.LOCALIZED_STATIC, category.getKind());
         assertEquals("配置分类", category.getLocalizedByLang().get("zh_cn"));
+    }
+
+    @Test
+    public void tomlBackendRoundTripsSupportedValues() throws Exception {
+        Path configRoot = temporaryFolder.newFolder("toml").toPath();
+        BaniraPlatforms.install(new TestBaniraPlatform().configDir(configRoot));
+        FabricConfigAdapter.register(TomlConfig.class, "test_mod");
+
+        ConfigHolder holder = FabricConfigAdapter.getHolder(TomlConfig.class);
+        holder.set("section.title", "value, # \"quoted\"\nnext");
+        holder.set("section.enabled", false);
+        holder.set("section.names", new ArrayList<>(Arrays.asList("alpha", "b,eta", "hash#tag")));
+        holder.set("section.mode", TestMode.SECOND);
+        holder.save();
+
+        Path toml = configRoot.resolve("vanilla.xin").resolve("fabric-toml-test.toml");
+        assertTrue(Files.isRegularFile(toml));
+        String content = new String(Files.readAllBytes(toml), StandardCharsets.UTF_8);
+        assertTrue(content.contains("[section]"));
+        assertTrue(content.contains("title = \"value, # \\\"quoted\\\"\\nnext\""));
+        assertTrue(content.contains("names = [\"alpha\", \"b,eta\", \"hash#tag\"]"));
+        assertFalse(content.contains("section.title="));
+
+        FabricConfigAdapter.register(TomlConfig.class, "test_mod");
+        TomlConfigView reloaded = FabricConfigAdapter.view(TomlConfig.class, TomlConfigView.class);
+        assertEquals("value, # \"quoted\"\nnext", reloaded.section().title());
+        assertFalse(reloaded.section().enabled());
+        assertEquals(Arrays.asList("alpha", "b,eta", "hash#tag"), reloaded.section().names());
+        assertEquals(TestMode.SECOND, reloaded.section().mode());
+    }
+
+    @Test
+    public void legacyPropertiesAreMigratedOnceToToml() throws Exception {
+        Path configRoot = temporaryFolder.newFolder("legacy").toPath();
+        Path configDirectory = configRoot.resolve("vanilla.xin");
+        Files.createDirectories(configDirectory);
+        Path legacy = configDirectory.resolve("fabric-legacy-test.properties");
+        Files.write(legacy, "section.count=7\n".getBytes(StandardCharsets.UTF_8));
+        BaniraPlatforms.install(new TestBaniraPlatform().configDir(configRoot));
+
+        FabricConfigAdapter.register(LegacyConfig.class, "test_mod");
+
+        LegacyConfigView view = FabricConfigAdapter.view(LegacyConfig.class, LegacyConfigView.class);
+        assertEquals(7, view.section().count());
+        assertTrue(Files.isRegularFile(configDirectory.resolve("fabric-legacy-test.toml")));
     }
 
     @Config(name = "fabric-adapter-test", type = ConfigScope.COMMON)
@@ -119,5 +173,47 @@ public class FabricConfigAdapterTest {
 
         @ConfigEntry.Gui.Tooltip({"第一行", "second line"})
         private String literal = "value";
+    }
+
+    @Config(name = "fabric-toml-test", type = ConfigScope.COMMON)
+    public static class TomlConfig implements ConfigData {
+        @ConfigEntry.Gui.CollapsibleObject
+        private TomlSection section = new TomlSection();
+    }
+
+    public interface TomlConfigView {
+        TomlSectionView section();
+    }
+
+    public interface TomlSectionView {
+        String title();
+
+        boolean enabled();
+
+        List<String> names();
+
+        TestMode mode();
+    }
+
+    public static class TomlSection {
+        private String title = "default";
+        private boolean enabled = true;
+        private List<String> names = new ArrayList<>(Arrays.asList("default"));
+        private TestMode mode = TestMode.FIRST;
+    }
+
+    public enum TestMode {
+        FIRST,
+        SECOND
+    }
+
+    @Config(name = "fabric-legacy-test", type = ConfigScope.COMMON)
+    public static class LegacyConfig implements ConfigData {
+        @ConfigEntry.Gui.CollapsibleObject
+        private Section section = new Section();
+    }
+
+    public interface LegacyConfigView {
+        SectionView section();
     }
 }

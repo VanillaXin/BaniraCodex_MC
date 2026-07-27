@@ -6,7 +6,6 @@ import xin.vanilla.banira.common.config.ConfigValueStore;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,19 +19,11 @@ import java.util.*;
  */
 final class FabricConfigValueStore implements ConfigValueStore {
     private final Path file;
-    @Nullable
-    private final Path legacyPropertiesFile;
     private final Map<String, ConfigEntryDescriptor> descriptors;
     private final Map<String, Object> values = new LinkedHashMap<>();
 
     FabricConfigValueStore(Path file, List<ConfigEntryDescriptor> descriptors) {
-        this(file, null, descriptors);
-    }
-
-    FabricConfigValueStore(Path file, @Nullable Path legacyPropertiesFile,
-                           List<ConfigEntryDescriptor> descriptors) {
         this.file = file;
-        this.legacyPropertiesFile = legacyPropertiesFile;
         Map<String, ConfigEntryDescriptor> byPath = new LinkedHashMap<>();
         for (ConfigEntryDescriptor descriptor : descriptors) {
             byPath.put(descriptor.getPath(), descriptor);
@@ -118,11 +109,6 @@ final class FabricConfigValueStore implements ConfigValueStore {
             loadToml();
             return;
         }
-        if (legacyPropertiesFile != null && Files.isRegularFile(legacyPropertiesFile)) {
-            loadLegacyProperties();
-            save();
-            return;
-        }
         save();
     }
 
@@ -158,63 +144,9 @@ final class FabricConfigValueStore implements ConfigValueStore {
         }
     }
 
-    private void loadLegacyProperties() {
-        Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(legacyPropertiesFile, StandardCharsets.UTF_8)) {
-            properties.load(reader);
-        } catch (IOException e) {
-            return;
-        }
-        for (String path : descriptors.keySet()) {
-            String raw = properties.getProperty(path);
-            if (raw == null) {
-                continue;
-            }
-            Object parsed = parseLegacy(descriptors.get(path), raw);
-            if (parsed != null && validate(path, parsed)) {
-                values.put(path, parsed);
-            }
-        }
-    }
-
-    private Object parseLegacy(ConfigEntryDescriptor descriptor, String raw) {
-        try {
-            switch (descriptor.getValueType()) {
-                case STRING:
-                    return raw;
-                case BOOLEAN:
-                    return Boolean.parseBoolean(raw);
-                case INTEGER:
-                    return Integer.parseInt(raw);
-                case LONG:
-                    return Long.parseLong(raw);
-                case DOUBLE:
-                    return Double.parseDouble(raw);
-                case ENUM:
-                    return parseEnum(descriptor.getEnumClass(), raw);
-                default:
-                    return parseLegacyList(descriptor, raw);
-            }
-        } catch (RuntimeException ignored) {
-            return null;
-        }
-    }
-
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Object parseEnum(Class<? extends Enum<?>> enumClass, String raw) {
         return enumClass == null ? null : Enum.valueOf((Class) enumClass, raw);
-    }
-
-    private Object parseLegacyList(ConfigEntryDescriptor descriptor, String raw) {
-        if (raw.isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<String> parts = splitEscapedCsv(raw);
-        List<Object> result = new ArrayList<>(parts.size());
-        for (String part : parts) {
-            result.add(parseListValue(descriptor, part));
-        }
-        return result;
     }
 
     private Object parseListValue(ConfigEntryDescriptor descriptor, String raw) {
@@ -495,31 +427,6 @@ final class FabricConfigValueStore implements ConfigValueStore {
             }
             result.add(coerced);
         }
-        return result;
-    }
-
-    private List<String> splitEscapedCsv(String raw) {
-        List<String> result = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-        boolean escaped = false;
-        for (int i = 0; i < raw.length(); i++) {
-            char c = raw.charAt(i);
-            if (escaped) {
-                current.append(c);
-                escaped = false;
-            } else if (c == '\\') {
-                escaped = true;
-            } else if (c == ',') {
-                result.add(current.toString());
-                current.setLength(0);
-            } else {
-                current.append(c);
-            }
-        }
-        if (escaped) {
-            current.append('\\');
-        }
-        result.add(current.toString());
         return result;
     }
 

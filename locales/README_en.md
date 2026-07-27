@@ -73,20 +73,10 @@ in-game tooltips and generated comments for the meaning and valid range of each 
 - Quick-action layout: `config/vanilla.xin/quick_action.json`
 - Shared player data: `world/vanilla.xin/playerdata/*.nbt`
 
-### Forge
+### Mod Files
 
-- Common and server-behavior Config: `config/banira_codex-common.toml`
-- Client Config: `config/banira_codex-client.toml`
-
-### NeoForge
-
-- Common and server-behavior Config: `config/banira_codex-common.toml`
-- Client Config: `config/banira_codex-client.toml`
-
-### Fabric
-
-- Common and server-behavior Config: `config/banira_codex-common.toml`
-- Client Config: `config/banira_codex-client.toml`
+- Common and server-behavior Config: [`config/banira_codex-common.toml`](/config/banira_codex-common.toml)
+- Client Config: [`config/banira_codex-client.toml`](/config/banira_codex-client.toml)
 
 Banira exposes loader-neutral configuration scopes:
 

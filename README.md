@@ -64,20 +64,10 @@ API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需
 - 快捷入口布局：`config/vanilla.xin/quick_action.json`
 - 香草芯系列玩家数据：`world/vanilla.xin/playerdata/*.nbt`
 
-### Forge
+### 模组部分
 
-- 通用及服务器行为配置：`config/banira_codex-common.toml`
-- 客户端配置：`config/banira_codex-client.toml`
-
-### NeoForge
-
-- 通用及服务器行为配置：`config/banira_codex-common.toml`
-- 客户端配置：`config/banira_codex-client.toml`
-
-### Fabric
-
-- 通用及服务器行为配置：`config/banira_codex-common.toml`
-- 客户端配置：`config/banira_codex-client.toml`
+- 通用及服务器行为配置：[`config/banira_codex-common.toml`](/config/banira_codex-common.toml)
+- 客户端配置：[`config/banira_codex-client.toml`](/config/banira_codex-client.toml)
 
 公共配置模型使用 Banira 自己的作用域：
 

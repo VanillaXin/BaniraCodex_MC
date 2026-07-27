@@ -1,0 +1,50 @@
+
+#帮助相关设置
+#Help-related settings
+[help]
+	#帮助头部
+	#Header line for paginated help output (format string)
+	helpHeader = "-----==== %s Help (%d/%d) ====-----"
+	#每页帮助数量
+	#Number of help lines per page
+	#Range: 1 ~ 100
+	helpInfoNumPerPage = 10
+
+#语言相关设置
+#Language settings
+[language]
+	#默认语言
+	#Default language code (e.g. en_us, zh_cn)
+	defaultLanguage = "en_us"
+
+#指令名称设置
+#Command name settings (prefix and subcommands)
+[command]
+	#指令前缀
+	#Root command prefix (namespace)
+	commandPrefix = "banira"
+	#帮助子指令名
+	#Subcommand name for help
+	commandHelp = "help"
+	#设置语言子指令名
+	#Subcommand name to change language
+	commandLanguage = "language"
+	#虚拟OP子指令名
+	#Subcommand name for virtual OP
+	commandVirtualOp = "virtual_op"
+
+#权限相关设置
+#Permission settings
+[permission]
+	#虚拟OP所需权限等级
+	#Permission level (0–4) required to use virtual OP
+	#Range: 0 ~ 4
+	virtualOpPermission = 4
+	#修改服务端配置所需权限等级（配置编辑器同步/拉取）
+	#Permission level (0–4) to edit server config (config editor sync / pull)
+	#Range: 0 ~ 4
+	editServerConfigPermission = 2
+	#修改服务端配置所需虚拟权限完整键（modId:id，与虚拟OP中授予的键一致）
+	#Full virtual permission key (modId:id) for editing server config; match keys granted via virtual OP
+	editServerConfigVirtualPermissionKey = "banira_codex:EDIT_SERVER_CONFIG"
+

@@ -67,20 +67,10 @@ Forge、Fabric、NeoForge の型を置き換える必要はありません。
 - クイックアクションの配置：`config/vanilla.xin/quick_action.json`
 - Vanilla Xin シリーズのプレイヤーデータ：`world/vanilla.xin/playerdata/*.nbt`
 
-### Forge
+### モジュールファイル
 
-- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
-- クライアント設定：`config/banira_codex-client.toml`
-
-### NeoForge
-
-- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
-- クライアント設定：`config/banira_codex-client.toml`
-
-### Fabric
-
-- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
-- クライアント設定：`config/banira_codex-client.toml`
+- 共通およびサーバー動作設定：[`config/banira_codex-common.toml`](/config/banira_codex-common.toml)
+- クライアント設定：[`config/banira_codex-client.toml`](/config/banira_codex-client.toml)
 
 Banira はローダーに依存しない設定スコープを公開します。
 

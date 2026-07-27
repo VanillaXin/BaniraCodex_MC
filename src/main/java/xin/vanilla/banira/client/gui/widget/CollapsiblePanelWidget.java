@@ -285,10 +285,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         Text tooltipText = tooltip.clone();
         int x = (int) mouseX;
         int y = (int) mouseY;
-        screen.addDeferredTooltipRender(graphics -> {
-            PoseStack stack = graphics.pose();
+        screen.addDeferredTooltipRender(stack -> {
             stack.pushPose();
-            stack.last().pose().identity();
+            stack.last().pose().setIdentity();
             TooltipWidget.drawPopupMessage(stack,
                     FontDrawArgs.ofPopo(tooltipText.stack(stack).font(screen.getFont()))
                             .x(x).y(y).popupUseTexture(theme.tooltipUseTexture()),

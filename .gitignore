@@ -128,3 +128,4 @@ docs/
 .cursor/
 __pycache__/
 publish.bat
+/build_.bat

@@ -47,6 +47,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     private Text text = Text.empty();
 
     @Getter
+    private Text tooltip = Text.empty();
+
+    @Getter
     private boolean expanded = true;
 
     @Getter
@@ -257,6 +260,40 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             stack.popPose();
         }
         // endregion 绘制边框线
+
+        deferHeaderTooltip();
+    }
+
+    /**
+     * 标题说明统一在全部控件之后延迟绘制，避免被相邻面板覆盖。
+     */
+    private void deferHeaderTooltip() {
+        if (screen == null || tooltip == null || tooltip.isEmpty() || !enabled) {
+            return;
+        }
+        double mouseX = screen.inputState().mouseX();
+        double mouseY = screen.inputState().mouseY();
+        double left = absoluteX();
+        double top = absoluteY();
+        if (mouseX < left || mouseX >= left + width()
+                || mouseY < top || mouseY >= top + headerHeight
+                || screen.isAnyDropdownSelectOpen()) {
+            return;
+        }
+        BaniraColorConfig theme = screen.getEffectiveTheme();
+        EnumSeason tooltipSeason = screen.season();
+        Text tooltipText = tooltip.clone();
+        int x = (int) mouseX;
+        int y = (int) mouseY;
+        screen.addDeferredTooltipRender(stack -> {
+            stack.pushPose();
+            stack.last().pose().setIdentity();
+            TooltipWidget.drawPopupMessage(stack,
+                    FontDrawArgs.ofPopo(tooltipText.stack(stack).font(screen.getFont()))
+                            .x(x).y(y).popupUseTexture(theme.tooltipUseTexture()),
+                    theme, tooltipSeason);
+            stack.popPose();
+        });
     }
 
     private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
@@ -851,6 +888,21 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
     public CollapsiblePanelWidget text(Text text) {
         this.text = text;
+        return this;
+    }
+
+    public CollapsiblePanelWidget tooltip(String tooltip) {
+        this.tooltip = Text.literal(tooltip);
+        return this;
+    }
+
+    public CollapsiblePanelWidget tooltip(xin.vanilla.banira.common.data.Component tooltip) {
+        this.tooltip = Text.from(tooltip);
+        return this;
+    }
+
+    public CollapsiblePanelWidget tooltip(Text tooltip) {
+        this.tooltip = tooltip;
         return this;
     }
 

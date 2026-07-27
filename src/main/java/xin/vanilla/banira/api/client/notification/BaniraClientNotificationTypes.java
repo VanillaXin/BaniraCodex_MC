@@ -1,6 +1,7 @@
 package xin.vanilla.banira.api.client.notification;
 
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 
 import javax.annotation.Nonnull;
@@ -21,6 +22,32 @@ public final class BaniraClientNotificationTypes {
 
     public static void register(@Nonnull String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
         NotificationTypeRegistry.register(typeId, defaultIfAbsent);
+    }
+
+    public static void register(@Nonnull String typeId, @Nullable Component tooltip) {
+        NotificationTypeRegistry.register(typeId, tooltip);
+    }
+
+    public static void register(@Nonnull String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent,
+                                @Nullable Component tooltip) {
+        NotificationTypeRegistry.register(typeId, defaultIfAbsent, tooltip);
+    }
+
+    /**
+     * 登记通知类型树中 modId 根分组使用的本地化名称。
+     */
+    public static void registerModDisplayName(@Nonnull String modId, @Nullable Component displayName) {
+        NotificationTypeRegistry.registerModDisplayName(modId, displayName);
+    }
+
+    @Nullable
+    public static Component tooltip(@Nonnull String typeId) {
+        return NotificationTypeRegistry.tooltip(typeId);
+    }
+
+    @Nullable
+    public static Component modDisplayName(@Nonnull String modId) {
+        return NotificationTypeRegistry.modDisplayName(modId);
     }
 
     @Nullable

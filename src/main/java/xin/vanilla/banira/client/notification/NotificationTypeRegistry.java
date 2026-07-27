@@ -1,9 +1,14 @@
 package xin.vanilla.banira.client.notification;
 
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
+import javax.annotation.Nullable;
+import java.util.Locale;
+import java.util.Map;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 客户端已知的通知类型集合。默认包含 {@link NotificationTypeKeys#DEFAULT}，收到通知或加载配置时会自动登记。
@@ -17,6 +22,8 @@ import java.util.List;
 public final class NotificationTypeRegistry {
 
     private static final ClientNotificationTypeRegistryState STATE = new ClientNotificationTypeRegistryState();
+    private static final Map<String, Component> TYPE_TOOLTIPS = new ConcurrentHashMap<>();
+    private static final Map<String, Component> MOD_DISPLAY_NAMES = new ConcurrentHashMap<>();
 
     private NotificationTypeRegistry() {
     }
@@ -33,10 +40,54 @@ public final class NotificationTypeRegistry {
      * 不会覆盖 JSON 中已有条目。若在 {@link NotificationTypeSettingsStore#load()} 之后调用，则立即对「当前内存中无该键」的情况补写并异步保存。
      */
     public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent) {
+        register(typeId, defaultIfAbsent, null);
+    }
+
+    public static void register(String typeId, @Nullable Component tooltip) {
+        register(typeId, null, tooltip);
+    }
+
+    /**
+     * 登记类型默认值及其本地配置界面说明。
+     */
+    public static void register(String typeId, EnumNotificationTypeDisplayMode defaultIfAbsent,
+                                @Nullable Component tooltip) {
         String t = STATE.register(typeId, defaultIfAbsent);
+        if (tooltip != null && !tooltip.isEmpty()) {
+            TYPE_TOOLTIPS.put(t, tooltip.clone());
+        } else {
+            TYPE_TOOLTIPS.remove(t);
+        }
         if (NotificationTypeSettingsStore.get().isSettingsLoadedFromDisk()) {
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(t);
         }
+    }
+
+    public static void registerModDisplayName(String modId, @Nullable Component displayName) {
+        if (modId == null || modId.trim().isEmpty()) {
+            return;
+        }
+        String normalized = modId.trim().toLowerCase(Locale.ROOT);
+        if (displayName != null && !displayName.isEmpty()) {
+            MOD_DISPLAY_NAMES.put(normalized, displayName.clone());
+        } else {
+            MOD_DISPLAY_NAMES.remove(normalized);
+        }
+    }
+
+    @Nullable
+    public static Component tooltip(String typeId) {
+        Component tooltip = TYPE_TOOLTIPS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
+        return tooltip != null ? tooltip.clone() : null;
+    }
+
+    @Nullable
+    public static Component modDisplayName(String modId) {
+        if (modId == null) {
+            return null;
+        }
+        Component displayName = MOD_DISPLAY_NAMES.get(modId.trim().toLowerCase(Locale.ROOT));
+        return displayName != null ? displayName.clone() : null;
     }
 
     public static void ensureKnown(String typeId) {

@@ -87,6 +87,7 @@
   "word.banira_codex.notification_log_meta_duration": "时长",
   "word.banira_codex.notification_type_config_title": "通知类型配置",
   "word.banira_codex.notification_type_config_root_title": "已注册的通知类型",
+  "word.banira_codex.notification_type_default": "默认通知",
   "word.banira_codex.notification_type_config_close": "关闭",
   "word.banira_codex.notification_type_config_save": "保存",
   "word.banira_codex.notification_type_config_open": "通知类型配置",

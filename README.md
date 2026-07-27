@@ -19,7 +19,6 @@
     - [目录](#目录)
     - [释义](#释义)
     - [介绍](#介绍)
-    - [支持范围](#支持范围)
     - [特性](#特性)
     - [配置说明](#配置说明)
     - [作为依赖接入](#作为依赖接入)
@@ -45,16 +44,6 @@ Banira Codex 为其他 Minecraft 模组提供配置、网络、事件、玩家�
 项目不追求用一个 jar 同时兼容所有 Minecraft 版本和加载器，而是为每个受支持组合维护独立分支与产物，并让依赖方尽可能使用同名、同语义、同结构的公共
 API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需跟着替换 Forge、Fabric 或 NeoForge 类型。
 
-## 支持范围
-
-| 加载器      | Minecraft 版本                       | 分支格式            |
-|----------|------------------------------------|-----------------|
-| Forge    | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `forge/<版本>`    |
-| Fabric   | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `fabric/<版本>`   |
-| NeoForge | 1.21.1                             | `neoforge/<版本>` |
-
-使用时必须让 Banira Codex 与依赖模组的 Minecraft 版本和加载器保持一致。
-
 ## 特性
 
 - **调用方稳定**：子模组依赖 `xin.vanilla.banira.api`，不直接绑定加载器事件、网络上下文或配置类型。
@@ -65,7 +54,7 @@ API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需
 
 ## 配置说明
 
-您可以通过 Banira 配置编辑器修改配置，也可以直接编辑下列文件。配置项含义和取值范围以游戏内提示及生成文件中的注释为准。
+您可以通过香草志配置编辑器修改配置，也可以直接编辑下列文件。配置项含义和取值范围以游戏内提示及生成文件中的注释为准。
 
 ### 通用部分
 
@@ -77,19 +66,18 @@ API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需
 
 ### Forge
 
-- 通用配置：`config/banira_codex-common.toml`
+- 通用及服务器行为配置：`config/banira_codex-common.toml`
 - 客户端配置：`config/banira_codex-client.toml`
 
 ### NeoForge
 
-- 通用配置：`config/banira_codex-common.toml`
+- 通用及服务器行为配置：`config/banira_codex-common.toml`
 - 客户端配置：`config/banira_codex-client.toml`
 
 ### Fabric
 
-- 通用配置：`config/banira_codex-common.toml`
+- 通用及服务器行为配置：`config/banira_codex-common.toml`
 - 客户端配置：`config/banira_codex-client.toml`
-- 安装 Mod Menu 后可从模组列表直接打开 Banira 配置界面。
 
 公共配置模型使用 Banira 自己的作用域：
 

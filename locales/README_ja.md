@@ -19,7 +19,6 @@
     - [目次](#目次)
     - [意味](#意味)
     - [はじめに](#はじめに)
-    - [対応範囲](#対応範囲)
     - [特徴](#特徴)
     - [設定](#設定)
     - [依存 MOD としての導入](#依存-mod-としての導入)
@@ -46,16 +45,6 @@ Banira Codex は、他の Minecraft MOD に設定、ネットワーク、イベ�
 MOD には同じ名前、意味、構造の公開 API を提供します。Minecraft バージョンやローダーを切り替えても、通常は業務ロジックで
 Forge、Fabric、NeoForge の型を置き換える必要はありません。
 
-## 対応範囲
-
-| ローダー     | Minecraft バージョン                    | ブランチ形式             |
-|----------|------------------------------------|--------------------|
-| Forge    | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `forge/<バージョン>`    |
-| Fabric   | 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 | `fabric/<バージョン>`   |
-| NeoForge | 1.21.1                             | `neoforge/<バージョン>` |
-
-Banira Codex と依存 MOD は、同じ Minecraft バージョンとローダーを使用する必要があります。
-
 ## 特徴
 
 - **呼び出し側 API の安定性**: 依存 MOD はローダー固有のイベント、ネットワークコンテキスト、設定型ではなく
@@ -68,7 +57,7 @@ Banira Codex と依存 MOD は、同じ Minecraft バージョンとローダー
 
 ## 設定
 
-Banira 設定エディター、または以下のファイルを直接編集して設定を変更できます。各項目の意味と有効範囲は、ゲーム内ツールチップおよび生成されたファイルのコメントを参照してください。
+香草志設定エディター、または以下のファイルを直接編集して設定を変更できます。各項目の意味と有効範囲は、ゲーム内ツールチップおよび生成されたファイルのコメントを参照してください。
 
 ### 共通ファイル
 
@@ -80,19 +69,18 @@ Banira 設定エディター、または以下のファイルを直接編集し�
 
 ### Forge
 
-- 共通設定：`config/banira_codex-common.toml`
+- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
 - クライアント設定：`config/banira_codex-client.toml`
 
 ### NeoForge
 
-- 共通設定：`config/banira_codex-common.toml`
+- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
 - クライアント設定：`config/banira_codex-client.toml`
 
 ### Fabric
 
-- 共通設定：`config/banira_codex-common.toml`
+- 共通およびサーバー動作設定：`config/banira_codex-common.toml`
 - クライアント設定：`config/banira_codex-client.toml`
-- Mod Menu を導入すると、MOD 一覧から Banira の設定画面を直接開けます。
 
 Banira はローダーに依存しない設定スコープを公開します。
 

@@ -19,7 +19,6 @@
     - [Table of Contents](#table-of-contents)
     - [Meaning](#meaning)
     - [Introduction](#introduction)
-    - [Supported Versions](#supported-versions)
     - [Features](#features)
     - [Configuration](#configuration)
     - [Using Banira as a Dependency](#using-banira-as-a-dependency)
@@ -49,16 +48,6 @@ The project does not attempt to support every Minecraft version and loader with 
 its own branch and artifact, while dependent mods use public APIs with consistent names, semantics, and structure.
 Switching Minecraft versions or loaders should therefore require little or no loader-specific change in business code.
 
-## Supported Versions
-
-| Loader   | Minecraft versions                     | Branch format        |
-|----------|----------------------------------------|----------------------|
-| Forge    | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `forge/<version>`    |
-| Fabric   | 1.16.5, 1.18.2, 1.19.2, 1.20.1, 1.21.1 | `fabric/<version>`   |
-| NeoForge | 1.21.1                                 | `neoforge/<version>` |
-
-Banira Codex and the dependent mod must use the same Minecraft version and loader.
-
 ## Features
 
 - **Stable caller API**: Dependent mods use `xin.vanilla.banira.api` instead of loader event, network context, or
@@ -73,8 +62,8 @@ Banira Codex and the dependent mod must use the same Minecraft version and loade
 
 ## Configuration
 
-Configuration can be changed through the Banira configuration editor or by editing the files below. Refer to in-game
-tooltips and generated comments for the meaning and valid range of each option.
+Configuration can be changed through the Banira Codex configuration editor or by editing the files below. Refer to
+in-game tooltips and generated comments for the meaning and valid range of each option.
 
 ### Shared Files
 
@@ -86,19 +75,18 @@ tooltips and generated comments for the meaning and valid range of each option.
 
 ### Forge
 
-- Common configuration: `config/banira_codex-common.toml`
-- Client configuration: `config/banira_codex-client.toml`
+- Common and server-behavior Config: `config/banira_codex-common.toml`
+- Client Config: `config/banira_codex-client.toml`
 
 ### NeoForge
 
-- Common configuration: `config/banira_codex-common.toml`
-- Client configuration: `config/banira_codex-client.toml`
+- Common and server-behavior Config: `config/banira_codex-common.toml`
+- Client Config: `config/banira_codex-client.toml`
 
 ### Fabric
 
-- Common configuration: `config/banira_codex-common.toml`
-- Client configuration: `config/banira_codex-client.toml`
-- With Mod Menu installed, the Banira configuration screen can be opened directly from the mod list.
+- Common and server-behavior Config: `config/banira_codex-common.toml`
+- Client Config: `config/banira_codex-client.toml`
 
 Banira exposes loader-neutral configuration scopes:
 

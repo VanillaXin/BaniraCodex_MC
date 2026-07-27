@@ -33,12 +33,11 @@ final class FabricConfigAdapter {
 
         Path configDirectory = BaniraPlatforms.get().pathService().configPath();
         Path file = configDirectory.resolve(config.name() + ".toml");
-        Path legacyPropertiesFile = configDirectory.resolve(config.name() + ".properties");
         ConfigHolder holder = ConfigHolder.create(
                 modId,
                 config.name(),
                 config.type(),
-                new FabricConfigValueStore(file, legacyPropertiesFile, descriptors),
+                new FabricConfigValueStore(file, descriptors),
                 descriptors,
                 categoryTooltips,
                 categoryTitleSpecs

@@ -8,4 +8,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'banira_codex'
+rootProject.name = 'banira-codex'

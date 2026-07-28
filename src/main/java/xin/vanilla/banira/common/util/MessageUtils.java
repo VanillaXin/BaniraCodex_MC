@@ -83,7 +83,7 @@ public final class MessageUtils {
     public static void sendMessage(CommandSourceStack source, boolean success, Component message) {
         if (source.getEntity() != null && source.getEntity() instanceof ServerPlayer) {
             try {
-                sendMessage(source.getPlayerOrException(), message);
+                sendNotification(source.getPlayerOrException(), message, NotificationTypeKeys.COMMAND_FEEDBACK);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
@@ -102,7 +102,7 @@ public final class MessageUtils {
     public static void sendMessageWithAdmin(CommandSourceStack source, boolean success, Component message) {
         if (source.getEntity() != null && source.getEntity() instanceof ServerPlayer) {
             try {
-                sendMessage(source.getPlayerOrException(), message);
+                sendNotification(source.getPlayerOrException(), message, NotificationTypeKeys.COMMAND_FEEDBACK);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {

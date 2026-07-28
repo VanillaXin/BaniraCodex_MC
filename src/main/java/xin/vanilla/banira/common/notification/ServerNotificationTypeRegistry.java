@@ -21,6 +21,13 @@ public final class ServerNotificationTypeRegistry {
 
     private static final ServerNotificationTypeRegistryState STATE = new ServerNotificationTypeRegistryState();
 
+    static {
+        register(NotificationTypeKeys.HELP, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+        register(NotificationTypeKeys.COMMAND_FEEDBACK, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+    }
+
     private ServerNotificationTypeRegistry() {
     }
 

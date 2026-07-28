@@ -42,6 +42,8 @@ public class ConfigSearchScreenContractTest {
         assertTrue(notification.contains("theme.searchMatchText()"));
         assertTrue(panel.contains("reflowVisibleChildren()"));
         assertTrue(label.contains("preserveStyledComponent"));
+        assertTrue(label.contains("sliceStyledComponent"));
+        assertTrue(label.contains("font.width(renderedLine)"));
         assertTrue(editor.contains("boolean selfMatches"));
         assertFalse(editor.contains("matched && !titleContains"));
         assertFalse(searchText.contains("emphasizeWholeText"));

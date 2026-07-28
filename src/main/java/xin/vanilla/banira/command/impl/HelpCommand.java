@@ -19,6 +19,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -118,7 +119,7 @@ public final class HelpCommand {
                 helpInfo = BaniraComponent.get().trans(EnumI18nType.WORD, "command_not_found").color(0xFFFF0000);
             }
         }
-        MessageUtils.sendMessage(player, helpInfo);
+        MessageUtils.sendNotification(player, helpInfo, NotificationTypeKeys.HELP);
         return 1;
     }
 

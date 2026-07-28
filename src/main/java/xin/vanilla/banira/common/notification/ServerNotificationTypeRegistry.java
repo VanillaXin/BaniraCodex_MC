@@ -31,6 +31,13 @@ public final class ServerNotificationTypeRegistry {
         KNOWN.add(NotificationTypeKeys.DEFAULT);
     }
 
+    static {
+        register(NotificationTypeKeys.HELP, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+        register(NotificationTypeKeys.COMMAND_FEEDBACK, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+    }
+
     private ServerNotificationTypeRegistry() {
     }
 

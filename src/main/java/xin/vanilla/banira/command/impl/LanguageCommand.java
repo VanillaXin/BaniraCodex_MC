@@ -13,6 +13,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -35,12 +36,18 @@ public final class LanguageCommand {
         Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
         if (translator.getI18nFiles().contains(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
-            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language));
+            MessageUtils.sendNotification(player,
+                    BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language),
+                    NotificationTypeKeys.COMMAND_FEEDBACK);
         } else if ("server".equalsIgnoreCase(language) || "client".equalsIgnoreCase(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
-            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language));
+            MessageUtils.sendNotification(player,
+                    BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_default_language", language),
+                    NotificationTypeKeys.COMMAND_FEEDBACK);
         } else {
-            MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "language_not_exist").color(0xFFFF0000));
+            MessageUtils.sendNotification(player,
+                    BaniraComponent.get().trans(EnumI18nType.FORMAT, "language_not_exist").color(0xFFFF0000),
+                    NotificationTypeKeys.COMMAND_FEEDBACK);
         }
         return 1;
     }

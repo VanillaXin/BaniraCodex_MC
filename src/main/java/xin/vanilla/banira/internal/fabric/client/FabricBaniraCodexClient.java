@@ -103,4 +103,5 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             return !event.canceled();
         });
     }
+
 }

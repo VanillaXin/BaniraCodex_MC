@@ -87,7 +87,8 @@ public final class MessageUtils {
     public static void sendMessage(CommandSourceStack source, boolean success, Component message) {
         if (BaniraCommandAccess.sourceEntity(source) instanceof ServerPlayer) {
             try {
-                sendMessage(BaniraCommandAccess.sourcePlayer(source), message);
+                sendNotification(BaniraCommandAccess.sourcePlayer(source), message,
+                        NotificationTypeKeys.COMMAND_FEEDBACK);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {
@@ -106,7 +107,8 @@ public final class MessageUtils {
     public static void sendMessageWithAdmin(CommandSourceStack source, boolean success, Component message) {
         if (BaniraCommandAccess.sourceEntity(source) instanceof ServerPlayer) {
             try {
-                sendMessage(BaniraCommandAccess.sourcePlayer(source), message);
+                sendNotification(BaniraCommandAccess.sourcePlayer(source), message,
+                        NotificationTypeKeys.COMMAND_FEEDBACK);
             } catch (CommandSyntaxException ignored) {
             }
         } else if (success) {

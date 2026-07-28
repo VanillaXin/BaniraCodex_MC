@@ -12,20 +12,14 @@ public final class ConfigSearchText {
     private ConfigSearchText() {
     }
 
-    public static Text highlight(String value, ConfigSearchQuery query, int normalColor,
-                                 int matchColor, boolean emphasizeWholeText) {
+    public static Text highlight(String value, ConfigSearchQuery query, int normalColor, int matchColor) {
         String display = value == null ? "" : value;
         int index = query.indexIn(display);
-        if (query.isEmpty() || (index < 0 && !emphasizeWholeText)) {
+        if (query.isEmpty() || index < 0) {
             return Text.literal(display).color(normalColor);
         }
-        if (index < 0) {
-            return Text.literal(display).color(matchColor).bold(true).underlined(true);
-        }
 
-        // 截断渲染无法保留子片段时，根样式仍能明确表达“该文本已命中”。
-        Component root = BaniraComponent.get().literal("")
-                .color(matchColor).bold(true).underlined(true);
+        Component root = BaniraComponent.get().literal("");
         int cursor = 0;
         while (index >= 0) {
             if (index > cursor) {
@@ -33,7 +27,7 @@ public final class ConfigSearchText {
             }
             int matchEnd = Math.min(display.length(), index + query.length());
             root.append(BaniraComponent.get().literal(display.substring(index, matchEnd))
-                    .color(matchColor).bold(true).underlined(true));
+                    .color(matchColor).bold(false).underlined(true));
             cursor = matchEnd;
             index = query.indexIn(display, cursor);
         }

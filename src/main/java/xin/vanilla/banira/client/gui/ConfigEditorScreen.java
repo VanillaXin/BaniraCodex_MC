@@ -11,8 +11,11 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Notification;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
+import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.config.*;
@@ -23,6 +26,7 @@ import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
@@ -63,10 +67,13 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int BUTTON_PADDING = 12;
     private static final int BUTTON_GAP = 8;
     private static final int CARD_GAP = 1;
+    private static final int SEARCH_HEIGHT = 18;
+    private static final int SEARCH_GAP = 4;
 
     private final ConfigHolder holder;
 
     private CollapsiblePanelWidget contentRootPanel;
+    private InputWidget searchInput;
     private ScrollbarWidget scrollbar;
     private double scrollOffset = 0;
     private int contentHeight = 0;
@@ -97,6 +104,11 @@ public class ConfigEditorScreen extends BaniraScreen {
      */
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
     private final Map<String, Object> baselineValues = new LinkedHashMap<>();
+    private final Map<String, CollapsiblePanelWidget> categoryPanels = new LinkedHashMap<>();
+    private final Map<String, String> categoryTitles = new LinkedHashMap<>();
+    private final Map<String, Boolean> expandedBeforeSearch = new LinkedHashMap<>();
+    private String searchText = "";
+    private boolean applyingSearch;
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
@@ -122,11 +134,21 @@ public class ConfigEditorScreen extends BaniraScreen {
         contentLeft = cardX + CARD_INNER;
         contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        listTop = cardY + CARD_INNER;
+        listTop = cardY + CARD_INNER + SEARCH_HEIGHT + SEARCH_GAP;
         entryWidgets.clear();
         baselineValues.clear();
+        categoryPanels.clear();
+        categoryTitles.clear();
+        expandedBeforeSearch.clear();
         syncTouchedPaths.clear();
         bottomButtons.clear();
+
+        searchInput = new InputWidget(this);
+        searchInput.id("config_search");
+        searchInput.text(BaniraComponent.get().transClientAuto("config_search_hint"));
+        searchInput.value(searchText);
+        searchInput.onTextChanged(this::applySearchFilter);
+        addWidget(searchInput);
 
         contentRootPanel = buildContentPanel();
         contentHeight = (int) contentRootPanel.height();
@@ -182,6 +204,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         updateLayout();
         updateWidgetPositions();
+        applySearchFilter(searchText);
     }
 
     /**
@@ -205,6 +228,8 @@ public class ConfigEditorScreen extends BaniraScreen {
         rootPanel.contentGap(ROW_GAP);
         rootPanel.headerHeight(ROW_HEIGHT);
         rootPanel.onExpandChanged(p -> syncContentHeight());
+        categoryPanels.put("", rootPanel);
+        categoryTitles.put("", rootTitle);
 
         buildPanelContent(rootPanel, rootNode);
         rootPanel.refreshLayout();
@@ -224,11 +249,16 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
         for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
             CollapsiblePanelWidget childPanel = CollapsiblePanelWidget.createAutoHeight(this, 0, 0, cw);
-            childPanel.text(ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
-                    configModId(), child.getDisplayName())).expanded(false);
+            xin.vanilla.banira.common.data.Component titleComponent =
+                    ConfigCategoryTitleTexts.categoryTitleComponent(holder.getCategoryTitleSpec(child.getCategoryPath()),
+                            configModId(), child.getDisplayName());
+            String title = titleComponent.getString(Translator.getClientLanguage(), true, true);
+            childPanel.text(Text.from(titleComponent)).expanded(false);
             childPanel.contentGap(ROW_GAP);
             childPanel.headerHeight(ROW_HEIGHT);
             childPanel.onExpandChanged(p -> syncContentHeight());
+            categoryPanels.put(child.getCategoryPath(), childPanel);
+            categoryTitles.put(child.getCategoryPath(), title);
             buildPanelContent(childPanel, child);
             childPanel.refreshLayout();
             panel.addCollapsibleChild(childPanel);
@@ -236,8 +266,8 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void syncContentHeight() {
-        if (contentRootPanel != null) {
-            contentRootPanel.refreshLayout();
+        if (!applyingSearch && contentRootPanel != null) {
+            contentRootPanel.reflowVisibleChildren();
             contentHeight = (int) contentRootPanel.height();
             updateLayout();
             updateWidgetPositions();
@@ -245,7 +275,12 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
+        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - SEARCH_HEIGHT - SEARCH_GAP
+                - BUTTON_HEIGHT - CARD_GAP);
+
+        if (searchInput != null) {
+            searchInput.bounds(new ScreenCoordinate(contentLeft, cardY + CARD_INNER, contentW, SEARCH_HEIGHT));
+        }
 
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
@@ -345,6 +380,119 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (contentRootPanel != null) {
             contentRootPanel.renderViewport(contentViewport);
         }
+    }
+
+    /**
+     * 保留完整配置树与控件实例，仅隐藏无关分支，避免搜索时丢失未保存输入。
+     */
+    private void applySearchFilter(String value) {
+        searchText = value == null ? "" : value;
+        if (contentRootPanel == null) {
+            return;
+        }
+        ConfigSearchQuery query = ConfigSearchQuery.of(searchText);
+        boolean searching = !query.isEmpty();
+        if (searching && expandedBeforeSearch.isEmpty()) {
+            for (Map.Entry<String, CollapsiblePanelWidget> entry : categoryPanels.entrySet()) {
+                expandedBeforeSearch.put(entry.getKey(), entry.getValue().expanded());
+            }
+        }
+
+        applyingSearch = true;
+        ConfigHolder.CategoryTreeNode root = holder.getCategoryTree().isEmpty()
+                ? null : holder.getCategoryTree().get(0);
+        if (root != null) {
+            applyNodeFilter(root, query, false);
+        }
+        contentRootPanel.visible(true);
+        updateCategoryTitle("", query, false);
+
+        if (!searching) {
+            for (Map.Entry<String, CollapsiblePanelWidget> entry : categoryPanels.entrySet()) {
+                Boolean expanded = expandedBeforeSearch.get(entry.getKey());
+                entry.getValue().expanded(expanded != null ? expanded : entry.getKey().isEmpty());
+            }
+            expandedBeforeSearch.clear();
+        }
+        contentRootPanel.reflowVisibleChildren();
+        contentHeight = (int) contentRootPanel.height();
+        scrollOffset = 0;
+        applyingSearch = false;
+        updateLayout();
+        updateWidgetPositions();
+    }
+
+    private boolean applyNodeFilter(ConfigHolder.CategoryTreeNode node, ConfigSearchQuery query,
+                                    boolean ancestorMatches) {
+        String categoryPath = node.getCategoryPath();
+        String title = categoryTitles.get(categoryPath);
+        boolean categoryMatches = !query.isEmpty() && query.matches(categoryPath, title, node.getDisplayName());
+        boolean showAll = ancestorMatches || categoryMatches;
+        boolean visibleDescendant = false;
+
+        for (ConfigEntryDescriptor descriptor : node.getEntries()) {
+            boolean matches = showAll || matchesEntry(descriptor, query);
+            IConfigEntryWidget widget = entryWidgets.get(descriptor.getPath());
+            if (widget != null) {
+                widget.getWidget().visible(matches);
+                updateEntryText(widget, descriptor, query, matches && !query.isEmpty());
+            }
+            visibleDescendant |= matches;
+        }
+        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
+            boolean childVisible = applyNodeFilter(child, query, showAll);
+            CollapsiblePanelWidget panel = categoryPanels.get(child.getCategoryPath());
+            if (panel != null) {
+                panel.visible(childVisible);
+                if (!query.isEmpty() && childVisible) {
+                    panel.expanded(true);
+                }
+            }
+            visibleDescendant |= childVisible;
+        }
+
+        boolean visible = query.isEmpty() || categoryMatches || visibleDescendant;
+        if (!categoryPath.isEmpty()) {
+            updateCategoryTitle(categoryPath, query, categoryMatches);
+        }
+        return visible;
+    }
+
+    private boolean matchesEntry(ConfigEntryDescriptor descriptor, ConfigSearchQuery query) {
+        String description = "";
+        if (ConfigEntryTooltipTexts.hasGuiTooltip(descriptor)) {
+            description = ConfigEntryTooltipTexts.guiTooltipComponent(descriptor, configModId())
+                    .getString(Translator.getClientLanguage(), true, true);
+        }
+        return query.matches(descriptor.getPath(), descriptor.getDisplayName(), description);
+    }
+
+    private void updateEntryText(IConfigEntryWidget widget, ConfigEntryDescriptor descriptor,
+                                 ConfigSearchQuery query, boolean matched) {
+        BaniraColorConfig theme = getEffectiveTheme();
+        boolean titleContains = query.indexIn(descriptor.getDisplayName()) >= 0;
+        if (widget instanceof ConfigEntryWidgetAdapter) {
+            ConfigEntryWidgetAdapter adapter = (ConfigEntryWidgetAdapter) widget;
+            adapter.labelWidget.text(ConfigSearchText.highlight(descriptor.getDisplayName(), query,
+                    theme.textPrimary(), theme.searchMatchText(), matched && !titleContains));
+            if (adapter.tooltipWidget != null) {
+                String description = ConfigEntryTooltipTexts.guiTooltipComponent(descriptor, configModId())
+                        .getString(Translator.getClientLanguage(), true, true);
+                adapter.tooltipWidget.text(ConfigSearchText.highlight(description, query,
+                        theme.textPrimary(), theme.searchMatchText(), false));
+            }
+        }
+    }
+
+    private void updateCategoryTitle(String path, ConfigSearchQuery query, boolean matched) {
+        CollapsiblePanelWidget panel = categoryPanels.get(path);
+        String title = categoryTitles.get(path);
+        if (panel == null || title == null) {
+            return;
+        }
+        BaniraColorConfig theme = getEffectiveTheme();
+        panel.text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
+                theme.searchMatchText(), matched && query.indexIn(title) < 0));
     }
 
     /**
@@ -1181,6 +1329,8 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private static class ConfigEntryWidgetAdapter implements IConfigEntryWidget {
         private final BaseWidget rowWidget;
+        private final LabelWidget labelWidget;
+        private final TooltipWidget tooltipWidget;
         private final java.util.function.Supplier<Object> getter;
         private final java.util.function.Consumer<Object> setter;
         private final java.util.function.Supplier<Boolean> isValidSupplier;
@@ -1189,6 +1339,8 @@ public class ConfigEditorScreen extends BaniraScreen {
                                  BaseWidget valueWidget, TooltipWidget tooltipWidget,
                                  java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter) {
             this.rowWidget = rowWidget;
+            this.labelWidget = label;
+            this.tooltipWidget = tooltipWidget;
             this.getter = getter;
             this.setter = setter;
             this.isValidSupplier = null;
@@ -1199,6 +1351,8 @@ public class ConfigEditorScreen extends BaniraScreen {
                                  java.util.function.Supplier<Object> getter, java.util.function.Consumer<Object> setter,
                                  java.util.function.Supplier<Boolean> isValidSupplier) {
             this.rowWidget = rowWidget;
+            this.labelWidget = label;
+            this.tooltipWidget = tooltipWidget;
             this.getter = getter;
             this.setter = setter;
             this.isValidSupplier = isValidSupplier;

@@ -29,7 +29,7 @@ public final class ConfigSearchText {
         int cursor = 0;
         while (index >= 0) {
             if (index > cursor) {
-                root.append(BaniraComponent.get().literal(display.substring(cursor, index)).color(normalColor));
+                root.append(normalSegment(display.substring(cursor, index), normalColor));
             }
             int matchEnd = Math.min(display.length(), index + query.length());
             root.append(BaniraComponent.get().literal(display.substring(index, matchEnd))
@@ -38,8 +38,13 @@ public final class ConfigSearchText {
             index = query.indexIn(display, cursor);
         }
         if (cursor < display.length()) {
-            root.append(BaniraComponent.get().literal(display.substring(cursor)).color(normalColor));
+            root.append(normalSegment(display.substring(cursor), normalColor));
         }
         return Text.from(root);
+    }
+
+    private static Component normalSegment(String value, int normalColor) {
+        return BaniraComponent.get().literal(value)
+                .color(normalColor).bold(false).underlined(false);
     }
 }

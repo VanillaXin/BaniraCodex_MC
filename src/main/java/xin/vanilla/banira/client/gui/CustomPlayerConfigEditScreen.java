@@ -422,24 +422,24 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         String modeDescription = BaniraComponent.get()
                 .transClientAuto("custom_player_config_notification_mode_description").toString();
 
-        boolean languageMatches = rootMatches || query.matches(
+        boolean languageSelfMatches = !query.isEmpty() && query.matches(
                 "language", "player.language", languageTitle, languageDescription);
-        boolean modeMatches = rootMatches || query.matches(
+        boolean modeSelfMatches = !query.isEmpty() && query.matches(
                 "notificationReceiveMode", "player.notificationReceiveMode", modeTitle, modeDescription);
-        languageRow.visible(languageMatches);
-        modeRow.visible(modeMatches);
+        languageRow.visible(query.isEmpty() || rootMatches || languageSelfMatches);
+        modeRow.visible(query.isEmpty() || rootMatches || modeSelfMatches);
 
         BaniraColorConfig theme = getEffectiveTheme();
         contentRootPanel.text(ConfigSearchText.highlight(rootTitle, query, theme.textPrimary(),
-                theme.searchMatchText(), rootMatches && query.indexIn(rootTitle) < 0));
+                theme.searchMatchText()));
         languageLabel.text(ConfigSearchText.highlight(languageTitle, query, theme.textPrimary(),
-                theme.searchMatchText(), languageMatches && query.indexIn(languageTitle) < 0));
+                theme.searchMatchText()));
         modeLabel.text(ConfigSearchText.highlight(modeTitle, query, theme.textPrimary(),
-                theme.searchMatchText(), modeMatches && query.indexIn(modeTitle) < 0));
+                theme.searchMatchText()));
         languageTooltip.text(ConfigSearchText.highlight(languageDescription, query, theme.textPrimary(),
-                theme.searchMatchText(), false));
+                theme.searchMatchText()));
         modeTooltip.text(ConfigSearchText.highlight(modeDescription, query, theme.textPrimary(),
-                theme.searchMatchText(), false));
+                theme.searchMatchText()));
 
         contentRootPanel.reflowVisibleChildren();
         contentHeight = (int) contentRootPanel.height();

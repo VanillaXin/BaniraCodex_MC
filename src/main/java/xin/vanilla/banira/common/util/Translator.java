@@ -128,7 +128,18 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(modId, resolveModMainClass(modId));
+        Class<?> resourceAnchor = Translator.class;
+        try {
+            if (BaniraPlatforms.isInstalled() && Banira.platform().isModLoaded(modId)) {
+                resourceAnchor = resolveModMainClass(modId);
+            } else {
+                LOGGER.debug("Using key-only translator for optional mod not present on this side: {}", modId);
+            }
+        } catch (RuntimeException e) {
+            // 低代码 Mod 或仅服务端 Mod 可能没有当前加载器可解析的主类。
+            LOGGER.debug("Using key-only translator for mod {}: {}", modId, e.getMessage());
+        }
+        return new Translator(modId, resourceAnchor);
     }
 
     @Override

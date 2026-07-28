@@ -366,6 +366,13 @@ public final class BaniraColorConfig {
         return borderDisabled;
     }
 
+    /**
+     * 搜索命中文字色：亮色主题取较深强调色，夜间主题取较亮强调色。
+     */
+    public int searchMatchText() {
+        return surfaceReadsAsDarkUi() ? accentHover : accentPressed;
+    }
+
     public int scrollbarBg() {
         return bgTertiary;
     }

@@ -11,6 +11,8 @@ package xin.vanilla.banira.common.notification;
 public final class NotificationTypeKeys {
 
     public static final String DEFAULT = "default";
+    public static final String HELP = "banira_codex.help";
+    public static final String COMMAND_FEEDBACK = "banira_codex.command_feedback";
 
     private NotificationTypeKeys() {
     }

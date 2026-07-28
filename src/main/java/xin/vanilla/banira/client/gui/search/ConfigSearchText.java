@@ -19,7 +19,8 @@ public final class ConfigSearchText {
             return Text.literal(display).color(normalColor);
         }
 
-        Component root = BaniraComponent.get().literal("");
+        Component root = BaniraComponent.get().literal("")
+                .color(normalColor).bold(false).underlined(false);
         int cursor = 0;
         while (index >= 0) {
             if (index > cursor) {

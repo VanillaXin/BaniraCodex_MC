@@ -23,7 +23,9 @@ public final class ConfigSearchText {
             return Text.literal(display).color(matchColor).bold(true).underlined(true);
         }
 
-        Component root = BaniraComponent.get().literal("");
+        // 截断渲染无法保留子片段时，根样式仍能明确表达“该文本已命中”。
+        Component root = BaniraComponent.get().literal("")
+                .color(matchColor).bold(true).underlined(true);
         int cursor = 0;
         while (index >= 0) {
             if (index > cursor) {

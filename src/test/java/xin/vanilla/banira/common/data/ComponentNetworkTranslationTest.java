@@ -31,6 +31,8 @@ public class ComponentNetworkTranslationTest {
         assertEquals(EnumI18nType.FORMAT.name(), json.get("i18nType").getAsString());
         assertEquals(Banira.MOD_ID, json.get("modId").getAsString());
         assertEquals("zh_cn", json.get("languageCode").getAsString());
+        assertEquals("服务端已应用并保存 %s 项配置",
+                json.get("translationFallback").getAsString());
 
         Component decoded = Component.deserialize(json);
         assertEquals("config_editor_sync_server_ok", decoded.text());
@@ -56,5 +58,40 @@ public class ComponentNetworkTranslationTest {
                 .transClientAuto("config_editor_save_success")
                 .getString("zh_cn", true, true);
         assertFalse(clientText.contains("config_editor_save_success"));
+    }
+
+    @Test
+    public void missingOptionalModUsesSerializedServerFallback() {
+        Component serverComponent = new ScopedComponent("server_only_optional_mod")
+                .trans(EnumI18nType.FORMAT, "cleanup_result", 7)
+                .languageCode("zh_cn")
+                .translationFallback("已清理 %s 个实体");
+
+        JsonObject json = Component.serialize(serverComponent);
+        assertEquals("已清理 %s 个实体", json.get("translationFallback").getAsString());
+
+        Component clientComponent = Component.deserialize(json);
+        assertEquals("已清理 7 个实体", clientComponent.toVanilla("zh_cn").getString());
+    }
+
+    @Test
+    public void legacyPayloadFromMissingOptionalModFallsBackToFullKey() {
+        Component component = new ScopedComponent("legacy_server_only_mod")
+                .trans(EnumI18nType.WORD, "cleanup_result")
+                .languageCode("zh_cn");
+
+        assertEquals("word.legacy_server_only_mod.cleanup_result",
+                component.toVanilla("zh_cn").getString());
+    }
+
+    @Test
+    public void installedModLocalTranslationWinsOverServerFallback() {
+        Component component = BaniraComponent.get()
+                .transAuto("config_editor_sync_server_ok", 3)
+                .languageCode("zh_cn")
+                .translationFallback("错误的服务端回退 %s");
+
+        assertEquals("服务端已应用并保存 3 项配置",
+                component.toVanilla("zh_cn").getString());
     }
 }

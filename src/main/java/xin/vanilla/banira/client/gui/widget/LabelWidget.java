@@ -318,10 +318,16 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             }
 
             Text lineText = textTemplate.text(line);
+            // 未换行且未截断时直接保留富文本子样式，搜索命中片段才能正确着色。
+            boolean preserveStyledComponent = layout.lines.length == 1
+                    && line.equals(text.content());
+            net.minecraft.network.chat.Component renderedText = preserveStyledComponent
+                    ? text.toComponent().toVanilla(Translator.getClientLanguage())
+                    : lineText.toComponent().toVanilla(Translator.getClientLanguage());
             if (hasShadow) {
-                layout.font.drawShadow(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
+                layout.font.drawShadow(stack, renderedText, (float) drawX + xOffset, yPos, textColor);
             } else {
-                layout.font.draw(stack, lineText.toComponent().toVanilla(Translator.getClientLanguage()), (float) drawX + xOffset, yPos, textColor);
+                layout.font.draw(stack, renderedText, (float) drawX + xOffset, yPos, textColor);
             }
         }
 

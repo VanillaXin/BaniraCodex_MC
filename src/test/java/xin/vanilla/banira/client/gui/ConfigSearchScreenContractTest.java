@@ -21,6 +21,9 @@ public class ConfigSearchScreenContractTest {
         String panel = new String(Files.readAllBytes(Paths.get(
                 "src/main/java/xin/vanilla/banira/client/gui/widget/CollapsiblePanelWidget.java")),
                 StandardCharsets.UTF_8);
+        String label = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/banira/client/gui/widget/LabelWidget.java")),
+                StandardCharsets.UTF_8);
 
         assertTrue(editor.contains("config_search"));
         assertTrue(editor.contains("ConfigEntryTooltipTexts.guiTooltipComponent"));
@@ -34,6 +37,7 @@ public class ConfigSearchScreenContractTest {
         assertTrue(player.contains("theme.searchMatchText()"));
         assertTrue(notification.contains("theme.searchMatchText()"));
         assertTrue(panel.contains("reflowVisibleChildren()"));
+        assertTrue(label.contains("preserveStyledComponent"));
     }
 
     @Test

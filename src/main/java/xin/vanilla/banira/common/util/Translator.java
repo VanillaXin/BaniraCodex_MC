@@ -21,16 +21,21 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
@@ -67,13 +72,27 @@ public class Translator implements ITranslator {
      */
     private final Set<String> languages = new HashSet<>();
 
+    private final Class<?> resourceAnchorClass;
+
     private final String modId;
 
     /**
      * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this.modId = modIdFromModMainClass(modMainClass);
+        this(modIdFromModMainClass(modMainClass), modMainClass);
+    }
+
+    private Translator(@NonNull String modId) {
+        this(modId, Translator.class);
+    }
+
+    protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
+        if (StringUtils.isNullOrEmptyEx(modId)) {
+            throw new IllegalArgumentException("modId must not be empty");
+        }
+        this.resourceAnchorClass = resourceAnchorClass;
+        this.modId = modId;
         getI18nFiles();
     }
 
@@ -81,6 +100,9 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
+        if (BaniraPlatforms.isInstalled()) {
+            return BaniraPlatforms.get().modIdFromMainClass(modMainClass);
+        }
         Mod mod = modMainClass.getAnnotation(Mod.class);
         if (mod == null) {
             throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
@@ -125,7 +147,13 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(resolveModMainClassFromModList(modId));
+        try {
+            return new Translator(resolveModMainClassFromModList(modId));
+        } catch (RuntimeException e) {
+            // 客户端可选 Mod 缺失时仍需保留翻译键，并接收服务端提供的回退文本。
+            LOGGER.debug("Using key-only translator for mod {}: {}", modId, e.getMessage());
+            return new Translator(modId);
+        }
     }
 
     @Override
@@ -235,8 +263,36 @@ public class Translator implements ITranslator {
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
+            loadFromClasspath();
         }
         return new ArrayList<>(languages);
+    }
+
+    private void loadFromClasspath() {
+        try {
+            URL url = resourceAnchorClass.getResource(getLangPath());
+            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
+                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+                return;
+            }
+            try (Stream<Path> files = Files.list(Path.of(url.toURI()))) {
+                files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
+                        .forEach(this::loadKnownClasspathLanguage);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+            loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+        }
+    }
+
+    private void loadKnownClasspathLanguage(String languageCode) {
+        String normalized = normalizeLanguageCode(languageCode);
+        if (StringUtils.isNullOrEmptyEx(normalized)) {
+            return;
+        }
+        loadModLanguage(resourceAnchorClass, modId, normalized);
+        languages.add(normalized);
     }
 
     private void loadFromResourceManager() {
@@ -338,7 +394,7 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.dist != null && FMLEnvironment.dist.isClient()) {
             return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected());
         }
         return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());

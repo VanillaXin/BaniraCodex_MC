@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -18,6 +19,9 @@ public class ConfigSearchScreenContractTest {
         String editor = source("ConfigEditorScreen.java");
         String player = source("CustomPlayerConfigEditScreen.java");
         String notification = source("NotificationTypeConfigScreen.java");
+        String searchText = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/banira/client/gui/search/ConfigSearchText.java")),
+                StandardCharsets.UTF_8);
         String panel = new String(Files.readAllBytes(Paths.get(
                 "src/main/java/xin/vanilla/banira/client/gui/widget/CollapsiblePanelWidget.java")),
                 StandardCharsets.UTF_8);
@@ -38,6 +42,10 @@ public class ConfigSearchScreenContractTest {
         assertTrue(notification.contains("theme.searchMatchText()"));
         assertTrue(panel.contains("reflowVisibleChildren()"));
         assertTrue(label.contains("preserveStyledComponent"));
+        assertTrue(editor.contains("boolean selfMatches"));
+        assertFalse(editor.contains("matched && !titleContains"));
+        assertFalse(searchText.contains("emphasizeWholeText"));
+        assertFalse(searchText.contains("bold(true)"));
     }
 
     @Test

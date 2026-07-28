@@ -88,8 +88,9 @@ public class FabricConfigAdapterTest {
         holder.set("section.mode", TestMode.SECOND);
         holder.save();
 
-        Path toml = configRoot.resolve("vanilla.xin").resolve("fabric-toml-test.toml");
+        Path toml = configRoot.resolve("fabric-toml-test.toml");
         assertTrue(Files.isRegularFile(toml));
+        assertFalse(Files.exists(configRoot.resolve("vanilla.xin").resolve("fabric-toml-test.toml")));
         String content = new String(Files.readAllBytes(toml), StandardCharsets.UTF_8);
         assertTrue(content.contains("[section]"));
         assertTrue(content.contains("title = \"value, # \\\"quoted\\\"\\nnext\""));

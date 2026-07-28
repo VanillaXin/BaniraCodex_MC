@@ -15,6 +15,8 @@ import java.util.List;
 public final class BaniraNotificationTypes {
 
     public static final String DEFAULT = NotificationTypeKeys.DEFAULT;
+    public static final String HELP = NotificationTypeKeys.HELP;
+    public static final String COMMAND_FEEDBACK = NotificationTypeKeys.COMMAND_FEEDBACK;
 
     private BaniraNotificationTypes() {
     }

@@ -52,6 +52,10 @@ public class ConfigSearchQueryTest {
         assertTrue(children.get(0).underlined());
         assertTrue(children.get(2).bold());
         assertTrue(children.get(2).underlined());
+        assertFalse(children.get(1).bold());
+        assertFalse(children.get(1).underlined());
+        assertFalse(children.get(3).bold());
+        assertFalse(children.get(3).underlined());
     }
 
     @Test

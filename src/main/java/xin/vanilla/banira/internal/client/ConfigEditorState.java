@@ -1,5 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 
@@ -8,6 +10,8 @@ import java.util.*;
 public final class ConfigEditorState {
     private final ConfigHolder holder;
     private final Map<String, Object> modifiedValues = new LinkedHashMap<>();
+    @Getter
+    @Accessors(fluent = true)
     private final Map<String, ConfigEditorEntryWidget> entryWidgets = new LinkedHashMap<>();
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
     private final Map<String, Object> baselineValues = new LinkedHashMap<>();

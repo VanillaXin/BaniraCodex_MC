@@ -17,6 +17,8 @@ import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
+import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
@@ -51,6 +53,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private static final int BUTTON_PADDING = 12;
     private static final int BUTTON_GAP = 8;
     private static final int CARD_GAP = 1;
+    private static final int SEARCH_HEIGHT = 18;
+    private static final int SEARCH_GAP = 4;
     private static final long DURATION_SLIDER_MIN_MS = 0L;
     private static final long DURATION_SLIDER_MAX_MS = 20000L;
     private static final long DURATION_SLIDER_STEP_MS = 500L;
@@ -58,6 +62,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private final Args args;
 
     private CollapsiblePanelWidget contentRootPanel;
+    private InputWidget searchInput;
     private ScrollbarWidget scrollbar;
     private double scrollOffset = 0;
     private int contentHeight = 0;
@@ -75,6 +80,13 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
     private Map<String, NotificationTypeSettingsStore.TypeSettings> baselineSettings;
     private Map<String, NotificationTypeSettingsStore.TypeSettings> draftSettings;
+    private final Map<String, CollapsiblePanelWidget> groupPanels = new LinkedHashMap<>();
+    private final Map<String, CollapsiblePanelWidget> typePanels = new LinkedHashMap<>();
+    private final Map<String, String> groupTitles = new LinkedHashMap<>();
+    private final Map<String, String> typeTitles = new LinkedHashMap<>();
+    private final Map<CollapsiblePanelWidget, Boolean> expandedBeforeSearch = new IdentityHashMap<>();
+    private String searchText = "";
+    private boolean applyingSearch;
 
     public NotificationTypeConfigScreen(Args args) {
         super(BaniraComponent.get().transClientAuto("notification_type_config_title").toVanilla());
@@ -106,8 +118,20 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         contentLeft = cardX + CARD_INNER;
         contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        listTop = cardY + CARD_INNER;
+        listTop = cardY + CARD_INNER + SEARCH_HEIGHT + SEARCH_GAP;
         bottomButtons.clear();
+        groupPanels.clear();
+        typePanels.clear();
+        groupTitles.clear();
+        typeTitles.clear();
+        expandedBeforeSearch.clear();
+
+        searchInput = new InputWidget(this);
+        searchInput.id("notification_type_search");
+        searchInput.text(BaniraComponent.get().transClientAuto("config_search_hint"));
+        searchInput.value(searchText);
+        searchInput.onTextChanged(this::applySearchFilter);
+        addWidget(searchInput);
 
         contentRootPanel = buildTypesPanel();
         contentHeight = (int) contentRootPanel.height();
@@ -141,6 +165,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
         updateLayout();
         updateWidgetPositions();
+        applySearchFilter(searchText);
     }
 
     private CollapsiblePanelWidget buildTypesPanel() {
@@ -149,6 +174,9 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         root.contentGap(ROW_GAP);
         root.headerHeight(ROW_HEIGHT);
         root.onExpandChanged(p -> syncContentHeight());
+        groupPanels.put("", root);
+        groupTitles.put("", BaniraComponent.get()
+                .transClientAuto("notification_type_config_root_title").toString());
 
         TypeTreeNode tree = buildTypeTree(NotificationTypeRegistry.knownTypesSorted());
         appendTypeTreeNodes(root, tree, "");
@@ -209,10 +237,13 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 continue;
             }
             CollapsiblePanelWidget group = parent.createChildPanel();
-            group.text(groupTitle(segment, pathFromRoot)).expanded(false);
+            Text title = groupTitle(segment, pathFromRoot);
+            group.text(title).expanded(false);
             group.contentGap(ROW_GAP);
             group.headerHeight(ROW_HEIGHT);
             group.onExpandChanged(p -> syncContentHeight());
+            groupPanels.put(childPath, group);
+            groupTitles.put(childPath, title.content());
             appendTypeTreeNodes(group, childNode, childPath);
             group.refreshLayout();
             parent.addCollapsibleChild(group);
@@ -243,7 +274,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
 
     private CollapsiblePanelWidget createTypeLeafPanel(CollapsiblePanelWidget parent, String typeId, String trieNodePathForTitle) {
         CollapsiblePanelWidget child = parent.createChildPanel();
-        child.text(typeTitle(typeId, trieNodePathForTitle)).expanded(false);
+        Text title = typeTitle(typeId, trieNodePathForTitle);
+        child.text(title).expanded(false);
         Component tooltip = NotificationTypeRegistry.tooltip(typeId);
         if (tooltip != null && !tooltip.isEmpty()) {
             child.tooltip(tooltip);
@@ -251,6 +283,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         child.contentGap(ROW_GAP);
         child.headerHeight(ROW_HEIGHT);
         child.onExpandChanged(p -> syncContentHeight());
+        typePanels.put(typeId, child);
+        typeTitles.put(typeId, title.content());
 
         NotificationTypeSettingsStore.TypeSettings st = draftSettings(typeId);
         double cw = child.getContentWidth();
@@ -463,8 +497,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     private void syncContentHeight() {
-        if (contentRootPanel != null) {
-            contentRootPanel.refreshLayout();
+        if (!applyingSearch && contentRootPanel != null) {
+            contentRootPanel.reflowVisibleChildren();
             contentHeight = (int) contentRootPanel.height();
             updateLayout();
             updateWidgetPositions();
@@ -472,7 +506,12 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
+        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - SEARCH_HEIGHT - SEARCH_GAP
+                - BUTTON_HEIGHT - CARD_GAP);
+
+        if (searchInput != null) {
+            searchInput.bounds(new ScreenCoordinate(contentLeft, cardY + CARD_INNER, contentW, SEARCH_HEIGHT));
+        }
 
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
@@ -536,6 +575,100 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         if (contentRootPanel != null) {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset, contentW, contentHeight));
         }
+    }
+
+    private void applySearchFilter(String value) {
+        searchText = value == null ? "" : value;
+        if (contentRootPanel == null) {
+            return;
+        }
+        ConfigSearchQuery query = ConfigSearchQuery.of(searchText);
+        boolean searching = !query.isEmpty();
+        if (searching && expandedBeforeSearch.isEmpty()) {
+            for (CollapsiblePanelWidget panel : groupPanels.values()) {
+                expandedBeforeSearch.put(panel, panel.expanded());
+            }
+            for (CollapsiblePanelWidget panel : typePanels.values()) {
+                expandedBeforeSearch.put(panel, panel.expanded());
+            }
+        }
+
+        Set<String> matches = new LinkedHashSet<>();
+        BaniraColorConfig theme = getEffectiveTheme();
+        for (Map.Entry<String, CollapsiblePanelWidget> entry : typePanels.entrySet()) {
+            String typeId = entry.getKey();
+            String title = typeTitles.get(typeId);
+            Component tooltip = NotificationTypeRegistry.tooltip(typeId);
+            String description = tooltip == null ? "" :
+                    tooltip.getString(Translator.getClientLanguage(), true, true);
+            boolean matched = query.matches(typeId, title, description)
+                    || matchesContainingGroup(typeId, query);
+            entry.getValue().visible(matched);
+            if (matched) {
+                matches.add(typeId);
+            }
+            entry.getValue().text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
+                    theme.searchMatchText(), matched && query.indexIn(title) < 0));
+            if (tooltip != null && !tooltip.isEmpty()) {
+                entry.getValue().tooltip(ConfigSearchText.highlight(description, query, theme.textPrimary(),
+                        theme.searchMatchText(), false));
+            }
+        }
+
+        applyingSearch = true;
+        for (Map.Entry<String, CollapsiblePanelWidget> entry : groupPanels.entrySet()) {
+            String path = entry.getKey();
+            CollapsiblePanelWidget panel = entry.getValue();
+            boolean visible = path.isEmpty() || query.isEmpty() || containsTypeAtPath(matches, path);
+            panel.visible(visible);
+            String title = groupTitles.get(path);
+            boolean titleMatched = !query.isEmpty() && query.matches(path, title);
+            panel.text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
+                    theme.searchMatchText(), titleMatched && query.indexIn(title) < 0));
+            if (searching && visible) {
+                panel.expanded(true);
+            }
+        }
+        if (searching) {
+            for (Map.Entry<String, CollapsiblePanelWidget> entry : typePanels.entrySet()) {
+                if (entry.getValue().visible()) {
+                    entry.getValue().expanded(true);
+                }
+            }
+        } else {
+            for (Map.Entry<CollapsiblePanelWidget, Boolean> entry : expandedBeforeSearch.entrySet()) {
+                entry.getKey().expanded(entry.getValue());
+            }
+            expandedBeforeSearch.clear();
+        }
+
+        contentRootPanel.reflowVisibleChildren();
+        contentHeight = (int) contentRootPanel.height();
+        scrollOffset = 0;
+        applyingSearch = false;
+        updateLayout();
+        updateWidgetPositions();
+    }
+
+    private static boolean containsTypeAtPath(Set<String> matches, String path) {
+        String prefix = path + ".";
+        for (String typeId : matches) {
+            if (typeId.equals(path) || typeId.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean matchesContainingGroup(String typeId, ConfigSearchQuery query) {
+        for (Map.Entry<String, String> entry : groupTitles.entrySet()) {
+            String path = entry.getKey();
+            if (!path.isEmpty() && (typeId.equals(path) || typeId.startsWith(path + "."))
+                    && query.matches(path, entry.getValue())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

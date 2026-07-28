@@ -610,10 +610,10 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
                 matches.add(typeId);
             }
             entry.getValue().text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
-                    theme.searchMatchText(), matched && query.indexIn(title) < 0));
+                    theme.searchMatchText()));
             if (tooltip != null && !tooltip.isEmpty()) {
                 entry.getValue().tooltip(ConfigSearchText.highlight(description, query, theme.textPrimary(),
-                        theme.searchMatchText(), false));
+                        theme.searchMatchText()));
             }
         }
 
@@ -624,9 +624,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             boolean visible = path.isEmpty() || query.isEmpty() || containsTypeAtPath(matches, path);
             panel.visible(visible);
             String title = groupTitles.get(path);
-            boolean titleMatched = !query.isEmpty() && query.matches(path, title);
             panel.text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
-                    theme.searchMatchText(), titleMatched && query.indexIn(title) < 0));
+                    theme.searchMatchText()));
             if (searching && visible) {
                 panel.expanded(true);
             }

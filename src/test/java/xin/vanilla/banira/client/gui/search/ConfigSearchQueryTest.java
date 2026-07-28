@@ -4,6 +4,7 @@ import org.junit.Test;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.List;
 
@@ -52,8 +53,13 @@ public class ConfigSearchQueryTest {
                 .bgSurface(0xFFF8F8F8).accentPressed(0xFF345678).accentHover(0xFFABCDEF);
         BaniraColorConfig dark = new BaniraColorConfig()
                 .bgSurface(0xFF101010).accentPressed(0xFF345678).accentHover(0xFFABCDEF);
+        BaniraColorConfig lowContrastLight = new BaniraColorConfig()
+                .bgSurface(0xFFF0FFF0).accentPressed(0xFF5AB85A).accentHover(0xFFB8E8B8);
 
         assertEquals(0xFF345678, light.searchMatchText());
         assertEquals(0xFFABCDEF, dark.searchMatchText());
+        assertEquals(ColorUtils.ensureReadableTextArgb(0xFF5AB85A, 0xFFF0FFF0),
+                lowContrastLight.searchMatchText());
+        assertFalse(lowContrastLight.searchMatchText() == 0xFF5AB85A);
     }
 }

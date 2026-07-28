@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.data;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -367,10 +368,11 @@ public final class BaniraColorConfig {
     }
 
     /**
-     * 搜索命中文字色：亮色主题取较深强调色，夜间主题取较亮强调色。
+     * 搜索命中文字色保留主题强调色的色相，并按内容背景校正到可读对比度。
      */
     public int searchMatchText() {
-        return surfaceReadsAsDarkUi() ? accentHover : accentPressed;
+        int semanticAccent = surfaceReadsAsDarkUi() ? accentHover : accentPressed;
+        return ColorUtils.ensureReadableTextArgb(semanticAccent, bgSurface);
     }
 
     public int scrollbarBg() {

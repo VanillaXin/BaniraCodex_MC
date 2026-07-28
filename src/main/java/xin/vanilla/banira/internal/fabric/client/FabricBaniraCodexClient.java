@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
@@ -19,6 +20,9 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
+import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -38,6 +42,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         FabricNetworkChannels.registerClientReceivers();
         BaniraInput.flushPendingRegistrations();
         BaniraClientOverlayBridge.loadNotificationLog();
+        registerOwnNotificationTypes();
         NotificationTypeSettingsStore.get().load();
         BaniraClientEventHub.registerCodexDefaults();
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
@@ -92,5 +97,16 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             ScreenKeyboardEvents.allowKeyPress(screen).register(BaniraClientInputBridge::allowKeyPress);
             ScreenKeyboardEvents.allowKeyRelease(screen).register(BaniraClientInputBridge::allowKeyRelease);
         });
+    }
+
+    private static void registerOwnNotificationTypes() {
+        BaniraClientNotificationTypes.registerModDisplayName(BaniraCodex.MODID,
+                BaniraComponent.get().transClientAuto("mod_name"));
+        BaniraClientNotificationTypes.register(NotificationTypeKeys.HELP,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT,
+                BaniraComponent.get().transClientAuto("notification_type_help"));
+        BaniraClientNotificationTypes.register(NotificationTypeKeys.COMMAND_FEEDBACK,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT,
+                BaniraComponent.get().transClientAuto("notification_type_command_feedback"));
     }
 }

@@ -23,6 +23,10 @@ public class BuiltInNotificationCoverageContractTest {
 
         String help = source("src/main/java/xin/vanilla/banira/command/impl/HelpCommand.java");
         assertTrue(help.contains("MessageUtils.sendNotification(player, helpInfo, NotificationTypeKeys.HELP)"));
+
+        String virtualOp = source("src/main/java/xin/vanilla/banira/command/impl/VirtualOpCommand.java");
+        assertTrue(virtualOp.contains("MessageUtils.sendMessage(source, false,"));
+        assertTrue(!virtualOp.contains("source.sendFailure("));
     }
 
     private EnumNotificationTypeDisplayMode displayDefault(String typeId) {

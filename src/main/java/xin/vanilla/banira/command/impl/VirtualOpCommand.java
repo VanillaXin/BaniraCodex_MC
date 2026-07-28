@@ -15,6 +15,7 @@ import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.banira.common.util.Translator;
@@ -87,10 +88,14 @@ public final class VirtualOpCommand {
             }
             Set<EnumCommandType> permissions = VirtualPermissionManager.getVirtualPermission(target);
             String permissionsStr = VirtualPermissionManager.buildPermissionsString(permissions);
-            MessageUtils.sendMessage(target, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+            MessageUtils.sendNotification(target, BaniraComponent.get().trans(EnumI18nType.FORMAT,
+                    "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
+                    NotificationTypeKeys.COMMAND_FEEDBACK);
             if (sourcePlayer != null) {
                 if (!target.getStringUUID().equalsIgnoreCase(sourcePlayer.getStringUUID())) {
-                    MessageUtils.sendMessage(sourcePlayer, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr));
+                    MessageUtils.sendNotification(sourcePlayer, BaniraComponent.get().trans(EnumI18nType.FORMAT,
+                            "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
+                            NotificationTypeKeys.COMMAND_FEEDBACK);
                 }
             } else {
                 MessageUtils.sendMessageWithAdmin(source, true, BaniraComponent.get().trans(EnumI18nType.FORMAT, "player_virtual_op", target.getDisplayName().getString(), permissionsStr).languageCode(language));

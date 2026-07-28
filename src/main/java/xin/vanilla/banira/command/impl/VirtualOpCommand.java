@@ -39,14 +39,14 @@ public final class VirtualOpCommand {
         CommandSourceStack source = context.getSource();
         EnumOperationType type = EnumOperationType.valueOfEx(StringArgumentType.getString(context, "operation"));
         if (type == null) {
-            String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation").languageCode(lang).toChat(lang));
+            MessageUtils.sendMessage(source, false,
+                    BaniraComponent.get().trans(EnumI18nType.WORD, "invalid_operation"));
             return 0;
         }
         if (!CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP)
                 && (source.getEntity() == null || !source.hasPermission(CommonConfig.get().permission().virtualOpPermission()))) {
-            String lang = CommandUtils.getLanguage(source);
-            source.sendFailure(BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled").languageCode(lang).toChat(lang));
+            MessageUtils.sendMessage(source, false,
+                    BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled"));
             return 0;
         }
         EnumCommandType[] rules;

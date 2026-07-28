@@ -16,6 +16,8 @@ import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
+import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumPosition;
@@ -53,15 +55,24 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     private static final int CARD_GAP = 1;
     private static final int CARD_RADIUS = 8;
     private static final int CARD_ALPHA = 0xFF;
+    private static final int SEARCH_HEIGHT = 18;
+    private static final int SEARCH_GAP = 4;
 
     private final Args args;
     private DropdownSelectWidget languageDropdown;
     private DropdownSelectWidget modeDropdown;
+    private EntryRowWidget languageRow;
+    private EntryRowWidget modeRow;
+    private LabelWidget languageLabel;
+    private LabelWidget modeLabel;
+    private TooltipWidget languageTooltip;
+    private TooltipWidget modeTooltip;
     private List<String> languageOptions = new ArrayList<>();
     private String labelBaniraMode;
     private String labelVanillaMode;
 
     private CollapsiblePanelWidget contentRootPanel;
+    private InputWidget searchInput;
     private ScrollbarWidget scrollbar;
     private double scrollOffset;
     private int contentHeight;
@@ -77,6 +88,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     private int btnY;
     private int contentTotalW;
     private final List<ButtonWidget> bottomButtons = new ArrayList<>();
+    private String searchText = "";
 
     public CustomPlayerConfigEditScreen(@Nullable Args args) {
         super(BaniraComponent.get().transClientAuto("custom_player_config_title").toVanilla());
@@ -110,10 +122,17 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         contentLeft = cardX + CARD_INNER;
         contentW = cardW - CARD_INNER * 2 - SCROLL_WIDTH - SCROLL_GAP;
         contentTotalW = contentW + SCROLL_GAP + SCROLL_WIDTH;
-        listTop = cardY + CARD_INNER;
+        listTop = cardY + CARD_INNER + SEARCH_HEIGHT + SEARCH_GAP;
         bottomButtons.clear();
 
         initializeOptions();
+        searchInput = new InputWidget(this);
+        searchInput.id("custom_player_config_search");
+        searchInput.text(BaniraComponent.get().transClientAuto("config_search_hint"));
+        searchInput.value(searchText);
+        searchInput.onTextChanged(this::applySearchFilter);
+        addWidget(searchInput);
+
         contentRootPanel = buildContentPanel();
         contentHeight = (int) contentRootPanel.height();
         addWidget(contentRootPanel);
@@ -146,6 +165,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
 
         updateLayout();
         updateWidgetPositions();
+        applySearchFilter(searchText);
     }
 
     private void initializeOptions() {
@@ -168,16 +188,21 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         root.onExpandChanged(panel -> syncContentHeight());
 
         double rowWidth = root.getContentWidth();
-        root.addChildAuto(createLanguageRow(rowWidth), ROW_HEIGHT);
-        root.addChildAuto(createNotificationModeRow(rowWidth), ROW_HEIGHT);
+        languageRow = createLanguageRow(rowWidth);
+        modeRow = createNotificationModeRow(rowWidth);
+        root.addChildAuto(languageRow, ROW_HEIGHT);
+        root.addChildAuto(modeRow, ROW_HEIGHT);
         root.refreshLayout();
         return root;
     }
 
     private EntryRowWidget createLanguageRow(double rowWidth) {
         EntryRowWidget row = createRow(rowWidth);
-        row.addChild(createLabel("custom_player_config_language_label",
-                BaniraComponent.get().transClientAuto("custom_player_config_language"), rowWidth));
+        languageLabel = createLabel("custom_player_config_language_label",
+                BaniraComponent.get().transClientAuto("custom_player_config_language"), rowWidth);
+        row.addChild(languageLabel);
+        languageTooltip = createDescriptionTooltip("custom_player_config_language_description", rowWidth);
+        row.addChild(languageTooltip);
 
         languageDropdown = new DropdownSelectWidget(this);
         languageDropdown.id("custom_player_config_language");
@@ -197,8 +222,11 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
 
     private EntryRowWidget createNotificationModeRow(double rowWidth) {
         EntryRowWidget row = createRow(rowWidth);
-        row.addChild(createLabel("custom_player_config_mode_label",
-                BaniraComponent.get().transClientAuto("custom_player_config_notification_mode"), rowWidth));
+        modeLabel = createLabel("custom_player_config_mode_label",
+                BaniraComponent.get().transClientAuto("custom_player_config_notification_mode"), rowWidth);
+        row.addChild(modeLabel);
+        modeTooltip = createDescriptionTooltip("custom_player_config_notification_mode_description", rowWidth);
+        row.addChild(modeTooltip);
 
         List<String> modeLabels = new ArrayList<>();
         modeLabels.add(labelBaniraMode);
@@ -235,6 +263,15 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         label.textWrap(false);
         label.textVerticalAlign(EnumAlignment.CENTER);
         return label;
+    }
+
+    private TooltipWidget createDescriptionTooltip(String translationKey, double rowWidth) {
+        TooltipWidget tooltip = new TooltipWidget(this,
+                new ScreenCoordinate(0, 0, labelTextWidth(rowWidth), ROW_HEIGHT));
+        tooltip.id(translationKey + "_tooltip");
+        tooltip.text(BaniraComponent.get().transClientAuto(translationKey));
+        tooltip.popupAtScreenCoords(true);
+        return tooltip;
     }
 
     private double labelColumnEndX(double rowWidth) {
@@ -315,7 +352,11 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - BUTTON_HEIGHT - CARD_GAP);
+        maxListHeight = Math.max(0, cardH - CARD_INNER * 2 - SEARCH_HEIGHT - SEARCH_GAP
+                - BUTTON_HEIGHT - CARD_GAP);
+        if (searchInput != null) {
+            searchInput.bounds(new ScreenCoordinate(contentLeft, cardY + CARD_INNER, contentW, SEARCH_HEIGHT));
+        }
         int buttonAreaHeight = BUTTON_HEIGHT + CARD_INNER;
         int buttonAreaTop = cardY + cardH - buttonAreaHeight;
         btnY = buttonAreaTop + (buttonAreaHeight - BUTTON_HEIGHT) / 2;
@@ -364,6 +405,47 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
             contentRootPanel.bounds(new ScreenCoordinate(contentLeft,
                     listTop - (int) scrollOffset, contentW, contentHeight));
         }
+    }
+
+    private void applySearchFilter(String value) {
+        searchText = value == null ? "" : value;
+        if (contentRootPanel == null || languageRow == null || modeRow == null) {
+            return;
+        }
+        ConfigSearchQuery query = ConfigSearchQuery.of(searchText);
+        String rootTitle = BaniraComponent.get().transClientAuto("custom_player_config_title").toString();
+        boolean rootMatches = !query.isEmpty() && query.matches(rootTitle, "player");
+        String languageTitle = BaniraComponent.get().transClientAuto("custom_player_config_language").toString();
+        String languageDescription = BaniraComponent.get()
+                .transClientAuto("custom_player_config_language_description").toString();
+        String modeTitle = BaniraComponent.get().transClientAuto("custom_player_config_notification_mode").toString();
+        String modeDescription = BaniraComponent.get()
+                .transClientAuto("custom_player_config_notification_mode_description").toString();
+
+        boolean languageMatches = rootMatches || query.matches(
+                "language", "player.language", languageTitle, languageDescription);
+        boolean modeMatches = rootMatches || query.matches(
+                "notificationReceiveMode", "player.notificationReceiveMode", modeTitle, modeDescription);
+        languageRow.visible(languageMatches);
+        modeRow.visible(modeMatches);
+
+        BaniraColorConfig theme = getEffectiveTheme();
+        contentRootPanel.text(ConfigSearchText.highlight(rootTitle, query, theme.textPrimary(),
+                theme.searchMatchText(), rootMatches && query.indexIn(rootTitle) < 0));
+        languageLabel.text(ConfigSearchText.highlight(languageTitle, query, theme.textPrimary(),
+                theme.searchMatchText(), languageMatches && query.indexIn(languageTitle) < 0));
+        modeLabel.text(ConfigSearchText.highlight(modeTitle, query, theme.textPrimary(),
+                theme.searchMatchText(), modeMatches && query.indexIn(modeTitle) < 0));
+        languageTooltip.text(ConfigSearchText.highlight(languageDescription, query, theme.textPrimary(),
+                theme.searchMatchText(), false));
+        modeTooltip.text(ConfigSearchText.highlight(modeDescription, query, theme.textPrimary(),
+                theme.searchMatchText(), false));
+
+        contentRootPanel.reflowVisibleChildren();
+        contentHeight = (int) contentRootPanel.height();
+        scrollOffset = 0;
+        updateLayout();
+        updateWidgetPositions();
     }
 
     @Override

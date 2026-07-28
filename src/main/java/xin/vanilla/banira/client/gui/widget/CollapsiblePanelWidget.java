@@ -702,6 +702,31 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     /**
+     * 递归重排当前可见子项，供搜索过滤等不销毁控件状态的场景使用。
+     */
+    public CollapsiblePanelWidget reflowVisibleChildren() {
+        double runningY = getContentStartY();
+        for (IWidget child : children) {
+            if (child == null || !child.visible()) {
+                continue;
+            }
+            if (child instanceof CollapsiblePanelWidget) {
+                ((CollapsiblePanelWidget) child).reflowVisibleChildren();
+            }
+            ScreenCoordinate bounds = child.bounds();
+            if (bounds != null && child instanceof BaseWidget) {
+                double childHeight = child.effectiveHeight();
+                ((BaseWidget) child).bounds(new ScreenCoordinate(
+                        bounds.x(), runningY, bounds.width(), childHeight));
+                runningY += childHeight + contentGap;
+            }
+        }
+        contentHeight = 0;
+        updateHeightFromExpanded();
+        return this;
+    }
+
+    /**
      * 获取嵌套层级深度（用于自定义缩进）。根级为 0，每层嵌套 +1。
      */
     public int getNestingDepth() {

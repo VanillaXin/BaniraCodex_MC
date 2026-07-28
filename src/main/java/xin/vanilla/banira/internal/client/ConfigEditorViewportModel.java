@@ -18,6 +18,7 @@ public final class ConfigEditorViewportModel {
     private final int cardInner;
     private final int scrollWidth;
     private final int scrollGap;
+    private final int contentTopInset;
 
     private double scrollOffset;
     private int contentHeight;
@@ -31,11 +32,13 @@ public final class ConfigEditorViewportModel {
     private int contentW;
     private int contentTotalW;
 
-    public ConfigEditorViewportModel(int cardMargin, int cardInner, int scrollWidth, int scrollGap) {
+    public ConfigEditorViewportModel(int cardMargin, int cardInner, int scrollWidth, int scrollGap,
+                                     int contentTopInset) {
         this.cardMargin = cardMargin;
         this.cardInner = cardInner;
         this.scrollWidth = scrollWidth;
         this.scrollGap = scrollGap;
+        this.contentTopInset = contentTopInset;
     }
 
     /**
@@ -49,7 +52,7 @@ public final class ConfigEditorViewportModel {
         contentLeft = cardX + cardInner;
         contentW = cardW - cardInner * 2 - scrollWidth - scrollGap;
         contentTotalW = contentW + scrollGap + scrollWidth;
-        listTop = cardY + cardInner;
+        listTop = cardY + cardInner + contentTopInset;
     }
 
     /**

@@ -454,19 +454,19 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
 
         net.minecraft.network.chat.MutableComponent result =
-                net.minecraft.network.chat.Component.literal("");
+                new net.minecraft.network.chat.TextComponent("");
         net.minecraft.network.chat.Style ellipsisStyle = source.getStyle();
         int suffixLength = line.length() - ellipsisIndex - ellipsis.length();
         if (position == EnumEllipsisPosition.START) {
-            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
             result.append(sliceStyledComponent(source,
                     Math.max(0, original.length() - suffixLength), original.length()));
         } else if (position == EnumEllipsisPosition.END) {
             result.append(sliceStyledComponent(source, 0, ellipsisIndex));
-            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
         } else {
             result.append(sliceStyledComponent(source, 0, ellipsisIndex));
-            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
             result.append(sliceStyledComponent(source,
                     Math.max(ellipsisIndex, original.length() - suffixLength), original.length()));
         }
@@ -476,7 +476,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     private static net.minecraft.network.chat.MutableComponent sliceStyledComponent(
             net.minecraft.network.chat.Component source, int start, int end) {
         net.minecraft.network.chat.MutableComponent result =
-                net.minecraft.network.chat.Component.literal("");
+                new net.minecraft.network.chat.TextComponent("");
         int[] cursor = {0};
         source.visit((style, segment) -> {
             int segmentStart = cursor[0];
@@ -484,8 +484,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             int from = Math.max(start, segmentStart);
             int to = Math.min(end, segmentEnd);
             if (from < to) {
-                result.append(net.minecraft.network.chat.Component
-                        .literal(segment.substring(from - segmentStart, to - segmentStart))
+                result.append(new net.minecraft.network.chat.TextComponent(
+                        segment.substring(from - segmentStart, to - segmentStart))
                         .withStyle(style));
             }
             cursor[0] = segmentEnd;

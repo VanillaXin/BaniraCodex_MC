@@ -20,7 +20,7 @@ public final class ConfigSearchText {
             return Text.literal(display).color(normalColor);
         }
         if (index < 0) {
-            return Text.literal(display).color(matchColor);
+            return Text.literal(display).color(matchColor).bold(true).underlined(true);
         }
 
         Component root = BaniraComponent.get().literal("");
@@ -30,7 +30,8 @@ public final class ConfigSearchText {
                 root.append(BaniraComponent.get().literal(display.substring(cursor, index)).color(normalColor));
             }
             int matchEnd = Math.min(display.length(), index + query.length());
-            root.append(BaniraComponent.get().literal(display.substring(index, matchEnd)).color(matchColor));
+            root.append(BaniraComponent.get().literal(display.substring(index, matchEnd))
+                    .color(matchColor).bold(true).underlined(true));
             cursor = matchEnd;
             index = query.indexIn(display, cursor);
         }

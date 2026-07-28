@@ -168,7 +168,7 @@ public class ConfigEditorScreen extends BaniraScreen {
             applyNodeFilter(root, query, false);
         }
         contentRootPanel.visible(true);
-        updateCategoryTitle("", query, false);
+        updateCategoryTitle("", query);
 
         // 清空搜索后恢复玩家原先的展开状态。
         if (!searching) {
@@ -197,13 +197,14 @@ public class ConfigEditorScreen extends BaniraScreen {
         boolean visibleDescendant = false;
 
         for (ConfigEntryDescriptor descriptor : node.getEntries()) {
-            boolean matches = showAll || matchesEntry(descriptor, query);
+            boolean selfMatches = !query.isEmpty() && matchesEntry(descriptor, query);
+            boolean visible = query.isEmpty() || showAll || selfMatches;
             ConfigEditorEntryWidget widget = editorState.entryWidgets().get(descriptor.getPath());
             if (widget != null) {
-                widget.getWidget().visible(matches);
-                updateEntryText(widget, descriptor, query, matches && !query.isEmpty());
+                widget.getWidget().visible(visible);
+                updateEntryText(widget, descriptor, query);
             }
-            visibleDescendant |= matches;
+            visibleDescendant |= visible;
         }
         for (ConfigHolder.CategoryTreeNode child : node.getChildren()) {
             boolean childVisible = applyNodeFilter(child, query, showAll);
@@ -220,7 +221,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         boolean visible = query.isEmpty() || categoryMatches || visibleDescendant;
         if (!categoryPath.isEmpty()) {
-            updateCategoryTitle(categoryPath, query, categoryMatches);
+            updateCategoryTitle(categoryPath, query);
         }
         return visible;
     }
@@ -231,20 +232,19 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void updateEntryText(ConfigEditorEntryWidget widget, ConfigEntryDescriptor descriptor,
-                                 ConfigSearchQuery query, boolean matched) {
+                                 ConfigSearchQuery query) {
         if (!(widget instanceof ConfigEditorEntryWidgetAdapter)) {
             return;
         }
         BaniraColorConfig theme = getEffectiveTheme();
         ConfigEditorEntryWidgetAdapter adapter = (ConfigEditorEntryWidgetAdapter) widget;
-        boolean titleContains = query.indexIn(descriptor.getDisplayName()) >= 0;
         if (adapter.labelWidget() != null) {
             adapter.labelWidget().text(ConfigSearchText.highlight(descriptor.getDisplayName(), query,
-                    theme.textPrimary(), theme.searchMatchText(), matched && !titleContains));
+                    theme.textPrimary(), theme.searchMatchText()));
         }
         if (adapter.tooltipWidget() != null) {
             adapter.tooltipWidget().text(ConfigSearchText.highlight(entryDescription(descriptor), query,
-                    theme.textPrimary(), theme.searchMatchText(), false));
+                    theme.textPrimary(), theme.searchMatchText()));
         }
     }
 
@@ -256,7 +256,7 @@ public class ConfigEditorScreen extends BaniraScreen {
                 .getString(Translator.getClientLanguage(), true, true);
     }
 
-    private void updateCategoryTitle(String path, ConfigSearchQuery query, boolean matched) {
+    private void updateCategoryTitle(String path, ConfigSearchQuery query) {
         CollapsiblePanelWidget panel = contentTreeBuilder.categoryPanels().get(path);
         String title = contentTreeBuilder.categoryTitles().get(path);
         if (panel == null || title == null) {
@@ -264,7 +264,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         }
         BaniraColorConfig theme = getEffectiveTheme();
         panel.text(ConfigSearchText.highlight(title, query, theme.textPrimary(),
-                theme.searchMatchText(), matched && query.indexIn(title) < 0));
+                theme.searchMatchText()));
     }
 
     private void saveConfig() {

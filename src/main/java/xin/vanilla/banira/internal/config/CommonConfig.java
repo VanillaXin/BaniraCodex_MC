@@ -165,7 +165,7 @@ public class CommonConfig implements ConfigData {
         @ConfigEntry.BoundedDiscrete(max = 4)
         private int editServerConfigPermission = 2;
 
-        @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需虚拟权限完整键（modId:id，与虚拟OP中授予的键一致）",
+        @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需虚拟权限完整键（modId:id，\n与虚拟OP中授予的键一致）",
                 en_us = "Full virtual permission key (modId:id) for editing server config; match keys granted via virtual OP")
         private String editServerConfigVirtualPermissionKey = Banira.MOD_ID + ":" + "EDIT_SERVER_CONFIG";
     }

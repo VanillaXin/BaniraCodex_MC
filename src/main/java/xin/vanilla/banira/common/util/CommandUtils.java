@@ -27,6 +27,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import javax.annotation.Nullable;
@@ -49,7 +50,8 @@ public final class CommandUtils {
             CommandSourceStack source = context.getSource();
             Entity entity = source.getEntity();
             if (entity instanceof ServerPlayer player) {
-                MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"));
+                MessageUtils.sendNotification(player, BaniraComponent.get().trans(EnumI18nType.WORD, "mod_disabled"),
+                        NotificationTypeKeys.COMMAND_FEEDBACK);
             }
         }
         return modDisabled.get();
@@ -308,7 +310,9 @@ public final class CommandUtils {
                         .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, BaniraComponent.get().literal(command)
                                 .toVanilla())
                         );
-                MessageUtils.sendMessage(player, BaniraComponent.get().trans(EnumI18nType.FORMAT, "notify_help", modName, button));
+                MessageUtils.sendNotification(player,
+                        BaniraComponent.get().trans(EnumI18nType.FORMAT, "notify_help", modName, button),
+                        NotificationTypeKeys.HELP);
                 playerData.setNotified(true);
             }
         }

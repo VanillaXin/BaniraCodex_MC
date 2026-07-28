@@ -31,7 +31,8 @@ final class FabricConfigAdapter {
         Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs = new LinkedHashMap<>();
         buildFromClass(configClass, "", descriptors, categoryTooltips, categoryTitleSpecs);
 
-        Path configDirectory = BaniraPlatforms.get().pathService().configPath();
+        // Fabric 的模组配置与原版约定一致，直接位于游戏 config 根目录
+        Path configDirectory = BaniraPlatforms.get().configDir();
         Path file = configDirectory.resolve(config.name() + ".toml");
         ConfigHolder holder = ConfigHolder.create(
                 modId,

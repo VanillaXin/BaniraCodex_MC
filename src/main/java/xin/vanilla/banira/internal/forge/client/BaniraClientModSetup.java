@@ -6,14 +6,18 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
+import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.internal.forge.util.ForgeLogoModifier;
 
@@ -38,11 +42,23 @@ public final class BaniraClientModSetup {
         LogoModifier.installApplier(ForgeLogoModifier::modifyLogo);
         BaniraInput.flushPendingRegistrations();
         BaniraClientOverlayBridge.loadNotificationLog();
+        registerOwnNotificationTypes();
         NotificationTypeSettingsStore.get().load();
 
         BaniraClientEventHub.registerCodexDefaults();
         registerCodexScreenKeyCallback();
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
+    }
+
+    private static void registerOwnNotificationTypes() {
+        BaniraClientNotificationTypes.registerModDisplayName(Banira.MOD_ID,
+                BaniraComponent.get().transClientAuto("mod_name"));
+        BaniraClientNotificationTypes.register(NotificationTypeKeys.HELP,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT,
+                BaniraComponent.get().transClientAuto("notification_type_help"));
+        BaniraClientNotificationTypes.register(NotificationTypeKeys.COMMAND_FEEDBACK,
+                EnumNotificationTypeDisplayMode.VANILLA_CHAT,
+                BaniraComponent.get().transClientAuto("notification_type_command_feedback"));
     }
 
     @SubscribeEvent

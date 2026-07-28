@@ -37,6 +37,7 @@ public class ConfigSearchQueryTest {
         Component component = text.toComponent();
         List<Component> children = component.getChildren();
 
+        assertEquals(0x202020, component.color().rgb());
         assertFalse(component.bold());
         assertFalse(component.underlined());
         StringBuilder rendered = new StringBuilder();

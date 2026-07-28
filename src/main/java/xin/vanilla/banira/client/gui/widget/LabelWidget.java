@@ -317,13 +317,10 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            Text lineText = textTemplate.text(line);
-            // 未换行且未截断时直接保留富文本子样式，搜索命中片段才能正确着色。
-            boolean preserveStyledComponent = layout.lines.length == 1
-                    && line.equals(text.content());
+            boolean preserveStyledComponent = layout.lines.length == 1;
             net.minecraft.network.chat.Component renderedText = preserveStyledComponent
-                    ? text.toComponent().toVanilla(Translator.getClientLanguage())
-                    : lineText.toComponent().toVanilla(Translator.getClientLanguage());
+                    ? styledLine(text, line, "...", args.position())
+                    : textTemplate.text(line).toComponent().toVanilla(Translator.getClientLanguage());
             if (hasShadow) {
                 layout.font.drawShadow(stack, renderedText, (float) drawX + xOffset, yPos, textColor);
             } else {
@@ -363,19 +360,23 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             }
         }
 
+        boolean cacheable = text.toComponent().getChildren().isEmpty();
         TextLayoutCacheKey cacheKey = new TextLayoutCacheKey(font, content, scale, drawX, drawY, availableWidth,
                 args.maxLine(), args.wrap(), args.position(), args.paddingLeft(), args.paddingRight(),
                 args.paddingTop(), args.paddingBottom());
-        synchronized (TEXT_LAYOUT_CACHE_LOCK) {
-            TextLayout cached = TEXT_LAYOUT_CACHE.get(cacheKey);
-            if (cached != null) {
-                return cached;
+        if (cacheable) {
+            synchronized (TEXT_LAYOUT_CACHE_LOCK) {
+                TextLayout cached = TEXT_LAYOUT_CACHE.get(cacheKey);
+                if (cached != null) {
+                    return cached;
+                }
             }
         }
 
         List<String> outputLines = collectOutputLines(args, font, content, availableWidth);
         String ellipsis = "...";
         int ellipsisWidth = font.width(ellipsis);
+        boolean preserveStyledComponent = outputLines.size() == 1 && !cacheable;
         String[] processedLines = new String[outputLines.size()];
         int[] lineWidths = new int[outputLines.size()];
         int maxLineWidth = 0;
@@ -383,7 +384,10 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         for (int i = 0; i < outputLines.size(); i++) {
             String line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, outputLines.get(i));
             processedLines[i] = line;
-            int width = font.width(line);
+            net.minecraft.network.chat.Component renderedLine = preserveStyledComponent
+                    ? styledLine(text, line, ellipsis, args.position())
+                    : net.minecraft.network.chat.Component.literal(line);
+            int width = font.width(renderedLine);
             lineWidths[i] = width;
             if (width > maxLineWidth) {
                 maxLineWidth = width;
@@ -400,10 +404,71 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         int finalHeight = (int) totalHeight + args.paddingTop() + args.paddingBottom();
         TextLayout layout = new TextLayout(font, scale, drawX, drawY, availableWidth, processedLines, lineWidths,
                 maxLineWidth, actualLineHeight, finalWidth, finalHeight);
-        synchronized (TEXT_LAYOUT_CACHE_LOCK) {
-            TEXT_LAYOUT_CACHE.put(cacheKey, layout);
+        if (cacheable) {
+            synchronized (TEXT_LAYOUT_CACHE_LOCK) {
+                TEXT_LAYOUT_CACHE.put(cacheKey, layout);
+            }
         }
         return layout;
+    }
+
+    /**
+     * 按最终可见字符范围裁剪富文本，避免省略后丢失搜索命中片段样式。
+     */
+    private static net.minecraft.network.chat.Component styledLine(
+            Text text, String line, String ellipsis, EnumEllipsisPosition position) {
+        net.minecraft.network.chat.Component source =
+                text.toComponent().toVanilla(Translator.getClientLanguage());
+        String original = text.content();
+        if (line.equals(original)) {
+            return source;
+        }
+
+        int ellipsisIndex = line.indexOf(ellipsis);
+        if (ellipsisIndex < 0) {
+            return text.copyWithoutChildren().text(line).toComponent()
+                    .toVanilla(Translator.getClientLanguage());
+        }
+
+        net.minecraft.network.chat.MutableComponent result =
+                net.minecraft.network.chat.Component.literal("");
+        net.minecraft.network.chat.Style ellipsisStyle = source.getStyle();
+        int suffixLength = line.length() - ellipsisIndex - ellipsis.length();
+        if (position == EnumEllipsisPosition.START) {
+            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+            result.append(sliceStyledComponent(source,
+                    Math.max(0, original.length() - suffixLength), original.length()));
+        } else if (position == EnumEllipsisPosition.END) {
+            result.append(sliceStyledComponent(source, 0, ellipsisIndex));
+            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+        } else {
+            result.append(sliceStyledComponent(source, 0, ellipsisIndex));
+            result.append(net.minecraft.network.chat.Component.literal(ellipsis).withStyle(ellipsisStyle));
+            result.append(sliceStyledComponent(source,
+                    Math.max(ellipsisIndex, original.length() - suffixLength), original.length()));
+        }
+        return result;
+    }
+
+    private static net.minecraft.network.chat.MutableComponent sliceStyledComponent(
+            net.minecraft.network.chat.Component source, int start, int end) {
+        net.minecraft.network.chat.MutableComponent result =
+                net.minecraft.network.chat.Component.literal("");
+        int[] cursor = {0};
+        source.visit((style, segment) -> {
+            int segmentStart = cursor[0];
+            int segmentEnd = segmentStart + segment.length();
+            int from = Math.max(start, segmentStart);
+            int to = Math.min(end, segmentEnd);
+            if (from < to) {
+                result.append(net.minecraft.network.chat.Component
+                        .literal(segment.substring(from - segmentStart, to - segmentStart))
+                        .withStyle(style));
+            }
+            cursor[0] = segmentEnd;
+            return Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return result;
     }
 
     private static List<String> collectOutputLines(FontDrawArgs args, Font font, String content, int availableWidth) {

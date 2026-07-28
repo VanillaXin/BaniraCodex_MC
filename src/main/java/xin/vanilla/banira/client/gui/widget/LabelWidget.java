@@ -464,7 +464,12 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 }
 
                 Text lineText = textTemplate.text(line);
-                net.minecraft.network.chat.Component vanillaLine = lineText.toComponent().toVanilla(Translator.getClientLanguage());
+                // 未换行且未截断时直接保留富文本子样式，搜索命中片段才能正确着色。
+                boolean preserveStyledComponent = processedLines.length == 1
+                        && line.equals(text.content());
+                net.minecraft.network.chat.Component vanillaLine = preserveStyledComponent
+                        ? text.toComponent().toVanilla(Translator.getClientLanguage())
+                        : lineText.toComponent().toVanilla(Translator.getClientLanguage());
                 drawComponentLine(args, font, vanillaLine, (float) drawX + xOffset, yPos, textColor, hasShadow);
             }
 

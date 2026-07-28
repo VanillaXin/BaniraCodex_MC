@@ -45,6 +45,10 @@ public class ConfigSearchQueryTest {
         assertEquals(4, children.size());
         assertEquals(0xCC5500, children.get(0).color().rgb());
         assertEquals(0xCC5500, children.get(2).color().rgb());
+        assertTrue(children.get(0).bold());
+        assertTrue(children.get(0).underlined());
+        assertTrue(children.get(2).bold());
+        assertTrue(children.get(2).underlined());
     }
 
     @Test

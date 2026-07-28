@@ -68,6 +68,13 @@ public final class Component implements Cloneable, Serializable {
     @Getter
     private String modId;
 
+    /**
+     * 来源 Mod 缺失时使用的服务端已解析翻译模板。
+     */
+    @Setter
+    @Getter
+    private String translationFallback;
+
     // region 样式属性
 
     /**
@@ -338,6 +345,7 @@ public final class Component implements Cloneable, Serializable {
             component.text(this.text)
                     .i18nType(this.i18nType)
                     .modId(this.modId)
+                    .translationFallback(this.translationFallback)
                     .languageCode(this.languageCode)
                     .color(this.color)
                     .bgColor(this.bgColor)
@@ -559,15 +567,7 @@ public final class Component implements Cloneable, Serializable {
             } else if (i18nType == EnumI18nType.ORIGINAL) {
                 result.append(((ITextComponent) this.original).getString());
             } else {
-                // 根据组件绑定的 modId 选择对应的 LanguageHelper，避免跨 Mod 污染
-                if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                    // 未设置 modId 时，退化为直接输出 key，避免错误跨 mod 翻译
-                    result.append(this.text);
-                } else {
-                    ITranslator helper = Translator.of(this.modId);
-                    String fullKey = helper.getKey(this.i18nType, this.text);
-                    result.append(helper.getTranslation(fullKey, this.languageCodeOrDefault(languageCode)));
-                }
+                result.append(this.resolveTranslationTemplate(this.languageCodeOrDefault(languageCode)));
             }
         }
         boolean finalIgColor = igColor;
@@ -601,8 +601,7 @@ public final class Component implements Cloneable, Serializable {
                         // 未设置 modId 时，退化为直接输出 key
                         text = this.text;
                     } else {
-                        ITranslator helper = Translator.of(this.modId);
-                        text = helper.getTranslation(this.i18nType, this.text, this.languageCodeOrDefault(languageCode));
+                        text = this.resolveTranslationTemplate(this.languageCodeOrDefault(languageCode));
                     }
                     String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                     for (String s : split) {
@@ -672,6 +671,32 @@ public final class Component implements Cloneable, Serializable {
             result.append(components.get(j));
         }
         return result.withStyle(this.getStyle());
+    }
+
+    /**
+     * 优先使用当前侧语言资源；来源 Mod 不存在时使用网络携带的服务端模板。
+     */
+    private String resolveTranslationTemplate(String languageCode) {
+        if (StringUtils.isNullOrEmptyEx(this.modId)) {
+            return this.text;
+        }
+        String fullKey = this.i18nType == EnumI18nType.PLAIN || this.i18nType == EnumI18nType.NONE
+                ? this.text
+                : String.format("%s.%s.%s", this.i18nType.name().toLowerCase(Locale.ROOT), this.modId, this.text);
+        String fallback = StringUtils.isNullOrEmptyEx(this.translationFallback)
+                ? fullKey
+                : this.translationFallback;
+        try {
+            ITranslator helper = Translator.of(this.modId);
+            String translated = helper.getTranslation(fullKey, languageCode);
+            if (StringUtils.isNullOrEmptyEx(translated)
+                    || (fullKey.equals(translated) && !StringUtils.isNullOrEmptyEx(this.translationFallback))) {
+                return fallback;
+            }
+            return translated;
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
     }
 
     /**
@@ -888,6 +913,7 @@ public final class Component implements Cloneable, Serializable {
         result.text(JsonUtils.getString(jsonObject, "text"));
         result.i18nType(EnumI18nType.valueOf(JsonUtils.getString(jsonObject, "i18nType")));
         result.modId(JsonUtils.getString(jsonObject, "modId", null));
+        result.translationFallback(JsonUtils.getString(jsonObject, "translationFallback", null));
         result.languageCode(JsonUtils.getString(jsonObject, "languageCode", null));
         if (jsonObject.has("color")) {
             result.color(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "color")));
@@ -925,6 +951,12 @@ public final class Component implements Cloneable, Serializable {
         JsonUtils.set(result, "i18nType", component.i18nType().name());
         if (!component.isModIdEmpty()) {
             JsonUtils.set(result, "modId", component.modId());
+        }
+        if (component.i18nType() != EnumI18nType.PLAIN && component.i18nType() != EnumI18nType.ORIGINAL) {
+            String fallback = component.resolveTranslationTemplate(component.languageCodeOrDefault());
+            if (!StringUtils.isNullOrEmptyEx(fallback)) {
+                JsonUtils.set(result, "translationFallback", fallback);
+            }
         }
         if (!component.isLanguageCodeEmpty()) {
             JsonUtils.set(result, "languageCode", component.languageCode().get());

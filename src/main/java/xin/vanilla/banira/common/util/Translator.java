@@ -18,9 +18,14 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
@@ -57,22 +62,19 @@ public class Translator implements ITranslator {
      */
     private final Set<String> languages = new HashSet<>();
 
+    private final Class<?> resourceAnchorClass;
+
     private final String modId;
 
     /**
      * @param modMainClass loader mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this.modId = modIdFromModMainClass(modMainClass);
-        getI18nFiles();
+        this(modIdFromModMainClass(modMainClass), modMainClass);
     }
 
     protected Translator(@NonNull String modId) {
-        if (StringUtils.isNullOrEmptyEx(modId)) {
-            throw new IllegalArgumentException("Mod id is empty");
-        }
-        this.modId = modId;
-        getI18nFiles();
+        this(modId, Translator.class);
     }
 
     /**
@@ -80,8 +82,12 @@ public class Translator implements ITranslator {
      * 1.16.5 的资源管理器直接按 modId 查找，因此锚点仅用于保持跨版本 API 一致。
      */
     protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
-        this(modId);
-        Objects.requireNonNull(resourceAnchorClass, "resourceAnchorClass");
+        if (StringUtils.isNullOrEmptyEx(modId)) {
+            throw new IllegalArgumentException("Mod id is empty");
+        }
+        this.modId = modId;
+        this.resourceAnchorClass = Objects.requireNonNull(resourceAnchorClass, "resourceAnchorClass");
+        getI18nFiles();
     }
 
     // region mod 主类与 modId（@Mod）
@@ -124,7 +130,18 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
-        return new Translator(resolveModMainClass(modId));
+        Class<?> resourceAnchor = Translator.class;
+        try {
+            if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isModLoaded(modId)) {
+                resourceAnchor = resolveModMainClass(modId);
+            } else {
+                LOGGER.debug("Using key-only translator for optional mod not present on this side: {}", modId);
+            }
+        } catch (RuntimeException e) {
+            // 低代码 Mod 或仅服务端 Mod 可能没有当前加载器可解析的主类。
+            LOGGER.debug("Using key-only translator for mod {}: {}", modId, e.getMessage());
+        }
+        return new Translator(modId, resourceAnchor);
     }
 
     @Override
@@ -234,8 +251,37 @@ public class Translator implements ITranslator {
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
+            loadFromClasspath();
         }
         return new ArrayList<>(languages);
+    }
+
+    private void loadFromClasspath() {
+        try {
+            URL url = resourceAnchorClass.getResource(getLangPath());
+            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
+                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+                return;
+            }
+            Path directory = Paths.get(url.toURI());
+            try (Stream<Path> files = Files.list(directory)) {
+                files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
+                        .forEach(this::loadKnownClasspathLanguage);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+            loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+        }
+    }
+
+    private void loadKnownClasspathLanguage(String languageCode) {
+        String normalized = normalizeLanguageCode(languageCode);
+        if (StringUtils.isNullOrEmptyEx(normalized)) {
+            return;
+        }
+        loadModLanguage(resourceAnchorClass, modId, normalized);
+        languages.add(normalized);
     }
 
     private void loadFromResourceManager() {

@@ -123,6 +123,10 @@ public class ItemSelectScreen extends BaniraScreen {
         private Function<ItemStack, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
         /**
+         * 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。
+         */
+        private boolean closeAfterSubmit = true;
+        /**
          * 季节主题，null 时从父界面继承
          */
         @Nullable
@@ -316,12 +320,12 @@ public class ItemSelectScreen extends BaniraScreen {
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(itemStack);
                     LOGGER.debug("Item selected via callback1: {}", ItemUtils.getItemRegistryString(itemStack));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(itemStack);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Item selected via callback2: {}", ItemUtils.getItemRegistryString(itemStack));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                     }
                 }
             }
@@ -329,6 +333,12 @@ public class ItemSelectScreen extends BaniraScreen {
         addWidget(submitButtonWidget);
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(Args args, Runnable closeAction) {
+        if (args.closeAfterSubmit()) {
+            closeAction.run();
+        }
     }
 
     @Override

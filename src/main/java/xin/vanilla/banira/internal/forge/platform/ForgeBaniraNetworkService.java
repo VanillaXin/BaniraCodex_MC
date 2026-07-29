@@ -33,7 +33,15 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
 
     @Override
     public NetworkPacketRegistrar registrar(String channelName, BaniraIdentifier identifier) {
-        ForgeNetworkChannel channel = create(channelName, identifier);
+        return registrar(channelName, identifier, "1", true);
+    }
+
+    @Override
+    public NetworkPacketRegistrar registrar(String channelName, BaniraIdentifier identifier,
+                                            String protocolVersion, boolean optionalClient) {
+        ForgeNetworkChannel channel = create(
+                channelName, identifier, protocolVersion, optionalClient
+        );
         return new NetworkPacketRegistrar() {
             @Override
             public <MSG extends INetworkPacket> void register(
@@ -99,8 +107,11 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
         return player instanceof ServerPlayerEntity && hasLocalChannel(channelId);
     }
 
-    private ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier) {
-        ForgeNetworkChannel channel = ForgeNetworkChannel.create(channelName, identifier);
+    private ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier,
+                                       String protocolVersion, boolean optionalClient) {
+        ForgeNetworkChannel channel = ForgeNetworkChannel.create(
+                channelName, identifier, protocolVersion, optionalClient
+        );
         channels.put(channel.channelName(), channel);
         return channel;
     }

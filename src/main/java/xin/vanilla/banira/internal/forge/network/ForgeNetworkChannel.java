@@ -19,21 +19,30 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class ForgeNetworkChannel {
-    private static final String PROTOCOL_VERSION = "1";
-
     private final SimpleChannel channel;
     private final ResourceLocation channelName;
     private final String modId;
 
     public static ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier) {
+        return create(channelName, identifier, "1", true);
+    }
+
+    public static ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier,
+                                             String protocolVersion, boolean optionalClient) {
         ResourceLocation id = new ResourceLocation(identifier.getNamespace(), channelName);
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
                 id,
-                () -> PROTOCOL_VERSION,
-                clientVersion -> true,
-                serverVersion -> true
+                () -> protocolVersion,
+                version -> accepts(protocolVersion, optionalClient, version),
+                version -> accepts(protocolVersion, optionalClient, version)
         );
         return new ForgeNetworkChannel(channel, id);
+    }
+
+    private static boolean accepts(String protocolVersion, boolean optionalClient, String version) {
+        return protocolVersion.equals(version)
+                || optionalClient && (NetworkRegistry.ABSENT.equals(version)
+                || NetworkRegistry.ACCEPTVANILLA.equals(version));
     }
 
     private ForgeNetworkChannel(SimpleChannel channel, ResourceLocation channelName) {

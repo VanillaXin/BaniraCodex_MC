@@ -22,6 +22,16 @@ public class NetworkHandler {
         return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(channelName, identifier));
     }
 
+    /**
+     * 创建采用精确协议版本的通道；可选客户端只放行 Forge 的缺失通道标记。
+     */
+    public static NetworkHandler create(String channelName, BaniraIdentifier identifier,
+                                        String protocolVersion, boolean optionalClient) {
+        return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(
+                channelName, identifier, protocolVersion, optionalClient
+        ));
+    }
+
     NetworkHandler(NetworkPacketRegistrar registrar) {
         this.registrar = registrar;
     }

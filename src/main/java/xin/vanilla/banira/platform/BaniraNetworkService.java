@@ -14,6 +14,19 @@ public interface BaniraNetworkService {
     @Nonnull
     NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier);
 
+    /**
+     * 创建带明确协议版本的子 mod 通道。
+     *
+     * @param optionalClient 是否允许未安装该通道的客户端加入
+     */
+    @Nonnull
+    default NetworkPacketRegistrar registrar(@Nonnull String channelName,
+                                             @Nonnull BaniraIdentifier identifier,
+                                             @Nonnull String protocolVersion,
+                                             boolean optionalClient) {
+        return registrar(channelName, identifier);
+    }
+
     void sendToServer(@Nonnull BaniraNetworkPacket packet);
 
     void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player);

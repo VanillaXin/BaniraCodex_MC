@@ -21,8 +21,13 @@ public class BaniraDataPathsTest {
             }
 
             @Override
+            public Path gameConfigPath() {
+                return Paths.get("config");
+            }
+
+            @Override
             public Path configPath() {
-                return Paths.get("config", rootDirectoryName());
+                return gameConfigPath().resolve(rootDirectoryName());
             }
 
             @Override
@@ -42,6 +47,7 @@ public class BaniraDataPathsTest {
         }));
 
         assertEquals("vanilla.xin", BaniraDataPaths.rootDirectoryName());
+        assertEquals(Paths.get("config"), BaniraDataPaths.gameConfigPath());
         assertEquals(Paths.get("config", "vanilla.xin"), BaniraDataPaths.configPath());
         assertEquals(Paths.get("world", "vanilla.xin"), BaniraDataPaths.worldDataPath());
         assertEquals(Paths.get("world", "vanilla.xin", "playerdata"), BaniraDataPaths.playerDataPath());

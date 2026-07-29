@@ -43,8 +43,13 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         }
 
         @Override
+        public @Nonnull Path gameConfigPath() {
+            return configDir;
+        }
+
+        @Override
         public @Nonnull Path configPath() {
-            return configDir.resolve(rootDirectoryName());
+            return gameConfigPath().resolve(rootDirectoryName());
         }
 
         @Override

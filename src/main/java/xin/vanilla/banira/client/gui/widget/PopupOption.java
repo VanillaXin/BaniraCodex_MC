@@ -60,6 +60,10 @@ public class PopupOption extends BaseWidget {
         private final String id;
         @Nonnull
         private final String text;
+        /**
+         * 触发选择的鼠标键。
+         */
+        private final int button;
     }
 
     private static final int PAD_TOP = 2, PAD_BOTTOM = 2, PAD_LEFT = 5, PAD_RIGHT = 5, MARGIN = 2;
@@ -85,6 +89,7 @@ public class PopupOption extends BaseWidget {
     private int selectedIndex = -1;
     private int scrollOffset, maxLines;
     private int pressedOptionIndex = -1;
+    private int pressedMouseButton = -1;
 
     @Setter
     private String tipsKeyNames;
@@ -296,6 +301,7 @@ public class PopupOption extends BaseWidget {
         maxWidth = maxHeight = -1;
         selectedIndex = -1;
         pressedOptionIndex = -1;
+        pressedMouseButton = -1;
         scrollOffset = maxLines = 0;
         built = false;
         bounds(new ScreenCoordinate(0, 0, 0, 0));
@@ -342,10 +348,11 @@ public class PopupOption extends BaseWidget {
      * @return 是否消费了此次按下事件（在选项上按下时返回 true）
      */
     public boolean tryHandleOptionPress(MouseEvent event) {
-        if (event == null || event.button() != 0 || !built || optionList.isEmpty()) return false;
+        if (event == null || event.button() < 0 || !built || optionList.isEmpty()) return false;
         int idx = findHoveredIndex(event.mouseX(), event.mouseY());
         if (idx < 0 || relationMap.getOrDefault(idx, -1) < 0) return false;
         pressedOptionIndex = relationMap.get(idx);
+        pressedMouseButton = event.button();
         return true;
     }
 
@@ -355,18 +362,19 @@ public class PopupOption extends BaseWidget {
      * 若按下时在选项上，抬起时无论是否在同一选项都会消费事件，避免误触下方控件。
      */
     public boolean tryHandleOptionRelease(MouseEvent event) {
-        if (event == null || event.button() != 0 || pressedOptionIndex < 0) return false;
+        if (event == null || pressedOptionIndex < 0 || event.button() != pressedMouseButton) return false;
         int releaseIdx = findHoveredIndex(event.mouseX(), event.mouseY());
         int releaseOptionIdx = releaseIdx >= 0 ? relationMap.getOrDefault(releaseIdx, -1) : -1;
         boolean sameOption = releaseOptionIdx == pressedOptionIndex;
         int idx = pressedOptionIndex;
         pressedOptionIndex = -1;
+        pressedMouseButton = -1;
         if (!sameOption) {
             return true; // 消费事件，但不触发回调
         }
         String text = (idx >= 0 && idx < optionList.size()) ? optionList.get(idx).content() : "";
         String optId = (idx >= 0 && idx < optionIds.size()) ? optionIds.get(idx) : "";
-        SelectEvent selectEvent = new SelectEvent(idx, optId, text);
+        SelectEvent selectEvent = new SelectEvent(idx, optId, text, event.button());
         Consumer<SelectEvent> cb = (idx >= 0 && idx < optionCallbacks.size()) ? optionCallbacks.get(idx) : null;
         if (cb == null) cb = onSelect;
         clear();

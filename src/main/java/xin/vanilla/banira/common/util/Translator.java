@@ -248,6 +248,7 @@ public class Translator implements ITranslator {
     /**
      * 获取 I18n 文件列表
      */
+    @Override
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();

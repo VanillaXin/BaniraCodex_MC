@@ -107,6 +107,12 @@ final class ForgeBaniraNetworkService implements BaniraNetworkService {
         return player instanceof ServerPlayerEntity && hasLocalChannel(channelId);
     }
 
+    @Override
+    public boolean isRemoteClientModInstalled(Object player, String modId) {
+        return player instanceof ServerPlayerEntity
+                && PlayerUtils.isRemoteClientModInstalled((ServerPlayerEntity) player, modId);
+    }
+
     private ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier,
                                        String protocolVersion, boolean optionalClient) {
         ForgeNetworkChannel channel = ForgeNetworkChannel.create(

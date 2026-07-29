@@ -167,3 +167,5 @@ tasks.withType(PublishToMavenLocal).configureEach {
     dependsOn 'remapJar', 'sourcesJar'
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）
+
+apply from: "gradle/publish-local-fingerprint.gradle"

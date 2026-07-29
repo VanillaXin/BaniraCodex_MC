@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class LocalPublicationFingerprintContractTest {
@@ -19,6 +20,8 @@ public class LocalPublicationFingerprintContractTest {
         assertTrue(fingerprintScript.contains("local-build.json"));
         assertTrue(fingerprintScript.contains("SHA-256"));
         assertTrue(fingerprintScript.contains("publishMavenJavaPublicationToMavenLocal"));
+        assertTrue(fingerprintScript.contains("findByName(\"MavenLocal\")"));
+        assertFalse(fingerprintScript.contains("System.getProperty(\"user.home\")"));
     }
 
     private String read(String path) throws Exception {

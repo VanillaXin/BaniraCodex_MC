@@ -6,25 +6,28 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
-import xin.vanilla.banira.internal.client.BaniraApiInputBridge;
+import xin.vanilla.banira.api.client.BaniraKeyHandle;
+import xin.vanilla.banira.api.client.BaniraKeySpec;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
-import xin.vanilla.banira.internal.forge.client.ForgeLogoService;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraPathService path = new ForgeBaniraPathService(this::configDir);
-    private final BaniraInputService input = BaniraApiInputBridge.service();
+    private final BaniraInputService input = createInputService();
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final ForgeBaniraServerService server = new ForgeBaniraServerService();
     private final BaniraPlayerDataService playerData = ForgeBaniraPlayerDataService.INSTANCE;
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraNotificationService notification = BaniraNotificationServices.INSTANCE;
+    private final BaniraLogoService logo = createLogoService();
 
     @Override
     public String loaderType() {
@@ -135,6 +138,67 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Nonnull
     @Override
     public BaniraLogoService logoService() {
-        return ForgeLogoService.INSTANCE;
+        return logo;
+    }
+
+    private static BaniraInputService createInputService() {
+        return FMLEnvironment.dist == Dist.CLIENT
+                ? ClientServices.input()
+                : ServerInputService.INSTANCE;
+    }
+
+    private static BaniraLogoService createLogoService() {
+        return FMLEnvironment.dist == Dist.CLIENT
+                ? ClientServices.logo()
+                : ServerLogoService.INSTANCE;
+    }
+
+    /**
+     * 客户端类只在确认运行侧后由这个嵌套桥接加载。
+     */
+    private static final class ClientServices {
+        private static BaniraInputService input() {
+            return xin.vanilla.banira.internal.client.BaniraApiInputBridge.service();
+        }
+
+        private static BaniraLogoService logo() {
+            return xin.vanilla.banira.internal.forge.client.ForgeLogoService.INSTANCE;
+        }
+    }
+
+    private enum ServerInputService implements BaniraInputService {
+        INSTANCE;
+
+        @Nonnull
+        @Override
+        public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
+            throw new IllegalStateException("Client input is unavailable on a dedicated server");
+        }
+
+        @Override
+        public boolean isKeyDown(int keyCode) {
+            return false;
+        }
+
+        @Override
+        public boolean isMouseDown(int button) {
+            return false;
+        }
+
+        @Override
+        public void flushPendingRegistrations() {
+        }
+    }
+
+    private enum ServerLogoService implements BaniraLogoService {
+        INSTANCE;
+
+        @Override
+        public void register(@Nonnull String modId, @Nonnull Supplier<String> logoFileSupplier) {
+        }
+
+        @Override
+        public void register(@Nonnull Function<String, String> logoFileFunction) {
+        }
     }
 }

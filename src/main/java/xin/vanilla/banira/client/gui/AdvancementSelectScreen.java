@@ -125,6 +125,10 @@ public class AdvancementSelectScreen extends BaniraScreen {
         private Function<ResourceLocation, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
         /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
+        private boolean closeAfterSubmit = true;
+        /**
          * 季节主题，null 时从父界面继承
          */
         @Nullable
@@ -333,12 +337,12 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(location);
                     LOGGER.debug("Advancement selected: {}", location);
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(location);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Advancement selected: {}", location);
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                     } else {
                         LOGGER.debug("Advancement validation failed: {}", result);
                     }
@@ -349,6 +353,12 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // endregion 确认与取消按钮
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(Args args, Runnable closeAction) {
+        if (args.closeAfterSubmit()) {
+            closeAction.run();
+        }
     }
 
     @Nullable

@@ -122,6 +122,10 @@ public class EffectSelectScreen extends BaniraScreen {
         private Consumer<EffectInstance> onDataReceived1;
         private Function<EffectInstance, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
+        /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
+        private boolean closeAfterSubmit = true;
         @Nullable
         private EnumSeason season;
         @Nullable
@@ -273,12 +277,12 @@ public class EffectSelectScreen extends BaniraScreen {
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(effectInstance);
                     LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    closeAfterSubmit(args.closeAfterSubmit(), () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(effectInstance);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Effect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        closeAfterSubmit(args.closeAfterSubmit(), () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                     }
                 }
             }
@@ -345,6 +349,12 @@ public class EffectSelectScreen extends BaniraScreen {
         }
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(boolean enabled, Runnable closeAction) {
+        if (enabled) {
+            closeAction.run();
+        }
     }
 
     @Override

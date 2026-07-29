@@ -1,0 +1,74 @@
+import groovy.json.JsonOutput
+import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
+
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+
+def publicationVersion = "${loader_type}-${minecraft_version}-${mod_version}"
+def artifactId = project.mod_id.toString()
+def mavenLocalRoot = new File(
+        System.getProperty("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").path)
+)
+def publicationDir = new File(
+        mavenLocalRoot,
+        "${project.group.toString().replace('.', '/')}/${artifactId}/${publicationVersion}"
+)
+def publishedJar = new File(publicationDir, "${artifactId}-${publicationVersion}.jar")
+def fingerprintFile = new File(publicationDir, "${artifactId}-${publicationVersion}.local-build.json")
+
+def sha256 = { File file ->
+    MessageDigest digest = MessageDigest.getInstance("SHA-256")
+    file.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        int count
+        while ((count = input.read(buffer)) >= 0) {
+            if (count > 0) {
+                digest.update(buffer, 0, count)
+            }
+        }
+    }
+    digest.digest().collect { String.format("%02x", it & 0xff) }.join()
+}
+
+def writeAtomically = { File target, String content ->
+    target.parentFile.mkdirs()
+    File temporary = File.createTempFile(target.name, ".tmp", target.parentFile)
+    temporary.setText(content, "UTF-8")
+    try {
+        Files.move(
+                temporary.toPath(),
+                target.toPath(),
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING
+        )
+    } catch (AtomicMoveNotSupportedException ignored) {
+        Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
+def fingerprintTask = tasks.register("writeBaniraLocalFingerprint") {
+    group = "publishing"
+    description = "Writes a content fingerprint for the Maven Local Banira artifact"
+    inputs.file(publishedJar)
+    outputs.file(fingerprintFile)
+
+    doLast {
+        if (!publishedJar.isFile()) {
+            throw new GradleException("Published Banira artifact not found: ${publishedJar}")
+        }
+        def payload = [
+                schema    : 1,
+                coordinate: "${project.group}:${artifactId}:${publicationVersion}",
+                sha256    : sha256(publishedJar),
+                size      : publishedJar.length()
+        ]
+        writeAtomically(fingerprintFile, JsonOutput.prettyPrint(JsonOutput.toJson(payload)) + System.lineSeparator())
+        logger.lifecycle("Banira Maven Local fingerprint: ${fingerprintFile}")
+    }
+}
+
+tasks.named("publishMavenJavaPublicationToMavenLocal", PublishToMavenLocal).configure {
+    finalizedBy(fingerprintTask)
+}

@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -32,6 +33,7 @@ import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
@@ -736,7 +738,7 @@ public final class QuickActionOverlay {
         }
 
         if (contextOpen) {
-            renderContextMenu(stack, screen, mc, mouseX, mouseY, theme);
+            renderContextMenu(stack, screen, mc, mouseX, mouseY, contextTheme(theme));
         }
 
         RenderSystem.disableBlend();
@@ -763,12 +765,34 @@ public final class QuickActionOverlay {
         if (ent == null || ent.label().isEmpty()) {
             return;
         }
-        boolean useTexture = theme != null && theme.tooltipUseTexture();
+        EnumSeason season = entrySeason(ent);
+        BaniraColorConfig entryTheme = BaniraColorConfig.forSeason(season);
+        boolean useTexture = entryTheme.tooltipUseTexture();
         FontDrawArgs args = FontDrawArgs.ofPopo(Text.from(ent.label()).stack(stack).font(AbstractGuiUtils.getFont()))
                 .x(mouseX)
                 .y(mouseY)
                 .popupUseTexture(useTexture);
-        TooltipWidget.drawPopupMessage(stack, args, theme, null);
+        TooltipWidget.drawPopupMessage(stack, args, entryTheme, season);
+    }
+
+    /**
+     * 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。
+     */
+    private BaniraColorConfig contextTheme(BaniraColorConfig fallback) {
+        String entryId = contextEntrySubmenuId != null
+                ? contextEntrySubmenuId
+                : contextUserEntryIdForHide;
+        QuickActionEntry entry = entryId != null
+                ? QuickActionRegistry.get().getEntry(entryId)
+                : null;
+        return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
+    }
+
+    private EnumSeason entrySeason(QuickActionEntry entry) {
+        String id = entry.id();
+        int separator = id.indexOf(':');
+        String modId = separator > 0 ? id.substring(0, separator) : BaniraCodex.MODID;
+        return BaniraThemes.seasonFor(modId);
     }
 
     public void tickInteraction(Screen screen, int mouseX, int mouseY) {

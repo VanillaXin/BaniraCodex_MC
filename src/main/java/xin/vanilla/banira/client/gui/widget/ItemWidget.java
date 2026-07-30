@@ -31,6 +31,8 @@ import java.util.List;
  */
 @Accessors(chain = true, fluent = true)
 public class ItemWidget extends BaseWidget {
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+
     @Getter
     private String itemId;
 
@@ -215,9 +217,16 @@ public class ItemWidget extends BaseWidget {
      * 绘制物品图标
      */
     public static void renderItem(ItemRenderer itemRenderer, FontRenderer font, ItemStack itemStack, int x, int y, boolean showText) {
-        renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+        float originalBlitOffset = itemRenderer.blitOffset;
+        try {
+            renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
+            if (showText) {
+                // 缩放绘制会额外抬高物品模型，装饰层也必须同步前移。
+                itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
+                itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+            }
+        } finally {
+            itemRenderer.blitOffset = originalBlitOffset;
         }
     }
 }

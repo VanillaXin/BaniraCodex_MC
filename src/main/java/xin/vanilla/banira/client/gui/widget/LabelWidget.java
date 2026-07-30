@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.FontRenderer;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -370,7 +371,10 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
 
                 if (args.bgBorderThickness() > 0) {
                     int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-                    AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
+                    AbstractGuiUtils.drawRoundedRectOutLine(stack, bgX, bgY, bgWidth, bgHeight,
+                            args.bgBorderRadius(), args.bgBorderRadius(), args.bgBorderRadius(), args.bgBorderRadius(),
+                            args.bgBorderThickness(), borderArgb,
+                            ShapeDrawArgs.RoundedCornerMode.FINE);
                 }
             }
 

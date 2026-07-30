@@ -423,7 +423,12 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 int borderThickness = args.bgBorderThickness();
                 AbstractGuiUtils.drawRoundedRect(args.text().stack(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, args.bgArgb(), borderRadius);
                 int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-                AbstractGuiUtils.drawRoundedRectOutLineRough(args.text().stack(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, borderThickness, borderArgb, borderRadius);
+                AbstractGuiUtils.drawRoundedRectOutLine(args.text().stack(),
+                        (float) finalAdjustedX, (float) finalAdjustedY,
+                        finalMsgWidth, finalMsgHeight,
+                        borderRadius, borderRadius, borderRadius, borderRadius,
+                        borderThickness, borderArgb,
+                        ShapeDrawArgs.RoundedCornerMode.FINE);
             }
 
             FontDrawArgs clone = args.clone()

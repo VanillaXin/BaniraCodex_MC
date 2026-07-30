@@ -825,50 +825,49 @@ public final class AbstractGuiUtils {
     }
 
     /**
-     * 绘制圆角矩形
-     *
-     * @param x      矩形的左上角X坐标
-     * @param y      矩形的左上角Y坐标
-     * @param width  矩形的宽度
-     * @param height 矩形的高度
-     * @param argb   矩形的颜色
-     * @param radius 圆角半径(0-10)
+     * 绘制精细圆角矩形。需要低成本像素圆角时应显式调用粗糙绘制入口。
      */
     public static void drawRoundedRect(MatrixStack stack, int x, int y, int width, int height, int argb, int radius) {
         if (radius <= 0) {
             AbstractGui.fill(stack, x, y, x + width, y + height, argb);
             return;
         }
+        drawRoundedRect(stack, (float) x, (float) y, (float) width, (float) height, (float) radius, argb);
+    }
 
-        // 限制半径最大值为10
+    /**
+     * 绘制低成本像素圆角。常规界面应使用默认的精细圆角入口。
+     */
+    public static void drawRoundedRectRough(MatrixStack stack, int x, int y,
+                                            int width, int height, int argb, int radius) {
+        if (radius <= 0) {
+            AbstractGui.fill(stack, x, y, x + width, y + height, argb);
+            return;
+        }
         radius = Math.min(radius, 10);
+        AbstractGuiUtils.fill(stack, x + radius + 1, y + radius + 1,
+                width - 2 * (radius + 1), height - 2 * (radius + 1), argb);
 
-        // 绘制中心矩形
-        AbstractGuiUtils.fill(stack, x + radius + 1, y + radius + 1, width - 2 * (radius + 1), height - 2 * (radius + 1), argb);
-
-        // 绘制四条边
-        // 上边
         AbstractGuiUtils.fill(stack, x + radius + 1, y, width - 2 * radius - 2, radius, argb);
         AbstractGuiUtils.fill(stack, x + radius + 1, y + radius, width - 2 * (radius + 1), 1, argb);
-        // 下边
-        AbstractGuiUtils.fill(stack, x + radius + 1, y + height - radius, width - 2 * radius - 2, radius, argb);
-        AbstractGuiUtils.fill(stack, x + radius + 1, y + height - radius - 1, width - 2 * (radius + 1), 1, argb);
-        // 左边
-        AbstractGuiUtils.fill(stack, x, y + radius + 1, radius, height - 2 * radius - 2, argb);
-        AbstractGuiUtils.fill(stack, x + radius, y + radius + 1, 1, height - 2 * (radius + 1), argb);
-        // 右边
-        AbstractGuiUtils.fill(stack, x + width - radius, y + radius + 1, radius, height - 2 * radius - 2, argb);
-        AbstractGuiUtils.fill(stack, x + width - radius - 1, y + radius + 1, 1, height - 2 * (radius + 1), argb);
+        AbstractGuiUtils.fill(stack, x + radius + 1, y + height - radius,
+                width - 2 * radius - 2, radius, argb);
+        AbstractGuiUtils.fill(stack, x + radius + 1, y + height - radius - 1,
+                width - 2 * (radius + 1), 1, argb);
+        AbstractGuiUtils.fill(stack, x, y + radius + 1, radius,
+                height - 2 * radius - 2, argb);
+        AbstractGuiUtils.fill(stack, x + radius, y + radius + 1, 1,
+                height - 2 * (radius + 1), argb);
+        AbstractGuiUtils.fill(stack, x + width - radius, y + radius + 1,
+                radius, height - 2 * radius - 2, argb);
+        AbstractGuiUtils.fill(stack, x + width - radius - 1, y + radius + 1,
+                1, height - 2 * (radius + 1), argb);
 
-        // 绘制四个圆角
-        // 左上角
         AbstractGuiUtils.drawCircleQuadrant(stack, x + radius, y + radius, radius, argb, 1);
-        // 右上角
         AbstractGuiUtils.drawCircleQuadrant(stack, x + width - radius - 1, y + radius, radius, argb, 2);
-        // 左下角
         AbstractGuiUtils.drawCircleQuadrant(stack, x + radius, y + height - radius - 1, radius, argb, 3);
-        // 右下角
-        AbstractGuiUtils.drawCircleQuadrant(stack, x + width - radius - 1, y + height - radius - 1, radius, argb, 4);
+        AbstractGuiUtils.drawCircleQuadrant(stack, x + width - radius - 1,
+                y + height - radius - 1, radius, argb, 4);
     }
 
     /**

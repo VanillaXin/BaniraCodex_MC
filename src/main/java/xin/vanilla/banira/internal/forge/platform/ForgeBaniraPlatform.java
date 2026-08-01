@@ -24,6 +24,7 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraConfigService config = new ForgeBaniraConfigService();
     private final ForgeBaniraServerService server = new ForgeBaniraServerService();
     private final BaniraPlayerDataService playerData = ForgeBaniraPlayerDataService.INSTANCE;
+    private final BaniraPermissionService permission = ForgeBaniraPermissionService.INSTANCE;
     private final BaniraNetworkService network = new ForgeBaniraNetworkService();
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraNotificationService notification = BaniraNotificationServices.INSTANCE;
@@ -117,6 +118,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraPlayerDataService playerDataService() {
         return playerData;
+    }
+
+    @Override
+    public BaniraPermissionService permissionService() {
+        return permission;
     }
 
     @Override

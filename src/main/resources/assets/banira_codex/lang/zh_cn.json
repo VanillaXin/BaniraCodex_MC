@@ -64,6 +64,7 @@
   "word.banira_codex.enter_something": "这是一个文本输入框",
   "word.banira_codex.help": "显示帮助",
   "word.banira_codex.invalid_operation": "无效的操作",
+  "format.banira_codex.unknown_virtual_permission": "未知的虚拟权限：%s",
   "word.banira_codex.item_select_count": "数量",
   "word.banira_codex.item_select_item": "ID",
   "word.banira_codex.item_select_type": "模式",

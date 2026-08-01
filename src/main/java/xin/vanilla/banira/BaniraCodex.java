@@ -4,8 +4,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
 import xin.vanilla.banira.command.BaniraCommand;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
@@ -20,6 +22,7 @@ import xin.vanilla.banira.internal.server.ServerSenderAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 @Accessors(fluent = true)
@@ -66,6 +69,9 @@ public final class BaniraCodex {
     public static void bootstrapCommon() {
         if (commonBootstrapped) return;
         commonBootstrapped = true;
+        Arrays.stream(EnumCommandType.values())
+                .filter(EnumCommandType::op)
+                .forEach(BaniraVirtualPermissionRegistry::register);
         registerBaniraEvent();
     }
 

@@ -56,6 +56,23 @@ public final class VirtualPermissionManager {
     }
 
     /**
+     * 使用注册表解析后的完整键修改权限，供通用 opv 指令调用。
+     */
+    public static void modifyVirtualPermissions(PlayerEntity player, EnumOperationType operation,
+                                                Collection<String> permissionKeys) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(operation, "operation");
+        Set<String> keys = permissionKeys == null
+                ? Collections.emptySet()
+                : permissionKeys.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(key -> !key.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        modifyPermissions(player.getStringUUID(), operation, keys);
+    }
+
+    /**
      * 清空所有权限
      */
     public static void clearVirtualPermission(PlayerEntity player) {
@@ -220,6 +237,13 @@ public final class VirtualPermissionManager {
      */
     public static String buildPermissionsString(Set<? extends BaniraVirtualPermission> permissions) {
         return BaniraVirtualPermissions.format(permissions);
+    }
+
+    public static String buildRawPermissionsString(Collection<String> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return "(empty)";
+        }
+        return permissions.stream().filter(Objects::nonNull).sorted().collect(Collectors.joining(", "));
     }
 
     // endregion 辅助方法

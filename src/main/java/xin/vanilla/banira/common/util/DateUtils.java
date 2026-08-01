@@ -4,13 +4,16 @@ import lombok.Getter;
 import lombok.NonNull;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class DateUtils {
@@ -46,6 +49,15 @@ public final class DateUtils {
 
     private static final String[] WEEK_NAMES = new String[]{"星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"};
     private static final String[] WEEK_NAMES_SIMPLE = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+    private static final Pattern SEPARATED_DATE_TIME = Pattern.compile(
+            "^(\\d{4})[-/.](\\d{1,2})(?:[-/.](\\d{1,2}))?" +
+                    "(?:[ T.]+(\\d{1,2})[:.](\\d{1,2})(?:[:.](\\d{1,2}))?)?$");
+    private static final Pattern TIME_ONLY = Pattern.compile(
+            "^(\\d{1,2}):(\\d{1,2})(?::(\\d{1,2}))?$");
+    private static final Pattern COMPACT_DATE_TIME = Pattern.compile(
+            "^(\\d{4})(\\d{2})(?:(\\d{2})(?:(\\d{2})(\\d{2})(\\d{2}))?)?$");
+    private static final Map<String, ThreadLocal<SimpleDateFormat>> STRICT_FORMATTERS =
+            new ConcurrentHashMap<>();
 
 
     public static String getWeekName(int week) {
@@ -65,47 +77,66 @@ public final class DateUtils {
         return Locale.forLanguageTag(languageTag);
     }
 
-    private static Date formatEx(String dateStr, String pattern) {
-        if (StringUtils.isNullOrEmpty(dateStr)) {
-            return null;
-        } else {
-            try {
-                return (new SimpleDateFormat(pattern)).parse(dateStr);
-            } catch (ParseException e) {
-                return null;
-            }
-        }
+    private static Date parseWithPattern(String value, String pattern) {
+        ThreadLocal<SimpleDateFormat> local = STRICT_FORMATTERS.computeIfAbsent(pattern,
+                key -> ThreadLocal.withInitial(() -> {
+                    SimpleDateFormat format = new SimpleDateFormat(key);
+                    format.setLenient(false);
+                    return format;
+                }));
+        ParsePosition position = new ParsePosition(0);
+        Date parsed = local.get().parse(value, position);
+        return parsed != null && position.getIndex() == value.length() ? parsed : null;
     }
 
-    private static List<String> getStrings(String pattern) {
-        List<String> formats = new ArrayList<>();
-        if (!StringUtils.isNullOrEmpty(pattern)) {
-            formats.add(pattern);
-        } else {
-            formats.add(ISO_YM_FORMAT);
-            formats.add(ISO_YMD_FORMAT);
-            formats.add(ISO_YMD_HMS_FORMAT);
-            formats.add(YM_FORMAT);
-            formats.add(YMD_FORMAT);
-            formats.add(HM_FORMAT);
-            formats.add(HMS_FORMAT);
-            formats.add(YMD_HM_FORMAT);
-            formats.add(YMD_HMS_FORMAT);
-            formats.add(SLASH_YM_FORMAT);
-            formats.add(SLASH_YMD_FORMAT);
-            formats.add(SLASH_YMD_HM_FORMAT);
-            formats.add(SLASH_YMD_HMS_FORMAT);
-            formats.add(POINT_YMD_FORMAT);
-            formats.add(POINT_YMD_HM_FORMAT);
-            formats.add(POINT_YMD_HMS_FORMAT);
-            formats.add(CN_YM_FORMAT);
-            formats.add(CN_YMD_FORMAT);
-            formats.add(CN_HM_FORMAT);
-            formats.add(CN_HMS_FORMAT);
-            formats.add(CN_YMD_HM_FORMAT);
-            formats.add(CN_YMD_HMS_FORMAT);
+    private static Date parseCommonDateTime(String input) {
+        String value = input.trim()
+                .replace('年', '-')
+                .replace('月', '-')
+                .replace("日", "")
+                .replace('时', ':')
+                .replace("分", "")
+                .replace("秒", "");
+        try {
+            Matcher separated = SEPARATED_DATE_TIME.matcher(value);
+            if (separated.matches()) {
+                int year = part(separated, 1, 1970);
+                int month = part(separated, 2, 1);
+                int day = part(separated, 3, 1);
+                int hour = part(separated, 4, 0);
+                int minute = part(separated, 5, 0);
+                int second = part(separated, 6, 0);
+                return fromLocalDateTime(LocalDateTime.of(
+                        year, month, day, hour, minute, second));
+            }
+
+            Matcher compact = COMPACT_DATE_TIME.matcher(value);
+            if (compact.matches()) {
+                return fromLocalDateTime(LocalDateTime.of(
+                        part(compact, 1, 1970), part(compact, 2, 1),
+                        part(compact, 3, 1), part(compact, 4, 0),
+                        part(compact, 5, 0), part(compact, 6, 0)));
+            }
+
+            Matcher time = TIME_ONLY.matcher(value);
+            if (time.matches()) {
+                return fromLocalDateTime(LocalDateTime.of(
+                        1970, 1, 1, part(time, 1, 0),
+                        part(time, 2, 0), part(time, 3, 0)));
+            }
+        } catch (DateTimeException | NumberFormatException ignored) {
+            // 非法日历值由 LocalDateTime 严格拒绝。
         }
-        return formats;
+        return null;
+    }
+
+    private static int part(Matcher matcher, int group, int defaultValue) {
+        String value = matcher.group(group);
+        return value == null ? defaultValue : Integer.parseInt(value);
+    }
+
+    private static Date fromLocalDateTime(LocalDateTime dateTime) {
+        return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 
     @Getter
@@ -147,19 +178,10 @@ public final class DateUtils {
     public static Date format(String strTime, String pattern) {
         if (StringUtils.isNullOrEmpty(strTime)) {
             return null;
-        } else {
-            Date date = null;
-            List<String> formats = getStrings(pattern);
-            for (String format : formats) {
-                if ((strTime.indexOf("-") <= 0 || format.contains("-")) && (strTime.contains("-") || format.indexOf("-") <= 0) && strTime.length() <= format.length()) {
-                    date = formatEx(strTime, format);
-                    if (date != null) {
-                        break;
-                    }
-                }
-            }
-            return date;
         }
+        return StringUtils.isNullOrEmpty(pattern)
+                ? parseCommonDateTime(strTime)
+                : parseWithPattern(strTime, pattern);
     }
 
     public static String toLocalStringYear(Date date, String languageTag) {

@@ -62,7 +62,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         /**
          * 布尔，使用 DropdownSelectWidget，选项为 true/false
          */
-        BOOLEAN
+        BOOLEAN,
+        /**
+         * 键盘组合键，点击输入框后捕获下一次实际按键
+         */
+        KEY_CHORD
     }
 
     public static final int HEADER_HEIGHT = 20;
@@ -407,6 +411,13 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 input.value("");
                 addInputWidget = input;
                 break;
+            case KEY_CHORD:
+                KeyCaptureInputWidget keyInput = new KeyCaptureInputWidget(screen);
+                keyInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
+                keyInput.maxLength(64);
+                keyInput.value("");
+                addInputWidget = keyInput;
+                break;
             case NUMBER:
                 NumericInputWidget numInput = new NumericInputWidget(screen);
                 numInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
@@ -565,11 +576,13 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         String label = formatItemLabel(items.get(index));
         switch (itemType) {
             case TEXT:
+            case KEY_CHORD:
             case ENUM:
             case BOOLEAN: {
-                InputWidget input = new InputWidget(screen);
+                InputWidget input = itemType == ItemType.KEY_CHORD
+                        ? new KeyCaptureInputWidget(screen) : new InputWidget(screen);
                 input.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
-                input.maxLength(itemType == ItemType.TEXT ? 64 : 128);
+                input.maxLength(itemType == ItemType.TEXT || itemType == ItemType.KEY_CHORD ? 64 : 128);
                 input.value(label);
                 editWidget = input;
                 break;
@@ -609,7 +622,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         Object parsed = null;
         switch (itemType) {
-            case TEXT: {
+            case TEXT:
+            case KEY_CHORD: {
                 String v = ((InputWidget) editWidget).value();
                 if (v == null) v = "";
                 parsed = v.trim();

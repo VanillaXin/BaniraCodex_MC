@@ -193,6 +193,12 @@ public @interface ConfigEntry {
         @interface CollapsibleObject {
         }
 
+        /** 将字符串列表作为组合键列表编辑，界面通过实际按键捕获内容。 */
+        @Retention(RetentionPolicy.RUNTIME)
+        @Target(ElementType.FIELD)
+        @interface KeyChords {
+        }
+
         /**
          * 枚举显示方式
          */

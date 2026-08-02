@@ -362,17 +362,20 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) {
-            return;
-        }
+    protected boolean requestClose(CloseReason reason) {
         int changedCount = editorState.pendingChangeCount();
         if (changedCount == 0) {
             onClose();
+            return true;
         } else {
             ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
+            return true;
         }
-        eventArgs.consumed(true);
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(viewport.cardX(), viewport.cardY(), viewport.cardW(), viewport.cardH());
     }
 
     @Override

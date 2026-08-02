@@ -12,6 +12,8 @@ import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
@@ -46,6 +48,15 @@ import java.util.function.Predicate;
  */
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
+
+    /** 统一描述界面关闭来源，子类可据此保留自己的未保存检查。 */
+    public enum CloseReason {
+        ESCAPE,
+        INVENTORY_KEY,
+        MOUSE_BACK,
+        OUTSIDE_RIGHT_CLICK,
+        BUTTON
+    }
 
     // region 基础属性
 
@@ -304,6 +315,11 @@ public abstract class BaniraScreen extends Screen {
             if (!args.consumed()) onMouseClicked(args);
         }
 
+        if (!args.consumed() && isMouseCloseShortcut(mouseX, mouseY, button)) {
+            args.consumed(requestClose(button == GLFWKey.GLFW_MOUSE_BUTTON_4
+                    ? CloseReason.MOUSE_BACK : CloseReason.OUTSIDE_RIGHT_CLICK));
+        }
+
         return args.consumed() || super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -466,10 +482,64 @@ public abstract class BaniraScreen extends Screen {
 
         onKeyPressed(args);
 
+        if (!args.consumed()) {
+            CloseReason closeReason = closeReasonForKey(keyCode, scanCode);
+            if (closeReason != null) {
+                args.consumed(requestClose(closeReason));
+            }
+        }
+
         return args.consumed() || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+    }
+
+    @Nullable
+    private CloseReason closeReasonForKey(int keyCode, int scanCode) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
+            return CloseReason.ESCAPE;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!hasFocusedTextInput() && minecraft.options != null
+                && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+            return CloseReason.INVENTORY_KEY;
+        }
+        return null;
+    }
+
+    private boolean isMouseCloseShortcut(double mouseX, double mouseY, int button) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
+            return true;
+        }
+        ScreenCoordinate bounds = closeableWindowBounds();
+        return button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT && bounds != null
+                && !contains(bounds, mouseX, mouseY);
+    }
+
+    private static boolean contains(ScreenCoordinate bounds, double x, double y) {
+        return x >= bounds.x() && x < bounds.x() + bounds.width()
+                && y >= bounds.y() && y < bounds.y() + bounds.height();
+    }
+
+    /**
+     * 返回支持“窗口外右键关闭”的可视窗口范围；全屏或没有明确窗口边界的界面保持 null。
+     */
+    @Nullable
+    protected ScreenCoordinate closeableWindowBounds() {
+        return null;
+    }
+
+    /**
+     * 统一关闭入口。存在未保存状态或临时动画的界面应重写此方法并决定是否消费请求。
+     */
+    protected boolean requestClose(CloseReason reason) {
+        onClose();
+        return true;
+    }
+
+    protected boolean hasFocusedTextInput() {
+        return focusedWidget instanceof InputWidget && ((InputWidget) focusedWidget).focused();
     }
 
     /**

@@ -541,6 +541,11 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         }
     }
 
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(cardX, cardY, cardW, cardH);
+    }
+
     private static final class EntryRowWidget extends BaseWidget {
         private EntryRowWidget(BaniraScreen screen) {
             super(screen);

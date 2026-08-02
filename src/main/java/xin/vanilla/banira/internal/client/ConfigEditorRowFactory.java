@@ -331,7 +331,9 @@ public final class ConfigEditorRowFactory {
     private static TagListEditorWidget.ItemType tagListItemType(ConfigEntryDescriptor desc) {
         switch (desc.getValueType()) {
             case STRING_LIST:
-                return TagListEditorWidget.ItemType.TEXT;
+                return desc.isKeyChords()
+                        ? TagListEditorWidget.ItemType.KEY_CHORD
+                        : TagListEditorWidget.ItemType.TEXT;
             case INTEGER_LIST:
             case LONG_LIST:
             case DOUBLE_LIST:

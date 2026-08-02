@@ -185,6 +185,7 @@ public class InputFormScreen extends BaniraScreen {
     public enum WidgetType {
         TEXT,
         PASSWORD,
+        KEY_CHORD,
         NUMERIC,
         FILE,
         COLOR,
@@ -493,8 +494,10 @@ public class InputFormScreen extends BaniraScreen {
             inputField.titleLabel(titleLabel);
             addWidget(titleLabel);
 
-            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD) {
-                InputWidget inputWidget = new InputWidget(this);
+            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD
+                    || widget.type() == WidgetType.KEY_CHORD) {
+                InputWidget inputWidget = widget.type() == WidgetType.KEY_CHORD
+                        ? new KeyCaptureInputWidget(this) : new InputWidget(this);
                 inputWidget.id("input_" + i);
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
@@ -828,8 +831,12 @@ public class InputFormScreen extends BaniraScreen {
             }
         }
 
-        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.getTranslationClient(EnumI18nType.WORD, "cancel")))) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+        if (!canSubmit()) {
+            for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
+                Widget widget = args.getWidgets().get(i);
+                InputField field = inputFields.get(i);
+                validateAndUpdateError(widget, i, inputFieldValueString(field), field.input());
+            }
             return;
         }
 
@@ -997,22 +1004,18 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         if (submitButtonWidget != null) {
-            boolean allValid = canSubmit();
-            if (allValid) {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
-            } else {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-            }
+            submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+            submitButtonWidget.enabled(canSubmit());
         }
     }
 
     @Override
-    protected void onMouseClicked(MouseClickedHandleArgs eventArgs) {
-        if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
-            eventArgs.consumed(true);
-        }
-        super.onMouseClicked(eventArgs);
+    protected ScreenCoordinate closeableWindowBounds() {
+        int left = contentLeft - FORM_PANEL_PAD;
+        int top = formHeaderAreaTop - FORM_PANEL_PAD;
+        int right = contentLeft + contentTotalWidth + FORM_PANEL_PAD;
+        int bottom = btnY + BTN_H + FORM_PANEL_PAD;
+        return new ScreenCoordinate(left, top, right - left, bottom - top);
     }
 
     @Override
@@ -1051,8 +1054,8 @@ public class InputFormScreen extends BaniraScreen {
             eventArgs.consumed(true);
             return;
         }
-        if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE
-                || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused()))) {
+        if (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE
+                && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }

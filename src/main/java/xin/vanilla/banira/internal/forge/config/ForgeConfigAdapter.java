@@ -417,7 +417,8 @@ public final class ForgeConfigAdapter {
                 .minValue(min)
                 .maxValue(max)
                 .decimalPlaces(decimalPlaces)
-                .enumClass(enumClass);
+                .enumClass(enumClass)
+                .keyChords(field.isAnnotationPresent(ConfigEntry.Gui.KeyChords.class));
         applyRequiresEditPermission(field, b);
         descriptors.add(b.build());
     }

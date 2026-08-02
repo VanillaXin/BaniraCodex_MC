@@ -1,0 +1,290 @@
+package xin.vanilla.banira.client.gui.quickaction;
+
+import com.google.gson.reflect.TypeToken;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.potion.Effect;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.Registry;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
+import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
+import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
+import xin.vanilla.banira.api.quickaction.*;
+import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
+import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.common.util.PacketUtils;
+import xin.vanilla.banira.common.util.PlayerUtils;
+
+import javax.annotation.Nonnull;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/** 加载、注册并执行玩家自定义快捷入口。 */
+public final class CustomQuickActionManager {
+    private static final Logger LOGGER = LogManager.getLogger();
+    private static final CustomQuickActionManager INSTANCE = new CustomQuickActionManager();
+    private static final String FILE_NAME = "quick_actions.json";
+    private static final String ENTRY_PREFIX = BaniraCodex.MODID + ":custom/";
+    private static final Type DEFINITION_LIST = new TypeToken<List<CustomQuickActionDefinition>>() { }.getType();
+
+    private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
+    private final Set<String> registeredIds = new HashSet<>();
+    private final Map<String, BaniraQuickActionScreenFactory> screenFactories = new HashMap<>();
+    private final List<QuickActionScreenAdapter> screenAdapters = new CopyOnWriteArrayList<>();
+
+    private CustomQuickActionManager() {
+    }
+
+    public static CustomQuickActionManager get() {
+        return INSTANCE;
+    }
+
+    public synchronized List<CustomQuickActionDefinition> definitions() {
+        return Collections.unmodifiableList(new ArrayList<>(definitions));
+    }
+
+    public synchronized void replaceDefinitions(List<CustomQuickActionDefinition> values) {
+        definitions.clear();
+        if (values != null) {
+            for (CustomQuickActionDefinition value : values) {
+                CustomQuickActionDefinition normalized = normalize(value);
+                if (normalized != null) definitions.add(normalized);
+            }
+        }
+        save();
+        applyToRegistry();
+    }
+
+    public synchronized void reload() {
+        definitions.clear();
+        Path file = configFile();
+        if (Files.isRegularFile(file)) {
+            try {
+                String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                List<CustomQuickActionDefinition> loaded = JsonUtils.GSON.fromJson(json, DEFINITION_LIST);
+                if (loaded != null) {
+                    for (CustomQuickActionDefinition value : loaded) {
+                        CustomQuickActionDefinition normalized = normalize(value);
+                        if (normalized != null) definitions.add(normalized);
+                    }
+                }
+            } catch (Exception exception) {
+                LOGGER.warn("Failed to load custom quick actions from {}", file, exception);
+            }
+        }
+        applyToRegistry();
+    }
+
+    public synchronized void save() {
+        Path file = configFile();
+        Path temporary = file.resolveSibling(file.getFileName() + ".tmp");
+        try {
+            Files.createDirectories(file.getParent());
+            Files.write(temporary, JsonUtils.PRETTY_GSON.toJson(definitions, DEFINITION_LIST)
+                    .getBytes(StandardCharsets.UTF_8));
+            try {
+                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (Exception exception) {
+            LOGGER.warn("Failed to save custom quick actions to {}", file, exception);
+        }
+    }
+
+    public synchronized void registerScreen(@Nonnull String id, @Nonnull BaniraQuickActionScreenFactory factory) {
+        screenFactories.put(Objects.requireNonNull(id, "id"), Objects.requireNonNull(factory, "factory"));
+    }
+
+    public synchronized List<String> screenIds() {
+        List<String> ids = new ArrayList<>(screenFactories.keySet());
+        Collections.sort(ids);
+        return Collections.unmodifiableList(ids);
+    }
+
+    public void registerScreenAdapter(@Nonnull QuickActionScreenAdapter adapter) {
+        screenAdapters.add(Objects.requireNonNull(adapter, "adapter"));
+    }
+
+    public void onScreenChanged() {
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen == null) return;
+        for (QuickActionScreenAdapter adapter : screenAdapters) {
+            try {
+                if (adapter.supports(screen)) {
+                    adapter.adopt(screen, QuickActionRegistry.get());
+                }
+            } catch (Throwable throwable) {
+                LOGGER.warn("Quick-action screen adapter failed for {}", screen.getClass().getName(), throwable);
+            }
+        }
+    }
+
+    public void onKeyPressed(BaniraKeyboardEvent event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen != null || event.repeatedPress()) return;
+        for (CustomQuickActionDefinition definition : definitions()) {
+            if (definition.isEnabled() && BaniraKeyCodes.matchesShortcut(
+                    definition.getKeyChord(), event.keyCode(), event.modifiers())) {
+                activate(definition, null);
+                event.cancel();
+                return;
+            }
+        }
+    }
+
+    private synchronized void applyToRegistry() {
+        QuickActionRegistry registry = QuickActionRegistry.get();
+        for (String id : registeredIds) registry.unregister(id);
+        registeredIds.clear();
+        for (CustomQuickActionDefinition definition : definitions) {
+            if (!definition.isEnabled()) continue;
+            String registryId = ENTRY_PREFIX + safeId(definition.getId());
+            QuickIcon icon = resolveIcon(definition);
+            registry.register(registryId, icon,
+                    BaniraComponent.get().literal(definition.getLabel()),
+                    EnumQuickActionDisplay.valueOf(definition.getDisplay().name()),
+                    context -> activate(definition, context.currentScreen()),
+                    Collections.emptyList());
+            registeredIds.add(registryId);
+        }
+    }
+
+    private void activate(CustomQuickActionDefinition definition, Screen parent) {
+        List<CustomQuickActionStep> commandSteps = new ArrayList<>();
+        CustomQuickActionStep screenStep = null;
+        for (CustomQuickActionStep step : definition.getSteps()) {
+            if (step == null) continue;
+            if (step.getType() == QuickActionStepType.COMMAND) commandSteps.add(step);
+            if (screenStep == null && step.getType() == QuickActionStepType.SCREEN
+                    && step.getCondition() == QuickActionStepCondition.ALWAYS) screenStep = step;
+        }
+        executeCommands(definition.getExecutionMode(), commandSteps);
+        if (screenStep != null) openScreen(screenStep.getValue(), parent);
+    }
+
+    private void executeCommands(QuickActionExecutionMode mode, List<CustomQuickActionStep> steps) {
+        if (steps.isEmpty()) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null && PlayerUtils.isRemoteServerModInstalled(
+                minecraft.player, BaniraCodex.MODID)) {
+            PacketUtils.sendPacketToServer(new QuickActionCommandsToServer(mode, steps));
+            return;
+        }
+        // 服务端未安装 Banira 时仍支持独立指令；依赖执行结果的链式条件不会被臆测。
+        if (minecraft.player != null) {
+            for (CustomQuickActionStep step : steps) {
+                if (mode == QuickActionExecutionMode.PARALLEL
+                        || step.getCondition() == QuickActionStepCondition.ALWAYS) {
+                    String command = step.getValue().trim();
+                    minecraft.player.chat(command.startsWith("/") ? command : "/" + command);
+                }
+            }
+        }
+    }
+
+    private void openScreen(String idOrClass, Screen parent) {
+        if (idOrClass == null || idOrClass.trim().isEmpty()) return;
+        try {
+            BaniraQuickActionScreenFactory factory = screenFactories.get(idOrClass);
+            Object created = factory != null ? factory.create(parent) : reflectScreen(idOrClass, parent);
+            Screen target = created instanceof Screen ? (Screen) created : null;
+            if (target != null) Minecraft.getInstance().setScreen(target);
+        } catch (Throwable throwable) {
+            LOGGER.warn("Failed to open quick-action screen {}", idOrClass, throwable);
+        }
+    }
+
+    private static Screen reflectScreen(String className, Screen parent) throws Exception {
+        Class<?> type = Class.forName(className, true, CustomQuickActionManager.class.getClassLoader());
+        if (!Screen.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException(className + " is not a Screen");
+        }
+        try {
+            Constructor<?> constructor = type.getDeclaredConstructor(Screen.class);
+            constructor.setAccessible(true);
+            return (Screen) constructor.newInstance(parent);
+        } catch (NoSuchMethodException ignored) {
+            Constructor<?> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return (Screen) constructor.newInstance();
+        }
+    }
+
+    private static QuickIcon resolveIcon(CustomQuickActionDefinition definition) {
+        String value = definition.getIcon() == null ? "" : definition.getIcon();
+        ResourceLocation id = ResourceLocation.tryParse(value);
+        try {
+            switch (definition.getIconType()) {
+                case EFFECT:
+                    Effect effect = id == null ? null : Registry.MOB_EFFECT.getOptional(id).orElse(null);
+                    return effect == null ? QuickIcon.item(Items.PAPER) : QuickIcon.effect(effect);
+                case RESOURCE:
+                    return id == null ? QuickIcon.item(Items.PAPER) : QuickIcon.resource(id);
+                case EXTERNAL_FILE:
+                    ResourceLocation texture = TextureUtils.loadCustomTexture(Identifier.id(), value);
+                    return QuickIcon.resource(texture);
+                case ITEM:
+                default:
+                    Item item = id == null ? Items.PAPER : Registry.ITEM.getOptional(id).orElse(Items.PAPER);
+                    return QuickIcon.item(new ItemStack(item));
+            }
+        } catch (Exception exception) {
+            return QuickIcon.item(Items.PAPER);
+        }
+    }
+
+    static CustomQuickActionDefinition normalize(CustomQuickActionDefinition definition) {
+        if (definition == null || definition.getId() == null || definition.getId().trim().isEmpty()) {
+            return null;
+        }
+        CustomQuickActionDefinition result = new CustomQuickActionDefinition()
+                .setId(definition.getId().trim())
+                .setLabel(definition.getLabel() == null ? definition.getId().trim() : definition.getLabel())
+                .setEnabled(definition.isEnabled())
+                .setDisplay(definition.getDisplay() == null ? QuickActionDisplayMode.ICON : definition.getDisplay())
+                .setIconType(definition.getIconType() == null ? QuickActionIconType.ITEM : definition.getIconType())
+                .setIcon(definition.getIcon() == null ? "minecraft:paper" : definition.getIcon())
+                .setKeyChord(definition.getKeyChord() == null ? "" : definition.getKeyChord())
+                .setExecutionMode(definition.getExecutionMode() == null
+                        ? QuickActionExecutionMode.PARALLEL : definition.getExecutionMode());
+        List<CustomQuickActionStep> steps = new ArrayList<>();
+        if (definition.getSteps() != null) {
+            for (CustomQuickActionStep step : definition.getSteps()) {
+                if (step == null || step.getType() == null || step.getValue() == null
+                        || step.getValue().trim().isEmpty()) continue;
+                steps.add(new CustomQuickActionStep().setType(step.getType())
+                        .setCondition(step.getCondition() == null
+                                ? QuickActionStepCondition.ALWAYS : step.getCondition())
+                        .setValue(step.getValue().trim()));
+            }
+        }
+        return result.setSteps(steps);
+    }
+
+    private static String safeId(String id) {
+        return id.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+    }
+
+    private static Path configFile() {
+        return CustomConfig.getConfigDirectory().resolve(FILE_NAME);
+    }
+}

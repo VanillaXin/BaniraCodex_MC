@@ -128,6 +128,8 @@ public final class QuickActionOverlay {
      */
     @Nullable
     private String contextEntrySubmenuId;
+    private int contextEntryItemOffset;
+    private boolean contextEntryDirect;
     /**
      * 系统格左键长按打开的菜单：非编辑根页不显示「进入编辑模式」行（编辑模式下首项仍为退出编辑，由 {@link #addExitEditRowWhenLayoutEditMode} 负责）
      */
@@ -1081,9 +1083,28 @@ public final class QuickActionOverlay {
         contextOpen = true;
         contextPage = CTX_PAGE_ROOT;
         contextEntrySubmenuId = null;
+        contextEntryItemOffset = 0;
+        contextEntryDirect = false;
         contextScrollPx = 0;
         contextX = mx;
         contextY = my;
+    }
+
+    /** 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。 */
+    void openCustomEntryMenu(String entryId, double mouseX, double mouseY, int itemOffset) {
+        contextMenuKind = ContextMenuKind.TRAY;
+        contextUserEntryIdForHide = null;
+        contextOmitEditToggleRow = true;
+        contextOpen = true;
+        contextPage = CTX_PAGE_ENTRY_CONTEXT;
+        contextEntrySubmenuId = entryId;
+        contextEntryItemOffset = Math.max(0, itemOffset);
+        contextEntryDirect = true;
+        contextScrollPx = 0;
+        contextClickMouseX = mouseX;
+        contextClickMouseY = mouseY;
+        contextX = (int) mouseX;
+        contextY = (int) mouseY;
     }
 
     private static String trWord(String key) {
@@ -1150,7 +1171,8 @@ public final class QuickActionOverlay {
         if (ent == null) {
             return;
         }
-        for (QuickActionContextMenuItem it : ent.contextMenuItems) {
+        for (int index = contextEntryItemOffset; index < ent.contextMenuItems.size(); index++) {
+            QuickActionContextMenuItem it = ent.contextMenuItems.get(index);
             if (it == null) {
                 continue;
             }
@@ -1193,11 +1215,13 @@ public final class QuickActionOverlay {
             if (contextEntrySubmenuId == null) {
                 contextPage = CTX_PAGE_ROOT;
             } else {
-                addExitEditRowWhenLayoutEditMode(L);
-                L.add(new CtxRow(trWord("quick_action.back"), true, () -> {
-                    contextPage = CTX_PAGE_ROOT;
-                    contextEntrySubmenuId = null;
-                }));
+                if (!contextEntryDirect) {
+                    addExitEditRowWhenLayoutEditMode(L);
+                    L.add(new CtxRow(trWord("quick_action.back"), true, () -> {
+                        contextPage = CTX_PAGE_ROOT;
+                        contextEntrySubmenuId = null;
+                    }));
+                }
                 QuickActionEntry ent = QuickActionRegistry.get().getEntry(contextEntrySubmenuId);
                 addEntryContextMenuRows(L, ent);
                 return L;
@@ -1486,6 +1510,8 @@ public final class QuickActionOverlay {
             return false;
         }
         contextEntrySubmenuId = sec.id();
+        contextEntryItemOffset = 0;
+        contextEntryDirect = false;
         contextPage = CTX_PAGE_ENTRY_CONTEXT;
         contextScrollPx = 0;
         return true;
@@ -1509,6 +1535,8 @@ public final class QuickActionOverlay {
             contextOpen = false;
             contextMenuKind = ContextMenuKind.NONE;
             contextEntrySubmenuId = null;
+            contextEntryItemOffset = 0;
+            contextEntryDirect = false;
             contextPage = CTX_PAGE_ROOT;
             return true;
         }
@@ -1539,6 +1567,8 @@ public final class QuickActionOverlay {
             contextOpen = false;
             contextMenuKind = ContextMenuKind.NONE;
             contextEntrySubmenuId = null;
+            contextEntryItemOffset = 0;
+            contextEntryDirect = false;
             contextPage = CTX_PAGE_ROOT;
         }
         markSave();
@@ -1568,6 +1598,8 @@ public final class QuickActionOverlay {
         contextMenuKind = ContextMenuKind.NONE;
         contextOmitEditToggleRow = false;
         contextEntrySubmenuId = null;
+        contextEntryItemOffset = 0;
+        contextEntryDirect = false;
         contextPage = CTX_PAGE_ROOT;
     }
 }

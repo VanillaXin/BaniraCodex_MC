@@ -374,7 +374,7 @@ public class DropdownSelectWidget extends InputWidget {
                 .collect(Collectors.toList());
     }
 
-    private String displayLabelForValue(String storedValue) {
+    String displayLabelForValue(String storedValue) {
         for (DropdownOption o : optionEntries) {
             if (o.value().equals(storedValue)) {
                 return o.displayLabel();
@@ -913,7 +913,7 @@ public class DropdownSelectWidget extends InputWidget {
         int currentX = contentLeft - tagScrollOffset;
         FontRenderer font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
+            int textW = font.width(displayLabelForValue(selectedValues.get(i)));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
             if (mouseX >= currentX && mouseX < currentX + tagW) return i;
             currentX += tagW + TAG_GAP;
@@ -933,7 +933,7 @@ public class DropdownSelectWidget extends InputWidget {
         int currentX = contentLeft - tagScrollOffset;
         FontRenderer font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
+            int textW = font.width(displayLabelForValue(selectedValues.get(i)));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
             int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
             int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;

@@ -25,9 +25,8 @@ final class CustomQuickActionEditor {
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
                 .setHeaderTitle(t("custom_quick_action_edit_title"))
-                .addWidget(text("id", "custom_quick_action_id", draft.getId(), false,
-                        "[a-z0-9._/-]{1,64}"))
-                .addWidget(text("label", "custom_quick_action_label", draft.getLabel(), false, ".{1,80}"))
+                .addWidget(text("label", "custom_quick_action_label", draft.getLabel(), false, ".{1,80}")
+                        .maxLength(80).tooltip(t("custom_quick_action_label_hint")))
                 .addWidget(dropdown("enabled", "custom_quick_action_enabled",
                         Boolean.toString(draft.isEnabled()), booleanOptions()))
                 .addWidget(dropdown("display", "custom_quick_action_display",
@@ -35,14 +34,14 @@ final class CustomQuickActionEditor {
                 .addWidget(new InputFormScreen.Widget().name("keyChord")
                         .title(t("custom_quick_action_key"))
                         .type(InputFormScreen.WidgetType.KEY_CHORD)
+                        .hint(t("key_capture_hint"))
                         .allowEmpty(true).defaultValue(draft.getKeyChord()))
                 .addWidget(dropdown("closeBefore", "custom_quick_action_close_before",
                         Boolean.toString(draft.isCloseBeforeExecution()), booleanOptions()))
                 .addWidget(dropdown("mode", "custom_quick_action_execution_mode",
                         draft.getExecutionMode().name(), options(QuickActionExecutionMode.values(), "execution")))
                 .setCallback(result -> {
-                    draft.setId(result.value("id").trim())
-                            .setLabel(result.value("label").trim())
+                    draft.setLabel(result.value("label").trim())
                             .setEnabled(Boolean.parseBoolean(result.value("enabled")))
                             .setDisplay(valueOf(QuickActionDisplayMode.class, result.value("display"), QuickActionDisplayMode.ICON))
                             .setKeyChord(result.value("keyChord").trim())
@@ -64,7 +63,9 @@ final class CustomQuickActionEditor {
         InputFormScreen.Widget value = new InputFormScreen.Widget().name("value")
                 .title(t(draft.getType() == QuickActionStepType.COMMAND
                         ? "custom_quick_action_command" : "custom_quick_action_screen"))
-                .defaultValue(draft.getValue()).allowEmpty(false).regex(".{1,1024}");
+                .tooltip(t(draft.getType() == QuickActionStepType.COMMAND
+                        ? "custom_quick_action_command_hint" : "custom_quick_action_screen_hint"))
+                .defaultValue(draft.getValue()).allowEmpty(false).regex(".{1,1024}").maxLength(1024);
         if (draft.getType() == QuickActionStepType.SCREEN) {
             value.type(InputFormScreen.WidgetType.DROPDOWN)
                     .dropdownOptionEntries(targets)

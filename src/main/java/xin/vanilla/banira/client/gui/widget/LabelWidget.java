@@ -22,6 +22,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,6 +64,12 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     @Getter
     @Setter
     private boolean showFullTextTooltipWhenTruncated = false;
+
+    /** 显式提示优先于因文本截断自动生成的提示。 */
+    @Getter
+    @Setter
+    @Nullable
+    private Text tooltip;
 
     public LabelWidget(BaniraScreen screen) {
         super(screen);
@@ -107,7 +114,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
         drawLimitedText(args);
 
-        maybeDeferTruncationTooltip(stack);
+        maybeDeferTooltip(stack);
 
         renderChildren(stack, partialTicks);
     }
@@ -128,11 +135,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return wNatural > wFitted;
     }
 
-    private void maybeDeferTruncationTooltip(MatrixStack stack) {
-        if (!showFullTextTooltipWhenTruncated || screen == null || !enabled) {
+    private void maybeDeferTooltip(MatrixStack stack) {
+        if (screen == null || !enabled) {
             return;
         }
-        if (!isLabelTextTruncated(stack)) {
+        Text tipText = tooltip;
+        if (tipText == null && showFullTextTooltipWhenTruncated && isLabelTextTruncated(stack)) {
+            tipText = text.clone();
+        }
+        if (tipText == null || StringUtils.isNullOrEmptyEx(tipText.content())) {
             return;
         }
         double mx = screen.inputState().mouseX();
@@ -146,15 +157,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason tipSeason = screen.season();
         boolean useTexture = theme.tooltipUseTexture();
-        FontRenderer fontForTip = text.font() != null ? text.font() : screen.getFont();
-        Text tipText = text.clone();
+        FontRenderer fontForTip = tipText.font() != null ? tipText.font() : screen.getFont();
+        Text deferredText = tipText.clone();
         int mouseX = (int) mx;
         int mouseY = (int) my;
         screen.addDeferredTooltipRender(s -> {
             s.pushPose();
             s.last().pose().setIdentity();
             TooltipWidget.drawPopupMessage(s,
-                    FontDrawArgs.ofPopo(tipText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(deferredText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, tipSeason);
             s.popPose();
         });

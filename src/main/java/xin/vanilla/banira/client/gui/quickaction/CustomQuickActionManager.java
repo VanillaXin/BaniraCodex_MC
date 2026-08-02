@@ -16,9 +16,10 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
-import xin.vanilla.banira.api.client.input.BaniraKeyCodes;
 import xin.vanilla.banira.api.quickaction.*;
 import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.banira.client.util.GLFWKeyUtils;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
@@ -142,8 +143,10 @@ public final class CustomQuickActionManager {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen != null || event.repeatedPress()) return;
         for (CustomQuickActionDefinition definition : definitions()) {
-            if (definition.isEnabled() && BaniraKeyCodes.matchesShortcut(
-                    definition.getKeyChord(), event.keyCode(), event.modifiers())) {
+            Set<Integer> pressed = new LinkedHashSet<>(InputStateManager.instance().pressedKeyCodes());
+            pressed.add(event.keyCode());
+            if (definition.isEnabled() && GLFWKeyUtils.matchKey(definition.getKeyChord(),
+                    pressed.stream().mapToInt(Integer::intValue).toArray())) {
                 activate(definition, null);
                 event.cancel();
                 return;
@@ -172,7 +175,14 @@ public final class CustomQuickActionManager {
             registry.register(registryId, icon,
                     BaniraComponent.get().literal(definition.getLabel()),
                     EnumQuickActionDisplay.valueOf(definition.getDisplay().name()),
-                    context -> activate(definition, context.currentScreen()),
+                    context -> {
+                        if (definition.getSteps().isEmpty() && !definition.getContextMenuItems().isEmpty()) {
+                            QuickActionOverlay.get().openCustomEntryMenu(registryId,
+                                    context.mouseX(), context.mouseY(), 1);
+                        } else {
+                            activate(definition, context.currentScreen());
+                        }
+                    },
                     menuItems);
             registeredIds.add(registryId);
         }
@@ -252,7 +262,7 @@ public final class CustomQuickActionManager {
         }
     }
 
-    private static QuickIcon resolveIcon(CustomQuickActionDefinition definition) {
+    static QuickIcon resolveIcon(CustomQuickActionDefinition definition) {
         String value = definition.getIcon() == null ? "" : definition.getIcon();
         ResourceLocation id = ResourceLocation.tryParse(value);
         try {
@@ -334,6 +344,10 @@ public final class CustomQuickActionManager {
 
     private static String safeId(String id) {
         return id.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+    }
+
+    static String nextDefinitionId() {
+        return UUID.randomUUID().toString();
     }
 
     private static Path configFile() {

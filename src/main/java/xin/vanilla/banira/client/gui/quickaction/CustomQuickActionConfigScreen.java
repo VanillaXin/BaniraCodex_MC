@@ -83,7 +83,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
 
             ButtonWidget delete = new ButtonWidget(this);
             delete.id("delete_" + i);
-            delete.presetStyle(ButtonWidget.PresetStyle.DELETE).padding(3);
+            delete.presetStyle(ButtonWidget.PresetStyle.MINUS).padding(3);
             delete.onClick(button -> delete(index));
             deleteButtons.add(delete);
             addWidget(delete);
@@ -118,7 +118,8 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
     }
 
     private void add() {
-        CustomQuickActionDefinition draft = new CustomQuickActionDefinition();
+        CustomQuickActionDefinition draft = new CustomQuickActionDefinition()
+                .setId(CustomQuickActionManager.nextDefinitionId());
         Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(this, draft, -1));
     }
 

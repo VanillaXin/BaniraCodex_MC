@@ -55,6 +55,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
     private CustomQuickActionMenuItem menuItem;
     private final List<ButtonWidget> rows = new ArrayList<>();
     private final List<ButtonWidget> deletes = new ArrayList<>();
+    private ButtonWidget iconButton;
     private ScrollbarWidget scrollbar;
     private int panelX;
     private int panelY;
@@ -123,8 +124,12 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             addWidget(button("add_screen", listX + (topButtonW + 3) * 2, panelY + PAD, topButtonW, TOP_H,
                     "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
         } else {
-            addWidget(button("icon", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
-                    "custom_quick_action_select_icon", this::selectIcon));
+            iconButton = button("icon", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
+                    "custom_quick_action_select_icon", this::selectIcon);
+            iconButton.leadingIconRenderer((stack, x, y, size) ->
+                    CustomQuickActionManager.resolveIcon(definition)
+                            .render(stack, Minecraft.getInstance(), x, y, size));
+            addWidget(iconButton);
             addWidget(button("add_command", listX + (topButtonW + 3) * 2, panelY + PAD,
                     topButtonW, TOP_H, "custom_quick_action_add_command",
                     () -> addStep(QuickActionStepType.COMMAND)));
@@ -141,7 +146,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             addWidget(row);
             ButtonWidget delete = new ButtonWidget(this);
             delete.id("delete_" + i);
-            delete.presetStyle(ButtonWidget.PresetStyle.DELETE).padding(3);
+            delete.presetStyle(ButtonWidget.PresetStyle.MINUS).padding(3);
             delete.onClick(button -> deleteRow(index));
             deletes.add(delete);
             addWidget(delete);

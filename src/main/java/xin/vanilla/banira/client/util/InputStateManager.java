@@ -12,6 +12,7 @@ import xin.vanilla.banira.internal.client.BaniraClientInputService;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -213,6 +214,10 @@ public final class InputStateManager {
     public boolean isKeyPressed(String keyNames) {
         if (StringUtils.isNullOrEmptyEx(keyNames)) return false;
         return GLFWKeyUtils.matchKey(keyNames, pressedKeys.stream().mapToInt(i -> i).toArray());
+    }
+
+    public Set<Integer> pressedKeyCodes() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(pressedKeys));
     }
 
     public boolean isKeyPressedInOrder(String keyNames) {

@@ -22,9 +22,21 @@ public class InputInteractionContractTest {
         assertTrue(form.contains("focusAdjacentInput"));
         assertTrue(form.contains("scrollFieldIntoView"));
         assertTrue(capture.contains("protected boolean onKeyRelease"));
-        assertTrue(capture.contains("pendingShortcut"));
+        assertTrue(capture.contains("capturedKeys"));
+        assertTrue(capture.contains("pressedKeys.isEmpty()"));
+        assertTrue(capture.contains("GLFWKeyUtils.getKeyDisplayString"));
         assertTrue(tags.contains("onCaptured(value -> confirmAddFromInput())"));
         assertTrue(tags.contains("onCaptured(value -> commitInlineEdit())"));
+    }
+
+    @Test
+    public void formsForwardExplicitLengthAndTitleTooltipMetadata() throws Exception {
+        String form = source("client/gui/InputFormScreen.java");
+        assertTrue(form.contains("private int maxLength = 256"));
+        assertTrue(form.contains("inputWidget.maxLength(widget.maxLength())"));
+        assertTrue(form.contains("dd.maxLength(widget.maxLength())"));
+        assertTrue(form.contains("titleLabel.tooltip(titleTooltip)"));
+        assertTrue(form.contains("StringUtils.isNotNullOrEmpty(widget.regex())"));
     }
 
     @Test
@@ -34,6 +46,14 @@ public class InputInteractionContractTest {
         assertTrue(popup.contains("screenHeight * 2 / 3"));
         assertTrue(popup.contains("addScrollOffset"));
         assertTrue(screen.contains("this.popupOption.addScrollOffset(delta)"));
+    }
+
+    @Test
+    public void selectedDropdownPreviewUsesDisplayLabels() throws Exception {
+        String dropdown = source("client/gui/widget/DropdownSelectWidget.java");
+        String preview = source("client/gui/widget/DropdownPreviewOverlayWidget.java");
+        assertTrue(dropdown.contains("String displayLabelForValue"));
+        assertTrue(preview.contains("parent.displayLabelForValue(items.get(i))"));
     }
 
     private static String source(String relative) throws Exception {

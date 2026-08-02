@@ -46,7 +46,10 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(steps.contains("new EffectSelectScreen"));
         assertTrue(steps.contains("WidgetType.FILE"));
         assertTrue(steps.contains("popupOption.addOptionWithId"));
-        assertTrue(steps.contains("PresetStyle.DELETE"));
+        assertTrue(steps.contains("PresetStyle.MINUS"));
+        assertTrue(steps.contains("leadingIconRenderer"));
+        assertTrue(!editor.contains("custom_quick_action_id"));
+        assertTrue(editor.contains(".maxLength(1024)"));
         assertTrue(steps.contains("definition.getContextMenuItems()"));
         assertTrue(editor.contains("custom_quick_action_close_before"));
         assertTrue(!editor.contains(".disabled(mode == QuickActionExecutionMode.PARALLEL)"));

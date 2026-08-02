@@ -94,6 +94,9 @@ public class InputFormScreen extends BaniraScreen {
         private String name = "";
         private Text title;
         private Text hint = Text.transAuto(BaniraCodex.MODID, "enter_something");
+        @Nullable
+        private Text tooltip;
+        private int maxLength = 256;
         private String regex = EnumStringInputRegex.NONE.regex();
         private String defaultValue = "";
         private boolean allowEmpty;
@@ -489,6 +492,11 @@ public class InputFormScreen extends BaniraScreen {
             LabelWidget titleLabel = new LabelWidget(this);
             titleLabel.id("title_" + i);
             titleLabel.text(widget.title());
+            Text titleTooltip = widget.tooltip();
+            if (titleTooltip == null && StringUtils.isNotNullOrEmpty(widget.regex())) {
+                titleTooltip = widget.hint();
+            }
+            titleLabel.tooltip(titleTooltip);
             titleLabel.bounds(new ScreenCoordinate(contentLeft, titleY, inputW, TITLE_HEIGHT));
             titleLabel.textWrap(false);
             inputField.titleLabel(titleLabel);
@@ -502,6 +510,7 @@ public class InputFormScreen extends BaniraScreen {
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
                 inputWidget.text(widget.hint());
+                inputWidget.maxLength(widget.maxLength());
                 inputWidget.enabled(!widget.disabled());
                 inputWidget.password(widget.type() == WidgetType.PASSWORD);
 
@@ -532,6 +541,7 @@ public class InputFormScreen extends BaniraScreen {
                 dd.multiSelect(widget.dropdownMultiSelect());
                 dd.inputMode(widget.dropdownInputMode());
                 dd.text(widget.hint());
+                dd.maxLength(widget.maxLength());
                 dd.selectedValues(parseDropdownInitialValues(widget, currentValue));
                 dd.enabled(!widget.disabled());
 
@@ -590,6 +600,7 @@ public class InputFormScreen extends BaniraScreen {
                 pickerInput.id("input_" + i);
                 pickerInput.bounds(new ScreenCoordinate(contentLeft, inputY, pickerInputW, INPUT_H));
                 pickerInput.value(currentValue);
+                pickerInput.maxLength(widget.maxLength());
                 Text pickerHint = widget.type() == WidgetType.FILE
                         ? Text.transAuto(BaniraCodex.MODID, "enter_file_path")
                         : Text.transAuto(BaniraCodex.MODID, "enter_color_hex");

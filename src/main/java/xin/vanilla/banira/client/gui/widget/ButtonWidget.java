@@ -18,6 +18,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -45,10 +46,6 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
          */
         PLUS,
         /**
-         * 删除/垃圾桶
-         */
-        DELETE,
-        /**
          * 最大化方框
          */
         MAXIMIZE,
@@ -72,6 +69,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
          * 重置/恢复（圆形箭头）
          */
         RESET,
+    }
+
+    @FunctionalInterface
+    public interface LeadingIconRenderer {
+        void render(MatrixStack stack, int x, int y, int size);
     }
 
     /**
@@ -271,6 +273,16 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     private PresetStyle presetStyle = null;
+
+    /** 可选的内容图标，与文本一起居中绘制。 */
+    @Getter
+    @Setter
+    @Nullable
+    private LeadingIconRenderer leadingIconRenderer;
+
+    @Getter
+    @Setter
+    private int leadingIconSize = 14;
 
     /**
      * 图标颜色（presetStyle 非 null 时生效）
@@ -574,6 +586,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         // 预置图标或文本
         if (presetStyle != null) {
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
+        } else if (leadingIconRenderer != null) {
+            int iconSize = Math.max(1, Math.min(leadingIconSize, availableHeight));
+            int gap = 4;
+            int maxTextWidth = Math.max(0, availableWidth - iconSize - gap);
+            int naturalTextWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+            int renderedTextWidth = Math.min(naturalTextWidth, maxTextWidth);
+            int totalWidth = iconSize + (renderedTextWidth > 0 ? gap + renderedTextWidth : 0);
+            int startX = contentX + Math.max(0, (availableWidth - totalWidth) / 2);
+            leadingIconRenderer.render(stack, startX, contentY + (availableHeight - iconSize) / 2, iconSize);
+            if (renderedTextWidth > 0) {
+                FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
+                LabelWidget.drawLimitedText(drawArgs.x(startX + iconSize + gap)
+                        .y(contentY + (availableHeight - 9) / 2)
+                        .maxWidth(maxTextWidth).position(EnumEllipsisPosition.END));
+            }
         } else {
             FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
             if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
@@ -921,22 +948,6 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 AbstractGuiUtils.drawLine(stack, cx - plusR, cy, cx + plusR, cy, lw, color);
                 AbstractGuiUtils.drawLine(stack, cx, cy - plusR, cx, cy + plusR, lw, color);
                 break;
-            case DELETE: {
-                float bodyW = r * 1.18f;
-                float bodyH = r * 1.18f;
-                float left = cx - bodyW * 0.5f;
-                float top = cy - bodyH * 0.34f;
-                AbstractGuiUtils.drawLine(stack, left, top, left + bodyW, top, lw, color);
-                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.18f, top,
-                        left + bodyW * 0.26f, top + bodyH, lw, color);
-                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.82f, top,
-                        left + bodyW * 0.74f, top + bodyH, lw, color);
-                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.26f, top + bodyH,
-                        left + bodyW * 0.74f, top + bodyH, lw, color);
-                AbstractGuiUtils.drawLine(stack, cx - bodyW * 0.22f, top - r * 0.28f,
-                        cx + bodyW * 0.22f, top - r * 0.28f, lw, color);
-                break;
-            }
             case MAXIMIZE:
                 // 最大化
                 ShapeDrawArgs.PolygonParams sq = new ShapeDrawArgs.PolygonParams()

@@ -7,8 +7,11 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.CharInputEvent;
 import xin.vanilla.banira.client.gui.event.KeyEvent;
+import xin.vanilla.banira.client.util.GLFWKeyUtils;
 
 import javax.annotation.Nullable;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** 点击后直接捕获下一组键盘组合键，不要求玩家输入按键名称。 */
@@ -17,8 +20,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     @Setter
     @Nullable
     private Consumer<String> onCaptured;
-    private int pendingKeyCode = GLFWKey.GLFW_KEY_UNKNOWN;
-    private String pendingShortcut = "";
+    private final Set<Integer> capturedKeys = new LinkedHashSet<>();
+    private final Set<Integer> pressedKeys = new LinkedHashSet<>();
 
     public KeyCaptureInputWidget(BaniraScreen screen) {
         super(screen);
@@ -41,23 +44,25 @@ public class KeyCaptureInputWidget extends InputWidget {
             capture("");
             return true;
         }
-        if (isModifierKey(keyCode)) {
-            return true;
-        }
-        pendingKeyCode = keyCode;
-        pendingShortcut = GLFWKey.formatShortcut(keyCode, event.modifiers());
+        capturedKeys.add(keyCode);
+        pressedKeys.add(keyCode);
+        value(GLFWKeyUtils.getKeyDisplayString(capturedKeys.stream().mapToInt(Integer::intValue).toArray()));
         return true;
     }
 
     @Override
     protected boolean onKeyRelease(KeyEvent event) {
-        if (!focused() || pendingKeyCode == GLFWKey.GLFW_KEY_UNKNOWN
-                || event.keyCode() != pendingKeyCode) {
+        if (!focused() || !capturedKeys.contains(event.keyCode())) {
             return false;
         }
-        String shortcut = pendingShortcut;
-        clearPending();
-        capture(shortcut);
+        pressedKeys.remove(event.keyCode());
+        // 玩家全部松开后再提交，才能可靠捕获 A+B 及带修饰键的组合。
+        if (pressedKeys.isEmpty() && capturedKeys.stream().anyMatch(key -> !isModifierKey(key))) {
+            String shortcut = GLFWKeyUtils.getKeyDisplayString(
+                    capturedKeys.stream().mapToInt(Integer::intValue).toArray());
+            clearPending();
+            capture(shortcut);
+        }
         return true;
     }
 
@@ -75,8 +80,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     }
 
     private void clearPending() {
-        pendingKeyCode = GLFWKey.GLFW_KEY_UNKNOWN;
-        pendingShortcut = "";
+        capturedKeys.clear();
+        pressedKeys.clear();
     }
 
     private static boolean isModifierKey(int keyCode) {

@@ -2,7 +2,6 @@ package xin.vanilla.banira.client.gui.quickaction;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -12,21 +11,33 @@ import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.quickaction.*;
+import xin.vanilla.banira.api.quickaction.CustomQuickActionDefinition;
+import xin.vanilla.banira.api.quickaction.CustomQuickActionMenuItem;
+import xin.vanilla.banira.api.quickaction.CustomQuickActionStep;
+import xin.vanilla.banira.api.quickaction.QuickActionExecutionMode;
+import xin.vanilla.banira.api.quickaction.QuickActionIconType;
+import xin.vanilla.banira.api.quickaction.QuickActionStepCondition;
+import xin.vanilla.banira.api.quickaction.QuickActionStepType;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
-import xin.vanilla.banira.client.gui.*;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.EffectSelectScreen;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-/** 编辑快捷入口的执行步骤；动作基础信息和图标选择保持为独立流程。 */
+/** 编辑主入口或右键菜单项的动作步骤。 */
 final class CustomQuickActionStepsScreen extends BaniraScreen {
     private static final int MARGIN = 16;
     private static final int PAD = 8;
@@ -36,9 +47,12 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
     private static final int BOTTOM_H = 20;
     private static final int SCROLL_W = 5;
 
-    private final CustomQuickActionConfigScreen parent;
+    private final CustomQuickActionConfigScreen rootParent;
+    private final CustomQuickActionStepsScreen sequenceParent;
     private final int originalIndex;
+    private final int menuItemIndex;
     private CustomQuickActionDefinition definition;
+    private CustomQuickActionMenuItem menuItem;
     private final List<ButtonWidget> rows = new ArrayList<>();
     private final List<ButtonWidget> deletes = new ArrayList<>();
     private ScrollbarWidget scrollbar;
@@ -55,15 +69,35 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
     CustomQuickActionStepsScreen(CustomQuickActionConfigScreen parent,
                                  CustomQuickActionDefinition definition, int originalIndex) {
         super(BaniraComponent.get().transClientAuto("custom_quick_action_step_title").toVanilla());
-        this.parent = parent;
+        this.rootParent = parent;
+        this.sequenceParent = null;
         this.definition = CustomQuickActionEditor.copy(definition);
+        this.menuItem = null;
         this.originalIndex = originalIndex;
+        this.menuItemIndex = -1;
+        previousScreen(parent);
+        inheritThemeAndSeason(this, parent, null, null);
+    }
+
+    private CustomQuickActionStepsScreen(CustomQuickActionStepsScreen parent,
+                                         CustomQuickActionMenuItem menuItem, int menuItemIndex) {
+        super(BaniraComponent.get().transClientAuto("custom_quick_action_menu_step_title").toVanilla());
+        this.rootParent = null;
+        this.sequenceParent = parent;
+        this.definition = null;
+        this.menuItem = CustomQuickActionEditor.copy(menuItem);
+        this.originalIndex = -1;
+        this.menuItemIndex = menuItemIndex;
         previousScreen(parent);
         inheritThemeAndSeason(this, parent, null, null);
     }
 
     void openDefinitionEditor() {
-        CustomQuickActionEditor.openDefinition(this, definition, value -> definition = value);
+        if (isMenuItem()) {
+            CustomQuickActionEditor.openMenuItem(this, menuItem, value -> menuItem = value);
+        } else {
+            CustomQuickActionEditor.openDefinition(this, definition, value -> definition = value);
+        }
     }
 
     @Override
@@ -75,32 +109,40 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         listX = panelX + PAD;
         listY = panelY + PAD + TOP_H + 4;
         listW = panelW - PAD * 2 - SCROLL_W - 3;
-        int bottomArea = BOTTOM_H * 2 + 5;
-        int listH = panelH - PAD * 3 - TOP_H - bottomArea;
+        int bottomRows = isMenuItem() ? 1 : 2;
+        int listH = panelH - PAD * 3 - TOP_H - (BOTTOM_H * bottomRows + (bottomRows - 1) * 5);
         visibleRows = Math.max(1, listH / (ROW_H + ROW_GAP));
 
         int topButtonW = (listW - 6) / 3;
         addWidget(button("details", listX, panelY + PAD, topButtonW, TOP_H,
-                "custom_quick_action_edit_details", this::openDefinitionEditor));
-        addWidget(button("icon", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
-                "custom_quick_action_select_icon", this::selectIcon));
-        addWidget(button("add_command", listX + (topButtonW + 3) * 2, panelY + PAD,
-                topButtonW, TOP_H, "custom_quick_action_add_command",
-                () -> addStep(QuickActionStepType.COMMAND)));
+                isMenuItem() ? "custom_quick_action_menu_details" : "custom_quick_action_edit_details",
+                this::openDefinitionEditor));
+        if (isMenuItem()) {
+            addWidget(button("add_command", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
+                    "custom_quick_action_add_command", () -> addStep(QuickActionStepType.COMMAND)));
+            addWidget(button("add_screen", listX + (topButtonW + 3) * 2, panelY + PAD, topButtonW, TOP_H,
+                    "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
+        } else {
+            addWidget(button("icon", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
+                    "custom_quick_action_select_icon", this::selectIcon));
+            addWidget(button("add_command", listX + (topButtonW + 3) * 2, panelY + PAD,
+                    topButtonW, TOP_H, "custom_quick_action_add_command",
+                    () -> addStep(QuickActionStepType.COMMAND)));
+        }
 
         rows.clear();
         deletes.clear();
-        for (int i = 0; i < definition.getSteps().size(); i++) {
+        for (int i = 0; i < rowCount(); i++) {
             final int index = i;
             ButtonWidget row = new ButtonWidget(this);
-            row.id("step_" + i);
-            row.onClick(button -> editStep(index));
+            row.id("entry_" + i);
+            row.onClick(button -> editRow(index));
             rows.add(row);
             addWidget(row);
             ButtonWidget delete = new ButtonWidget(this);
             delete.id("delete_" + i);
-            delete.text("-");
-            delete.onClick(button -> deleteStep(index));
+            delete.presetStyle(ButtonWidget.PresetStyle.DELETE).padding(3);
+            delete.onClick(button -> deleteRow(index));
             deletes.add(delete);
             addWidget(delete);
         }
@@ -108,7 +150,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         scrollbar = new ScrollbarWidget(this);
         scrollbar.id("scroll");
         scrollbar.orientation(EnumOrientation.VERTICAL).minValue(0)
-                .maxValue(Math.max(0, definition.getSteps().size() - visibleRows)).visibleSize(visibleRows)
+                .maxValue(Math.max(0, rowCount() - visibleRows)).visibleSize(visibleRows)
                 .scrollStep(1).onValueChanged(value -> {
                     scrollIndex = (int) Math.round(value);
                     updateRows();
@@ -116,79 +158,166 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         addWidget(scrollbar);
 
         int gap = 5;
-        int y1 = panelY + panelH - PAD - BOTTOM_H * 2 - gap;
-        int y2 = y1 + BOTTOM_H + gap;
+        int saveY = panelY + panelH - PAD - BOTTOM_H;
         int half = (listW - gap) / 2;
-        addWidget(button("add_screen", listX, y1, listW, BOTTOM_H,
-                "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
-        addWidget(button("save", listX, y2, half, BOTTOM_H, "save", this::save));
-        addWidget(button("cancel", listX + half + gap, y2, half, BOTTOM_H, "cancel", this::onClose));
+        if (!isMenuItem()) {
+            int addY = saveY - BOTTOM_H - gap;
+            addWidget(button("add_screen", listX, addY, half, BOTTOM_H,
+                    "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
+            addWidget(button("add_menu", listX + half + gap, addY, half, BOTTOM_H,
+                    "custom_quick_action_add_menu", this::addMenuItem));
+        }
+        addWidget(button("save", listX, saveY, half, BOTTOM_H, "save", this::save));
+        addWidget(button("cancel", listX + half + gap, saveY, half, BOTTOM_H, "cancel", this::onClose));
         updateRows();
+    }
+
+    private boolean isMenuItem() {
+        return menuItem != null;
+    }
+
+    private List<CustomQuickActionStep> currentSteps() {
+        return isMenuItem() ? menuItem.getSteps() : definition.getSteps();
+    }
+
+    private QuickActionExecutionMode currentMode() {
+        return isMenuItem() ? menuItem.getExecutionMode() : definition.getExecutionMode();
+    }
+
+    private void forceChainedForConditionalStep(CustomQuickActionStep step) {
+        if (step.getCondition() == QuickActionStepCondition.ALWAYS) return;
+        if (isMenuItem()) menuItem.setExecutionMode(QuickActionExecutionMode.CHAINED);
+        else definition.setExecutionMode(QuickActionExecutionMode.CHAINED);
+    }
+
+    private int rowCount() {
+        return currentSteps().size() + (isMenuItem() ? 0 : definition.getContextMenuItems().size());
     }
 
     private void addStep(QuickActionStepType type) {
         CustomQuickActionStep step = new CustomQuickActionStep().setType(type);
-        CustomQuickActionEditor.openStep(this, step, definition.getExecutionMode(), value -> {
-            definition.getSteps().add(value);
+        CustomQuickActionEditor.openStep(this, step, currentMode(), value -> {
+            forceChainedForConditionalStep(value);
+            currentSteps().add(value);
         });
     }
 
-    private void editStep(int index) {
-        if (index < 0 || index >= definition.getSteps().size()) return;
-        CustomQuickActionEditor.openStep(this, definition.getSteps().get(index),
-                definition.getExecutionMode(), value -> {
-                    definition.getSteps().set(index, value);
-                });
+    private void editRow(int index) {
+        if (index < 0 || index >= rowCount()) return;
+        if (index < currentSteps().size()) {
+            CustomQuickActionEditor.openStep(this, currentSteps().get(index), currentMode(), value -> {
+                forceChainedForConditionalStep(value);
+                currentSteps().set(index, value);
+            });
+            return;
+        }
+        int menuIndex = index - currentSteps().size();
+        Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(
+                this, definition.getContextMenuItems().get(menuIndex), menuIndex));
     }
 
-    private void deleteStep(int index) {
-        if (index < 0 || index >= definition.getSteps().size()) return;
-        definition.getSteps().remove(index);
-        rebuild();
+    private void deleteRow(int index) {
+        if (index < 0 || index >= rowCount()) return;
+        if (index < currentSteps().size()) currentSteps().remove(index);
+        else definition.getContextMenuItems().remove(index - currentSteps().size());
+        reopen();
     }
 
-    private void rebuild() {
-        Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(parent, definition, originalIndex));
+    private void addMenuItem() {
+        CustomQuickActionMenuItem item = new CustomQuickActionMenuItem()
+                .setLabel(CustomQuickActionEditor.t("custom_quick_action_new_menu").content());
+        Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(this, item, -1));
+    }
+
+    private void replaceMenuItem(int index, CustomQuickActionMenuItem value) {
+        if (index >= 0 && index < definition.getContextMenuItems().size()) {
+            definition.getContextMenuItems().set(index, value);
+        } else {
+            definition.getContextMenuItems().add(value);
+        }
+        Minecraft.getInstance().setScreen(this);
     }
 
     private void save() {
+        if (isMenuItem()) {
+            if (menuItem.getLabel().trim().isEmpty()) {
+                openDefinitionEditor();
+                return;
+            }
+            sequenceParent.replaceMenuItem(menuItemIndex, CustomQuickActionEditor.copy(menuItem));
+            return;
+        }
         if (definition.getId().trim().isEmpty() || definition.getLabel().trim().isEmpty()) {
             openDefinitionEditor();
             return;
         }
-        parent.saveDefinition(originalIndex, definition);
+        rootParent.saveDefinition(originalIndex, definition);
     }
 
+    private void reopen() {
+        if (isMenuItem()) {
+            Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(
+                    sequenceParent, menuItem, menuItemIndex));
+        } else {
+            Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(
+                    rootParent, definition, originalIndex));
+        }
+    }
+
+    /** 先在当前页面选择图标来源，再进入对应选择器。 */
     private void selectIcon() {
-        switch (definition.getIconType()) {
+        popupOption.clear();
+        for (QuickActionIconType type : QuickActionIconType.values()) {
+            popupOption.addOptionWithId(type.name(), CustomQuickActionEditor.t(
+                    "custom_quick_action_icon_" + type.name().toLowerCase()), null,
+                    event -> openIconPicker(type));
+        }
+        popupOption.showAt(inputState.mouseX(), inputState.mouseY(), "quick_action_icon_type");
+    }
+
+    private void openIconPicker(QuickActionIconType type) {
+        definition.setIconType(type);
+        switch (type) {
             case ITEM:
                 Item item = optionalItem(definition.getIcon());
                 Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args()
                         .parentScreen(this).defaultItem(new ItemStack(item))
-                        .onDataReceived((java.util.function.Consumer<ItemStack>) stack ->
-                                definition.setIcon(String.valueOf(Registry.ITEM.getKey(stack.getItem()))))));
+                        .onDataReceived((java.util.function.Consumer<ItemStack>) stack -> {
+                            definition.setIconType(QuickActionIconType.ITEM);
+                            definition.setIcon(String.valueOf(Registry.ITEM.getKey(stack.getItem())));
+                        })));
                 break;
             case EFFECT:
                 Effect effect = optionalEffect(definition.getIcon());
                 Minecraft.getInstance().setScreen(new EffectSelectScreen(new EffectSelectScreen.Args()
                         .parentScreen(this).defaultEffect(new EffectInstance(effect, 200, 0))
-                        .onDataReceived((java.util.function.Consumer<EffectInstance>) value ->
-                                definition.setIcon(String.valueOf(Registry.MOB_EFFECT.getKey(value.getEffect()))))));
+                        .onDataReceived((java.util.function.Consumer<EffectInstance>) value -> {
+                            definition.setIconType(QuickActionIconType.EFFECT);
+                            definition.setIcon(String.valueOf(Registry.MOB_EFFECT.getKey(value.getEffect())));
+                        })));
                 break;
             case EXTERNAL_FILE:
-                openIconInput(InputFormScreen.WidgetType.FILE);
+                openIconInput(InputFormScreen.WidgetType.FILE, null);
                 break;
             case RESOURCE:
             default:
-                openIconInput(InputFormScreen.WidgetType.TEXT);
+                openIconInput(InputFormScreen.WidgetType.DROPDOWN, Arrays.asList(
+                        new DropdownOption("banira_codex:gui/quick_icon.png"),
+                        new DropdownOption("banira_codex:gui/sakura_cat.png"),
+                        new DropdownOption("banira_codex:gui/aotake_cat.png"),
+                        new DropdownOption("banira_codex:gui/narcissus_cat.png"),
+                        new DropdownOption("banira_codex:gui/snowflake_cat.png")));
                 break;
         }
     }
 
-    private void openIconInput(InputFormScreen.WidgetType type) {
+    private void openIconInput(InputFormScreen.WidgetType type, List<DropdownOption> options) {
         InputFormScreen.Widget icon = new InputFormScreen.Widget().name("icon")
                 .title(CustomQuickActionEditor.t("custom_quick_action_icon_value"))
                 .type(type).defaultValue(definition.getIcon()).allowEmpty(false);
+        if (type == InputFormScreen.WidgetType.DROPDOWN) {
+            icon.dropdownOptionEntries(options).dropdownInputMode(DropdownInputMode.EDITABLE);
+        }
         Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args()
                 .setParentScreen(this).setHeaderTitle(CustomQuickActionEditor.t("custom_quick_action_select_icon"))
                 .addWidget(icon).setCallback(result -> definition.setIcon(result.firstValue().trim()))));
@@ -210,15 +339,10 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             int visibleIndex = i - scrollIndex;
             boolean visible = visibleIndex >= 0 && visibleIndex < visibleRows;
             int y = listY + visibleIndex * (ROW_H + ROW_GAP);
-            CustomQuickActionStep step = definition.getSteps().get(i);
-            String value = step.getValue() == null ? "" : step.getValue();
             ButtonWidget row = rows.get(i);
             row.visible(visible);
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
-            row.text((i + 1) + ". " + CustomQuickActionEditor.t("custom_quick_action_step_type_"
-                    + step.getType().name().toLowerCase()).content() + " · "
-                    + CustomQuickActionEditor.t("custom_quick_action_condition_"
-                    + step.getCondition().name().toLowerCase()).content() + " · " + value);
+            row.text(rowText(i));
             row.textMaxWidth(listW - deleteW - 12);
             ButtonWidget delete = deletes.get(i);
             delete.visible(visible);
@@ -228,6 +352,19 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             scrollbar.bounds(new ScreenCoordinate(listX + listW + 3, listY, SCROLL_W,
                     visibleRows * (ROW_H + ROW_GAP) - ROW_GAP));
         }
+    }
+
+    private String rowText(int index) {
+        if (index >= currentSteps().size()) {
+            CustomQuickActionMenuItem item = definition.getContextMenuItems().get(index - currentSteps().size());
+            return CustomQuickActionEditor.t("custom_quick_action_menu_prefix").content() + " · " + item.getLabel();
+        }
+        CustomQuickActionStep step = currentSteps().get(index);
+        String value = step.getValue() == null ? "" : step.getValue();
+        return (index + 1) + ". " + CustomQuickActionEditor.t("custom_quick_action_step_type_"
+                + step.getType().name().toLowerCase()).content() + " · "
+                + CustomQuickActionEditor.t("custom_quick_action_condition_"
+                + step.getCondition().name().toLowerCase()).content() + " · " + value;
     }
 
     @Override
@@ -245,7 +382,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
                 ColorUtils.applyAlphaToArgb(theme.panelBg(), 0xFF));
         panel.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panel);
-        if (definition.getSteps().isEmpty()) {
+        if (rowCount() == 0) {
             String empty = CustomQuickActionEditor.t("custom_quick_action_step_empty").content();
             font.draw(stack, empty, panelX + (panelW - font.width(empty)) / 2f,
                     listY + 12, theme.textSecondary());

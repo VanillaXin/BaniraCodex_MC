@@ -416,6 +416,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 keyInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
                 keyInput.maxLength(64);
                 keyInput.value("");
+                keyInput.onCaptured(value -> confirmAddFromInput());
                 addInputWidget = keyInput;
                 break;
             case NUMBER:
@@ -584,6 +585,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 input.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
                 input.maxLength(itemType == ItemType.TEXT || itemType == ItemType.KEY_CHORD ? 64 : 128);
                 input.value(label);
+                if (input instanceof KeyCaptureInputWidget) {
+                    ((KeyCaptureInputWidget) input).onCaptured(value -> commitInlineEdit());
+                }
                 editWidget = input;
                 break;
             }

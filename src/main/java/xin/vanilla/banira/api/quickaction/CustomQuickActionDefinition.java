@@ -17,6 +17,8 @@ public class CustomQuickActionDefinition {
     private QuickActionIconType iconType = QuickActionIconType.ITEM;
     private String icon = "minecraft:paper";
     private String keyChord = "";
+    private boolean closeBeforeExecution;
     private QuickActionExecutionMode executionMode = QuickActionExecutionMode.PARALLEL;
     private List<CustomQuickActionStep> steps = new ArrayList<>();
+    private List<CustomQuickActionMenuItem> contextMenuItems = new ArrayList<>();
 }

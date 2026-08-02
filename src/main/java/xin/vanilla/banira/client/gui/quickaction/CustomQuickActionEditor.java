@@ -32,13 +32,12 @@ final class CustomQuickActionEditor {
                         Boolean.toString(draft.isEnabled()), booleanOptions()))
                 .addWidget(dropdown("display", "custom_quick_action_display",
                         draft.getDisplay().name(), options(QuickActionDisplayMode.values(), "display")))
-                .addWidget(dropdown("iconType", "custom_quick_action_icon_type",
-                        draft.getIconType().name(), options(QuickActionIconType.values(), "icon")))
-                .addWidget(text("icon", "custom_quick_action_icon_value", draft.getIcon(), true, ".{0,512}"))
                 .addWidget(new InputFormScreen.Widget().name("keyChord")
                         .title(t("custom_quick_action_key"))
                         .type(InputFormScreen.WidgetType.KEY_CHORD)
                         .allowEmpty(true).defaultValue(draft.getKeyChord()))
+                .addWidget(dropdown("closeBefore", "custom_quick_action_close_before",
+                        Boolean.toString(draft.isCloseBeforeExecution()), booleanOptions()))
                 .addWidget(dropdown("mode", "custom_quick_action_execution_mode",
                         draft.getExecutionMode().name(), options(QuickActionExecutionMode.values(), "execution")))
                 .setCallback(result -> {
@@ -46,9 +45,8 @@ final class CustomQuickActionEditor {
                             .setLabel(result.value("label").trim())
                             .setEnabled(Boolean.parseBoolean(result.value("enabled")))
                             .setDisplay(valueOf(QuickActionDisplayMode.class, result.value("display"), QuickActionDisplayMode.ICON))
-                            .setIconType(valueOf(QuickActionIconType.class, result.value("iconType"), QuickActionIconType.ITEM))
-                            .setIcon(result.value("icon").trim())
                             .setKeyChord(result.value("keyChord").trim())
+                            .setCloseBeforeExecution(Boolean.parseBoolean(result.value("closeBefore")))
                             .setExecutionMode(valueOf(QuickActionExecutionMode.class, result.value("mode"), QuickActionExecutionMode.PARALLEL));
                     accepted.accept(draft);
                     result.runningResult("");
@@ -73,21 +71,41 @@ final class CustomQuickActionEditor {
                     .dropdownInputMode(DropdownInputMode.EDITABLE);
         }
 
-        QuickActionStepCondition condition = mode == QuickActionExecutionMode.PARALLEL
-                ? QuickActionStepCondition.ALWAYS : draft.getCondition();
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
                 .setHeaderTitle(t("custom_quick_action_step_edit_title"))
                 .addWidget(dropdown("type", "custom_quick_action_step_type", draft.getType().name(),
                         options(QuickActionStepType.values(), "step_type")))
-                .addWidget(dropdown("condition", "custom_quick_action_step_condition", condition.name(),
-                        options(QuickActionStepCondition.values(), "condition")).disabled(mode == QuickActionExecutionMode.PARALLEL))
+                .addWidget(dropdown("condition", "custom_quick_action_step_condition",
+                        draft.getCondition().name(), options(QuickActionStepCondition.values(), "condition")))
                 .addWidget(value)
                 .setCallback(result -> {
                     draft.setType(valueOf(QuickActionStepType.class, result.value("type"), draft.getType()))
-                            .setCondition(mode == QuickActionExecutionMode.PARALLEL ? QuickActionStepCondition.ALWAYS
-                                    : valueOf(QuickActionStepCondition.class, result.value("condition"), QuickActionStepCondition.ALWAYS))
+                            .setCondition(valueOf(QuickActionStepCondition.class, result.value("condition"),
+                                    QuickActionStepCondition.ALWAYS))
                             .setValue(result.value("value").trim());
+                    accepted.accept(draft);
+                    result.runningResult("");
+                });
+        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+    }
+
+    static void openMenuItem(Screen parent, CustomQuickActionMenuItem source,
+                             Consumer<CustomQuickActionMenuItem> accepted) {
+        CustomQuickActionMenuItem draft = copy(source);
+        InputFormScreen.Args args = new InputFormScreen.Args()
+                .setParentScreen(parent)
+                .setHeaderTitle(t("custom_quick_action_menu_edit_title"))
+                .addWidget(text("label", "custom_quick_action_menu_label", draft.getLabel(), false, ".{1,80}"))
+                .addWidget(dropdown("closeBefore", "custom_quick_action_close_before",
+                        Boolean.toString(draft.isCloseBeforeExecution()), booleanOptions()))
+                .addWidget(dropdown("mode", "custom_quick_action_execution_mode",
+                        draft.getExecutionMode().name(), options(QuickActionExecutionMode.values(), "execution")))
+                .setCallback(result -> {
+                    draft.setLabel(result.value("label").trim())
+                            .setCloseBeforeExecution(Boolean.parseBoolean(result.value("closeBefore")))
+                            .setExecutionMode(valueOf(QuickActionExecutionMode.class, result.value("mode"),
+                                    QuickActionExecutionMode.PARALLEL));
                     accepted.accept(draft);
                     result.runningResult("");
                 });
@@ -99,16 +117,26 @@ final class CustomQuickActionEditor {
                 .setId(source == null ? "" : source.getId())
                 .setLabel(source == null ? "" : source.getLabel())
                 .setEnabled(source == null || source.isEnabled())
-                .setDisplay(source == null ? QuickActionDisplayMode.ICON : source.getDisplay())
-                .setIconType(source == null ? QuickActionIconType.ITEM : source.getIconType())
+                .setDisplay(source == null || source.getDisplay() == null
+                        ? QuickActionDisplayMode.ICON : source.getDisplay())
+                .setIconType(source == null || source.getIconType() == null
+                        ? QuickActionIconType.ITEM : source.getIconType())
                 .setIcon(source == null ? "minecraft:paper" : source.getIcon())
                 .setKeyChord(source == null ? "" : source.getKeyChord())
-                .setExecutionMode(source == null ? QuickActionExecutionMode.PARALLEL : source.getExecutionMode());
+                .setCloseBeforeExecution(source != null && source.isCloseBeforeExecution())
+                .setExecutionMode(source == null || source.getExecutionMode() == null
+                        ? QuickActionExecutionMode.PARALLEL : source.getExecutionMode());
         List<CustomQuickActionStep> steps = new ArrayList<>();
         if (source != null && source.getSteps() != null) {
             for (CustomQuickActionStep step : source.getSteps()) if (step != null) steps.add(copy(step));
         }
-        return copy.setSteps(steps);
+        List<CustomQuickActionMenuItem> menuItems = new ArrayList<>();
+        if (source != null && source.getContextMenuItems() != null) {
+            for (CustomQuickActionMenuItem item : source.getContextMenuItems()) {
+                if (item != null) menuItems.add(copy(item));
+            }
+        }
+        return copy.setSteps(steps).setContextMenuItems(menuItems);
     }
 
     static CustomQuickActionStep copy(CustomQuickActionStep source) {
@@ -117,6 +145,19 @@ final class CustomQuickActionEditor {
                 .setCondition(source == null || source.getCondition() == null
                         ? QuickActionStepCondition.ALWAYS : source.getCondition())
                 .setValue(source == null || source.getValue() == null ? "" : source.getValue());
+    }
+
+    static CustomQuickActionMenuItem copy(CustomQuickActionMenuItem source) {
+        CustomQuickActionMenuItem copy = new CustomQuickActionMenuItem()
+                .setLabel(source == null || source.getLabel() == null ? "" : source.getLabel())
+                .setCloseBeforeExecution(source != null && source.isCloseBeforeExecution())
+                .setExecutionMode(source == null || source.getExecutionMode() == null
+                        ? QuickActionExecutionMode.PARALLEL : source.getExecutionMode());
+        List<CustomQuickActionStep> steps = new ArrayList<>();
+        if (source != null && source.getSteps() != null) {
+            for (CustomQuickActionStep step : source.getSteps()) if (step != null) steps.add(copy(step));
+        }
+        return copy.setSteps(steps);
     }
 
     static Text t(String key) {

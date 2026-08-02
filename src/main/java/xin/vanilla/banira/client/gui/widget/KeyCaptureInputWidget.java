@@ -17,6 +17,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     @Setter
     @Nullable
     private Consumer<String> onCaptured;
+    private int pendingKeyCode = GLFWKey.GLFW_KEY_UNKNOWN;
+    private String pendingShortcut = "";
 
     public KeyCaptureInputWidget(BaniraScreen screen) {
         super(screen);
@@ -31,6 +33,7 @@ public class KeyCaptureInputWidget extends InputWidget {
         }
         int keyCode = event.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
+            clearPending();
             screen.unfocusWidget(this);
             return true;
         }
@@ -41,7 +44,20 @@ public class KeyCaptureInputWidget extends InputWidget {
         if (isModifierKey(keyCode)) {
             return true;
         }
-        capture(GLFWKey.formatShortcut(keyCode, event.modifiers()));
+        pendingKeyCode = keyCode;
+        pendingShortcut = GLFWKey.formatShortcut(keyCode, event.modifiers());
+        return true;
+    }
+
+    @Override
+    protected boolean onKeyRelease(KeyEvent event) {
+        if (!focused() || pendingKeyCode == GLFWKey.GLFW_KEY_UNKNOWN
+                || event.keyCode() != pendingKeyCode) {
+            return false;
+        }
+        String shortcut = pendingShortcut;
+        clearPending();
+        capture(shortcut);
         return true;
     }
 
@@ -56,6 +72,11 @@ public class KeyCaptureInputWidget extends InputWidget {
             onCaptured.accept(shortcut);
         }
         screen.unfocusWidget(this);
+    }
+
+    private void clearPending() {
+        pendingKeyCode = GLFWKey.GLFW_KEY_UNKNOWN;
+        pendingShortcut = "";
     }
 
     private static boolean isModifierKey(int keyCode) {

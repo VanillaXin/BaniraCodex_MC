@@ -159,25 +159,48 @@ public final class CustomQuickActionManager {
             if (!definition.isEnabled()) continue;
             String registryId = ENTRY_PREFIX + safeId(definition.getId());
             QuickIcon icon = resolveIcon(definition);
+            List<QuickActionContextMenuItem> menuItems = new ArrayList<>();
+            menuItems.add(new QuickActionContextMenuItem(
+                    BaniraComponent.get().transClientAuto("custom_quick_action_edit"),
+                    context -> CustomQuickActionConfigScreen.openEditor(
+                            context.currentScreen(), definition.getId())));
+            for (CustomQuickActionMenuItem item : definition.getContextMenuItems()) {
+                menuItems.add(new QuickActionContextMenuItem(
+                        BaniraComponent.get().literal(item.getLabel()),
+                        context -> activate(item, context.currentScreen())));
+            }
             registry.register(registryId, icon,
                     BaniraComponent.get().literal(definition.getLabel()),
                     EnumQuickActionDisplay.valueOf(definition.getDisplay().name()),
                     context -> activate(definition, context.currentScreen()),
-                    Collections.emptyList());
+                    menuItems);
             registeredIds.add(registryId);
         }
     }
 
     private void activate(CustomQuickActionDefinition definition, Screen parent) {
+        activate(definition.getExecutionMode(), definition.getSteps(),
+                definition.isCloseBeforeExecution(), parent);
+    }
+
+    private void activate(CustomQuickActionMenuItem item, Screen parent) {
+        activate(item.getExecutionMode(), item.getSteps(), item.isCloseBeforeExecution(), parent);
+    }
+
+    private void activate(QuickActionExecutionMode mode, List<CustomQuickActionStep> steps,
+                          boolean closeBeforeExecution, Screen parent) {
+        if (closeBeforeExecution) {
+            Minecraft.getInstance().setScreen(null);
+        }
         List<CustomQuickActionStep> commandSteps = new ArrayList<>();
         CustomQuickActionStep screenStep = null;
-        for (CustomQuickActionStep step : definition.getSteps()) {
+        for (CustomQuickActionStep step : steps) {
             if (step == null) continue;
             if (step.getType() == QuickActionStepType.COMMAND) commandSteps.add(step);
             if (screenStep == null && step.getType() == QuickActionStepType.SCREEN
                     && step.getCondition() == QuickActionStepCondition.ALWAYS) screenStep = step;
         }
-        executeCommands(definition.getExecutionMode(), commandSteps);
+        executeCommands(mode, commandSteps);
         if (screenStep != null) openScreen(screenStep.getValue(), parent);
     }
 
@@ -264,6 +287,7 @@ public final class CustomQuickActionManager {
                 .setIconType(definition.getIconType() == null ? QuickActionIconType.ITEM : definition.getIconType())
                 .setIcon(definition.getIcon() == null ? "minecraft:paper" : definition.getIcon())
                 .setKeyChord(definition.getKeyChord() == null ? "" : definition.getKeyChord())
+                .setCloseBeforeExecution(definition.isCloseBeforeExecution())
                 .setExecutionMode(definition.getExecutionMode() == null
                         ? QuickActionExecutionMode.PARALLEL : definition.getExecutionMode());
         List<CustomQuickActionStep> steps = new ArrayList<>();
@@ -277,7 +301,35 @@ public final class CustomQuickActionManager {
                         .setValue(step.getValue().trim()));
             }
         }
-        return result.setSteps(steps);
+        List<CustomQuickActionMenuItem> menuItems = new ArrayList<>();
+        if (definition.getContextMenuItems() != null) {
+            for (CustomQuickActionMenuItem item : definition.getContextMenuItems()) {
+                CustomQuickActionMenuItem normalized = normalize(item);
+                if (normalized != null) menuItems.add(normalized);
+            }
+        }
+        return result.setSteps(steps).setContextMenuItems(menuItems);
+    }
+
+    private static CustomQuickActionMenuItem normalize(CustomQuickActionMenuItem item) {
+        if (item == null || item.getLabel() == null || item.getLabel().trim().isEmpty()) return null;
+        List<CustomQuickActionStep> steps = new ArrayList<>();
+        if (item.getSteps() != null) {
+            for (CustomQuickActionStep step : item.getSteps()) {
+                if (step == null || step.getType() == null || step.getValue() == null
+                        || step.getValue().trim().isEmpty()) continue;
+                steps.add(new CustomQuickActionStep().setType(step.getType())
+                        .setCondition(step.getCondition() == null
+                                ? QuickActionStepCondition.ALWAYS : step.getCondition())
+                        .setValue(step.getValue().trim()));
+            }
+        }
+        return new CustomQuickActionMenuItem()
+                .setLabel(item.getLabel().trim())
+                .setCloseBeforeExecution(item.isCloseBeforeExecution())
+                .setExecutionMode(item.getExecutionMode() == null
+                        ? QuickActionExecutionMode.PARALLEL : item.getExecutionMode())
+                .setSteps(steps);
     }
 
     private static String safeId(String id) {

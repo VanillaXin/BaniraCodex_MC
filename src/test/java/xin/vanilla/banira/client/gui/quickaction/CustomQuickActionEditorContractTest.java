@@ -25,7 +25,9 @@ public class CustomQuickActionEditorContractTest {
             "custom_quick_action_execution_parallel", "custom_quick_action_execution_chained",
             "custom_quick_action_step_type_command", "custom_quick_action_step_type_screen",
             "custom_quick_action_condition_always", "custom_quick_action_condition_on_success",
-            "custom_quick_action_condition_on_failure"
+            "custom_quick_action_condition_on_failure", "custom_quick_action_close_before",
+            "custom_quick_action_edit", "custom_quick_action_add_menu",
+            "custom_quick_action_menu_step_title", "custom_quick_action_menu_edit_title"
     );
 
     @Test
@@ -43,6 +45,11 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(steps.contains("new ItemSelectScreen"));
         assertTrue(steps.contains("new EffectSelectScreen"));
         assertTrue(steps.contains("WidgetType.FILE"));
+        assertTrue(steps.contains("popupOption.addOptionWithId"));
+        assertTrue(steps.contains("PresetStyle.DELETE"));
+        assertTrue(steps.contains("definition.getContextMenuItems()"));
+        assertTrue(editor.contains("custom_quick_action_close_before"));
+        assertTrue(!editor.contains(".disabled(mode == QuickActionExecutionMode.PARALLEL)"));
     }
 
     private static void assertTranslations(String language) throws Exception {

@@ -40,7 +40,7 @@ import java.util.function.Predicate;
  *   <li><b>mouseClicked</b>: cursor → popupOption(悬停则处理) → 否则 popupOption.clear + unfocusAllExcept
  *       → 逆序 widgets(visible+enabled, shouldWidgetReceiveClick) handleMouseClick → 首个 consumed 的获得 focus
  *       → 未 consumed 则 onMouseClicked</li>
- *   <li><b>mouseScrolled</b>: cursor → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
+ *   <li><b>mouseScrolled</b>: cursor → popupOption → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
  *       → 逆序 widgets handleMouseScroll → onMouseScrolled</li>
  *   <li><b>keyPressed</b>: focusedWidget 优先 → 逆序 widgets(跳过 focused) handleKeyPress → onKeyPressed</li>
  * </ul>
@@ -383,6 +383,11 @@ public abstract class BaniraScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
         this.cursor.mouseScrolled(scrollEvent);
+
+        // 弹出菜单覆盖普通控件，应先消费其范围内的滚轮事件。
+        if (delta != 0 && this.popupOption.addScrollOffset(delta)) {
+            return true;
+        }
 
         // 优先让已获得焦点的输入框/滑块处理滚轮，无论鼠标位置
         if (delta != 0 && focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()

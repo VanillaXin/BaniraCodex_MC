@@ -83,7 +83,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
 
             ButtonWidget delete = new ButtonWidget(this);
             delete.id("delete_" + i);
-            delete.text("-");
+            delete.presetStyle(ButtonWidget.PresetStyle.DELETE).padding(3);
             delete.onClick(button -> delete(index));
             deleteButtons.add(delete);
             addWidget(delete);
@@ -119,14 +119,24 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
 
     private void add() {
         CustomQuickActionDefinition draft = new CustomQuickActionDefinition();
-        CustomQuickActionStepsScreen steps = new CustomQuickActionStepsScreen(this, draft, -1);
-        Minecraft.getInstance().setScreen(steps);
-        steps.openDefinitionEditor();
+        Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(this, draft, -1));
     }
 
     private void openEditor(int index) {
         if (index < 0 || index >= definitions.size()) return;
         Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(this, definitions.get(index), index));
+    }
+
+    static void openEditor(Screen parent, String definitionId) {
+        CustomQuickActionConfigScreen screen = new CustomQuickActionConfigScreen(parent);
+        List<CustomQuickActionDefinition> values = CustomQuickActionManager.get().definitions();
+        for (int i = 0; i < values.size(); i++) {
+            if (values.get(i).getId().equalsIgnoreCase(definitionId)) {
+                Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(screen, values.get(i), i));
+                return;
+            }
+        }
+        Minecraft.getInstance().setScreen(screen);
     }
 
     private void delete(int index) {

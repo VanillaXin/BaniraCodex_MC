@@ -1045,6 +1045,11 @@ public class InputFormScreen extends BaniraScreen {
         if (eventArgs.consumed()) {
             return;
         }
+        if (eventArgs.key() == GLFWKey.GLFW_KEY_TAB && focusAdjacentInput(
+                (eventArgs.modifiers() & GLFWKey.GLFW_MOD_SHIFT) == 0 ? 1 : -1)) {
+            eventArgs.consumed(true);
+            return;
+        }
         boolean inputFocused = this.inputFields.stream()
                 .anyMatch(field -> field.input() != null && field.input().focused());
         if ((eventArgs.key() == GLFWKey.GLFW_KEY_ENTER
@@ -1059,6 +1064,54 @@ public class InputFormScreen extends BaniraScreen {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
+    }
+
+    /** 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。 */
+    private boolean focusAdjacentInput(int direction) {
+        List<InputWidget> candidates = new ArrayList<>();
+        List<Integer> fieldIndexes = new ArrayList<>();
+        for (int i = 0; i < inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            InputWidget input = field.input() != null
+                    ? field.input() : field.slider() == null ? null : field.slider().inlineInputWidget();
+            if (input != null && input.visible() && input.enabled()) {
+                candidates.add(input);
+                fieldIndexes.add(i);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        int current = -1;
+        for (int i = 0; i < candidates.size(); i++) {
+            if (candidates.get(i).focused()) {
+                current = i;
+                break;
+            }
+        }
+        int target = current < 0
+                ? (direction > 0 ? 0 : candidates.size() - 1)
+                : Math.floorMod(current + direction, candidates.size());
+        requestFocus(candidates.get(target));
+        scrollFieldIntoView(fieldIndexes.get(target));
+        return true;
+    }
+
+    private void scrollFieldIntoView(int fieldIndex) {
+        if (!scrollMode || scrollbarWidget == null || fieldIndex < 0) {
+            return;
+        }
+        int itemTop = fieldIndex * ITEM_HEIGHT;
+        int itemBottom = itemTop + ITEM_HEIGHT;
+        int current = getScrollOffset();
+        int target = current;
+        if (itemTop < current) {
+            target = itemTop;
+        } else if (itemBottom > current + listAreaHeight) {
+            target = itemBottom - listAreaHeight;
+        }
+        scrollbarWidget.setValue(Math.max(0, Math.min(scrollbarWidget.maxValue(), target)));
+        updateInputFieldsPosition();
     }
 
 }

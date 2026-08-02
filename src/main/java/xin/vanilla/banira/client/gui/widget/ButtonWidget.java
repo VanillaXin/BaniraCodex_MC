@@ -45,6 +45,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
          */
         PLUS,
         /**
+         * 删除/垃圾桶
+         */
+        DELETE,
+        /**
          * 最大化方框
          */
         MAXIMIZE,
@@ -917,6 +921,22 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 AbstractGuiUtils.drawLine(stack, cx - plusR, cy, cx + plusR, cy, lw, color);
                 AbstractGuiUtils.drawLine(stack, cx, cy - plusR, cx, cy + plusR, lw, color);
                 break;
+            case DELETE: {
+                float bodyW = r * 1.18f;
+                float bodyH = r * 1.18f;
+                float left = cx - bodyW * 0.5f;
+                float top = cy - bodyH * 0.34f;
+                AbstractGuiUtils.drawLine(stack, left, top, left + bodyW, top, lw, color);
+                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.18f, top,
+                        left + bodyW * 0.26f, top + bodyH, lw, color);
+                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.82f, top,
+                        left + bodyW * 0.74f, top + bodyH, lw, color);
+                AbstractGuiUtils.drawLine(stack, left + bodyW * 0.26f, top + bodyH,
+                        left + bodyW * 0.74f, top + bodyH, lw, color);
+                AbstractGuiUtils.drawLine(stack, cx - bodyW * 0.22f, top - r * 0.28f,
+                        cx + bodyW * 0.22f, top - r * 0.28f, lw, color);
+                break;
+            }
             case MAXIMIZE:
                 // 最大化
                 ShapeDrawArgs.PolygonParams sq = new ShapeDrawArgs.PolygonParams()

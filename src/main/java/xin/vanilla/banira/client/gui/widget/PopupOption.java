@@ -503,7 +503,9 @@ public class PopupOption extends BaseWidget {
         int screenWidth = AbstractGuiUtils.getScreenSize().key();
         int screenHeight = AbstractGuiUtils.getScreenSize().val();
         if (maxWidth <= 0) maxWidth = screenWidth - MARGIN * 2;
-        if (maxHeight <= 0) maxHeight = screenHeight - MARGIN * 2;
+        // 长菜单默认只占屏幕高度的三分之二，剩余内容继续通过滚轮访问。
+        if (maxHeight <= 0) maxHeight = Math.max(font.lineHeight + PAD_TOP + PAD_BOTTOM,
+                screenHeight * 2 / 3);
 
         width = Math.min(AbstractGuiUtils.getTextWidth(font, renderList) + PAD_LEFT + PAD_RIGHT, maxWidth);
         height = Math.min(AbstractGuiUtils.getTextHeight(font, renderList) + renderList.size() - 1 + PAD_TOP + PAD_BOTTOM, maxHeight);

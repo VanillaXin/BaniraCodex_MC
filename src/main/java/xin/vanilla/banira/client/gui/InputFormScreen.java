@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -112,6 +113,7 @@ public class InputFormScreen extends BaniraScreen {
         @Nullable
         private List<DropdownOption> dropdownOptionEntries;
         private boolean dropdownMultiSelect;
+        private DropdownInputMode dropdownInputMode = DropdownInputMode.SELECTION_ONLY;
         private Function<Results, String> validator = s -> "";
         private Consumer<Inputs> changed;
 
@@ -182,6 +184,7 @@ public class InputFormScreen extends BaniraScreen {
 
     public enum WidgetType {
         TEXT,
+        PASSWORD,
         NUMERIC,
         FILE,
         COLOR,
@@ -490,13 +493,14 @@ public class InputFormScreen extends BaniraScreen {
             inputField.titleLabel(titleLabel);
             addWidget(titleLabel);
 
-            if (widget.type() == WidgetType.TEXT) {
+            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD) {
                 InputWidget inputWidget = new InputWidget(this);
                 inputWidget.id("input_" + i);
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
                 inputWidget.text(widget.hint());
                 inputWidget.enabled(!widget.disabled());
+                inputWidget.password(widget.type() == WidgetType.PASSWORD);
 
                 int finalI = i;
                 inputWidget.onTextChanged(text -> {
@@ -523,6 +527,7 @@ public class InputFormScreen extends BaniraScreen {
                     dd.options(new ArrayList<>(widget.dropdownOptions()));
                 }
                 dd.multiSelect(widget.dropdownMultiSelect());
+                dd.inputMode(widget.dropdownInputMode());
                 dd.text(widget.hint());
                 dd.selectedValues(parseDropdownInitialValues(widget, currentValue));
                 dd.enabled(!widget.disabled());
@@ -741,6 +746,31 @@ public class InputFormScreen extends BaniraScreen {
         return null;
     }
 
+    private boolean canSubmit() {
+        Results results = buildResultsFromInputs(-1, null);
+        for (int index = 0; index < this.args.getWidgets().size(); index++) {
+            Widget widget = this.args.getWidgets().get(index);
+            if (index >= inputFields.size()) {
+                continue;
+            }
+            InputField field = inputFields.get(index);
+            boolean empty;
+            if (field.input() instanceof DropdownSelectWidget) {
+                empty = ((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
+            } else {
+                empty = field.input() == null || StringUtils.isNullOrEmpty(field.input().value());
+            }
+            if (!widget.allowEmpty() && empty) {
+                return false;
+            }
+            results.curIndex(index).curName(widget.name());
+            if (StringUtils.isNotNullOrEmpty(widget.validator().apply(results))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * 校验并更新错误状态。
      * 使用 buildResultsFromInputs 支持跨字段校验。
@@ -918,6 +948,8 @@ public class InputFormScreen extends BaniraScreen {
             if (headerDraw.colorEmpty()) {
                 headerDraw.color(getEffectiveTheme().textPrimary());
             }
+            headerDraw.color(ColorUtils.ensureReadableTextArgb(
+                    headerDraw.color(), getEffectiveTheme().panelBg()));
             LabelWidget.drawLimitedText(FontDrawArgs.of(headerDraw)
                     .x(contentLeft)
                     .y(formHeaderAreaTop + HEADER_TOP_PAD)
@@ -965,20 +997,7 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         if (submitButtonWidget != null) {
-            boolean allValid = this.args.getWidgets().stream().allMatch(wi -> {
-                int index = args.getWidgets().indexOf(wi);
-                if (index >= 0 && index < inputFields.size()) {
-                    InputField field = inputFields.get(index);
-                    if (wi.allowEmpty()) {
-                        return true;
-                    }
-                    if (field.input() instanceof DropdownSelectWidget) {
-                        return !((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
-                    }
-                    return field.input() != null && StringUtils.isNotNullOrEmpty(field.input().value());
-                }
-                return true;
-            });
+            boolean allValid = canSubmit();
             if (allValid) {
                 submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
             } else {
@@ -1021,6 +1040,15 @@ public class InputFormScreen extends BaniraScreen {
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
         super.onKeyPressed(eventArgs);
         if (eventArgs.consumed()) {
+            return;
+        }
+        boolean inputFocused = this.inputFields.stream()
+                .anyMatch(field -> field.input() != null && field.input().focused());
+        if ((eventArgs.key() == GLFWKey.GLFW_KEY_ENTER
+                || eventArgs.key() == GLFWKey.GLFW_KEY_KP_ENTER)
+                && !inputFocused && canSubmit()) {
+            handleSubmit();
+            eventArgs.consumed(true);
             return;
         }
         if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE

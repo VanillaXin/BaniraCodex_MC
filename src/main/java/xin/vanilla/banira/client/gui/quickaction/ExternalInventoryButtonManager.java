@@ -112,6 +112,34 @@ public final class ExternalInventoryButtonManager {
         return effectiveHost == EnumExternalInventoryButtonHost.FTB_LIBRARY;
     }
 
+    synchronized String diagnosticSnapshot(@Nullable Screen screen) {
+        StringBuilder result = new StringBuilder();
+        result.append("effectiveHost=").append(effectiveHost).append('\n');
+        result.append("screen=").append(screen == null ? "null" : screen.getClass().getName()).append('\n');
+        result.append("ftbHostAvailable=").append(ftbHostBridge.available()).append('\n');
+        result.append("providerCount=").append(providers.size()).append('\n');
+        for (ExternalInventoryActionProvider provider : providers) {
+            String sourceId = normalizeId(provider.sourceId());
+            try {
+                List<ExternalInventoryAction> actions = provider.actions(screen);
+                result.append("provider[").append(sourceId).append("]=");
+                if (actions != null) {
+                    for (ExternalInventoryAction action : actions) {
+                        if (action != null) result.append(normalizeId(action.id())).append(',');
+                    }
+                }
+                result.append('\n');
+            } catch (Throwable throwable) {
+                result.append("provider[").append(sourceId).append("]=ERROR:")
+                        .append(throwable.getClass().getName()).append(':')
+                        .append(throwable.getMessage()).append('\n');
+            }
+        }
+        result.append("adoptedEntryCount=").append(adoptedEntryIds.size()).append('\n');
+        for (String id : adoptedEntryIds) result.append("adopted=").append(id).append('\n');
+        return result.toString();
+    }
+
     synchronized void clearAdoptedEntries() {
         QuickActionRegistry registry = QuickActionRegistry.get();
         for (String id : adoptedEntryIds) registry.unregister(id);

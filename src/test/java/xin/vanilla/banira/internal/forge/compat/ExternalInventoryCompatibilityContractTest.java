@@ -102,6 +102,21 @@ public class ExternalInventoryCompatibilityContractTest {
         assertFalse(source.contains("inventoryprofiles.tooltip.editor_open"));
     }
 
+    @Test
+    public void devSmokeRunnerOpensInventoryAndWritesBoundedDiagnostics() throws Exception {
+        String runner = source("src/main/java/xin/vanilla/banira/client/gui/quickaction/ExternalInventoryButtonSmokeRunner.java");
+        String eventBridge = source("src/main/java/xin/vanilla/banira/internal/forge/client/ForgeBaniraClientEventBridge.java");
+        String build = source("build.gradle");
+
+        assertTrue(runner.contains("banira.externalButtonsSmoke"));
+        assertTrue(runner.contains("new InventoryScreen"));
+        assertTrue(runner.contains("ScreenShotHelper.takeScreenshot"));
+        assertTrue(runner.contains("writeToFile"));
+        assertTrue(runner.contains("FINISHED"));
+        assertTrue(eventBridge.contains("ExternalInventoryButtonSmokeRunner.onClientTick()"));
+        assertTrue(build.contains("externalButtonsSmoke"));
+    }
+
     private static String source(String path) throws Exception {
         return new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
     }

@@ -19,6 +19,7 @@ import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
+import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonSmokeRunner;
 import xin.vanilla.banira.internal.client.*;
 
 /**
@@ -47,6 +48,7 @@ public final class ForgeBaniraClientEventBridge {
         if (event.phase == TickEvent.Phase.END) {
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraClientGuiService.handleClientTickEnd(!BaniraClientAccess.hasScreen());
+            ExternalInventoryButtonSmokeRunner.onClientTick();
         }
     }
 

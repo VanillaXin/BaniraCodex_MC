@@ -156,6 +156,7 @@ public final class InputStateManager {
     }
 
     public void registerKey(int key) {
+        if (!BaniraClientInputService.isValidKeyboardKey(key)) return;
         keyHistoryRecords.computeIfAbsent(key, k -> new FixedList<>(KEY_HISTORY_SIZE));
     }
 
@@ -411,11 +412,13 @@ public final class InputStateManager {
     }
 
     private void onKeyPressed(int keyCode) {
+        if (!BaniraClientInputService.isValidKeyboardKey(keyCode)) return;
         pressedKeys.add(keyCode);
         updateKeyHistory(keyCode, true);
     }
 
     private void onKeyReleased(int keyCode) {
+        if (!BaniraClientInputService.isValidKeyboardKey(keyCode)) return;
         pressedKeys.remove(keyCode);
         updateKeyHistory(keyCode, false);
     }
@@ -490,8 +493,15 @@ public final class InputStateManager {
     }
 
     private void syncRegisteredKeys() {
-        for (Map.Entry<Integer, FixedList<Boolean>> entry : keyHistoryRecords.entrySet()) {
+        java.util.Iterator<Map.Entry<Integer, FixedList<Boolean>>> iterator =
+                keyHistoryRecords.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, FixedList<Boolean>> entry = iterator.next();
             int key = entry.getKey();
+            if (!BaniraClientInputService.isValidKeyboardKey(key)) {
+                iterator.remove();
+                continue;
+            }
             FixedList<Boolean> record = entry.getValue();
             record.add(BaniraClientInputService.isKeyDown(key));
         }

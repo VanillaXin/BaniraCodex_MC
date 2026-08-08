@@ -54,7 +54,11 @@ minecraft {
             jvmArgs.add "-XX:HotswapAgent=fatjar"
         }
 
-        client {}
+        client {
+            if (project.hasProperty('externalButtonsSmoke')) {
+                property 'banira.externalButtonsSmoke', project.property('externalButtonsSmoke').toString()
+            }
+        }
 
         server {
             // args '--nogui'

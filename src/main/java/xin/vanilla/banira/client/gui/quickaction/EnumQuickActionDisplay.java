@@ -10,7 +10,7 @@ import xin.vanilla.banira.common.util.EnumDescriptionHelper;
  */
 public enum EnumQuickActionDisplay implements IEnumDescribable {
     /**
-     * 在背包界面顶部图标组中显示
+     * 同时显示为背包界面按钮和 Banira 菜单项
      */
     ICON,
     /**
@@ -18,7 +18,7 @@ public enum EnumQuickActionDisplay implements IEnumDescribable {
      */
     INVENTORY_ONLY,
     /**
-     * 仅注册到列表
+     * 仅显示为 Banira 菜单项
      */
     LIST_ONLY,
     ;

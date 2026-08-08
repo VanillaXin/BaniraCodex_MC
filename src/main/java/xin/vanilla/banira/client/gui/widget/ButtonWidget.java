@@ -266,7 +266,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.NONE;
+    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.END;
 
     /**
      * 预置图标样式，非 null 时绘制图标而非文本

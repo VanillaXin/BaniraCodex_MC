@@ -319,7 +319,7 @@ public final class QuickActionOverlay {
             return null;
         }
         QuickActionEntry e = QuickActionRegistry.get().getEntry(id);
-        if (e == null || e.display() != EnumQuickActionDisplay.ICON) {
+        if (e == null || !e.display().showsInventoryIcon()) {
             return null;
         }
         return e;
@@ -338,7 +338,7 @@ public final class QuickActionOverlay {
             return false;
         }
         QuickActionEntry e = QuickActionRegistry.get().getEntry(id);
-        return e != null && e.display() == EnumQuickActionDisplay.ICON;
+        return e != null && e.display().showsInventoryIcon();
     }
 
     /**
@@ -726,7 +726,7 @@ public final class QuickActionOverlay {
                     if (!id.isEmpty() && !layout.hiddenIconIds().contains(id)) {
                         drawEntry = reg.getEntry(id);
                     }
-                    if (drawEntry != null && drawEntry.display() == EnumQuickActionDisplay.ICON) {
+                    if (drawEntry != null && drawEntry.display().showsInventoryIcon()) {
                         drawEntry.quickIcon().render(stack, mc, ix, iy, iconSize);
                     }
                 }

@@ -58,7 +58,8 @@ public class CustomQuickActionEditorContractTest {
                 .contains("row.bounds().width() - 12"));
         assertTrue(steps.contains("row.bounds().width() - 12"));
         String manager = source("CustomQuickActionManager.java");
-        assertTrue(manager.contains("QuickActionOverlay.isSupportedInventoryScreen"));
+        assertTrue(manager.contains("if (minecraft.screen != null)"));
+        assertTrue(!manager.contains("QuickActionOverlay.isSupportedInventoryScreen"));
         assertTrue(manager.contains("menuOnly ? null"));
     }
 

@@ -152,7 +152,7 @@ public final class CustomQuickActionManager {
     public void onKeyPressed(BaniraKeyboardEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (event.repeatedPress()) return;
-        if (minecraft.screen != null && !QuickActionOverlay.isSupportedInventoryScreen(minecraft.screen)) {
+        if (minecraft.screen != null) {
             return;
         }
         for (CustomQuickActionDefinition definition : definitions()) {

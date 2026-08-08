@@ -348,7 +348,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             row.visible(visible);
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
             row.text(rowText(i));
-            row.textMaxWidth(listW - deleteW - 12);
+            row.textMaxWidth(Math.max(0, (int) row.bounds().width() - 12));
             ButtonWidget delete = deletes.get(i);
             delete.visible(visible);
             delete.bounds(new ScreenCoordinate(listX + listW - deleteW, y, deleteW, ROW_H));

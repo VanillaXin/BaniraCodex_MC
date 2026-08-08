@@ -18,14 +18,9 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
@@ -258,22 +253,12 @@ public class Translator implements ITranslator {
     }
 
     private void loadFromClasspath() {
-        try {
-            URL url = resourceAnchorClass.getResource(getLangPath());
-            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
-                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
-                return;
-            }
-            Path directory = Paths.get(url.toURI());
-            try (Stream<Path> files = Files.list(directory)) {
-                files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
-                        .forEach(this::loadKnownClasspathLanguage);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+        Set<String> discovered = ClasspathLanguageDiscovery.discover(resourceAnchorClass, getLangPath());
+        if (discovered.isEmpty()) {
             loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+            return;
         }
+        discovered.forEach(this::loadKnownClasspathLanguage);
     }
 
     private void loadKnownClasspathLanguage(String languageCode) {

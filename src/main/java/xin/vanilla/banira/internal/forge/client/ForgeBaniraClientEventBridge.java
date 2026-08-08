@@ -7,10 +7,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.*;
@@ -169,6 +171,26 @@ public final class ForgeBaniraClientEventBridge {
         BaniraKeyboardEvent baniraEvent = BaniraKeyboardEvent.released(screenInfo(event.getGui()), event.getKeyCode(), event.getScanCode(), event.getModifiers());
         BaniraClientEventHub.dispatchKeyReleasedPost(baniraEvent);
         BaniraClientGuiService.handleKeyboard(baniraEvent);
+    }
+
+    /** 游戏内没有打开界面时，Forge 不会触发 GuiScreenEvent。 */
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGlobalKeyInput(InputEvent.KeyInputEvent event) {
+        if (Minecraft.getInstance().screen != null) {
+            return;
+        }
+        if (event.getAction() == GLFW.GLFW_PRESS || event.getAction() == GLFW.GLFW_REPEAT) {
+            BaniraKeyboardEvent baniraEvent = BaniraKeyboardEvent.pressed(
+                    BaniraScreenInfo.closed(), event.getKey(), event.getScanCode(), event.getModifiers());
+            BaniraClientEventHub.dispatchKeyPressedPre(baniraEvent);
+            BaniraClientGuiService.handleKeyboard(baniraEvent);
+        } else if (event.getAction() == GLFW.GLFW_RELEASE) {
+            BaniraKeyboardEvent baniraEvent = BaniraKeyboardEvent.released(
+                    BaniraScreenInfo.closed(), event.getKey(), event.getScanCode(), event.getModifiers());
+            BaniraClientEventHub.dispatchKeyReleasedPost(baniraEvent);
+            BaniraClientGuiService.handleKeyboard(baniraEvent);
+        }
     }
 
     private static BaniraHudRenderEvent hudEvent(RenderGameOverlayEvent event, HudRenderPhase phase, boolean cancellable) {

@@ -19,7 +19,8 @@ public class CustomQuickActionEditorContractTest {
     private static final List<String> REQUIRED_SUFFIXES = Arrays.asList(
             "custom_quick_action_title", "custom_quick_action_edit_title",
             "custom_quick_action_step_title", "custom_quick_action_step_edit_title",
-            "custom_quick_action_display_icon", "custom_quick_action_display_list_only",
+            "custom_quick_action_display_icon", "custom_quick_action_display_inventory_only",
+            "custom_quick_action_display_list_only",
             "custom_quick_action_icon_item", "custom_quick_action_icon_effect",
             "custom_quick_action_icon_resource", "custom_quick_action_icon_external_file",
             "custom_quick_action_execution_parallel", "custom_quick_action_execution_chained",
@@ -53,6 +54,12 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(steps.contains("definition.getContextMenuItems()"));
         assertTrue(editor.contains("custom_quick_action_close_before"));
         assertTrue(!editor.contains(".disabled(mode == QuickActionExecutionMode.PARALLEL)"));
+        assertTrue(source("CustomQuickActionConfigScreen.java")
+                .contains("row.bounds().width() - 12"));
+        assertTrue(steps.contains("row.bounds().width() - 12"));
+        String manager = source("CustomQuickActionManager.java");
+        assertTrue(manager.contains("QuickActionOverlay.isSupportedInventoryScreen"));
+        assertTrue(manager.contains("menuOnly ? null"));
     }
 
     private static void assertTranslations(String language) throws Exception {

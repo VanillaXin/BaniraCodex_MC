@@ -14,10 +14,22 @@ public enum EnumQuickActionDisplay implements IEnumDescribable {
      */
     ICON,
     /**
+     * 仅显示为背包界面按钮，不加入 Banira 默认图标的菜单
+     */
+    INVENTORY_ONLY,
+    /**
      * 仅注册到列表
      */
     LIST_ONLY,
     ;
+
+    public boolean showsInventoryIcon() {
+        return this == ICON || this == INVENTORY_ONLY;
+    }
+
+    public boolean showsInDefaultMenu() {
+        return this == ICON || this == LIST_ONLY;
+    }
 
     @Override
     public Component enumDescription() {

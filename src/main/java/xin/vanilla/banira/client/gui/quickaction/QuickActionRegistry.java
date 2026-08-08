@@ -188,6 +188,22 @@ public final class QuickActionRegistry {
 
     // endregion
 
+    // region registerInventoryOnly 重载
+
+    /** 注册仅显示为背包界面按钮、不加入默认图标菜单的入口。 */
+    public void registerInventoryOnly(
+            @Nonnull String id,
+            @Nonnull QuickIcon icon,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        register(id, icon, label, EnumQuickActionDisplay.INVENTORY_ONLY,
+                action, Arrays.asList(contextMenuItems));
+    }
+
+    // endregion
+
     // region registerListOnly 重载
 
     public void registerListOnly(
@@ -328,7 +344,7 @@ public final class QuickActionRegistry {
     public LinkedHashSet<String> registeredIconEntryIds() {
         LinkedHashSet<String> set = new LinkedHashSet<>();
         for (QuickActionEntry e : allEntriesInOrder()) {
-            if (e.display() == EnumQuickActionDisplay.ICON) {
+            if (e.display().showsInventoryIcon()) {
                 set.add(e.id());
             }
         }
@@ -384,7 +400,13 @@ public final class QuickActionRegistry {
      */
     @Nonnull
     public List<QuickActionEntry> dropdownEntries() {
-        return allEntriesInOrder();
+        List<QuickActionEntry> result = new ArrayList<>();
+        for (QuickActionEntry entry : allEntriesInOrder()) {
+            if (entry.display().showsInDefaultMenu()) {
+                result.add(entry);
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     void validateMenuAnchor() {
@@ -393,7 +415,7 @@ public final class QuickActionRegistry {
             return;
         }
         QuickActionEntry e = entries.get(anchor);
-        if (e == null || e.display() != EnumQuickActionDisplay.ICON) {
+        if (e == null || !e.display().showsInventoryIcon()) {
             LOGGER.warn("Inventory quick-action menu anchor '{}' is invalid or not an ICON entry; dropdown disabled until set.", anchor);
         }
     }

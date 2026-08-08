@@ -38,6 +38,7 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -107,6 +108,7 @@ public final class QuickActionOverlay {
     private final QuickActionLayout layout = new QuickActionLayout();
 
     private boolean layoutLoaded;
+    private boolean layoutHotReloadRegistered;
 
     private int lastScreenW;
     private int lastScreenH;
@@ -220,6 +222,10 @@ public final class QuickActionOverlay {
         }
         layoutLoaded = true;
         Path path = CustomConfig.getConfigDirectory().resolve(LAYOUT_FILE);
+        if (!layoutHotReloadRegistered) {
+            ManagedConfigFiles.register(path, ManagedConfigFiles.Scope.CLIENT, this::reloadLayoutFromDisk);
+            layoutHotReloadRegistered = true;
+        }
         if (!Files.exists(path)) {
             syncLayoutWithRegistry();
             return;
@@ -233,6 +239,12 @@ public final class QuickActionOverlay {
             LOGGER.warn("Failed to load inventory quick-action layout: {}", e.getMessage());
             syncLayoutWithRegistry();
         }
+    }
+
+    private void reloadLayoutFromDisk() {
+        layoutLoaded = false;
+        savePending = false;
+        ensureLoaded();
     }
 
     private void markSave() {
@@ -251,6 +263,7 @@ public final class QuickActionOverlay {
                 Path path = dir.resolve(LAYOUT_FILE);
                 JsonObject o = layout.toJson();
                 Files.write(path, JsonUtils.toPrettyString(o).getBytes(StandardCharsets.UTF_8));
+                ManagedConfigFiles.markWritten(path);
             } catch (Exception e) {
                 LOGGER.warn("Failed to save inventory quick-action layout: {}", e.getMessage());
             }
@@ -1030,6 +1043,9 @@ public final class QuickActionOverlay {
 
     private void fireAction(QuickActionEntry entry, double mx, double my) {
         if (entry.onActivate() == null) {
+            if (!entry.contextMenuItems.isEmpty()) {
+                openCustomEntryMenu(entry.id(), mx, my, entry.primaryMenuItemOffset());
+            }
             return;
         }
         QuickActionContext ctx = new QuickActionContext()
@@ -1199,8 +1215,18 @@ public final class QuickActionOverlay {
                 continue;
             }
             boolean hasSecondary = !ent.contextMenuItems.isEmpty();
-            L.add(new CtxRow(ent.label().toVanilla().getString(), false, () ->
-                    fireAction(ent, contextClickMouseX, contextClickMouseY), ent.quickIcon(),
+            boolean menuOnly = ent.onActivate() == null && hasSecondary;
+            L.add(new CtxRow(ent.label().toVanilla().getString(), menuOnly, () -> {
+                if (menuOnly) {
+                    contextEntrySubmenuId = ent.id();
+                    contextEntryItemOffset = ent.primaryMenuItemOffset();
+                    contextEntryDirect = false;
+                    contextPage = CTX_PAGE_ENTRY_CONTEXT;
+                    contextScrollPx = 0;
+                } else {
+                    fireAction(ent, contextClickMouseX, contextClickMouseY);
+                }
+            }, ent.quickIcon(),
                     hasSecondary ? ent : null));
         }
     }

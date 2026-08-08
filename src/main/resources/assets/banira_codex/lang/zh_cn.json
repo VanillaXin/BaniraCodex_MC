@@ -138,6 +138,7 @@
   "word.banira_codex.custom_quick_action_key": "绑定按键",
   "word.banira_codex.custom_quick_action_execution_mode": "指令执行方式",
   "word.banira_codex.custom_quick_action_display_icon": "显示在背包快捷栏",
+  "word.banira_codex.custom_quick_action_display_inventory_only": "仅显示为背包界面按钮",
   "word.banira_codex.custom_quick_action_display_list_only": "仅显示在快捷入口列表",
   "word.banira_codex.custom_quick_action_icon_item": "物品图标",
   "word.banira_codex.custom_quick_action_icon_effect": "效果图标",

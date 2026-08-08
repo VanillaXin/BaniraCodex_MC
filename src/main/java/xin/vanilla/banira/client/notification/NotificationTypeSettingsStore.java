@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ public final class NotificationTypeSettingsStore {
      */
     @Getter
     private volatile boolean settingsLoadedFromDisk;
+    private volatile boolean hotReloadRegistered;
 
     public static NotificationTypeSettingsStore get() {
         return INSTANCE;
@@ -46,6 +48,14 @@ public final class NotificationTypeSettingsStore {
 
     public void load() {
         Path path = CustomConfig.getConfigDirectory().resolve(FILE_NAME);
+        if (!hotReloadRegistered) {
+            synchronized (this) {
+                if (!hotReloadRegistered) {
+                    ManagedConfigFiles.register(path, ManagedConfigFiles.Scope.CLIENT, this::load);
+                    hotReloadRegistered = true;
+                }
+            }
+        }
         File file = path.toFile();
         if (!file.exists()) {
             markSettingsLoadedAndApplyRegistryDefaults();
@@ -130,6 +140,7 @@ public final class NotificationTypeSettingsStore {
                 }
                 root.add("types", types);
                 Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+                ManagedConfigFiles.markWritten(path);
             } catch (Exception e) {
                 LOGGER.warn("Failed to save notification type settings: {}", e.getMessage());
             }

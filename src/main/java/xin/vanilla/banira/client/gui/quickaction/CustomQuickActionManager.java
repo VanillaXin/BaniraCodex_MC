@@ -21,6 +21,7 @@ import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
@@ -49,6 +50,7 @@ public final class CustomQuickActionManager {
     private final Set<String> registeredIds = new HashSet<>();
     private final Map<String, BaniraQuickActionScreenFactory> screenFactories = new HashMap<>();
     private final List<QuickActionScreenAdapter> screenAdapters = new CopyOnWriteArrayList<>();
+    private boolean hotReloadRegistered;
 
     private CustomQuickActionManager() {
     }
@@ -74,8 +76,12 @@ public final class CustomQuickActionManager {
     }
 
     public synchronized void reload() {
-        definitions.clear();
         Path file = configFile();
+        if (!hotReloadRegistered) {
+            ManagedConfigFiles.register(file, ManagedConfigFiles.Scope.CLIENT, this::reload);
+            hotReloadRegistered = true;
+        }
+        List<CustomQuickActionDefinition> loadedDefinitions = new ArrayList<>();
         if (Files.isRegularFile(file)) {
             try {
                 String json = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
@@ -83,13 +89,16 @@ public final class CustomQuickActionManager {
                 if (loaded != null) {
                     for (CustomQuickActionDefinition value : loaded) {
                         CustomQuickActionDefinition normalized = normalize(value);
-                        if (normalized != null) definitions.add(normalized);
+                        if (normalized != null) loadedDefinitions.add(normalized);
                     }
                 }
             } catch (Exception exception) {
                 LOGGER.warn("Failed to load custom quick actions from {}", file, exception);
+                return;
             }
         }
+        definitions.clear();
+        definitions.addAll(loadedDefinitions);
         applyToRegistry();
     }
 
@@ -106,6 +115,7 @@ public final class CustomQuickActionManager {
             } catch (AtomicMoveNotSupportedException ignored) {
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
+            ManagedConfigFiles.markWritten(file);
         } catch (Exception exception) {
             LOGGER.warn("Failed to save custom quick actions to {}", file, exception);
         }
@@ -141,13 +151,16 @@ public final class CustomQuickActionManager {
 
     public void onKeyPressed(BaniraKeyboardEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen != null || event.repeatedPress()) return;
+        if (event.repeatedPress()) return;
+        if (minecraft.screen != null && !QuickActionOverlay.isSupportedInventoryScreen(minecraft.screen)) {
+            return;
+        }
         for (CustomQuickActionDefinition definition : definitions()) {
             Set<Integer> pressed = new LinkedHashSet<>(InputStateManager.instance().pressedKeyCodes());
             pressed.add(event.keyCode());
             if (definition.isEnabled() && GLFWKeyUtils.matchKey(definition.getKeyChord(),
                     pressed.stream().mapToInt(Integer::intValue).toArray())) {
-                activate(definition, null);
+                activate(definition, minecraft.screen);
                 event.cancel();
                 return;
             }
@@ -172,18 +185,18 @@ public final class CustomQuickActionManager {
                         BaniraComponent.get().literal(item.getLabel()),
                         context -> activate(item, context.currentScreen())));
             }
+            boolean menuOnly = definition.getSteps().isEmpty()
+                    && !definition.getContextMenuItems().isEmpty();
             registry.register(registryId, icon,
                     BaniraComponent.get().literal(definition.getLabel()),
                     EnumQuickActionDisplay.valueOf(definition.getDisplay().name()),
-                    context -> {
-                        if (definition.getSteps().isEmpty() && !definition.getContextMenuItems().isEmpty()) {
-                            QuickActionOverlay.get().openCustomEntryMenu(registryId,
-                                    context.mouseX(), context.mouseY(), 1);
-                        } else {
-                            activate(definition, context.currentScreen());
-                        }
-                    },
+                    menuOnly ? null : context -> activate(definition, context.currentScreen()),
                     menuItems);
+            QuickActionEntry registered = registry.getEntry(registryId);
+            if (registered != null && menuOnly) {
+                // 第一项是编辑入口；纯菜单快捷项左键只展示玩家配置的菜单内容。
+                registered.primaryMenuItemOffset(1);
+            }
             registeredIds.add(registryId);
         }
     }

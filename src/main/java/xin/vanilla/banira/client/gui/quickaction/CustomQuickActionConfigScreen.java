@@ -180,7 +180,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
             row.text((definition.isEnabled() ? "" : "[x] ") + definition.getLabel()
                     + (definition.getKeyChord().isEmpty() ? "" : "  [" + definition.getKeyChord() + "]"));
-            row.textMaxWidth(listW - deleteW - 12);
+            row.textMaxWidth(Math.max(0, (int) row.bounds().width() - 12));
             ButtonWidget delete = deleteButtons.get(i);
             delete.visible(visible);
             delete.bounds(new ScreenCoordinate(listX + listW - deleteW, y, deleteW, ROW_H));

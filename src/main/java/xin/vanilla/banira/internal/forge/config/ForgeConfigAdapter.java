@@ -5,6 +5,8 @@ import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
@@ -45,6 +47,9 @@ import java.util.function.Predicate;
 public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
+    private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = new IdentityHashMap<>();
+    private static final Set<IEventBus> CONFIG_EVENT_BUSES =
+            Collections.newSetFromMap(new IdentityHashMap<>());
 
     /**
      * 从注解配置类构建并注册 Forge 配置
@@ -80,7 +85,28 @@ public final class ForgeConfigAdapter {
         backend.setModConfig(modConfig);
 
         HOLDER_MAP.put(configClass, holder);
+        HOLDER_BY_CONFIG.put(modConfig, holder);
+        registerConfigEventListeners();
         ConfigRegistry.registerHolder(holder);
+    }
+
+    private static void registerConfigEventListeners() {
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        synchronized (CONFIG_EVENT_BUSES) {
+            if (!CONFIG_EVENT_BUSES.add(modBus)) return;
+        }
+        modBus.addListener(ForgeConfigAdapter::onConfigLoading);
+        modBus.addListener(ForgeConfigAdapter::onConfigReloading);
+    }
+
+    private static void onConfigLoading(ModConfig.Loading event) {
+        ConfigHolder holder = HOLDER_BY_CONFIG.get(event.getConfig());
+        if (holder != null) holder.acceptInitialExternalLoad();
+    }
+
+    private static void onConfigReloading(ModConfig.Reloading event) {
+        ConfigHolder holder = HOLDER_BY_CONFIG.get(event.getConfig());
+        if (holder != null) holder.acceptExternalReload();
     }
 
     private static ModContainer resolveContainer(String modId) {

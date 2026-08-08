@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -60,6 +61,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     private ScrollbarWidget scrollbar;
     private String searchText = "";
     private boolean applyingSearch;
+    private final Runnable reloadUnsubscribe;
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
@@ -73,9 +75,20 @@ public class ConfigEditorScreen extends BaniraScreen {
                 this::syncToServer, this::syncToServerFull, this::onClose);
         this.viewport = new ConfigEditorViewportModel(
                 CARD_MARGIN, CARD_INNER, SCROLL_WIDTH, SCROLL_GAP, SEARCH_HEIGHT + SEARCH_GAP);
+        this.reloadUnsubscribe = holder.onReloaded(changed -> Minecraft.getInstance().execute(() -> {
+            if (Minecraft.getInstance().screen == this) {
+                editorState.refreshEntriesFromHolder(holder.getConfigName());
+            }
+        }));
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null,
                 args != null ? args.theme() : null, args != null ? args.season() : null);
+    }
+
+    @Override
+    protected void onRemoved() {
+        reloadUnsubscribe.run();
+        super.onRemoved();
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {

@@ -14,6 +14,7 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
     private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
     private final List<ButtonWidget> rowButtons = new ArrayList<>();
     private final List<ButtonWidget> deleteButtons = new ArrayList<>();
+    private final List<TooltipWidget> rowTooltips = new ArrayList<>();
     private ScrollbarWidget scrollbar;
     private int panelX;
     private int panelY;
@@ -73,12 +75,18 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
 
         rowButtons.clear();
         deleteButtons.clear();
+        rowTooltips.clear();
         for (int i = 0; i < definitions.size(); i++) {
             final int index = i;
             ButtonWidget row = new ButtonWidget(this);
             row.id("action_" + i);
             row.onClick(button -> openEditor(index));
+            TooltipWidget tooltip = new TooltipWidget(this);
+            tooltip.id("entry_tooltip_" + i);
+            tooltip.popupAtScreenCoords(true);
+            row.addChild(tooltip);
             rowButtons.add(row);
+            rowTooltips.add(tooltip);
             addWidget(row);
 
             ButtonWidget delete = new ButtonWidget(this);
@@ -178,9 +186,17 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
             ButtonWidget row = rowButtons.get(i);
             row.visible(visible);
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
-            row.text((definition.isEnabled() ? "" : "[x] ") + definition.getLabel()
-                    + (definition.getKeyChord().isEmpty() ? "" : "  [" + definition.getKeyChord() + "]"));
-            row.textMaxWidth(Math.max(0, (int) row.bounds().width() - 12));
+            String fullText = (definition.isEnabled() ? "" : "[x] ") + definition.getLabel()
+                    + (definition.getKeyChord().isEmpty() ? "" : "  [" + definition.getKeyChord() + "]");
+            int maxTextWidth = Math.max(0, (int) row.bounds().width() - 12);
+            String displayText = QuickActionTextLayout.ellipsize(fullText, maxTextWidth, font::width);
+            row.text(displayText);
+            row.textMaxWidth(maxTextWidth);
+            TooltipWidget tooltip = rowTooltips.get(i);
+            tooltip.bounds(new ScreenCoordinate(0, 0, row.bounds().width(), ROW_H));
+            tooltip.text(QuickActionTextLayout.wrap(fullText,
+                    Math.max(40, Math.min(320, width - 24)), font::width));
+            tooltip.visible(visible && !displayText.equals(fullText));
             ButtonWidget delete = deleteButtons.get(i);
             delete.visible(visible);
             delete.bounds(new ScreenCoordinate(listX + listW - deleteW, y, deleteW, ROW_H));

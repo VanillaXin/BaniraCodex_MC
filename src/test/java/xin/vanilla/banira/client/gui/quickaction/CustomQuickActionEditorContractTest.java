@@ -57,6 +57,13 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(source("CustomQuickActionConfigScreen.java")
                 .contains("row.bounds().width() - 12"));
         assertTrue(steps.contains("row.bounds().width() - 12"));
+        assertTrue(steps.contains("QuickActionTextLayout.ellipsize"));
+        assertTrue(steps.contains("QuickActionTextLayout.wrap"));
+        assertTrue(steps.contains("TooltipWidget"));
+        String config = source("CustomQuickActionConfigScreen.java");
+        assertTrue(config.contains("QuickActionTextLayout.ellipsize"));
+        assertTrue(config.contains("QuickActionTextLayout.wrap"));
+        assertTrue(config.contains("TooltipWidget"));
         String manager = source("CustomQuickActionManager.java");
         assertTrue(manager.contains("if (minecraft.screen != null)"));
         assertTrue(!manager.contains("QuickActionOverlay.isSupportedInventoryScreen"));

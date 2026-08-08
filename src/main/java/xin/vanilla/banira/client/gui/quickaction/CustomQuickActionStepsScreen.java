@@ -31,6 +31,7 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
     private CustomQuickActionMenuItem menuItem;
     private final List<ButtonWidget> rows = new ArrayList<>();
     private final List<ButtonWidget> deletes = new ArrayList<>();
+    private final List<TooltipWidget> rowTooltips = new ArrayList<>();
     private ButtonWidget iconButton;
     private ScrollbarWidget scrollbar;
     private int panelX;
@@ -137,12 +139,18 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
 
         rows.clear();
         deletes.clear();
+        rowTooltips.clear();
         for (int i = 0; i < rowCount(); i++) {
             final int index = i;
             ButtonWidget row = new ButtonWidget(this);
             row.id("entry_" + i);
             row.onClick(button -> editRow(index));
+            TooltipWidget tooltip = new TooltipWidget(this);
+            tooltip.id("entry_tooltip_" + i);
+            tooltip.popupAtScreenCoords(true);
+            row.addChild(tooltip);
             rows.add(row);
+            rowTooltips.add(tooltip);
             addWidget(row);
             ButtonWidget delete = new ButtonWidget(this);
             delete.id("delete_" + i);
@@ -347,8 +355,16 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             ButtonWidget row = rows.get(i);
             row.visible(visible);
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
-            row.text(rowText(i));
-            row.textMaxWidth(Math.max(0, (int) row.bounds().width() - 12));
+            String fullText = rowText(i);
+            int maxTextWidth = Math.max(0, (int) row.bounds().width() - 12);
+            String displayText = QuickActionTextLayout.ellipsize(fullText, maxTextWidth, font::width);
+            row.text(displayText);
+            row.textMaxWidth(maxTextWidth);
+            TooltipWidget tooltip = rowTooltips.get(i);
+            tooltip.bounds(new ScreenCoordinate(0, 0, row.bounds().width(), ROW_H));
+            tooltip.text(QuickActionTextLayout.wrap(fullText,
+                    Math.max(40, Math.min(320, width - 24)), font::width));
+            tooltip.visible(visible && !displayText.equals(fullText));
             ButtonWidget delete = deletes.get(i);
             delete.visible(visible);
             delete.bounds(new ScreenCoordinate(listX + listW - deleteW, y, deleteW, ROW_H));

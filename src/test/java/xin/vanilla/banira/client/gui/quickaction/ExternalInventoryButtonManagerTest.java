@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ExternalInventoryButtonManagerTest {
     private static final String PROVIDER_ID = "test_provider";
@@ -33,8 +34,11 @@ public class ExternalInventoryButtonManagerTest {
         manager.registerProvider(provider(actions));
 
         manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
-        assertNotNull(QuickActionRegistry.get().getEntry(
-                ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
+        String adoptedId = ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID);
+        QuickActionEntry adopted = QuickActionRegistry.get().getEntry(adoptedId);
+        assertNotNull(adopted);
+        assertTrue(adopted.display().showsInventoryIcon());
+        assertTrue(QuickActionRegistry.get().registeredIconEntryIds().contains(adoptedId));
 
         actions.set(Collections.emptyList());
         manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);

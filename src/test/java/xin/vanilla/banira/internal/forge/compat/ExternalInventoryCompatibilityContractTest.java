@@ -113,8 +113,33 @@ public class ExternalInventoryCompatibilityContractTest {
         assertTrue(runner.contains("ScreenShotHelper.takeScreenshot"));
         assertTrue(runner.contains("writeToFile"));
         assertTrue(runner.contains("FINISHED"));
+        assertTrue(runner.contains("CONFIGURED"));
+        assertTrue(runner.contains("refreshCurrentScreen()"));
         assertTrue(eventBridge.contains("ExternalInventoryButtonSmokeRunner.onClientTick()"));
         assertTrue(build.contains("externalButtonsSmoke"));
+    }
+
+    @Test
+    public void suppressingFtbButtonsClearsTheAreaReservedForJei() throws Exception {
+        String compatibility = source("src/main/java/xin/vanilla/banira/internal/forge/compat/ftblibrary/FtbLibraryCompatibility.java");
+        String mixin = source("src/main/java/xin/vanilla/banira/internal/mixin/compat/ftblibrary/SidebarGroupGuiButtonMixin.java");
+        assertTrue(compatibility.contains("clearReservedArea"));
+        assertTrue(mixin.contains("clearReservedArea"));
+
+        Class<?> rectangleClass = Class.forName("net.minecraft.client.renderer.Rectangle2d");
+        Object occupied = rectangleClass.getConstructor(int.class, int.class, int.class, int.class)
+                .newInstance(4, 8, 32, 48);
+        Class<?> groupClass = Class.forName(
+                "dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton");
+        java.lang.reflect.Field area = groupClass.getField("lastDrawnArea");
+        area.set(null, occupied);
+
+        Class.forName("xin.vanilla.banira.internal.forge.compat.ftblibrary.FtbLibraryCompatibility")
+                .getMethod("clearReservedArea").invoke(null);
+
+        Object cleared = area.get(null);
+        assertTrue((Integer) rectangleClass.getMethod("getWidth").invoke(cleared) == 0);
+        assertTrue((Integer) rectangleClass.getMethod("getHeight").invoke(cleared) == 0);
     }
 
     private static String source(String path) throws Exception {

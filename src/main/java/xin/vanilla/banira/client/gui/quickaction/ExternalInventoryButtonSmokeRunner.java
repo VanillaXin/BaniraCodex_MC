@@ -42,20 +42,27 @@ public final class ExternalInventoryButtonSmokeRunner {
             LOGGER.info("External inventory button smoke opened the inventory screen");
             return;
         }
-        EnumExternalInventoryButtonHost requested = requestedHost(REQUESTED_HOST);
+        boolean configured = "CONFIGURED".equalsIgnoreCase(REQUESTED_HOST);
+        EnumExternalInventoryButtonHost requested = configured
+                ? null : requestedHost(REQUESTED_HOST);
         ExternalInventoryButtonManager manager = ExternalInventoryButtonManager.get();
         if (!hostApplied) {
             if (++ticks < SETTLE_TICKS) return;
-            manager.refresh(requested, minecraft.screen);
+            if (configured) {
+                manager.refreshCurrentScreen();
+            } else {
+                manager.refresh(requested, minecraft.screen);
+            }
             hostApplied = true;
             ticks = 0;
             return;
         }
         if (++ticks < CAPTURE_TICKS) return;
 
-        String screenshot = writeScreenshot(minecraft, requested);
+        EnumExternalInventoryButtonHost effective = manager.effectiveHost();
+        String screenshot = writeScreenshot(minecraft, effective);
         String status = screenshot.startsWith("ERROR:") ? "FAILED" : "FINISHED";
-        writeResult("requestedHost=" + requested + '\n'
+        writeResult("requestedHost=" + (configured ? "CONFIGURED" : requested) + '\n'
                 + manager.diagnosticSnapshot(minecraft.screen)
                 + "screenshot=" + screenshot + '\n'
                 + status + '\n');

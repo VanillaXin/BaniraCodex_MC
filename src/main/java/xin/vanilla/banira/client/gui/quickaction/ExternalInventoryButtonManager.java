@@ -150,7 +150,7 @@ public final class ExternalInventoryButtonManager {
         QuickActionRegistry registry = QuickActionRegistry.get();
         for (ExternalInventoryAction action : actions) {
             String id = registryId(action.sourceId(), action.id());
-            registry.registerListOnly(id, action.icon(), action.label(),
+            registry.registerIcon(id, action.icon(), action.label(),
                     action.onActivate(), action.contextMenuItems().toArray(
                             new QuickActionContextMenuItem[0]));
             adoptedEntryIds.add(id);

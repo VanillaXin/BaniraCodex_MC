@@ -9,6 +9,7 @@ import dev.ftb.mods.ftblibrary.sidebar.SidebarButtonManager;
 import dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.renderer.Rectangle2d;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.ModList;
@@ -99,6 +100,11 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
         if (value instanceof SidebarGroupGuiButton) {
             ((SidebarGroupGuiButton) value).visible = !shouldSuppressNativeGroup();
         }
+    }
+
+    /** 清除 FTB 留给侧边按钮的区域，使 JEI 收藏区重新使用完整高度。 */
+    public static void clearReservedArea() {
+        SidebarGroupGuiButton.lastDrawnArea = new Rectangle2d(0, 0, 0, 0);
     }
 
     /** 返回 true 表示该按钮属于 Banira 动态组，调用方应取消 FTB 原处理。 */

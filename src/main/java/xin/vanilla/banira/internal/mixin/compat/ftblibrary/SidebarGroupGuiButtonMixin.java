@@ -16,7 +16,10 @@ public abstract class SidebarGroupGuiButtonMixin {
     private void banira$render(MatrixStack stack, int mouseX, int mouseY,
                                float partialTicks, CallbackInfo callback) {
         FtbLibraryCompatibility.updateGroupWidgetVisibility(this);
-        if (FtbLibraryCompatibility.shouldSuppressNativeGroup()) callback.cancel();
+        if (FtbLibraryCompatibility.shouldSuppressNativeGroup()) {
+            FtbLibraryCompatibility.clearReservedArea();
+            callback.cancel();
+        }
     }
 
     @Inject(method = {"onPress", "func_230930_b_"}, at = @At("HEAD"), cancellable = true, require = 0)

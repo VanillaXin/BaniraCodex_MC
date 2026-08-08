@@ -605,6 +605,22 @@ public final class AbstractGuiUtils {
     }
 
     /**
+     * 绘制带方形端帽的线段，适合拼接箭头、对勾等需要无缝连接的图形。
+     */
+    public static void drawLineWithSquareCaps(MatrixStack stack, float x1, float y1, float x2, float y2,
+                                              float lineWidth, int color) {
+        if (lineWidth <= 0) return;
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length <= 0) return;
+        float capExtension = lineWidth * 0.5f;
+        float offsetX = dx / length * capExtension;
+        float offsetY = dy / length * capExtension;
+        drawLine(stack, x1 - offsetX, y1 - offsetY, x2 + offsetX, y2 + offsetY, lineWidth, color);
+    }
+
+    /**
      * 绘制扇环形状
      */
     private static void drawSectorRingShape(ShapeDrawArgs args) {

@@ -870,10 +870,12 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         float y3 = centerY - size * 0.36f;
         int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
         int color = withAlphaArgb(effect.baseColor, alpha);
-        AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
-        AbstractGuiUtils.drawLine(stack, x2, y2, x3, y3, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x1, y1, x2, y2, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x2, y2, x3, y3, 2.6f, color);
     }
 
     private static int withAlphaArgb(int argb, int alpha) {

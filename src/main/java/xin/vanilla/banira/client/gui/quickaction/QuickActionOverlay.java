@@ -1388,11 +1388,18 @@ public final class QuickActionOverlay {
         return Math.max(0, innerW - MENU_TEXT_PAD_X * 2);
     }
 
+    static int contextMenuMaxBodyHeight(int screenHeight) {
+        int available = Math.max(MENU_ROW_H, screenHeight * 2 / 3 - 6);
+        int capped = Math.min(MENU_MAX_BODY_H, available);
+        return Math.max(MENU_ROW_H, capped / MENU_ROW_H * MENU_ROW_H);
+    }
+
     private void layoutContextMenu(List<CtxRow> rows, Minecraft mc) {
         int n = rows.size();
         int contentH = Math.max(MENU_ROW_H, n * MENU_ROW_H);
-        ctxNeedsScrollbar = contentH > MENU_MAX_BODY_H;
-        ctxInnerH = Math.min(contentH, MENU_MAX_BODY_H);
+        int maxBodyHeight = contextMenuMaxBodyHeight(lastScreenH);
+        ctxNeedsScrollbar = contentH > maxBodyHeight;
+        ctxInnerH = Math.min(contentH, maxBodyHeight);
         int innerPad = 3;
         int maxTextInner = 0;
         for (CtxRow r : rows) {
@@ -1455,37 +1462,42 @@ public final class QuickActionOverlay {
         }
 
         FontRenderer font = AbstractGuiUtils.getFont();
-        for (int i = 0; i < rows.size(); i++) {
-            int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
-            int rh = MENU_ROW_H;
-            if (ry + rh < innerTop || ry > innerBottom) {
-                continue;
+        AbstractGuiUtils.pushScissor(x + 1, innerTop, Math.max(1, ctxInnerW - 1), Math.max(1, ctxInnerH));
+        try {
+            for (int i = 0; i < rows.size(); i++) {
+                int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
+                int rh = MENU_ROW_H;
+                if (ry + rh < innerTop || ry > innerBottom) {
+                    continue;
+                }
+                boolean hi = mouseX >= x && mouseX < x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP : 0)
+                        && mouseY >= ry && mouseY < ry + rh && mouseY >= innerTop && mouseY < innerBottom;
+                if (hi) {
+                    int rowTop = Math.max(ry, innerTop);
+                    int rowBot = Math.min(ry + rh, innerBottom);
+                    int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
+                    AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
+                            (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                }
+                CtxRow row = rows.get(i);
+                String full = row.text;
+                String shown = ellipsizeText(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
+                if (row.menuIcon != null) {
+                    int iconX = x + MENU_TEXT_PAD_X;
+                    int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
+                    row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
+                }
+                float textX = row.menuIcon != null
+                        ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
+                        : x + MENU_TEXT_PAD_X;
+                float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
+                font.draw(stack, new StringTextComponent(shown), textX, textY, textColor);
+                if (hi && !shown.equals(full)) {
+                    contextTooltipLine = full;
+                }
             }
-            boolean hi = mouseX >= x && mouseX < x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP : 0)
-                    && mouseY >= ry && mouseY < ry + rh && mouseY >= innerTop && mouseY < innerBottom;
-            if (hi) {
-                int rowTop = Math.max(ry, innerTop);
-                int rowBot = Math.min(ry + rh, innerBottom);
-                int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
-                AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
-                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
-            }
-            CtxRow row = rows.get(i);
-            String full = row.text;
-            String shown = ellipsizeText(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
-            if (row.menuIcon != null) {
-                int iconX = x + MENU_TEXT_PAD_X;
-                int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.renderForMenu(stack, mc, iconX, iconY, MENU_ICON_SIZE);
-            }
-            float textX = row.menuIcon != null
-                    ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
-                    : x + MENU_TEXT_PAD_X;
-            float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
-            font.draw(stack, new StringTextComponent(shown), textX, textY, textColor);
-            if (hi && !shown.equals(full)) {
-                contextTooltipLine = full;
-            }
+        } finally {
+            AbstractGuiUtils.popScissor();
         }
 
         contextX = x;

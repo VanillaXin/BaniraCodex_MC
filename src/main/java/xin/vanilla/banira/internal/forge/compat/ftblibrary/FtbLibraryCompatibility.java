@@ -74,7 +74,6 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
             json.addProperty("icon", "minecraft:paper");
             SidebarButton button = new SidebarButton(id, group, json);
             setIcon(button, new QuickActionFtbIcon(action.icon()));
-            button.setCustomTextHandler(() -> action.label().toVanilla().getString());
             button.setTooltipHandler(lines -> lines.add(action.label().toVanilla().getString()));
             group.getButtons().add(button);
             HOSTED_ACTIONS.put(id, action);

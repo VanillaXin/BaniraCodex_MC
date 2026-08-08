@@ -74,6 +74,8 @@ public class ExternalInventoryCompatibilityContractTest {
     public void hostedFtbButtonsUseARealTranslationKey() throws Exception {
         String source = source("src/main/java/xin/vanilla/banira/internal/forge/compat/ftblibrary/FtbLibraryCompatibility.java");
         assertTrue(source.contains("hostedButtonTranslationKey"));
+        assertFalse(source.contains("setCustomTextHandler"));
+        assertTrue(source.contains("setTooltipHandler"));
         String zh = source("src/main/resources/assets/banira_codex/lang/zh_cn.json");
         String en = source("src/main/resources/assets/banira_codex/lang/en_us.json");
         assertTrue(zh.contains("sidebar_button.banira_codex.external_inventory_button"));
@@ -100,6 +102,11 @@ public class ExternalInventoryCompatibilityContractTest {
         assertTrue(source.contains("inventoryprofiles.tooltip.settings_open"));
         assertTrue(source.contains("inventoryprofiles.tooltip.editor_toggle"));
         assertFalse(source.contains("inventoryprofiles.tooltip.editor_open"));
+        assertTrue(source.contains("textures/gui/gui_buttons.png"));
+        assertTrue(source.contains("profileIcon(140, 0)"));
+        assertTrue(source.contains("profileIcon(160, 40)"));
+        assertFalse(source.contains("Items.REPEATER"));
+        assertFalse(source.contains("Items.WRITABLE_BOOK"));
     }
 
     @Test

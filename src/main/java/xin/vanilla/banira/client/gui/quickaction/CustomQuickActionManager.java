@@ -36,7 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /** 加载、注册并执行玩家自定义快捷入口。 */
 public final class CustomQuickActionManager {
@@ -49,7 +48,6 @@ public final class CustomQuickActionManager {
     private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
     private final Set<String> registeredIds = new HashSet<>();
     private final Map<String, BaniraQuickActionScreenFactory> screenFactories = new HashMap<>();
-    private final List<QuickActionScreenAdapter> screenAdapters = new CopyOnWriteArrayList<>();
     private boolean hotReloadRegistered;
 
     private CustomQuickActionManager() {
@@ -131,24 +129,6 @@ public final class CustomQuickActionManager {
         return Collections.unmodifiableList(ids);
     }
 
-    public void registerScreenAdapter(@Nonnull QuickActionScreenAdapter adapter) {
-        screenAdapters.add(Objects.requireNonNull(adapter, "adapter"));
-    }
-
-    public void onScreenChanged() {
-        Screen screen = Minecraft.getInstance().screen;
-        if (screen == null) return;
-        for (QuickActionScreenAdapter adapter : screenAdapters) {
-            try {
-                if (adapter.supports(screen)) {
-                    adapter.adopt(screen, QuickActionRegistry.get());
-                }
-            } catch (Throwable throwable) {
-                LOGGER.warn("Quick-action screen adapter failed for {}", screen.getClass().getName(), throwable);
-            }
-        }
-    }
-
     public void onKeyPressed(BaniraKeyboardEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (event.repeatedPress()) return;
@@ -199,6 +179,7 @@ public final class CustomQuickActionManager {
             }
             registeredIds.add(registryId);
         }
+        ExternalInventoryButtonManager.get().refreshCurrentScreen();
     }
 
     private void activate(CustomQuickActionDefinition definition, Screen parent) {

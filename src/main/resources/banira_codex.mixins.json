@@ -12,6 +12,13 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "compat.ftblibrary.SidebarButtonMixin",
+    "compat.ftblibrary.SidebarGroupGuiButtonMixin",
+    "compat.jei.BookmarkButtonAccessor",
+    "compat.jei.BookmarkButtonMixin",
+    "compat.jei.GuiIconToggleButtonMixin",
+    "compat.ipn.IpnButtonMixin",
+    "compat.ipn.IpnProfileButtonClickMixin",
     "injections.IngameGuiExperienceMixin",
     "injections.MinecraftClientMixin"
   ],

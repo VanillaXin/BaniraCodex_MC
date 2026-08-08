@@ -34,6 +34,7 @@ public class QuickIcon {
         ITEM,
         EFFECT,
         RESOURCE,
+        CUSTOM,
         NONE,
         ;
     }
@@ -57,6 +58,11 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Texture texture;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Renderer customRenderer;
 
     @Nonnull
     public static QuickIcon none() {
@@ -106,6 +112,15 @@ public class QuickIcon {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
         q.texture(texture);
+        return q;
+    }
+
+    /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
+    @Nonnull
+    public static QuickIcon custom(@Nonnull Renderer renderer) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.CUSTOM);
+        q.customRenderer(renderer);
         return q;
     }
 
@@ -172,9 +187,20 @@ public class QuickIcon {
                 RenderSystem.color4f(1f, 1f, 1f, 1f);
                 break;
             }
+            case CUSTOM: {
+                if (customRenderer != null) {
+                    customRenderer.render(stack, mc, x, y, size);
+                }
+                break;
+            }
             default:
                 break;
         }
+    }
+
+    @FunctionalInterface
+    public interface Renderer {
+        void render(MatrixStack stack, Minecraft minecraft, int x, int y, int size);
     }
 
 }

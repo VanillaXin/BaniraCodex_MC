@@ -9,5 +9,6 @@ public final class ForgeBaniraClientBootstrap {
 
     public static void init() {
         xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.init();
+        xin.vanilla.banira.internal.forge.compat.ForgeExternalInventoryCompatibility.init();
     }
 }

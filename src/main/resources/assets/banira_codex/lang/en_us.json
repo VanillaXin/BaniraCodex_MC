@@ -1,4 +1,5 @@
 {
+  "sidebar_button.banira_codex.external_inventory_button": "Quick action",
   "key.banira_codex.categories": "Banira Codex",
   "key.banira_codex.codex_navigation": "Open Banira Codex Hub",
   "key.banira_codex.notification_log": "Open Notification Log",
@@ -328,6 +329,9 @@
   "word.banira_codex.enum_gui_night_mode_auto": "Auto from game time",
   "word.banira_codex.enum_gui_night_mode_off": "Night mode off",
   "word.banira_codex.enum_gui_night_mode_scheduled": "Scheduled time window",
+  "word.banira_codex.enum_external_inventory_button_host_banira": "Show in Banira",
+  "word.banira_codex.enum_external_inventory_button_host_ftb_library": "Show in FTB Library",
+  "word.banira_codex.enum_external_inventory_button_host_original": "Keep original buttons",
   "word.banira_codex.enum_quick_action_display_icon": "Inventory button and Banira menu",
   "word.banira_codex.enum_quick_action_display_inventory_only": "Inventory button only",
   "word.banira_codex.enum_quick_action_display_list_only": "Banira menu only",

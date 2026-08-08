@@ -18,6 +18,7 @@ import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.internal.client.*;
 
 /**
@@ -90,6 +91,7 @@ public final class ForgeBaniraClientEventBridge {
     @SubscribeEvent
     public static void onGuiOpen(GuiOpenEvent event) {
         BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(BaniraClientEventHub.screenInfo(event.getGui())));
+        ExternalInventoryButtonManager.get().refreshForScreen(event.getGui());
         BaniraClientGuiService.handleScreenOpened();
     }
 

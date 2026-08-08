@@ -271,6 +271,9 @@ public final class QuickActionOverlay {
     }
 
     public static boolean isSupportedInventoryScreen(@Nullable Screen screen) {
+        if (ExternalInventoryButtonManager.get().suppressesBaniraOverlay()) {
+            return false;
+        }
         return screen instanceof InventoryScreen || screen instanceof CreativeScreen;
     }
 

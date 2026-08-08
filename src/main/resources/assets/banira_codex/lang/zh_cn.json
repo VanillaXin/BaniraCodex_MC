@@ -1,4 +1,5 @@
 {
+  "sidebar_button.banira_codex.external_inventory_button": "快捷入口",
   "key.banira_codex.categories": "香草志",
   "key.banira_codex.codex_navigation": "打开香草志设置",
   "key.banira_codex.notification_log": "打开通知日志",
@@ -328,6 +329,9 @@
   "word.banira_codex.enum_gui_night_mode_auto": "根据游戏时间自动",
   "word.banira_codex.enum_gui_night_mode_off": "关闭夜间模式",
   "word.banira_codex.enum_gui_night_mode_scheduled": "按时间段切换",
+  "word.banira_codex.enum_external_inventory_button_host_banira": "由 Banira 统一显示",
+  "word.banira_codex.enum_external_inventory_button_host_ftb_library": "由 FTB Library 统一显示",
+  "word.banira_codex.enum_external_inventory_button_host_original": "保留各模组原始按钮",
   "word.banira_codex.enum_quick_action_display_icon": "同时显示为背包按钮和 Banira 菜单项",
   "word.banira_codex.enum_quick_action_display_inventory_only": "仅显示为背包界面按钮",
   "word.banira_codex.enum_quick_action_display_list_only": "仅显示为 Banira 菜单项",

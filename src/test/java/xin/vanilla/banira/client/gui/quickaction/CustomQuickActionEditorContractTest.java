@@ -28,7 +28,8 @@ public class CustomQuickActionEditorContractTest {
             "custom_quick_action_condition_always", "custom_quick_action_condition_on_success",
             "custom_quick_action_condition_on_failure", "custom_quick_action_close_before",
             "custom_quick_action_edit", "custom_quick_action_add_menu",
-            "custom_quick_action_menu_step_title", "custom_quick_action_menu_edit_title"
+            "custom_quick_action_menu_step_title", "custom_quick_action_menu_edit_title",
+            "delete"
     );
 
     @Test
@@ -47,7 +48,6 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(steps.contains("new EffectSelectScreen"));
         assertTrue(steps.contains("WidgetType.FILE"));
         assertTrue(steps.contains("popupOption.addOptionWithId"));
-        assertTrue(steps.contains("PresetStyle.MINUS"));
         assertTrue(steps.contains("leadingIconRenderer"));
         assertTrue(!editor.contains("custom_quick_action_id"));
         assertTrue(editor.contains(".maxLength(1024)"));
@@ -64,6 +64,19 @@ public class CustomQuickActionEditorContractTest {
         assertTrue(config.contains("QuickActionTextLayout.ellipsize"));
         assertTrue(config.contains("QuickActionTextLayout.wrap"));
         assertTrue(config.contains("TooltipWidget"));
+        assertTrue(config.contains("QuickActionWidgets.deleteButton"));
+        assertTrue(steps.contains("QuickActionWidgets.deleteButton"));
+        Path widgetsPath = Paths.get("src/main/java/xin/vanilla/banira/client/gui/quickaction/QuickActionWidgets.java");
+        assertTrue(Files.exists(widgetsPath));
+        String widgets = new String(Files.readAllBytes(widgetsPath), StandardCharsets.UTF_8);
+        assertTrue(widgets.contains("PresetStyle.MINUS"));
+        assertTrue(widgets.contains(".dangerStyle()"));
+        assertTrue(widgets.contains("transClientAuto(\"delete\")"));
+        assertTrue(widgets.contains("popupAtScreenCoords(true)"));
+        String button = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/banira/client/gui/widget/ButtonWidget.java")), StandardCharsets.UTF_8);
+        assertTrue(button.contains("public ButtonWidget dangerStyle()"));
+        assertTrue(button.contains("applyDangerTheme(theme)"));
         String manager = source("CustomQuickActionManager.java");
         assertTrue(manager.contains("if (minecraft.screen != null)"));
         assertTrue(!manager.contains("QuickActionOverlay.isSupportedInventoryScreen"));

@@ -89,10 +89,8 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
             rowTooltips.add(tooltip);
             addWidget(row);
 
-            ButtonWidget delete = new ButtonWidget(this);
-            delete.id("delete_" + i);
-            delete.presetStyle(ButtonWidget.PresetStyle.MINUS).padding(3);
-            delete.onClick(button -> delete(index));
+            ButtonWidget delete = QuickActionWidgets.deleteButton(this, "delete_" + i, ROW_H,
+                    button -> delete(index));
             deleteButtons.add(delete);
             addWidget(delete);
         }

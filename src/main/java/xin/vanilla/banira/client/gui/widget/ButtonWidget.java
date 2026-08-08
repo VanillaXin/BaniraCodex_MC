@@ -119,6 +119,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
 
+    private boolean dangerStyle;
+
     /**
      * 长按进度条模式，默认从左至右
      */
@@ -327,13 +329,37 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
                 .disabledTextColor(theme.buttonTextDisabled())
                 .longPressProgressFillColor(theme.buttonLongPressProgressFill());
-        if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
+        if (dangerStyle) {
+            applyDangerTheme(theme);
+        } else if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
             iconColor(theme.buttonPresetIconColor())
                     .hoverIconColor(theme.buttonPresetIconHoverColor())
                     .focusedIconColor(theme.buttonPresetIconFocusedColor())
                     .pressedIconColor(theme.buttonPresetIconPressedColor())
                     .disabledIconColor(theme.buttonPresetIconDisabledColor());
         }
+    }
+
+    private void applyDangerTheme(BaniraColorConfig theme) {
+        int background = theme.notificationErrorBg();
+        int danger = theme.error();
+        int hoverDanger = brightenArgb(danger, 1.12f);
+        int pressedDanger = blendArgb(danger, 0xFF000000, 0.16f);
+        int disabledDanger = blendArgb(theme.buttonPresetIconDisabledColor(), danger, 0.18f);
+        bgColor(background)
+                .hoverBgColor(blendArgb(background, danger, 0.16f))
+                .focusedBgColor(blendArgb(background, danger, 0.12f))
+                .pressedBgColor(blendArgb(background, danger, 0.28f))
+                .disabledBgColor(blendArgb(theme.buttonBgDisabled(), danger, 0.08f))
+                .borderColor(danger).hoverBorderColor(hoverDanger)
+                .focusedBorderColor(danger).pressedBorderColor(pressedDanger)
+                .disabledBorderColor(disabledDanger)
+                .textColor(danger).hoverTextColor(hoverDanger)
+                .focusedTextColor(danger).pressedTextColor(pressedDanger)
+                .disabledTextColor(disabledDanger)
+                .iconColor(danger).hoverIconColor(hoverDanger)
+                .focusedIconColor(danger).pressedIconColor(pressedDanger)
+                .disabledIconColor(disabledDanger);
     }
 
     /**
@@ -449,6 +475,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     public ButtonWidget presetStyle(PresetStyle style) {
         this.presetStyle = style;
+        return this;
+    }
+
+    /** 使用当前主题的错误语义色绘制危险操作按钮。 */
+    public ButtonWidget dangerStyle() {
+        this.dangerStyle = true;
+        if (screen != null) {
+            applyDangerTheme(screen.getEffectiveTheme());
+        }
         return this;
     }
 

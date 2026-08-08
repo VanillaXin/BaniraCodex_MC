@@ -152,10 +152,8 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             rows.add(row);
             rowTooltips.add(tooltip);
             addWidget(row);
-            ButtonWidget delete = new ButtonWidget(this);
-            delete.id("delete_" + i);
-            delete.presetStyle(ButtonWidget.PresetStyle.MINUS).padding(3);
-            delete.onClick(button -> deleteRow(index));
+            ButtonWidget delete = QuickActionWidgets.deleteButton(this, "delete_" + i, ROW_H,
+                    button -> deleteRow(index));
             deletes.add(delete);
             addWidget(delete);
         }

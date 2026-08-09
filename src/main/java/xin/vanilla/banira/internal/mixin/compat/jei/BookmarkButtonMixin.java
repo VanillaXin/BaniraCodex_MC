@@ -22,7 +22,7 @@ public abstract class BookmarkButtonMixin {
     private void banira$capture(IDrawable offIcon, IDrawable onIcon,
                                 BookmarkOverlay overlay, BookmarkList bookmarks,
                                 IWorldConfig worldConfig, CallbackInfo callback) {
-        JeiCompatibility.capture(this);
+        JeiCompatibility.capture(this, offIcon, onIcon, worldConfig);
     }
 
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true, require = 0)

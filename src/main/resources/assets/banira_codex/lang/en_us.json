@@ -184,6 +184,7 @@
   "word.banira_codex.quick_action.exit_edit": "Exit edit mode",
   "word.banira_codex.quick_action.hidden_empty": "(none hidden)",
   "word.banira_codex.quick_action.hide_slot": "Hide this slot",
+  "word.banira_codex.quick_action.hide_menu_entry": "Hide this entry",
   "word.banira_codex.quick_action.menu_hidden": "Hidden…",
   "word.banira_codex.quick_action.menu_layout": "Grid…",
   "word.banira_codex.quick_action.menu_position": "Position…",
@@ -243,6 +244,7 @@
   "format.banira_codex.quick_action.cols_plus": "Cols %d +",
   "format.banira_codex.quick_action.pos_axis": "%s %.3f · %s",
   "format.banira_codex.quick_action.unhide": "Show · %s",
+  "format.banira_codex.quick_action.unhide_menu_item": "Show menu item · %s",
 
   "word.banira_codex.enum_tooltip_texture_mode_auto": "Follow theme setting",
   "word.banira_codex.enum_tooltip_texture_mode_color": "Solid color background",

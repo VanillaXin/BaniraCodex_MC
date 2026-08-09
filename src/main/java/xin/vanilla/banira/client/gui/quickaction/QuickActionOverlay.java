@@ -1134,6 +1134,18 @@ public final class QuickActionOverlay {
         return String.format(Translator.of(BaniraCodex.MODID).translate(EnumI18nType.FORMAT, key), args);
     }
 
+    private static String entryMenuKey(QuickActionEntry entry) {
+        return "entry:" + entry.id();
+    }
+
+    private static String itemMenuKey(QuickActionEntry entry, QuickActionContextMenuItem item, int index) {
+        String itemId = item.id();
+        if (itemId == null || itemId.trim().isEmpty()) {
+            itemId = "index/" + index;
+        }
+        return "item:" + entry.id() + "#" + itemId;
+    }
+
     private static final class CtxRow {
         final String text;
         final boolean keepOpen;
@@ -1145,21 +1157,30 @@ public final class QuickActionOverlay {
          */
         @Nullable
         final QuickActionEntry entryForSecondaryMenu;
+        /** 可右键隐藏的菜单行标识；结构行保持为空。 */
+        @Nullable
+        final String hiddenMenuKey;
 
         CtxRow(String text, boolean keepOpen, Runnable action) {
-            this(text, keepOpen, action, null, null);
+            this(text, keepOpen, action, null, null, null);
         }
 
         CtxRow(String text, boolean keepOpen, Runnable action, @Nullable QuickIcon menuIcon) {
-            this(text, keepOpen, action, menuIcon, null);
+            this(text, keepOpen, action, menuIcon, null, null);
         }
 
         CtxRow(String text, boolean keepOpen, Runnable action, @Nullable QuickIcon menuIcon, @Nullable QuickActionEntry entryForSecondaryMenu) {
+            this(text, keepOpen, action, menuIcon, entryForSecondaryMenu, null);
+        }
+
+        CtxRow(String text, boolean keepOpen, Runnable action, @Nullable QuickIcon menuIcon,
+               @Nullable QuickActionEntry entryForSecondaryMenu, @Nullable String hiddenMenuKey) {
             this.text = text;
             this.keepOpen = keepOpen;
             this.action = action;
             this.menuIcon = menuIcon;
             this.entryForSecondaryMenu = entryForSecondaryMenu;
+            this.hiddenMenuKey = hiddenMenuKey;
         }
     }
 
@@ -1195,6 +1216,10 @@ public final class QuickActionOverlay {
             if (it == null) {
                 continue;
             }
+            String hiddenKey = itemMenuKey(ent, it, index);
+            if (layout.hiddenMenuItemIds().contains(hiddenKey)) {
+                continue;
+            }
             L.add(new CtxRow(it.getLabel().toVanilla().getString(), false, () -> {
                 if (it.getOnActivate() != null) {
                     QuickActionContext ctx = new QuickActionContext()
@@ -1205,7 +1230,7 @@ public final class QuickActionOverlay {
                             .mouseY(contextClickMouseY);
                     it.getOnActivate().accept(ctx);
                 }
-            }, it.getMenuIcon()));
+            }, it.getMenuIcon(), null, hiddenKey));
         }
     }
 
@@ -1215,6 +1240,10 @@ public final class QuickActionOverlay {
     private void addSystemTrayDropdownRows(List<CtxRow> L) {
         for (QuickActionEntry ent : QuickActionRegistry.get().dropdownEntries()) {
             if (ent == null) {
+                continue;
+            }
+            String hiddenKey = entryMenuKey(ent);
+            if (layout.hiddenMenuItemIds().contains(hiddenKey)) {
                 continue;
             }
             boolean hasSecondary = !ent.contextMenuItems.isEmpty();
@@ -1230,8 +1259,34 @@ public final class QuickActionOverlay {
                     fireAction(ent, contextClickMouseX, contextClickMouseY);
                 }
             }, ent.quickIcon(),
-                    hasSecondary ? ent : null));
+                    hasSecondary ? ent : null, hiddenKey));
         }
+    }
+
+    private CtxRow hiddenMenuRestoreRow(String hiddenKey) {
+        String display = hiddenKey;
+        QuickIcon icon = null;
+        for (QuickActionEntry entry : QuickActionRegistry.get().allEntriesInOrder()) {
+            if (entryMenuKey(entry).equals(hiddenKey)) {
+                display = entry.label().toVanilla().getString();
+                icon = entry.quickIcon();
+                break;
+            }
+            for (int index = 0; index < entry.contextMenuItems.size(); index++) {
+                QuickActionContextMenuItem item = entry.contextMenuItems.get(index);
+                if (item != null && itemMenuKey(entry, item, index).equals(hiddenKey)) {
+                    display = entry.label().toVanilla().getString() + " > "
+                            + item.getLabel().toVanilla().getString();
+                    icon = item.getMenuIcon() != null ? item.getMenuIcon() : entry.quickIcon();
+                    break;
+                }
+            }
+        }
+        String finalHiddenKey = hiddenKey;
+        return new CtxRow(trFormat("quick_action.unhide_menu_item", display), true, () -> {
+            layout.hiddenMenuItemIds().remove(finalHiddenKey);
+            markSave();
+        }, icon);
     }
 
     private List<CtxRow> buildContextRows() {
@@ -1252,6 +1307,10 @@ public final class QuickActionOverlay {
                     }));
                 }
                 QuickActionEntry ent = QuickActionRegistry.get().getEntry(contextEntrySubmenuId);
+                if (!contextEntryDirect && ent != null) {
+                    L.add(new CtxRow(trWord("quick_action.hide_menu_entry"), false, () ->
+                            layout.hiddenMenuItemIds().add(entryMenuKey(ent))));
+                }
                 addEntryContextMenuRows(L, ent);
                 return L;
             }
@@ -1260,7 +1319,7 @@ public final class QuickActionOverlay {
         if (contextPage == CTX_PAGE_HIDDEN) {
             addExitEditRowWhenLayoutEditMode(L);
             L.add(new CtxRow(trWord("quick_action.back"), true, () -> contextPage = CTX_PAGE_ROOT));
-            if (layout.hiddenIconIds().isEmpty()) {
+            if (layout.hiddenIconIds().isEmpty() && layout.hiddenMenuItemIds().isEmpty()) {
                 L.add(new CtxRow(trWord("quick_action.hidden_empty"), true, () -> {
                 }));
             } else {
@@ -1274,6 +1333,9 @@ public final class QuickActionOverlay {
                         layout.hiddenIconIds().remove(id);
                         markSave();
                     }, ent != null ? ent.quickIcon() : null));
+                }
+                for (String hiddenKey : layout.hiddenMenuItemIds()) {
+                    L.add(hiddenMenuRestoreRow(hiddenKey));
                 }
             }
             return L;
@@ -1548,13 +1610,24 @@ public final class QuickActionOverlay {
         CtxRow row = rows.get(idx);
         QuickActionEntry sec = row.entryForSecondaryMenu;
         if (sec == null || sec.contextMenuItems.isEmpty()) {
-            return false;
+            return hideContextMenuRow(row);
         }
         contextEntrySubmenuId = sec.id();
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
         contextPage = CTX_PAGE_ENTRY_CONTEXT;
         contextScrollPx = 0;
+        return true;
+    }
+
+    private boolean hideContextMenuRow(CtxRow row) {
+        if (row == null || row.hiddenMenuKey == null || row.hiddenMenuKey.isEmpty()) {
+            return false;
+        }
+        layout.hiddenMenuItemIds().add(row.hiddenMenuKey);
+        contextScrollPx = 0;
+        markSave();
+        flushSaveIfNeeded();
         return true;
     }
 

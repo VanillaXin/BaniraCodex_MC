@@ -184,6 +184,7 @@
   "word.banira_codex.quick_action.exit_edit": "退出编辑模式",
   "word.banira_codex.quick_action.hidden_empty": "（无已隐藏项）",
   "word.banira_codex.quick_action.hide_slot": "隐藏此格",
+  "word.banira_codex.quick_action.hide_menu_entry": "隐藏此入口",
   "word.banira_codex.quick_action.menu_hidden": "已隐藏…",
   "word.banira_codex.quick_action.menu_layout": "网格…",
   "word.banira_codex.quick_action.menu_position": "位置…",
@@ -243,6 +244,7 @@
   "format.banira_codex.quick_action.cols_plus": "列数 %d +",
   "format.banira_codex.quick_action.pos_axis": "%s %.3f · %s",
   "format.banira_codex.quick_action.unhide": "显示 · %s",
+  "format.banira_codex.quick_action.unhide_menu_item": "显示菜单项 · %s",
 
   "word.banira_codex.enum_tooltip_texture_mode_auto": "跟随主题设置",
   "word.banira_codex.enum_tooltip_texture_mode_color": "使用纯色背景",

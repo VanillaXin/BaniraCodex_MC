@@ -1,11 +1,13 @@
 package xin.vanilla.banira.internal.forge.compat.jei;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.config.IWorldConfig;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButton;
 import mezz.jei.input.click.MouseClickState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.item.Items;
 import net.minecraftforge.fml.ModList;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
@@ -24,6 +26,9 @@ public final class JeiCompatibility {
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =
             ThreadLocal.withInitial(() -> false);
     private static volatile BookmarkButton bookmarkButton;
+    private static volatile IDrawable bookmarkOffIcon;
+    private static volatile IDrawable bookmarkOnIcon;
+    private static volatile IWorldConfig bookmarkWorldConfig;
 
     private JeiCompatibility() {
     }
@@ -33,8 +38,13 @@ public final class JeiCompatibility {
         ExternalInventoryButtonManager.get().registerProvider(new BookmarkProvider());
     }
 
-    public static void capture(Object value) {
-        if (value instanceof BookmarkButton) bookmarkButton = (BookmarkButton) value;
+    public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
+                               IWorldConfig worldConfig) {
+        if (!(value instanceof BookmarkButton)) return;
+        bookmarkButton = (BookmarkButton) value;
+        bookmarkOffIcon = offIcon;
+        bookmarkOnIcon = onIcon;
+        bookmarkWorldConfig = worldConfig;
     }
 
     public static boolean isManagedBookmark(Object value) {
@@ -65,6 +75,27 @@ public final class JeiCompatibility {
         }
     }
 
+    private static void drawBookmarkIcon(MatrixStack stack, int x, int y, int size) {
+        IWorldConfig worldConfig = bookmarkWorldConfig;
+        IDrawable icon = worldConfig != null && worldConfig.isBookmarkOverlayEnabled()
+                ? bookmarkOnIcon : bookmarkOffIcon;
+        if (icon == null || size <= 0) return;
+
+        int sourceWidth = Math.max(1, icon.getWidth());
+        int sourceHeight = Math.max(1, icon.getHeight());
+        float scale = Math.min(size / (float) sourceWidth, size / (float) sourceHeight);
+        float offsetX = (size - sourceWidth * scale) / 2f;
+        float offsetY = (size - sourceHeight * scale) / 2f;
+        stack.pushPose();
+        try {
+            stack.translate(x + offsetX, y + offsetY, 0);
+            stack.scale(scale, scale, 1f);
+            icon.draw(stack, 0, 0);
+        } finally {
+            stack.popPose();
+        }
+    }
+
     private static final class BookmarkProvider implements ExternalInventoryActionProvider {
         @Override
         public String sourceId() {
@@ -76,7 +107,8 @@ public final class JeiCompatibility {
             return Collections.singletonList(new ExternalInventoryAction(
                     "bookmarks",
                     BaniraComponent.get().literal(I18n.get("jei.tooltip.bookmarks")),
-                    QuickIcon.item(Items.BOOK),
+                    QuickIcon.custom((stack, minecraft, x, y, size) ->
+                            drawBookmarkIcon(stack, x, y, size)),
                     context -> activate()));
         }
     }

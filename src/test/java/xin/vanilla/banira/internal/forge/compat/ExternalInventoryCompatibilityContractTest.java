@@ -110,6 +110,22 @@ public class ExternalInventoryCompatibilityContractTest {
     }
 
     @Test
+    public void jeiBridgeUsesTheNativeBookmarkDrawable() throws Exception {
+        String source = source("src/main/java/xin/vanilla/banira/internal/forge/compat/jei/JeiCompatibility.java");
+        assertTrue(source.contains("jei.tooltip.bookmarks"));
+        assertFalse(source.contains("Items.BOOK"));
+        assertTrue(source.contains("IDrawable"));
+        assertTrue(source.contains("IWorldConfig"));
+        assertTrue(source.contains("QuickIcon.custom"));
+        assertTrue(source.contains("isBookmarkOverlayEnabled"));
+
+        String mixin = source("src/main/java/xin/vanilla/banira/internal/mixin/compat/jei/BookmarkButtonMixin.java");
+        assertTrue(mixin.contains("offIcon"));
+        assertTrue(mixin.contains("onIcon"));
+        assertTrue(mixin.contains("worldConfig"));
+    }
+
+    @Test
     public void devSmokeRunnerOpensInventoryAndWritesBoundedDiagnostics() throws Exception {
         String runner = source("src/main/java/xin/vanilla/banira/client/gui/quickaction/ExternalInventoryButtonSmokeRunner.java");
         String eventBridge = source("src/main/java/xin/vanilla/banira/internal/forge/client/ForgeBaniraClientEventBridge.java");

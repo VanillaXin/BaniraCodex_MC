@@ -156,12 +156,12 @@ public final class CustomQuickActionManager {
             String registryId = ENTRY_PREFIX + safeId(definition.getId());
             QuickIcon icon = resolveIcon(definition);
             List<QuickActionContextMenuItem> menuItems = new ArrayList<>();
-            menuItems.add(new QuickActionContextMenuItem(
+            menuItems.add(new QuickActionContextMenuItem("edit",
                     BaniraComponent.get().transClientAuto("custom_quick_action_edit"),
                     context -> CustomQuickActionConfigScreen.openEditor(
                             context.currentScreen(), definition.getId())));
             for (CustomQuickActionMenuItem item : definition.getContextMenuItems()) {
-                menuItems.add(new QuickActionContextMenuItem(
+                menuItems.add(new QuickActionContextMenuItem("custom/" + safeId(item.getId()),
                         BaniraComponent.get().literal(item.getLabel()),
                         context -> activate(item, context.currentScreen())));
             }

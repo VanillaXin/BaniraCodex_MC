@@ -50,9 +50,23 @@ public class QuickActionMenuVisibilityTest {
         String source = source("QuickActionOverlay.java");
         assertTrue(source.contains("hiddenMenuItemIds()"));
         assertTrue(source.contains("hiddenMenuKey"));
-        assertTrue(source.contains("hideContextMenuRow"));
+        assertTrue(source.contains("CTX_PAGE_ROW_ACTION"));
+        assertTrue(source.contains("openContextMenuRowActions"));
         assertTrue(source.contains("quick_action.hide_menu_entry"));
+        assertTrue(source.contains("quick_action.hide_menu_item"));
         assertTrue(source.contains("quick_action.unhide_menu_item"));
+        assertFalse(source.contains("return hideContextMenuRow(row);"));
+    }
+
+    @Test
+    public void longContextRowsUseMiddleEllipsisAndKeepTheFullTooltip() throws Exception {
+        String source = source("QuickActionOverlay.java");
+        assertTrue(source.contains("ellipsizeMiddle"));
+        assertTrue(source.contains("contextTooltipLine = full"));
+
+        String zh = new String(Files.readAllBytes(Paths.get(
+                "src/main/resources/assets/banira_codex/lang/zh_cn.json")), StandardCharsets.UTF_8);
+        assertTrue(zh.contains("\"format.banira_codex.quick_action.unhide_menu_item\": \"恢复 · %s\""));
     }
 
     private static String source(String file) throws Exception {

@@ -87,6 +87,8 @@ public final class QuickActionOverlay {
      * 托盘根菜单中某注册项的「扩展右键菜单」子页
      */
     private static final int CTX_PAGE_ENTRY_CONTEXT = 4;
+    /** 对某一菜单行再次操作的临时页，用于显式确认隐藏。 */
+    private static final int CTX_PAGE_ROW_ACTION = 5;
     private static final String BANIRA_TEXTURE_NAME = "gui/quick_icon.png";
     private static ResourceLocation BANIRA_TEXTURE = null;
 
@@ -132,6 +134,9 @@ public final class QuickActionOverlay {
     private String contextEntrySubmenuId;
     private int contextEntryItemOffset;
     private boolean contextEntryDirect;
+    @Nullable
+    private CtxRow contextRowAction;
+    private int contextRowActionReturnPage = CTX_PAGE_ROOT;
     /**
      * 系统格左键长按打开的菜单：非编辑根页不显示「进入编辑模式」行（编辑模式下首项仍为退出编辑，由 {@link #addExitEditRowWhenLayoutEditMode} 负责）
      */
@@ -943,6 +948,9 @@ public final class QuickActionOverlay {
                 contextOpen = false;
                 contextMenuKind = ContextMenuKind.NONE;
                 contextEntrySubmenuId = null;
+                contextEntryItemOffset = 0;
+                contextEntryDirect = false;
+                contextRowAction = null;
                 contextPage = CTX_PAGE_ROOT;
             }
             return true;
@@ -1104,6 +1112,7 @@ public final class QuickActionOverlay {
         contextEntrySubmenuId = null;
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
+        contextRowAction = null;
         contextScrollPx = 0;
         contextX = mx;
         contextY = my;
@@ -1119,6 +1128,7 @@ public final class QuickActionOverlay {
         contextEntrySubmenuId = entryId;
         contextEntryItemOffset = Math.max(0, itemOffset);
         contextEntryDirect = true;
+        contextRowAction = null;
         contextScrollPx = 0;
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
@@ -1295,6 +1305,34 @@ public final class QuickActionOverlay {
             return L;
         }
 
+        if (contextPage == CTX_PAGE_ROW_ACTION) {
+            CtxRow selected = contextRowAction;
+            if (selected == null || selected.hiddenMenuKey == null) {
+                contextPage = contextRowActionReturnPage;
+            } else {
+                L.add(new CtxRow(trWord("quick_action.back"), true, () -> {
+                    contextPage = contextRowActionReturnPage;
+                    contextRowAction = null;
+                }));
+                QuickActionEntry submenu = selected.entryForSecondaryMenu;
+                if (submenu != null && !submenu.contextMenuItems.isEmpty()) {
+                    L.add(new CtxRow(trWord("quick_action.open_submenu"), true, () -> {
+                        contextEntrySubmenuId = submenu.id();
+                        contextEntryItemOffset = 0;
+                        contextEntryDirect = false;
+                        contextPage = CTX_PAGE_ENTRY_CONTEXT;
+                        contextRowAction = null;
+                        contextScrollPx = 0;
+                    }, submenu.quickIcon()));
+                }
+                String hideKey = selected.hiddenMenuKey.startsWith("entry:")
+                        ? "quick_action.hide_menu_entry" : "quick_action.hide_menu_item";
+                L.add(new CtxRow(trWord(hideKey), false, () ->
+                        layout.hiddenMenuItemIds().add(selected.hiddenMenuKey), selected.menuIcon));
+                return L;
+            }
+        }
+
         if (contextPage == CTX_PAGE_ENTRY_CONTEXT) {
             if (contextEntrySubmenuId == null) {
                 contextPage = CTX_PAGE_ROOT;
@@ -1307,10 +1345,6 @@ public final class QuickActionOverlay {
                     }));
                 }
                 QuickActionEntry ent = QuickActionRegistry.get().getEntry(contextEntrySubmenuId);
-                if (!contextEntryDirect && ent != null) {
-                    L.add(new CtxRow(trWord("quick_action.hide_menu_entry"), false, () ->
-                            layout.hiddenMenuItemIds().add(entryMenuKey(ent))));
-                }
                 addEntryContextMenuRows(L, ent);
                 return L;
             }
@@ -1425,7 +1459,7 @@ public final class QuickActionOverlay {
         layout.groupAnchor(DEFAULT.groupAnchor());
     }
 
-    private String ellipsizeText(FontRenderer font, String s, int maxW) {
+    private String ellipsizeMiddle(FontRenderer font, String s, int maxW) {
         if (s == null || s.isEmpty()) {
             return "";
         }
@@ -1436,11 +1470,16 @@ public final class QuickActionOverlay {
         if (font.width(new StringTextComponent(ell)) > maxW) {
             return "";
         }
-        String t = s;
-        while (!t.isEmpty() && font.width(new StringTextComponent(t + ell)) > maxW) {
-            t = t.substring(0, t.length() - 1);
+        for (int keep = s.length() - 1; keep >= 0; keep--) {
+            int left = (keep + 1) / 2;
+            int right = keep / 2;
+            String candidate = s.substring(0, left) + ell
+                    + (right > 0 ? s.substring(s.length() - right) : "");
+            if (font.width(new StringTextComponent(candidate)) <= maxW) {
+                return candidate;
+            }
         }
-        return t + ell;
+        return ell;
     }
 
     private int contextMenuRowTextMaxWidth(int innerW, CtxRow r) {
@@ -1543,7 +1582,7 @@ public final class QuickActionOverlay {
                 }
                 CtxRow row = rows.get(i);
                 String full = row.text;
-                String shown = ellipsizeText(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
+                String shown = ellipsizeMiddle(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
                 if (row.menuIcon != null) {
                     int iconX = x + MENU_TEXT_PAD_X;
                     int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
@@ -1567,7 +1606,7 @@ public final class QuickActionOverlay {
     }
 
     /**
-     * 托盘菜单内：在根列表行上右键进入该条目的 {@link QuickActionEntry#contextMenuItems} 子菜单。
+     * 托盘菜单内：右键可隐藏的行后进入显式操作页，避免误触直接隐藏。
      *
      * @return true 表示已处理（含子菜单已打开、滚动条命中等），不应再交给外层关闭逻辑
      */
@@ -1608,10 +1647,12 @@ public final class QuickActionOverlay {
             return true;
         }
         CtxRow row = rows.get(idx);
-        QuickActionEntry sec = row.entryForSecondaryMenu;
-        if (sec == null || sec.contextMenuItems.isEmpty()) {
-            return hideContextMenuRow(row);
+        if (row.hiddenMenuKey != null && !row.hiddenMenuKey.isEmpty()) {
+            openContextMenuRowActions(row);
+            return true;
         }
+        QuickActionEntry sec = row.entryForSecondaryMenu;
+        if (sec == null || sec.contextMenuItems.isEmpty()) return false;
         contextEntrySubmenuId = sec.id();
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
@@ -1620,15 +1661,11 @@ public final class QuickActionOverlay {
         return true;
     }
 
-    private boolean hideContextMenuRow(CtxRow row) {
-        if (row == null || row.hiddenMenuKey == null || row.hiddenMenuKey.isEmpty()) {
-            return false;
-        }
-        layout.hiddenMenuItemIds().add(row.hiddenMenuKey);
+    private void openContextMenuRowActions(CtxRow row) {
+        contextRowAction = row;
+        contextRowActionReturnPage = contextPage;
+        contextPage = CTX_PAGE_ROW_ACTION;
         contextScrollPx = 0;
-        markSave();
-        flushSaveIfNeeded();
-        return true;
     }
 
     private boolean tryClickContext(double mouseX, double mouseY, int button) {
@@ -1651,6 +1688,7 @@ public final class QuickActionOverlay {
             contextEntrySubmenuId = null;
             contextEntryItemOffset = 0;
             contextEntryDirect = false;
+            contextRowAction = null;
             contextPage = CTX_PAGE_ROOT;
             return true;
         }
@@ -1683,6 +1721,7 @@ public final class QuickActionOverlay {
             contextEntrySubmenuId = null;
             contextEntryItemOffset = 0;
             contextEntryDirect = false;
+            contextRowAction = null;
             contextPage = CTX_PAGE_ROOT;
         }
         markSave();
@@ -1714,6 +1753,7 @@ public final class QuickActionOverlay {
         contextEntrySubmenuId = null;
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
+        contextRowAction = null;
         contextPage = CTX_PAGE_ROOT;
     }
 }

@@ -19,6 +19,7 @@
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.ipn.IpnButtonMixin",
     "compat.ipn.IpnProfileButtonClickMixin",
+    "injections.CreativeScreenQuickActionMixin",
     "injections.IngameGuiExperienceMixin",
     "injections.MinecraftClientMixin"
   ],

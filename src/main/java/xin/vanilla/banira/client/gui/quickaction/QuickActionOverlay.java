@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -30,7 +31,6 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -79,6 +79,7 @@ public final class QuickActionOverlay {
      * 图标相对格子内缩，避免贴边
      */
     private static final int ICON_CELL_INSET = 1;
+    private static final int AVOIDANCE_MARGIN = 3;
     private static final int CTX_PAGE_ROOT = 0;
     private static final int CTX_PAGE_HIDDEN = 1;
     private static final int CTX_PAGE_LAYOUT = 2;
@@ -190,6 +191,17 @@ public final class QuickActionOverlay {
     private enum ContextMenuKind {
         NONE,
         TRAY
+    }
+
+    @Value
+    @Accessors(fluent = true)
+    private static class TrayGeometry {
+        int x;
+        int y;
+        int insetX;
+        int insetY;
+        double anchorOffsetX;
+        double anchorOffsetY;
     }
 
     /**
@@ -435,6 +447,32 @@ public final class QuickActionOverlay {
         return layout.cellGap() + GRID_GAP_EXTRA;
     }
 
+    /** 计算当前界面的临时避让位置，不修改玩家保存的锚点。 */
+    private TrayGeometry resolveTrayGeometry(Screen screen) {
+        lastScreenW = screen.width;
+        lastScreenH = screen.height;
+        int cols = Math.max(1, layout.gridColumns());
+        int cell = layout.cellSize();
+        int gap = gridGap();
+        List<String> userGrid = layout.userSlotGrid();
+        int[] bounds = occupiedColRowBounds(cols, userGrid);
+        int contentWidth = contentWidthPx(bounds[0], bounds[1], cell, gap);
+        int contentHeight = contentHeightPx(bounds[2], bounds[3], cell, gap);
+        int insetX = bounds[0] * (cell + gap);
+        int insetY = bounds[2] * (cell + gap);
+        double[] anchorOffset = new double[2];
+        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), contentWidth, contentHeight, anchorOffset);
+
+        int preferredContentX = (int) Math.round(trayTopLeftX(anchorOffset[0], insetX) + insetX);
+        int preferredContentY = (int) Math.round(trayTopLeftY(anchorOffset[1], insetY) + insetY);
+        QuickActionRect contentRect = QuickActionPlacement.resolve(
+                preferredContentX, preferredContentY, contentWidth, contentHeight,
+                screen.width, screen.height,
+                BaniraClientAccess.quickActionExclusionAreas(screen), AVOIDANCE_MARGIN);
+        return new TrayGeometry(contentRect.x() - insetX, contentRect.y() - insetY,
+                insetX, insetY, anchorOffset[0], anchorOffset[1]);
+    }
+
     /**
      * 每格绘制前恢复 GUI 纹理/混合/颜色状态，避免上一格悬停半透明或 blit 残留导致下一格 PNG 半透明边缘异常。
      */
@@ -624,18 +662,13 @@ public final class QuickActionOverlay {
         int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
-        List<String> userGrid = layout.userSlotGrid();
-        int[] cr = occupiedColRowBounds(cols, userGrid);
-        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
-        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
-        int insetX = cr[0] * (cell + gap);
-        int insetY = cr[2] * (cell + gap);
-        double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
-        double tlX = trayTopLeftX(off[0], insetX);
-        double tlY = trayTopLeftY(off[1], insetY);
-        int trayXi = (int) Math.round(tlX);
-        int trayYi = (int) Math.round(tlY);
+        Screen screen = mc().screen;
+        if (!isSupportedInventoryScreen(screen)) {
+            return;
+        }
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        int trayXi = tray.x();
+        int trayYi = tray.y();
         int releaseSlot = resolveUserDropLinearSlot(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal);
         if (releaseSlot >= 1 && from >= 1 && from != releaseSlot) {
             layout.moveUserBetweenLinearSlots(from, releaseSlot);
@@ -658,32 +691,21 @@ public final class QuickActionOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        KeyValue<Integer, Integer> screenSize = BaniraClientAccess.guiScaledSize();
-        lastScreenW = screenSize.key();
-        lastScreenH = screenSize.val();
-
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
         int slotsTotal = cols * cols;
         int cell = layout.cellSize();
         int gap = gridGap();
         List<String> userGrid = layout.userSlotGrid();
-        int[] occCr = occupiedColRowBounds(cols, userGrid);
-        int cw = contentWidthPx(occCr[0], occCr[1], cell, gap);
-        int ch = contentHeightPx(occCr[2], occCr[3], cell, gap);
-        int insetX = occCr[0] * (cell + gap);
-        int insetY = occCr[2] * (cell + gap);
-
-        double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
-
-        double tlX = trayTopLeftX(off[0], insetX);
-        double tlY = trayTopLeftY(off[1], insetY);
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        double tlX = tray.x();
+        double tlY = tray.y();
 
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
-            applyAnchorFromTopLeft(tlX, tlY, off[0], off[1], insetX, insetY);
+            applyAnchorFromTopLeft(tlX, tlY, tray.anchorOffsetX(), tray.anchorOffsetY(),
+                    tray.insetX(), tray.insetY());
         }
 
         int trayXi = (int) Math.round(tlX);
@@ -833,15 +855,9 @@ public final class QuickActionOverlay {
         int cell = layout.cellSize();
         int gap = gridGap();
         List<String> userGrid = layout.userSlotGrid();
-        int[] cr = occupiedColRowBounds(cols, userGrid);
-        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
-        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
-        int insetX = cr[0] * (cell + gap);
-        int insetY = cr[2] * (cell + gap);
-        double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
-        double tlX = trayTopLeftX(off[0], insetX);
-        double tlY = trayTopLeftY(off[1], insetY);
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        double tlX = tray.x();
+        double tlY = tray.y();
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
@@ -904,6 +920,35 @@ public final class QuickActionOverlay {
         return Minecraft.getInstance();
     }
 
+    /** 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。 */
+    public boolean capturesPointer(Screen screen, double mouseX, double mouseY) {
+        if (!isSupportedInventoryScreen(screen)) {
+            return false;
+        }
+        ensureLoaded();
+        if (contextOpen) {
+            layoutContextMenu(buildContextRows(), mc());
+        }
+        if (contextOpen && new QuickActionRect(ctxLayoutX, ctxLayoutY, ctxLayoutW, ctxLayoutH)
+                .contains(mouseX, mouseY)) {
+            return true;
+        }
+
+        int cols = Math.max(1, layout.gridColumns());
+        int rows = cols;
+        int slotsTotal = cols * cols;
+        int cell = layout.cellSize();
+        int gap = gridGap();
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        int trayX = draggingTray ? (int) Math.round(mouseX - dragGrabDx) : tray.x();
+        int trayY = draggingTray ? (int) Math.round(mouseY - dragGrabDy) : tray.y();
+        if (editIconDragging) {
+            return true;
+        }
+        return hitAnyActiveSlot(mouseX, mouseY, trayX, trayY, cols, rows, cell, gap,
+                slotsTotal, layout.userSlotGrid());
+    }
+
     public boolean handleMouseClicked(Screen screen, double mouseX, double mouseY, int button) {
         if (!isSupportedInventoryScreen(screen)) {
             return false;
@@ -915,15 +960,9 @@ public final class QuickActionOverlay {
         int cell = layout.cellSize();
         int gap = gridGap();
         List<String> userGrid = layout.userSlotGrid();
-        int[] cr = occupiedColRowBounds(cols, userGrid);
-        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
-        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
-        int insetX = cr[0] * (cell + gap);
-        int insetY = cr[2] * (cell + gap);
-        double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
-        double tlX = trayTopLeftX(off[0], insetX);
-        double tlY = trayTopLeftY(off[1], insetY);
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        double tlX = tray.x();
+        double tlY = tray.y();
         if (draggingTray) {
             tlX = mouseX - dragGrabDx;
             tlY = mouseY - dragGrabDy;
@@ -1008,17 +1047,9 @@ public final class QuickActionOverlay {
         int cell = layout.cellSize();
         int gap = gridGap();
         List<String> userGrid = layout.userSlotGrid();
-        int[] cr = occupiedColRowBounds(cols, userGrid);
-        int cw = contentWidthPx(cr[0], cr[1], cell, gap);
-        int ch = contentHeightPx(cr[2], cr[3], cell, gap);
-        int insetX = cr[0] * (cell + gap);
-        int insetY = cr[2] * (cell + gap);
-        double[] off = new double[2];
-        QuickActionAnchorMath.offsetFromTopLeft(layout.groupAnchor(), cw, ch, off);
-        double tlX = trayTopLeftX(off[0], insetX);
-        double tlY = trayTopLeftY(off[1], insetY);
-        int trayXi = (int) Math.round(tlX);
-        int trayYi = (int) Math.round(tlY);
+        TrayGeometry tray = resolveTrayGeometry(screen);
+        int trayXi = tray.x();
+        int trayYi = tray.y();
         int releaseSlot = hitSlotInteractive(mouseX, mouseY, trayXi, trayYi, cols, rows, cell, gap, slotsTotal, userGrid, false);
 
         if (draggingTray) {
@@ -1517,12 +1548,16 @@ public final class QuickActionOverlay {
         ctxLayoutH = ctxInnerH + innerPad * 2;
         ctxScrollMaxPx = Math.max(0, contentH - ctxInnerH);
 
-        int x = Math.min(contextX, lastScreenW - ctxLayoutW - 4);
-        int y = Math.min(contextY, lastScreenH - ctxLayoutH - 4);
-        ctxLayoutX = x;
-        ctxLayoutY = y;
-        ctxInnerTop = y + innerPad;
-        ctxScrollbarLeft = x + innerW + MENU_SCROLLBAR_GAP;
+        Screen screen = mc.screen;
+        QuickActionRect placement = QuickActionPlacement.resolve(
+                contextX, contextY, ctxLayoutW, ctxLayoutH,
+                lastScreenW, lastScreenH,
+                screen != null ? BaniraClientAccess.quickActionExclusionAreas(screen)
+                        : java.util.Collections.emptyList(), AVOIDANCE_MARGIN);
+        ctxLayoutX = placement.x();
+        ctxLayoutY = placement.y();
+        ctxInnerTop = ctxLayoutY + innerPad;
+        ctxScrollbarLeft = ctxLayoutX + innerW + MENU_SCROLLBAR_GAP;
 
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
     }

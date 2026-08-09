@@ -4,6 +4,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionRect;
 import xin.vanilla.banira.common.data.KeyValue;
 
 import java.util.Collections;
@@ -66,6 +67,9 @@ public interface BaniraClientService {
     KeyValue<Integer, Integer> guiScaledSize();
 
     KeyValue<Integer, Integer> guiPixelSize();
+
+    /** 收集快捷入口需要避开的当前界面区域。 */
+    List<QuickActionRect> quickActionExclusionAreas(Object nativeScreen);
 
     /**
      * Draws text through the active client version's font/render-context API.
@@ -197,6 +201,11 @@ public interface BaniraClientService {
         @Override
         public KeyValue<Integer, Integer> guiPixelSize() {
             return new KeyValue<>(0, 0);
+        }
+
+        @Override
+        public List<QuickActionRect> quickActionExclusionAreas(Object nativeScreen) {
+            return Collections.emptyList();
         }
 
         @Override

@@ -1,13 +1,8 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.ScheduledTask;
 import xin.vanilla.banira.common.data.WallClockScheduledTask;
 
@@ -37,7 +32,6 @@ public final class BaniraScheduler {
         serverTasks.add(ScheduledTask.server(executeAt, action));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void schedule(int delayTicks, @Nonnull Runnable action) {
         long executeAt = clientTicks.get() + Math.max(0, delayTicks);
         clientTasks.add(ScheduledTask.client(executeAt, action));
@@ -57,23 +51,19 @@ public final class BaniraScheduler {
     /**
      * 客户端：墙钟延迟 {@code delayMillis} 毫秒
      */
-    @OnlyIn(Dist.CLIENT)
     public static void scheduleAfterMillis(double delayMillis, @Nonnull Runnable action) {
         clientWallClockTasks.add(WallClockScheduledTask.client(delayMillis, action));
     }
 
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
-        MinecraftServer server = BaniraCodex.serverInstance().key();
-        if (server == null) return;
-
+    /**
+     * 由加载器 adapter 在服务器 END tick 阶段调用。
+     */
+    public static void dispatchServerTick(@Nonnull MinecraftServer server) {
         runTask(server.getTickCount(), serverTasks, serverExecutedCount);
         runWallClockTask(serverWallClockTasks, serverExecutedCount);
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent.Post event) {
+    public static void dispatchClientTick() {
         long tick = clientTicks.incrementAndGet();
         runTask(tick, clientTasks, clientExecutedCount);
         runWallClockTask(clientWallClockTasks, clientExecutedCount);

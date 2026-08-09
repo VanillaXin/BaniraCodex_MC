@@ -1,9 +1,7 @@
 package xin.vanilla.banira.client.data;
 
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import java.time.LocalTime;
@@ -11,7 +9,6 @@ import java.time.LocalTime;
 /**
  * 根据 {@link ClientConfig} 判定是否使用 GUI 夜间配色（仅客户端）
  */
-@OnlyIn(Dist.CLIENT)
 public final class BaniraGuiNightMode {
 
     private BaniraGuiNightMode() {
@@ -62,9 +59,9 @@ public final class BaniraGuiNightMode {
     }
 
     private static boolean autoNight() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.level != null) {
-            long t = mc.level.getDayTime() % 24000L;
+        net.minecraft.world.level.Level level = BaniraClientRuntime.level();
+        if (level != null) {
+            long t = level.getDayTime() % 24000L;
             return t >= 13000L && t < 23000L;
         }
         LocalTime now = LocalTime.now();

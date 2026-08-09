@@ -13,17 +13,20 @@ import static org.junit.Assert.assertTrue;
 /** 防止服务端加载路径直接解析客户端玩家与世界类型。 */
 public class ForgeDedicatedServerNetworkBoundaryTest {
     @Test
-    public void sharedPlayerAndNetworkPathsRemainClientNeutral() throws IOException {
+    public void serverLoadedNetworkClassesUseNeutralPlayerDescriptor() throws IOException {
+        String channels = read("src/main/java/xin/vanilla/banira/internal/forge/network/ForgeNetworkChannels.java");
         String playerUtils = read("src/main/java/xin/vanilla/banira/common/util/PlayerUtils.java");
-        String bridge = read("src/main/java/xin/vanilla/banira/internal/common/ClientPlayerRuntimeBridge.java");
-        String platform = read("src/main/java/xin/vanilla/banira/internal/forge/platform/ForgeBaniraPlatform.java");
+        String clientRuntime = read("src/main/java/xin/vanilla/banira/internal/client/BaniraClientRuntime.java");
 
-        assertFalse(playerUtils.contains("net.minecraft.client"));
-        assertTrue(playerUtils.contains("ClientPlayerRuntimeBridge.levelPlayer(uuid)"));
-        assertTrue(playerUtils.contains("ClientPlayerRuntimeBridge.onlinePlayerSkin(uuid)"));
-        assertTrue(bridge.contains("BaniraPlatforms.get().isClient()"));
-        assertTrue(bridge.contains("Class.forName(RUNTIME_CLASS)"));
-        assertFalse(platform.contains("LocalPlayer"));
+        assertFalse(channels.contains("net.minecraft.client.player.LocalPlayer"));
+        assertFalse(channels.contains("net.minecraft.client.Minecraft"));
+        assertFalse(channels.contains("BaniraClientRuntime.localPlayer()"));
+        assertTrue(channels.contains("ForgeClientNetworkAccess"));
+        assertFalse(playerUtils.contains("BaniraClientRuntime."));
+        assertTrue(playerUtils.contains("ClientRuntimeBridge.localPlayer()"));
+        assertTrue(playerUtils.contains("ClientRuntimeBridge.levelPlayer(uuid)"));
+        assertTrue(playerUtils.contains("ClientRuntimeBridge.onlinePlayerSkin(uuid)"));
+        assertTrue(clientRuntime.contains("public static Player player()"));
     }
 
     private static String read(String relative) throws IOException {

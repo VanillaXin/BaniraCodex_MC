@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
- * Loader-neutral resource identifier used by Banira public APIs.
+ * Banira 公共 API 使用的加载器无关资源标识符。
  */
 @Getter
 @EqualsAndHashCode

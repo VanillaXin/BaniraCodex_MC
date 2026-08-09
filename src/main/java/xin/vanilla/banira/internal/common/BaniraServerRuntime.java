@@ -5,8 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.world.level.storage.LevelResource;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -20,26 +19,28 @@ import java.util.UUID;
 /**
  * Banira 服务端运行时状态。
  *
- * <p>服务端句柄和玩家数据管理器集中在这里，加载器入口只负责更新生命周期。</p>
+ * <p>不同 MC 版本获取 server/tick 的方式不完全一致，统一集中在这里可减少根入口和工具类的迁移成本。</p>
  */
 @Accessors(fluent = true)
 public final class BaniraServerRuntime {
+
+    private static final String LEGACY_ARTIFACT_ID = "xin.vanilla";
+
     @Getter
     private static final KeyValue<MinecraftServer, Boolean> serverInstance = new KeyValue<>(null, false);
 
     @Getter
     private static final PlayerDataManager playerDataManager = PlayerDataManager.getOrCreateInstance(
-            BaniraCodex.BANIRA_PLAYER_DATA_PATH,
-            () -> serverInstance().key().getWorldPath(LevelResource.PLAYER_DATA_DIR),
-            BaniraCodex.MODID,
+            BaniraPaths.PLAYER_DATA_PATH,
+            BaniraPaths::vanillaPlayerDataPath,
+            Banira.MOD_ID,
             "",
-            StringUtils.reverseBySeparatorElegant(BaniraCodex.ARTIFACT_ID, ".")
+            StringUtils.reverseBySeparatorElegant(LEGACY_ARTIFACT_ID, ".")
     );
 
     private BaniraServerRuntime() {
     }
 
-    @Nullable
     public static MinecraftServer server() {
         return serverInstance().key();
     }
@@ -66,7 +67,7 @@ public final class BaniraServerRuntime {
         return server != null ? server.getResourceManager() : null;
     }
 
-    public static void markStarting(@Nonnull MinecraftServer server) {
+    public static void markStarting(MinecraftServer server) {
         serverInstance().key(server).value(true);
     }
 

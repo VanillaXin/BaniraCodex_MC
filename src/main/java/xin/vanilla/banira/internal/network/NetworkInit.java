@@ -34,6 +34,7 @@ public final class NetworkInit {
         HANDLER.register(ConfigFetchRequestToServer.class, ConfigFetchRequestToServer::toBytes, ConfigFetchRequestToServer::new, ConfigFetchRequestToServer::handle);
         HANDLER.register(ConfigSnapshotToClient.class, ConfigSnapshotToClient::toBytes, ConfigSnapshotToClient::new, ConfigSnapshotToClient::handle);
         HANDLER.register(CustomPlayerConfigSyncToServer.class, CustomPlayerConfigSyncToServer::toBytes, CustomPlayerConfigSyncToServer::new, CustomPlayerConfigSyncToServer::handle);
+        HANDLER.register(QuickActionCommandsToServer.class, QuickActionCommandsToServer::toBytes, QuickActionCommandsToServer::new, QuickActionCommandsToServer::handle);
 
         RequestToBoth.registerHandler(REQUEST_ADVANCEMENT_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(new AdvancementToClient(AdvancementUtils.advancementData()), player);
@@ -44,7 +45,5 @@ public final class NetworkInit {
         RequestToBoth.registerHandler(REQUEST_BIOME_DATA, (packet, player) -> {
             PacketUtils.sendSplitPacketToPlayer(new BiomeToClient(new ArrayList<>(BiomeUtils.getAllIds())), player);
         });
-
-        HANDLER.completeRegistration();
     }
 }

@@ -1,6 +1,8 @@
 package xin.vanilla.banira.platform;
 
-/** 测试用配置服务，避免单元测试触碰真实加载器配置。 */
+/**
+ * 测试用配置服务，平台契约测试默认不触碰真实加载器配置。
+ */
 public enum NoopConfigService implements BaniraConfigService {
     INSTANCE;
 

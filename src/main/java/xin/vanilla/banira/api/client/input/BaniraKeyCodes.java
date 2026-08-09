@@ -122,6 +122,17 @@ public final class BaniraKeyCodes {
         return String.join(" + ", parts);
     }
 
+    public static boolean matchesShortcut(String shortcut, int keyCode, int modifiers) {
+        if (shortcut == null || shortcut.trim().isEmpty()) {
+            return false;
+        }
+        return normalizeShortcut(shortcut).equals(normalizeShortcut(formatShortcut(keyCode, modifiers)));
+    }
+
+    private static String normalizeShortcut(String shortcut) {
+        return shortcut.replaceAll("\\s*\\+\\s*", "+").trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
     public static String formatModifiers(int modifiers) {
         List<String> parts = new ArrayList<>();
         appendModifiers(parts, modifiers);

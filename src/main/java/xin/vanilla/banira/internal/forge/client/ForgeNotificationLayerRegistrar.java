@@ -6,16 +6,16 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.util.NotificationManager;
 
 /**
  * 将无界面通知注册为 Forge 1.21.1 HUD 的最上层。
  */
-@Mod.EventBusSubscriber(modid = BaniraCodex.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid = Banira.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ForgeNotificationLayerRegistrar {
     private static final ResourceLocation NOTIFICATION_LAYER =
-            ResourceLocation.fromNamespaceAndPath(BaniraCodex.MODID, "notifications");
+            ResourceLocation.fromNamespaceAndPath(Banira.MOD_ID, "notifications");
 
     private ForgeNotificationLayerRegistrar() {
     }

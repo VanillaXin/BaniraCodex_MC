@@ -15,8 +15,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
@@ -31,7 +29,6 @@ import javax.annotation.Nullable;
 /**
  * 快捷项在托盘上显示的图标来源：物品、药水效果或纹理资源。
  */
-@OnlyIn(Dist.CLIENT)
 @Accessors(chain = true, fluent = true)
 public class QuickIcon {
 
@@ -39,6 +36,7 @@ public class QuickIcon {
         ITEM,
         EFFECT,
         RESOURCE,
+        CUSTOM,
         NONE,
         ;
     }
@@ -50,8 +48,8 @@ public class QuickIcon {
 
     @Getter
     @Setter
-    @Nonnull
-    private ItemStack itemStack = new ItemStack(Items.PAPER);
+    @Nullable
+    private ItemStack itemStack;
 
     @Getter
     @Setter
@@ -62,6 +60,11 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Texture texture;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Renderer customRenderer;
 
     @Nonnull
     public static QuickIcon none() {
@@ -114,6 +117,15 @@ public class QuickIcon {
         return q;
     }
 
+    /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
+    @Nonnull
+    public static QuickIcon custom(@Nonnull Renderer renderer) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.CUSTOM);
+        q.customRenderer(renderer);
+        return q;
+    }
+
     /**
      * 子 mod 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
      */
@@ -137,7 +149,8 @@ public class QuickIcon {
             return;
         }
         if (kind == Kind.ITEM) {
-            ItemWidget.renderGuiItemFlatBlit(graphics.pose(), mc, itemStack, x, y, size);
+            prepareDrawState();
+            ItemWidget.renderGuiItemFlatBlit(graphics.pose(), mc, resolvedItemStack(), x, y, size);
             return;
         }
         render(graphics, mc, x, y, size);
@@ -151,9 +164,10 @@ public class QuickIcon {
             return;
         }
         PoseStack stack = graphics.pose();
+        prepareDrawState();
         switch (kind) {
             case ITEM: {
-                ItemWidget.renderGuiItemScaled(graphics, itemStack, x, y, size);
+                ItemWidget.renderGuiItemScaled(graphics, resolvedItemStack(), x, y, size);
                 break;
             }
             case EFFECT: {
@@ -178,9 +192,45 @@ public class QuickIcon {
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;
             }
+            case CUSTOM: {
+                if (customRenderer != null) {
+                    customRenderer.render(stack, mc, x, y, size);
+                }
+                break;
+            }
             default:
                 break;
         }
+    }
+
+    /** 将 PoseStack 图标回调接入 1.20.1 的 GuiGraphics 管线。 */
+    public void render(@Nonnull PoseStack stack, int x, int y, int size) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (kind == Kind.CUSTOM) {
+            if (customRenderer != null) {
+                customRenderer.render(stack, minecraft, x, y, size);
+            }
+            return;
+        }
+        GuiGraphics graphics = new GuiGraphics(minecraft, minecraft.renderBuffers().bufferSource());
+        graphics.pose().last().pose().set(stack.last().pose());
+        render(graphics, minecraft, x, y, size);
+    }
+
+    /** 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。 */
+    private static void prepareDrawState() {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+    }
+
+    @FunctionalInterface
+    public interface Renderer {
+        void render(PoseStack stack, Minecraft minecraft, int x, int y, int size);
+    }
+
+    private ItemStack resolvedItemStack() {
+        return itemStack != null && !itemStack.isEmpty() ? itemStack : new ItemStack(Items.PAPER);
     }
 
 }

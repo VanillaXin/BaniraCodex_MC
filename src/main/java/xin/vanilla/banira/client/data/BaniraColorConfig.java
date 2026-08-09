@@ -2,11 +2,10 @@ package xin.vanilla.banira.client.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -96,6 +95,18 @@ public final class BaniraColorConfig {
      * 错误色
      */
     private int error;
+    /**
+     * 警告色
+     */
+    private int warning;
+    /**
+     * 成功色
+     */
+    private int success;
+    /**
+     * 信息色
+     */
+    private int info;
 
     /**
      * 列表项文字色覆盖
@@ -387,6 +398,261 @@ public final class BaniraColorConfig {
         return borderHover;
     }
 
+    // region 状态语义色（背景/边框/文字分开，便于输入校验、通知、徽标等复用）
+    public int statusErrorBg() {
+        return inputBgError();
+    }
+
+    public int statusErrorBorder() {
+        return error();
+    }
+
+    public int statusErrorText() {
+        return error();
+    }
+
+    public int statusWarningBg() {
+        return bgTertiary();
+    }
+
+    public int statusWarningBorder() {
+        return warning();
+    }
+
+    public int statusWarningText() {
+        return warning();
+    }
+
+    public int statusSuccessBg() {
+        return bgSecondary();
+    }
+
+    public int statusSuccessBorder() {
+        return success();
+    }
+
+    public int statusSuccessText() {
+        return success();
+    }
+
+    public int statusInfoBg() {
+        return bgSecondary();
+    }
+
+    public int statusInfoBorder() {
+        return info();
+    }
+
+    public int statusInfoText() {
+        return info();
+    }
+    // endregion
+
+    /**
+     * 按语义 token 获取颜色。组件和页面绘制应走这里，避免绑定具体字段或派生方法。
+     */
+    public int color(@Nonnull BaniraColorToken token) {
+        switch (token) {
+            case ACCENT:
+                return accent();
+            case ACCENT_HOVER:
+                return accentHover();
+            case ACCENT_FOCUSED:
+                return accentFocused();
+            case ACCENT_PRESSED:
+                return accentPressed();
+            case BG_PRIMARY:
+                return bgPrimary();
+            case BG_SECONDARY:
+                return bgSecondary();
+            case BG_SURFACE:
+                return bgSurface();
+            case BG_TERTIARY:
+                return bgTertiary();
+            case BG_QUATERNARY:
+                return bgQuaternary();
+            case BG_DISABLED:
+                return bgDisabled();
+            case TEXT_PRIMARY:
+                return textPrimary();
+            case TEXT_SECONDARY:
+                return textSecondary();
+            case TEXT_HINT:
+                return textHint();
+            case TEXT_DISABLED:
+                return textDisabled();
+            case BORDER:
+                return border();
+            case BORDER_HOVER:
+                return borderHover();
+            case BORDER_FOCUSED:
+                return borderFocused();
+            case BORDER_DISABLED:
+                return borderDisabled();
+            case STATUS_ERROR:
+                return error();
+            case STATUS_WARNING:
+                return warning();
+            case STATUS_SUCCESS:
+                return success();
+            case STATUS_INFO:
+                return info();
+            case STATUS_ERROR_BG:
+                return statusErrorBg();
+            case STATUS_ERROR_BORDER:
+                return statusErrorBorder();
+            case STATUS_ERROR_TEXT:
+                return statusErrorText();
+            case STATUS_WARNING_BG:
+                return statusWarningBg();
+            case STATUS_WARNING_BORDER:
+                return statusWarningBorder();
+            case STATUS_WARNING_TEXT:
+                return statusWarningText();
+            case STATUS_SUCCESS_BG:
+                return statusSuccessBg();
+            case STATUS_SUCCESS_BORDER:
+                return statusSuccessBorder();
+            case STATUS_SUCCESS_TEXT:
+                return statusSuccessText();
+            case STATUS_INFO_BG:
+                return statusInfoBg();
+            case STATUS_INFO_BORDER:
+                return statusInfoBorder();
+            case STATUS_INFO_TEXT:
+                return statusInfoText();
+            case PANEL_BG:
+                return panelBg();
+            case LIST_ITEM_TEXT:
+                return listItemText();
+            case BUTTON_BG:
+                return buttonBg();
+            case BUTTON_BG_HOVER:
+                return buttonBgHover();
+            case BUTTON_BG_FOCUSED:
+                return buttonBgFocused();
+            case BUTTON_BG_PRESSED:
+                return buttonBgPressed();
+            case BUTTON_BG_DISABLED:
+                return buttonBgDisabled();
+            case BUTTON_BORDER:
+                return buttonBorder();
+            case BUTTON_BORDER_HOVER:
+                return buttonBorderHover();
+            case BUTTON_BORDER_FOCUSED:
+                return buttonBorderFocused();
+            case BUTTON_BORDER_PRESSED:
+                return buttonBorderPressed();
+            case BUTTON_BORDER_DISABLED:
+                return buttonBorderDisabled();
+            case BUTTON_TEXT:
+                return buttonText();
+            case BUTTON_TEXT_HOVER:
+                return buttonTextHover();
+            case BUTTON_TEXT_FOCUSED:
+                return buttonTextFocused();
+            case BUTTON_TEXT_PRESSED:
+                return buttonTextPressed();
+            case BUTTON_TEXT_DISABLED:
+                return buttonTextDisabled();
+            case BUTTON_ICON:
+                return buttonPresetIconColor();
+            case BUTTON_ICON_HOVER:
+                return buttonPresetIconHoverColor();
+            case BUTTON_ICON_FOCUSED:
+                return buttonPresetIconFocusedColor();
+            case BUTTON_ICON_PRESSED:
+                return buttonPresetIconPressedColor();
+            case BUTTON_ICON_DISABLED:
+                return buttonPresetIconDisabledColor();
+            case BUTTON_LONG_PRESS_PROGRESS_FILL:
+                return buttonLongPressProgressFill();
+            case INPUT_BG:
+                return inputBg();
+            case INPUT_BG_ERROR:
+                return inputBgError();
+            case INPUT_TEXT:
+                return inputText();
+            case INPUT_TEXT_UNEDITABLE:
+                return inputTextUneditable();
+            case INPUT_HINT:
+                return inputHint();
+            case INPUT_CURSOR:
+                return inputCursor();
+            case INPUT_BORDER:
+                return inputBorder();
+            case INPUT_BORDER_FOCUSED:
+                return inputBorderFocused();
+            case INPUT_BORDER_DISABLED:
+                return inputBorderDisabled();
+            case POPUP_BG:
+                return popupBg();
+            case POPUP_BORDER:
+                return popupBorder();
+            case POPUP_ITEM_TEXT:
+                return popupItemText();
+            case POPUP_ITEM_TEXT_SELECTED:
+                return popupItemTextSelected();
+            case POPUP_ITEM_HOVER:
+                return popupItemHover();
+            case POPUP_ITEM_SELECTED:
+                return popupItemSelected();
+            case POPUP_ITEM_SELECTED_BORDER:
+                return popupItemSelectedBorder();
+            case SCROLLBAR_BG:
+                return scrollbarBg();
+            case SCROLLBAR_THUMB:
+                return scrollbarThumb();
+            case SCROLLBAR_THUMB_HOVER:
+                return scrollbarThumbHover();
+            case NOTIFICATION_NORMAL_BG:
+                return notificationNormalBg();
+            case NOTIFICATION_NORMAL_BORDER:
+                return notificationNormalBorder();
+            case NOTIFICATION_NORMAL_TEXT:
+                return notificationNormalText();
+            case NOTIFICATION_WARNING_BG:
+                return notificationWarningBg();
+            case NOTIFICATION_WARNING_BORDER:
+                return notificationWarningBorder();
+            case NOTIFICATION_WARNING_TEXT:
+                return notificationWarningText();
+            case NOTIFICATION_ERROR_BG:
+                return notificationErrorBg();
+            case NOTIFICATION_ERROR_BORDER:
+                return notificationErrorBorder();
+            case NOTIFICATION_ERROR_TEXT:
+                return notificationErrorText();
+            case NOTIFICATION_SUCCESS_BG:
+                return notificationSuccessBg();
+            case NOTIFICATION_SUCCESS_BORDER:
+                return notificationSuccessBorder();
+            case NOTIFICATION_SUCCESS_TEXT:
+                return notificationSuccessText();
+            case CURSOR_LIGHT_MAIN:
+                return cursorLightMain();
+            case CURSOR_LIGHT_SUB:
+                return cursorLightSub();
+            case CURSOR_LIGHT_PRESSED:
+                return cursorLightPressed();
+            case CURSOR_DARK_MAIN:
+                return cursorDarkMain();
+            case CURSOR_DARK_SUB:
+                return cursorDarkSub();
+            case CURSOR_DARK_PRESSED:
+                return cursorDarkPressed();
+            default:
+                throw new IllegalArgumentException("Unsupported Banira color token: " + token);
+        }
+    }
+
+    /**
+     * 为组件字段默认值提供语义取色，避免组件直接依赖具体主题字段。
+     */
+    public static int colorForSeason(@Nullable EnumSeason season, @Nonnull BaniraColorToken token) {
+        return forSeason(season).color(token);
+    }
+
     // region 通知条（按语义类型，由客户端根据当前主题计算）
 
     public int notificationNormalBg() {
@@ -402,39 +668,39 @@ public final class BaniraColorConfig {
     }
 
     public int notificationWarningBg() {
-        return bgTertiary();
+        return statusWarningBg();
     }
 
     public int notificationWarningBorder() {
-        return accent();
+        return statusWarningBorder();
     }
 
     public int notificationWarningText() {
-        return textPrimary();
+        return statusWarningText();
     }
 
     public int notificationErrorBg() {
-        return inputBgError();
+        return statusErrorBg();
     }
 
     public int notificationErrorBorder() {
-        return error();
+        return statusErrorBorder();
     }
 
     public int notificationErrorText() {
-        return error();
+        return statusErrorText();
     }
 
     public int notificationSuccessBg() {
-        return bgSecondary();
+        return statusSuccessBg();
     }
 
     public int notificationSuccessBorder() {
-        return accent();
+        return statusSuccessBorder();
     }
 
     public int notificationSuccessText() {
-        return accent();
+        return statusSuccessText();
     }
     // endregion
 
@@ -546,7 +812,7 @@ public final class BaniraColorConfig {
      */
     @Nonnull
     public static BaniraColorConfig themeForConcreteSeason(@Nonnull EnumSeason concreteSeason) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (EnvironmentUtils.isClient()) {
             return BaniraColorThemeLoader.get().resolve(concreteSeason);
         }
         return builtinForConcreteSeason(concreteSeason);
@@ -614,66 +880,66 @@ public final class BaniraColorConfig {
     }
 
     /**
-     * 春 - 樱花粉：白底微粉，层次由浅到深
+     * 春 - 樱花粉白：轻亮、柔软，避免混入过多冷色
      */
     private static BaniraColorConfig builtinSpring() {
         BaniraColorConfig c = new BaniraColorConfig()
-                .accent(0xFFE8A0B0).accentHover(0xFFF5D0DC).accentFocused(0xFFF0B8C8).accentPressed(0xFFE090A8)
-                .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFFFF5F8).bgSurface(0xFFFFF0F5).bgTertiary(0xFFFFE8EF).bgQuaternary(0xFFFFE0E8).bgDisabled(0xFFF5EEF0)
-                .textPrimary(0xFF8B4A5A).textSecondary(0xFFA67B8A).textHint(0xFFC8A8B5).textDisabled(0xFFB0B0B0)
-                .border(0xFFF0B8C8).borderHover(0xFFE8A0B0).borderFocused(0xFFE090A0).borderDisabled(0xFFD8D0D2)
-                .error(0xFFB00020)
-                .cursorLightPressedOverride(0xFFB05068);
-        c.listItemTextOverride(0xFF6B3A4A);
+                .accent(0xFFEE7FA8).accentHover(0xFFFFBED3).accentFocused(0xFFF26D9D).accentPressed(0xFFD75B8A)
+                .bgPrimary(0xFFFFFCFE).bgSecondary(0xFFFFF7FB).bgSurface(0xFFFFF0F6).bgTertiary(0xFFFFE8F1).bgQuaternary(0xFFFFDCE9).bgDisabled(0xFFF5EAF0)
+                .textPrimary(0xFF5C3B48).textSecondary(0xFF805D6B).textHint(0xFFB78FA0).textDisabled(0xFFC7B6BE)
+                .border(0xFFF2C7D7).borderHover(0xFFEE8FB2).borderFocused(0xFFF26D9D).borderDisabled(0xFFEADCE2)
+                .error(0xFFDA5B72).warning(0xFFE4A24A).success(0xFF61B875).info(0xFF6DA7E8)
+                .cursorLightPressedOverride(0xFFCC5A83);
+        c.listItemTextOverride(0xFF4E3340);
         return c;
     }
 
     /**
-     * 夏 - 清新绿：白底微绿，清爽通透
+     * 夏 - 清新绿白：高明度绿，保持界面干净
      */
     private static BaniraColorConfig builtinSummer() {
         return new BaniraColorConfig()
-                .accent(0xFF5BA85B).accentHover(0xFFA8D8A8).accentFocused(0xFF88C888).accentPressed(0xFF4A9A4A)
-                .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFF5FFF5).bgSurface(0xFFF0FFF0).bgTertiary(0xFFE8F5E8).bgQuaternary(0xFFE0F0E0).bgDisabled(0xFFEEF5EE)
-                .textPrimary(0xFF2D5A2D).textSecondary(0xFF5A7B5A).textHint(0xFF98B898).textDisabled(0xFFA0B0A0)
-                .border(0xFF88C888).borderHover(0xFF5BA85B).borderFocused(0xFF3D8A3D).borderDisabled(0xFFD0E0D0)
-                .error(0xFFB00020)
-                .cursorLightPressedOverride(0xFF2D7A2D);
+                .accent(0xFF65C978).accentHover(0xFFB9EFC3).accentFocused(0xFF45B962).accentPressed(0xFF3C9E54)
+                .bgPrimary(0xFFFBFFFC).bgSecondary(0xFFF3FFF5).bgSurface(0xFFEAFBEF).bgTertiary(0xFFDFF5E7).bgQuaternary(0xFFD2EDDC).bgDisabled(0xFFEAF3ED)
+                .textPrimary(0xFF294634).textSecondary(0xFF58735F).textHint(0xFF8EAD98).textDisabled(0xFFA7B8AD)
+                .border(0xFFBCE6C8).borderHover(0xFF74D98A).borderFocused(0xFF45B962).borderDisabled(0xFFD6E8DC)
+                .error(0xFFDA5C63).warning(0xFFE3A13B).success(0xFF45B962).info(0xFF5CAAE6)
+                .cursorLightPressedOverride(0xFF368B4B);
     }
 
     /**
-     * 秋 - 活力橙：白底暖橙，层次分明
+     * 秋 - 蜜橙白：温暖但不过暗，减少土色感
      */
     private static BaniraColorConfig builtinAutumn() {
         return new BaniraColorConfig()
-                .accent(0xFFE88A38).accentHover(0xFFF5C8A0).accentFocused(0xFFF0B070).accentPressed(0xFFD87A28)
-                .bgPrimary(0xFFFFFCF8).bgSecondary(0xFFFFF5EB).bgSurface(0xFFFFF0E0).bgTertiary(0xFFFFE8D0).bgQuaternary(0xFFFFE0C0).bgDisabled(0xFFF5EDE5)
-                .textPrimary(0xFF8B5A2D).textSecondary(0xFFA67B5A).textHint(0xFFC8A888).textDisabled(0xFFB0A898)
-                .border(0xFFF0B070).borderHover(0xFFE88A38).borderFocused(0xFFD87A28).borderDisabled(0xFFE0D8D0)
-                .error(0xFFB00020)
-                .cursorLightPressedOverride(0xFFC05018);
+                .accent(0xFFF59A4C).accentHover(0xFFFFC78F).accentFocused(0xFFE98637).accentPressed(0xFFD8752C)
+                .bgPrimary(0xFFFFFDF9).bgSecondary(0xFFFFF7EF).bgSurface(0xFFFFF0DF).bgTertiary(0xFFFFE7CE).bgQuaternary(0xFFFFD9B8).bgDisabled(0xFFF3E8DC)
+                .textPrimary(0xFF5B432F).textSecondary(0xFF80654A).textHint(0xFFB49578).textDisabled(0xFFC4B4A2)
+                .border(0xFFF1C89D).borderHover(0xFFF7A762).borderFocused(0xFFE98637).borderDisabled(0xFFE5D5C2)
+                .error(0xFFD45B5B).warning(0xFFE28A24).success(0xFF69AE69).info(0xFF5E9DD6)
+                .cursorLightPressedOverride(0xFFBE6323);
     }
 
     /**
-     * 冬 - 宝石蓝：白底冰蓝，清冽通透
+     * 冬 - 冰蓝白：清亮蓝白，保留软萌感
      */
     private static BaniraColorConfig builtinWinter() {
         return new BaniraColorConfig()
-                .accent(0xFF3D7AB8).accentHover(0xFFA0C8E8).accentFocused(0xFF78B0D8).accentPressed(0xFF2D6AA8)
-                .bgPrimary(0xFFFFFCFD).bgSecondary(0xFFF5FAFF).bgSurface(0xFFF0F8FF).bgTertiary(0xFFE8F0F8).bgQuaternary(0xFFE0E8F5).bgDisabled(0xFFEEF2F8)
-                .textPrimary(0xFF4A6B8B).textSecondary(0xFF6A8BA8).textHint(0xFFA8C0D8).textDisabled(0xFFB0C0D0)
-                .border(0xFF78B0D8).borderHover(0xFF3D7AB8).borderFocused(0xFF2D6AA8).borderDisabled(0xFFD0D8E5)
-                .error(0xFFB00020)
-                .cursorLightPressedOverride(0xFF1D4A88);
+                .accent(0xFF78BDF7).accentHover(0xFFC7E6FF).accentFocused(0xFF5EAFE9).accentPressed(0xFF4B9DDF)
+                .bgPrimary(0xFFFBFEFF).bgSecondary(0xFFF4FBFF).bgSurface(0xFFEAF6FF).bgTertiary(0xFFDCEFFF).bgQuaternary(0xFFCFE6FB).bgDisabled(0xFFE9F0F6)
+                .textPrimary(0xFF2E475F).textSecondary(0xFF5B7892).textHint(0xFF8EACC4).textDisabled(0xFFA9B8C5)
+                .border(0xFFBBDCF5).borderHover(0xFF7AC6FF).borderFocused(0xFF5EAFE9).borderDisabled(0xFFD5E3EF)
+                .error(0xFFD45B74).warning(0xFFE0A244).success(0xFF5BAF82).info(0xFF5EAFE9)
+                .cursorLightPressedOverride(0xFF3B86C7);
     }
 
     private static BaniraColorConfig builtinNightSpring() {
         BaniraColorConfig c = new BaniraColorConfig()
-                .accent(0xFFF0A8C0).accentHover(0xFFFFC8D8).accentFocused(0xFFFFB0D0).accentPressed(0xFFE090B0)
-                .bgPrimary(0xFF1A1418).bgSecondary(0xFF221A20).bgSurface(0xFF2A2228).bgTertiary(0xFF322A30).bgQuaternary(0xFF3A3238).bgDisabled(0xFF282228)
-                .textPrimary(0xFFF0D8E0).textSecondary(0xFFD0B0C0).textHint(0xFF988898).textDisabled(0xFF706870)
-                .border(0xFF705868).borderHover(0xFFF0A8C0).borderFocused(0xFFFFB0D0).borderDisabled(0xFF484048)
-                .error(0xFFFF7088)
+                .accent(0xFFF0A8C0).accentHover(0xFFFFC8D8).accentFocused(0xFFFF9FC2).accentPressed(0xFFE090B0)
+                .bgPrimary(0xFF181519).bgSecondary(0xFF201B20).bgSurface(0xFF28232A).bgTertiary(0xFF2F3030).bgQuaternary(0xFF382E36).bgDisabled(0xFF282428)
+                .textPrimary(0xFFF2DDE5).textSecondary(0xFFC8B7C0).textHint(0xFF9A8E96).textDisabled(0xFF746D72)
+                .border(0xFF66505D).borderHover(0xFFF0A8C0).borderFocused(0xFFFF9FC2).borderDisabled(0xFF474047)
+                .error(0xFFFF7088).warning(0xFFF0B560).success(0xFF8BCB8D).info(0xFF80B8F0)
                 .cursorLightMainOverride(0xFFFFD0E0).cursorDarkMainOverride(0xFFF0A8C0)
                 .cursorLightPressedOverride(0xFFFFA8C8).cursorDarkPressedOverride(0xFFE080A0);
         c.listItemTextOverride(0xFFFFE8F0);
@@ -684,25 +950,25 @@ public final class BaniraColorConfig {
 
     private static BaniraColorConfig builtinNightSummer() {
         return new BaniraColorConfig()
-                .accent(0xFF7BC87C).accentHover(0xFFB8E8B8).accentFocused(0xFF98D898).accentPressed(0xFF5AB85A)
-                .bgPrimary(0xFF141A16).bgSecondary(0xFF1A221C).bgSurface(0xFF202A22).bgTertiary(0xFF283228).bgQuaternary(0xFF303A30).bgDisabled(0xFF222822)
-                .textPrimary(0xFFE0F0E0).textSecondary(0xFFB0D0B0).textHint(0xFF789878).textDisabled(0xFF587058)
-                .border(0xFF486848).borderHover(0xFF7BC87C).borderFocused(0xFF98D898).borderDisabled(0xFF384038)
-                .error(0xFFFF7088)
-                .cursorLightMainOverride(0xFFE8FFE8).cursorDarkMainOverride(0xFF7BC87C)
-                .cursorLightPressedOverride(0xFFC8F0C8).cursorDarkPressedOverride(0xFF58A858)
-                .listItemTextOverride(0xFFD8F8D8)
-                .inputBgOverride(0xFF242E26)
-                .inputBgErrorOverride(0xFF2E3830);
+                .accent(0xFF7FE192).accentHover(0xFFBDF3C7).accentFocused(0xFF98E7A8).accentPressed(0xFF58C76E)
+                .bgPrimary(0xFF101912).bgSecondary(0xFF172019).bgSurface(0xFF1F2A22).bgTertiary(0xFF27332A).bgQuaternary(0xFF2F3A31).bgDisabled(0xFF222928)
+                .textPrimary(0xFFE2F4EF).textSecondary(0xFFAED1C8).textHint(0xFF7E9E96).textDisabled(0xFF60746F)
+                .border(0xFF456B4F).borderHover(0xFF7FE192).borderFocused(0xFF98E7A8).borderDisabled(0xFF374341)
+                .error(0xFFFF7480).warning(0xFFF0B860).success(0xFF8EE59C).info(0xFF78B8F0)
+                .cursorLightMainOverride(0xFFE8FFFA).cursorDarkMainOverride(0xFF7FE192)
+                .cursorLightPressedOverride(0xFFC6F5CE).cursorDarkPressedOverride(0xFF58C76E)
+                .listItemTextOverride(0xFFDFF8F2)
+                .inputBgOverride(0xFF222E2B)
+                .inputBgErrorOverride(0xFF33272A);
     }
 
     private static BaniraColorConfig builtinNightAutumn() {
         return new BaniraColorConfig()
-                .accent(0xFFFFA868).accentHover(0xFFFFD0A8).accentFocused(0xFFFFC090).accentPressed(0xFFE88840)
-                .bgPrimary(0xFF1A1612).bgSecondary(0xFF221C18).bgSurface(0xFF2A241E).bgTertiary(0xFF322C26).bgQuaternary(0xFF3A342E).bgDisabled(0xFF282220)
-                .textPrimary(0xFFF0E0D0).textSecondary(0xFFD0B898).textHint(0xFF988878).textDisabled(0xFF706860)
-                .border(0xFF685848).borderHover(0xFFFFA868).borderFocused(0xFFFFC090).borderDisabled(0xFF403830)
-                .error(0xFFFF7088)
+                .accent(0xFFFFA060).accentHover(0xFFFFC79A).accentFocused(0xFFFFB070).accentPressed(0xFFE58042)
+                .bgPrimary(0xFF181512).bgSecondary(0xFF211B17).bgSurface(0xFF29231E).bgTertiary(0xFF312B25).bgQuaternary(0xFF3A3026).bgDisabled(0xFF27231F)
+                .textPrimary(0xFFF1E0CE).textSecondary(0xFFCBBBA3).textHint(0xFF978A7A).textDisabled(0xFF70685F)
+                .border(0xFF675746).borderHover(0xFFFFA060).borderFocused(0xFFFFB070).borderDisabled(0xFF403830)
+                .error(0xFFFF7474).warning(0xFFFFB45C).success(0xFFA7C080).info(0xFF82A7D8)
                 .cursorLightMainOverride(0xFFFFF0D8).cursorDarkMainOverride(0xFFFFA868)
                 .cursorLightPressedOverride(0xFFFFD0A0).cursorDarkPressedOverride(0xFFE07830)
                 .listItemTextOverride(0xFFFFE8D8)
@@ -712,16 +978,16 @@ public final class BaniraColorConfig {
 
     private static BaniraColorConfig builtinNightWinter() {
         return new BaniraColorConfig()
-                .accent(0xFF68A8E8).accentHover(0xFFA8D0F8).accentFocused(0xFF88C0F0).accentPressed(0xFF4890D8)
-                .bgPrimary(0xFF12161C).bgSecondary(0xFF181C22).bgSurface(0xFF1E222A).bgTertiary(0xFF262A32).bgQuaternary(0xFF2E323A).bgDisabled(0xFF202428)
-                .textPrimary(0xFFD8E8F8).textSecondary(0xFFA8C0D8).textHint(0xFF7898B8).textDisabled(0xFF587088)
-                .border(0xFF486078).borderHover(0xFF68A8E8).borderFocused(0xFF88C0F0).borderDisabled(0xFF384050)
-                .error(0xFFFF7088)
-                .cursorLightMainOverride(0xFFE8F8FF).cursorDarkMainOverride(0xFF68A8E8)
-                .cursorLightPressedOverride(0xFFB8D8F8).cursorDarkPressedOverride(0xFF4080C8)
-                .listItemTextOverride(0xFFE0F0FF)
-                .inputBgOverride(0xFF202830)
-                .inputBgErrorOverride(0xFF283038);
+                .accent(0xFF7AB8F2).accentHover(0xFFB8D8FA).accentFocused(0xFF94CBFF).accentPressed(0xFF4F91D0)
+                .bgPrimary(0xFF11161D).bgSecondary(0xFF171D24).bgSurface(0xFF1F242E).bgTertiary(0xFF272D37).bgQuaternary(0xFF2D3542).bgDisabled(0xFF21262D)
+                .textPrimary(0xFFDDEBFA).textSecondary(0xFFADC2D8).textHint(0xFF7E98B4).textDisabled(0xFF5D7186)
+                .border(0xFF475D73).borderHover(0xFF7AB8F2).borderFocused(0xFF94CBFF).borderDisabled(0xFF394451)
+                .error(0xFFFF7088).warning(0xFFE8B86A).success(0xFF80CFA0).info(0xFF7AB8F2)
+                .cursorLightMainOverride(0xFFEAF7FF).cursorDarkMainOverride(0xFF7AB8F2)
+                .cursorLightPressedOverride(0xFFC5DFFF).cursorDarkPressedOverride(0xFF4D84C8)
+                .listItemTextOverride(0xFFE4F0FF)
+                .inputBgOverride(0xFF222B35)
+                .inputBgErrorOverride(0xFF302832);
     }
     // endregion
 }

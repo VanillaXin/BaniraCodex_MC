@@ -62,7 +62,11 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         /**
          * 布尔，使用 DropdownSelectWidget，选项为 true/false
          */
-        BOOLEAN
+        BOOLEAN,
+        /**
+         * 键盘组合键，点击输入框后捕获下一次实际按键
+         */
+        KEY_CHORD
     }
 
     public static final int HEADER_HEIGHT = 20;
@@ -156,6 +160,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     private final List<Object> items = new ArrayList<>();
 
     private double listScrollOffset = 0;
+    private final VisibleTagRange cachedVisibleTagRange = new VisibleTagRange();
     private boolean addingMode = false;
     private int hoveredDeleteIndex = -1;
     private int pressedDeleteIndex = -1;
@@ -219,6 +224,32 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     private double tagsContentHeight() {
         return items.size() * (double) tagRowStride();
+    }
+
+    private int firstVisibleTagIndex(double viewportHeight) {
+        if (items.isEmpty()) return 0;
+        return Math.max(0, (int) Math.floor(listScrollOffset / tagRowStride()));
+    }
+
+    private int lastVisibleTagIndex(double viewportHeight) {
+        if (items.isEmpty()) return -1;
+        double bottom = listScrollOffset + Math.max(0, viewportHeight);
+        return Math.min(items.size() - 1, (int) Math.ceil(bottom / tagRowStride()));
+    }
+
+    private VisibleTagRange visibleTagRange(double viewportHeight) {
+        cachedVisibleTagRange.set(firstVisibleTagIndex(viewportHeight), lastVisibleTagIndex(viewportHeight));
+        return cachedVisibleTagRange;
+    }
+
+    private static final class VisibleTagRange {
+        private int first;
+        private int last;
+
+        private void set(int first, int last) {
+            this.first = first;
+            this.last = last;
+        }
     }
 
     /**
@@ -407,6 +438,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 input.value("");
                 addInputWidget = input;
                 break;
+            case KEY_CHORD:
+                KeyCaptureInputWidget keyInput = new KeyCaptureInputWidget(screen);
+                keyInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
+                keyInput.maxLength(64);
+                keyInput.value("");
+                keyInput.onCaptured(value -> confirmAddFromInput());
+                addInputWidget = keyInput;
+                break;
             case NUMBER:
                 NumericInputWidget numInput = new NumericInputWidget(screen);
                 numInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
@@ -562,12 +601,17 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         String label = formatItemLabel(items.get(index));
         switch (itemType) {
             case TEXT:
+            case KEY_CHORD:
             case ENUM:
             case BOOLEAN: {
-                InputWidget input = new InputWidget(screen);
+                InputWidget input = itemType == ItemType.KEY_CHORD
+                        ? new KeyCaptureInputWidget(screen) : new InputWidget(screen);
                 input.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
-                input.maxLength(itemType == ItemType.TEXT ? 64 : 128);
+                input.maxLength(itemType == ItemType.TEXT || itemType == ItemType.KEY_CHORD ? 64 : 128);
                 input.value(label);
+                if (input instanceof KeyCaptureInputWidget) {
+                    ((KeyCaptureInputWidget) input).onCaptured(value -> commitInlineEdit());
+                }
                 editWidget = input;
                 break;
             }
@@ -606,7 +650,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
         Object parsed = null;
         switch (itemType) {
-            case TEXT: {
+            case TEXT:
+            case KEY_CHORD: {
                 String v = ((InputWidget) editWidget).value();
                 if (v == null) v = "";
                 parsed = v.trim();
@@ -851,7 +896,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         int tagW = (int) listW;
         int textMaxW = tagW - TAG_PAD * 2 - TAG_CLOSE_SIZE - TAG_PAD;
         int closeX = tagW - TAG_PAD - TAG_CLOSE_SIZE;
-        for (int i = 0; i < items.size(); i++) {
+        VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
+        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
             Object item = items.get(i);
             String label = formatItemLabel(item);
             String display = font.plainSubstrByWidth(label, textMaxW);
@@ -964,7 +1010,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 hoveredTagBodyIndex = bodyIdx;
             }
         }
-        for (int i = 0; i < items.size(); i++) {
+        VisibleTagRange visibleRange = visibleTagRange(visibleListViewportHeight());
+        for (int i = visibleRange.first; i <= visibleRange.last; i++) {
             double tagY = listContentTop - listScrollOffset + i * tagRowStride();
             double delX = absX + closeX;
             double delY = absY + tagY + (TAG_HEIGHT - TAG_CLOSE_SIZE) / 2.0;
@@ -1073,7 +1120,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             }
         }
         if (relY >= listContentTop && relY < listContentTop + listAreaHeight && event.button() == 0) {
-            for (int i = 0; i < items.size(); i++) {
+            VisibleTagRange visibleRange = visibleTagRange(listAreaHeight);
+            for (int i = visibleRange.first; i <= visibleRange.last; i++) {
                 int closeX = getDeleteButtonX();
                 double tagY = listContentTop - listScrollOffset + i * tagRowStride();
                 double delX = absX + closeX;

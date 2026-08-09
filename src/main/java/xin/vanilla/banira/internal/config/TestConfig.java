@@ -5,7 +5,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
@@ -69,7 +68,7 @@ public class TestConfig implements ConfigData {
     }
 
     public static TestConfig get() {
-        return new TestConfig(ForgeConfigAdapter.getHolder(TestConfig.class));
+        return new TestConfig(InternalConfigHandles.holder(TestConfig.class));
     }
 
     public ConfigHolder holder() {

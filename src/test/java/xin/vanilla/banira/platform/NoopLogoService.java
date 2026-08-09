@@ -3,7 +3,6 @@ package xin.vanilla.banira.platform;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** 测试用 logo 服务。 */
 public enum NoopLogoService implements BaniraLogoService {
     INSTANCE;
 

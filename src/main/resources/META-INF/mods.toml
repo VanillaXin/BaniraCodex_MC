@@ -23,3 +23,15 @@ logoFile = "logo.png"
     versionRange = "${minecraft_version_range}"
     ordering = "NONE"
     side = "BOTH"
+[[dependencies."${mod_id}"]]
+    modId = "jei"
+    mandatory = false
+    versionRange = "[0,)"
+    ordering = "AFTER"
+    side = "CLIENT"
+[[dependencies."${mod_id}"]]
+    modId = "inventoryprofilesnext"
+    mandatory = false
+    versionRange = "[0,)"
+    ordering = "AFTER"
+    side = "CLIENT"

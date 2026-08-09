@@ -1,7 +1,7 @@
 package xin.vanilla.banira.platform;
 
-import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
@@ -9,7 +9,9 @@ import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-/** 测试用网络服务，避免平台单元测试绑定具体加载器。 */
+/**
+ * 测试用网络服务，避免平台单元测试绑定具体加载器。
+ */
 public enum NoopNetworkService implements BaniraNetworkService {
     INSTANCE;
 

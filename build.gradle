@@ -60,6 +60,9 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
+            if (project.hasProperty('externalButtonsSmoke')) {
+                property 'banira.externalButtonsSmoke', project.property('externalButtonsSmoke').toString()
+            }
         }
 
         server {
@@ -117,6 +120,9 @@ dependencies {
 
     // runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
     // runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
+
+    implementation fg.deobf("curse.maven:jei-238222:${jei_id}")
+
 }
 
 tasks.named('processResources', ProcessResources).configure {

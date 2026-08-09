@@ -1,5 +1,7 @@
 package xin.vanilla.banira;
 
+import xin.vanilla.banira.api.Banira;
+
 import xin.vanilla.banira.common.util.IIdentifier;
 
 public final class Identifier implements IIdentifier {
@@ -7,7 +9,7 @@ public final class Identifier implements IIdentifier {
 
     @Override
     public String modId() {
-        return BaniraCodex.MODID;
+        return Banira.MOD_ID;
     }
 
     public IIdentifier instance() {

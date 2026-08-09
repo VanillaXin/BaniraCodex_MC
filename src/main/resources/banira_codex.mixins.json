@@ -8,8 +8,11 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
-    "injections.MinecraftClientMixin",
-    "injections.PlayerTabOverlayMixin"
+    "compat.jei.BookmarkButtonMixin",
+    "compat.jei.GuiIconToggleButtonMixin",
+    "injections.CreativeScreenQuickActionMixin",
+    "injections.GuiHudLayerMixin",
+    "injections.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

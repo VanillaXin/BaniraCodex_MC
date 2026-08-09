@@ -1,59 +1,34 @@
 package xin.vanilla.banira.internal.forge.platform;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.UsernameCache;
-import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.network.ChannelBuilder;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.SimpleChannel;
-import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
-import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.util.BaniraKeyBindings;
-import xin.vanilla.banira.client.util.InputStateManager;
-import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
-import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.NotificationData;
-import xin.vanilla.banira.common.network.BaniraNetworkContext;
-import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
-import xin.vanilla.banira.internal.forge.client.ForgeLogoService;
-import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
+import xin.vanilla.banira.internal.common.BaniraNotificationServices;
+import xin.vanilla.banira.internal.common.BaniraPaths;
+import xin.vanilla.banira.internal.forge.config.ForgeBaniraConfigService;
+import xin.vanilla.banira.internal.forge.network.ForgeBaniraNetworkService;
 import xin.vanilla.banira.platform.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
- * Forge 1.21.1 的 platform 适配层；公共 API 不直接暴露 Forge/FML 类型。
+ * Forge 1.18.2 的基础 platform 实现。
  */
 public final class ForgeBaniraPlatform implements BaniraPlatform {
-    private static final String NETWORK_PROTOCOL_VERSION = "1";
-
-    private static final BaniraPathService PATHS = new ForgePathService();
-    private static final BaniraConfigService CONFIGS = new ForgeConfigService();
-    private static final BaniraNetworkService NETWORK = new ForgeNetworkService();
-    private static final BaniraRegistryService REGISTRIES = new ForgeRegistryService();
-    private static final BaniraInputService INPUT = new ForgeInputService();
-    private static final BaniraNotificationService NOTIFICATIONS = new ForgeNotificationService();
+    private final BaniraInputService input = createInputService();
+    private final BaniraLogoService logo = createLogoService();
 
     @Nonnull
     @Override
@@ -104,11 +79,11 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Nonnull
     @Override
     public String modIdFromMainClass(@Nonnull Class<?> modMainClass) {
-        Mod annotation = modMainClass.getAnnotation(Mod.class);
-        if (annotation == null || annotation.value().trim().isEmpty()) {
-            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
+        Mod mod = modMainClass.getAnnotation(Mod.class);
+        if (mod == null || mod.value() == null || mod.value().trim().isEmpty()) {
+            throw new IllegalArgumentException("Class must be annotated with a loader mod entry annotation: " + modMainClass.getName());
         }
-        return annotation.value();
+        return mod.value();
     }
 
     @Nonnull
@@ -130,13 +105,13 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     @Nonnull
     @Override
     public BaniraPathService pathService() {
-        return PATHS;
+        return BaniraPaths.SERVICE;
     }
 
     @Nonnull
     @Override
     public BaniraConfigService configService() {
-        return CONFIGS;
+        return ForgeBaniraConfigService.INSTANCE;
     }
 
     @Nonnull
@@ -153,496 +128,96 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
+    public BaniraPermissionService permissionService() {
+        return ForgeBaniraPermissionService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
     public BaniraNetworkService networkService() {
-        return NETWORK;
+        return ForgeBaniraNetworkService.INSTANCE;
     }
 
     @Nonnull
     @Override
     public BaniraRegistryService registryService() {
-        return REGISTRIES;
+        return ForgeBaniraRegistryService.INSTANCE;
     }
 
     @Nonnull
     @Override
     public BaniraInputService inputService() {
-        return INPUT;
+        return input;
     }
 
     @Nonnull
     @Override
     public BaniraNotificationService notificationService() {
-        return NOTIFICATIONS;
-    }
-
-    private static final class ForgePathService implements BaniraPathService {
-        @Override
-        public String rootDirectoryName() {
-            return BaniraCodex.VANILLA_XIN;
-        }
-
-        @Override
-        public Path configPath() {
-            return BaniraCodex.BANIRA_CONFIG_PATH.get();
-        }
-
-        @Override
-        public Path worldDataPath() {
-            return BaniraCodex.BANIRA_WORLD_DATA_PATH.get();
-        }
-
-        @Override
-        public Path playerDataPath() {
-            return BaniraCodex.BANIRA_PLAYER_DATA_PATH.get();
-        }
-
-        @Override
-        public Path vanillaPlayerDataPath() {
-            return BaniraCodex.serverInstance().key().getWorldPath(net.minecraft.world.level.storage.LevelResource.PLAYER_DATA_DIR);
-        }
-    }
-
-    private static final class ForgeConfigService implements BaniraConfigService {
-        @Override
-        public <T> void register(@Nonnull Class<T> configClass, @Nonnull String modId) {
-            ForgeConfigAdapter.register(configClass, modId);
-        }
-
-        @Nonnull
-        @Override
-        public <T> T view(@Nonnull Class<?> configClass, @Nonnull Class<T> viewClass) {
-            Object view = ForgeConfigAdapter.get(configClass);
-            return viewClass.cast(view);
-        }
-
-        @Nullable
-        @Override
-        public BaniraConfigHandle handle(@Nonnull Class<?> configClass) {
-            return ForgeConfigAdapter.getHolder(configClass);
-        }
-    }
-
-    private static final class ForgeNetworkService implements BaniraNetworkService {
-        private static final Map<Class<?>, SimpleChannel> PACKET_CHANNELS = new ConcurrentHashMap<>();
-        private static SimpleChannel defaultChannel;
-
-        @Nonnull
-        @Override
-        public NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
-            SimpleChannel channel = ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), channelName))
-                    .networkProtocolVersion(Integer.parseInt(NETWORK_PROTOCOL_VERSION))
-                    .acceptedVersions((status, version) -> true)
-                    .simpleChannel();
-            if (defaultChannel == null) {
-                defaultChannel = channel;
-            }
-            return new ForgeNetworkPacketRegistrar(channel);
-        }
-
-        @Override
-        public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
-            SimpleChannel channel = resolve(packet);
-            if (channel != null && Minecraft.getInstance().getConnection() != null) {
-                channel.send(packet, Minecraft.getInstance().getConnection().getConnection());
-            }
-        }
-
-        @Override
-        public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
-            SimpleChannel channel = resolve(packet);
-            if (channel != null && player instanceof ServerPlayer serverPlayer) {
-                channel.send(packet, PacketDistributor.PLAYER.with(serverPlayer));
-            }
-        }
-
-        @Override
-        public boolean hasDefaultChannel() {
-            return defaultChannel != null;
-        }
-
-        @Override
-        public boolean hasLocalChannel(@Nonnull String channelId) {
-            ResourceLocation channel = ResourceLocation.tryParse(channelId);
-            return channel != null && NetworkRegistry.findTarget(channel) != null;
-        }
-
-        @Override
-        public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
-            ResourceLocation channel = ResourceLocation.tryParse(channelId);
-            return player instanceof ServerPlayer && channel != null && NetworkRegistry.findTarget(channel) != null;
-        }
-
-        private static SimpleChannel resolve(BaniraNetworkPacket packet) {
-            return PACKET_CHANNELS.getOrDefault(packet.getClass(), defaultChannel);
-        }
-    }
-
-    private static final class ForgeNetworkPacketRegistrar implements NetworkPacketRegistrar {
-        private final SimpleChannel channel;
-
-        private ForgeNetworkPacketRegistrar(SimpleChannel channel) {
-            this.channel = channel;
-        }
-
-        @Override
-        public <MSG extends xin.vanilla.banira.common.api.INetworkPacket> void register(
-                int packetId,
-                Class<MSG> packetClass,
-                java.util.function.BiConsumer<MSG, BaniraPacketBuffer> encoder,
-                java.util.function.Function<BaniraPacketBuffer, MSG> decoder,
-                java.util.function.BiConsumer<MSG, BaniraNetworkContext> handler) {
-            // Forge 1.21.1 的 SimpleChannel 注册细节留在 adapter 内部。
-            ForgeNetworkService.PACKET_CHANNELS.put(packetClass, channel);
-            channel.messageBuilder(packetClass, packetId)
-                    .encoder((packet, buffer) -> encoder.accept(packet, new ForgePacketBuffer(buffer)))
-                    .decoder(buffer -> decoder.apply(new ForgePacketBuffer(buffer)))
-                    .consumerMainThread((packet, context) -> handler.accept(packet, new ForgeNetworkContext(context)))
-                    .add();
-        }
-
-        @Override
-        public void complete() {
-            channel.build();
-        }
-    }
-
-    private static final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
-        private final FriendlyByteBuf delegate;
-
-        private ForgePacketBuffer(FriendlyByteBuf delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public String readUtf() {
-            return delegate.readUtf();
-        }
-
-        @Override
-        public String readUtf(int maxLength) {
-            return delegate.readUtf(maxLength);
-        }
-
-        @Override
-        public void writeUtf(String value) {
-            delegate.writeUtf(value);
-        }
-
-        @Override
-        public void writeUtf(String value, int maxLength) {
-            delegate.writeUtf(value, maxLength);
-        }
-
-        @Override
-        public int readInt() {
-            return delegate.readInt();
-        }
-
-        @Override
-        public void writeInt(int value) {
-            delegate.writeInt(value);
-        }
-
-        @Override
-        public int readVarInt() {
-            return delegate.readVarInt();
-        }
-
-        @Override
-        public void writeVarInt(int value) {
-            delegate.writeVarInt(value);
-        }
-
-        @Override
-        public long readLong() {
-            return delegate.readLong();
-        }
-
-        @Override
-        public void writeLong(long value) {
-            delegate.writeLong(value);
-        }
-
-        @Override
-        public boolean readBoolean() {
-            return delegate.readBoolean();
-        }
-
-        @Override
-        public void writeBoolean(boolean value) {
-            delegate.writeBoolean(value);
-        }
-
-        @Override
-        public byte readByte() {
-            return delegate.readByte();
-        }
-
-        @Override
-        public void writeByte(int value) {
-            delegate.writeByte(value);
-        }
-
-        @Override
-        public double readDouble() {
-            return delegate.readDouble();
-        }
-
-        @Override
-        public void writeDouble(double value) {
-            delegate.writeDouble(value);
-        }
-
-        @Override
-        public UUID readUuid() {
-            return delegate.readUUID();
-        }
-
-        @Override
-        public void writeUuid(UUID value) {
-            delegate.writeUUID(Objects.requireNonNull(value, "value"));
-        }
-
-        @Override
-        public <T extends Enum<T>> T readEnum(Class<T> enumClass) {
-            return delegate.readEnum(Objects.requireNonNull(enumClass, "enumClass"));
-        }
-
-        @Override
-        public void writeEnum(Enum<?> value) {
-            delegate.writeEnum(Objects.requireNonNull(value, "value"));
-        }
-
-        @Override
-        public BaniraIdentifier readIdentifier() {
-            return BaniraIdentifier.parse(delegate.readResourceLocation().toString());
-        }
-
-        @Override
-        public void writeIdentifier(BaniraIdentifier value) {
-            BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
-            delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
-        }
-
-        @Override
-        public FriendlyByteBuf nativeBuffer() {
-            return delegate;
-        }
-    }
-
-    private static final class ForgeNetworkContext implements BaniraNetworkContext {
-        private final CustomPayloadEvent.Context delegate;
-
-        private ForgeNetworkContext(CustomPayloadEvent.Context delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void enqueueWork(Runnable work) {
-            delegate.enqueueWork(work);
-        }
-
-        @Override
-        public void markHandled() {
-            delegate.setPacketHandled(true);
-        }
-
-        @Override
-        public boolean isClientSide() {
-            return delegate.isClientSide();
-        }
-
-        @Override
-        public boolean isServerSide() {
-            return !delegate.isClientSide();
-        }
-
-        @Nullable
-        @Override
-        public Object sender() {
-            return delegate.getSender();
-        }
-    }
-
-    private static final class ForgeRegistryService implements BaniraRegistryService {
-        @Nullable
-        @Override
-        public String blockKey(@Nullable Object block) {
-            return key(BuiltInRegistries.BLOCK.getKey((net.minecraft.world.level.block.Block) block));
-        }
-
-        @Nullable
-        @Override
-        public Object block(@Nullable String id) {
-            return id == null ? null : BuiltInRegistries.BLOCK.get(ResourceLocation.parse(id));
-        }
-
-        @Nonnull
-        @Override
-        public Collection<?> blocks() {
-            return Collections.unmodifiableCollection(BuiltInRegistries.BLOCK.stream().toList());
-        }
-
-        @Nullable
-        @Override
-        public String itemKey(@Nullable Object item) {
-            return key(BuiltInRegistries.ITEM.getKey((net.minecraft.world.item.Item) item));
-        }
-
-        @Nullable
-        @Override
-        public Object item(@Nullable String id) {
-            return id == null ? null : BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
-        }
-
-        @Nonnull
-        @Override
-        public Collection<?> items() {
-            return Collections.unmodifiableCollection(BuiltInRegistries.ITEM.stream().toList());
-        }
-
-        @Nonnull
-        @Override
-        public Collection<String> itemTagIds(@Nullable Object item) {
-            return Collections.emptyList();
-        }
-
-        @Nullable
-        @Override
-        public String entityTypeKey(@Nullable Object entityType) {
-            return key(BuiltInRegistries.ENTITY_TYPE.getKey((net.minecraft.world.entity.EntityType<?>) entityType));
-        }
-
-        @Nullable
-        @Override
-        public Object entityType(@Nullable String id) {
-            return id == null ? null : BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
-        }
-
-        @Nonnull
-        @Override
-        public Collection<?> entityTypes() {
-            return Collections.unmodifiableCollection(BuiltInRegistries.ENTITY_TYPE.stream().toList());
-        }
-
-        @Nullable
-        @Override
-        public String effectKey(@Nullable Object effect) {
-            if (effect instanceof net.minecraft.world.effect.MobEffect mobEffect) {
-                return key(BuiltInRegistries.MOB_EFFECT.getKey(mobEffect));
-            }
-            return null;
-        }
-
-        @Nullable
-        @Override
-        public Object effect(@Nullable String id) {
-            return id == null ? null : BuiltInRegistries.MOB_EFFECT.get(ResourceLocation.parse(id));
-        }
-
-        @Nonnull
-        @Override
-        public Collection<?> effects() {
-            return Collections.unmodifiableCollection(BuiltInRegistries.MOB_EFFECT.stream().toList());
-        }
-
-        @Nullable
-        @Override
-        public Object biome(@Nullable String id) {
-            return null;
-        }
-
-        @Nonnull
-        @Override
-        public Collection<String> biomeIds() {
-            return Collections.emptyList();
-        }
-
-        @Nullable
-        private static String key(@Nullable ResourceLocation location) {
-            return location == null ? null : location.toString();
-        }
-    }
-
-    private static final class ForgeInputService implements BaniraInputService {
-        @Nonnull
-        @Override
-        public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
-            String category = spec.category() != null ? spec.category() : BaniraKeyBindings.defaultCategory(spec.modId());
-            KeyMapping mapping = BaniraKeyBindings.register(spec.modId(), spec.suffix(), spec.defaultKey(), category);
-            String descriptionId = BaniraKeyBindings.descriptionId(spec.modId(), spec.suffix());
-            int defaultKey = spec.defaultKey();
-            return new BaniraKeyHandle() {
-                @Nonnull
-                @Override
-                public String descriptionId() {
-                    return descriptionId;
-                }
-
-                @Nonnull
-                @Override
-                public String category() {
-                    return category;
-                }
-
-                @Override
-                public int defaultKey() {
-                    return defaultKey;
-                }
-
-                @Override
-                public int currentKey() {
-                    return mapping.getKey().getValue();
-                }
-
-                @Override
-                public boolean isDown() {
-                    return mapping.isDown();
-                }
-
-                @Override
-                public boolean consumeClick() {
-                    return mapping.consumeClick();
-                }
-            };
-        }
-
-        @Override
-        public boolean isKeyDown(int keyCode) {
-            return InputStateManager.isKeyPressing(keyCode);
-        }
-
-        @Override
-        public boolean isMouseDown(int button) {
-            return InputStateManager.isMousePressing(button);
-        }
-
-        @Override
-        public void flushPendingRegistrations() {
-            // Forge 的 RegisterKeyMappingsEvent 会调用 BaniraKeyBindings.flushPendingRegistrations(event)。
-        }
-    }
-
-    private static final class ForgeNotificationService implements BaniraNotificationService {
-        @Override
-        public void show(@Nonnull Component component) {
-            NotificationManager.get().addNotification(Notification.ofComponent(component));
-        }
-
-        @Override
-        public void show(@Nonnull NotificationData notification) {
-            NotificationManager.get().addNotification(Notification.fromData(notification));
-        }
-
-        @Override
-        public void show(@Nonnull NotificationData notification, boolean fromNetwork) {
-            NotificationManager.get().addNotification(Notification.fromData(notification, fromNetwork), fromNetwork);
-        }
+        return BaniraNotificationServices.INSTANCE;
     }
 
     @Nonnull
     @Override
     public BaniraLogoService logoService() {
-        return ForgeLogoService.INSTANCE;
+        return logo;
+    }
+
+    private static BaniraInputService createInputService() {
+        return FMLEnvironment.dist == Dist.CLIENT
+                ? ClientServices.input()
+                : ServerInputService.INSTANCE;
+    }
+
+    private static BaniraLogoService createLogoService() {
+        return FMLEnvironment.dist == Dist.CLIENT
+                ? ClientServices.logo()
+                : ServerLogoService.INSTANCE;
+    }
+
+    /** 客户端实现只在确认运行侧后解析，专用服务器不会链接这些类。 */
+    private static final class ClientServices {
+        private static BaniraInputService input() {
+            return xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService.INSTANCE;
+        }
+
+        private static BaniraLogoService logo() {
+            return xin.vanilla.banira.internal.forge.client.ForgeLogoService.INSTANCE;
+        }
+    }
+
+    private enum ServerInputService implements BaniraInputService {
+        INSTANCE;
+
+        @Nonnull
+        @Override
+        public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
+            throw new IllegalStateException("Client input is unavailable on a dedicated server");
+        }
+
+        @Override
+        public boolean isKeyDown(int keyCode) {
+            return false;
+        }
+
+        @Override
+        public boolean isMouseDown(int button) {
+            return false;
+        }
+
+        @Override
+        public void flushPendingRegistrations() {
+        }
+    }
+
+    private enum ServerLogoService implements BaniraLogoService {
+        INSTANCE;
+
+        @Override
+        public void register(@Nonnull String modId, @Nonnull Supplier<String> logoFileSupplier) {
+        }
+
+        @Override
+        public void register(@Nonnull Function<String, String> logoFileFunction) {
+        }
     }
 }

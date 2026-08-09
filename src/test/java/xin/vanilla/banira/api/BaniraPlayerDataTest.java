@@ -16,6 +16,7 @@ public class BaniraPlayerDataTest {
         UUID uuid = UUID.randomUUID();
         Object stored = new Object();
         AtomicReference<Object> written = new AtomicReference<>();
+        AtomicReference<UUID> flushed = new AtomicReference<>();
         BaniraPlatforms.install(new TestBaniraPlatform().playerDataService(new BaniraPlayerDataService() {
             @Override
             public Object getOrCreate(UUID playerUuid, String modId) {
@@ -26,10 +27,17 @@ public class BaniraPlayerDataTest {
             public void put(UUID playerUuid, String modId, Object data) {
                 written.set(data);
             }
+
+            @Override
+            public void flush(UUID playerUuid) {
+                flushed.set(playerUuid);
+            }
         }));
 
         assertSame(stored, BaniraPlayerData.getOrCreate(uuid, "child_mod", Object.class));
         BaniraPlayerData.put(uuid, "child_mod", stored);
+        BaniraPlayerData.flush(uuid);
         assertSame(stored, written.get());
+        assertSame(uuid, flushed.get());
     }
 }

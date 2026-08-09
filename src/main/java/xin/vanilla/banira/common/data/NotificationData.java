@@ -42,6 +42,10 @@ public class NotificationData {
      */
     private EnumNotificationStyle style = EnumNotificationStyle.NORMAL;
     /**
+     * 使用通知类型所属 Mod 的主题解析语义配色。
+     */
+    private boolean themed = false;
+    /**
      * 通知类型
      */
     private String notificationType = NotificationTypeKeys.DEFAULT;

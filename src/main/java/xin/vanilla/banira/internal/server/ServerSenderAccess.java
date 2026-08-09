@@ -27,13 +27,11 @@ public final class ServerSenderAccess {
     }
 
     public static boolean canAccessServerConfigEditor(Object sender) {
-        ServerPlayer player = asServerPlayer(sender);
-        return player != null && ConfigEditPermission.canAccessServerConfigEditor(player);
+        return ConfigEditPermission.canAccessServerConfigEditor(sender);
     }
 
     public static boolean canModifyConfigEntry(Object sender, @Nullable ConfigEntryDescriptor desc) {
-        ServerPlayer player = asServerPlayer(sender);
-        return player != null && ConfigEditPermission.canModifyEntry(player, desc);
+        return ConfigEditPermission.canModifyEntry(sender, desc);
     }
 
     public static String language(Object sender) {

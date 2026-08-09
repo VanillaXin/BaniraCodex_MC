@@ -7,7 +7,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionRect;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientService;
@@ -150,11 +149,6 @@ public final class ForgeBaniraClientService implements BaniraClientService {
                 Minecraft.getInstance().getWindow().getWidth(),
                 Minecraft.getInstance().getWindow().getHeight()
         );
-    }
-
-    @Override
-    public List<QuickActionRect> quickActionExclusionAreas(Object nativeScreen) {
-        return ForgeQuickActionExclusionProvider.collect(nativeScreen);
     }
 
     @Override

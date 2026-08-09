@@ -5,7 +5,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.fml.DistExecutor;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionRect;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.forge.client.ForgeBaniraClientService;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -103,10 +102,6 @@ public final class BaniraClientAccess {
 
     public static KeyValue<Integer, Integer> guiPixelSize() {
         return service().guiPixelSize();
-    }
-
-    public static List<QuickActionRect> quickActionExclusionAreas(Object nativeScreen) {
-        return service().quickActionExclusionAreas(nativeScreen);
     }
 
     public static int drawText(Object nativeContext, String text, int x, int y, int argb, boolean shadow) {

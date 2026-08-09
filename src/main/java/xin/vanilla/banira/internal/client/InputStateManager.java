@@ -15,6 +15,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 import java.nio.DoubleBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,7 +66,11 @@ public final class InputStateManager implements BaniraInputState {
     }
 
     private static long getWindowHandle() {
-        return BaniraClientRuntime.windowHandle();
+        try {
+            return BaniraClientRuntime.windowHandle();
+        } catch (Throwable ignored) {
+            return 0L;
+        }
     }
 
     // endregion
@@ -73,7 +78,9 @@ public final class InputStateManager implements BaniraInputState {
     // region 按键/鼠标状态
 
     public static boolean isKeyPressing(int key) {
-        return GLFW.glfwGetKey(getWindowHandle(), key) == GLFW.GLFW_PRESS;
+        long window = getWindowHandle();
+        return window != 0L && isValidKeyboardKey(key)
+                && GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
     }
 
     public static boolean isShiftPressingStatic() {
@@ -89,7 +96,10 @@ public final class InputStateManager implements BaniraInputState {
     }
 
     public static boolean isMousePressing(int mouseButton) {
-        return GLFW.glfwGetMouseButton(getWindowHandle(), mouseButton) == GLFW.GLFW_PRESS;
+        long window = getWindowHandle();
+        return window != 0L && mouseButton >= GLFW.GLFW_MOUSE_BUTTON_1
+                && mouseButton <= GLFW.GLFW_MOUSE_BUTTON_LAST
+                && GLFW.glfwGetMouseButton(window, mouseButton) == GLFW.GLFW_PRESS;
     }
 
     // endregion
@@ -98,6 +108,9 @@ public final class InputStateManager implements BaniraInputState {
 
     public static KeyValue<Double, Double> getRawCursorPos() {
         long window = getWindowHandle();
+        if (window == 0L) {
+            return new KeyValue<>(0.0D, 0.0D);
+        }
         try (MemoryStack stack = MemoryStack.stackPush()) {
             DoubleBuffer xb = stack.mallocDouble(1);
             DoubleBuffer yb = stack.mallocDouble(1);
@@ -115,16 +128,16 @@ public final class InputStateManager implements BaniraInputState {
     }
 
     public static KeyValue<Integer, Integer> rawToGui(double rawX, double rawY) {
-        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
-        KeyValue<Integer, Integer> scaled = BaniraClientRuntime.guiScaledSize();
+        KeyValue<Integer, Integer> window = safeWindowSize();
+        KeyValue<Integer, Integer> scaled = safeGuiScaledSize();
         int gx = (int) Math.round(rawX * (double) scaled.key() / Math.max(1, window.key()));
         int gy = (int) Math.round(rawY * (double) scaled.val() / Math.max(1, window.val()));
         return new KeyValue<>(gx, gy);
     }
 
     public static KeyValue<Double, Double> guiToRaw(double guiX, double guiY) {
-        KeyValue<Integer, Integer> window = BaniraClientRuntime.windowSize();
-        KeyValue<Integer, Integer> scaled = BaniraClientRuntime.guiScaledSize();
+        KeyValue<Integer, Integer> window = safeWindowSize();
+        KeyValue<Integer, Integer> scaled = safeGuiScaledSize();
         double rx = guiX * (double) window.key() / Math.max(1, scaled.key());
         double ry = guiY * (double) window.val() / Math.max(1, scaled.val());
         return new KeyValue<>(rx, ry);
@@ -179,6 +192,7 @@ public final class InputStateManager implements BaniraInputState {
     }
 
     public void registerKey(int key) {
+        if (!isValidKeyboardKey(key)) return;
         keyHistoryRecords.computeIfAbsent(key, k -> new FixedList<>(KEY_HISTORY_SIZE));
     }
 
@@ -237,6 +251,10 @@ public final class InputStateManager implements BaniraInputState {
     public boolean isKeyPressed(String keyNames) {
         if (StringUtils.isNullOrEmptyEx(keyNames)) return false;
         return GLFWKeyUtils.matchKey(keyNames, pressedKeys.stream().mapToInt(i -> i).toArray());
+    }
+
+    public Set<Integer> pressedKeyCodes() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(pressedKeys));
     }
 
     public boolean isKeyPressedInOrder(String keyNames) {
@@ -399,11 +417,13 @@ public final class InputStateManager implements BaniraInputState {
     }
 
     public void handleKeyPressed(int keyCode) {
+        if (!isValidKeyboardKey(keyCode)) return;
         pressedKeys.add(keyCode);
         updateKeyHistory(keyCode, true);
     }
 
     public void handleKeyReleased(int keyCode) {
+        if (!isValidKeyboardKey(keyCode)) return;
         pressedKeys.remove(keyCode);
         updateKeyHistory(keyCode, false);
     }
@@ -483,11 +503,38 @@ public final class InputStateManager implements BaniraInputState {
 
     private void syncRegisteredKeys() {
         long windowHandle = getWindowHandle();
-        for (Map.Entry<Integer, FixedList<Boolean>> entry : keyHistoryRecords.entrySet()) {
+        java.util.Iterator<Map.Entry<Integer, FixedList<Boolean>>> iterator =
+                keyHistoryRecords.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, FixedList<Boolean>> entry = iterator.next();
             int key = entry.getKey();
+            if (!isValidKeyboardKey(key)) {
+                iterator.remove();
+                continue;
+            }
             FixedList<Boolean> record = entry.getValue();
             boolean pressing = GLFW.glfwGetKey(windowHandle, key) == GLFW.GLFW_PRESS;
             record.add(pressing);
+        }
+    }
+
+    private static boolean isValidKeyboardKey(int key) {
+        return key >= GLFW.GLFW_KEY_SPACE && key <= GLFW.GLFW_KEY_LAST;
+    }
+
+    private static KeyValue<Integer, Integer> safeWindowSize() {
+        try {
+            return BaniraClientRuntime.windowSize();
+        } catch (Throwable ignored) {
+            return new KeyValue<>(1, 1);
+        }
+    }
+
+    private static KeyValue<Integer, Integer> safeGuiScaledSize() {
+        try {
+            return BaniraClientRuntime.guiScaledSize();
+        } catch (Throwable ignored) {
+            return new KeyValue<>(1, 1);
         }
     }
 

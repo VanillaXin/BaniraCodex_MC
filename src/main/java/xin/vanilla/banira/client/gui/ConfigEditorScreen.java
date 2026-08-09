@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
@@ -28,6 +29,7 @@ import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -109,10 +111,16 @@ public class ConfigEditorScreen extends BaniraScreen {
     private final Map<String, Boolean> expandedBeforeSearch = new LinkedHashMap<>();
     private String searchText = "";
     private boolean applyingSearch;
+    private final Runnable reloadUnsubscribe;
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
+        this.reloadUnsubscribe = holder.onReloaded(changed -> Minecraft.getInstance().execute(() -> {
+            if (Minecraft.getInstance().screen == this) {
+                refreshWidget();
+            }
+        }));
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null, args != null ? args.theme() : null, args != null ? args.season() : null);
     }
@@ -121,6 +129,12 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (EnvironmentUtils.isClient()) {
             BaniraClientRuntime.setScreen(new ConfigEditorScreen(holder, new Args().parentScreen(parent)));
         }
+    }
+
+    @Override
+    protected void onRemoved() {
+        reloadUnsubscribe.run();
+        super.onRemoved();
     }
 
     @Override
@@ -523,6 +537,9 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private static TagListEditorWidget.ItemType tagListItemType(ConfigEntryDescriptor desc) {
+        if (desc.isKeyChords()) {
+            return TagListEditorWidget.ItemType.KEY_CHORD;
+        }
         switch (desc.getValueType()) {
             case STRING_LIST:
                 return TagListEditorWidget.ItemType.TEXT;
@@ -1177,20 +1194,20 @@ public class ConfigEditorScreen extends BaniraScreen {
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        if (eventArgs.key() != GLFWKey.GLFW_KEY_ESCAPE) {
-            return;
-        }
+    protected boolean requestClose(CloseReason reason) {
         int changedCount = pendingChangeCount();
         if (changedCount == 0) {
             onClose();
+            return true;
         } else {
-            Notification notification = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_unsaved_changes", changedCount));
-            notification.position(EnumPosition.TOP_RIGHT).durationTime(4500);
-            BaniraNotifications.show(notification);
+            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
+            return true;
         }
-        eventArgs.consumed(true);
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(cardX, cardY, cardW, cardH);
     }
 
     @Override

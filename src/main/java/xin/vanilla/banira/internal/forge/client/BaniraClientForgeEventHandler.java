@@ -5,16 +5,22 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.data.BaniraColorThemeLoader;
+import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
+import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonSmokeRunner;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**
  * 客户端 Forge 游戏总线（{@code Dist.CLIENT}）：只做 Forge 事件到 Banira 事件的转换。
@@ -43,9 +49,25 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT);
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraScheduler.dispatchClientTick();
             BaniraClientOverlayBridge.tickOutOfScreenNotifications();
+            ExternalInventoryButtonSmokeRunner.onClientTick();
+        }
+    }
+
+    /** 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。 */
+    @OnlyIn(Dist.CLIENT)
+    @SubscribeEvent
+    public static void onGlobalKeyInput(InputEvent.Key event) {
+        if (Minecraft.getInstance().screen != null) return;
+        if (event.getAction() == GLFW.GLFW_PRESS || event.getAction() == GLFW.GLFW_REPEAT) {
+            BaniraClientEventHub.dispatchKeyPressedPre(BaniraKeyboardEvent.pressed(
+                    BaniraScreenInfo.closed(), event.getKey(), event.getScanCode(), event.getModifiers()));
+        } else if (event.getAction() == GLFW.GLFW_RELEASE) {
+            BaniraClientEventHub.dispatchKeyReleasedPost(BaniraKeyboardEvent.released(
+                    BaniraScreenInfo.closed(), event.getKey(), event.getScanCode(), event.getModifiers()));
         }
     }
 
@@ -91,6 +113,7 @@ public final class BaniraClientForgeEventHandler {
     @SubscribeEvent
     public static void onGuiOpen(ScreenEvent.Opening event) {
         BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(BaniraClientEventHub.screenInfo(event.getScreen())));
+        ExternalInventoryButtonManager.get().refreshForScreen(event.getScreen());
     }
 
     @OnlyIn(Dist.CLIENT)

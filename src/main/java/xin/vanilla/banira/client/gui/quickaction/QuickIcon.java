@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -33,6 +34,7 @@ public class QuickIcon {
         ITEM,
         EFFECT,
         RESOURCE,
+        CUSTOM,
         NONE,
         ;
     }
@@ -44,8 +46,8 @@ public class QuickIcon {
 
     @Getter
     @Setter
-    @Nonnull
-    private ItemStack itemStack = new ItemStack(Items.PAPER);
+    @Nullable
+    private ItemStack itemStack;
 
     @Getter
     @Setter
@@ -56,6 +58,11 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Texture texture;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Renderer customRenderer;
 
     @Nonnull
     public static QuickIcon none() {
@@ -108,6 +115,15 @@ public class QuickIcon {
         return q;
     }
 
+    /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
+    @Nonnull
+    public static QuickIcon custom(@Nonnull Renderer renderer) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.CUSTOM);
+        q.customRenderer(renderer);
+        return q;
+    }
+
     /**
      * 子 mod 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
      */
@@ -131,7 +147,8 @@ public class QuickIcon {
             return;
         }
         if (kind == Kind.ITEM) {
-            BaniraItemRenderBridge.renderFlatIcon(stack, itemStack, x, y, size);
+            prepareDrawState();
+            BaniraItemRenderBridge.renderFlatIcon(stack, resolvedItemStack(), x, y, size);
             return;
         }
         render(stack, x, y, size);
@@ -144,9 +161,14 @@ public class QuickIcon {
         if (size <= 0) {
             return;
         }
+        // 自定义绘制器也可用于无客户端上下文的契约测试；真实 GUI 绘制才需要恢复 GL 状态。
+        Minecraft mc = Minecraft.getInstance();
+        if (stack != null && mc != null) {
+            prepareDrawState();
+        }
         switch (kind) {
             case ITEM: {
-                BaniraItemRenderBridge.renderScaled(itemStack, x, y, size);
+                BaniraItemRenderBridge.renderScaled(resolvedItemStack(), x, y, size);
                 break;
             }
             case EFFECT: {
@@ -172,9 +194,32 @@ public class QuickIcon {
                 AbstractGuiUtils.restoreGuiRenderState();
                 break;
             }
+            case CUSTOM: {
+                if (customRenderer != null) {
+                    customRenderer.render(stack, mc, x, y, size);
+                }
+                break;
+            }
             default:
                 break;
         }
+    }
+
+    /** 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。 */
+    private static void prepareDrawState() {
+        RenderSystem.enableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+    }
+
+    @FunctionalInterface
+    public interface Renderer {
+        void render(PoseStack stack, Minecraft minecraft, int x, int y, int size);
+    }
+
+    private ItemStack resolvedItemStack() {
+        return itemStack != null && !itemStack.isEmpty() ? itemStack : new ItemStack(Items.PAPER);
     }
 
 }

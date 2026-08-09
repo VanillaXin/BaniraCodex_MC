@@ -3,10 +3,6 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,8 +12,8 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.resource.BaniraResourceAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -30,9 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -323,66 +317,17 @@ public class Translator implements ITranslator {
 
     private void loadFromResourceManager() {
         try {
-            ResourceManager manager;
-            if (BaniraServerRuntime.isRunning()) {
-                manager = BaniraServerRuntime.resourceManager();
-            } else {
-                manager = BaniraClientRuntime.resourceManager();
-            }
-            Collection<ResourceLocation> resources = collectModLangJsonLocations(manager);
-            languages.addAll(resources.stream()
-                    .filter(loc -> modId.equals(loc.getNamespace()))
-                    .map(loc -> {
-                        String path = loc.getPath();
-                        int slash = path.lastIndexOf('/');
-                        String name = slash >= 0 ? path.substring(slash + 1) : path;
-                        return name.replace(".json", "");
-                    })
-                    .collect(Collectors.toSet()));
+            Map<String, JsonObject> loaded = BaniraResourceAccess.modLanguageFiles(modId);
+            loaded.forEach((languageCode, json) -> {
+                languages.add(languageCode);
+                JsonObject existing = LANGUAGES.get(languageCode);
+                if (existing == null) LANGUAGES.put(languageCode, json);
+                else JsonUtils.mergeInPlace(existing, json);
+            });
+            if (loaded.isEmpty()) languages.add(DEFAULT_LANGUAGE);
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
             languages.add(DEFAULT_LANGUAGE);
-        }
-    }
-
-    private Collection<ResourceLocation> collectModLangJsonLocations(ResourceManager manager) {
-        Set<ResourceLocation> result = new HashSet<>();
-        Predicate<String> predicate = path -> path.endsWith(".json");
-        try {
-            manager.listPacks().forEach(pack -> {
-                try {
-                    Collection<ResourceLocation> locs = pack.getResources(PackType.CLIENT_RESOURCES, modId, "lang", Integer.MAX_VALUE, predicate);
-                    result.addAll(locs);
-                    for (ResourceLocation loc : locs) {
-                        loadAllLanguages(PackType.CLIENT_RESOURCES, pack, loc);
-                        loadAllLanguages(PackType.SERVER_DATA, pack, loc);
-                    }
-                } catch (Exception e) {
-                    LOGGER.trace("Failed to list lang from pack {}: {}", pack.getName(), e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from resource packs:", e);
-        }
-        return result;
-    }
-
-    private static void loadAllLanguages(PackType packType, PackResources pack, ResourceLocation location) {
-        try (InputStreamReader reader = new InputStreamReader(pack.getResource(packType, location), StandardCharsets.UTF_8)) {
-            String path = location.getPath();
-            int slash = path.lastIndexOf('/');
-            String name = slash >= 0 ? path.substring(slash + 1) : path;
-            String languageCode = name.replace(".json", "").toLowerCase();
-
-            JsonObject json = JsonUtils.parseObject(reader);
-            JsonObject object = LANGUAGES.get(languageCode);
-            if (object == null) {
-                LANGUAGES.put(languageCode, json);
-            } else {
-                JsonUtils.mergeInPlace(object, json);
-            }
-        } catch (Throwable t) {
-            LOGGER.debug("Failed to load language file: {}", t.getMessage());
         }
     }
 

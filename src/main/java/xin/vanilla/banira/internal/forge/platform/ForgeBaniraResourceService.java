@@ -7,16 +7,21 @@ import net.minecraft.resources.ResourcePackType;
 import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Forge 1.16.5 resource-pack traversal. Resource manager internals change often by version.
@@ -31,15 +36,56 @@ public final class ForgeBaniraResourceService {
         Map<String, JsonObject> result = new LinkedHashMap<>();
         if (modId == null || modId.trim().isEmpty()) return result;
         IResourceManager manager = activeResourceManager();
-        if (manager == null) return result;
-
-        Predicate<String> jsonLang = path -> path.endsWith(".json");
-        try {
-            ((ResourceManagerAccessor) manager).banira$packs().forEach(pack -> collectLanguageFiles(pack, modId, jsonLang, result));
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from resource packs:", e);
+        if (manager != null) {
+            Predicate<String> jsonLang = path -> path.endsWith(".json");
+            try {
+                ((ResourceManagerAccessor) manager).banira$packs()
+                        .forEach(pack -> collectLanguageFiles(pack, modId, jsonLang, result));
+            } catch (Exception e) {
+                LOGGER.debug("Failed to list lang from resource packs:", e);
+            }
         }
+        collectRegisteredModLanguages(modId, result);
         return result;
+    }
+
+    /** 启动早期资源管理器尚未就绪时，直接从 Forge 已登记的模组文件读取语言。 */
+    private static void collectRegisteredModLanguages(String modId, Map<String, JsonObject> result) {
+        try {
+            ModFileInfo modFile = ModList.get().getModFileById(modId);
+            if (modFile == null) return;
+            Path languageDirectory = modFile.getFile().findResource("assets/" + modId + "/lang");
+            collectLanguageDirectory(languageDirectory, result);
+        } catch (Throwable throwable) {
+            LOGGER.debug("Failed to list lang from registered mod file {}: {}", modId, throwable.getMessage());
+        }
+    }
+
+    static void collectLanguageDirectory(Path directory, Map<String, JsonObject> result) {
+        if (directory == null || result == null || !Files.isDirectory(directory)) return;
+        try (Stream<Path> files = Files.list(directory)) {
+            files.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().toLowerCase().endsWith(".json"))
+                    .sorted()
+                    .forEach(path -> loadLanguage(path, result));
+        } catch (Exception exception) {
+            LOGGER.debug("Failed to list lang directory {}: {}", directory, exception.getMessage());
+        }
+    }
+
+    private static void loadLanguage(Path path, Map<String, JsonObject> result) {
+        try (InputStreamReader reader = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
+            String fileName = path.getFileName().toString();
+            String languageCode = fileName.substring(0, fileName.length() - 5).toLowerCase();
+            JsonObject base = JsonUtils.parseObject(reader);
+            JsonObject override = result.get(languageCode);
+            if (override != null) {
+                JsonUtils.mergeInPlace(base, override);
+            }
+            result.put(languageCode, base);
+        } catch (Throwable throwable) {
+            LOGGER.debug("Failed to load language file {}: {}", path, throwable.getMessage());
+        }
     }
 
     private static IResourceManager activeResourceManager() {

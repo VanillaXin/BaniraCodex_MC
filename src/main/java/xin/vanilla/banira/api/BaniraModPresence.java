@@ -33,6 +33,16 @@ public final class BaniraModPresence {
         return ModLoadedPresenceStore.hasRegistration(modId);
     }
 
+    /**
+     * 查询指定玩家的远端客户端是否声明安装了子 mod。
+     *
+     * @param player 加载器对应的服务端玩家对象
+     * @param modId  子 mod id
+     */
+    public static boolean isRemoteClientInstalled(@Nonnull Object player, @Nonnull String modId) {
+        return Banira.platform().networkService().isRemoteClientModInstalled(player, modId);
+    }
+
     @Nonnull
     public static List<String> announcedModIds() {
         return ModLoadedPresenceStore.announcedModIds();

@@ -18,6 +18,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -72,6 +73,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         RESET,
     }
 
+    @FunctionalInterface
+    public interface LeadingIconRenderer {
+        void render(PoseStack stack, int x, int y, int size);
+    }
+
     /**
      * 长按进度条填充方向
      */
@@ -114,6 +120,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     private static final int COMPLETION_KIND_CHECK = 1;
 
     private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
+
+    private boolean dangerStyle;
 
     /**
      * 长按进度条模式，默认从左至右
@@ -266,13 +274,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.NONE;
+    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.END;
 
     /**
      * 预置图标样式，非 null 时绘制图标而非文本
      */
     @Getter
     private PresetStyle presetStyle = null;
+
+    /** 可选的内容图标，与文本一起居中绘制。 */
+    @Getter
+    @Setter
+    @Nullable
+    private LeadingIconRenderer leadingIconRenderer;
+
+    @Getter
+    @Setter
+    private int leadingIconSize = 14;
 
     /**
      * 图标颜色（presetStyle 非 null 时生效）
@@ -307,23 +325,47 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.color(BUTTON_BG)).hoverBgColor(theme.color(BUTTON_BG_HOVER))
-                .focusedBgColor(theme.color(BUTTON_BG_FOCUSED)).pressedBgColor(theme.color(BUTTON_BG_PRESSED))
-                .disabledBgColor(theme.color(BUTTON_BG_DISABLED))
-                .borderColor(theme.color(BUTTON_BORDER)).hoverBorderColor(theme.color(BUTTON_BORDER_HOVER))
-                .focusedBorderColor(theme.color(BUTTON_BORDER_FOCUSED)).pressedBorderColor(theme.color(BUTTON_BORDER_PRESSED))
-                .disabledBorderColor(theme.color(BUTTON_BORDER_DISABLED))
-                .textColor(theme.color(BUTTON_TEXT)).hoverTextColor(theme.color(BUTTON_TEXT_HOVER))
-                .focusedTextColor(theme.color(BUTTON_TEXT_FOCUSED)).pressedTextColor(theme.color(BUTTON_TEXT_PRESSED))
-                .disabledTextColor(theme.color(BUTTON_TEXT_DISABLED))
-                .longPressProgressFillColor(theme.color(BUTTON_LONG_PRESS_PROGRESS_FILL));
-        if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
-            iconColor(theme.color(BUTTON_ICON))
-                    .hoverIconColor(theme.color(BUTTON_ICON_HOVER))
-                    .focusedIconColor(theme.color(BUTTON_ICON_FOCUSED))
-                    .pressedIconColor(theme.color(BUTTON_ICON_PRESSED))
-                    .disabledIconColor(theme.color(BUTTON_ICON_DISABLED));
+        bgColor(theme.buttonBg()).hoverBgColor(theme.buttonBgHover())
+                .focusedBgColor(theme.buttonBgFocused()).pressedBgColor(theme.buttonBgPressed())
+                .disabledBgColor(theme.buttonBgDisabled())
+                .borderColor(theme.buttonBorder()).hoverBorderColor(theme.buttonBorderHover())
+                .focusedBorderColor(theme.buttonBorderFocused()).pressedBorderColor(theme.buttonBorderPressed())
+                .disabledBorderColor(theme.buttonBorderDisabled())
+                .textColor(theme.buttonText()).hoverTextColor(theme.buttonTextHover())
+                .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
+                .disabledTextColor(theme.buttonTextDisabled())
+                .longPressProgressFillColor(theme.buttonLongPressProgressFill());
+        if (dangerStyle) {
+            applyDangerTheme(theme);
+        } else if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
+            iconColor(theme.buttonPresetIconColor())
+                    .hoverIconColor(theme.buttonPresetIconHoverColor())
+                    .focusedIconColor(theme.buttonPresetIconFocusedColor())
+                    .pressedIconColor(theme.buttonPresetIconPressedColor())
+                    .disabledIconColor(theme.buttonPresetIconDisabledColor());
         }
+    }
+
+    private void applyDangerTheme(BaniraColorConfig theme) {
+        int background = theme.notificationErrorBg();
+        int danger = theme.error();
+        int hoverDanger = brightenArgb(danger, 1.12f);
+        int pressedDanger = blendArgb(danger, 0xFF000000, 0.16f);
+        int disabledDanger = blendArgb(theme.buttonPresetIconDisabledColor(), danger, 0.18f);
+        bgColor(background)
+                .hoverBgColor(blendArgb(background, danger, 0.16f))
+                .focusedBgColor(blendArgb(background, danger, 0.12f))
+                .pressedBgColor(blendArgb(background, danger, 0.28f))
+                .disabledBgColor(blendArgb(theme.buttonBgDisabled(), danger, 0.08f))
+                .borderColor(danger).hoverBorderColor(hoverDanger)
+                .focusedBorderColor(danger).pressedBorderColor(pressedDanger)
+                .disabledBorderColor(disabledDanger)
+                .textColor(danger).hoverTextColor(hoverDanger)
+                .focusedTextColor(danger).pressedTextColor(pressedDanger)
+                .disabledTextColor(disabledDanger)
+                .iconColor(danger).hoverIconColor(hoverDanger)
+                .focusedIconColor(danger).pressedIconColor(pressedDanger)
+                .disabledIconColor(disabledDanger);
     }
 
     /**
@@ -439,6 +481,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     public ButtonWidget presetStyle(PresetStyle style) {
         this.presetStyle = style;
+        return this;
+    }
+
+    /** 使用当前主题的错误语义色绘制危险操作按钮。 */
+    public ButtonWidget dangerStyle() {
+        this.dangerStyle = true;
+        if (screen != null) {
+            applyDangerTheme(screen.getEffectiveTheme());
+        }
         return this;
     }
 
@@ -576,6 +627,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         // 预置图标或文本
         if (presetStyle != null) {
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
+        } else if (leadingIconRenderer != null) {
+            int iconSize = Math.max(1, Math.min(leadingIconSize, availableHeight));
+            int gap = 4;
+            int maxTextWidth = Math.max(0, availableWidth - iconSize - gap);
+            int naturalTextWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+            int renderedTextWidth = Math.min(naturalTextWidth, maxTextWidth);
+            int totalWidth = iconSize + (renderedTextWidth > 0 ? gap + renderedTextWidth : 0);
+            int startX = contentX + Math.max(0, (availableWidth - totalWidth) / 2);
+            leadingIconRenderer.render(stack, startX, contentY + (availableHeight - iconSize) / 2, iconSize);
+            if (renderedTextWidth > 0) {
+                FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
+                LabelWidget.drawLimitedText(drawArgs.x(startX + iconSize + gap)
+                        .y(contentY + (availableHeight - 9) / 2)
+                        .maxWidth(maxTextWidth).position(EnumEllipsisPosition.END));
+            }
         } else {
             FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
             if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
@@ -859,10 +925,12 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         float y3 = cy - size * 0.36f;
         int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
         int color = withAlphaArgb(e.baseColor, alpha);
-        AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
-        AbstractGuiUtils.drawLine(stack, x2, y2, x3, y3, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x1, y1, x2, y2, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x2, y2, x3, y3, 2.6f, color);
     }
 
     private static int withAlphaArgb(int argb, int alpha) {

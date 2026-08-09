@@ -625,4 +625,10 @@ public class NotificationLogScreen extends BaniraScreen {
             super.onClose();
         }
     }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(SCREEN_CARD_MARGIN, SCREEN_CARD_MARGIN,
+                width - SCREEN_CARD_MARGIN * 2, height - SCREEN_CARD_MARGIN * 2);
+    }
 }

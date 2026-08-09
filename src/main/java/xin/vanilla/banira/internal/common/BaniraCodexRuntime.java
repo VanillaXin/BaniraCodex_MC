@@ -4,12 +4,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
+import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.network.ModLoadedPresence;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**
  * Banira 自身的跨加载器运行时注册，加载器事件只负责触发这些公共回调。
@@ -25,10 +27,14 @@ public final class BaniraCodexRuntime {
         registerCommonLifecycle();
         registerServerLifecycle();
         registerPlayerLifecycle();
-        registerClientLifecycle();
     }
 
     private static void registerCommonLifecycle() {
+        for (EnumCommandType commandType : EnumCommandType.values()) {
+            if (commandType.op()) {
+                BaniraVirtualPermissionRegistry.register(commandType);
+            }
+        }
         BaniraLifecycle.onCommonSetup(event -> {
             CustomConfig.loadCustomConfig(false);
             ModLoadedPresence.register(Banira.MOD_ID);
@@ -44,6 +50,7 @@ public final class BaniraCodexRuntime {
 
         // 自定义配置允许外部编辑，运行时定期重新读取并补齐默认值。
         BaniraEventBus.Server.onTick(event -> {
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.COMMON);
             MinecraftServer server = BaniraServerRuntime.server();
             if (server == null) return;
             if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
@@ -74,9 +81,4 @@ public final class BaniraCodexRuntime {
         });
     }
 
-    private static void registerClientLifecycle() {
-        if (EnvironmentUtils.isClient()) {
-            BaniraCodexClientBootstrap.init();
-        }
-    }
 }

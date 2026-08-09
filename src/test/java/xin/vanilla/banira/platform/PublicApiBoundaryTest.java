@@ -67,6 +67,19 @@ public class PublicApiBoundaryTest {
     }
 
     @Test
+    public void stablePermissionFacadeDoesNotExposeMinecraftTypes() throws Exception {
+        Path facade = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "api", "permission", "BaniraPermissions.java"));
+        String source = new String(Files.readAllBytes(facade), StandardCharsets.UTF_8);
+        List<String> violations = new ArrayList<>();
+        addIfContains(source, "net.minecraft.", violations, "BaniraPermissions must use neutral player handles.");
+        addIfContains(source, "xin.vanilla.banira.internal.", violations, "BaniraPermissions must delegate through the platform contract.");
+        assertNoViolations("Permission access should stay loader-neutral.", violations);
+
+        Class<?> service = Class.forName("xin.vanilla.banira.platform.BaniraPermissionService");
+        assertEquals(service, BaniraPlatform.class.getMethod("permissionService").getReturnType());
+    }
+
+    @Test
     public void rootPlatformDoesNotHideInternalDefaults() throws IOException {
         Path platform = MAIN_SOURCE.resolve(Paths.get("xin", "vanilla", "banira", "platform", "BaniraPlatform.java"));
         String source = new String(Files.readAllBytes(platform), StandardCharsets.UTF_8);

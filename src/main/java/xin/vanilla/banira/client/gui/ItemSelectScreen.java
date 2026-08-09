@@ -110,8 +110,8 @@ public class ItemSelectScreen extends BaniraScreen {
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
-        this.selectedItem = args.defaultItem();
-        this.selectedItemId = ItemUtils.serializeItemStack(args.defaultItem());
+        this.selectedItem = args.defaultItem() != null ? args.defaultItem() : new ItemStack(Items.AIR);
+        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
@@ -119,10 +119,13 @@ public class ItemSelectScreen extends BaniraScreen {
     @Accessors(chain = true, fluent = true)
     public static final class Args {
         private net.minecraft.client.gui.screens.Screen parentScreen;
-        private ItemStack defaultItem = new ItemStack(Items.AIR);
+        @Nullable
+        private ItemStack defaultItem;
         private Consumer<ItemStack> onDataReceived1;
         private Function<ItemStack, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
+        /** 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。 */
+        private boolean closeAfterSubmit = true;
         /**
          * 季节主题，null 时从父界面继承
          */
@@ -319,12 +322,12 @@ public class ItemSelectScreen extends BaniraScreen {
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(itemStack);
                     LOGGER.debug("Item selected via callback1: {}", ItemUtils.getItemRegistryString(itemStack));
-                    BaniraClientRuntime.setScreen(args.parentScreen());
+                    closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(itemStack);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Item selected via callback2: {}", ItemUtils.getItemRegistryString(itemStack));
-                        BaniraClientRuntime.setScreen(args.parentScreen());
+                        closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
                     }
                 }
             }
@@ -332,6 +335,12 @@ public class ItemSelectScreen extends BaniraScreen {
         addWidget(submitButtonWidget);
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(Args args, Runnable closeAction) {
+        if (args.closeAfterSubmit()) {
+            closeAction.run();
+        }
     }
 
     @Override

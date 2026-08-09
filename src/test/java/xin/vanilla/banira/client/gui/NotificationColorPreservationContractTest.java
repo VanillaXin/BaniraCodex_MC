@@ -18,6 +18,10 @@ public class NotificationColorPreservationContractTest {
         assertTrue(notification.contains("ColorUtils.readableVanillaComponentCopy"));
         assertTrue(notification.contains("this.component().toVanilla(lang)"));
         assertTrue(notification.contains("c.color().isEmpty() || c.color().rgb() == 0xFFFFFF"));
+        assertTrue(notification.contains("fromNetwork || data.themed()"));
+        assertTrue(notification.contains("n.themed(themed)"));
+        assertTrue(notification.contains("separator = type.indexOf('.')"));
+        assertTrue(notification.contains("BaniraThemes.seasonFor(type.substring(0, separator))"));
         assertTrue(!notification.contains("richNeedsContrastShadow"));
         assertTrue(logScreen.contains("ColorUtils.readableVanillaComponentCopy("));
         assertTrue(logScreen.contains("entry.component().toVanilla(language)"));

@@ -12,6 +12,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -138,6 +139,7 @@ public final class NotificationTypeSettingsStore {
         }
         root.add("types", types);
         Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+        ManagedConfigFiles.markWritten(path);
     }
 
     public TypeSettings getOrCreate(String typeId) {

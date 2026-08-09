@@ -74,6 +74,13 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private boolean editable = true;
 
     /**
+     * 密码模式仅改变显示和用户复制行为；表单回调仍可读取真实值。
+     */
+    @Getter
+    @Setter
+    private boolean password;
+
+    /**
      * 是否错误状态
      */
     @Getter
@@ -439,7 +446,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         float fontScale = actualFontSize / font.lineHeight;
 
         if (!skipTextContentForRendering) {
-            String value = this.value;
+            String rawValue = this.value;
+            String value = displayValue(rawValue);
             int currentTextColor = this.textColor;
             if (!this.editable) {
                 currentTextColor = this.uneditableTextColor;
@@ -496,7 +504,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            boolean isAtEnd = cursorPos >= value.length();
+            boolean isAtEnd = cursorPos >= rawValue.length();
             int cursorX = textDrawX;
             if (!cursorVisible) {
                 cursorX = cursorInVisible > 0 ? textX + innerWidth : textX;
@@ -1439,9 +1447,26 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int end = Math.max(this.cursorPosition, this.highlightPos);
         String value = this.value;
         if (start >= 0 && end <= value.length() && start < end) {
-            return value.substring(start, end);
+            String selected = value.substring(start, end);
+            return password ? mask(selected.length()) : selected;
         }
         return "";
+    }
+
+    /** 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。 */
+    private String displayValue(String rawValue) {
+        return password ? mask(rawValue.length()) : rawValue;
+    }
+
+    private static String mask(int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            result.append('*');
+        }
+        return result.toString();
     }
 
     /**

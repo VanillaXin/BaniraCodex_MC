@@ -25,14 +25,25 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
     }
 
     public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier) {
+        return create(channelName, identifier, PROTOCOL_VERSION, true);
+    }
+
+    public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
+                                              String protocolVersion, boolean optionalClient) {
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
                 new ResourceLocation(identifier.getNamespace(), channelName),
-                () -> PROTOCOL_VERSION,
-                clientVersion -> true,
-                serverVersion -> true
+                () -> protocolVersion,
+                version -> accepts(protocolVersion, optionalClient, version),
+                version -> accepts(protocolVersion, optionalClient, version)
         );
         ForgeNetworkChannels.installDefault(channel);
         return new ForgeNetworkHandler(channel);
+    }
+
+    private static boolean accepts(String protocolVersion, boolean optionalClient, String version) {
+        return protocolVersion.equals(version)
+                || optionalClient && (NetworkRegistry.ABSENT.equals(version)
+                || NetworkRegistry.ACCEPTVANILLA.equals(version));
     }
 
     @Override

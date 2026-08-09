@@ -30,4 +30,9 @@ public final class ForgeBaniraPlayerDataService implements BaniraPlayerDataServi
         }
         BaniraServerRuntime.playerDataManager().put(playerUuid, modId, (CompoundTag) data);
     }
+
+    @Override
+    public void flush(@Nonnull UUID playerUuid) {
+        BaniraServerRuntime.playerDataManager().saveToDisk(playerUuid);
+    }
 }

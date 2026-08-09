@@ -104,7 +104,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
                     int itemY = contentY + i * ITEM_HEIGHT;
                     if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
 
-                    String item = items.get(i);
+                    String item = parent.displayLabelForValue(items.get(i));
                     int textMaxWidth = contentWidth - PAD * 2 - TAG_CLOSE_SIZE - 4;
                     String display = font.plainSubstrByWidth(item, textMaxWidth);
 

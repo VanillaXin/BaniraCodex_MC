@@ -30,6 +30,17 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         }
     };
     private BaniraPlayerDataService playerDataService;
+    private BaniraPermissionService permissionService = new BaniraPermissionService() {
+        @Override
+        public boolean hasVanillaPermission(Object player, int permissionLevel) {
+            return false;
+        }
+
+        @Override
+        public boolean hasVirtualPermission(Object player, String permissionKey) {
+            return false;
+        }
+    };
     private BaniraNetworkService networkService = NoopNetworkService.INSTANCE;
     private BaniraRegistryService registryService = NoopRegistryService.INSTANCE;
     private BaniraNotificationService notificationService = NoopNotificationService.INSTANCE;
@@ -42,8 +53,13 @@ public final class TestBaniraPlatform implements BaniraPlatform {
         }
 
         @Override
+        public @Nonnull Path gameConfigPath() {
+            return configDir;
+        }
+
+        @Override
         public @Nonnull Path configPath() {
-            return configDir.resolve(rootDirectoryName());
+            return gameConfigPath().resolve(rootDirectoryName());
         }
 
         @Override
@@ -118,6 +134,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
 
     public TestBaniraPlatform playerDataService(BaniraPlayerDataService value) {
         this.playerDataService = Objects.requireNonNull(value, "playerDataService");
+        return this;
+    }
+
+    public TestBaniraPlatform permissionService(BaniraPermissionService value) {
+        this.permissionService = Objects.requireNonNull(value, "permissionService");
         return this;
     }
 
@@ -227,6 +248,11 @@ public final class TestBaniraPlatform implements BaniraPlatform {
             throw new IllegalStateException("No player data service configured for this test");
         }
         return playerDataService;
+    }
+
+    @Override
+    public @Nonnull BaniraPermissionService permissionService() {
+        return permissionService;
     }
 
     @Override

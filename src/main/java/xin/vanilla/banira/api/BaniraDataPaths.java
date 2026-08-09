@@ -22,6 +22,10 @@ public final class BaniraDataPaths {
         return Banira.platform().pathService().playerDataPath();
     }
 
+    public static Path gameConfigPath() {
+        return Banira.platform().pathService().gameConfigPath();
+    }
+
     public static Path configPath() {
         return Banira.platform().pathService().configPath();
     }

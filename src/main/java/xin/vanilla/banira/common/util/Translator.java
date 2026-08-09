@@ -6,7 +6,6 @@ import lombok.NonNull;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
@@ -19,25 +18,21 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 推荐显式传入 modId 与资源锚点类，避免公共 API 依赖 Forge/Fabric/NeoForge 的入口注解：
+ * 构造时传入 loader mod 主类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
- *     private MyModLang() { super("my_mod_id", MyModLang.class); }
+ *     private MyModLang() { super(MyMod.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时通过 Banira platform 解析该 mod 的主类。
+ * 仅使用 {@link #of(String)} 时通过 Banira 平台适配层解析该 mod 的主类。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -67,44 +62,52 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass mod 主类或资源锚点类；modId 由当前 platform 解析
+     * @param modMainClass loader mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
-        this(resolveModId(modMainClass), modMainClass);
+        this(modIdFromModMainClass(modMainClass), modMainClass);
+    }
+
+    protected Translator(@NonNull String modId) {
+        this(modId, Translator.class);
     }
 
     /**
-     * @param modId               所属 mod id
-     * @param resourceAnchorClass 用于从 classpath 定位 {@code /assets/<modid>/lang} 的同 jar 类
+     * 显式指定子 mod 身份，避免依赖加载器入口类发现。
+     * 1.16.5 的资源管理器直接按 modId 查找，因此锚点仅用于保持跨版本 API 一致。
      */
     protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
         if (StringUtils.isNullOrEmptyEx(modId)) {
-            throw new IllegalArgumentException("modId must not be empty");
+            throw new IllegalArgumentException("Mod id is empty");
         }
-        this.resourceAnchorClass = resourceAnchorClass;
         this.modId = modId;
+        this.resourceAnchorClass = Objects.requireNonNull(resourceAnchorClass, "resourceAnchorClass");
         getI18nFiles();
     }
 
-    // region mod 元数据
+    // region mod 主类与 modId（@Mod）
 
     @NonNull
-    private static String resolveModId(@NonNull Class<?> modMainClass) {
-        if (BaniraPlatforms.isInstalled()) {
-            return Banira.platform().modIdFromMainClass(modMainClass);
+    private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
+        String id = BaniraPlatforms.get().modIdFromMainClass(modMainClass);
+        if (StringUtils.isNullOrEmptyEx(id)) {
+            throw new IllegalArgumentException("Mod id is empty on: " + modMainClass.getName());
         }
-        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod id for class: " + modMainClass.getName());
+        return id;
     }
 
     @NonNull
     private static Class<?> resolveModMainClass(@NonNull String modId) {
-        if (BaniraPlatforms.isInstalled()) {
-            return Banira.platform().modMainClass(modId);
+        try {
+            return BaniraPlatforms.get().modMainClass(modId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new IllegalStateException("Failed to resolve mod main class for mod id: " + modId, t);
         }
-        throw new IllegalStateException("Banira platform has not been installed; cannot resolve mod main class for mod id: " + modId);
     }
 
-    // endregion mod 元数据
+    // endregion mod 主类与 modId（@Mod）
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -124,7 +127,7 @@ public class Translator implements ITranslator {
     private static Translator create(String modId) {
         Class<?> resourceAnchor = Translator.class;
         try {
-            if (BaniraPlatforms.isInstalled() && Banira.platform().isModLoaded(modId)) {
+            if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isModLoaded(modId)) {
                 resourceAnchor = resolveModMainClass(modId);
             } else {
                 LOGGER.debug("Using key-only translator for optional mod not present on this side: {}", modId);
@@ -240,6 +243,7 @@ public class Translator implements ITranslator {
     /**
      * 获取 I18n 文件列表
      */
+    @Override
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
@@ -249,21 +253,12 @@ public class Translator implements ITranslator {
     }
 
     private void loadFromClasspath() {
-        try {
-            URL url = resourceAnchorClass.getResource(getLangPath());
-            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
-                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
-                return;
-            }
-            try (Stream<Path> files = Files.list(Path.of(url.toURI()))) {
-                files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
-                        .forEach(this::loadKnownClasspathLanguage);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+        Set<String> discovered = ClasspathLanguageDiscovery.discover(resourceAnchorClass, getLangPath());
+        if (discovered.isEmpty()) {
             loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+            return;
         }
+        discovered.forEach(this::loadKnownClasspathLanguage);
     }
 
     private void loadKnownClasspathLanguage(String languageCode) {
@@ -277,14 +272,21 @@ public class Translator implements ITranslator {
 
     private void loadFromResourceManager() {
         try {
-            Map<String, JsonObject> loaded = BaniraResourceAccess.modLanguageFiles(modId);
+            Map<String, JsonObject> loaded = BaniraPlatforms.isInstalled()
+                    ? BaniraResourceAccess.modLanguageFiles(modId)
+                    : Collections.emptyMap();
             loaded.forEach((languageCode, json) -> {
                 languages.add(languageCode);
-                JsonObject existing = LANGUAGES.get(languageCode);
-                if (existing == null) LANGUAGES.put(languageCode, json);
-                else JsonUtils.mergeInPlace(existing, json);
+                JsonObject object = LANGUAGES.get(languageCode);
+                if (object == null) {
+                    LANGUAGES.put(languageCode, json);
+                } else {
+                    JsonUtils.mergeInPlace(object, json);
+                }
             });
-            if (loaded.isEmpty()) languages.add(DEFAULT_LANGUAGE);
+            if (loaded.isEmpty()) {
+                languages.add(DEFAULT_LANGUAGE);
+            }
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
             languages.add(DEFAULT_LANGUAGE);
@@ -324,14 +326,10 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (BaniraPlatforms.isInstalled() && EnvironmentUtils.isClient()) {
-            try {
-                String selected = BaniraClientRuntime.selectedLanguageCode();
-                if (!StringUtils.isNullOrEmptyEx(selected)) {
-                    return normalizeLanguageCode(selected);
-                }
-            } catch (Throwable ignored) {
-                // 测试环境或客户端早期启动时语言管理器可能尚未就绪。
+        if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
+            String languageCode = BaniraClientRuntime.selectedLanguageCode();
+            if (StringUtils.isNotNullOrEmpty(languageCode)) {
+                return normalizeLanguageCode(languageCode);
             }
         }
         return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());

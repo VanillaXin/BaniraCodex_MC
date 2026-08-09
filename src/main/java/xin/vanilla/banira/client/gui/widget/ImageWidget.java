@@ -47,7 +47,7 @@ public class ImageWidget extends BaseWidget {
     }
 
     @Override
-    public boolean needsUpdate() {
+    protected boolean needsSelfUpdate() {
         return false;
     }
 

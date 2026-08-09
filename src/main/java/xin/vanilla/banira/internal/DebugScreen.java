@@ -1,5 +1,7 @@
 package xin.vanilla.banira.internal;
 
+import xin.vanilla.banira.api.Banira;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,7 +23,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
+import xin.vanilla.banira.internal.client.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.PlayerSkinTextureUtils;
 import xin.vanilla.banira.common.data.Component;
@@ -423,7 +425,7 @@ public class DebugScreen extends BaniraScreen {
                                         new DropdownOption("冬", new ItemStack(Items.SNOW), BaniraComponent.get().literal("嗜血"))
                                 ))
                                 .defaultValue("夏")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "choose_option")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "choose_option")))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("mc_color")
                                 .title(Text.literal("MC颜色"))
@@ -437,7 +439,7 @@ public class DebugScreen extends BaniraScreen {
                                 .title(Text.literal("颜色"))
                                 .type(InputFormScreen.WidgetType.COLOR)
                                 .defaultValue("#FF0000")
-                                .hint(Text.transAuto(BaniraCodex.MODID, "enter_color_hex")))
+                                .hint(Text.transAuto(Banira.MOD_ID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
                 Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
                 break;

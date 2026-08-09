@@ -14,6 +14,19 @@ public interface BaniraNetworkService {
     @Nonnull
     NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier);
 
+    /**
+     * 创建带明确协议版本的子 mod 通道。
+     *
+     * @param optionalClient 是否允许未安装该通道的客户端加入
+     */
+    @Nonnull
+    default NetworkPacketRegistrar registrar(@Nonnull String channelName,
+                                             @Nonnull BaniraIdentifier identifier,
+                                             @Nonnull String protocolVersion,
+                                             boolean optionalClient) {
+        return registrar(channelName, identifier);
+    }
+
     void sendToServer(@Nonnull BaniraNetworkPacket packet);
 
     void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player);
@@ -23,4 +36,12 @@ public interface BaniraNetworkService {
     boolean hasLocalChannel(@Nonnull String channelId);
 
     boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId);
+
+    /**
+     * 查询远端玩家客户端是否声明安装了指定 mod。
+     * 1.0.2 平台实现未提供该能力时按未安装处理。
+     */
+    default boolean isRemoteClientModInstalled(@Nonnull Object player, @Nonnull String modId) {
+        return false;
+    }
 }

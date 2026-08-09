@@ -86,6 +86,10 @@ public class QuickActionLayout {
     @Getter
     private final Set<String> hiddenIconIds = new LinkedHashSet<>();
 
+    /** 默认图标菜单中的入口与子项隐藏偏好，与背包图标隐藏分别存储。 */
+    @Getter
+    private final Set<String> hiddenMenuItemIds = new LinkedHashSet<>();
+
     public QuickActionLayout gridColumns(int v) {
         int c = Math.max(1, Math.min(16, v));
         if (c == this.gridColumns) {
@@ -186,6 +190,11 @@ public class QuickActionLayout {
             hid.add(id);
         }
         o.add("hiddenIconIds", hid);
+        JsonArray hiddenMenu = new JsonArray();
+        for (String id : hiddenMenuItemIds) {
+            hiddenMenu.add(id);
+        }
+        o.add("hiddenMenuItemIds", hiddenMenu);
         return o;
     }
 
@@ -234,6 +243,14 @@ public class QuickActionLayout {
             for (JsonElement el : o.getAsJsonArray("hiddenIconIds")) {
                 if (el.isJsonPrimitive()) {
                     hiddenIconIds.add(el.getAsString());
+                }
+            }
+        }
+        hiddenMenuItemIds.clear();
+        if (o.has("hiddenMenuItemIds") && o.get("hiddenMenuItemIds").isJsonArray()) {
+            for (JsonElement el : o.getAsJsonArray("hiddenMenuItemIds")) {
+                if (el.isJsonPrimitive()) {
+                    hiddenMenuItemIds.add(el.getAsString());
                 }
             }
         }

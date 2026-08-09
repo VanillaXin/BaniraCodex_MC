@@ -18,6 +18,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -70,6 +71,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         RESET,
     }
 
+    @FunctionalInterface
+    public interface LeadingIconRenderer {
+        void render(PoseStack stack, int x, int y, int size);
+    }
+
     /**
      * 长按进度条填充方向
      */
@@ -112,6 +118,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
 
+    private boolean dangerStyle;
+
     /**
      * 长按进度条模式，默认从左至右
      */
@@ -121,6 +129,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     private Text text = Text.empty();
+
+    private Font cachedTextWidthFont;
+    private String cachedTextWidthContent;
+    private int cachedTextWidth;
 
     @Getter
     @Setter
@@ -259,13 +271,23 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.NONE;
+    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.END;
 
     /**
      * 预置图标样式，非 null 时绘制图标而非文本
      */
     @Getter
     private PresetStyle presetStyle = null;
+
+    /** 可选的内容图标，与文本一起居中绘制。 */
+    @Getter
+    @Setter
+    @Nullable
+    private LeadingIconRenderer leadingIconRenderer;
+
+    @Getter
+    @Setter
+    private int leadingIconSize = 14;
 
     /**
      * 图标颜色（presetStyle 非 null 时生效）
@@ -310,13 +332,37 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
                 .disabledTextColor(theme.buttonTextDisabled())
                 .longPressProgressFillColor(theme.buttonLongPressProgressFill());
-        if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
+        if (dangerStyle) {
+            applyDangerTheme(theme);
+        } else if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
             iconColor(theme.buttonPresetIconColor())
                     .hoverIconColor(theme.buttonPresetIconHoverColor())
                     .focusedIconColor(theme.buttonPresetIconFocusedColor())
                     .pressedIconColor(theme.buttonPresetIconPressedColor())
                     .disabledIconColor(theme.buttonPresetIconDisabledColor());
         }
+    }
+
+    private void applyDangerTheme(BaniraColorConfig theme) {
+        int background = theme.notificationErrorBg();
+        int danger = theme.error();
+        int hoverDanger = brightenArgb(danger, 1.12f);
+        int pressedDanger = blendArgb(danger, 0xFF000000, 0.16f);
+        int disabledDanger = blendArgb(theme.buttonPresetIconDisabledColor(), danger, 0.18f);
+        bgColor(background)
+                .hoverBgColor(blendArgb(background, danger, 0.16f))
+                .focusedBgColor(blendArgb(background, danger, 0.12f))
+                .pressedBgColor(blendArgb(background, danger, 0.28f))
+                .disabledBgColor(blendArgb(theme.buttonBgDisabled(), danger, 0.08f))
+                .borderColor(danger).hoverBorderColor(hoverDanger)
+                .focusedBorderColor(danger).pressedBorderColor(pressedDanger)
+                .disabledBorderColor(disabledDanger)
+                .textColor(danger).hoverTextColor(hoverDanger)
+                .focusedTextColor(danger).pressedTextColor(pressedDanger)
+                .disabledTextColor(disabledDanger)
+                .iconColor(danger).hoverIconColor(hoverDanger)
+                .focusedIconColor(danger).pressedIconColor(pressedDanger)
+                .disabledIconColor(disabledDanger);
     }
 
     /**
@@ -432,6 +478,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     public ButtonWidget presetStyle(PresetStyle style) {
         this.presetStyle = style;
+        return this;
+    }
+
+    /** 使用当前主题的错误语义色绘制危险操作按钮。 */
+    public ButtonWidget dangerStyle() {
+        this.dangerStyle = true;
+        if (screen != null) {
+            applyDangerTheme(screen.getEffectiveTheme());
+        }
         return this;
     }
 
@@ -570,6 +625,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         // 预置图标或文本
         if (presetStyle != null) {
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
+        } else if (leadingIconRenderer != null) {
+            int iconSize = Math.max(1, Math.min(leadingIconSize, availableHeight));
+            int gap = 4;
+            int maxTextWidth = Math.max(0, availableWidth - iconSize - gap);
+            int naturalTextWidth = cachedTextWidth(font);
+            int renderedTextWidth = Math.min(naturalTextWidth, maxTextWidth);
+            int totalWidth = iconSize + (renderedTextWidth > 0 ? gap + renderedTextWidth : 0);
+            int startX = contentX + Math.max(0, (availableWidth - totalWidth) / 2);
+            leadingIconRenderer.render(stack, startX, contentY + (availableHeight - iconSize) / 2, iconSize);
+            if (renderedTextWidth > 0) {
+                FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
+                LabelWidget.drawLimitedText(drawArgs.x(startX + iconSize + gap)
+                        .y(contentY + (availableHeight - 9) / 2)
+                        .maxWidth(maxTextWidth).position(EnumEllipsisPosition.END));
+            }
         } else {
             FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
             if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
@@ -581,14 +651,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 stack.translate(contentX, contentY, 0);
                 float scale = fontSize / 9.0f;
                 stack.scale(scale, scale, 1.0f);
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
                 int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
                 LabelWidget.drawLimitedText(graphics, drawArgs.x(scaledTextX).y(scaledTextY));
                 stack.popPose();
             } else {
-                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+                int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int centeredTextX = contentX + (availableWidth - textWidth) / 2;
                 int centeredTextY = contentY + (availableHeight - textHeight) / 2;
@@ -601,6 +671,22 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
 
         renderChildren(graphics, partialTicks);
+    }
+
+    private int cachedTextWidth(Font font) {
+        String content = text.content();
+        if (cachedTextWidthFont != font || !content.equals(cachedTextWidthContent)) {
+            cachedTextWidthFont = font;
+            cachedTextWidthContent = content;
+            cachedTextWidth = AbstractGuiUtils.getTextWidth(font, text);
+        }
+        return cachedTextWidth;
+    }
+
+    private void invalidateTextWidthCache() {
+        cachedTextWidthFont = null;
+        cachedTextWidthContent = null;
+        cachedTextWidth = 0;
     }
 
     private void renderLongPressPressedFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
@@ -840,10 +926,12 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         float y3 = centerY - size * 0.36f;
         int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
         int color = withAlphaArgb(effect.baseColor, alpha);
-        AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
-        AbstractGuiUtils.drawLine(stack, x2, y2, x3, y3, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x1, y1, x2, y2, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x2, y2, x3, y3, 2.6f, color);
     }
 
     private static final class LongPressCompletionPalette {
@@ -1017,16 +1105,19 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     public ButtonWidget text(String text) {
         this.text = Text.literal(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Component text) {
         this.text = Text.from(text);
+        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Text text) {
         this.text = text;
+        invalidateTextWidthCache();
         return this;
     }
 

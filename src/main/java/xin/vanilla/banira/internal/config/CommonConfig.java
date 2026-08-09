@@ -4,17 +4,16 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 
 /**
- * 通用（Common）配置：注解结构用于构建 ForgeConfigSpec 与配置编辑器；
+ * 通用（Common）配置：注解结构用于构建 Banira 配置模型与配置编辑器；
  * <p>
  * 运行时通过 {@link #get()} 返回的 {@link RootView} 分层读 {@link ConfigHolder}（路径由代理按字段名推导，无需 Key 与手写 get/set）。
  */
@@ -49,7 +48,7 @@ public class CommonConfig implements ConfigData {
     }
 
     public static RootView get() {
-        return CommonConfigAccess.root(ForgeConfigAdapter.getHolder(CommonConfig.class));
+        return CommonConfigAccess.root(InternalConfigHandles.holder(CommonConfig.class));
     }
 
     // region 运行时视图接口
@@ -168,6 +167,6 @@ public class CommonConfig implements ConfigData {
 
         @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需虚拟权限完整键（modId:id，\n与虚拟OP中授予的键一致）",
                 en_us = "Full virtual permission key (modId:id) for editing server config; match keys granted via virtual OP")
-        private String editServerConfigVirtualPermissionKey = BaniraCodex.MODID + ":" + "EDIT_SERVER_CONFIG";
+        private String editServerConfigVirtualPermissionKey = Banira.MOD_ID + ":" + "EDIT_SERVER_CONFIG";
     }
 }

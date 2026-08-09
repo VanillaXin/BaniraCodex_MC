@@ -11,8 +11,13 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
-    "injections.MinecraftClientMixin",
-    "injections.PlayerTabOverlayMixin"
+    "compat.ftblibrary.SidebarButtonMixin",
+    "compat.ftblibrary.SidebarGroupGuiButtonMixin",
+    "compat.jei.BookmarkButtonAccessor",
+    "compat.jei.BookmarkButtonMixin",
+    "compat.jei.GuiIconToggleButtonMixin",
+    "injections.CreativeScreenQuickActionMixin",
+    "injections.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -7,18 +7,16 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
+import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
@@ -33,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-@OnlyIn(Dist.CLIENT)
 public final class TextureUtils {
     private TextureUtils() {
     }
@@ -171,7 +167,7 @@ public final class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(effectInstance.getEffect());
+        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect());
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

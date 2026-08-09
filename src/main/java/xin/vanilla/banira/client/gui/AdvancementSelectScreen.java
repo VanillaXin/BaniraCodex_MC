@@ -1,5 +1,8 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
@@ -69,6 +72,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> advancementButtonWidgets = new ArrayList<>();
+    private final List<AdvancementRow> advancementRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private ResourceLocation currentAdvancement;
@@ -79,6 +83,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     private ItemWidget advancementButtonItemWidget;
     private TooltipWidget typeTooltip;
     private TooltipWidget advancementTooltip;
+    private boolean advancementButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -124,6 +129,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
         private Consumer<ResourceLocation> onDataReceived1;
         private Function<ResourceLocation, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
+        /** 多步骤流程可关闭自动返回，由回调决定下一界面。 */
+        private boolean closeAfterSubmit = true;
         /**
          * 季节主题，null 时从父界面继承
          */
@@ -202,7 +209,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_advancement"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_advancement"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -221,7 +228,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> refreshAdvancementButtons());
+        scrollbarWidget.onValueChanged(v -> markAdvancementButtonsDirty());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
         // endregion 滚动条
@@ -248,7 +255,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, tooltipBounds);
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                         (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
                 btn.addChild(typeTooltip);
@@ -270,6 +277,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
         // region 进度列表按钮
         advancementButtonWidgets.clear();
+        advancementRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -309,6 +317,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             });
 
             advancementButtonWidgets.add(btn);
+            advancementRows.add(new AdvancementRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
         // endregion 进度列表按钮
@@ -317,14 +326,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentAdvancement == null) {
                 Minecraft.getInstance().setScreen(args.parentScreen());
@@ -333,12 +342,12 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(location);
                     LOGGER.debug("Advancement selected: {}", location);
-                    Minecraft.getInstance().setScreen(args.parentScreen());
+                    closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(location);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Advancement selected: {}", location);
-                        Minecraft.getInstance().setScreen(args.parentScreen());
+                        closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
                     } else {
                         LOGGER.debug("Advancement validation failed: {}", result);
                     }
@@ -349,6 +358,12 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // endregion 确认与取消按钮
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(Args args, Runnable closeAction) {
+        if (args.closeAfterSubmit()) {
+            closeAction.run();
+        }
     }
 
     @Nullable
@@ -377,9 +392,6 @@ public class AdvancementSelectScreen extends BaniraScreen {
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
-        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
-        super.renderWidgets(graphics, partialTicks);
-
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
@@ -391,7 +403,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
         }
         this.wasLoading = isLoading;
 
-        refreshAdvancementButtons();
+        refreshAdvancementButtonsIfDirty();
+        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
+        super.renderWidgets(graphics, partialTicks);
     }
 
     @Override
@@ -440,18 +454,18 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     private void refreshAdvancementButtons() {
-        if (advancementButtonWidgets.isEmpty()) return;
+        if (advancementRows.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < advancementButtonWidgets.size(); i++) {
-            ButtonWidget buttonWidget = advancementButtonWidgets.get(i);
+        for (int i = 0; i < advancementRows.size(); i++) {
+            AdvancementRow row = advancementRows.get(i);
+            ButtonWidget buttonWidget = row.button;
             int index = scrollOffset + i;
-            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
-            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
-            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
-            if (iw == null || lw == null) continue;
+            ItemWidget iw = row.icon;
+            LabelWidget lw = row.label;
+            TooltipWidget tw = row.tooltip;
 
             if (index >= 0 && index < advancementList.size()) {
                 AdvancementData advancementData = advancementList.get(index);
@@ -493,7 +507,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         if (!found) selectedAdvancementWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                     (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
         }
@@ -514,8 +528,31 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 String advancementId = sel.id().toString();
                 advancementTooltip.text(Text.literal(buildDeduplicatedTooltip(displayName, description, advancementId)));
             } else {
-                advancementTooltip.text(Text.transAuto(BaniraCodex.MODID, "advancement_select_advancement"));
+                advancementTooltip.text(Text.transAuto(Banira.MOD_ID, "advancement_select_advancement"));
             }
+        }
+        advancementButtonsDirty = false;
+    }
+
+    private void markAdvancementButtonsDirty() {
+        advancementButtonsDirty = true;
+    }
+
+    private void refreshAdvancementButtonsIfDirty() {
+        if (advancementButtonsDirty) refreshAdvancementButtons();
+    }
+
+    private static final class AdvancementRow {
+        private final ButtonWidget button;
+        private final ItemWidget icon;
+        private final LabelWidget label;
+        private final TooltipWidget tooltip;
+
+        private AdvancementRow(ButtonWidget button, ItemWidget icon, LabelWidget label, TooltipWidget tooltip) {
+            this.button = button;
+            this.icon = icon;
+            this.label = label;
+            this.tooltip = tooltip;
         }
     }
 
@@ -546,7 +583,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             }
         }
 
-        refreshAdvancementButtons();
+        markAdvancementButtonsDirty();
         LOGGER.debug("Search results updated: count={}, query={}", advancementList.size(), s);
     }
 
@@ -556,7 +593,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 ResourceLocation location = Identifier.id().parse(advancementId);
                 this.currentAdvancement = location;
                 LOGGER.debug("Select advancement: {}", location);
-                refreshAdvancementButtons();
+                markAdvancementButtonsDirty();
             } catch (IllegalArgumentException e) {
                 LOGGER.debug("Invalid advancement id format: {}", advancementId);
             } catch (Exception e) {
@@ -597,8 +634,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_advancement_id"))
-                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
+                            .title(Text.transAuto(Banira.MOD_ID, "enter_advancement_id"))
+                            .hint(Text.transAuto(Banira.MOD_ID, "enter_something"))
                             .defaultValue(effectString)
                             .validator((input) -> {
                                 try {
@@ -613,6 +650,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                         String id = input.firstValue();
                         try {
                             this.currentAdvancement = Identifier.id().parse(id);
+                            markAdvancementButtonsDirty();
                         } catch (IllegalArgumentException e) {
                             LOGGER.debug("Invalid advancement id format: {}", id);
                         } catch (Exception e) {

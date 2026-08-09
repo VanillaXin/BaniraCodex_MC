@@ -14,10 +14,4 @@ public interface NetworkPacketRegistrar {
                                                BiConsumer<MSG, BaniraPacketBuffer> encoder,
                                                Function<BaniraPacketBuffer, MSG> decoder,
                                                BiConsumer<MSG, BaniraNetworkContext> handler);
-
-    /**
-     * 完成当前 channel 的注册阶段。旧 Forge 版本不需要额外操作，较新 Forge/NeoForge 会在 adapter 内锁定 channel。
-     */
-    default void complete() {
-    }
 }

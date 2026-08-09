@@ -4,15 +4,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
@@ -48,7 +46,7 @@ public final class AdvancementUtils {
      * 确保进度数据已在客户端缓存
      */
     public static void ensureAdvancementData() {
-        if (FMLEnvironment.dist.isClient() && !requestedAdvancementData && advancementData.isEmpty()) {
+        if (EnvironmentUtils.isClient() && !requestedAdvancementData && advancementData.isEmpty()) {
             requestAdvancementDataFromServer();
         }
     }
@@ -57,7 +55,7 @@ public final class AdvancementUtils {
      * 向服务器请求进度数据
      */
     public static void requestAdvancementDataFromServer() {
-        if (FMLEnvironment.dist.isClient() && !requestedAdvancementData) {
+        if (EnvironmentUtils.isClient() && !requestedAdvancementData) {
             requestedAdvancementData = true;
             dataLoaded = false;
             PacketUtils.sendPacketToServer(new RequestToBoth(NetworkInit.REQUEST_ADVANCEMENT_DATA));
@@ -118,13 +116,14 @@ public final class AdvancementUtils {
      */
     public static ArraySet<AdvancementData> advancementData() {
         // 服务端
-        if (advancementData.isEmpty() && BaniraCodex.serverInstance().val()) {
-            advancementData(BaniraCodex.serverInstance().key().getAdvancements().getAllAdvancements().stream()
+        MinecraftServer server = BaniraServerRuntime.server();
+        if (advancementData.isEmpty() && server != null) {
+            advancementData(server.getAdvancements().getAllAdvancements().stream()
                     .map(AdvancementData::fromAdvancement).collect(Collectors.toList())
             );
         }
         // 客户端
-        else if (FMLEnvironment.dist.isClient()) {
+        else if (EnvironmentUtils.isClient()) {
             ensureAdvancementData();
         }
         return advancementData;
@@ -178,7 +177,6 @@ public final class AdvancementUtils {
     /**
      * 获取所有可显示的进度列表（有图标的进度）
      */
-    @OnlyIn(Dist.CLIENT)
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
                 .filter(Objects::nonNull)
@@ -293,7 +291,6 @@ public final class AdvancementUtils {
      * @param keyword 搜索关键字
      * @return 匹配的进度列表
      */
-    @OnlyIn(Dist.CLIENT)
     public static List<AdvancementData> searchDisplayableAdvancements(String keyword) {
         if (StringUtils.isNullOrEmpty(keyword)) {
             return getDisplayableAdvancements();

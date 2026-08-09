@@ -15,11 +15,9 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraftforge.client.model.data.ModelData;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 
@@ -133,7 +131,7 @@ public class ItemWidget extends BaseWidget {
     private void deferTooltipRender(ItemStack itemStack, int mouseX, int mouseY) {
         List<net.minecraft.network.chat.Component> tooltip = itemStack.getTooltipLines(
                 Minecraft.getInstance().player,
-                InputStateManager.isShiftPressingStatic() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
+                screen.inputState().isShiftPressing() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
         );
         if (tooltip.isEmpty()) {
             return;
@@ -185,7 +183,7 @@ public class ItemWidget extends BaseWidget {
         RenderSystem.defaultBlendFunc();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
-        TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
+        TextureAtlasSprite sprite = model.getParticleIcon();
         int tint = mc.getItemColors().getColor(stack, 0);
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;

@@ -56,7 +56,11 @@ minecraft {
             }
         }
 
-        client {}
+        client {
+            if (project.hasProperty('externalButtonsSmoke')) {
+                property 'banira.externalButtonsSmoke', project.property('externalButtonsSmoke').toString()
+            }
+        }
 
         server {
             // args '--nogui'
@@ -104,6 +108,11 @@ dependencies {
 
     runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
     runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
+
+    // Optional inventory integrations are compiled against their real 1.20.1 APIs.
+    implementation fg.deobf("curse.maven:jei-238222:${jei_id}")
+    implementation fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
+    implementation fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
 }
 
 tasks.named('processResources', ProcessResources).configure {

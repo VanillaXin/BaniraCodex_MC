@@ -72,6 +72,13 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     private double thumbSize = 10.0;
+    private double lastThumbTrackSize = Double.NaN;
+    private double lastThumbMinValue = Double.NaN;
+    private double lastThumbMaxValue = Double.NaN;
+    private double lastThumbValue = Double.NaN;
+    private double lastThumbVisibleSize = Double.NaN;
+    private int lastMinThumbSize = Integer.MIN_VALUE;
+    private EnumOrientation lastThumbOrientation;
 
     @Getter
     private boolean dragging;
@@ -108,6 +115,11 @@ public class ScrollbarWidget extends BaseWidget {
             scrollingCoordinates = new ArrayList<>();
         }
         scrollingCoordinates.add(area);
+        return this;
+    }
+
+    public ScrollbarWidget clearScrollHoverAreas() {
+        if (scrollingCoordinates != null) scrollingCoordinates.clear();
         return this;
     }
 
@@ -342,6 +354,8 @@ public class ScrollbarWidget extends BaseWidget {
 
     private void updateThumb() {
         double trackSize = orientation == EnumOrientation.VERTICAL ? height() : width();
+        if (thumbLayoutFresh(trackSize)) return;
+        rememberThumbLayout(trackSize);
         double valueRange = maxValue - minValue;
         double totalContentSize = visibleSize + valueRange;
 
@@ -357,6 +371,25 @@ public class ScrollbarWidget extends BaseWidget {
             double ratio = (value - minValue) / valueRange;
             thumbPosition = ratio * (trackSize - thumbSize);
         }
+    }
+
+    private boolean thumbLayoutFresh(double trackSize) {
+        return Double.compare(lastThumbTrackSize, trackSize) == 0
+                && Double.compare(lastThumbMinValue, minValue) == 0
+                && Double.compare(lastThumbMaxValue, maxValue) == 0
+                && Double.compare(lastThumbValue, value) == 0
+                && Double.compare(lastThumbVisibleSize, visibleSize) == 0
+                && lastMinThumbSize == minThumbSize && lastThumbOrientation == orientation;
+    }
+
+    private void rememberThumbLayout(double trackSize) {
+        lastThumbTrackSize = trackSize;
+        lastThumbMinValue = minValue;
+        lastThumbMaxValue = maxValue;
+        lastThumbValue = value;
+        lastThumbVisibleSize = visibleSize;
+        lastMinThumbSize = minThumbSize;
+        lastThumbOrientation = orientation;
     }
 
     @Override

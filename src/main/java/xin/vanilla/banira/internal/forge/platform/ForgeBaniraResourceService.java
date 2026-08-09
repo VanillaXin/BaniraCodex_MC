@@ -9,8 +9,8 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModFileInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -84,8 +84,8 @@ public final class ForgeBaniraResourceService {
     }
 
     private static ResourceManager activeResourceManager() {
-        if (BaniraCodex.serverInstance().val()) {
-            return BaniraCodex.serverInstance().key().getResourceManager();
+        if (BaniraServerRuntime.isRunning()) {
+            return BaniraServerRuntime.server().getResourceManager();
         }
         try {
             Class<?> minecraftClass = Class.forName("net.minecraft.client.Minecraft");

@@ -46,11 +46,11 @@ public class PlayerDataManagerPersistenceTest {
         FileTime unchangedMarker = FileTime.fromMillis(1_000L);
         Files.setLastModifiedTime(playerFile, unchangedMarker);
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 5_000; i++) {
             manager.getOrCreate(playerUuid);
             manager.saveToDisk(playerUuid);
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 5_000; i++) {
             manager.getOrCreate(playerUuid);
             manager.saveAll();
         }

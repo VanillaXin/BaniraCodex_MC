@@ -20,6 +20,7 @@ import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionManager;
 import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
@@ -28,6 +29,7 @@ import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**
  * Fabric 客户端入口，只负责把 Fabric 事件转换成 Banira 客户端运行时回调。
@@ -62,9 +64,11 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             BaniraScheduler.dispatchClientTick();
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT);
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraClientOverlayBridge.tickOutOfScreenNotifications();
             if (client.screen == null) {
+                CustomQuickActionManager.get().tickKeyBindings();
                 if (NOTIFICATION_LOG_KEY.isDown()) {
                     client.setScreen(new NotificationLogScreen(null));
                 } else if (BANIRA_HUB_KEY.isDown()) {

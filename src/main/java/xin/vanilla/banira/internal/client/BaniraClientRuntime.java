@@ -69,8 +69,8 @@ public final class BaniraClientRuntime {
                     }
                 }
             }
-            return itemColorsField != null ? (ItemColors) itemColorsField.get(renderer) : null;
-        } catch (IllegalAccessException e) {
+            return itemColorsField == null ? null : (ItemColors) itemColorsField.get(renderer);
+        } catch (IllegalAccessException ignored) {
             return null;
         }
     }
@@ -125,6 +125,14 @@ public final class BaniraClientRuntime {
 
     @Nullable
     public static LocalPlayer localPlayer() {
+        return Minecraft.getInstance().player;
+    }
+
+    /**
+     * 供共享代码读取玩家时使用中立返回类型，避免 dedicated server 解析客户端类描述符。
+     */
+    @Nullable
+    public static Player player() {
         return Minecraft.getInstance().player;
     }
 

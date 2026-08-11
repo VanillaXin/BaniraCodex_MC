@@ -31,9 +31,6 @@ public class BaniraInputTest {
 
         assertFalse(BaniraInput.isKeyDown(BaniraKeyCodes.KEY_K));
         assertFalse(BaniraInput.isMouseDown(BaniraKeyCodes.MOUSE_LEFT));
-        assertFalse(BaniraInput.isShiftDown());
-        assertFalse(BaniraInput.isControlDown());
-        assertFalse(BaniraInput.isAltDown());
     }
 
     @Test(expected = IllegalArgumentException.class)

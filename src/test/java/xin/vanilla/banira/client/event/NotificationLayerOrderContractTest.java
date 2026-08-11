@@ -14,9 +14,9 @@ import static org.junit.Assert.assertTrue;
 public class NotificationLayerOrderContractTest {
     @Test
     public void screenNotificationRendersAfterQuickActions() throws IOException {
-        Path path = Paths.get("src/main/java/xin/vanilla/banira/internal/client/BaniraClientEventBridge.java");
+        Path path = Paths.get("src/main/java/xin/vanilla/banira/internal/client/BaniraClientOverlayBridge.java");
         String source = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-        int method = source.indexOf("fireDrawScreenPost");
+        int method = source.indexOf("renderScreenOverlay");
         int quickAction = source.indexOf("QuickActionOverlay.get().render", method);
         int notification = source.indexOf("NotificationManager.get().render", method);
 

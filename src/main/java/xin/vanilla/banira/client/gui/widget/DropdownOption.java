@@ -9,6 +9,7 @@ import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * 下拉选项：内部值 {@link #value}、可选展示文案 {@link #displayLabel}、可选左侧图标、可选悬浮提示。
@@ -31,6 +32,8 @@ public class DropdownOption {
     private final Texture[] texture;
     @Nullable
     private final Component tooltip;
+    private final String valueLowerCase;
+    private final String displayLabelLowerCase;
 
     /**
      * 展示用文案；无单独标签时返回 {@link #value}
@@ -87,11 +90,13 @@ public class DropdownOption {
     }
 
     public DropdownOption(String value, @Nullable String displayLabel, ItemStack icon, @Nullable Texture[] texture, @Nullable Component tooltip) {
-        this.value = value;
+        this.value = value != null ? value : "";
         this.label = displayLabel;
         this.icon = icon != null && !icon.isEmpty() ? icon : ItemStack.EMPTY;
         this.texture = texture;
         this.tooltip = tooltip;
+        this.valueLowerCase = this.value.toLowerCase(Locale.ROOT);
+        this.displayLabelLowerCase = displayLabel().toLowerCase(Locale.ROOT);
     }
 
     public boolean hasIcon() {

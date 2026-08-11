@@ -25,6 +25,11 @@ public final class BaniraPaths {
         }
 
         @Override
+        public Path gameConfigPath() {
+            return BaniraPlatforms.get().configDir();
+        }
+
+        @Override
         public Path configPath() {
             return BaniraPaths.configPath();
         }

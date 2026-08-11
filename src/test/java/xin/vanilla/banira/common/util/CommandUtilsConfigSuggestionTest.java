@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
-/** 验证数值配置补全不会因泛型重载产生运行时类型转换。 */
+/** 验证配置值补全不会触发泛型重载导致的运行时类型转换。 */
 public class CommandUtilsConfigSuggestionTest {
     @Test
     public void numericValueSuggestionUsesObjectStringConversion() {

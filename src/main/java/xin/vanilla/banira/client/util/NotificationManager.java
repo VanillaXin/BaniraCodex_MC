@@ -48,6 +48,11 @@ public final class NotificationManager {
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
     private Style frameHoverStyle;
+    private final CoalescingAsyncTask logSaveTask = new CoalescingAsyncTask(
+            "BaniraCodex-NotificationLogSave",
+            this::saveLogSnapshot,
+            e -> LOGGER.warn("Failed to save notification log: {}", e.getMessage())
+    );
 
     private static boolean prevLeftDown;
 
@@ -259,36 +264,34 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LOG_FILE_NAME);
-                JsonObject root = new JsonObject();
-                JsonArray arr = new JsonArray();
-                List<NotificationLogEntry> snapshot;
-                synchronized (log) {
-                    snapshot = new ArrayList<>(log);
-                }
-                for (NotificationLogEntry e : snapshot) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("id", e.id());
-                    obj.addProperty("timestamp", e.timestamp());
-                    obj.addProperty("componentJson", e.componentJson());
-                    obj.addProperty("positionName", e.positionName());
-                    obj.addProperty("animationName", e.animationName());
-                    obj.addProperty("durationTime", e.durationTime());
-                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-                    obj.addProperty("source", e.source());
-                    arr.add(obj);
-                }
-                root.add("entries", arr);
-                Files.writeString(path, JsonUtils.toPrettyString(root));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
-            }
-        }).start();
+        logSaveTask.request();
+    }
+
+    private void saveLogSnapshot() throws Exception {
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(LOG_FILE_NAME);
+        JsonObject root = new JsonObject();
+        JsonArray arr = new JsonArray();
+        List<NotificationLogEntry> snapshot;
+        synchronized (log) {
+            snapshot = new ArrayList<>(log);
+        }
+        for (NotificationLogEntry e : snapshot) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", e.id());
+            obj.addProperty("timestamp", e.timestamp());
+            obj.addProperty("componentJson", e.componentJson());
+            obj.addProperty("positionName", e.positionName());
+            obj.addProperty("animationName", e.animationName());
+            obj.addProperty("durationTime", e.durationTime());
+            obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+            obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
+            obj.addProperty("source", e.source());
+            arr.add(obj);
+        }
+        root.add("entries", arr);
+        Files.writeString(path, JsonUtils.toPrettyString(root));
     }
 
     public void render(GuiGraphics graphics) {
@@ -339,7 +342,7 @@ public final class NotificationManager {
                 }
 
                 frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
+                n.index(i++).renderAt(stack, preInfo, screenInfo, currentTime, lastInfo);
 
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());

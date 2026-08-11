@@ -25,4 +25,11 @@ public final class BaniraPlayerData {
     public static void put(@Nonnull UUID playerUuid, @Nonnull String modId, @Nullable Object data) {
         Banira.platform().playerDataService().put(playerUuid, modId, data);
     }
+
+    /**
+     * 立即写入指定玩家的数据，供需要事务边界的数据迁移使用。
+     */
+    public static void flush(@Nonnull UUID playerUuid) {
+        Banira.platform().playerDataService().flush(playerUuid);
+    }
 }

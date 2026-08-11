@@ -139,7 +139,8 @@ class DropdownOverlayWidget extends BaseWidget {
                 }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;
-                graphics.drawString(font, display, textX, (int) Math.round(itemY + (ITEM_HEIGHT - font.lineHeight) / 2f), textColor, false);
+                graphics.drawString(font, display, textX,
+                        (int) itemY + (ITEM_HEIGHT - font.lineHeight) / 2, textColor, false);
             }
 
             AbstractGuiUtils.disableScissor();

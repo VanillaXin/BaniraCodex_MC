@@ -1,6 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -8,11 +7,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,7 +48,8 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        return BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+        String id = Banira.platform().registryService().entityTypeKey(entityType);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -242,7 +242,8 @@ public final class EntityUtils {
             return null;
         }
         try {
-            return BuiltInRegistries.ENTITY_TYPE.get(location);
+            Object entityType = Banira.platform().registryService().entityType(location.toString());
+            return entityType instanceof EntityType ? (EntityType<?>) entityType : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find entity type by registry name: {}", location, e);
             return null;
@@ -255,9 +256,9 @@ public final class EntityUtils {
 
     public static List<Entity> getAllEntities() {
         List<Entity> entities = new ArrayList<>();
-        KeyValue<MinecraftServer, Boolean> serverInstance = BaniraCodex.serverInstance();
-        if (serverInstance.val()) {
-            serverInstance.key().getAllLevels().forEach(level ->
+        MinecraftServer server = BaniraServerRuntime.server();
+        if (server != null) {
+            server.getAllLevels().forEach(level ->
                     level.getAllEntities().forEach(entities::add)
             );
         }
@@ -286,8 +287,9 @@ public final class EntityUtils {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
                     Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
-                    for (EntityType<?> entityType : BuiltInRegistries.ENTITY_TYPE) {
-                        if (entityType == null) continue;
+                    for (Object value : Banira.platform().registryService().entityTypes()) {
+                        if (!(value instanceof EntityType)) continue;
+                        EntityType<?> entityType = (EntityType<?>) value;
                         ResourceLocation rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;
                         byId.putIfAbsent(rl, entityType);

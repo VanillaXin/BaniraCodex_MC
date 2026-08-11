@@ -6,6 +6,8 @@ import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +52,22 @@ public class FabricConfigValueStoreTest {
 
         store.set("ints", List.of(2, 4));
         assertEquals(List.of(2, 3), store.get("ints"));
+    }
+
+    @Test
+    public void reloadFromDiskReplacesValuesAndRestoresRemovedKeys() throws Exception {
+        File file = temporaryFolder.newFile("reload.toml");
+        List<ConfigEntryDescriptor> descriptors = List.of(descriptor(
+                "value", ConfigEntryDescriptor.ConfigValueType.STRING, "default"));
+        FabricConfigValueStore store = new FabricConfigValueStore(file.toPath(), descriptors);
+
+        Files.write(file.toPath(), "value = \"disk\"\n".getBytes(StandardCharsets.UTF_8));
+        store.reloadFromDisk();
+        assertEquals("disk", store.get("value"));
+
+        Files.write(file.toPath(), new byte[0]);
+        store.reloadFromDisk();
+        assertEquals("default", store.get("value"));
     }
 
     private static ConfigEntryDescriptor descriptor(String path, ConfigEntryDescriptor.ConfigValueType type, Object defaultValue) {

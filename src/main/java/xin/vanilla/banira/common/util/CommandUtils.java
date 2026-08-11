@@ -19,7 +19,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissions;
@@ -28,6 +27,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 
 import javax.annotation.Nullable;
@@ -105,9 +105,7 @@ public final class CommandUtils {
             if (suppressedOutput) {
                 commandSourceStack = commandSourceStack.withSuppressedOutput();
             }
-            if (server != null) {
-                result = server.getCommands().performPrefixedCommand(commandSourceStack, command) > 0;
-            }
+            result = server.getCommands().performCommand(server.getCommands().getDispatcher().parse(command, commandSourceStack), command) > 0;
         } catch (Exception e) {
             LOGGER.error("Failed to execute command: {}", command, e);
         }
@@ -141,8 +139,9 @@ public final class CommandUtils {
     public static void refreshPermission(@NonNull ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) {
-            server = BaniraCodex.serverInstance().key();
+            server = BaniraServerRuntime.server();
         }
+        if (server == null) return;
         server.getPlayerList().sendPlayerPermissionLevel(player);
     }
 
@@ -357,6 +356,7 @@ public final class CommandUtils {
         return parsedStr;
     }
 
+
     public static void configKeySuggestion(ConfigHolder holder, SuggestionsBuilder builder, String configKey) {
         if (holder == null || CollectionUtils.isNullOrEmpty(holder.valuePaths())) {
             return;
@@ -468,6 +468,5 @@ public final class CommandUtils {
     }
 
     // endregion config modifier
-
 
 }

@@ -101,7 +101,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
                     int itemY = contentY + i * ITEM_HEIGHT;
                     if (itemY + ITEM_HEIGHT < pb.y() || itemY >= pb.y() + pb.height()) continue;
 
-                    String item = items.get(i);
+                    String item = parent.displayLabelForValue(items.get(i));
                     int textMaxWidth = contentWidth - PAD * 2 - TAG_CLOSE_SIZE - 4;
                     String display = font.plainSubstrByWidth(item, textMaxWidth);
 
@@ -112,7 +112,8 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
                         AbstractGuiUtils.fill(s, (int) pb.x() + 1, itemY, contentWidth, ITEM_HEIGHT, popupSelected);
                     }
 
-                    graphics.drawString(font, display, (int) pb.x() + PAD, (int) Math.round(itemY + (ITEM_HEIGHT - font.lineHeight) / 2f), textColor, false);
+                    graphics.drawString(font, display, (int) pb.x() + PAD,
+                            (int) itemY + (ITEM_HEIGHT - font.lineHeight) / 2, textColor, false);
 
                     int closeX = (int) (pb.x() + contentWidth - PAD - TAG_CLOSE_SIZE);
                     int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;

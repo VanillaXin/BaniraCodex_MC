@@ -10,7 +10,9 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +35,11 @@ public final class NotificationTypeSettingsStore {
     private static final NotificationTypeSettingsStore INSTANCE = new NotificationTypeSettingsStore();
 
     private final Map<String, TypeSettings> byType = new ConcurrentHashMap<>();
+    private final CoalescingAsyncTask saveTask = new CoalescingAsyncTask(
+            "BaniraCodex-NotificationTypeSettingsSave",
+            this::saveSnapshot,
+            e -> LOGGER.warn("Failed to save notification type settings: {}", e.getMessage())
+    );
 
     /**
      * 是否已完成至少一次磁盘加载尝试
@@ -107,33 +114,32 @@ public final class NotificationTypeSettingsStore {
     }
 
     public void saveAsync() {
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(FILE_NAME);
-                JsonObject root = new JsonObject();
-                JsonObject types = new JsonObject();
-                Map<String, TypeSettings> snapshot;
-                synchronized (byType) {
-                    snapshot = new LinkedHashMap<>(byType);
-                }
-                for (Map.Entry<String, TypeSettings> e : snapshot.entrySet()) {
-                    TypeSettings s = e.getValue();
-                    JsonObject o = new JsonObject();
-                    o.addProperty("hidden", s.hidden());
-                    o.addProperty("durationMs", s.durationMs());
-                    o.addProperty("positionName", s.positionName() != null ? s.positionName() : "");
-                    o.addProperty("animationName", s.animationName() != null ? s.animationName() : "");
-                    o.addProperty("displayMode", s.displayMode() != null ? s.displayMode().name() : EnumNotificationTypeDisplayMode.OVERLAY.name());
-                    types.add(e.getKey(), o);
-                }
-                root.add("types", types);
-                Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save notification type settings: {}", e.getMessage());
-            }
-        }).start();
+        saveTask.request();
+    }
+
+    private void saveSnapshot() throws Exception {
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(FILE_NAME);
+        JsonObject root = new JsonObject();
+        JsonObject types = new JsonObject();
+        Map<String, TypeSettings> snapshot;
+        synchronized (byType) {
+            snapshot = new LinkedHashMap<>(byType);
+        }
+        for (Map.Entry<String, TypeSettings> e : snapshot.entrySet()) {
+            TypeSettings s = e.getValue();
+            JsonObject o = new JsonObject();
+            o.addProperty("hidden", s.hidden());
+            o.addProperty("durationMs", s.durationMs());
+            o.addProperty("positionName", s.positionName() != null ? s.positionName() : "");
+            o.addProperty("animationName", s.animationName() != null ? s.animationName() : "");
+            o.addProperty("displayMode", s.displayMode() != null ? s.displayMode().name() : EnumNotificationTypeDisplayMode.OVERLAY.name());
+            types.add(e.getKey(), o);
+        }
+        root.add("types", types);
+        Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+        ManagedConfigFiles.markWritten(path);
     }
 
     public TypeSettings getOrCreate(String typeId) {

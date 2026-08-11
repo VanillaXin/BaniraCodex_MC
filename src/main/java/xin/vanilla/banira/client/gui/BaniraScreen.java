@@ -11,17 +11,24 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.gui.event.CharInputEvent;
+import xin.vanilla.banira.client.gui.event.KeyClickTracker;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
+import xin.vanilla.banira.client.gui.event.MouseClickTracker;
+import xin.vanilla.banira.client.gui.event.PressGestureState;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -41,7 +48,7 @@ import java.util.function.Predicate;
  *   <li><b>mouseClicked</b>: cursor → popupOption(悬停则处理) → 否则 popupOption.clear + unfocusAllExcept
  *       → 逆序 widgets(visible+enabled, shouldWidgetReceiveClick) handleMouseClick → 首个 consumed 的获得 focus
  *       → 未 consumed 则 onMouseClicked</li>
- *   <li><b>mouseScrolled</b>: cursor → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
+ *   <li><b>mouseScrolled</b>: cursor → popupOption → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
  *       → 逆序 widgets handleMouseScroll → onMouseScrolled</li>
  *   <li><b>keyPressed</b>: focusedWidget 优先 → 逆序 widgets(跳过 focused) handleKeyPress → onKeyPressed</li>
  * </ul>
@@ -49,6 +56,15 @@ import java.util.function.Predicate;
  */
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
+
+    /** 统一描述界面关闭来源，子类可据此保留自己的未保存检查。 */
+    public enum CloseReason {
+        ESCAPE,
+        INVENTORY_KEY,
+        MOUSE_BACK,
+        OUTSIDE_RIGHT_CLICK,
+        BUTTON
+    }
 
     // region 基础属性
 
@@ -144,11 +160,10 @@ public abstract class BaniraScreen extends Screen {
     }
 
     public void renderButtons(GuiGraphics graphics, double mouseX, double mouseY, float partialTicks) {
-        this.children().forEach(child -> {
-            if (child instanceof net.minecraft.client.gui.components.Renderable renderable) {
-                renderable.render(graphics, (int) mouseX, (int) mouseY, partialTicks);
-            }
-        });
+        this.children().stream()
+                .filter(net.minecraft.client.gui.components.Renderable.class::isInstance)
+                .map(net.minecraft.client.gui.components.Renderable.class::cast)
+                .forEach(renderable -> renderable.render(graphics, (int) mouseX, (int) mouseY, partialTicks));
     }
 
     @Override
@@ -186,11 +201,19 @@ public abstract class BaniraScreen extends Screen {
      * 每帧 render 时缓存的 theme，避免 getEffectiveTheme 重复计算
      */
     private BaniraColorConfig cachedTheme;
+    private long renderFrameId;
+    private long dropdownOpenCacheFrameId = -1;
+    private boolean cachedDropdownOpen;
 
     /**
      * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
      */
     private final List<Consumer<GuiGraphics>> deferredTooltipRenders = new ArrayList<>();
+
+    /** 根控件变化时才重建渲染快照，避免每帧复制列表。 */
+    private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
+    private boolean renderWidgetSnapshotDirty = true;
+    private boolean renderingWidgets;
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
@@ -204,6 +227,17 @@ public abstract class BaniraScreen extends Screen {
      * 用于在下拉全屏浮层显示时抑制后方控件的 {@link TooltipWidget}，避免与下拉项提示叠显。
      */
     public boolean isAnyDropdownSelectOpen() {
+        if (cachedTheme != null) {
+            if (dropdownOpenCacheFrameId != renderFrameId) {
+                cachedDropdownOpen = computeAnyDropdownSelectOpen();
+                dropdownOpenCacheFrameId = renderFrameId;
+            }
+            return cachedDropdownOpen;
+        }
+        return computeAnyDropdownSelectOpen();
+    }
+
+    private boolean computeAnyDropdownSelectOpen() {
         for (IWidget w : this.widgets) {
             if (anyDropdownSelectOpenInTree(w)) {
                 return true;
@@ -239,10 +273,12 @@ public abstract class BaniraScreen extends Screen {
             totalRenderCount++;
             this.renderCount++;
         }
+        renderFrameId++;
         cachedTheme = getEffectiveTheme();
-        // 标题界面没有世界帧负责清屏，Mod Menu 打开的独立页面必须先覆盖上一帧。
+        dropdownOpenCacheFrameId = -1;
+
         if (this.minecraft == null || this.minecraft.level == null) {
-            this.renderBackground(graphics);
+            renderBackground(graphics);
         }
 
         this.onRender(graphics, mouseX, mouseY, partialTicks);
@@ -309,6 +345,11 @@ public abstract class BaniraScreen extends Screen {
             if (!args.consumed()) onMouseClicked(args);
         }
 
+        if (!args.consumed() && isMouseCloseShortcut(mouseX, mouseY, button)) {
+            args.consumed(requestClose(button == GLFWKey.GLFW_MOUSE_BUTTON_4
+                    ? CloseReason.MOUSE_BACK : CloseReason.OUTSIDE_RIGHT_CLICK));
+        }
+
         return args.consumed() || super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -368,10 +409,24 @@ public abstract class BaniraScreen extends Screen {
     protected void onMouseReleased(MouseReleasedHandleArgs eventArgs) {
     }
 
+    /** 将当前输入状态转换成 GLFW modifier 位。 */
+    protected int currentKeyboardModifiers() {
+        int modifiers = 0;
+        if (inputState.isShiftPressing()) modifiers |= GLFWKey.GLFW_MOD_SHIFT;
+        if (inputState.isCtrlPressing()) modifiers |= GLFWKey.GLFW_MOD_CONTROL;
+        if (inputState.isAltPressing()) modifiers |= GLFWKey.GLFW_MOD_ALT;
+        return modifiers;
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta);
+        MouseScrollEvent scrollEvent = MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers());
         this.cursor.mouseScrolled(scrollEvent);
+
+        // 弹出菜单覆盖普通控件，应先消费其范围内的滚轮事件。
+        if (delta != 0 && this.popupOption.addScrollOffset(delta)) {
+            return true;
+        }
 
         // 优先让已获得焦点的输入框/滑块处理滚轮，无论鼠标位置
         if (delta != 0 && focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
@@ -452,10 +507,64 @@ public abstract class BaniraScreen extends Screen {
 
         onKeyPressed(args);
 
+        if (!args.consumed()) {
+            CloseReason closeReason = closeReasonForKey(keyCode, scanCode);
+            if (closeReason != null) {
+                args.consumed(requestClose(closeReason));
+            }
+        }
+
         return args.consumed() || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+    }
+
+    @Nullable
+    private CloseReason closeReasonForKey(int keyCode, int scanCode) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
+            return CloseReason.ESCAPE;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!hasFocusedTextInput() && minecraft.options != null
+                && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+            return CloseReason.INVENTORY_KEY;
+        }
+        return null;
+    }
+
+    private boolean isMouseCloseShortcut(double mouseX, double mouseY, int button) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
+            return true;
+        }
+        ScreenCoordinate bounds = closeableWindowBounds();
+        return button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT && bounds != null
+                && !contains(bounds, mouseX, mouseY);
+    }
+
+    private static boolean contains(ScreenCoordinate bounds, double x, double y) {
+        return x >= bounds.x() && x < bounds.x() + bounds.width()
+                && y >= bounds.y() && y < bounds.y() + bounds.height();
+    }
+
+    /**
+     * 返回支持“窗口外右键关闭”的可视窗口范围；全屏或没有明确窗口边界的界面保持 null。
+     */
+    @Nullable
+    protected ScreenCoordinate closeableWindowBounds() {
+        return null;
+    }
+
+    /**
+     * 统一关闭入口。存在未保存状态或临时动画的界面应重写此方法并决定是否消费请求。
+     */
+    protected boolean requestClose(CloseReason reason) {
+        onClose();
+        return true;
+    }
+
+    protected boolean hasFocusedTextInput() {
+        return focusedWidget instanceof InputWidget && ((InputWidget) focusedWidget).focused();
     }
 
     /**
@@ -549,15 +658,27 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
-        List<IWidget> snapshot = new ArrayList<>(widgets);
-        for (IWidget widget : snapshot) {
-            if (widget.visible() && widget.parent() == null) {
-                if (widget.enabled() && widget.needsUpdate()) {
-                    widget.update();
+        rebuildRenderWidgetSnapshotIfNeeded();
+        renderingWidgets = true;
+        try {
+            for (IWidget widget : renderWidgetSnapshot) {
+                if (widget.visible() && widget.parent() == null) {
+                    if (widget.enabled() && widget.needsUpdate()) {
+                        widget.update();
+                    }
+                    widget.render(graphics, partialTicks);
                 }
-                widget.render(graphics, partialTicks);
             }
+        } finally {
+            renderingWidgets = false;
         }
+    }
+
+    private void rebuildRenderWidgetSnapshotIfNeeded() {
+        if (!renderWidgetSnapshotDirty) return;
+        renderWidgetSnapshot.clear();
+        renderWidgetSnapshot.addAll(widgets);
+        renderWidgetSnapshotDirty = false;
     }
 
     @Nullable
@@ -579,14 +700,18 @@ public abstract class BaniraScreen extends Screen {
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);
             }
+            markRenderWidgetSnapshotDirty(false);
         }
     }
 
     protected void removeWidget(IWidget widget) {
         if (widget != null) {
-            widgets.remove(widget);
-            if (widget.id() != null) {
+            boolean removed = widgets.remove(widget);
+            if (removed && widget.id() != null) {
                 widgetMap.remove(widget.id());
+            }
+            if (removed) {
+                markRenderWidgetSnapshotDirty(false);
             }
         }
     }
@@ -613,10 +738,18 @@ public abstract class BaniraScreen extends Screen {
             }
         }
         widgets.clear();
+        markRenderWidgetSnapshotDirty(true);
         widgetMap.clear();
         focusedWidget = null;
         synchronized (focusableWidgets) {
             focusableWidgets.clear();
+        }
+    }
+
+    private void markRenderWidgetSnapshotDirty(boolean clearWhenIdle) {
+        renderWidgetSnapshotDirty = true;
+        if (clearWhenIdle && !renderingWidgets) {
+            renderWidgetSnapshot.clear();
         }
     }
 

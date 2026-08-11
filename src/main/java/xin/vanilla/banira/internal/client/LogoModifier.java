@@ -10,26 +10,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * Logo 覆盖注册入口；具体 mod 元数据写入由加载器内部适配层安装。
+ */
 public final class LogoModifier {
     private LogoModifier() {
     }
 
-    /**
-     * modId -> Supplier
-     */
     private static final Map<String, Supplier<String>> SUPPLIER_REGISTRY = new ConcurrentHashMap<>();
-
-    /**
-     * Function列表, 按注册顺序执行
-     */
     private static final List<Function<String, String>> FUNCTION_REGISTRY = new ArrayList<>();
+    private static LogoApplier applier = LogoApplier.NOOP;
 
+    public static void installApplier(LogoApplier logoApplier) {
+        applier = logoApplier != null ? logoApplier : LogoApplier.NOOP;
+    }
 
-    /**
-     * 注册Logo提供者
-     *
-     * @param logoFileSupplier Logo文件路径提供者
-     */
     public static void register(String modId, Supplier<String> logoFileSupplier) {
         if (modId == null || logoFileSupplier == null) {
             throw new IllegalArgumentException("modId and logoFileSupplier cannot be null");
@@ -37,11 +32,6 @@ public final class LogoModifier {
         SUPPLIER_REGISTRY.put(modId, logoFileSupplier);
     }
 
-    /**
-     * 注册Logo提供者
-     *
-     * @param logoFileFunction Logo文件路径函数, 接收 modId, 返回 logoFile
-     */
     public static void register(Function<String, String> logoFileFunction) {
         if (logoFileFunction == null) {
             throw new IllegalArgumentException("logoFileFunction cannot be null");
@@ -49,11 +39,6 @@ public final class LogoModifier {
         FUNCTION_REGISTRY.add(logoFileFunction);
     }
 
-    /**
-     * 获取指定Mod的Logo文件路径
-     *
-     * @return Logo文件路径
-     */
     public static Optional<String> getLogoFile(String modId) {
         if (StringUtils.isNullOrEmptyEx(modId)) {
             return Optional.empty();
@@ -78,15 +63,20 @@ public final class LogoModifier {
     }
 
     public static void modifyLogo() {
-        // Fabric 的 mod 元数据在运行时不可按 Forge ModInfo 的方式安全改写。
-        // 保留注册 API，避免外部调用失效；实际图标由 fabric.mod.json 控制。
+        if (!SUPPLIER_REGISTRY.isEmpty() || !FUNCTION_REGISTRY.isEmpty()) {
+            applier.apply();
+        }
     }
 
-    /**
-     * 清除所有注册
-     */
     public static void clear() {
         SUPPLIER_REGISTRY.clear();
         FUNCTION_REGISTRY.clear();
+    }
+
+    public interface LogoApplier {
+        LogoApplier NOOP = () -> {
+        };
+
+        void apply();
     }
 }

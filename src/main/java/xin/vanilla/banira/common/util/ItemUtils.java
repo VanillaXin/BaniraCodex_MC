@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -20,6 +21,7 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -89,7 +91,8 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return BuiltInRegistries.ITEM.getKey(item);
+        String key = Banira.platform().registryService().itemKey(item);
+        return key != null ? ResourceLocation.tryParse(key) : null;
     }
 
     /**
@@ -427,7 +430,7 @@ public final class ItemUtils {
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
-            Item item = BuiltInRegistries.ITEM.get(rl);
+            Item item = getItemFromRegistry(rl);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -451,7 +454,7 @@ public final class ItemUtils {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        Item item = BuiltInRegistries.ITEM.get(id);
+        Item item = getItemFromRegistry(id);
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -473,7 +476,8 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return BuiltInRegistries.ITEM.get(location);
+            Object item = Banira.platform().registryService().item(location.toString());
+            return item instanceof Item ? (Item) item : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -538,41 +542,36 @@ public final class ItemUtils {
         addedItems.add(Items.AIR);
 
         try {
-            // 首先从创造模式搜索标签中获取所有物品变体
-            // 1.20 创造模式标签页由注册表驱动，先收集展示物品再补默认堆叠。
+            // 从创造模式标签收集可展示变体
             try {
                 CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
                 CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
-                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
-                    if (group == null || group == hotbarTab) continue;
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == hotbarTab) continue;
                     try {
-                        Collection<ItemStack> groupItems = group == searchTab
-                                ? group.getSearchTabDisplayItems()
-                                : group.getDisplayItems();
-                        if (CollectionUtils.isNotNullOrEmpty(groupItems)) {
-                            for (ItemStack stack : groupItems) {
-                                if (stack != null && !stack.isEmpty()) {
-                                    boolean exists = items.stream().anyMatch(existing ->
-                                            areItemsEqual(existing, stack));
-                                    if (!exists) {
-                                        items.add(stack.copy());
-                                        addedItems.add(stack.getItem());
-                                    }
+                        Collection<ItemStack> tabItems = tab == searchTab
+                                ? tab.getSearchTabDisplayItems() : tab.getDisplayItems();
+                        if (CollectionUtils.isNotNullOrEmpty(tabItems)) {
+                            for (ItemStack stack : tabItems) {
+                                if (stack != null && !stack.isEmpty()
+                                        && items.stream().noneMatch(existing -> areItemsEqual(existing, stack))) {
+                                    items.add(stack.copy());
+                                    addedItems.add(stack.getItem());
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        LOGGER.debug("Failed to get items from item group: {}",
-                                group.getDisplayName().getString(), e);
+                        LOGGER.debug("Failed to get items from creative tab: {}", tab.getDisplayName().getString(), e);
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to get items from item groups", e);
+                LOGGER.warn("Failed to get items from creative tabs", e);
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : BuiltInRegistries.ITEM) {
-                if (item == null) continue;
+            for (Object value : Banira.platform().registryService().items()) {
+                if (!(value instanceof Item)) continue;
+                Item item = (Item) value;
                 if (!addedItems.contains(item)) {
                     try {
                         ItemStack defaultStack = new ItemStack(item);
@@ -582,7 +581,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                BuiltInRegistries.ITEM.getKey(item), e);
+                                getItemRegistry(item), e);
                     }
                 }
             }
@@ -654,6 +653,19 @@ public final class ItemUtils {
                     }
                 }
             } catch (Throwable ignored) {
+            }
+
+            // 获取标签
+            try {
+                for (String tagId : Banira.platform().registryService().itemTagIds(item)) {
+                    ResourceLocation loc = ResourceLocation.tryParse(tagId);
+                    if (loc != null) {
+                        tags.add(loc.toString().toLowerCase());
+                        tags.add(loc.getPath().toLowerCase());
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Failed to get tags for item: {}", registry, e);
             }
 
             return new ItemStackInfo(registry, hoverName, description, tags);
@@ -1037,7 +1049,7 @@ public final class ItemUtils {
         }
         return modNameCache.computeIfAbsent(modId, id -> {
             try {
-                return Banira.platform().modDisplayName(id);
+                return BaniraPlatforms.isInstalled() ? Banira.platform().modDisplayName(id) : id;
             } catch (Exception e) {
                 LOGGER.debug("Failed to get mod name for: {}", id, e);
                 return id;
@@ -1152,13 +1164,11 @@ public final class ItemUtils {
                 CreativeModeTab itemGroup = null;
                 CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
                 CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
-                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
-                    if (group == null || group == searchTab || group == hotbarTab) {
-                        continue;
-                    }
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == searchTab || tab == hotbarTab) continue;
                     try {
-                        if (group.contains(itemStack)) {
-                            itemGroup = group;
+                        if (tab.contains(itemStack)) {
+                            itemGroup = tab;
                             break;
                         }
                     } catch (Exception ignored) {
@@ -1184,6 +1194,19 @@ public final class ItemUtils {
                             result.add(BaniraComponent.get().literal(text));
                         }
                     }
+                }
+
+                // 5. 标签列表
+                try {
+                    List<String> tagIds = new ArrayList<>(Banira.platform().registryService().itemTagIds(item));
+                    tagIds.sort(Comparator.naturalOrder());
+                    for (String tagId : tagIds) {
+                        Component tagComponent = BaniraComponent.get().literal("#" + tagId)
+                                .color(Color.argb(0xFF8A2BE2));
+                        result.add(tagComponent);
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Failed to get tags for item: {}", getItemRegistryString(itemStack), e);
                 }
 
                 // 6. 物品ID

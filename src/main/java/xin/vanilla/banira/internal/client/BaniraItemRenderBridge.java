@@ -2,8 +2,9 @@ package xin.vanilla.banira.internal.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.color.item.ItemColors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -20,6 +21,8 @@ import java.util.List;
  * 物品 GUI 绘制桥。物品模型、ItemRenderer 和本地玩家都属于版本/加载器敏感实现细节。
  */
 public final class BaniraItemRenderBridge {
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+
     private BaniraItemRenderBridge() {
     }
 
@@ -29,6 +32,17 @@ public final class BaniraItemRenderBridge {
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {
         renderGuiItemScaled(stack, x, y, 16);
+        if (showCount) {
+            GuiGraphics graphics = graphics();
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().translate(0, 0, ITEM_DECORATION_DEPTH_OFFSET);
+                graphics.renderItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+                graphics.flush();
+            } finally {
+                graphics.pose().popPose();
+            }
+        }
     }
 
     public static void renderScaled(@Nonnull ItemStack stack, int x, int y, int size) {
@@ -44,8 +58,7 @@ public final class BaniraItemRenderBridge {
         ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
         BakedModel model = itemRenderer.getModel(stack, null, BaniraClientRuntime.localPlayer(), 0);
         TextureAtlasSprite sprite = model.getParticleIcon();
-        ItemColors itemColors = BaniraClientRuntime.itemColors();
-        int tint = itemColors != null ? itemColors.getColor(stack, 0) : -1;
+        int tint = BaniraClientRuntime.itemColors().getColor(stack, 0);
         if (tint != -1) {
             float cr = (float) (tint >> 16 & 255) / 255.0F;
             float cg = (float) (tint >> 8 & 255) / 255.0F;
@@ -61,6 +74,22 @@ public final class BaniraItemRenderBridge {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        // 1.20 的真实物品渲染需要 GuiGraphics；旧 PoseStack 入口仅保留为空实现以兼容内部调用点。
+        GuiGraphics graphics = graphics();
+        float scale = size / 16f;
+        graphics.pose().pushPose();
+        try {
+            graphics.pose().translate(x, y, 200f);
+            graphics.pose().scale(scale, scale, scale);
+            graphics.renderItem(stack, 0, 0);
+            graphics.flush();
+        } finally {
+            graphics.pose().popPose();
+            AbstractGuiUtils.restoreGuiRenderState();
+        }
+    }
+
+    private static GuiGraphics graphics() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return new GuiGraphics(minecraft, minecraft.renderBuffers().bufferSource());
     }
 }

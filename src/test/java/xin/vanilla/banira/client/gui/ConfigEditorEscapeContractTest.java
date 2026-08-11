@@ -14,7 +14,6 @@ public class ConfigEditorEscapeContractTest {
     public void escapeUsesOpeningBaselineAndWarnsAboutPendingChanges() throws Exception {
         String source = new String(Files.readAllBytes(Paths.get(
                 "src/main/java/xin/vanilla/banira/client/gui/ConfigEditorScreen.java")), StandardCharsets.UTF_8);
-
         assertTrue(source.contains("baselineValues.put(desc.getPath(), snapshot(adapter.getValue()))"));
         assertTrue(source.contains("int changedCount = pendingChangeCount()"));
         assertTrue(source.contains("config_editor_unsaved_changes"));

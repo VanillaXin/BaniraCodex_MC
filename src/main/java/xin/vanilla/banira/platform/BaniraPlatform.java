@@ -61,6 +61,12 @@ public interface BaniraPlatform {
     BaniraPlayerDataService playerDataService();
 
     /**
+     * 当前版本的玩家权限判断服务。
+     */
+    @Nonnull
+    BaniraPermissionService permissionService();
+
+    /**
      * 当前加载器的网络服务。
      */
     @Nonnull
@@ -85,7 +91,7 @@ public interface BaniraPlatform {
     BaniraNotificationService notificationService();
 
     /**
-     * 当前加载器的 mod logo 注册服务。
+     * 当前加载器的 mod logo 服务；仅客户端初始化阶段调用。
      */
     @Nonnull
     BaniraLogoService logoService();

@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -70,6 +71,13 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     @Getter
     @Setter
     private boolean editable = true;
+
+    /**
+     * 密码模式仅改变显示和用户复制行为；表单回调仍可读取真实值。
+     */
+    @Getter
+    @Setter
+    private boolean password;
 
     /**
      * 是否错误状态
@@ -347,6 +355,24 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 字体渲染
      */
     private final Font font;
+    private String cachedValueWidthText;
+    private int cachedValueWidth;
+    private String cachedVisibleTextValue;
+    private int cachedVisibleTextDisplayPos = -1;
+    private int cachedVisibleTextWidth = -1;
+    private String cachedVisibleText = "";
+    private String cachedPrefixWidthTextA;
+    private int cachedPrefixWidthIndexA = -1;
+    private int cachedPrefixWidthA;
+    private String cachedPrefixWidthTextB;
+    private int cachedPrefixWidthIndexB = -1;
+    private int cachedPrefixWidthB;
+    private String cachedReverseWindowText;
+    private int cachedReverseWindowEnd = -1;
+    private int cachedReverseWindowWidth = -1;
+    private int cachedReverseWindowLength;
+    private String cachedErrorTooltipSource;
+    private Text cachedErrorTooltipText;
 
     public InputWidget(BaniraScreen screen) {
         super(screen);
@@ -419,7 +445,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         float fontScale = actualFontSize / font.lineHeight;
 
         if (!skipTextContentForRendering) {
-            String value = this.value;
+            String rawValue = this.value;
+            String value = displayValue(rawValue);
             int currentTextColor = this.textColor;
             if (!this.editable) {
                 currentTextColor = this.uneditableTextColor;
@@ -431,7 +458,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int highlightPos = this.highlightPos;
             int displayPos = this.displayPos;
 
-            String visibleText = this.font.plainSubstrByWidth(value.substring(displayPos), scaledInnerWidth);
+            String visibleText = visibleText(value, displayPos, scaledInnerWidth);
 
             boolean hasLeftHidden = displayPos > 0;
             boolean hasRightHidden = displayPos + visibleText.length() < value.length();
@@ -476,7 +503,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            boolean isAtEnd = cursorPos >= value.length();
+            boolean isAtEnd = cursorPos >= rawValue.length();
             int cursorX = textDrawX;
             if (!cursorVisible) {
                 cursorX = cursorInVisible > 0 ? textX + innerWidth : textX;
@@ -500,22 +527,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            if (this.hint != null && value.isEmpty() && !this.focused()) {
-                float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
-                float hintFontScale = actualHintFontSize / font.lineHeight;
-                if (hintFontScale != 1.0f) {
-                    stack.pushPose();
-                    stack.translate(textX, textY, 0);
-                    stack.scale(hintFontScale, hintFontScale, 1.0f);
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(0).y(0).maxWidth((int) (innerWidth / hintFontScale))
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(graphics, args);
-                    stack.popPose();
-                } else {
-                    FontDrawArgs args = FontDrawArgs.of(this.hint.stack(stack).color(hintColor)).x(textX).y(textY).maxWidth(innerWidth)
-                            .wrap(false).position(EnumEllipsisPosition.END).maxLine(1);
-                    LabelWidget.drawLimitedText(graphics, args);
-                }
+            if (shouldRenderHint()) {
+                renderHint(graphics, stack, textX, textY, innerWidth);
             }
 
             if (highlightPos != cursorPos) {
@@ -526,8 +539,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 int highlightEndInVisible = Math.min(visibleText.length(), highlightEnd - displayPos);
 
                 if (highlightStartInVisible < highlightEndInVisible) {
-                    int highlightX1 = textX + (int) (this.font.width(visibleText.substring(0, highlightStartInVisible)) * fontScale);
-                    int highlightX2 = textX + (int) (this.font.width(visibleText.substring(0, highlightEndInVisible)) * fontScale);
+                    int highlightX1 = textX + (int) (prefixWidth(visibleText, highlightStartInVisible) * fontScale);
+                    int highlightX2 = textX + (int) (prefixWidth(visibleText, highlightEndInVisible) * fontScale);
                     renderHighlight(stack, highlightX1, textY - 1, highlightX2, textY + (int) actualFontSize, textX, innerWidth);
                 }
             }
@@ -547,7 +560,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             } else if (error && errorMessage != null && !errorMessage.isEmpty() && isMouseOverTextArea() && screen != null) {
                 double mx = screen.inputState().mouseX();
                 double my = screen.inputState().mouseY();
-                drawTooltipAtScreenCoords(graphics, mx, my, Text.literal(errorMessage), EnumTooltipTextureMode.AUTO);
+                drawTooltipAtScreenCoords(graphics, mx, my, errorTooltipText(), EnumTooltipTextureMode.AUTO);
             }
 
             if (shouldShowCursor) {
@@ -789,7 +802,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int clickX = Mth.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
-            String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
+            String visibleText = visibleText(this.value, this.displayPos, textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
             this.shiftPressed = Screen.hasShiftDown();
             moveCursorTo(textPos);
@@ -805,7 +818,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (renderCoordinate == null) return false;
         int totalWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
         int innerWidth = getTextAreaWidth(totalWidth);
-        if (this.font.width(value) <= innerWidth) return false;
+        if (valueWidth() <= innerWidth) return false;
         int step = event.delta() > 0 ? -SCROLL_STEP : SCROLL_STEP;
         moveCursor(step);
         return true;
@@ -838,20 +851,20 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (Screen.isCopy(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+            BaniraClientRuntime.clipboard(getHighlighted());
             return true;
         }
 
         if (Screen.isPaste(keyCode)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
+                insertText(BaniraClientRuntime.clipboard());
             }
             return true;
         }
 
         if (Screen.isCut(keyCode)) {
-            Minecraft.getInstance().keyboardHandler.setClipboard(getHighlighted());
+            BaniraClientRuntime.clipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");
@@ -946,6 +959,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         this.value = value;
         if (!value.equals(oldValue)) {
             this.error = false;
+            invalidateValueWidthCache();
         }
         int valueLength = value.length();
         this.displayPos = Mth.clamp(this.displayPos, 0, valueLength);
@@ -955,6 +969,99 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (onTextChanged != null) {
             onTextChanged.accept(value);
         }
+    }
+
+    private boolean shouldRenderHint() {
+        return hint != null && !hint.isEmpty() && value.isEmpty() && !focused();
+    }
+
+    private void renderHint(GuiGraphics graphics, PoseStack stack, int textX, int textY, int innerWidth) {
+        float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
+        float hintFontScale = actualHintFontSize / font.lineHeight;
+        if (hintFontScale != 1.0f) {
+            stack.pushPose();
+            stack.translate(textX, textY, 0);
+            stack.scale(hintFontScale, hintFontScale, 1.0f);
+            drawHintText(graphics, stack, 0, 0, (int) (innerWidth / hintFontScale));
+            stack.popPose();
+        } else {
+            drawHintText(graphics, stack, textX, textY, innerWidth);
+        }
+    }
+
+    private void drawHintText(GuiGraphics graphics, PoseStack stack, int x, int y, int maxWidth) {
+        FontDrawArgs args = FontDrawArgs.of(hint.stack(stack).color(hintColor))
+                .x(x).y(y).maxWidth(maxWidth).wrap(false)
+                .position(EnumEllipsisPosition.END).maxLine(1);
+        LabelWidget.drawLimitedText(graphics, args);
+    }
+
+    private void invalidateValueWidthCache() {
+        cachedValueWidthText = null;
+        invalidateVisibleTextCache();
+    }
+
+    private int valueWidth() {
+        if (!value.equals(cachedValueWidthText)) {
+            cachedValueWidthText = value;
+            cachedValueWidth = font.width(value);
+        }
+        return cachedValueWidth;
+    }
+
+    private void invalidateVisibleTextCache() {
+        cachedVisibleTextValue = null;
+        cachedPrefixWidthTextA = null;
+        cachedPrefixWidthTextB = null;
+        cachedReverseWindowText = null;
+    }
+
+    private String visibleText(String text, int displayPosition, int width) {
+        if (!text.equals(cachedVisibleTextValue)
+                || cachedVisibleTextDisplayPos != displayPosition
+                || cachedVisibleTextWidth != width) {
+            cachedVisibleTextValue = text;
+            cachedVisibleTextDisplayPos = displayPosition;
+            cachedVisibleTextWidth = width;
+            int safePosition = Mth.clamp(displayPosition, 0, text.length());
+            cachedVisibleText = font.plainSubstrByWidth(text.substring(safePosition), width);
+        }
+        return cachedVisibleText;
+    }
+
+    private int prefixWidth(String text, int index) {
+        int safeIndex = Mth.clamp(index, 0, text.length());
+        if (text.equals(cachedPrefixWidthTextA) && safeIndex == cachedPrefixWidthIndexA) return cachedPrefixWidthA;
+        if (text.equals(cachedPrefixWidthTextB) && safeIndex == cachedPrefixWidthIndexB) return cachedPrefixWidthB;
+        int width = safeIndex <= 0 ? 0 : font.width(text.substring(0, safeIndex));
+        cachedPrefixWidthTextB = cachedPrefixWidthTextA;
+        cachedPrefixWidthIndexB = cachedPrefixWidthIndexA;
+        cachedPrefixWidthB = cachedPrefixWidthA;
+        cachedPrefixWidthTextA = text;
+        cachedPrefixWidthIndexA = safeIndex;
+        cachedPrefixWidthA = width;
+        return width;
+    }
+
+    private int reverseWindowLength(int endPos, int width) {
+        int safeEnd = Mth.clamp(endPos, 0, value.length());
+        if (value.equals(cachedReverseWindowText)
+                && cachedReverseWindowEnd == safeEnd && cachedReverseWindowWidth == width) {
+            return cachedReverseWindowLength;
+        }
+        cachedReverseWindowText = value;
+        cachedReverseWindowEnd = safeEnd;
+        cachedReverseWindowWidth = width;
+        cachedReverseWindowLength = font.plainSubstrByWidth(value.substring(0, safeEnd), width, true).length();
+        return cachedReverseWindowLength;
+    }
+
+    private Text errorTooltipText() {
+        if (cachedErrorTooltipText == null || !java.util.Objects.equals(cachedErrorTooltipSource, errorMessage)) {
+            cachedErrorTooltipSource = errorMessage;
+            cachedErrorTooltipText = Text.literal(errorMessage != null ? errorMessage : "");
+        }
+        return cachedErrorTooltipText;
     }
 
     /**
@@ -1079,7 +1186,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (innerWidth <= 0) {
             return;
         }
-        if (this.font.width(value) <= innerWidth) {
+        if (valueWidth() <= innerWidth) {
             this.displayPos = 0;
             return;
         }
@@ -1090,8 +1197,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.lastCursorPos = cursorPos;
         }
 
-        String remainingText = value.substring(this.displayPos);
-        String visibleText = this.font.plainSubstrByWidth(remainingText, innerWidth);
+        String visibleText = visibleText(value, this.displayPos, innerWidth);
         int visibleEnd = this.displayPos + visibleText.length();
 
         boolean hasLeftHidden = this.displayPos > 0;
@@ -1100,13 +1206,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int cursorInVisible = cursorPos - this.displayPos;
 
         if (cursorPos < this.displayPos) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else if (cursorPos > visibleEnd) {
-            String beforeCursor = value.substring(0, cursorPos);
-            String reverseText = this.font.plainSubstrByWidth(beforeCursor, innerWidth, true);
-            this.displayPos = Math.max(0, cursorPos - reverseText.length());
+            this.displayPos = Math.max(0, cursorPos - reverseWindowLength(cursorPos, innerWidth));
         } else {
             int lenVisible = visibleText.length();
             if (movingRight && hasRightHidden && lenVisible > 0) {
@@ -1123,7 +1225,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (this.highlightPos != cursorPos) {
-            visibleText = this.font.plainSubstrByWidth(value.substring(this.displayPos), innerWidth);
+            visibleText = visibleText(value, this.displayPos, innerWidth);
             visibleEnd = visibleText.length() + this.displayPos;
 
             boolean cursorVisible = cursorInVisible >= 0 && cursorInVisible <= visibleText.length();
@@ -1306,9 +1408,26 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         int end = Math.max(this.cursorPosition, this.highlightPos);
         String value = this.value;
         if (start >= 0 && end <= value.length() && start < end) {
-            return value.substring(start, end);
+            String selected = value.substring(start, end);
+            return password ? mask(selected.length()) : selected;
         }
         return "";
+    }
+
+    /** 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。 */
+    private String displayValue(String rawValue) {
+        return password ? mask(rawValue.length()) : rawValue;
+    }
+
+    private static String mask(int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            result.append('*');
+        }
+        return result.toString();
     }
 
     /**

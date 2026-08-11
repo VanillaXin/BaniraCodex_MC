@@ -9,10 +9,11 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
 import javax.annotation.Nonnull;
@@ -65,7 +66,7 @@ public final class PlayerUtils {
      * 获取所有玩家
      */
     public static List<ServerPlayer> getAllPlayers() {
-        return BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+        return BaniraServerRuntime.players();
     }
 
     /**
@@ -140,6 +141,9 @@ public final class PlayerUtils {
             }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
+            nameString = Banira.platform().lastKnownUsername(uuid);
+        }
+        if (StringUtils.isNullOrEmpty(nameString)) {
             nameString = uuid.toString();
         }
         return nameString;
@@ -163,7 +167,7 @@ public final class PlayerUtils {
     @Nullable
     public static ServerPlayer getServerPlayerByUUID(UUID uuid) {
         try {
-            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
+            return BaniraServerRuntime.player(uuid);
         } catch (Throwable ignored) {
             return null;
         }
@@ -186,12 +190,8 @@ public final class PlayerUtils {
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
         try {
-            if (uuid != null) {
-                ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
-                if (skin != null) {
-                    return skin;
-                }
-            }
+            ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
+            if (skin != null) return skin;
         } catch (Throwable ignored) {
         }
         return Identifier.id().create("minecraft", "textures/entity/steve.png");

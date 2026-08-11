@@ -12,8 +12,13 @@ public class MouseScrollEvent {
     private double mouseX;
     private double mouseY;
     private double delta;
+    private int modifiers;
 
     public static MouseScrollEvent of(double mouseX, double mouseY, double delta) {
         return new MouseScrollEvent().mouseX(mouseX).mouseY(mouseY).delta(delta);
+    }
+
+    public static MouseScrollEvent of(double mouseX, double mouseY, double delta, int modifiers) {
+        return of(mouseX, mouseY, delta).modifiers(modifiers);
     }
 }

@@ -211,7 +211,7 @@ public final class Component implements Cloneable, Serializable {
         if (this.languageCode == null) {
             return defaultLanguage;
         }
-        String resolved = this.languageCode.get();
+        String resolved = resolveLanguageCode(defaultLanguage);
         return resolved == null ? defaultLanguage : resolved;
     }
 
@@ -222,8 +222,17 @@ public final class Component implements Cloneable, Serializable {
         if (this.languageCode == null) {
             return CustomConfig.getDefaultLanguage();
         }
-        String resolved = this.languageCode.get();
+        String resolved = resolveLanguageCode(CustomConfig.getDefaultLanguage());
         return resolved == null ? CustomConfig.getDefaultLanguage() : resolved;
+    }
+
+    private String resolveLanguageCode(String defaultLanguage) {
+        try {
+            return this.languageCode.get();
+        } catch (Throwable ignored) {
+            // 惰性语言来源可能依赖客户端状态；不可用时回落到调用方默认语言。
+            return defaultLanguage;
+        }
     }
 
     /**

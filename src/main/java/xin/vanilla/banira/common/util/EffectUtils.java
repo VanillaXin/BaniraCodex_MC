@@ -2,8 +2,8 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -11,6 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
 import javax.annotation.Nullable;
@@ -44,7 +45,8 @@ public final class EffectUtils {
     @Nullable
     public static ResourceLocation getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
-        return BuiltInRegistries.MOB_EFFECT.getKey(effect);
+        String id = Banira.platform().registryService().effectKey(effect);
+        return id != null ? ResourceLocation.tryParse(id) : null;
     }
 
     /**
@@ -115,7 +117,7 @@ public final class EffectUtils {
      * 检查效果实例是否为空或无效
      */
     public static boolean isEffectNull(MobEffectInstance effectInstance) {
-        return effectInstance == null || effectInstance.getEffect() == null;
+        return effectInstance == null;
     }
 
     /**
@@ -229,7 +231,8 @@ public final class EffectUtils {
     public static MobEffect getEffectFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return BuiltInRegistries.MOB_EFFECT.get(location);
+            Object effect = Banira.platform().registryService().effect(location.toString());
+            return effect instanceof MobEffect ? (MobEffect) effect : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find effect by registry name: {}", location, e);
             return null;
@@ -271,11 +274,12 @@ public final class EffectUtils {
             Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
                 Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-                for (Holder<MobEffect> e : player.getActiveEffectsMap().keySet()) {
+                for (Holder<MobEffect> holder : player.getActiveEffectsMap().keySet()) {
+                    MobEffect e = holder.value();
                     if (e == null) continue;
-                    ResourceLocation rl = getEffectRegistry(e);
+                    ResourceLocation rl = getEffectRegistry(holder);
                     if (rl == null) rl = UNKNOWN_EFFECT;
-                    byId.putIfAbsent(rl, e.value());
+                    byId.putIfAbsent(rl, e);
                 }
                 result.addAll(byId.values());
             }
@@ -289,8 +293,9 @@ public final class EffectUtils {
      */
     private static List<MobEffect> buildUniqueEffectsList() {
         Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
-        for (MobEffect effect : BuiltInRegistries.MOB_EFFECT) {
-            if (effect == null) continue;
+        for (Object value : Banira.platform().registryService().effects()) {
+            if (!(value instanceof MobEffect)) continue;
+            MobEffect effect = (MobEffect) value;
             ResourceLocation rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;
             byId.putIfAbsent(rl, effect);

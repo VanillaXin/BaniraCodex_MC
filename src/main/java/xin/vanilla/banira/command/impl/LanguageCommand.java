@@ -1,5 +1,7 @@
 package xin.vanilla.banira.command.impl;
 
+import xin.vanilla.banira.api.Banira;
+
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -33,7 +35,7 @@ public final class LanguageCommand {
     private static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         String language = StringArgumentType.getString(context, "language");
-        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator translator = (Translator) Translator.of(Banira.MOD_ID);
         if (translator.getI18nFiles().contains(language)) {
             CustomConfig.setPlayerLanguage(PlayerUtils.getPlayerUUIDString(player), language);
             MessageUtils.sendNotification(player,
@@ -54,7 +56,7 @@ public final class LanguageCommand {
 
     private static CompletableFuture<Suggestions> suggestion(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String lang = CommandUtils.getLanguage(context.getSource());
-        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator translator = (Translator) Translator.of(Banira.MOD_ID);
         Component clientTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_client");
         Component serverTooltip = BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "suggest_language_server");
         builder.suggest("client", clientTooltip.toVanilla(lang));

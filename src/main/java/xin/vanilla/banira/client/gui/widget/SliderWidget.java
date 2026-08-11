@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -155,6 +155,14 @@ public class SliderWidget extends BaseWidget {
 
     @Getter
     private double thumbSize;
+    private double lastThumbTrackSize = Double.NaN;
+    private double lastThumbMinValue = Double.NaN;
+    private double lastThumbMaxValue = Double.NaN;
+    private double lastThumbValue = Double.NaN;
+    private int lastThumbRadius = Integer.MIN_VALUE;
+    private int lastMinThumbSize = Integer.MIN_VALUE;
+    @Nullable
+    private SliderStyle lastThumbStyle;
 
     @Getter
     private boolean dragging;
@@ -267,7 +275,7 @@ public class SliderWidget extends BaseWidget {
         if (inlineInputWidget != null) return;
         inlineInputWidget = new NumericInputWidget(screen);
         inlineInputWidget.id(id() != null ? id() + "_inline" : "slider_inline");
-        inlineInputWidget.text(Text.transAuto(BaniraCodex.MODID, "enter_number"));
+        inlineInputWidget.text(Text.transAuto(Banira.MOD_ID, "enter_number"));
         inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
         inlineInputWidget.decimalPlaces(decimalPlaces);
         inlineInputWidget.enabled(enabled());
@@ -445,7 +453,7 @@ public class SliderWidget extends BaseWidget {
             bgRect.rect().radius(2).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(bgRect);
         }
-        graphics.drawString(font, valueStr, (int) Math.round(textX), (int) Math.round(textY), valueTextColor, false);
+        graphics.drawString(font, valueStr, (int) textX, (int) textY, valueTextColor, false);
     }
 
     /**
@@ -614,7 +622,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = GLFWKey.hasShiftModifier(event.modifiers()) ? step * 10 : step;
         double newValue = value + (event.delta() < 0 ? stepVal : -stepVal);
         setValue(newValue);
         return true;
@@ -651,6 +659,8 @@ public class SliderWidget extends BaseWidget {
     }
 
     private void updateThumb(double effectiveTrackSize) {
+        if (thumbLayoutFresh(effectiveTrackSize)) return;
+        rememberThumbLayout(effectiveTrackSize);
         double valueRange = maxValue - minValue;
 
         if (style == SliderStyle.ROUND) {
@@ -668,6 +678,25 @@ public class SliderWidget extends BaseWidget {
         double availableTrack = Math.max(0, effectiveTrackSize - thumbSize);
         double ratio = (value - minValue) / valueRange;
         thumbPosition = ratio * availableTrack;
+    }
+
+    private boolean thumbLayoutFresh(double trackSize) {
+        return Double.compare(lastThumbTrackSize, trackSize) == 0
+                && Double.compare(lastThumbMinValue, minValue) == 0
+                && Double.compare(lastThumbMaxValue, maxValue) == 0
+                && Double.compare(lastThumbValue, value) == 0
+                && lastThumbRadius == thumbRadius && lastMinThumbSize == minThumbSize
+                && lastThumbStyle == style;
+    }
+
+    private void rememberThumbLayout(double trackSize) {
+        lastThumbTrackSize = trackSize;
+        lastThumbMinValue = minValue;
+        lastThumbMaxValue = maxValue;
+        lastThumbValue = value;
+        lastThumbRadius = thumbRadius;
+        lastMinThumbSize = minThumbSize;
+        lastThumbStyle = style;
     }
 
     @Override

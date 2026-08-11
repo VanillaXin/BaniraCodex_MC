@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.api.Banira;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -176,7 +178,7 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         languageOptions = new ArrayList<>();
         languageOptions.add("client");
         languageOptions.add("server");
-        Translator translator = (Translator) Translator.of(BaniraCodex.MODID);
+        Translator translator = (Translator) Translator.of(Banira.MOD_ID);
         languageOptions.addAll(translator.getI18nFiles());
     }
 
@@ -541,6 +543,11 @@ public class CustomPlayerConfigEditScreen extends BaniraScreen {
         } else {
             super.onClose();
         }
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(cardX, cardY, cardW, cardH);
     }
 
     private static final class EntryRowWidget extends BaseWidget {

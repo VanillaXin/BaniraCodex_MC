@@ -34,9 +34,6 @@ public final class ClientRuntimeBridge {
         return value instanceof Player ? (Player) value : null;
     }
 
-    /**
-     * 返回当前客户端世界；服务端或世界尚未建立时返回 null。
-     */
     @Nullable
     public static Level level() {
         Object value = invoke("level");

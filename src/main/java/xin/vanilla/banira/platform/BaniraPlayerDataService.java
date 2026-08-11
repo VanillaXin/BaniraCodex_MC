@@ -12,4 +12,9 @@ public interface BaniraPlayerDataService {
     Object getOrCreate(@Nonnull UUID playerUuid, @Nonnull String modId);
 
     void put(@Nonnull UUID playerUuid, @Nonnull String modId, @Nullable Object data);
+
+    /**
+     * 立即持久化指定玩家所有已修改的 Banira 数据。
+     */
+    void flush(@Nonnull UUID playerUuid);
 }

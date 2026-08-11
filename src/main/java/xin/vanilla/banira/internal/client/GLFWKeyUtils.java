@@ -9,7 +9,9 @@ import xin.vanilla.banira.common.util.StringUtils;
 import java.lang.reflect.Field;
 import java.util.*;
 
-
+/**
+ * 内部 GLFW 按键名解析工具；子 mod 应使用 {@link BaniraKeyCodes} 中的稳定常量和格式化方法。
+ */
 public final class GLFWKeyUtils {
     private GLFWKeyUtils() {
     }

@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +64,7 @@ public final class BaniraClientPacketHandlers {
             BaniraNotifications.show(err);
             return;
         }
-        Screen open = BaniraClientRuntime.currentScreen();
+        Screen open = Minecraft.getInstance().screen;
         if (open instanceof ConfigEditorScreen screen) {
             screen.refreshUIFromHolderAfterRemoteFetch(packet.configName());
         }

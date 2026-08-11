@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -74,7 +75,7 @@ public class Notification extends NotificationData {
      */
     private long coalesceLastActivityMs;
     /**
-     * 是否由网络包经 {@link #fromData} 应用了客户端主题色
+     * 是否经 {@link #fromData} 应用了客户端主题色
      */
     private boolean themedFromNetwork;
 
@@ -170,14 +171,16 @@ public class Notification extends NotificationData {
         n.acceleration(data.acceleration());
         n.decelerationDistance(data.decelerationDistance());
         n.notificationType(data.notificationType() != null ? data.notificationType() : NotificationTypeKeys.DEFAULT);
-        if (fromNetwork) {
+        boolean themed = fromNetwork || data.themed();
+        if (themed) {
             n.applyClientNotificationStyle(n.style());
         } else {
             n.bgColor(data.bgColor());
             n.borderColor(data.borderColor());
             n.ensureReadableComponentColors();
         }
-        n.themedFromNetwork(fromNetwork);
+        n.themed(themed);
+        n.themedFromNetwork(themed);
         return n;
     }
 
@@ -203,7 +206,7 @@ public class Notification extends NotificationData {
     }
 
     private void applyClientNotificationStyle(EnumNotificationStyle style) {
-        BaniraColorConfig t = ClientThemeManager.getEffectiveTheme();
+        BaniraColorConfig t = notificationTheme();
         int bg;
         int border;
         int textArgb;
@@ -241,6 +244,19 @@ public class Notification extends NotificationData {
         this.ensureReadableComponentColors();
     }
 
+    private BaniraColorConfig notificationTheme() {
+        String type = notificationType();
+        int separator = type != null ? type.indexOf(':') : -1;
+        if (separator < 0 && type != null) {
+            separator = type.indexOf('.');
+        }
+        if (separator > 0) {
+            return BaniraColorConfig.forSeason(
+                    BaniraThemes.seasonFor(type.substring(0, separator)));
+        }
+        return ClientThemeManager.getEffectiveTheme();
+    }
+
     private void ensureReadableComponentColors() {
         this.updateRichLayout();
     }
@@ -272,6 +288,12 @@ public class Notification extends NotificationData {
     }
 
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+        renderAt(stack, preInfo, screenInfo, currentTime, calculatePosition(screenInfo, preInfo));
+    }
+
+    /** 使用调用方已计算的坐标渲染，通知队列无需在同一帧重复布局。 */
+    public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo,
+                         long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
         if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
@@ -282,7 +304,6 @@ public class Notification extends NotificationData {
             return;
         }
 
-        ScreenCoordinate coordinate = this.calculatePosition(screenInfo, preInfo);
         this.applyAnimationEffect(coordinate, progress);
         this.handlePositionTransition(coordinate, currentTime);
 

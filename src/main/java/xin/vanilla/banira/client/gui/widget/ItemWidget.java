@@ -14,13 +14,14 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
-import xin.vanilla.banira.internal.client.InputStateManager;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -130,14 +131,10 @@ public class ItemWidget extends BaseWidget {
      * 延迟到帧末、在单位矩阵下绘制，避免父级 translate 导致错位
      */
     private void deferTooltipRender(ItemStack itemStack, int mouseX, int mouseY) {
-        if (Minecraft.getInstance().player == null) {
-            return;
-        }
-        net.minecraft.world.item.Item.TooltipContext ctx = net.minecraft.world.item.Item.TooltipContext.of(Minecraft.getInstance().player.level());
         List<net.minecraft.network.chat.Component> tooltip = itemStack.getTooltipLines(
-                ctx,
+                Item.TooltipContext.of(Minecraft.getInstance().level),
                 Minecraft.getInstance().player,
-                InputStateManager.isShiftPressingStatic() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
+                screen.inputState().isShiftPressing() ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
         );
         if (tooltip.isEmpty()) {
             return;
@@ -190,7 +187,14 @@ public class ItemWidget extends BaseWidget {
         ItemRenderer itemRenderer = mc.getItemRenderer();
         BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
         TextureAtlasSprite sprite = model.getParticleIcon();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        net.minecraft.client.color.item.ItemColors itemColors = BaniraClientRuntime.itemColors();
+        int tint = itemColors == null ? -1 : itemColors.getColor(stack, 0);
+        if (tint != -1) {
+            float cr = (float) (tint >> 16 & 255) / 255.0F;
+            float cg = (float) (tint >> 8 & 255) / 255.0F;
+            float cb = (float) (tint & 255) / 255.0F;
+            RenderSystem.setShaderColor(cr, cg, cb, 1f);
+        }
         AbstractGuiUtils.blit(pose, TextureAtlas.LOCATION_BLOCKS, x, y, 0, size, size, sprite);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         AbstractGuiUtils.restoreGuiRenderState();

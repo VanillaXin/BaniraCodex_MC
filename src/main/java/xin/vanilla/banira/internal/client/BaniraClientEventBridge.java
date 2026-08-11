@@ -20,34 +20,23 @@ public final class BaniraClientEventBridge {
     }
 
     public static void fireGuiChanged(Screen screen) {
-        BaniraClientEvents.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(screen)));
+        BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(screen)));
     }
 
     public static void fireDrawScreenPre(@Nonnull GuiGraphics nativeGraphics, @Nonnull Screen screen,
                                          double mouseX, double mouseY, float partialTick) {
-        InputStateManager.instance().handleDrawScreenPre(mouseX, mouseY);
-        if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-            QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(mouseX), (int) Math.round(mouseY));
-        }
-        BaniraClientEvents.Client.fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        BaniraClientEventHub.Client.fireDrawScreenPreNative(nativeGraphics, screen, mouseX, mouseY, partialTick);
     }
 
     public static void fireDrawScreenPost(@Nonnull GuiGraphics nativeGraphics, @Nonnull Screen screen,
                                           double mouseX, double mouseY, float partialTick) {
-        if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
-            QuickActionOverlay.get().render(nativeGraphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
-            QuickActionOverlay.get().flushSaveIfNeeded();
-        }
-        NotificationManager.get().render(nativeGraphics);
-        BaniraClientEvents.Client.fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        BaniraClientEventHub.Client.fireDrawScreenPostNative(nativeGraphics, screen, mouseX, mouseY, partialTick);
     }
 
     public static void fireRenderOverlayPost(@Nonnull HudOverlayElement element, @Nonnull GuiGraphics nativeGraphics,
                                              float partialTick, boolean screenOpen) {
-        if (element == HudOverlayElement.ALL && !screenOpen) {
-            NotificationManager.get().render(nativeGraphics);
-        }
-        BaniraClientEvents.Client.fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+        BaniraClientEventHub.Client.fireRenderOverlayPostNative(
+                element, nativeGraphics.pose(), partialTick, screenOpen);
     }
 
     public static void dispatchRenderOverlayPre(@Nonnull HudOverlayElement element, @Nonnull GuiGraphics nativeGraphics,

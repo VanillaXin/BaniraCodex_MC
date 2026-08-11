@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.fabric.config;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.config.ConfigValueStore;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -99,6 +100,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
         try {
             Files.createDirectories(file.getParent());
             Files.write(file, renderToml().getBytes(StandardCharsets.UTF_8));
+            ManagedConfigFiles.markWritten(file);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to save config: " + file, e);
         }
@@ -110,6 +112,15 @@ final class FabricConfigValueStore implements ConfigValueStore {
             return;
         }
         save();
+    }
+
+    /** 在游戏线程重新读取磁盘内容；已删除的键恢复描述符默认值。 */
+    void reloadFromDisk() {
+        values.clear();
+        for (ConfigEntryDescriptor descriptor : descriptors.values()) {
+            values.put(descriptor.getPath(), descriptor.getDefaultValue());
+        }
+        load();
     }
 
     private void loadToml() {

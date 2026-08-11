@@ -1,15 +1,15 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import lombok.Data;
-import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -26,11 +26,14 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
@@ -56,6 +59,7 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final int DETAIL_AFTER_META_GAP = 8;
     private static final int META_COL_GAP = 12;
     private static final int META_ROW_GAP = 4;
+    private static final int META_FONT_SIZE = 10;
 
     private final Args args;
     private int leftX, leftY, leftW, leftH;
@@ -269,7 +273,7 @@ public class NotificationLogScreen extends BaniraScreen {
         searchInput = new InputWidget(this);
         searchInput.id("notification_log_search");
         searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
-        searchInput.text(Text.transAuto(BaniraCodex.MODID, "notification_log_search_hint"));
+        searchInput.text(Text.transAuto(Banira.MOD_ID, "notification_log_search_hint"));
         searchInput.onTextChanged(this::applySearchAndReselect);
         searchInput.value("");
         addWidget(searchInput);
@@ -299,7 +303,7 @@ public class NotificationLogScreen extends BaniraScreen {
         typeCfgBtn.id("type_cfg");
         typeCfgBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
         typeCfgBtn.bounds(new ScreenCoordinate(listX, leftY + leftH - PANEL_MARGIN - TYPE_CFG_BTN_H, Math.min(listW, 180), TYPE_CFG_BTN_H));
-        typeCfgBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(
+        typeCfgBtn.onClick(b -> BaniraClientRuntime.setScreen(new NotificationTypeConfigScreen(
                 new NotificationTypeConfigScreen.Args().parentScreen(this))));
         addWidget(typeCfgBtn);
 
@@ -361,11 +365,11 @@ public class NotificationLogScreen extends BaniraScreen {
         PoseStack stack = graphics.pose();
         BaniraColorConfig theme = getEffectiveTheme();
 
-        ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
+        ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.color(PANEL_BG));
         leftBg.rect().radius(8, 0, 8, 0).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(leftBg);
 
-        ShapeDrawArgs rightBg = ShapeDrawArgs.rect(stack, rightX, rightY, rightW, rightH, theme.panelBg());
+        ShapeDrawArgs rightBg = ShapeDrawArgs.rect(stack, rightX, rightY, rightW, rightH, theme.color(PANEL_BG));
         rightBg.rect().radius(0, 8, 0, 8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(rightBg);
 
@@ -392,11 +396,11 @@ public class NotificationLogScreen extends BaniraScreen {
         }
 
         if (filteredEntries.isEmpty()) {
-            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_empty")
+            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_empty")
                             .stack(stack).font(font))
                     .x(listX + listW / 2 - 50).y(listY + listH / 2 - 8).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-            LabelWidget.drawLimitedText(graphics, emptyArgs);
+            LabelWidget.drawLimitedText(emptyArgs);
         }
 
         renderDetailPane(graphics, theme);
@@ -408,16 +412,16 @@ public class NotificationLogScreen extends BaniraScreen {
         PoseStack stack = graphics.pose();
         boolean selected = index == selectedIndex;
         boolean hovered = index == listHoverIndex && !selected;
-        int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x40)
-                : hovered ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x18)
-                : "network".equals(entry.source()) ? ColorUtils.applyAlphaToArgb(theme.bgTertiary(), 0x30)
-                : ColorUtils.applyAlphaToArgb(theme.bgSecondary(), 0x20);
+        int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.color(ACCENT), 0x40)
+                : hovered ? ColorUtils.applyAlphaToArgb(theme.color(ACCENT), 0x18)
+                : "network".equals(entry.source()) ? ColorUtils.applyAlphaToArgb(theme.color(BG_TERTIARY), 0x30)
+                : ColorUtils.applyAlphaToArgb(theme.color(BG_SECONDARY), 0x20);
         ShapeDrawArgs rowRect = ShapeDrawArgs.rect(stack, x, y, w, h, rowBg);
         rowRect.rect().radius(4);
         BaseShapeWidget.drawShape(rowRect);
 
         int accentW = 3;
-        int accentColor = "network".equals(entry.source()) ? theme.accent() : theme.bgTertiary();
+        int accentColor = "network".equals(entry.source()) ? theme.color(ACCENT) : theme.color(BG_TERTIARY);
         ShapeDrawArgs accentRect = ShapeDrawArgs.rect(stack, x, y, accentW, h, accentColor);
         BaseShapeWidget.drawShape(accentRect);
 
@@ -437,8 +441,8 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     private void renderDetailPane(GuiGraphics graphics, BaniraColorConfig theme) {
-        detailContentLines = Collections.emptyList();
         PoseStack stack = graphics.pose();
+        detailContentLines = Collections.emptyList();
         int pad = 16;
         int x = rightX + pad;
         int y = rightY + pad;
@@ -446,11 +450,11 @@ public class NotificationLogScreen extends BaniraScreen {
 
         if (selectedIndex < 0 || selectedIndex >= filteredEntries.size()) {
             metaHoverRegions.clear();
-            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_select_hint")
+            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_select_hint")
                             .stack(stack).font(font))
                     .x(x + w / 2 - 60).y(y + rightH / 2 - 30).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-            LabelWidget.drawLimitedText(graphics, hint);
+            LabelWidget.drawLimitedText(hint);
             return;
         }
 
@@ -459,11 +463,11 @@ public class NotificationLogScreen extends BaniraScreen {
 
         int curY = y;
 
-        FontDrawArgs timeArgs = FontDrawArgs.ofPopo(Text.literal(timeStr).color(theme.textHint()).stack(stack).font(font))
+        FontDrawArgs timeArgs = FontDrawArgs.ofPopo(Text.literal(timeStr).color(theme.color(TEXT_HINT)).stack(stack).font(font))
                 .x(x).y(curY).fontSize(10).maxWidth(w).wrap(true)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
         KeyValue<Integer, Integer> timeBlock = LabelWidget.calculateLimitedTextSize(timeArgs);
-        LabelWidget.drawLimitedText(graphics, timeArgs);
+        LabelWidget.drawLimitedText(timeArgs);
         curY += timeBlock.value() + DETAIL_AFTER_TIME_GAP;
 
         curY += renderDetailMetaRows(stack, x, curY, w, entry, theme);
@@ -478,9 +482,9 @@ public class NotificationLogScreen extends BaniraScreen {
             detailContentTop = curY;
             detailContentMaxLineW = w;
             float lineY = curY;
-            int textColor = theme.textPrimary();
+            int textColor = theme.color(TEXT_PRIMARY);
             for (FormattedCharSequence line : detailContentLines) {
-                graphics.drawString(font, line, x, (int) Math.round(lineY), textColor, false);
+                graphics.drawString(font, line, x, (int) lineY, textColor, false);
                 lineY += font.lineHeight;
             }
             if (!isAnyDropdownSelectOpen()) {
@@ -510,13 +514,14 @@ public class NotificationLogScreen extends BaniraScreen {
         final BaniraColorConfig tipTheme = theme != null ? theme : getEffectiveTheme();
         final EnumSeason tipSeason = season();
         final boolean useTexture = tipTheme.tooltipUseTexture();
-        addDeferredTooltipRender(s -> {
-            s.pose().pushPose();
-            s.pose().last().pose().identity();
-            TooltipWidget.drawPopupMessage(s.pose(),
-                    FontDrawArgs.ofPopo(tipText.stack(s.pose()).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
+        addDeferredTooltipRender(graphics -> {
+            PoseStack tipStack = graphics.pose();
+            tipStack.pushPose();
+            tipStack.last().pose().identity();
+            TooltipWidget.drawPopupMessage(tipStack,
+                    FontDrawArgs.ofPopo(tipText.stack(tipStack).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
                     tipTheme, tipSeason);
-            s.pose().popPose();
+            tipStack.popPose();
         });
     }
 
@@ -557,40 +562,30 @@ public class NotificationLogScreen extends BaniraScreen {
         return h;
     }
 
-    private boolean metaLineTruncated(PoseStack stack, String line, int colW, BaniraColorConfig theme) {
+    private boolean metaLineTruncated(String line, int colW) {
         if (StringUtils.isNullOrEmptyEx(line)) {
             return false;
         }
-        FontDrawArgs base = FontDrawArgs.ofPopo(Text.literal(line).color(theme.textSecondary()).stack(stack).font(font))
-                .x(0).y(0).fontSize(10).wrap(false)
-                .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0)
-                .inScreen(false);
-        FontDrawArgs natural = base.clone().maxWidth(20000).position(EnumEllipsisPosition.NONE);
-        FontDrawArgs fitted = base.clone().maxWidth(colW).position(EnumEllipsisPosition.END);
-        int wNatural = LabelWidget.calculateLimitedTextSize(natural).key();
-        int wFitted = LabelWidget.calculateLimitedTextSize(fitted).key();
-        return wNatural > wFitted;
+        return font.width(line) > colW;
     }
 
     private int drawMetaPairRow(PoseStack stack, int x, int y, int colW, BaniraColorConfig theme,
                                 String label1, String value1, String label2, String value2) {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
-        FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x).y(y).fontSize(10).maxWidth(colW).wrap(false)
+        FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.color(TEXT_SECONDARY)).stack(stack).font(font))
+                .x(x).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z1 = LabelWidget.calculateLimitedTextSize(a1);
-        FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x + colW + META_COL_GAP).y(y).fontSize(10).maxWidth(colW).wrap(false)
+        FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.color(TEXT_SECONDARY)).stack(stack).font(font))
+                .x(x + colW + META_COL_GAP).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z2 = LabelWidget.calculateLimitedTextSize(a2);
-        int rowH = Math.max(z1.value(), z2.value());
-        if (metaLineTruncated(stack, s1, colW, theme)) {
+        int rowH = META_FONT_SIZE;
+        if (metaLineTruncated(s1, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x, y, colW, rowH, value1));
         }
-        if (metaLineTruncated(stack, s2, colW, theme)) {
+        if (metaLineTruncated(s2, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x + colW + META_COL_GAP, y, colW, rowH, value2));
         }
         LabelWidget.drawLimitedText(a1);
@@ -631,9 +626,15 @@ public class NotificationLogScreen extends BaniraScreen {
     @Override
     public void onClose() {
         if (args.parentScreen() != null) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            BaniraClientRuntime.setScreen(args.parentScreen());
         } else {
             super.onClose();
         }
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(SCREEN_CARD_MARGIN, SCREEN_CARD_MARGIN,
+                width - SCREEN_CARD_MARGIN * 2, height - SCREEN_CARD_MARGIN * 2);
     }
 }

@@ -3,6 +3,9 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,13 +20,14 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.item.component.CustomData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -93,7 +97,8 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        return BuiltInRegistries.ITEM.getKey(item);
+        String key = Banira.platform().registryService().itemKey(item);
+        return key != null ? ResourceLocation.tryParse(key) : null;
     }
 
     /**
@@ -173,25 +178,19 @@ public final class ItemUtils {
     }
 
     public static net.minecraft.network.chat.Component getItemCustomName(@NonNull ItemStack itemStack) {
-        return itemStack.getComponents().get(DataComponents.CUSTOM_NAME);
+        return itemStack.get(DataComponents.CUSTOM_NAME);
     }
 
     public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
-        String result = "";
         net.minecraft.network.chat.Component name = getItemCustomName(itemStack);
-        if (name != null && BaniraCodex.serverInstance().val()) {
-            result = net.minecraft.network.chat.Component.Serializer.toJson(name, BaniraCodex.serverInstance().key().registryAccess());
-        }
-        return result;
+        return name == null ? "" : net.minecraft.network.chat.Component.Serializer.toJson(name, registryAccess());
     }
 
     public static net.minecraft.network.chat.Component getItemCustomNameFromJson(String json) {
         net.minecraft.network.chat.Component result = null;
         if (StringUtils.isNotNullOrEmpty(json)) {
             try {
-                result = BaniraCodex.serverInstance().val()
-                        ? net.minecraft.network.chat.Component.Serializer.fromJson(json, BaniraCodex.serverInstance().key().registryAccess())
-                        : null;
+                result = net.minecraft.network.chat.Component.Serializer.fromJson(json, registryAccess());
             } catch (Exception e) {
                 LOGGER.error("Invalid unsafe item name: {}", json, e);
             }
@@ -211,8 +210,7 @@ public final class ItemUtils {
     public static boolean hasCustomTag(String modId, ItemStack item) {
         if (item == null) return false;
         DataComponentMap components = item.getComponents();
-        return !components.isEmpty()
-                && components.has(DataComponents.CUSTOM_DATA)
+        return components.has(DataComponents.CUSTOM_DATA)
                 && components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().contains(modId);
     }
 
@@ -222,14 +220,9 @@ public final class ItemUtils {
      * @param modId 模组ID
      */
     public static CompoundTag getCustomTag(String modId, @NonNull ItemStack item) {
-        if (!hasCustomTag(modId, item)) {
-            CompoundTag tag = new CompoundTag();
-            CompoundTag modTag = new CompoundTag();
-            tag.put(modId, modTag);
-            item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-            return modTag;
-        }
-        CompoundTag tag = item.getComponents().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(modId)) tag.put(modId, new CompoundTag());
+        item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         return tag.getCompound(modId);
     }
 
@@ -239,12 +232,7 @@ public final class ItemUtils {
      * @param modId 模组ID
      */
     public static void setCustomTag(String modId, @NonNull ItemStack item, CompoundTag customTag) {
-        CompoundTag tag;
-        if (!hasCustomTag(modId, item)) {
-            tag = new CompoundTag();
-        } else {
-            tag = item.getComponents().getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        }
+        CompoundTag tag = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         tag.put(modId, customTag);
         item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
@@ -256,16 +244,13 @@ public final class ItemUtils {
      */
     public static CompoundTag clearCustomTag(String modId, ItemStack item) {
         if (item == null) return null;
-        DataComponentMap components = item.getComponents();
-        if (!components.isEmpty() && components.has(DataComponents.CUSTOM_DATA)) {
-            CompoundTag tag = components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-            if (!tag.isEmpty() && tag.contains(modId)) {
-                tag.remove(modId);
-                item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-            }
-            return tag;
+        CompoundTag tag = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.isEmpty()) {
+            tag.remove(modId);
+            if (tag.isEmpty()) item.remove(DataComponents.CUSTOM_DATA);
+            else item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
-        return null;
+        return tag;
     }
 
     /**
@@ -273,12 +258,9 @@ public final class ItemUtils {
      */
     public static void trimCustomTag(ItemStack item) {
         if (item == null) return;
-        DataComponentMap components = item.getComponents();
-        if (!components.isEmpty() && components.has(DataComponents.CUSTOM_DATA)) {
-            CompoundTag tag = components.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-            if (tag.isEmpty()) {
-                item.remove(DataComponents.CUSTOM_DATA);
-            }
+        CustomData customData = item.get(DataComponents.CUSTOM_DATA);
+        if (customData != null && customData.copyTag().isEmpty()) {
+            item.remove(DataComponents.CUSTOM_DATA);
         }
     }
 
@@ -449,7 +431,7 @@ public final class ItemUtils {
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
-            Item item = BuiltInRegistries.ITEM.get(rl);
+            Item item = getItemFromRegistry(rl);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -473,7 +455,7 @@ public final class ItemUtils {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        Item item = BuiltInRegistries.ITEM.get(id);
+        Item item = getItemFromRegistry(id);
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -495,7 +477,8 @@ public final class ItemUtils {
     public static Item getItemFromRegistry(ResourceLocation location) {
         if (location == null) return null;
         try {
-            return BuiltInRegistries.ITEM.get(location);
+            Object item = Banira.platform().registryService().item(location.toString());
+            return item instanceof Item ? (Item) item : null;
         } catch (Exception e) {
             LOGGER.debug("Failed to find item by registry name: {}", location, e);
             return null;
@@ -514,11 +497,7 @@ public final class ItemUtils {
      */
     public static String serializeItemStackTag(ItemStack itemStack) {
         CustomData customData = itemStack.get(DataComponents.CUSTOM_DATA);
-        String result = "";
-        if (customData != null && !customData.isEmpty()) {
-            result = customData.copyTag().toString();
-        }
-        return result;
+        return customData == null || customData.isEmpty() ? "" : customData.copyTag().toString();
     }
 
     // endregion
@@ -561,41 +540,36 @@ public final class ItemUtils {
         addedItems.add(Items.AIR);
 
         try {
-            // 首先从创造模式搜索标签中获取所有物品变体
-            // 1.20 创造模式标签页由注册表驱动，先收集展示物品再补默认堆叠。
+            // 从创造模式标签收集可展示变体
             try {
                 CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
                 CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
-                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
-                    if (group == null || group == hotbarTab) continue;
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == hotbarTab) continue;
                     try {
-                        Collection<ItemStack> groupItems = group == searchTab
-                                ? group.getSearchTabDisplayItems()
-                                : group.getDisplayItems();
-                        if (CollectionUtils.isNotNullOrEmpty(groupItems)) {
-                            for (ItemStack stack : groupItems) {
-                                if (stack != null && !stack.isEmpty()) {
-                                    boolean exists = items.stream().anyMatch(existing ->
-                                            areItemsEqual(existing, stack));
-                                    if (!exists) {
-                                        items.add(stack.copy());
-                                        addedItems.add(stack.getItem());
-                                    }
+                        Collection<ItemStack> tabItems = tab == searchTab
+                                ? tab.getSearchTabDisplayItems() : tab.getDisplayItems();
+                        if (CollectionUtils.isNotNullOrEmpty(tabItems)) {
+                            for (ItemStack stack : tabItems) {
+                                if (stack != null && !stack.isEmpty()
+                                        && items.stream().noneMatch(existing -> areItemsEqual(existing, stack))) {
+                                    items.add(stack.copy());
+                                    addedItems.add(stack.getItem());
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        LOGGER.debug("Failed to get items from item group: {}",
-                                group.getDisplayName().getString(), e);
+                        LOGGER.debug("Failed to get items from creative tab: {}", tab.getDisplayName().getString(), e);
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to get items from item groups", e);
+                LOGGER.warn("Failed to get items from creative tabs", e);
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠
-            for (Item item : BuiltInRegistries.ITEM) {
-                if (item == null) continue;
+            for (Object value : Banira.platform().registryService().items()) {
+                if (!(value instanceof Item)) continue;
+                Item item = (Item) value;
                 if (!addedItems.contains(item)) {
                     try {
                         ItemStack defaultStack = new ItemStack(item);
@@ -605,7 +579,7 @@ public final class ItemUtils {
                         }
                     } catch (Exception e) {
                         LOGGER.debug("Failed to create default stack for item: {}",
-                                BuiltInRegistries.ITEM.getKey(item), e);
+                                getItemRegistry(item), e);
                     }
                 }
             }
@@ -664,9 +638,8 @@ public final class ItemUtils {
             try {
                 Player player = ClientRuntimeBridge.localPlayer();
                 if (player != null) {
-                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     List<net.minecraft.network.chat.Component> tooltip = stack.getTooltipLines(
-                            ctx,
+                            Item.TooltipContext.of(player.level()),
                             player,
                             TooltipFlag.Default.NORMAL
                     );
@@ -679,6 +652,19 @@ public final class ItemUtils {
                     }
                 }
             } catch (Throwable ignored) {
+            }
+
+            // 获取标签
+            try {
+                for (String tagId : Banira.platform().registryService().itemTagIds(item)) {
+                    ResourceLocation loc = ResourceLocation.tryParse(tagId);
+                    if (loc != null) {
+                        tags.add(loc.toString().toLowerCase());
+                        tags.add(loc.getPath().toLowerCase());
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Failed to get tags for item: {}", registry, e);
             }
 
             return new ItemStackInfo(registry, hoverName, description, tags);
@@ -1062,7 +1048,7 @@ public final class ItemUtils {
         }
         return modNameCache.computeIfAbsent(modId, id -> {
             try {
-                return Banira.platform().modDisplayName(id);
+                return BaniraPlatforms.isInstalled() ? Banira.platform().modDisplayName(id) : id;
             } catch (Exception e) {
                 LOGGER.debug("Failed to get mod name for: {}", id, e);
                 return id;
@@ -1111,9 +1097,8 @@ public final class ItemUtils {
                 // 获取基础tooltip
                 List<net.minecraft.network.chat.Component> baseTooltip = new ArrayList<>();
                 if (player != null) {
-                    Item.TooltipContext ctx = Item.TooltipContext.of(player.level());
                     baseTooltip.addAll(itemStack.getTooltipLines(
-                            ctx,
+                            Item.TooltipContext.of(player.level()),
                             player,
                             advanced ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL
                     ));
@@ -1179,13 +1164,11 @@ public final class ItemUtils {
                 CreativeModeTab itemGroup = null;
                 CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
                 CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
-                for (CreativeModeTab group : CreativeModeTabs.allTabs()) {
-                    if (group == null || group == searchTab || group == hotbarTab) {
-                        continue;
-                    }
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    if (tab == null || tab == searchTab || tab == hotbarTab) continue;
                     try {
-                        if (group.contains(itemStack)) {
-                            itemGroup = group;
+                        if (tab.contains(itemStack)) {
+                            itemGroup = tab;
                             break;
                         }
                     } catch (Exception ignored) {
@@ -1211,6 +1194,19 @@ public final class ItemUtils {
                             result.add(BaniraComponent.get().literal(text));
                         }
                     }
+                }
+
+                // 5. 标签列表
+                try {
+                    List<String> tagIds = new ArrayList<>(Banira.platform().registryService().itemTagIds(item));
+                    tagIds.sort(Comparator.naturalOrder());
+                    for (String tagId : tagIds) {
+                        Component tagComponent = BaniraComponent.get().literal("#" + tagId)
+                                .color(Color.argb(0xFF8A2BE2));
+                        result.add(tagComponent);
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Failed to get tags for item: {}", getItemRegistryString(itemStack), e);
                 }
 
                 // 6. 物品ID
@@ -1260,6 +1256,13 @@ public final class ItemUtils {
             LOGGER.debug("Failed to get client player for tooltip", e);
             return getItemTooltip(itemStack, null, advanced);
         }
+    }
+
+    private static HolderLookup.Provider registryAccess() {
+        Player player = ClientRuntimeBridge.localPlayer();
+        if (player != null) return player.registryAccess();
+        if (BaniraServerRuntime.server() != null) return BaniraServerRuntime.server().registryAccess();
+        return RegistryAccess.EMPTY;
     }
 
     // endregion Tooltip

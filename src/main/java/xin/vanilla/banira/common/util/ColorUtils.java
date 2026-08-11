@@ -1,5 +1,6 @@
 package xin.vanilla.banira.common.util;
 
+import net.minecraft.network.chat.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -238,7 +239,8 @@ public final class ColorUtils {
             Integer legacyColor = legacyColorArgb(code);
             if (legacyColor != null) {
                 int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
-                currentStyle = currentStyle.withColor(TextColor.fromRgb(readable & 0x00FFFFFF));
+                currentStyle = currentStyle.withColor(
+                        net.minecraft.network.chat.TextColor.fromRgb(readable & 0x00FFFFFF));
             }
         }
         appendVanillaSegment(target, segment, currentStyle);
@@ -257,7 +259,7 @@ public final class ColorUtils {
             return style != null ? style : Style.EMPTY;
         }
         int readable = ensureReadableTextArgb(0xFF000000 | style.getColor().getValue(), backgroundArgb);
-        return style.withColor(TextColor.fromRgb(readable & 0x00FFFFFF));
+        return style.withColor(net.minecraft.network.chat.TextColor.fromRgb(readable & 0x00FFFFFF));
     }
 
     private static void adjustComponentColors(Component component, int backgroundArgb) {

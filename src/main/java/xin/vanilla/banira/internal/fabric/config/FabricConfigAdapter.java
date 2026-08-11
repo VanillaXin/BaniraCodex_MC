@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.fabric.config;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.lang.reflect.Field;
@@ -34,17 +35,24 @@ final class FabricConfigAdapter {
         // Fabric 的模组配置与原版约定一致，直接位于游戏 config 根目录
         Path configDirectory = BaniraPlatforms.get().configDir();
         Path file = configDirectory.resolve(config.name() + ".toml");
+        FabricConfigValueStore store = new FabricConfigValueStore(file, descriptors);
         ConfigHolder holder = ConfigHolder.create(
                 modId,
                 config.name(),
                 config.type(),
-                new FabricConfigValueStore(file, descriptors),
+                store,
                 descriptors,
                 categoryTooltips,
                 categoryTitleSpecs
         );
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
+        ManagedConfigFiles.Scope scope = config.type() == ConfigScope.CLIENT
+                ? ManagedConfigFiles.Scope.CLIENT : ManagedConfigFiles.Scope.COMMON;
+        ManagedConfigFiles.register(file, scope, () -> {
+            store.reloadFromDisk();
+            holder.acceptExternalReload();
+        });
     }
 
     static <T> T view(Class<?> configClass, Class<T> viewClass) {
@@ -143,7 +151,8 @@ final class FabricConfigAdapter {
                     .minValue(min)
                     .maxValue(max)
                     .decimalPlaces(decimalPlaces)
-                    .enumClass(enumClass);
+                    .enumClass(enumClass)
+                    .keyChords(field.isAnnotationPresent(ConfigEntry.Gui.KeyChords.class));
             applyRequiresEditPermission(field, builder);
             return builder.build();
         } catch (ReflectiveOperationException e) {

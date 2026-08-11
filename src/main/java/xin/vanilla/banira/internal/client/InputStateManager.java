@@ -14,6 +14,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import java.nio.DoubleBuffer;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -155,6 +156,10 @@ public final class InputStateManager implements BaniraInputState {
 
     public boolean isKeyPressed(int keyCode) {
         return pressedKeys.contains(keyCode);
+    }
+
+    public Set<Integer> pressedKeyCodes() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(pressedKeys));
     }
 
     public boolean isPressing(int key) {

@@ -4,6 +4,9 @@ import lombok.NonNull;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * 语言助手接口。
  * <p>
@@ -62,5 +65,12 @@ public interface ITranslator {
      * 加载语言文件
      */
     void loadLanguage(@NonNull String languageCode);
+
+    /**
+     * 获取当前模组声明的语言代码。
+     */
+    default List<String> getI18nFiles() {
+        return Collections.emptyList();
+    }
 
 }

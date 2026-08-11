@@ -3,13 +3,18 @@ package xin.vanilla.banira.internal.common;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
 import xin.vanilla.banira.api.event.BaniraLifecycle;
 import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
+import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
+
+import java.util.Arrays;
 
 /**
  * Banira 自身的跨加载器运行时注册，加载器事件只负责触发这些公共回调。
@@ -22,6 +27,9 @@ public final class BaniraCodexRuntime {
     }
 
     public static void bootstrap() {
+        Arrays.stream(EnumCommandType.values())
+                .filter(EnumCommandType::op)
+                .forEach(BaniraVirtualPermissionRegistry::register);
         registerCommonLifecycle();
         registerServerLifecycle();
         registerPlayerLifecycle();
@@ -46,6 +54,7 @@ public final class BaniraCodexRuntime {
         BaniraEventBus.Server.onTick(event -> {
             MinecraftServer server = BaniraServerRuntime.server();
             if (server == null) return;
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.COMMON);
             if (server.getTickCount() % CONFIG_SAVE_INTERVAL_TICKS == 0) {
                 if (!CustomConfig.loadCustomConfig(true)) {
                     CustomConfig.saveCustomConfig();

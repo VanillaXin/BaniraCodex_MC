@@ -6,9 +6,14 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import xin.vanilla.banira.client.gui.NotificationTypeConfigScreen;
+import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionManager;
+import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.internal.config.ClientConfig;
 
 import java.util.function.Consumer;
 
@@ -31,6 +36,26 @@ public final class BaniraCodexClientBootstrap {
                             new CodexNavigationScreen(new CodexNavigationScreen.Args().parentScreen(ctx.currentScreen()))
                     );
             QuickActionRegistry.get().registerListOnly(Banira.MOD_ID + ":quick_codex_navigation", texture, label, action);
+
+            CustomQuickActionManager customActions = CustomQuickActionManager.get();
+            customActions.registerScreen(Banira.MOD_ID + ":navigation",
+                    parent -> new CodexNavigationScreen(new CodexNavigationScreen.Args()
+                            .parentScreen((net.minecraft.client.gui.screens.Screen) parent)));
+            customActions.registerScreen(Banira.MOD_ID + ":notification_log",
+                    parent -> new NotificationLogScreen(new NotificationLogScreen.Args()
+                            .parentScreen((net.minecraft.client.gui.screens.Screen) parent)));
+            customActions.registerScreen(Banira.MOD_ID + ":notification_types",
+                    parent -> new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args()
+                            .parentScreen((net.minecraft.client.gui.screens.Screen) parent)));
+            customActions.reload();
+
+            ClientConfig.get().holder().onSaved(changed ->
+                    ExternalInventoryButtonManager.get().refreshCurrentScreen());
+            ClientConfig.get().holder().onReloaded(changed ->
+                    ExternalInventoryButtonManager.get().refreshCurrentScreen());
         });
+        BaniraClientEvents.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);
+        BaniraClientEvents.Client.onGuiChanged(event ->
+                ExternalInventoryButtonManager.get().refreshCurrentScreen());
     }
 }

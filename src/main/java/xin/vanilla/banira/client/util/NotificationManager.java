@@ -9,8 +9,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Style;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -50,6 +48,11 @@ public final class NotificationManager {
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
     private Style frameHoverStyle;
+    private final CoalescingAsyncTask logSaveTask = new CoalescingAsyncTask(
+            "BaniraCodex-NotificationLogSave",
+            this::saveLogSnapshot,
+            e -> LOGGER.warn("Failed to save notification log: {}", e.getMessage())
+    );
 
     private static boolean prevLeftDown;
 
@@ -261,39 +264,36 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        new Thread(() -> {
-            try {
-                Path dir = CustomConfig.getConfigDirectory();
-                Files.createDirectories(dir);
-                Path path = dir.resolve(LOG_FILE_NAME);
-                JsonObject root = new JsonObject();
-                JsonArray arr = new JsonArray();
-                List<NotificationLogEntry> snapshot;
-                synchronized (log) {
-                    snapshot = new ArrayList<>(log);
-                }
-                for (NotificationLogEntry e : snapshot) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("id", e.id());
-                    obj.addProperty("timestamp", e.timestamp());
-                    obj.addProperty("componentJson", e.componentJson());
-                    obj.addProperty("positionName", e.positionName());
-                    obj.addProperty("animationName", e.animationName());
-                    obj.addProperty("durationTime", e.durationTime());
-                    obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-                    obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-                    obj.addProperty("source", e.source());
-                    arr.add(obj);
-                }
-                root.add("entries", arr);
-                Files.writeString(path, JsonUtils.toPrettyString(root));
-            } catch (Exception e) {
-                LOGGER.warn("Failed to save notification log: {}", e.getMessage());
-            }
-        }).start();
+        logSaveTask.request();
     }
 
-    @OnlyIn(Dist.CLIENT)
+    private void saveLogSnapshot() throws Exception {
+        Path dir = CustomConfig.getConfigDirectory();
+        Files.createDirectories(dir);
+        Path path = dir.resolve(LOG_FILE_NAME);
+        JsonObject root = new JsonObject();
+        JsonArray arr = new JsonArray();
+        List<NotificationLogEntry> snapshot;
+        synchronized (log) {
+            snapshot = new ArrayList<>(log);
+        }
+        for (NotificationLogEntry e : snapshot) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", e.id());
+            obj.addProperty("timestamp", e.timestamp());
+            obj.addProperty("componentJson", e.componentJson());
+            obj.addProperty("positionName", e.positionName());
+            obj.addProperty("animationName", e.animationName());
+            obj.addProperty("durationTime", e.durationTime());
+            obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+            obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
+            obj.addProperty("source", e.source());
+            arr.add(obj);
+        }
+        root.add("entries", arr);
+        Files.writeString(path, JsonUtils.toPrettyString(root));
+    }
+
     public void render(GuiGraphics graphics) {
         Minecraft mc = Minecraft.getInstance();
         PoseStack stack = graphics.pose();
@@ -342,7 +342,7 @@ public final class NotificationManager {
                 }
 
                 frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
+                n.index(i++).renderAt(stack, preInfo, screenInfo, currentTime, lastInfo);
 
                 preInfo.y(n.lastY());
                 preInfo.width(n.cachedWidth());
@@ -383,7 +383,6 @@ public final class NotificationManager {
      *
      * @return 是否已消费
      */
-    @OnlyIn(Dist.CLIENT)
     public boolean tryHandleHudClick(double guiMouseX, double guiMouseY, int button) {
         if (button != 0) {
             return false;
@@ -419,7 +418,6 @@ public final class NotificationManager {
     /**
      * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
      */
-    @OnlyIn(Dist.CLIENT)
     public void tickOutOfScreenClick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) {

@@ -1,9 +1,5 @@
 package xin.vanilla.banira.common.config;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.config.ConfigTracker;
-import net.neoforged.fml.config.ModConfig;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,20 +11,7 @@ public final class ConfigRegistry {
     private static final Map<String, ConfigHolder> HOLDERS = new LinkedHashMap<>();
 
     /**
-     * 注册配置
-     *
-     * @param holder       配置持有者
-     * @param modContainer Mod 容器
-     */
-    public static void register(ConfigHolder holder, ModContainer modContainer) {
-        String fileName = holder.getConfigName().endsWith(".toml") ? holder.getConfigName() : holder.getConfigName() + ".toml";
-        ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(ForgeConfigAdapter.toForgeType(holder.getConfigScope()), holder.getSpec(), modContainer, fileName);
-        holder.setModConfig(modConfig);
-        HOLDERS.put(holder.getConfigName(), holder);
-    }
-
-    /**
-     * 注册 ConfigHolder（供 ForgeConfigAdapter 等调用）
+     * 注册 ConfigHolder（供加载器配置服务调用）。
      */
     public static void registerHolder(ConfigHolder holder) {
         HOLDERS.put(holder.getConfigName(), holder);
@@ -44,10 +27,10 @@ public final class ConfigRegistry {
     }
 
     /**
-     * 获取配置持有者（兼容旧 API）
+     * 获取配置持有者
      */
     public static ConfigHolder get(String configName, ConfigScope scope) {
-        String key = configName + "-" + ForgeConfigAdapter.toForgeType(scope).extension();
+        String key = configName + "-" + scope.extension();
         return HOLDERS.get(key);
     }
 

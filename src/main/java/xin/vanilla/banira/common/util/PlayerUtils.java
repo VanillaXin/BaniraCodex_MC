@@ -9,12 +9,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.UsernameCache;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
-import xin.vanilla.banira.internal.common.ClientPlayerRuntimeBridge;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
@@ -70,7 +70,7 @@ public final class PlayerUtils {
      * 获取所有玩家
      */
     public static List<ServerPlayer> getAllPlayers() {
-        return BaniraCodex.serverInstance().key().getPlayerList().getPlayers();
+        return BaniraServerRuntime.players();
     }
 
     /**
@@ -94,7 +94,7 @@ public final class PlayerUtils {
     }
 
     public static UUID getPlayerUUID() {
-        Player player = ClientPlayerRuntimeBridge.localPlayer();
+        Player player = ClientRuntimeBridge.localPlayer();
         return player != null ? player.getUUID() : null;
     }
 
@@ -137,10 +137,15 @@ public final class PlayerUtils {
     public static String getPlayerNameString(UUID uuid) {
         String nameString = getPlayerNameString(getPlayerByUUID(uuid));
         if (StringUtils.isNullOrEmpty(nameString)) {
-            nameString = ClientPlayerRuntimeBridge.onlinePlayerName(uuid);
+            try {
+                if (EnvironmentUtils.isClient()) {
+                    nameString = ClientRuntimeBridge.onlinePlayerName(uuid);
+                }
+            } catch (Throwable ignored) {
+            }
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
-            nameString = UsernameCache.getLastKnownUsername(uuid);
+            nameString = Banira.platform().lastKnownUsername(uuid);
         }
         if (StringUtils.isNullOrEmpty(nameString)) {
             nameString = uuid.toString();
@@ -166,7 +171,7 @@ public final class PlayerUtils {
     @Nullable
     public static ServerPlayer getServerPlayerByUUID(UUID uuid) {
         try {
-            return BaniraCodex.serverInstance().key().getPlayerList().getPlayer(uuid);
+            return BaniraServerRuntime.player(uuid);
         } catch (Throwable ignored) {
             return null;
         }
@@ -179,32 +184,26 @@ public final class PlayerUtils {
     public static Player getPlayerByUUID(UUID uuid) {
         Player entity = getServerPlayerByUUID(uuid);
         if (entity != null) return entity;
-        return ClientPlayerRuntimeBridge.levelPlayer(uuid);
+        try {
+            entity = ClientRuntimeBridge.levelPlayer(uuid);
+        } catch (Throwable ignored) {
+        }
+        return entity;
     }
 
     @Nullable
     public static ResourceLocation getPlayerSkin(UUID uuid) {
-        ResourceLocation skin = ClientPlayerRuntimeBridge.onlinePlayerSkin(uuid);
-        if (skin != null) return skin;
+        try {
+            ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
+            if (skin != null) return skin;
+        } catch (Throwable ignored) {
+        }
         return Identifier.id().create("minecraft", "textures/entity/steve.png");
     }
 
     // endregion 玩家信息
 
     // region 玩家物品管理
-
-    /**
-     * 获取玩家身上的所有物品
-     *
-     * @param player 玩家
-     * @return 玩家身上的所有物品列表副本
-     * @deprecated Use {@link ItemUtils#getAllPlayerItems}
-     */
-    @Deprecated
-    @Nonnull
-    public static List<ItemStack> getAllPlayerItems(@Nonnull Player player) {
-        return ItemUtils.getAllPlayerItems(player);
-    }
 
     /**
      * 移除玩家身上的某个指定物品

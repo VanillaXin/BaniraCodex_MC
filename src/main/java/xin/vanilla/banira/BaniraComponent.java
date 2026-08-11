@@ -1,6 +1,7 @@
 package xin.vanilla.banira;
 
 import lombok.NonNull;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.AbstractComponent;
 
 /**
@@ -15,7 +16,7 @@ public final class BaniraComponent extends AbstractComponent {
 
     @Override
     protected @NonNull String modId() {
-        return BaniraCodex.MODID;
+        return Banira.MOD_ID;
     }
 
     public static BaniraComponent get() {

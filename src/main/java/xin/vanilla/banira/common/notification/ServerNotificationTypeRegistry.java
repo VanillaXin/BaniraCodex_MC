@@ -1,17 +1,17 @@
 package xin.vanilla.banira.common.notification;
 
+import lombok.Value;
+import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 服务端已登记的通知类型 id。请在服务端通用初始化时 {@link #register} 声明本 Mod 会发送的类型；
+ * 服务端已登记的通知类型 id。依赖 mod 请优先使用
+ * {@link xin.vanilla.banira.api.notification.BaniraNotificationTypes#register(String)}
+ * 声明本 Mod 会发送的类型；
  * 此外 {@link xin.vanilla.banira.common.util.MessageUtils#sendNotification(net.minecraft.entity.player.ServerPlayerEntity, xin.vanilla.banira.common.data.Component, String)} 在发包时也会自动 {@link #ensureKnown}。
  * <p>
  * 可通过 {@link #register(String, EnumPosition, EnumMoveType)} 为类型指定默认位置与动画；未指定时使用 {@link EnumPosition#TOP_RIGHT} 与 {@link EnumMoveType#AUTO}。
@@ -21,14 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ServerNotificationTypeRegistry {
 
-    private static final Set<String> KNOWN = ConcurrentHashMap.newKeySet();
-    private static final ConcurrentHashMap<String, TypeLayoutDefaults> LAYOUT_DEFAULTS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, EnumNotificationTypeDisplayMode> SYNC_CLIENT_DISPLAY_IF_ABSENT = new ConcurrentHashMap<>();
-
-    private static final TypeLayoutDefaults FALLBACK_LAYOUT = new TypeLayoutDefaults(EnumPosition.TOP_RIGHT, EnumMoveType.AUTO);
+    private static final ServerNotificationTypeRegistryState STATE = new ServerNotificationTypeRegistryState();
 
     static {
-        KNOWN.add(NotificationTypeKeys.DEFAULT);
         registerInternal(NotificationTypeKeys.HELP, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
                 EnumNotificationTypeDisplayMode.VANILLA_CHAT);
         registerInternal(NotificationTypeKeys.COMMAND_FEEDBACK, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
@@ -46,7 +41,7 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static void registerInternal(String typeId) {
-        KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
+        STATE.register(typeId);
     }
 
     /**
@@ -57,11 +52,7 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static void registerInternal(String typeId, EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
-        String key = NotificationTypeKeys.normalizeOrDefault(typeId);
-        KNOWN.add(key);
-        if (clientDefaultDisplayIfAbsent != null) {
-            SYNC_CLIENT_DISPLAY_IF_ABSENT.put(key, clientDefaultDisplayIfAbsent);
-        }
+        STATE.register(typeId, clientDefaultDisplayIfAbsent);
     }
 
     /**
@@ -72,11 +63,7 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static void registerInternal(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation) {
-        String key = NotificationTypeKeys.normalizeOrDefault(typeId);
-        KNOWN.add(key);
-        EnumPosition p = defaultPosition != null ? defaultPosition : FALLBACK_LAYOUT.position();
-        EnumMoveType a = defaultAnimation != null ? defaultAnimation : FALLBACK_LAYOUT.animation();
-        LAYOUT_DEFAULTS.put(key, new TypeLayoutDefaults(p, a));
+        STATE.register(typeId, defaultPosition, defaultAnimation);
     }
 
     /**
@@ -89,24 +76,22 @@ public final class ServerNotificationTypeRegistry {
 
     public static void registerInternal(String typeId, EnumPosition defaultPosition, EnumMoveType defaultAnimation,
                                         EnumNotificationTypeDisplayMode clientDefaultDisplayIfAbsent) {
-        registerInternal(typeId, defaultPosition, defaultAnimation);
-        if (clientDefaultDisplayIfAbsent != null) {
-            SYNC_CLIENT_DISPLAY_IF_ABSENT.put(NotificationTypeKeys.normalizeOrDefault(typeId), clientDefaultDisplayIfAbsent);
-        }
+        STATE.register(typeId, defaultPosition, defaultAnimation, clientDefaultDisplayIfAbsent);
     }
 
     public static void ensureKnown(String typeId) {
-        KNOWN.add(NotificationTypeKeys.normalizeOrDefault(typeId));
+        STATE.ensureKnown(typeId);
+    }
+
+    /**
+     * 注销通知类型声明。默认类型会被保留。
+     */
+    public static boolean unregister(String typeId) {
+        return unregisterInternal(typeId);
     }
 
     public static boolean unregisterInternal(String typeId) {
-        String key = NotificationTypeKeys.normalizeOrDefault(typeId);
-        if (NotificationTypeKeys.DEFAULT.equals(key)) {
-            return false;
-        }
-        LAYOUT_DEFAULTS.remove(key);
-        SYNC_CLIENT_DISPLAY_IF_ABSENT.remove(key);
-        return KNOWN.remove(key);
+        return STATE.unregister(typeId);
     }
 
     /**
@@ -117,8 +102,7 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static EnumPosition defaultPositionInternal(String typeId) {
-        TypeLayoutDefaults d = LAYOUT_DEFAULTS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
-        return d != null ? d.position() : FALLBACK_LAYOUT.position();
+        return STATE.defaultLayout(typeId).position();
     }
 
     /**
@@ -129,8 +113,7 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static EnumMoveType defaultAnimationInternal(String typeId) {
-        TypeLayoutDefaults d = LAYOUT_DEFAULTS.get(NotificationTypeKeys.normalizeOrDefault(typeId));
-        return d != null ? d.animation() : FALLBACK_LAYOUT.animation();
+        return STATE.defaultLayout(typeId).animation();
     }
 
     /**
@@ -141,43 +124,23 @@ public final class ServerNotificationTypeRegistry {
     }
 
     public static List<String> sortedSnapshotInternal() {
-        List<String> list = new ArrayList<>(KNOWN);
-        Collections.sort(list);
-        return list;
+        return STATE.sortedSnapshot();
     }
 
     /**
      * 构建登录同步条目（类型 id + 可选的客户端默认展示方式）
      */
     public static List<NotificationTypeSyncEntry> buildSyncEntries() {
-        List<String> ids = sortedSnapshot();
-        List<NotificationTypeSyncEntry> out = new ArrayList<>(ids.size());
-        for (String id : ids) {
-            String key = NotificationTypeKeys.normalizeOrDefault(id);
-            EnumNotificationTypeDisplayMode d = SYNC_CLIENT_DISPLAY_IF_ABSENT.get(key);
-            out.add(new NotificationTypeSyncEntry(key, d));
-        }
-        return out;
+        return STATE.buildSyncEntries();
     }
 
     /**
      * 某类型的默认位置与动画
      */
-    public static final class TypeLayoutDefaults {
-        private final EnumPosition position;
-        private final EnumMoveType animation;
-
-        public TypeLayoutDefaults(EnumPosition position, EnumMoveType animation) {
-            this.position = position;
-            this.animation = animation;
-        }
-
-        public EnumPosition position() {
-            return position;
-        }
-
-        public EnumMoveType animation() {
-            return animation;
-        }
+    @Value
+    @Accessors(fluent = true)
+    public static class TypeLayoutDefaults {
+        EnumPosition position;
+        EnumMoveType animation;
     }
 }

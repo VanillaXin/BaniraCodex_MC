@@ -10,17 +10,22 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** NeoForge 1.21.1 必须使用官方整帧事件绘制无界面通知。 */
+/** NeoForge 1.21.1 必须通过官方分层 HUD 注册绘制无界面通知。 */
 public class HudNotificationFrameContractTest {
     @Test
-    public void neoForgeHudPostEventOwnsScreenlessNotificationRendering() throws IOException {
-        String handler = read("src/main/java/xin/vanilla/banira/client/event/BaniraClientForgeEventHandler.java");
+    public void neoForgeHudLayerOwnsScreenlessNotificationRendering() throws IOException {
+        String registrar = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/NeoForgeNotificationLayerRegistrar.java");
+        String handler = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/BaniraClientNeoForgeEventHandler.java");
         String config = read("src/main/resources/banira_codex.mixins.json");
 
-        assertTrue(handler.contains("gameEventBus.addListener(RenderGuiEvent.Post.class"));
-        assertTrue(handler.contains("Minecraft.getInstance().screen == null"));
-        assertTrue(handler.contains("NotificationManager.get().render(event.getGuiGraphics())"));
-        assertFalse(config.contains("\"injections.GuiMixin\""));
+        assertTrue(registrar.contains("RegisterGuiLayersEvent"));
+        assertTrue(registrar.contains("registerAboveAll"));
+        assertTrue(registrar.contains("Minecraft.getInstance().screen == null"));
+        assertTrue(registrar.contains("NotificationManager.get().render(graphics)"));
+        assertTrue(config.contains("\"injections.GuiHudLayerMixin\""));
+        assertFalse(registrar.contains("RenderGuiEvent"));
+        assertTrue(handler.contains("onGuiScreen(ScreenEvent.Render.Pre event)"));
+        assertFalse(handler.contains("onGuiScreen(ScreenEvent event)"));
     }
 
     private static String read(String path) throws IOException {

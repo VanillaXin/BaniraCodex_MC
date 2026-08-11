@@ -6,10 +6,10 @@ import lombok.Setter;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ForgeConfigAdapter;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
+import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 /**
@@ -87,11 +87,18 @@ public class ClientConfig implements ConfigData {
             en_us = "Use this mod's drawn cursor in Banira GUIs; when off, the system default cursor is shown.")
     private boolean useCustomCursor = true;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.Tooltip(zh_cn = "控制已适配模组的背包界面按钮由谁统一显示\n选择 FTB Library 但未安装时自动改由 Banira 显示",
+            en_us = "Choose who displays supported third-party inventory buttons\nFalls back to Banira when FTB Library is selected but unavailable")
+    private EnumExternalInventoryButtonHost externalInventoryButtonHost =
+            EnumExternalInventoryButtonHost.ORIGINAL;
+
     public ClientConfig() {
     }
 
     public static RootView get() {
-        return ClientConfigAccess.root(ForgeConfigAdapter.getHolder(ClientConfig.class));
+        return ClientConfigAccess.root(InternalConfigHandles.holder(ClientConfig.class));
     }
 
     // region 运行时视图接口
@@ -136,6 +143,10 @@ public class ClientConfig implements ConfigData {
         boolean useCustomCursor();
 
         RootView useCustomCursor(boolean value);
+
+        EnumExternalInventoryButtonHost externalInventoryButtonHost();
+
+        RootView externalInventoryButtonHost(EnumExternalInventoryButtonHost value);
 
         ConfigHolder holder();
     }

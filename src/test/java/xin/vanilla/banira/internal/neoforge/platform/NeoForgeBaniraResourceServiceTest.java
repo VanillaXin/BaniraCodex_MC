@@ -40,7 +40,7 @@ public class NeoForgeBaniraResourceServiceTest {
                 "src/main/java/xin/vanilla/banira/internal/neoforge/platform/NeoForgeBaniraResourceService.java"),
                 StandardCharsets.UTF_8);
 
-        assertTrue(source.contains("getModContainerById(modId)"));
-        assertTrue(source.contains("findResource(\"assets/\" + modId + \"/lang\")"));
+        assertTrue(source.contains("getModFileById(modId)"));
+        assertTrue(source.contains("getFile().findResource(\"assets/\" + modId + \"/lang\")"));
     }
 }

@@ -2,8 +2,6 @@ package xin.vanilla.banira.client.util;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -14,7 +12,6 @@ import javax.annotation.Nullable;
 /**
  * 客户端全局主题管理器
  */
-@OnlyIn(Dist.CLIENT)
 public final class ClientThemeManager {
 
     @Nullable

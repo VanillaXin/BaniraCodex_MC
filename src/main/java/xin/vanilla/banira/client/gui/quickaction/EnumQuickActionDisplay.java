@@ -10,14 +10,26 @@ import xin.vanilla.banira.common.util.EnumDescriptionHelper;
  */
 public enum EnumQuickActionDisplay implements IEnumDescribable {
     /**
-     * 在背包界面顶部图标组中显示
+     * 同时显示为背包界面按钮和 Banira 菜单项
      */
     ICON,
     /**
-     * 仅注册到列表
+     * 仅显示为背包界面按钮，不加入 Banira 默认图标的菜单
+     */
+    INVENTORY_ONLY,
+    /**
+     * 仅显示为 Banira 菜单项
      */
     LIST_ONLY,
     ;
+
+    public boolean showsInventoryIcon() {
+        return this == ICON || this == INVENTORY_ONLY;
+    }
+
+    public boolean showsInDefaultMenu() {
+        return this == ICON || this == LIST_ONLY;
+    }
 
     @Override
     public Component enumDescription() {

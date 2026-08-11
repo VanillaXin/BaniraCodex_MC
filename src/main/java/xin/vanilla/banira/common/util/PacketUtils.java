@@ -2,10 +2,10 @@ package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.util.List;
@@ -20,11 +20,9 @@ public final class PacketUtils {
      * 广播数据包至所有玩家
      */
     public static <MSG extends INetworkPacket> void broadcastPacket(MSG msg) {
-        if (BaniraCodex.serverInstance().key() != null) {
-            BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                    BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
-            );
-        }
+        BaniraServerRuntime.players().forEach(player ->
+                BaniraPlatforms.get().networkService().sendToPlayer(msg, player)
+        );
     }
 
     /**
@@ -33,11 +31,9 @@ public final class PacketUtils {
      * @param packet 要发送的数据包
      */
     public static <T extends SplitPacket & INetworkPacket> void broadcastSplitPacket(T packet) {
-        if (BaniraCodex.serverInstance().key() != null) {
-            BaniraCodex.serverInstance().key().getPlayerList().getPlayers().forEach(player ->
-                    sendSplitPacketToPlayer(packet, player)
-            );
-        }
+        BaniraServerRuntime.players().forEach(player ->
+                sendSplitPacketToPlayer(packet, player)
+        );
     }
 
 

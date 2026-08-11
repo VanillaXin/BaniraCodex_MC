@@ -15,14 +15,14 @@ public class NeoForgeDedicatedServerNetworkBoundaryTest {
     @Test
     public void sharedPlayerAndNetworkPathsRemainClientNeutral() throws IOException {
         String playerUtils = read("src/main/java/xin/vanilla/banira/common/util/PlayerUtils.java");
-        String bridge = read("src/main/java/xin/vanilla/banira/internal/common/ClientPlayerRuntimeBridge.java");
+        String bridge = read("src/main/java/xin/vanilla/banira/internal/common/ClientRuntimeBridge.java");
         String platform = read("src/main/java/xin/vanilla/banira/internal/neoforge/platform/NeoForgeBaniraPlatform.java");
 
         assertFalse(playerUtils.contains("net.minecraft.client"));
-        assertTrue(playerUtils.contains("ClientPlayerRuntimeBridge.levelPlayer(uuid)"));
-        assertTrue(playerUtils.contains("ClientPlayerRuntimeBridge.onlinePlayerSkin(uuid)"));
+        assertTrue(playerUtils.contains("ClientRuntimeBridge.levelPlayer(uuid)"));
+        assertTrue(playerUtils.contains("ClientRuntimeBridge.onlinePlayerSkin(uuid)"));
         assertTrue(bridge.contains("BaniraPlatforms.get().isClient()"));
-        assertTrue(bridge.contains("Class.forName(RUNTIME_CLASS)"));
+        assertTrue(bridge.contains("Class.forName(\"xin.vanilla.banira.internal.client.BaniraClientRuntime\")"));
         assertFalse(platform.contains("LocalPlayer"));
         assertFalse(platform.contains("net.minecraftforge"));
     }

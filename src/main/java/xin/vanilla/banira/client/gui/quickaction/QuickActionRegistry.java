@@ -4,8 +4,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.Component;
@@ -35,7 +33,6 @@ import static java.util.Collections.emptyList;
  * }</pre>
  * <p>多 mod 注册时，展示顺序按条目 id 稳定排序：先按命名空间（首个 {@code ':'} 之前，无则视为空）、再按路径（之后子串），均按 {@link Locale#ROOT} 不区分大小写，与各 mod 客户端初始化回调的执行先后无关。</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class QuickActionRegistry {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -191,6 +188,22 @@ public final class QuickActionRegistry {
 
     // endregion
 
+    // region registerInventoryOnly 重载
+
+    /** 注册仅显示为背包界面按钮、不加入默认图标菜单的入口。 */
+    public void registerInventoryOnly(
+            @Nonnull String id,
+            @Nonnull QuickIcon icon,
+            @Nonnull Component label,
+            @Nullable Consumer<QuickActionContext> action,
+            @Nonnull QuickActionContextMenuItem... contextMenuItems
+    ) {
+        register(id, icon, label, EnumQuickActionDisplay.INVENTORY_ONLY,
+                action, Arrays.asList(contextMenuItems));
+    }
+
+    // endregion
+
     // region registerListOnly 重载
 
     public void registerListOnly(
@@ -331,7 +344,7 @@ public final class QuickActionRegistry {
     public LinkedHashSet<String> registeredIconEntryIds() {
         LinkedHashSet<String> set = new LinkedHashSet<>();
         for (QuickActionEntry e : allEntriesInOrder()) {
-            if (e.display() == EnumQuickActionDisplay.ICON) {
+            if (e.display().showsInventoryIcon()) {
                 set.add(e.id());
             }
         }
@@ -387,7 +400,13 @@ public final class QuickActionRegistry {
      */
     @Nonnull
     public List<QuickActionEntry> dropdownEntries() {
-        return allEntriesInOrder();
+        List<QuickActionEntry> result = new ArrayList<>();
+        for (QuickActionEntry entry : allEntriesInOrder()) {
+            if (entry.display().showsInDefaultMenu()) {
+                result.add(entry);
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     void validateMenuAnchor() {
@@ -396,7 +415,7 @@ public final class QuickActionRegistry {
             return;
         }
         QuickActionEntry e = entries.get(anchor);
-        if (e == null || e.display() != EnumQuickActionDisplay.ICON) {
+        if (e == null || !e.display().showsInventoryIcon()) {
             LOGGER.warn("Inventory quick-action menu anchor '{}' is invalid or not an ICON entry; dropdown disabled until set.", anchor);
         }
     }

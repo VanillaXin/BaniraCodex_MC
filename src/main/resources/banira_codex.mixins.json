@@ -8,8 +8,9 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
-    "injections.MinecraftClientMixin",
-    "injections.PlayerTabOverlayMixin"
+    "injections.CreativeScreenQuickActionMixin",
+    "injections.GuiHudLayerMixin",
+    "injections.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

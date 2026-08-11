@@ -1,8 +1,6 @@
 package xin.vanilla.banira.common.config;
 
 import lombok.Getter;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
@@ -13,88 +11,100 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
- * 配置持有者，封装 ModConfigSpec 与元数据，提供统一访问接口
+ * 配置持有者，封装配置值后端与元数据，提供统一访问接口。
  */
-@Getter
 public class ConfigHolder implements BaniraConfigHandle {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
-     * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等
+     * 注册配置时传入的 Mod ID，用于 {@link ConfigEntryDescriptor.ConfigTooltipGuiKind#TRANSLATION_KEY} 等。
      */
+    @Getter
     private final String modId;
 
+    @Getter
     private final String configName;
+
+    @Getter
     private final ConfigScope configScope;
-    private final ModConfigSpec spec;
+
+    private final ConfigValueStore valueStore;
+
+    @Getter
     private final List<ConfigEntryDescriptor> descriptors;
-    private final Map<String, ModConfigSpec.ConfigValue<?>> valueMap;
+
     /**
-     * 分类路径 -> 显示名（用于 GUI 层级展示，兼容旧逻辑；配置编辑器折叠标题优先 {@link #categoryTitleSpecs}）
+     * 分类路径 -> 显示名；配置编辑器折叠标题优先使用 {@link #categoryTitleSpecs}。
      */
     private final Map<String, String> categoryTooltips;
 
     /**
-     * 分类路径 -> 折叠面板标题元数据（翻译键 / 多语言硬编码 / 字面量）
+     * 分类路径 -> 折叠面板标题元数据。
      */
     private final Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs;
 
     /**
-     * 配置路径 -> 描述符（与 {@link #descriptors} 一致，用于 {@link #get} 对列表做运行时类型归一化）
+     * 配置路径 -> 描述符，用于 GUI 和列表运行时归一化。
      */
     private final Map<String, ConfigEntryDescriptor> descriptorByPath;
 
-    @Nullable
-    private ModConfig modConfig;
     private final Set<String> pendingChangedPaths = new LinkedHashSet<>();
     private final List<Consumer<Set<String>>> savedListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<Set<String>>> reloadedListeners = new CopyOnWriteArrayList<>();
+    private final Map<String, Object> loadedSnapshot = new LinkedHashMap<>();
 
-    ConfigHolder(String modId, String configName, ConfigScope configScope, ModConfigSpec spec,
-                 List<ConfigEntryDescriptor> descriptors, Map<String, ModConfigSpec.ConfigValue<?>> valueMap,
+    /**
+     * 供各加载器配置服务创建统一 holder。
+     */
+    public static ConfigHolder create(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                                      List<ConfigEntryDescriptor> descriptors,
+                                      Map<String, String> categoryTooltips,
+                                      Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
+        return new ConfigHolder(modId, configName, configScope, valueStore, descriptors, categoryTooltips, categoryTitleSpecs);
+    }
+
+    ConfigHolder(String modId, String configName, ConfigScope configScope, ConfigValueStore valueStore,
+                 List<ConfigEntryDescriptor> descriptors,
                  Map<String, String> categoryTooltips,
                  Map<String, ConfigCategoryTitleSpec> categoryTitleSpecs) {
         this.modId = modId != null ? modId : "";
         this.configName = configName;
         this.configScope = configScope != null ? configScope : ConfigScope.COMMON;
-        this.spec = spec;
-        this.descriptors = Collections.unmodifiableList(descriptors);
-        this.valueMap = Collections.unmodifiableMap(valueMap);
-        this.categoryTooltips = categoryTooltips != null ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTooltips)) : Collections.emptyMap();
+        this.valueStore = valueStore;
+        this.descriptors = Collections.unmodifiableList(new ArrayList<>(descriptors));
+        this.categoryTooltips = categoryTooltips != null
+                ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTooltips))
+                : Collections.emptyMap();
         this.categoryTitleSpecs = categoryTitleSpecs != null
                 ? Collections.unmodifiableMap(new LinkedHashMap<>(categoryTitleSpecs))
                 : Collections.emptyMap();
+
         Map<String, ConfigEntryDescriptor> byPath = new LinkedHashMap<>();
-        for (ConfigEntryDescriptor d : descriptors) {
-            byPath.put(d.getPath(), d);
+        for (ConfigEntryDescriptor descriptor : descriptors) {
+            byPath.put(descriptor.getPath(), descriptor);
         }
         this.descriptorByPath = Collections.unmodifiableMap(byPath);
+        captureLoadedSnapshot();
     }
 
-    /**
-     * 获取某分类路径的折叠标题元数据；无记录时配置编辑器可回退 {@link CategoryTreeNode#getDisplayName()}。
-     */
+    ConfigValueStore valueStore() {
+        return valueStore;
+    }
+
+    @Override
+    public Set<String> valuePaths() {
+        return valueStore.paths();
+    }
+
     @Nullable
     public ConfigCategoryTitleSpec getCategoryTitleSpec(String categoryPath) {
         return categoryTitleSpecs.get(categoryPath);
     }
 
-    void setModConfig(@Nullable ModConfig modConfig) {
-        this.modConfig = modConfig;
-    }
-
-    /**
-     * 保存配置到文件
-     */
     public synchronized void save() {
-        if (modConfig == null) {
-            return;
-        }
-        var loaded = modConfig.getLoadedConfig();
-        if (loaded == null) {
-            return;
-        }
-        loaded.save();
+        valueStore.save();
+        captureLoadedSnapshot();
         if (pendingChangedPaths.isEmpty()) {
             return;
         }
@@ -118,88 +128,142 @@ public class ConfigHolder implements BaniraConfigHandle {
         return () -> savedListeners.remove(listener);
     }
 
-    /**
-     * 获取配置值
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T get(String path) {
-        ModConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        if (cv == null) {
-            return null;
-        }
-        Object v = cv.get();
-        ConfigEntryDescriptor desc = descriptorByPath.get(path);
-        if (desc != null && desc.isListType() && v instanceof List) {
-            v = ConfigListSpecHelper.normalizeListForRuntime((List<?>) v, desc);
-        }
-        return (T) v;
+    /** 外部配置文件重载成功后触发；返回值用于注销监听。 */
+    @Override
+    public Runnable onReloaded(Consumer<Set<String>> listener) {
+        Objects.requireNonNull(listener, "listener");
+        reloadedListeners.add(listener);
+        return () -> reloadedListeners.remove(listener);
     }
 
-    /**
-     * 设置配置值（仅内存，需调用 save 持久化）
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    /** Forge 初次装载配置文件时只建立基线，不把它当成玩家热修改。 */
+    public synchronized void acceptInitialExternalLoad() {
+        pendingChangedPaths.clear();
+        captureLoadedSnapshot();
+    }
+
+    /** Forge 已将磁盘值写入 ConfigValue 后，计算真实变化并废弃尚未保存的旧内存改动。 */
+    public synchronized void acceptExternalReload() {
+        Set<String> changed = new LinkedHashSet<>();
+        for (String path : valueStore.paths()) {
+            Object current = snapshotValueSafely(path);
+            if (!Objects.deepEquals(loadedSnapshot.get(path), current)) {
+                changed.add(path);
+            }
+        }
+        pendingChangedPaths.clear();
+        captureLoadedSnapshot();
+        if (changed.isEmpty()) return;
+        Set<String> immutable = Collections.unmodifiableSet(changed);
+        for (Consumer<Set<String>> listener : reloadedListeners) {
+            try {
+                listener.accept(immutable);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Config reloaded listener failed for {}", configName, ex);
+            }
+        }
+    }
+
+    private void captureLoadedSnapshot() {
+        loadedSnapshot.clear();
+        for (String path : valueStore.paths()) {
+            loadedSnapshot.put(path, snapshotValueSafely(path));
+        }
+    }
+
+    private Object snapshotValueSafely(String path) {
+        try {
+            return snapshotValue(valueStore.get(path));
+        } catch (RuntimeException exception) {
+            return UnavailableValue.INSTANCE;
+        }
+    }
+
+    private static Object snapshotValue(Object value) {
+        if (value instanceof List) {
+            List<Object> copy = new ArrayList<>();
+            for (Object item : (List<?>) value) copy.add(snapshotValue(item));
+            return copy;
+        }
+        if (value instanceof Map) {
+            Map<Object, Object> copy = new LinkedHashMap<>();
+            ((Map<?, ?>) value).forEach((key, item) -> copy.put(key, snapshotValue(item)));
+            return copy;
+        }
+        return value;
+    }
+
+    private enum UnavailableValue {
+        INSTANCE
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T get(String path) {
+        if (!valueStore.paths().contains(path)) {
+            return null;
+        }
+        Object value = valueStore.get(path);
+        ConfigEntryDescriptor desc = descriptorByPath.get(path);
+        if (desc != null && desc.isListType() && value instanceof List) {
+            value = ConfigListSpecHelper.normalizeListForRuntime((List<?>) value, desc);
+        }
+        return (T) value;
+    }
+
+    @Override
     public synchronized void set(String path, Object value) {
-        ModConfigSpec.ConfigValue cv = valueMap.get(path);
-        if (cv != null) {
-            Object previous = cv.get();
-            cv.set(value);
-            if (!Objects.deepEquals(previous, cv.get())) {
+        if (valueStore.paths().contains(path)) {
+            Object previous = valueStore.get(path);
+            valueStore.set(path, value);
+            if (!Objects.deepEquals(previous, valueStore.get(path))) {
                 pendingChangedPaths.add(path);
             }
         }
     }
 
-    /**
-     * 校验网络同步或 GUI 写入的值是否符合当前配置项约束。
-     */
-    public boolean validate(String path, Object value) {
-        ModConfigSpec.ConfigValue<?> cv = valueMap.get(path);
-        return xin.vanilla.banira.common.util.CommandUtils.validateConfigValueWithSpec(cv, value);
-    }
-
-    @Override
-    public Set<String> valuePaths() {
-        return valueMap.keySet();
-    }
-
     @Override
     public boolean hasValue(String path) {
-        return valueMap.containsKey(path);
+        return valueStore.paths().contains(path);
     }
 
     @Nullable
     @Override
     public String findValuePath(String key) {
-        if (key == null || key.isEmpty()) {
+        if (key == null) {
             return null;
         }
-        if (hasValue(key)) {
+        if (valueStore.paths().contains(key)) {
             return key;
         }
-        for (String path : valueMap.keySet()) {
-            if (path.endsWith("." + key) || path.equals(key)) {
-                return path;
+        String lowerKey = key.toLowerCase(Locale.ROOT);
+        String match = null;
+        for (String path : valueStore.paths()) {
+            if (!path.toLowerCase(Locale.ROOT).contains(lowerKey)) {
+                continue;
             }
+            if (match != null) {
+                return null;
+            }
+            match = path;
         }
-        return null;
+        return match;
     }
 
     @Override
     public Class<?> valueClass(String path) {
-        Object value = get(path);
-        if (value != null) {
-            return value.getClass();
-        }
-        Object def = defaultValue(path);
-        return def != null ? def.getClass() : Object.class;
+        return valueStore.valueClass(path);
     }
 
     @Nullable
     @Override
     public Object defaultValue(String path) {
-        ConfigEntryDescriptor descriptor = getDescriptor(path);
-        return descriptor == null ? null : descriptor.getDefaultValue();
+        return valueStore.defaultValue(path);
+    }
+
+    @Override
+    public boolean validate(String path, Object value) {
+        return valueStore.validate(path, value);
     }
 
     @Override
@@ -211,50 +275,16 @@ public class ConfigHolder implements BaniraConfigHandle {
         return true;
     }
 
-    /**
-     * 获取配置项描述符
-     */
     public ConfigEntryDescriptor getDescriptor(String path) {
         return descriptorByPath.get(path);
     }
 
-    /**
-     * 是否为服务端配置
-     */
     public boolean isServerConfig() {
         return configScope == ConfigScope.SERVER;
     }
 
-    /**
-     * 是否可同步至服务器（Common 与 Server 配置均可）
-     */
     public boolean canSyncToServer() {
         return configScope == ConfigScope.SERVER || configScope == ConfigScope.COMMON;
-    }
-
-    /**
-     * 按分类分组获取配置项，用于 GUI 层级展示（兼容旧逻辑，仅深度1）。
-     * 返回顺序：先按 categoryTooltips 中的分类顺序，再按 descriptors 中的顺序。
-     */
-    public List<CategoryGroup> getDescriptorsGroupedByCategory() {
-        Map<String, List<ConfigEntryDescriptor>> byCategory = new LinkedHashMap<>();
-        for (ConfigEntryDescriptor d : descriptors) {
-            String path = d.getPath();
-            int dot = path.indexOf('.');
-            String category = dot > 0 ? path.substring(0, dot) : "";
-            byCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(d);
-        }
-        List<CategoryGroup> result = new ArrayList<>();
-        Set<String> orderedCategories = new LinkedHashSet<>(categoryTooltips.keySet());
-        orderedCategories.addAll(byCategory.keySet());
-        for (String cat : orderedCategories) {
-            List<ConfigEntryDescriptor> entries = byCategory.get(cat);
-            if (entries != null && !entries.isEmpty()) {
-                String displayName = categoryTooltips.getOrDefault(cat, cat);
-                result.add(new CategoryGroup(cat, displayName, entries));
-            }
-        }
-        return result;
     }
 
     /**
@@ -268,21 +298,24 @@ public class ConfigHolder implements BaniraConfigHandle {
      */
     public List<CategoryTreeNode> getCategoryTree() {
         Map<String, List<ConfigEntryDescriptor>> byCategory = new LinkedHashMap<>();
-        for (ConfigEntryDescriptor d : descriptors) {
-            String path = d.getPath();
+        for (ConfigEntryDescriptor descriptor : descriptors) {
+            String path = descriptor.getPath();
             int lastDot = path.lastIndexOf('.');
-            String categoryPath = lastDot > 0 ? path.substring(0, lastDot) : VIRTUAL_ROOT_PATH;
-            byCategory.computeIfAbsent(categoryPath, k -> new ArrayList<>()).add(d);
+            String categoryPath = lastDot > 0 ? path.substring(0, lastDot) : "";
+            byCategory.computeIfAbsent(categoryPath, key -> new ArrayList<>()).add(descriptor);
         }
+
         Set<String> allCategories = new LinkedHashSet<>(categoryTooltips.keySet());
         allCategories.addAll(byCategory.keySet());
-        allCategories.add(VIRTUAL_ROOT_PATH);
+        allCategories.add("");
+
         Map<String, CategoryTreeNode> nodeMap = new LinkedHashMap<>();
-        for (String cat : allCategories) {
-            String displayName = categoryTooltips.getOrDefault(cat, cat);
-            List<ConfigEntryDescriptor> entries = byCategory.getOrDefault(cat, Collections.emptyList());
-            nodeMap.put(cat, new CategoryTreeNode(cat, displayName, entries));
+        for (String category : allCategories) {
+            String displayName = categoryTooltips.getOrDefault(category, category);
+            List<ConfigEntryDescriptor> entries = byCategory.getOrDefault(category, Collections.emptyList());
+            nodeMap.put(category, new CategoryTreeNode(category, displayName, entries));
         }
+
         for (CategoryTreeNode node : nodeMap.values()) {
             String parentPath = getParentPath(node.getCategoryPath());
             CategoryTreeNode parent = nodeMap.get(parentPath);
@@ -290,29 +323,14 @@ public class ConfigHolder implements BaniraConfigHandle {
                 parent.addChild(node);
             }
         }
-        CategoryTreeNode virtualRoot = nodeMap.get(VIRTUAL_ROOT_PATH);
+
+        CategoryTreeNode virtualRoot = nodeMap.get("");
         return virtualRoot != null ? Collections.singletonList(virtualRoot) : Collections.emptyList();
     }
 
     private static String getParentPath(String path) {
         int lastDot = path.lastIndexOf('.');
         return lastDot > 0 ? path.substring(0, lastDot) : "";
-    }
-
-    /**
-     * 配置分类组（兼容旧 API）
-     */
-    @Getter
-    public static class CategoryGroup {
-        private final String categoryPath;
-        private final String displayName;
-        private final List<ConfigEntryDescriptor> entries;
-
-        public CategoryGroup(String categoryPath, String displayName, List<ConfigEntryDescriptor> entries) {
-            this.categoryPath = categoryPath;
-            this.displayName = displayName;
-            this.entries = List.copyOf(entries);
-        }
     }
 
     /**
@@ -328,7 +346,7 @@ public class ConfigHolder implements BaniraConfigHandle {
         public CategoryTreeNode(String categoryPath, String displayName, List<ConfigEntryDescriptor> entries) {
             this.categoryPath = categoryPath;
             this.displayName = displayName;
-            this.entries = List.copyOf(entries);
+            this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
         }
 
         void addChild(CategoryTreeNode child) {

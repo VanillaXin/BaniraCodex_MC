@@ -1,7 +1,5 @@
 package xin.vanilla.banira.client.util;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -16,8 +14,6 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-
-@OnlyIn(Dist.CLIENT)
 public final class PNGUtils {
     private PNGUtils() {
     }

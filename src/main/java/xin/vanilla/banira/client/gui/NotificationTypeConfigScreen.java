@@ -7,8 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -40,7 +38,6 @@ import java.util.*;
 /**
  * 按通知类型配置是否隐藏、显示时长、动画与位置
  */
-@OnlyIn(Dist.CLIENT)
 public class NotificationTypeConfigScreen extends BaniraScreen {
 
     private static final int CARD_MARGIN = 10;
@@ -683,14 +680,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
     }
 
-    /**
-     * ESC 属于界面级命令，需要先于折叠面板和下拉框处理。
-     */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode != GLFWKey.GLFW_KEY_ESCAPE) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
+    protected boolean requestClose(CloseReason reason) {
         int changedCount = changedSettingCount();
         if (changedCount == 0) {
             onClose();
@@ -698,6 +689,11 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
         }
         return true;
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(cardX, cardY, cardW, cardH);
     }
 
     private static final int CARD_RADIUS = 8;

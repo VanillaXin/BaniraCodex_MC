@@ -6,11 +6,11 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,13 +50,9 @@ public final class NeoForgeBaniraResourceService {
     /** 启动早期资源管理器尚未就绪时，直接从 NeoForge 已登记的模组文件读取语言。 */
     private static void collectRegisteredModLanguages(String modId, Map<String, JsonObject> result) {
         try {
-            IModInfo modInfo = ModList.get().getModContainerById(modId)
-                    .map(container -> container.getModInfo())
-                    .orElse(null);
-            if (modInfo == null) return;
-            Path languageDirectory = modInfo.getOwningFile().getFile()
-                    .findResource("assets/" + modId + "/lang");
-            collectLanguageDirectory(languageDirectory, result);
+            IModFileInfo modFile = ModList.get().getModFileById(modId);
+            if (modFile == null) return;
+            collectLanguageDirectory(modFile.getFile().findResource("assets/" + modId + "/lang"), result);
         } catch (Throwable throwable) {
             LOGGER.debug("Failed to list lang from registered mod file {}: {}", modId, throwable.getMessage());
         }
@@ -88,8 +84,8 @@ public final class NeoForgeBaniraResourceService {
     }
 
     private static ResourceManager activeResourceManager() {
-        if (BaniraCodex.serverInstance().val()) {
-            return BaniraCodex.serverInstance().key().getResourceManager();
+        if (BaniraServerRuntime.isRunning()) {
+            return BaniraServerRuntime.server().getResourceManager();
         }
         try {
             Class<?> minecraftClass = Class.forName("net.minecraft.client.Minecraft");
@@ -103,10 +99,7 @@ public final class NeoForgeBaniraResourceService {
     private static void loadLanguage(IoSupplier<InputStream> supplier, ResourceLocation location,
                                      Map<String, JsonObject> result) {
         try (InputStreamReader reader = new InputStreamReader(supplier.get(), StandardCharsets.UTF_8)) {
-            String path = location.getPath();
-            int slash = path.lastIndexOf('/');
-            String fileName = slash >= 0 ? path.substring(slash + 1) : path;
-            String languageCode = fileName.substring(0, fileName.length() - 5).toLowerCase();
+            String languageCode = languageCode(location);
             JsonObject json = JsonUtils.parseObject(reader);
             JsonObject existing = result.get(languageCode);
             if (existing == null) result.put(languageCode, json);
@@ -114,5 +107,12 @@ public final class NeoForgeBaniraResourceService {
         } catch (Throwable throwable) {
             LOGGER.debug("Failed to load language file {}: {}", location, throwable.getMessage());
         }
+    }
+
+    private static String languageCode(ResourceLocation location) {
+        String path = location.getPath();
+        int slash = path.lastIndexOf('/');
+        String name = slash >= 0 ? path.substring(slash + 1) : path;
+        return name.substring(0, name.length() - 5).toLowerCase();
     }
 }

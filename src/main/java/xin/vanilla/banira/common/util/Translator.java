@@ -5,19 +5,13 @@ import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforgespi.language.IModInfo;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import net.neoforged.neoforgespi.locating.IModFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.Type;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.resource.BaniraResourceAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -25,25 +19,21 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入带 {@link Mod} 的主类（与入口 {@code @Mod("modid")} 为同一类），modId 从注解读取，语言文件从该类所在 JAR 加载：
+ * 构造时传入 loader mod 主类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
  *     private MyModLang() { super(MyMod.class); }
  * }
  * }</pre>
- * 仅使用 {@link #of(String)} 时通过 {@link ModList} 与 {@link ModFileScanData} 扫描结果解析该 mod 的 {@code @Mod} 主类（NeoForge 中 {@code ModContainer} 不再持有 mod 实例）。
+ * 仅使用 {@link #of(String)} 时通过 Banira 平台适配层解析该 mod 的主类。
  */
 public class Translator implements ITranslator {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -73,22 +63,26 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass 带 {@link Mod} 注解的 mod 主类（通常即 {@code @Mod("your_mod_id")} 所在类）
+     * @param modMainClass loader mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
         this(modIdFromModMainClass(modMainClass), modMainClass);
     }
 
-    private Translator(@NonNull String modId) {
+    protected Translator(@NonNull String modId) {
         this(modId, Translator.class);
     }
 
+    /**
+     * 显式指定子 mod 身份，避免依赖加载器入口类发现。
+     * 1.16.5 的资源管理器直接按 modId 查找，因此锚点仅用于保持跨版本 API 一致。
+     */
     protected Translator(@NonNull String modId, @NonNull Class<?> resourceAnchorClass) {
         if (StringUtils.isNullOrEmptyEx(modId)) {
-            throw new IllegalArgumentException("modId must not be empty");
+            throw new IllegalArgumentException("Mod id is empty");
         }
-        this.resourceAnchorClass = resourceAnchorClass;
         this.modId = modId;
+        this.resourceAnchorClass = Objects.requireNonNull(resourceAnchorClass, "resourceAnchorClass");
         getI18nFiles();
     }
 
@@ -96,68 +90,22 @@ public class Translator implements ITranslator {
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
-        if (BaniraPlatforms.isInstalled()) {
-            return BaniraPlatforms.get().modIdFromMainClass(modMainClass);
-        }
-        Mod mod = modMainClass.getAnnotation(Mod.class);
-        if (mod == null) {
-            throw new IllegalArgumentException("Class must be annotated with @Mod: " + modMainClass.getName());
-        }
-        String id = mod.value();
+        String id = BaniraPlatforms.get().modIdFromMainClass(modMainClass);
         if (StringUtils.isNullOrEmptyEx(id)) {
-            throw new IllegalArgumentException("@Mod value is empty on: " + modMainClass.getName());
+            throw new IllegalArgumentException("Mod id is empty on: " + modMainClass.getName());
         }
         return id;
     }
 
     @NonNull
-    private static Class<?> resolveModMainClassFromModList(@NonNull String modId) {
+    private static Class<?> resolveModMainClass(@NonNull String modId) {
         try {
-            IModInfo modInfo = ModList.get().getModContainerById(modId)
-                    .orElseThrow(() -> new IllegalStateException("No mod container for id: " + modId))
-                    .getModInfo();
-            IModFile modFile = modInfo.getOwningFile().getFile();
-            ModFileScanData scan = modFile.getScanResult();
-            if (scan == null) {
-                throw new IllegalStateException("No ModFileScanData for mod id: " + modId);
-            }
-            Type modAnnotationType = Type.getType(Mod.class);
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            for (ModFileScanData.AnnotationData ad : scan.getAnnotations()) {
-                if (!modAnnotationType.equals(ad.annotationType())) {
-                    continue;
-                }
-                if (!modIdMatchesModAnnotation(modId, ad.annotationData())) {
-                    continue;
-                }
-                String binaryName = ad.clazz().getClassName();
-                return Class.forName(binaryName, false, loader);
-            }
-            throw new IllegalStateException("No @Mod class in scan data for mod id: " + modId);
+            return BaniraPlatforms.get().modMainClass(modId);
         } catch (IllegalStateException e) {
             throw e;
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Failed to load @Mod class for mod id: " + modId, e);
         } catch (Throwable t) {
-            throw new IllegalStateException("Failed to resolve @Mod main class for mod id: " + modId, t);
+            throw new IllegalStateException("Failed to resolve mod main class for mod id: " + modId, t);
         }
-    }
-
-    private static boolean modIdMatchesModAnnotation(@NonNull String modId, @Nullable Map<String, ?> annotationData) {
-        if (annotationData == null) {
-            return false;
-        }
-        Object v = annotationData.get("value");
-        if (v instanceof String s) {
-            return modId.equals(s);
-        }
-        if (v instanceof String[] arr && arr.length == 1) {
-            return modId.equals(arr[0]);
-        }
-        if (v instanceof List<?> list && list.size() == 1 && list.get(0) instanceof String s) {
-            return modId.equals(s);
-        }
-        return false;
     }
 
     // endregion mod 主类与 modId（@Mod）
@@ -178,13 +126,18 @@ public class Translator implements ITranslator {
     }
 
     private static Translator create(String modId) {
+        Class<?> resourceAnchor = Translator.class;
         try {
-            return new Translator(resolveModMainClassFromModList(modId));
+            if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isModLoaded(modId)) {
+                resourceAnchor = resolveModMainClass(modId);
+            } else {
+                LOGGER.debug("Using key-only translator for optional mod not present on this side: {}", modId);
+            }
         } catch (RuntimeException e) {
-            // 客户端可选 Mod 缺失时仍需保留翻译键，并接收服务端提供的回退文本。
+            // 低代码 Mod 或仅服务端 Mod 可能没有当前加载器可解析的主类。
             LOGGER.debug("Using key-only translator for mod {}: {}", modId, e.getMessage());
-            return new Translator(modId);
         }
+        return new Translator(modId, resourceAnchor);
     }
 
     @Override
@@ -291,6 +244,7 @@ public class Translator implements ITranslator {
     /**
      * 获取 I18n 文件列表
      */
+    @Override
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
@@ -300,21 +254,12 @@ public class Translator implements ITranslator {
     }
 
     private void loadFromClasspath() {
-        try {
-            URL url = resourceAnchorClass.getResource(getLangPath());
-            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
-                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
-                return;
-            }
-            try (Stream<Path> files = Files.list(Path.of(url.toURI()))) {
-                files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
-                        .forEach(this::loadKnownClasspathLanguage);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+        Set<String> discovered = ClasspathLanguageDiscovery.discover(resourceAnchorClass, getLangPath());
+        if (discovered.isEmpty()) {
             loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+            return;
         }
+        discovered.forEach(this::loadKnownClasspathLanguage);
     }
 
     private void loadKnownClasspathLanguage(String languageCode) {
@@ -328,14 +273,21 @@ public class Translator implements ITranslator {
 
     private void loadFromResourceManager() {
         try {
-            Map<String, JsonObject> loaded = BaniraResourceAccess.modLanguageFiles(modId);
+            Map<String, JsonObject> loaded = BaniraPlatforms.isInstalled()
+                    ? BaniraResourceAccess.modLanguageFiles(modId)
+                    : Collections.emptyMap();
             loaded.forEach((languageCode, json) -> {
                 languages.add(languageCode);
-                JsonObject existing = LANGUAGES.get(languageCode);
-                if (existing == null) LANGUAGES.put(languageCode, json);
-                else JsonUtils.mergeInPlace(existing, json);
+                JsonObject object = LANGUAGES.get(languageCode);
+                if (object == null) {
+                    LANGUAGES.put(languageCode, json);
+                } else {
+                    JsonUtils.mergeInPlace(object, json);
+                }
             });
-            if (loaded.isEmpty()) languages.add(DEFAULT_LANGUAGE);
+            if (loaded.isEmpty()) {
+                languages.add(DEFAULT_LANGUAGE);
+            }
         } catch (Exception e) {
             LOGGER.debug("Failed to list lang from ResourceManager:", e);
             languages.add(DEFAULT_LANGUAGE);
@@ -375,8 +327,15 @@ public class Translator implements ITranslator {
      * 获取客户端语言（服务端环境返回默认语言）
      */
     public static String getClientLanguage() {
-        if (FMLEnvironment.dist != null && FMLEnvironment.dist.isClient()) {
-            return normalizeLanguageCode(net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected());
+        if (BaniraPlatforms.isInstalled() && EnvironmentUtils.isClient()) {
+            try {
+                String selected = ClientRuntimeBridge.selectedLanguageCode();
+                if (!StringUtils.isNullOrEmptyEx(selected)) {
+                    return normalizeLanguageCode(selected);
+                }
+            } catch (Throwable ignored) {
+                // 测试环境或客户端早期启动时语言管理器可能尚未就绪。
+            }
         }
         return normalizeLanguageCode(BaniraCommonSettings.defaultLanguage());
     }

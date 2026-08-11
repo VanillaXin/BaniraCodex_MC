@@ -3,8 +3,6 @@ package xin.vanilla.banira.client.gui.widget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -19,7 +17,6 @@ import xin.vanilla.banira.common.util.ColorUtils;
 /**
  * 自定义的鼠标光标
  */
-@OnlyIn(Dist.CLIENT)
 public class MouseWidget extends BaseWidget {
 
     private long drawCount = 0;

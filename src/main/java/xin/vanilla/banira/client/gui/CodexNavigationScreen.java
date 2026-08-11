@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -9,6 +11,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionConfigScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
@@ -55,7 +58,7 @@ public class CodexNavigationScreen extends BaniraScreen {
         int innerH = height - CARD_MARGIN * 2;
         int btnW = Math.min(340, width - CARD_MARGIN * 2);
         int cx = (width - btnW) / 2;
-        int contentH = 4 * BTN_H + 3 * BTN_GAP;
+        int contentH = 5 * BTN_H + 4 * BTN_GAP;
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
         addNavButton(cx, y, btnW, "codex_navigation_notification_log",
@@ -71,7 +74,11 @@ public class CodexNavigationScreen extends BaniraScreen {
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",
-                () -> Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
+                () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
+        y += BTN_H + BTN_GAP;
+
+        addNavButton(cx, y, btnW, "custom_quick_action_title",
+                () -> BaniraClientRuntime.setScreen(new CustomQuickActionConfigScreen(this)));
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
@@ -96,6 +103,12 @@ public class CodexNavigationScreen extends BaniraScreen {
     @Override
     public boolean shouldCloseOnEsc() {
         return true;
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(CARD_MARGIN, CARD_MARGIN,
+                width - CARD_MARGIN * 2, height - CARD_MARGIN * 2);
     }
 
     @Override

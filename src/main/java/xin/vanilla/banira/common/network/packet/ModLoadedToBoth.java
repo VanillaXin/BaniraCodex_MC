@@ -111,11 +111,14 @@ public class ModLoadedToBoth implements NetworkPacket {
                 }
                 for (String modid : packet.modids()) {
                     ServerSenderAccess.setRemoteClientModInstalled(sender, modid, false);
-                    ModLoadedPresenceStore.dispatchServerSync(sender, modid);
                 }
                 List<String> serverIds = ModLoadedPresenceStore.announcedModIds();
                 if (!serverIds.isEmpty()) {
                     ServerSenderAccess.sendPacket(sender, new ModLoadedToBoth(serverIds));
+                }
+                // 先让客户端确认服务端模组状态，再发送子 mod 自定义通道数据。
+                for (String modid : packet.modids()) {
+                    ModLoadedPresenceStore.dispatchServerSync(sender, modid);
                 }
             } else {
                 if (!packet.modids().isEmpty()) {

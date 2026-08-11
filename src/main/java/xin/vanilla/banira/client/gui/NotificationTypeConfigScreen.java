@@ -681,14 +681,8 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
         }
     }
 
-    /**
-     * ESC 属于界面级命令，需要先于折叠面板和下拉框处理。
-     */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode != GLFWKey.GLFW_KEY_ESCAPE) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
+    protected boolean requestClose(CloseReason reason) {
         int changedCount = changedSettingCount();
         if (changedCount == 0) {
             onClose();
@@ -696,6 +690,11 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
             ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
         }
         return true;
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(cardX, cardY, cardW, cardH);
     }
 
     private static final int CARD_RADIUS = 8;
@@ -774,7 +773,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (delta != 0 && contentRootPanel != null && contentRootPanel.visible() && contentRootPanel.enabled()
                 && contentRootPanel.isMouseInside(mouseX, mouseY)
-                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta, currentKeyboardModifiers()))) {
+                && contentRootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
             return true;
         }
         if (super.mouseScrolled(mouseX, mouseY, delta)) {

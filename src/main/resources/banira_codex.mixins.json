@@ -7,8 +7,9 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
-    "injections.MinecraftClientMixin",
-    "injections.GuiExperienceMixin"
+    "injections.CreativeScreenQuickActionMixin",
+    "injections.GuiExperienceMixin",
+    "injections.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

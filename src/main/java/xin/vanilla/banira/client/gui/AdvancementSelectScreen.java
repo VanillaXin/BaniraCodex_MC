@@ -4,15 +4,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -28,7 +29,6 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
 
 import javax.annotation.Nullable;
@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 成就选择界面。支持搜索、显示模式切换（可显示/全部）、列表滚动选择。
@@ -68,7 +69,6 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> advancementButtonWidgets = new ArrayList<>();
-    private final List<AdvancementRow> advancementRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private ResourceLocation currentAdvancement;
@@ -79,7 +79,6 @@ public class AdvancementSelectScreen extends BaniraScreen {
     private ItemWidget advancementButtonItemWidget;
     private TooltipWidget typeTooltip;
     private TooltipWidget advancementTooltip;
-    private boolean advancementButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -126,6 +125,10 @@ public class AdvancementSelectScreen extends BaniraScreen {
         private Function<ResourceLocation, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
         /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
+        private boolean closeAfterSubmit = true;
+        /**
          * 季节主题，null 时从父界面继承
          */
         @Nullable
@@ -158,7 +161,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
     @Override
     protected void onInit() {
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            Minecraft.getInstance().setScreen(args.parentScreen());
 
         AdvancementUtils.ensureAdvancementData();
         this.wasLoading = AdvancementUtils.isLoading();
@@ -203,7 +206,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_advancement"));
+        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_advancement"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -222,7 +225,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> markAdvancementButtonsDirty());
+        scrollbarWidget.onValueChanged(v -> refreshAdvancementButtons());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
         // endregion 滚动条
@@ -249,7 +252,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, tooltipBounds);
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
+                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
                         (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                         (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
                 btn.addChild(typeTooltip);
@@ -271,7 +274,6 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
         // region 进度列表按钮
         advancementButtonWidgets.clear();
-        advancementRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -303,15 +305,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object advId = b.property("advancementId");
-                if (advId instanceof String string) {
-                    handleAdvancement(string);
+                if (advId instanceof String) {
+                    handleAdvancement((String) advId);
                     if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(false);
                     selectedAdvancementWidget = btn;
                 }
             });
 
             advancementButtonWidgets.add(btn);
-            advancementRows.add(new AdvancementRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
         // endregion 进度列表按钮
@@ -320,28 +321,28 @@ public class AdvancementSelectScreen extends BaniraScreen {
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
-        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
+        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
+        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
         submitButtonWidget.onClick(b -> {
             if (this.currentAdvancement == null) {
-                BaniraClientRuntime.setScreen(args.parentScreen());
+                Minecraft.getInstance().setScreen(args.parentScreen());
             } else {
                 ResourceLocation location = this.currentAdvancement;
                 if (args.onDataReceived1() != null) {
                     args.onDataReceived1().accept(location);
                     LOGGER.debug("Advancement selected: {}", location);
-                    BaniraClientRuntime.setScreen(args.parentScreen());
+                    closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                 } else if (args.onDataReceived2() != null) {
                     String result = args.onDataReceived2().apply(location);
                     if (StringUtils.isNullOrEmpty(result)) {
                         LOGGER.debug("Advancement selected: {}", location);
-                        BaniraClientRuntime.setScreen(args.parentScreen());
+                        closeAfterSubmit(args, () -> Minecraft.getInstance().setScreen(args.parentScreen()));
                     } else {
                         LOGGER.debug("Advancement validation failed: {}", result);
                     }
@@ -352,6 +353,12 @@ public class AdvancementSelectScreen extends BaniraScreen {
         // endregion 确认与取消按钮
 
         updateSearchResults();
+    }
+
+    static void closeAfterSubmit(Args args, Runnable closeAction) {
+        if (args.closeAfterSubmit()) {
+            closeAction.run();
+        }
     }
 
     @Nullable
@@ -379,6 +386,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
+        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
+        super.renderWidgets(stack, partialTicks);
+
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
@@ -390,16 +400,14 @@ public class AdvancementSelectScreen extends BaniraScreen {
         }
         this.wasLoading = isLoading;
 
-        refreshAdvancementButtonsIfDirty();
-        if (selectedAdvancementWidget != null) selectedAdvancementWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
+        refreshAdvancementButtons();
     }
 
     @Override
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            Minecraft.getInstance().setScreen(args.parentScreen());
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -426,7 +434,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            Minecraft.getInstance().setScreen(args.parentScreen());
             eventArgs.consumed(true);
         } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
@@ -441,18 +449,18 @@ public class AdvancementSelectScreen extends BaniraScreen {
     }
 
     private void refreshAdvancementButtons() {
-        if (advancementRows.isEmpty()) return;
+        if (advancementButtonWidgets.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < advancementRows.size(); i++) {
-            AdvancementRow row = advancementRows.get(i);
-            ButtonWidget buttonWidget = row.button;
+        for (int i = 0; i < advancementButtonWidgets.size(); i++) {
+            ButtonWidget buttonWidget = advancementButtonWidgets.get(i);
             int index = scrollOffset + i;
-            ItemWidget iw = row.icon;
-            LabelWidget lw = row.label;
-            TooltipWidget tw = row.tooltip;
+            ItemWidget iw = buttonWidget.findChildByType(ItemWidget.class);
+            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
+            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
+            if (iw == null || lw == null) continue;
 
             if (index >= 0 && index < advancementList.size()) {
                 AdvancementData advancementData = advancementList.get(index);
@@ -494,7 +502,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
         if (!found) selectedAdvancementWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
+            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
                     (this.displayMode ? "advancement_display_mode_icon" : "advancement_display_mode_all"),
                     (this.displayMode ? AdvancementUtils.getDisplayableAdvancements().size() : AdvancementUtils.getAllAdvancements().size())));
         }
@@ -515,39 +523,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 String advancementId = sel.id().toString();
                 advancementTooltip.text(Text.literal(buildDeduplicatedTooltip(displayName, description, advancementId)));
             } else {
-                advancementTooltip.text(Text.transAuto(Banira.MOD_ID, "advancement_select_advancement"));
+                advancementTooltip.text(Text.transAuto(BaniraCodex.MODID, "advancement_select_advancement"));
             }
-        }
-        advancementButtonsDirty = false;
-    }
-
-    private void markAdvancementButtonsDirty() {
-        advancementButtonsDirty = true;
-    }
-
-    /**
-     * 成就列表在搜索、滚动、选择或异步加载完成后才刷新，普通 render 只绘制现有控件。
-     */
-    private void refreshAdvancementButtonsIfDirty() {
-        if (advancementButtonsDirty) {
-            refreshAdvancementButtons();
-        }
-    }
-
-    /**
-     * 列表行组件在 initWidgets 中固定，刷新时直接复用引用，避免反复遍历子树查找。
-     */
-    private static final class AdvancementRow {
-        private final ButtonWidget button;
-        private final ItemWidget icon;
-        private final LabelWidget label;
-        private final TooltipWidget tooltip;
-
-        private AdvancementRow(ButtonWidget button, ItemWidget icon, LabelWidget label, TooltipWidget tooltip) {
-            this.button = button;
-            this.icon = icon;
-            this.label = label;
-            this.tooltip = tooltip;
         }
     }
 
@@ -578,7 +555,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
             }
         }
 
-        markAdvancementButtonsDirty();
+        refreshAdvancementButtons();
         LOGGER.debug("Search results updated: count={}, query={}", advancementList.size(), s);
     }
 
@@ -588,7 +565,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 ResourceLocation location = Identifier.id().parse(advancementId);
                 this.currentAdvancement = location;
                 LOGGER.debug("Select advancement: {}", location);
-                markAdvancementButtonsDirty();
+                refreshAdvancementButtons();
             } catch (IllegalArgumentException e) {
                 LOGGER.debug("Invalid advancement id format: {}", advancementId);
             } catch (Exception e) {
@@ -606,7 +583,7 @@ public class AdvancementSelectScreen extends BaniraScreen {
                 && !advancementId.equals(description)) {
             parts.add(advancementId);
         }
-        return String.join("\n", new LinkedHashSet<>(parts));
+        return new LinkedHashSet<>(parts).stream().collect(Collectors.joining("\n"));
     }
 
     private int parseOperationButtonType(String buttonId) {
@@ -629,8 +606,8 @@ public class AdvancementSelectScreen extends BaniraScreen {
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(Banira.MOD_ID, "enter_advancement_id"))
-                            .hint(Text.transAuto(Banira.MOD_ID, "enter_something"))
+                            .title(Text.transAuto(BaniraCodex.MODID, "enter_advancement_id"))
+                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
                             .defaultValue(effectString)
                             .validator((input) -> {
                                 try {
@@ -645,14 +622,13 @@ public class AdvancementSelectScreen extends BaniraScreen {
                         String id = input.firstValue();
                         try {
                             this.currentAdvancement = Identifier.id().parse(id);
-                            markAdvancementButtonsDirty();
                         } catch (IllegalArgumentException e) {
                             LOGGER.debug("Invalid advancement id format: {}", id);
                         } catch (Exception e) {
                             LOGGER.debug("Unexpected error parsing advancement id: {}", id, e);
                         }
                     });
-            BaniraClientRuntime.setScreen(new InputFormScreen(inputArgs));
+            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         }
     }
 }

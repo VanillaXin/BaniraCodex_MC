@@ -36,6 +36,8 @@ public class CustomConfig {
     @Setter
     private static boolean dirty = false;
 
+    private static volatile boolean hotReloadRegistered;
+
     private static JsonObject defaultConfig() {
         JsonObject config = new JsonObject();
 
@@ -66,10 +68,12 @@ public class CustomConfig {
             dir.mkdirs();
         }
         File file = new File(dir, FILE_NAME);
+        registerHotReload(file.toPath());
         if (file.exists()) {
             if (!notDirty || !isDirty()) {
                 try {
                     customConfig = JsonUtils.parseObject(new String(Files.readAllBytes(Paths.get(file.getPath()))));
+                    setDirty(false);
                     LOGGER.debug("Loaded custom common config.");
                     return true;
                 } catch (Exception e) {
@@ -83,6 +87,16 @@ public class CustomConfig {
             return true;
         }
         return false;
+    }
+
+    private static void registerHotReload(Path path) {
+        if (hotReloadRegistered) return;
+        synchronized (CustomConfig.class) {
+            if (hotReloadRegistered) return;
+            ManagedConfigFiles.register(path, ManagedConfigFiles.Scope.COMMON,
+                    () -> loadCustomConfig(false));
+            hotReloadRegistered = true;
+        }
     }
 
     /**
@@ -119,6 +133,7 @@ public class CustomConfig {
                     accessFile.setLength(0);
                     accessFile.write(JsonUtils.toPrettyString(customConfig).getBytes(StandardCharsets.UTF_8));
                     setDirty(false);
+                    ManagedConfigFiles.markWritten(file.toPath());
                     LOGGER.debug("Saved custom common config.");
                 } catch (Exception e) {
                     LOGGER.error("Error saving custom common config: ", e);

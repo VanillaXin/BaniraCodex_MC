@@ -183,6 +183,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
+    public BaniraPermissionService permissionService() {
+        return FabricBaniraPermissionService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
     public BaniraLogoService logoService() {
         return FabricLogoService.INSTANCE;
     }

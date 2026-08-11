@@ -22,17 +22,24 @@ import java.util.function.Function;
  */
 public final class FabricNetworkHandler implements NetworkPacketRegistrar {
     private final ResourceLocation channel;
+    private final String protocolVersion;
     private final Map<Integer, PacketRegistration<?>> byId = new LinkedHashMap<>();
     private final Map<Class<?>, PacketRegistration<?>> byClass = new LinkedHashMap<>();
     private boolean serverReceiverRegistered;
     private boolean clientReceiverRegistered;
 
-    private FabricNetworkHandler(ResourceLocation channel) {
+    private FabricNetworkHandler(ResourceLocation channel, String protocolVersion) {
         this.channel = channel;
+        this.protocolVersion = protocolVersion == null ? "" : protocolVersion;
     }
 
     public static FabricNetworkHandler create(String channelName, BaniraIdentifier identifier) {
-        FabricNetworkHandler handler = new FabricNetworkHandler(new ResourceLocation(identifier.getNamespace(), channelName));
+        return create(channelName, identifier, "");
+    }
+
+    public static FabricNetworkHandler create(String channelName, BaniraIdentifier identifier, String protocolVersion) {
+        FabricNetworkHandler handler = new FabricNetworkHandler(
+                new ResourceLocation(identifier.getNamespace(), channelName), protocolVersion);
         FabricNetworkChannels.installDefault(handler);
         return handler;
     }
@@ -63,6 +70,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
             throw new IllegalArgumentException("Unregistered Banira packet: " + packet.getClass().getName());
         }
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        buffer.writeUtf(protocolVersion);
         buffer.writeVarInt(registration.packetId);
         registration.encodeUntyped(packet, new FabricPacketBuffer(buffer));
         return buffer;
@@ -87,6 +95,11 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
     }
 
     private void receive(FriendlyByteBuf buffer, BaniraNetworkContext context) {
+        String remoteProtocol = buffer.readUtf();
+        if (!protocolVersion.equals(remoteProtocol)) {
+            context.markHandled();
+            return;
+        }
         int packetId = buffer.readVarInt();
         PacketRegistration<?> registration = byId.get(packetId);
         if (registration == null) {

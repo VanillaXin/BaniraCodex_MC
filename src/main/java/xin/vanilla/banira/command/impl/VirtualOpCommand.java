@@ -12,6 +12,7 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
+import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
 import xin.vanilla.banira.common.enums.EnumCommandType;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumOperationType;
@@ -22,10 +23,7 @@ import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.common.util.VirtualPermissionManager;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -49,17 +47,14 @@ public final class VirtualOpCommand {
                     BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled"));
             return 0;
         }
-        EnumCommandType[] rules;
-        try {
-            rules = Arrays.stream(CommandUtils.getStringDefault(context, "rules", "").split(","))
-                    .filter(s -> s != null && !s.trim().isEmpty())
-                    .map(String::trim)
-                    .map(String::toUpperCase)
-                    .map(EnumCommandType::valueOf)
-                    .toArray(EnumCommandType[]::new);
-        } catch (IllegalArgumentException ignored) {
-            rules = new EnumCommandType[]{};
+        String rawRules = CommandUtils.getStringDefault(context, "rules", "");
+        Optional<LinkedHashSet<String>> resolvedRules = resolvePermissionKeys(rawRules);
+        if (!resolvedRules.isPresent()) {
+            MessageUtils.sendMessage(source, false, BaniraComponent.get().trans(
+                    EnumI18nType.FORMAT, "unknown_virtual_permission", rawRules));
+            return 0;
         }
+        Set<String> rules = resolvedRules.get();
         List<ServerPlayer> targetList = new ArrayList<>();
         try {
             targetList.addAll(EntityArgument.getPlayers(context, "player"));
@@ -70,28 +65,13 @@ public final class VirtualOpCommand {
             language = Translator.getPlayerLanguage(source.getPlayerOrException());
         }
         for (ServerPlayer target : targetList) {
-            switch (type) {
-                case ADD:
-                    VirtualPermissionManager.addVirtualPermission(target, rules);
-                    break;
-                case SET:
-                    VirtualPermissionManager.setVirtualPermission(target, rules);
-                    break;
-                case DEL:
-                case REMOVE:
-                    VirtualPermissionManager.delVirtualPermission(target, rules);
-                    break;
-                case CLEAR:
-                    VirtualPermissionManager.clearVirtualPermission(target);
-                    break;
-                case GET:
-                case LIST:
-                    break;
-                default:
-                    break;
+            if (type == EnumOperationType.CLEAR) {
+                VirtualPermissionManager.clearVirtualPermission(target);
+            } else if (type != EnumOperationType.GET && type != EnumOperationType.LIST) {
+                VirtualPermissionManager.modifyVirtualPermissions(target, type, rules);
             }
-            Set<EnumCommandType> permissions = VirtualPermissionManager.getVirtualPermission(target);
-            String permissionsStr = VirtualPermissionManager.buildPermissionsString(permissions);
+            Set<String> permissions = VirtualPermissionManager.getRawVirtualPermission(target);
+            String permissionsStr = VirtualPermissionManager.buildRawPermissionsString(permissions);
             MessageUtils.sendNotification(target, BaniraComponent.get().trans(EnumI18nType.FORMAT,
                     "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
                     NotificationTypeKeys.COMMAND_FEEDBACK);
@@ -129,12 +109,33 @@ public final class VirtualOpCommand {
         String input = CommandUtils.getStringEmpty(context, "rules").replace(" ", ",");
         String[] split = input.split(",");
         String current = input.endsWith(",") ? "" : split[split.length - 1];
-        Arrays.stream(EnumCommandType.values())
+        BaniraVirtualPermissionRegistry.all().stream()
                 .filter(BaniraVirtualPermission::op)
-                .filter(type -> Arrays.stream(split).noneMatch(in -> in.equalsIgnoreCase(type.name())))
-                .filter(type -> (current == null || current.isEmpty()) || type.name().toLowerCase().contains(current.toLowerCase()))
-                .forEach(type -> builder.suggest(type.name()));
+                .filter(permission -> Arrays.stream(split)
+                        .noneMatch(in -> in.equalsIgnoreCase(permission.key())))
+                .filter(permission -> current.isEmpty()
+                        || permission.key().toLowerCase(Locale.ROOT).contains(current.toLowerCase(Locale.ROOT)))
+                .forEach(permission -> builder.suggest(permission.key()));
         return builder.buildFuture();
+    }
+
+    static Optional<LinkedHashSet<String>> resolvePermissionKeys(String input) {
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        if (input == null || input.trim().isEmpty()) {
+            return Optional.of(result);
+        }
+        for (String token : input.replace(' ', ',').split(",")) {
+            String key = token.trim();
+            if (key.isEmpty()) {
+                continue;
+            }
+            Optional<BaniraVirtualPermission> permission = BaniraVirtualPermissionRegistry.find(key);
+            if (!permission.isPresent()) {
+                return Optional.empty();
+            }
+            result.add(permission.get().key());
+        }
+        return Optional.of(result);
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> create() {

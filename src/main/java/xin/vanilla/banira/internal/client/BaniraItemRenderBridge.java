@@ -21,6 +21,8 @@ import java.util.List;
  * 物品 GUI 绘制桥。物品模型、ItemRenderer 和本地玩家都属于版本/加载器敏感实现细节。
  */
 public final class BaniraItemRenderBridge {
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+
     private BaniraItemRenderBridge() {
     }
 
@@ -29,9 +31,16 @@ public final class BaniraItemRenderBridge {
     }
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {
-        renderGuiItemScaled(stack, x, y, 16);
-        if (showCount) {
-            BaniraClientRuntime.itemRenderer().renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+        ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
+        float originalBlitOffset = itemRenderer.blitOffset;
+        try {
+            renderGuiItemScaled(stack, x, y, 16);
+            if (showCount) {
+                itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
+                itemRenderer.renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+            }
+        } finally {
+            itemRenderer.blitOffset = originalBlitOffset;
         }
     }
 

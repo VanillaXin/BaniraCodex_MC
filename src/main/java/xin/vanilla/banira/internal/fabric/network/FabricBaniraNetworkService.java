@@ -21,6 +21,15 @@ public enum FabricBaniraNetworkService implements BaniraNetworkService {
         return FabricNetworkHandler.create(channelName, identifier);
     }
 
+    @Nonnull
+    @Override
+    public NetworkPacketRegistrar registrar(@Nonnull String channelName,
+                                             @Nonnull BaniraIdentifier identifier,
+                                             @Nonnull String protocolVersion,
+                                             boolean optionalClient) {
+        return FabricNetworkHandler.create(channelName, identifier, protocolVersion);
+    }
+
     @Override
     public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
         FabricNetworkChannels.sendToServer(packet);

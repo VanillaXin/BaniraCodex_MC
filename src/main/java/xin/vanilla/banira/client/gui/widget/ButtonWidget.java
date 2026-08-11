@@ -7,22 +7,21 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.event.PressGestureState;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static xin.vanilla.banira.client.data.BaniraColorToken.*;
 
 /**
  * 按钮Widget
@@ -72,6 +71,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         RESET,
     }
 
+    @FunctionalInterface
+    public interface LeadingIconRenderer {
+        void render(PoseStack stack, int x, int y, int size);
+    }
+
     /**
      * 长按进度条填充方向
      */
@@ -115,6 +119,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     private final List<LongPressCompletionEffect> longPressCompletionEffects = new ArrayList<>();
 
+    private boolean dangerStyle;
+
     /**
      * 长按进度条模式，默认从左至右
      */
@@ -124,10 +130,6 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     private Text text = Text.empty();
-
-    private Font cachedTextWidthFont;
-    private String cachedTextWidthContent;
-    private int cachedTextWidth;
 
     @Getter
     @Setter
@@ -145,47 +147,47 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Getter
     private long longPressDurationMs = 2000L;
 
-    private final BaniraPressGestureState longPressState = new BaniraPressGestureState();
+    private final PressGestureState longPressState = new PressGestureState();
 
     @Getter
     @Setter
-    private int bgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG);
+    private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBg();
 
     @Getter
     @Setter
-    private int hoverBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_HOVER);
+    private int hoverBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgHover();
 
     @Getter
     @Setter
-    private int focusedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_FOCUSED);
+    private int focusedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgFocused();
 
     @Getter
     @Setter
-    private int pressedBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_PRESSED);
+    private int pressedBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgPressed();
 
     @Getter
     @Setter
-    private int disabledBgColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BG_DISABLED);
+    private int disabledBgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBgDisabled();
 
     @Getter
     @Setter
-    private int borderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER);
+    private int borderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorder();
 
     @Getter
     @Setter
-    private int hoverBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_HOVER);
+    private int hoverBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderHover();
 
     @Getter
     @Setter
-    private int focusedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_FOCUSED);
+    private int focusedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderFocused();
 
     @Getter
     @Setter
-    private int pressedBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_PRESSED);
+    private int pressedBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderPressed();
 
     @Getter
     @Setter
-    private int disabledBorderColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_BORDER_DISABLED);
+    private int disabledBorderColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonBorderDisabled();
 
     @Getter
     @Setter
@@ -193,30 +195,30 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @Getter
     @Setter
-    private int textColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT);
+    private int textColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonText();
 
     @Getter
     @Setter
-    private int hoverTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_HOVER);
+    private int hoverTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextHover();
 
     @Getter
     @Setter
-    private int focusedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_FOCUSED);
+    private int focusedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextFocused();
 
     @Getter
     @Setter
-    private int pressedTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_PRESSED);
+    private int pressedTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextPressed();
 
     @Getter
     @Setter
-    private int disabledTextColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_TEXT_DISABLED);
+    private int disabledTextColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonTextDisabled();
 
     /**
      * 长按进度填充色（与 hover 轨道区分），由主题 {@link BaniraColorConfig#buttonLongPressProgressFill()} 提供
      */
     @Getter
     @Setter
-    private int longPressProgressFillColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_LONG_PRESS_PROGRESS_FILL);
+    private int longPressProgressFillColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).buttonLongPressProgressFill();
 
     @Getter
     @Setter
@@ -266,7 +268,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     @Getter
     @Setter
-    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.NONE;
+    private EnumEllipsisPosition textEllipsisPosition = EnumEllipsisPosition.END;
 
     /**
      * 预置图标样式，非 null 时绘制图标而非文本
@@ -274,28 +276,38 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Getter
     private PresetStyle presetStyle = null;
 
+    /** 可选的内容图标，与文本一起居中绘制。 */
+    @Getter
+    @Setter
+    @Nullable
+    private LeadingIconRenderer leadingIconRenderer;
+
+    @Getter
+    @Setter
+    private int leadingIconSize = 14;
+
     /**
      * 图标颜色（presetStyle 非 null 时生效）
      */
     @Getter
     @Setter
-    private int iconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON);
+    private int iconColor = 0xFF333333;
 
     @Getter
     @Setter
-    private int hoverIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_HOVER);
+    private int hoverIconColor = 0xFF555555;
 
     @Getter
     @Setter
-    private int focusedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_FOCUSED);
+    private int focusedIconColor = 0xFF444444;
 
     @Getter
     @Setter
-    private int pressedIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_PRESSED);
+    private int pressedIconColor = 0xFF222222;
 
     @Getter
     @Setter
-    private int disabledIconColor = BaniraColorConfig.colorForSeason(EnumSeason.AUTO, BUTTON_ICON_DISABLED);
+    private int disabledIconColor = 0xFFAAAAAA;
 
     /**
      * 图标线条宽度
@@ -307,23 +319,47 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Override
     public void applyTheme(BaniraColorConfig theme) {
         super.applyTheme(theme);
-        bgColor(theme.color(BUTTON_BG)).hoverBgColor(theme.color(BUTTON_BG_HOVER))
-                .focusedBgColor(theme.color(BUTTON_BG_FOCUSED)).pressedBgColor(theme.color(BUTTON_BG_PRESSED))
-                .disabledBgColor(theme.color(BUTTON_BG_DISABLED))
-                .borderColor(theme.color(BUTTON_BORDER)).hoverBorderColor(theme.color(BUTTON_BORDER_HOVER))
-                .focusedBorderColor(theme.color(BUTTON_BORDER_FOCUSED)).pressedBorderColor(theme.color(BUTTON_BORDER_PRESSED))
-                .disabledBorderColor(theme.color(BUTTON_BORDER_DISABLED))
-                .textColor(theme.color(BUTTON_TEXT)).hoverTextColor(theme.color(BUTTON_TEXT_HOVER))
-                .focusedTextColor(theme.color(BUTTON_TEXT_FOCUSED)).pressedTextColor(theme.color(BUTTON_TEXT_PRESSED))
-                .disabledTextColor(theme.color(BUTTON_TEXT_DISABLED))
-                .longPressProgressFillColor(theme.color(BUTTON_LONG_PRESS_PROGRESS_FILL));
-        if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
-            iconColor(theme.color(BUTTON_ICON))
-                    .hoverIconColor(theme.color(BUTTON_ICON_HOVER))
-                    .focusedIconColor(theme.color(BUTTON_ICON_FOCUSED))
-                    .pressedIconColor(theme.color(BUTTON_ICON_PRESSED))
-                    .disabledIconColor(theme.color(BUTTON_ICON_DISABLED));
+        bgColor(theme.buttonBg()).hoverBgColor(theme.buttonBgHover())
+                .focusedBgColor(theme.buttonBgFocused()).pressedBgColor(theme.buttonBgPressed())
+                .disabledBgColor(theme.buttonBgDisabled())
+                .borderColor(theme.buttonBorder()).hoverBorderColor(theme.buttonBorderHover())
+                .focusedBorderColor(theme.buttonBorderFocused()).pressedBorderColor(theme.buttonBorderPressed())
+                .disabledBorderColor(theme.buttonBorderDisabled())
+                .textColor(theme.buttonText()).hoverTextColor(theme.buttonTextHover())
+                .focusedTextColor(theme.buttonTextFocused()).pressedTextColor(theme.buttonTextPressed())
+                .disabledTextColor(theme.buttonTextDisabled())
+                .longPressProgressFillColor(theme.buttonLongPressProgressFill());
+        if (dangerStyle) {
+            applyDangerTheme(theme);
+        } else if (presetStyle != null && presetStyle != PresetStyle.CLOSE) {
+            iconColor(theme.buttonPresetIconColor())
+                    .hoverIconColor(theme.buttonPresetIconHoverColor())
+                    .focusedIconColor(theme.buttonPresetIconFocusedColor())
+                    .pressedIconColor(theme.buttonPresetIconPressedColor())
+                    .disabledIconColor(theme.buttonPresetIconDisabledColor());
         }
+    }
+
+    private void applyDangerTheme(BaniraColorConfig theme) {
+        int background = theme.notificationErrorBg();
+        int danger = theme.error();
+        int hoverDanger = brightenArgb(danger, 1.12f);
+        int pressedDanger = blendArgb(danger, 0xFF000000, 0.16f);
+        int disabledDanger = blendArgb(theme.buttonPresetIconDisabledColor(), danger, 0.18f);
+        bgColor(background)
+                .hoverBgColor(blendArgb(background, danger, 0.16f))
+                .focusedBgColor(blendArgb(background, danger, 0.12f))
+                .pressedBgColor(blendArgb(background, danger, 0.28f))
+                .disabledBgColor(blendArgb(theme.buttonBgDisabled(), danger, 0.08f))
+                .borderColor(danger).hoverBorderColor(hoverDanger)
+                .focusedBorderColor(danger).pressedBorderColor(pressedDanger)
+                .disabledBorderColor(disabledDanger)
+                .textColor(danger).hoverTextColor(hoverDanger)
+                .focusedTextColor(danger).pressedTextColor(pressedDanger)
+                .disabledTextColor(disabledDanger)
+                .iconColor(danger).hoverIconColor(hoverDanger)
+                .focusedIconColor(danger).pressedIconColor(pressedDanger)
+                .disabledIconColor(disabledDanger);
     }
 
     /**
@@ -439,6 +475,15 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      */
     public ButtonWidget presetStyle(PresetStyle style) {
         this.presetStyle = style;
+        return this;
+    }
+
+    /** 使用当前主题的错误语义色绘制危险操作按钮。 */
+    public ButtonWidget dangerStyle() {
+        this.dangerStyle = true;
+        if (screen != null) {
+            applyDangerTheme(screen.getEffectiveTheme());
+        }
         return this;
     }
 
@@ -576,10 +621,25 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         // 预置图标或文本
         if (presetStyle != null) {
             drawPresetIcon(stack, contentX, contentY, availableWidth, availableHeight, currentIconColor);
+        } else if (leadingIconRenderer != null) {
+            int iconSize = Math.max(1, Math.min(leadingIconSize, availableHeight));
+            int gap = 4;
+            int maxTextWidth = Math.max(0, availableWidth - iconSize - gap);
+            int naturalTextWidth = AbstractGuiUtils.getTextWidth(font, this.text());
+            int renderedTextWidth = Math.min(naturalTextWidth, maxTextWidth);
+            int totalWidth = iconSize + (renderedTextWidth > 0 ? gap + renderedTextWidth : 0);
+            int startX = contentX + Math.max(0, (availableWidth - totalWidth) / 2);
+            leadingIconRenderer.render(stack, startX, contentY + (availableHeight - iconSize) / 2, iconSize);
+            if (renderedTextWidth > 0) {
+                FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
+                LabelWidget.drawLimitedText(drawArgs.x(startX + iconSize + gap)
+                        .y(contentY + (availableHeight - 9) / 2)
+                        .maxWidth(maxTextWidth).position(EnumEllipsisPosition.END));
+            }
         } else {
             FontDrawArgs drawArgs = FontDrawArgs.of(text.stack(stack).color(currentTextColor)).inScreen(false);
             if (textMaxWidth > 0 && textEllipsisPosition != EnumEllipsisPosition.NONE) {
-                LabelWidget.drawLimitedText(drawArgs.x(contentX).y(contentY + (availableHeight - 9) / 2f)
+                LabelWidget.drawLimitedText(drawArgs.x(contentX).y(contentY + (availableHeight - 9) / 2)
                         .maxWidth(Math.min(textMaxWidth, availableWidth))
                         .position(textEllipsisPosition));
             } else if (fontSize != 9.0f) {
@@ -587,14 +647,14 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 stack.translate(contentX, contentY, 0);
                 float scale = fontSize / 9.0f;
                 stack.scale(scale, scale, 1.0f);
-                int textWidth = cachedTextWidth(font);
+                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
                 int textHeight = 9;
                 int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
                 int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
                 LabelWidget.drawLimitedText(drawArgs.x(scaledTextX).y(scaledTextY));
                 stack.popPose();
             } else {
-                int textWidth = cachedTextWidth(font);
+                int textWidth = AbstractGuiUtils.getTextWidth(font, this.text());
                 int textHeight = 9;
                 int centeredTextX = contentX + (availableWidth - textWidth) / 2;
                 int centeredTextY = contentY + (availableHeight - textHeight) / 2;
@@ -607,22 +667,6 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
 
         renderChildren(stack, partialTicks);
-    }
-
-    private int cachedTextWidth(Font font) {
-        String content = text.content();
-        if (cachedTextWidthFont != font || !content.equals(cachedTextWidthContent)) {
-            cachedTextWidthFont = font;
-            cachedTextWidthContent = content;
-            cachedTextWidth = AbstractGuiUtils.getTextWidth(font, this.text);
-        }
-        return cachedTextWidth;
-    }
-
-    private void invalidateTextWidthCache() {
-        cachedTextWidthFont = null;
-        cachedTextWidthContent = null;
-        cachedTextWidth = 0;
     }
 
     private void renderLongPressPressedFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
@@ -770,79 +814,81 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (a << 24) | (cr << 16) | (cg << 8) | cb;
     }
 
-    private static int blendArgb(int from, int to, float t) {
-        float clamped = Math.max(0f, Math.min(1f, t));
-        int a = Math.round(((from >>> 24) & 0xFF) * (1f - clamped) + ((to >>> 24) & 0xFF) * clamped);
-        int r = Math.round(((from >> 16) & 0xFF) * (1f - clamped) + ((to >> 16) & 0xFF) * clamped);
-        int g = Math.round(((from >> 8) & 0xFF) * (1f - clamped) + ((to >> 8) & 0xFF) * clamped);
-        int b = Math.round((from & 0xFF) * (1f - clamped) + (to & 0xFF) * clamped);
+    private static int blendArgb(int from, int to, float amount) {
+        float clamped = Math.max(0f, Math.min(1f, amount));
+        int a = Math.round(((from >>> 24) & 0xFF) * (1f - clamped)
+                + ((to >>> 24) & 0xFF) * clamped);
+        int r = Math.round(((from >> 16) & 0xFF) * (1f - clamped)
+                + ((to >> 16) & 0xFF) * clamped);
+        int g = Math.round(((from >> 8) & 0xFF) * (1f - clamped)
+                + ((to >> 8) & 0xFF) * clamped);
+        int b = Math.round((from & 0xFF) * (1f - clamped)
+                + (to & 0xFF) * clamped);
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
-    private void drawLongPressCompletionEffects(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight) {
+    private void drawLongPressCompletionEffects(PoseStack stack, int drawX, int drawY,
+                                                int drawWidth, int drawHeight) {
         if (drawWidth < 1 || drawHeight < 1) {
             return;
         }
-        float cx = drawX + drawWidth * 0.5f;
-        float cy = drawY + drawHeight * 0.5f;
+        float centerX = drawX + drawWidth * 0.5f;
+        float centerY = drawY + drawHeight * 0.5f;
         long now = System.currentTimeMillis();
-        for (LongPressCompletionEffect e : longPressCompletionEffects) {
-            float elapsedMs = now - e.spawnTimeMs;
-            if (elapsedMs <= 0f || elapsedMs >= e.lifetimeMs) {
+        for (LongPressCompletionEffect effect : longPressCompletionEffects) {
+            float elapsedMs = now - effect.spawnTimeMs;
+            if (elapsedMs <= 0f || elapsedMs >= effect.lifetimeMs) {
                 continue;
             }
-            float age = elapsedMs / e.lifetimeMs;
-            if (e.kind == COMPLETION_KIND_FLASH) {
-                drawLongPressCompletionFlash(stack, cx, cy, e, elapsedMs, age);
-                continue;
-            }
-            if (e.kind == COMPLETION_KIND_CHECK) {
-                drawLongPressCompletionCheck(stack, cx, cy, e, age);
-                continue;
+            float age = elapsedMs / effect.lifetimeMs;
+            if (effect.kind == COMPLETION_KIND_FLASH) {
+                drawLongPressCompletionFlash(stack, centerX, centerY, effect, elapsedMs, age);
+            } else if (effect.kind == COMPLETION_KIND_CHECK) {
+                drawLongPressCompletionCheck(stack, centerX, centerY, effect, age);
             }
         }
     }
 
     /**
-     * 长按完成反馈主体：全按钮短暂亮起，再有一条轻扫光掠过。
+     * 完成时短暂提亮按钮，并用扫光连接进度态与完成态。
      */
-    private void drawLongPressCompletionFlash(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float elapsedMs, float age) {
-        int w = Math.max(1, Math.round(e.drawW));
-        int h = Math.max(1, Math.round(e.drawH));
-        int x = Math.round(cx - w * 0.5f);
-        int y = Math.round(cy - h * 0.5f);
+    private void drawLongPressCompletionFlash(PoseStack stack, float centerX, float centerY,
+                                              LongPressCompletionEffect effect,
+                                              float elapsedMs, float age) {
+        int width = Math.max(1, Math.round(effect.drawW));
+        int height = Math.max(1, Math.round(effect.drawH));
+        int x = Math.round(centerX - width * 0.5f);
+        int y = Math.round(centerY - height * 0.5f);
         float fade = 1f - age;
         int washAlpha = (int) (72f * fade * fade);
         if (washAlpha > 5) {
-            ShapeDrawArgs wash = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, washAlpha));
+            ShapeDrawArgs wash = ShapeDrawArgs.rect(stack, x, y, width, height,
+                    withAlphaArgb(effect.baseColor, washAlpha));
             applyButtonRectCorners(wash);
             BaseShapeWidget.drawShape(wash);
         }
 
         float sweepProgress = Math.min(1f, elapsedMs / 360f);
-        int sweepAlpha = (int) (110f * (1f - Math.abs(sweepProgress - 0.5f) * 1.45f) * Math.max(0f, fade));
+        int sweepAlpha = (int) (110f * (1f - Math.abs(sweepProgress - 0.5f) * 1.45f)
+                * Math.max(0f, fade));
         if (sweepAlpha > 5) {
-            int sweepW = Math.max(5, Math.round(w * 0.24f));
-            int sx = x - sweepW + Math.round((w + sweepW * 2f) * sweepProgress);
-            AbstractGuiUtils.pushScissor(x, y, w, h);
-            AbstractGuiUtils.fill(stack, sx, y, sweepW, h, withAlphaArgb(e.baseColor, sweepAlpha));
-            AbstractGuiUtils.fill(stack, sx + sweepW / 2, y, 1, h, withAlphaArgb(brightenArgb(e.baseColor, 1.18f), Math.min(255, sweepAlpha + 42)));
+            int sweepWidth = Math.max(5, Math.round(width * 0.24f));
+            int sweepX = x - sweepWidth + Math.round((width + sweepWidth * 2f) * sweepProgress);
+            AbstractGuiUtils.pushScissor(x, y, width, height);
+            AbstractGuiUtils.fill(stack, sweepX, y, sweepWidth, height,
+                    withAlphaArgb(effect.baseColor, sweepAlpha));
+            AbstractGuiUtils.fill(stack, sweepX + sweepWidth / 2, y, 1, height,
+                    withAlphaArgb(brightenArgb(effect.baseColor, 1.18f),
+                            Math.min(255, sweepAlpha + 42)));
             AbstractGuiUtils.popScissor();
-        }
-
-        int borderAlpha = (int) (120f * fade);
-        if (borderAlpha > 5) {
-            ShapeDrawArgs border = ShapeDrawArgs.rect(stack, x, y, w, h, withAlphaArgb(e.baseColor, borderAlpha));
-            applyButtonRectCorners(border);
-            border.rect().border(1.4f);
-            BaseShapeWidget.drawShape(border);
         }
     }
 
     /**
-     * 长按完成反馈标记：对勾比粒子和形状更明确地表示“完成”。
+     * 对勾明确表示长按动作已经完成。
      */
-    private void drawLongPressCompletionCheck(PoseStack stack, float cx, float cy, LongPressCompletionEffect e, float age) {
+    private void drawLongPressCompletionCheck(PoseStack stack, float centerX, float centerY,
+                                              LongPressCompletionEffect effect, float age) {
         float pop = age < 0.22f ? age / 0.22f : 1f;
         pop = 1f - (1f - pop) * (1f - pop);
         float fade = age < 0.76f ? 1f : Math.max(0f, (1f - age) / 0.24f);
@@ -850,19 +896,21 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         if (alpha < 8) {
             return;
         }
-        float size = e.drawW * (0.76f + 0.24f * pop);
-        float x1 = cx - size * 0.44f;
-        float y1 = cy + size * 0.02f;
-        float x2 = cx - size * 0.12f;
-        float y2 = cy + size * 0.34f;
-        float x3 = cx + size * 0.48f;
-        float y3 = cy - size * 0.36f;
+        float size = effect.drawW * (0.76f + 0.24f * pop);
+        float x1 = centerX - size * 0.44f;
+        float y1 = centerY + size * 0.02f;
+        float x2 = centerX - size * 0.12f;
+        float y2 = centerY + size * 0.34f;
+        float x3 = centerX + size * 0.48f;
+        float y3 = centerY - size * 0.36f;
         int shadow = withAlphaArgb(0xFF000000, (int) (58f * fade));
-        int color = withAlphaArgb(e.baseColor, alpha);
-        AbstractGuiUtils.drawLine(stack, x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
-        AbstractGuiUtils.drawLine(stack, x1, y1, x2, y2, 2.6f, color);
-        AbstractGuiUtils.drawLine(stack, x2, y2, x3, y3, 2.6f, color);
+        int color = withAlphaArgb(effect.baseColor, alpha);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x1 + 0.8f, y1 + 0.8f, x2 + 0.8f, y2 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack,
+                x2 + 0.8f, y2 + 0.8f, x3 + 0.8f, y3 + 0.8f, 3.2f, shadow);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x1, y1, x2, y2, 2.6f, color);
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, x2, y2, x3, y3, 2.6f, color);
     }
 
     private static int withAlphaArgb(int argb, int alpha) {
@@ -887,7 +935,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         final int kind;
         final int lifetimeMs;
 
-        LongPressCompletionEffect(int baseColor, long spawnTimeMs, float drawW, float drawH, int kind, int lifetimeMs) {
+        LongPressCompletionEffect(int baseColor, long spawnTimeMs,
+                                  float drawW, float drawH, int kind, int lifetimeMs) {
             this.baseColor = baseColor;
             this.spawnTimeMs = spawnTimeMs;
             this.drawW = drawW;
@@ -1038,19 +1087,16 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     public ButtonWidget text(String text) {
         this.text = Text.literal(text);
-        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Component text) {
         this.text = Text.from(text);
-        invalidateTextWidthCache();
         return this;
     }
 
     public ButtonWidget text(Text text) {
         this.text = text;
-        invalidateTextWidthCache();
         return this;
     }
 

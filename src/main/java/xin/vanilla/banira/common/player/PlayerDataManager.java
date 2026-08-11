@@ -120,10 +120,14 @@ public final class PlayerDataManager {
 
     private static final class CachedPlayerData {
         volatile CompoundTag root;
+        @Nullable
+        CompoundTag persistedRoot;
         volatile boolean dirty = false;
 
-        CachedPlayerData(CompoundTag root) {
+        CachedPlayerData(CompoundTag root, boolean migratedFromLegacy) {
             this.root = root;
+            this.persistedRoot = migratedFromLegacy ? null : root.copy();
+            this.dirty = migratedFromLegacy;
         }
     }
 
@@ -132,6 +136,7 @@ public final class PlayerDataManager {
      */
     public void clearCache() {
         playerCache.clear();
+        fileLocks.clear();
         LOGGER.info("PlayerDataManager[{}] cache cleared.", suffix);
     }
 
@@ -239,20 +244,30 @@ public final class PlayerDataManager {
         if (cached == null) {
             return;
         }
-        synchronized (cached) {
-            if (!cached.dirty) return;
-            File file = getPlayerDataFile(playerUuid);
-            Path filePath = file.toPath();
-            ReentrantLock lock = fileLocks.computeIfAbsent(filePath, p -> new ReentrantLock());
-            lock.lock();
-            try {
-                atomicWrite(cached.root, file);
-                cached.dirty = false;
-            } catch (IOException e) {
-                LOGGER.error("PlayerDataManager[{}] failed to write {} : {}", suffix, file.getAbsolutePath(), e.getMessage());
-            } finally {
-                lock.unlock();
+        File file = getPlayerDataFile(playerUuid);
+        Path filePath = file.toPath();
+        ReentrantLock lock = fileLocks.computeIfAbsent(filePath, p -> new ReentrantLock());
+        lock.lock();
+        try {
+            CompoundTag snapshot;
+            synchronized (cached) {
+                if (!cached.dirty) return;
+                if (cached.persistedRoot != null && cached.root.equals(cached.persistedRoot)) {
+                    cached.dirty = false;
+                    return;
+                }
+                // 只在短锁内复制；压缩和文件替换不阻塞内存数据读写。
+                snapshot = cached.root.copy();
             }
+            atomicWrite(snapshot, file);
+            synchronized (cached) {
+                cached.persistedRoot = snapshot;
+                cached.dirty = !cached.root.equals(snapshot);
+            }
+        } catch (IOException e) {
+            LOGGER.error("PlayerDataManager[{}] failed to write {} : {}", suffix, file.getAbsolutePath(), e.getMessage());
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -260,24 +275,8 @@ public final class PlayerDataManager {
      * 尝试保存所有 dirty 缓存项
      */
     public void saveAll() {
-        for (Map.Entry<UUID, CachedPlayerData> e : playerCache.entrySet()) {
-            UUID uuid = e.getKey();
-            CachedPlayerData cached = e.getValue();
-            synchronized (cached) {
-                if (!cached.dirty) continue;
-                File file = getPlayerDataFile(uuid);
-                Path filePath = file.toPath();
-                ReentrantLock lock = fileLocks.computeIfAbsent(filePath, p -> new ReentrantLock());
-                lock.lock();
-                try {
-                    atomicWrite(cached.root, file);
-                    cached.dirty = false;
-                } catch (IOException ex) {
-                    LOGGER.error("PlayerDataManager[{}] saveAll failed for {}: {}", suffix, uuid, ex.getMessage());
-                } finally {
-                    lock.unlock();
-                }
-            }
+        for (UUID uuid : playerCache.keySet()) {
+            saveToDisk(uuid);
         }
     }
 
@@ -309,10 +308,7 @@ public final class PlayerDataManager {
                 root = legacy.root;
                 migratedFromLegacy = legacy.fromLegacy;
             }
-            CachedPlayerData cached = new CachedPlayerData(root);
-            if (migratedFromLegacy) {
-                cached.dirty = true;
-            }
+            CachedPlayerData cached = new CachedPlayerData(root, migratedFromLegacy);
             playerCache.put(playerUuid, cached);
             return cached;
         } finally {
@@ -344,10 +340,7 @@ public final class PlayerDataManager {
                 root = legacy.root;
                 migratedFromLegacy = legacy.fromLegacy;
             }
-            CachedPlayerData cached = new CachedPlayerData(root);
-            if (migratedFromLegacy) {
-                cached.dirty = true;
-            }
+            CachedPlayerData cached = new CachedPlayerData(root, migratedFromLegacy);
             playerCache.put(playerUuid, cached);
             return cached;
         } finally {

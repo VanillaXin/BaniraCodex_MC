@@ -15,13 +15,20 @@ public final class BaniraClientInputService {
     }
 
     public static boolean isKeyDown(int key) {
+        if (!isValidKeyboardKey(key)) return false;
         long window = safeWindowHandle();
         return window != 0L && GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
     }
 
     public static boolean isMouseDown(int mouseButton) {
+        if (mouseButton < GLFW.GLFW_MOUSE_BUTTON_1
+                || mouseButton > GLFW.GLFW_MOUSE_BUTTON_LAST) return false;
         long window = safeWindowHandle();
         return window != 0L && GLFW.glfwGetMouseButton(window, mouseButton) == GLFW.GLFW_PRESS;
+    }
+
+    public static boolean isValidKeyboardKey(int key) {
+        return key >= GLFW.GLFW_KEY_SPACE && key <= GLFW.GLFW_KEY_LAST;
     }
 
     public static boolean isWindowActive() {

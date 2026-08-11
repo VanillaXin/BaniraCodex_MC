@@ -5,8 +5,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.*;
@@ -18,7 +20,6 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
@@ -177,7 +178,7 @@ public class NotificationLogScreen extends BaniraScreen {
         return buildSearchHaystack(e).toLowerCase(Locale.ROOT).contains(q);
     }
 
-    private static String componentPlainSingleLineForLog(@Nullable Component c) {
+    private static String componentPlainSingleLineForLog(@Nullable xin.vanilla.banira.common.data.Component c) {
         if (c == null) {
             return "";
         }
@@ -434,10 +435,10 @@ public class NotificationLogScreen extends BaniraScreen {
         int textX = x + 6 + accentW;
         int textW = w - 12 - accentW;
         String language = Translator.getClientLanguage();
-        net.minecraft.network.chat.Component rowComponent = ColorUtils.readableVanillaComponentCopy(
+        Component rowComponent = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
         if (StringUtils.isNullOrEmptyEx(rowComponent.getString())) {
-            rowComponent = new net.minecraft.network.chat.TextComponent("-");
+            rowComponent = new TextComponent("-");
         }
         List<FormattedCharSequence> rowLines = font.split(rowComponent, Math.max(1, textW));
         if (!rowLines.isEmpty()) {
@@ -480,7 +481,7 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += DETAIL_AFTER_META_GAP;
 
         String language = Translator.getClientLanguage();
-        net.minecraft.network.chat.Component contentVanilla = ColorUtils.readableVanillaComponentCopy(
+        Component contentVanilla = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             detailContentLines = font.split(contentVanilla, w);
@@ -496,7 +497,7 @@ public class NotificationLogScreen extends BaniraScreen {
             if (!isAnyDropdownSelectOpen()) {
                 Style hoverSt = styleAtDetailContentPoint(inputState.mouseX(), inputState.mouseY());
                 if (hoverSt != null && hoverSt.getHoverEvent() != null) {
-                    net.minecraft.network.chat.Component tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
+                    Component tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
                     if (tipVanilla != null) {
                         deferThemedTooltipWidget(theme, (int) inputState.mouseX(), (int) inputState.mouseY(),
                                 new Text(BaniraComponent.get().object(tipVanilla)));
@@ -645,5 +646,11 @@ public class NotificationLogScreen extends BaniraScreen {
         } else {
             super.onClose();
         }
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        return new ScreenCoordinate(SCREEN_CARD_MARGIN, SCREEN_CARD_MARGIN,
+                width - SCREEN_CARD_MARGIN * 2, height - SCREEN_CARD_MARGIN * 2);
     }
 }

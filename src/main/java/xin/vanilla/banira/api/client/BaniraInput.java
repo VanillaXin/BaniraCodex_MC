@@ -50,14 +50,14 @@ public final class BaniraInput {
     }
 
     /**
-     * 查询当前客户端窗口中的实时按键状态；key code 使用 {@link BaniraKeyCodes}。
+     * 查询当前客户端窗口中的实时按键状态。
      */
     public static boolean isKeyDown(int keyCode) {
         return BaniraPlatforms.get().inputService().isKeyDown(keyCode);
     }
 
     /**
-     * 查询当前客户端窗口中的实时鼠标状态；button code 使用 {@link BaniraKeyCodes}。
+     * 查询当前客户端窗口中的实时鼠标状态。
      */
     public static boolean isMouseDown(int button) {
         return BaniraPlatforms.get().inputService().isMouseDown(button);

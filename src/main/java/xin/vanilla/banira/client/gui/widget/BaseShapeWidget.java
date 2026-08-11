@@ -92,7 +92,8 @@ public abstract class BaseShapeWidget extends BaseWidget {
             if (rect.hasRadius() && rect.isUniformRadius()) {
                 ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
                 if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && rect.topLeft() <= 10)) {
-                    AbstractGuiUtils.drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) rect.topLeft());
+                    AbstractGuiUtils.drawRoundedRectRough(stack, (int) rect.x(), (int) rect.y(),
+                            (int) rect.width(), (int) rect.height(), color, (int) rect.topLeft());
                 } else {
                     AbstractGuiUtils.drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), color);
                 }
@@ -100,7 +101,8 @@ public abstract class BaseShapeWidget extends BaseWidget {
                 float maxRadius = Math.max(Math.max(rect.topLeft(), rect.topRight()), Math.max(rect.bottomLeft(), rect.bottomRight()));
                 ShapeDrawArgs.RoundedCornerMode mode = args.rect().cornerMode();
                 if (mode == ShapeDrawArgs.RoundedCornerMode.ROUGH || (mode == ShapeDrawArgs.RoundedCornerMode.AUTO && maxRadius <= 10)) {
-                    AbstractGuiUtils.drawRoundedRect(stack, (int) rect.x(), (int) rect.y(), (int) rect.width(), (int) rect.height(), color, (int) maxRadius);
+                    AbstractGuiUtils.drawRoundedRectRough(stack, (int) rect.x(), (int) rect.y(),
+                            (int) rect.width(), (int) rect.height(), color, (int) maxRadius);
                 } else {
                     AbstractGuiUtils.drawRoundedRect(stack, rect.x(), rect.y(), rect.width(), rect.height(), rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight(), color);
                 }

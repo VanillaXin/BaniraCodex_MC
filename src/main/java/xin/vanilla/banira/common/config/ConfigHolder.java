@@ -51,6 +51,8 @@ public class ConfigHolder implements BaniraConfigHandle {
 
     private final Set<String> pendingChangedPaths = new LinkedHashSet<>();
     private final List<Consumer<Set<String>>> savedListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<Set<String>>> reloadedListeners = new CopyOnWriteArrayList<>();
+    private final Map<String, Object> loadedSnapshot = new LinkedHashMap<>();
 
     /**
      * 供各加载器配置服务创建统一 holder。
@@ -83,6 +85,7 @@ public class ConfigHolder implements BaniraConfigHandle {
             byPath.put(descriptor.getPath(), descriptor);
         }
         this.descriptorByPath = Collections.unmodifiableMap(byPath);
+        captureLoadedSnapshot();
     }
 
     ConfigValueStore valueStore() {
@@ -101,6 +104,7 @@ public class ConfigHolder implements BaniraConfigHandle {
 
     public synchronized void save() {
         valueStore.save();
+        captureLoadedSnapshot();
         if (pendingChangedPaths.isEmpty()) {
             return;
         }
@@ -122,6 +126,75 @@ public class ConfigHolder implements BaniraConfigHandle {
         Objects.requireNonNull(listener, "listener");
         savedListeners.add(listener);
         return () -> savedListeners.remove(listener);
+    }
+
+    /** 外部配置文件重载成功后触发；返回值用于注销监听。 */
+    @Override
+    public Runnable onReloaded(Consumer<Set<String>> listener) {
+        Objects.requireNonNull(listener, "listener");
+        reloadedListeners.add(listener);
+        return () -> reloadedListeners.remove(listener);
+    }
+
+    /** Forge 初次装载配置文件时只建立基线，不把它当成玩家热修改。 */
+    public synchronized void acceptInitialExternalLoad() {
+        pendingChangedPaths.clear();
+        captureLoadedSnapshot();
+    }
+
+    /** Forge 已将磁盘值写入 ConfigValue 后，计算真实变化并废弃尚未保存的旧内存改动。 */
+    public synchronized void acceptExternalReload() {
+        Set<String> changed = new LinkedHashSet<>();
+        for (String path : valueStore.paths()) {
+            Object current = snapshotValueSafely(path);
+            if (!Objects.deepEquals(loadedSnapshot.get(path), current)) {
+                changed.add(path);
+            }
+        }
+        pendingChangedPaths.clear();
+        captureLoadedSnapshot();
+        if (changed.isEmpty()) return;
+        Set<String> immutable = Collections.unmodifiableSet(changed);
+        for (Consumer<Set<String>> listener : reloadedListeners) {
+            try {
+                listener.accept(immutable);
+            } catch (RuntimeException ex) {
+                LOGGER.error("Config reloaded listener failed for {}", configName, ex);
+            }
+        }
+    }
+
+    private void captureLoadedSnapshot() {
+        loadedSnapshot.clear();
+        for (String path : valueStore.paths()) {
+            loadedSnapshot.put(path, snapshotValueSafely(path));
+        }
+    }
+
+    private Object snapshotValueSafely(String path) {
+        try {
+            return snapshotValue(valueStore.get(path));
+        } catch (RuntimeException exception) {
+            return UnavailableValue.INSTANCE;
+        }
+    }
+
+    private static Object snapshotValue(Object value) {
+        if (value instanceof List) {
+            List<Object> copy = new ArrayList<>();
+            for (Object item : (List<?>) value) copy.add(snapshotValue(item));
+            return copy;
+        }
+        if (value instanceof Map) {
+            Map<Object, Object> copy = new LinkedHashMap<>();
+            ((Map<?, ?>) value).forEach((key, item) -> copy.put(key, snapshotValue(item)));
+            return copy;
+        }
+        return value;
+    }
+
+    private enum UnavailableValue {
+        INSTANCE
     }
 
     @Override

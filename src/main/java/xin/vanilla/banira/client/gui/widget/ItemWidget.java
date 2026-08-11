@@ -1,20 +1,20 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import com.mojang.blaze3d.platform.Lighting;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -31,6 +31,8 @@ import java.util.List;
  */
 @Accessors(chain = true, fluent = true)
 public class ItemWidget extends BaseWidget {
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+
     @Getter
     private String itemId;
 
@@ -168,7 +170,7 @@ public class ItemWidget extends BaseWidget {
 
 
     /**
-     * 用方块图集精灵做平面绘制，走 {@link com.mojang.blaze3d.vertex.PoseStack} 与 {@link AbstractGuiUtils#blit}
+     * 用方块图集精灵做平面绘制，走 {@link com.mojang.blaze3d.matrix.PoseStack} 与 {@link AbstractGuiUtils#blit}
      */
     public static void renderGuiItemFlatBlit(@Nonnull PoseStack pose, @Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
@@ -216,9 +218,16 @@ public class ItemWidget extends BaseWidget {
      * 绘制物品图标
      */
     public static void renderItem(ItemRenderer itemRenderer, Font font, ItemStack itemStack, int x, int y, boolean showText) {
-        renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+        float originalBlitOffset = itemRenderer.blitOffset;
+        try {
+            renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
+            if (showText) {
+                // 缩放绘制会额外抬高物品模型，装饰层也必须同步前移。
+                itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
+                itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+            }
+        } finally {
+            itemRenderer.blitOffset = originalBlitOffset;
         }
     }
 }

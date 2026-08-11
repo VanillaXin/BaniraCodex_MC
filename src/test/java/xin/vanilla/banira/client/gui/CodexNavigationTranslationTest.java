@@ -24,7 +24,8 @@ public class CodexNavigationTranslationTest {
             "word.banira_codex.codex_navigation_notification_log",
             "word.banira_codex.codex_navigation_client_config",
             "word.banira_codex.codex_navigation_common_config",
-            "word.banira_codex.custom_player_config_title"
+            "word.banira_codex.custom_player_config_title",
+            "word.banira_codex.custom_quick_action_title"
     );
 
     @Test

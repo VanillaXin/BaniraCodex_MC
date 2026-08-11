@@ -11,6 +11,7 @@
   ],
   "client": [
     "accessors.MinecraftAccessor",
+    "injections.CreativeScreenQuickActionMixin",
     "injections.IngameGuiExperienceMixin",
     "injections.MinecraftClientMixin"
   ],

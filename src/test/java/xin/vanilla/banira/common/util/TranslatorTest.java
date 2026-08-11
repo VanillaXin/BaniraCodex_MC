@@ -6,6 +6,7 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TranslatorTest {
 
@@ -32,6 +33,13 @@ public class TranslatorTest {
         assertEquals("word.server_only_translator_test.notice",
                 Translator.of("server_only_translator_test")
                         .getTranslation(EnumI18nType.WORD, "notice", "zh_cn"));
+    }
+
+    @Test
+    public void packagedLanguageEnumerationIncludesChinese() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+        Translator translator = new Translator("banira_codex", TranslatorTest.class);
+        assertTrue(translator.getI18nFiles().contains("zh_cn"));
     }
 
     private static final class ExplicitTranslator extends Translator {

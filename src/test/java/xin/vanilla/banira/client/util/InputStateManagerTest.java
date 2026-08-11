@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.util;
 
 import org.junit.Test;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.KeyValue;
 
 import static org.junit.Assert.assertEquals;
@@ -20,5 +21,16 @@ public class InputStateManagerTest {
         KeyValue<Integer, Integer> gui = InputStateManager.rawToGui(10.0D, 20.0D);
         assertEquals(10, gui.key().intValue());
         assertEquals(20, gui.val().intValue());
+    }
+
+    @Test
+    public void unknownKeyEventsAreIgnored() {
+        InputStateManager.handleClientTickEnd(true);
+
+        InputStateManager.handleKeyPressed(GLFWKey.GLFW_KEY_UNKNOWN);
+
+        assertFalse(InputStateManager.instance().isKeyPressed(GLFWKey.GLFW_KEY_UNKNOWN));
+        assertFalse(InputStateManager.instance().pressedKeyCodes().contains(
+                GLFWKey.GLFW_KEY_UNKNOWN));
     }
 }

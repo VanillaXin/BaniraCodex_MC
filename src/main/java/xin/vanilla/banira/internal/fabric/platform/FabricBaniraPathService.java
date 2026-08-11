@@ -25,8 +25,13 @@ public final class FabricBaniraPathService implements BaniraPathService {
     }
 
     @Override
+    public Path gameConfigPath() {
+        return configDir.get();
+    }
+
+    @Override
     public Path configPath() {
-        return configDir.get().resolve(rootDirectoryName());
+        return gameConfigPath().resolve(rootDirectoryName());
     }
 
     @Override

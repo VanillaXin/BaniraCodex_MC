@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -93,6 +94,9 @@ public class InputFormScreen extends BaniraScreen {
         private String name = "";
         private Text title;
         private Text hint = Text.transAuto(BaniraCodex.MODID, "enter_something");
+        @Nullable
+        private Text tooltip;
+        private int maxLength = 256;
         private String regex = EnumStringInputRegex.NONE.regex();
         private String defaultValue = "";
         private boolean allowEmpty;
@@ -112,6 +116,7 @@ public class InputFormScreen extends BaniraScreen {
         @Nullable
         private List<DropdownOption> dropdownOptionEntries;
         private boolean dropdownMultiSelect;
+        private DropdownInputMode dropdownInputMode = DropdownInputMode.SELECTION_ONLY;
         private Function<Results, String> validator = s -> "";
         private Consumer<Inputs> changed;
 
@@ -182,6 +187,8 @@ public class InputFormScreen extends BaniraScreen {
 
     public enum WidgetType {
         TEXT,
+        PASSWORD,
+        KEY_CHORD,
         NUMERIC,
         FILE,
         COLOR,
@@ -485,18 +492,27 @@ public class InputFormScreen extends BaniraScreen {
             LabelWidget titleLabel = new LabelWidget(this);
             titleLabel.id("title_" + i);
             titleLabel.text(widget.title());
+            Text titleTooltip = widget.tooltip();
+            if (titleTooltip == null && StringUtils.isNotNullOrEmpty(widget.regex())) {
+                titleTooltip = widget.hint();
+            }
+            titleLabel.tooltip(titleTooltip);
             titleLabel.bounds(new ScreenCoordinate(contentLeft, titleY, inputW, TITLE_HEIGHT));
             titleLabel.textWrap(false);
             inputField.titleLabel(titleLabel);
             addWidget(titleLabel);
 
-            if (widget.type() == WidgetType.TEXT) {
-                InputWidget inputWidget = new InputWidget(this);
+            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD
+                    || widget.type() == WidgetType.KEY_CHORD) {
+                InputWidget inputWidget = widget.type() == WidgetType.KEY_CHORD
+                        ? new KeyCaptureInputWidget(this) : new InputWidget(this);
                 inputWidget.id("input_" + i);
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
                 inputWidget.text(widget.hint());
+                inputWidget.maxLength(widget.maxLength());
                 inputWidget.enabled(!widget.disabled());
+                inputWidget.password(widget.type() == WidgetType.PASSWORD);
 
                 int finalI = i;
                 inputWidget.onTextChanged(text -> {
@@ -523,7 +539,9 @@ public class InputFormScreen extends BaniraScreen {
                     dd.options(new ArrayList<>(widget.dropdownOptions()));
                 }
                 dd.multiSelect(widget.dropdownMultiSelect());
+                dd.inputMode(widget.dropdownInputMode());
                 dd.text(widget.hint());
+                dd.maxLength(widget.maxLength());
                 dd.selectedValues(parseDropdownInitialValues(widget, currentValue));
                 dd.enabled(!widget.disabled());
 
@@ -582,6 +600,7 @@ public class InputFormScreen extends BaniraScreen {
                 pickerInput.id("input_" + i);
                 pickerInput.bounds(new ScreenCoordinate(contentLeft, inputY, pickerInputW, INPUT_H));
                 pickerInput.value(currentValue);
+                pickerInput.maxLength(widget.maxLength());
                 Text pickerHint = widget.type() == WidgetType.FILE
                         ? Text.transAuto(BaniraCodex.MODID, "enter_file_path")
                         : Text.transAuto(BaniraCodex.MODID, "enter_color_hex");
@@ -741,6 +760,31 @@ public class InputFormScreen extends BaniraScreen {
         return null;
     }
 
+    private boolean canSubmit() {
+        Results results = buildResultsFromInputs(-1, null);
+        for (int index = 0; index < this.args.getWidgets().size(); index++) {
+            Widget widget = this.args.getWidgets().get(index);
+            if (index >= inputFields.size()) {
+                continue;
+            }
+            InputField field = inputFields.get(index);
+            boolean empty;
+            if (field.input() instanceof DropdownSelectWidget) {
+                empty = ((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
+            } else {
+                empty = field.input() == null || StringUtils.isNullOrEmpty(field.input().value());
+            }
+            if (!widget.allowEmpty() && empty) {
+                return false;
+            }
+            results.curIndex(index).curName(widget.name());
+            if (StringUtils.isNotNullOrEmpty(widget.validator().apply(results))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * 校验并更新错误状态。
      * 使用 buildResultsFromInputs 支持跨字段校验。
@@ -798,8 +842,12 @@ public class InputFormScreen extends BaniraScreen {
             }
         }
 
-        if (results.isEmpty() || (submitButtonWidget != null && submitButtonWidget.text().content().equals(BaniraLang.INSTANCE.getTranslationClient(EnumI18nType.WORD, "cancel")))) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+        if (!canSubmit()) {
+            for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
+                Widget widget = args.getWidgets().get(i);
+                InputField field = inputFields.get(i);
+                validateAndUpdateError(widget, i, inputFieldValueString(field), field.input());
+            }
             return;
         }
 
@@ -918,6 +966,8 @@ public class InputFormScreen extends BaniraScreen {
             if (headerDraw.colorEmpty()) {
                 headerDraw.color(getEffectiveTheme().textPrimary());
             }
+            headerDraw.color(ColorUtils.ensureReadableTextArgb(
+                    headerDraw.color(), getEffectiveTheme().panelBg()));
             LabelWidget.drawLimitedText(FontDrawArgs.of(headerDraw)
                     .x(contentLeft)
                     .y(formHeaderAreaTop + HEADER_TOP_PAD)
@@ -965,35 +1015,18 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         if (submitButtonWidget != null) {
-            boolean allValid = this.args.getWidgets().stream().allMatch(wi -> {
-                int index = args.getWidgets().indexOf(wi);
-                if (index >= 0 && index < inputFields.size()) {
-                    InputField field = inputFields.get(index);
-                    if (wi.allowEmpty()) {
-                        return true;
-                    }
-                    if (field.input() instanceof DropdownSelectWidget) {
-                        return !((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
-                    }
-                    return field.input() != null && StringUtils.isNotNullOrEmpty(field.input().value());
-                }
-                return true;
-            });
-            if (allValid) {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
-            } else {
-                submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-            }
+            submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
+            submitButtonWidget.enabled(canSubmit());
         }
     }
 
     @Override
-    protected void onMouseClicked(MouseClickedHandleArgs eventArgs) {
-        if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
-            eventArgs.consumed(true);
-        }
-        super.onMouseClicked(eventArgs);
+    protected ScreenCoordinate closeableWindowBounds() {
+        int left = contentLeft - FORM_PANEL_PAD;
+        int top = formHeaderAreaTop - FORM_PANEL_PAD;
+        int right = contentLeft + contentTotalWidth + FORM_PANEL_PAD;
+        int bottom = btnY + BTN_H + FORM_PANEL_PAD;
+        return new ScreenCoordinate(left, top, right - left, bottom - top);
     }
 
     @Override
@@ -1023,11 +1056,73 @@ public class InputFormScreen extends BaniraScreen {
         if (eventArgs.consumed()) {
             return;
         }
-        if (eventArgs.key() == GLFWKey.GLFW_KEY_ESCAPE
-                || (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused()))) {
+        if (eventArgs.key() == GLFWKey.GLFW_KEY_TAB && focusAdjacentInput(
+                (eventArgs.modifiers() & GLFWKey.GLFW_MOD_SHIFT) == 0 ? 1 : -1)) {
+            eventArgs.consumed(true);
+            return;
+        }
+        boolean inputFocused = this.inputFields.stream()
+                .anyMatch(field -> field.input() != null && field.input().focused());
+        if ((eventArgs.key() == GLFWKey.GLFW_KEY_ENTER
+                || eventArgs.key() == GLFWKey.GLFW_KEY_KP_ENTER)
+                && !inputFocused && canSubmit()) {
+            handleSubmit();
+            eventArgs.consumed(true);
+            return;
+        }
+        if (eventArgs.key() == GLFWKey.GLFW_KEY_BACKSPACE
+                && this.inputFields.stream().noneMatch(w -> w.input() != null && w.input().focused())) {
             Minecraft.getInstance().setScreen(this.previousScreen());
             eventArgs.consumed(true);
         }
+    }
+
+    /** 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。 */
+    private boolean focusAdjacentInput(int direction) {
+        List<InputWidget> candidates = new ArrayList<>();
+        List<Integer> fieldIndexes = new ArrayList<>();
+        for (int i = 0; i < inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            InputWidget input = field.input() != null
+                    ? field.input() : field.slider() == null ? null : field.slider().inlineInputWidget();
+            if (input != null && input.visible() && input.enabled()) {
+                candidates.add(input);
+                fieldIndexes.add(i);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        int current = -1;
+        for (int i = 0; i < candidates.size(); i++) {
+            if (candidates.get(i).focused()) {
+                current = i;
+                break;
+            }
+        }
+        int target = current < 0
+                ? (direction > 0 ? 0 : candidates.size() - 1)
+                : Math.floorMod(current + direction, candidates.size());
+        requestFocus(candidates.get(target));
+        scrollFieldIntoView(fieldIndexes.get(target));
+        return true;
+    }
+
+    private void scrollFieldIntoView(int fieldIndex) {
+        if (!scrollMode || scrollbarWidget == null || fieldIndex < 0) {
+            return;
+        }
+        int itemTop = fieldIndex * ITEM_HEIGHT;
+        int itemBottom = itemTop + ITEM_HEIGHT;
+        int current = getScrollOffset();
+        int target = current;
+        if (itemTop < current) {
+            target = itemTop;
+        } else if (itemBottom > current + listAreaHeight) {
+            target = itemBottom - listAreaHeight;
+        }
+        scrollbarWidget.setValue(Math.max(0, Math.min(scrollbarWidget.maxValue(), target)));
+        updateInputFieldsPosition();
     }
 
 }

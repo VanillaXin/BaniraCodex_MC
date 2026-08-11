@@ -32,6 +32,7 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     private final Map<String, Class<?>> mainClassesByModId = new ConcurrentHashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new ConcurrentHashMap<>();
     private final BaniraPathService path = new FabricBaniraPathService(this::configDir);
+    private final BaniraPermissionService permission = FabricBaniraPermissionService.INSTANCE;
 
     @Nonnull
     @Override
@@ -154,6 +155,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraPlayerDataService playerDataService() {
         return FabricBaniraPlayerDataService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraPermissionService permissionService() {
+        return permission;
     }
 
     @Nonnull

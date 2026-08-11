@@ -18,19 +18,14 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * 语言助手基类，实现 {@link ITranslator}。
  * <p>
- * 构造时传入 mod 所属类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
+ * 构造时传入 loader mod 主类，modId 由当前平台适配层读取，语言文件从该类所在 JAR 加载：
  * <pre>{@code
  * public final class MyModLang extends Translator {
  *     public static final MyModLang INSTANCE = new MyModLang();
@@ -67,7 +62,7 @@ public class Translator implements ITranslator {
     private final String modId;
 
     /**
-     * @param modMainClass mod 入口类或公共 bootstrap 类
+     * @param modMainClass loader mod 主类
      */
     protected Translator(@NonNull Class<?> modMainClass) {
         this(modIdFromModMainClass(modMainClass), modMainClass);
@@ -90,7 +85,7 @@ public class Translator implements ITranslator {
         getI18nFiles();
     }
 
-    // region mod 主入口与 modId
+    // region mod 主类与 modId（@Mod）
 
     @NonNull
     private static String modIdFromModMainClass(@NonNull Class<?> modMainClass) {
@@ -112,7 +107,7 @@ public class Translator implements ITranslator {
         }
     }
 
-    // endregion mod 主入口与 modId
+    // endregion mod 主类与 modId（@Mod）
 
     /**
      * 将当前实例注册到缓存（供直接 new 的子类在构造末尾调用）。
@@ -248,6 +243,7 @@ public class Translator implements ITranslator {
     /**
      * 获取 I18n 文件列表
      */
+    @Override
     public List<String> getI18nFiles() {
         if (languages.isEmpty()) {
             loadFromResourceManager();
@@ -257,22 +253,12 @@ public class Translator implements ITranslator {
     }
 
     private void loadFromClasspath() {
-        try {
-            URL url = resourceAnchorClass.getResource(getLangPath());
-            if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
-                loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
-                return;
-            }
-            Path directory = Paths.get(url.toURI());
-            try (Stream<Path> files = Files.list(directory)) {
-                files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                        .map(path -> path.getFileName().toString().replace(".json", "").toLowerCase(Locale.ROOT))
-                        .forEach(this::loadKnownClasspathLanguage);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to list lang from classpath for mod {}: {}", modId, e.getMessage());
+        Set<String> discovered = ClasspathLanguageDiscovery.discover(resourceAnchorClass, getLangPath());
+        if (discovered.isEmpty()) {
             loadKnownClasspathLanguage(DEFAULT_LANGUAGE);
+            return;
         }
+        discovered.forEach(this::loadKnownClasspathLanguage);
     }
 
     private void loadKnownClasspathLanguage(String languageCode) {

@@ -27,46 +27,51 @@ public final class BaniraHudSyntheticEvents {
 
     public static void afterExperienceBar(PoseStack stack, int x) {
         BaniraDrawContext draw = drawContext(stack);
-        dispatchPost(
-                HudOverlayElement.EXPERIENCE_BAR,
-                draw,
-                BaniraHudGeometry.experienceBarBounds(x, draw.screenHeight())
-        );
+        dispatchPost(HudOverlayElement.EXPERIENCE_BAR, draw,
+                BaniraHudGeometry.experienceBarBounds(x, draw.screenHeight()));
     }
 
     public static boolean beforeExperienceText(PoseStack stack, int x) {
         BaniraDrawContext draw = drawContext(stack);
-        BaniraHudRenderEvent event = preEvent(
+        BaniraHudRenderEvent event = new BaniraHudRenderEvent(
+                HudRenderPhase.PRE,
                 HudOverlayElement.EXPERIENCE_TEXT,
-                draw,
-                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight())
+                hudContext(draw),
+                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                true
         );
         BaniraHudEvents.dispatchPre(event);
+        if (event.canceled()) {
+            BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
+                    HudRenderPhase.POST,
+                    HudOverlayElement.EXPERIENCE_TEXT,
+                    hudContext(draw),
+                    BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                    false
+            ));
+        }
         return event.canceled();
     }
 
     public static void afterExperienceText(PoseStack stack, int x) {
         BaniraDrawContext draw = drawContext(stack);
-        dispatchPost(
+        BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
+                HudRenderPhase.POST,
                 HudOverlayElement.EXPERIENCE_TEXT,
-                draw,
-                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight())
-        );
+                hudContext(draw),
+                BaniraHudGeometry.experienceTextBounds(x, draw.screenHeight()),
+                false
+        ));
     }
 
     private static BaniraHudRenderEvent preEvent(HudOverlayElement element, BaniraDrawContext draw,
-                                                 BaniraHudBounds bounds) {
+                                                  BaniraHudBounds bounds) {
         return new BaniraHudRenderEvent(HudRenderPhase.PRE, element, hudContext(draw), bounds, true);
     }
 
     private static void dispatchPost(HudOverlayElement element, BaniraDrawContext draw, BaniraHudBounds bounds) {
         BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
-                HudRenderPhase.POST,
-                element,
-                hudContext(draw),
-                bounds,
-                false
-        ));
+                HudRenderPhase.POST, element, hudContext(draw), bounds, false));
     }
 
     private static BaniraDrawContext drawContext(PoseStack stack) {

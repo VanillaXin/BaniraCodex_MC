@@ -4,11 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -71,6 +72,13 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     @Getter
     @Setter
     private boolean editable = true;
+
+    /**
+     * 密码模式仅改变显示和用户复制行为；表单回调仍可读取真实值。
+     */
+    @Getter
+    @Setter
+    private boolean password;
 
     /**
      * 是否错误状态
@@ -419,7 +427,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         float fontScale = actualFontSize / font.lineHeight;
 
         if (!skipTextContentForRendering) {
-            String value = this.value;
+            String rawValue = this.value;
+            String value = displayValue(rawValue);
             int currentTextColor = this.textColor;
             if (!this.editable) {
                 currentTextColor = this.uneditableTextColor;
@@ -476,7 +485,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            boolean isAtEnd = cursorPos >= value.length();
+            boolean isAtEnd = cursorPos >= rawValue.length();
             int cursorX = textDrawX;
             if (!cursorVisible) {
                 cursorX = cursorInVisible > 0 ? textX + innerWidth : textX;
@@ -789,7 +798,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int clickX = Mth.floor(mouseX) - (int) absX - marginLeft - paddingLeft;
             if (clickX < 0) clickX = 0;
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
-            String visibleText = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), textAreaWidth);
+            String visibleValue = displayValue(this.value);
+            String visibleText = this.font.plainSubstrByWidth(visibleValue.substring(this.displayPos), textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
             this.shiftPressed = Screen.hasShiftDown();
             moveCursorTo(textPos);
@@ -805,7 +815,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (renderCoordinate == null) return false;
         int totalWidth = (int) renderCoordinate.width() - marginLeft - marginRight;
         int innerWidth = getTextAreaWidth(totalWidth);
-        if (this.font.width(value) <= innerWidth) return false;
+        if (this.font.width(displayValue(value)) <= innerWidth) return false;
         int step = event.delta() > 0 ? -SCROLL_STEP : SCROLL_STEP;
         moveCursor(step);
         return true;
@@ -1054,8 +1064,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 更新高亮位置
      */
     private void updateHighlightPos(int pos) {
-        String value = this.value;
-        int valueLength = value.length();
+        String rawValue = this.value;
+        String value = displayValue(rawValue);
+        int valueLength = rawValue.length();
         this.highlightPos = Mth.clamp(pos, 0, valueLength);
         this.updateDisplayPos();
     }
@@ -1303,14 +1314,32 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 获取选中的文本
      */
+    @ParametersAreNonnullByDefault
     public String getHighlighted() {
         int start = Math.min(this.cursorPosition, this.highlightPos);
         int end = Math.max(this.cursorPosition, this.highlightPos);
         String value = this.value;
         if (start >= 0 && end <= value.length() && start < end) {
-            return value.substring(start, end);
+            String selected = value.substring(start, end);
+            return password ? mask(selected.length()) : selected;
         }
         return "";
+    }
+
+    /** 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。 */
+    private String displayValue(String rawValue) {
+        return password ? mask(rawValue.length()) : rawValue;
+    }
+
+    private static String mask(int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            result.append('*');
+        }
+        return result.toString();
     }
 
     /**

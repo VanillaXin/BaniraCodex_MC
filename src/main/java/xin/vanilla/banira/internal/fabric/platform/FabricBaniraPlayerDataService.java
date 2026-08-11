@@ -30,4 +30,9 @@ public final class FabricBaniraPlayerDataService implements BaniraPlayerDataServ
         }
         BaniraCodex.playerDataManager.put(playerUuid, modId, (CompoundTag) data);
     }
+
+    @Override
+    public void flush(@Nonnull UUID playerUuid) {
+        BaniraCodex.playerDataManager.saveToDisk(playerUuid);
+    }
 }

@@ -143,7 +143,8 @@ final class FabricConfigAdapter {
                     .minValue(min)
                     .maxValue(max)
                     .decimalPlaces(decimalPlaces)
-                    .enumClass(enumClass);
+                    .enumClass(enumClass)
+                    .keyChords(field.isAnnotationPresent(ConfigEntry.Gui.KeyChords.class));
             applyRequiresEditPermission(field, builder);
             return builder.build();
         } catch (ReflectiveOperationException e) {

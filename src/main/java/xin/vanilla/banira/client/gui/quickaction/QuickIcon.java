@@ -34,6 +34,7 @@ public class QuickIcon {
         ITEM,
         EFFECT,
         RESOURCE,
+        CUSTOM,
         NONE,
         ;
     }
@@ -57,6 +58,11 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Texture texture;
+
+    @Getter
+    @Setter
+    @Nullable
+    private Renderer customRenderer;
 
     @Nonnull
     public static QuickIcon none() {
@@ -109,8 +115,17 @@ public class QuickIcon {
         return q;
     }
 
+    /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
+    @Nonnull
+    public static QuickIcon custom(@Nonnull Renderer renderer) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.CUSTOM);
+        q.customRenderer(renderer);
+        return q;
+    }
+
     /**
-     * Fabric 1.16 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
+     * 子 mod 可能在资源重载前注册快捷项；首次绘制时补齐当时无法读取的纹理尺寸。
      */
     @Nullable
     private Texture resolvedResourceTexture() {
@@ -132,6 +147,7 @@ public class QuickIcon {
             return;
         }
         if (kind == Kind.ITEM) {
+            prepareDrawState();
             ItemWidget.renderGuiItemFlatBlit(stack, mc, itemStack, x, y, size);
             return;
         }
@@ -144,6 +160,10 @@ public class QuickIcon {
     public void render(@Nonnull PoseStack stack, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
+        }
+        // 自定义绘制器也可用于无客户端上下文的契约测试；真实 GUI 绘制才需要恢复 GL 状态。
+        if (stack != null && mc != null) {
+            prepareDrawState();
         }
         switch (kind) {
             case ITEM: {
@@ -172,9 +192,29 @@ public class QuickIcon {
                 RenderSystem.color4f(1f, 1f, 1f, 1f);
                 break;
             }
+            case CUSTOM: {
+                if (customRenderer != null) {
+                    customRenderer.render(stack, mc, x, y, size);
+                }
+                break;
+            }
             default:
                 break;
         }
+    }
+
+    /** 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。 */
+    private static void prepareDrawState() {
+        RenderSystem.enableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.color4f(1f, 1f, 1f, 1f);
+    }
+
+    @FunctionalInterface
+    public interface Renderer {
+        void render(PoseStack stack, Minecraft minecraft, int x, int y, int size);
     }
 
 }

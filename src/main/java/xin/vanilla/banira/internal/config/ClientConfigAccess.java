@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.config;
 
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
@@ -22,6 +23,8 @@ final class ClientConfigAccess {
     private static final int DEFAULT_NOTIFICATION_BURST_STAGGER_MS = 400;
     private static final int DEFAULT_NOTIFICATION_BURST_MAX_EXTRA_DELAY_MS = 20000;
     private static final boolean DEFAULT_USE_CUSTOM_CURSOR = true;
+    private static final EnumExternalInventoryButtonHost DEFAULT_EXTERNAL_INVENTORY_BUTTON_HOST =
+            EnumExternalInventoryButtonHost.ORIGINAL;
 
     private ClientConfigAccess() {
     }
@@ -158,6 +161,19 @@ final class ClientConfigAccess {
                     holder.set("useCustomCursor", args[0]);
                 }
                 return proxy;
+            case "externalInventoryButtonHost":
+                if (args == null || args.length == 0) {
+                    if (holder == null) {
+                        return DEFAULT_EXTERNAL_INVENTORY_BUTTON_HOST;
+                    }
+                    return enumConfig(holder, "externalInventoryButtonHost",
+                            DEFAULT_EXTERNAL_INVENTORY_BUTTON_HOST,
+                            EnumExternalInventoryButtonHost.class);
+                }
+                if (holder != null) {
+                    holder.set("externalInventoryButtonHost", args[0]);
+                }
+                return proxy;
             case "holder":
                 return holder;
             default:
@@ -177,6 +193,22 @@ final class ClientConfigAccess {
         Object v = holder.get(path);
         if (v instanceof Boolean) {
             return (Boolean) v;
+        }
+        return def;
+    }
+
+    private static <E extends Enum<E>> E enumConfig(ConfigHolder holder, String path,
+                                                     E def, Class<E> enumClass) {
+        Object value = holder.get(path);
+        if (enumClass.isInstance(value)) {
+            return enumClass.cast(value);
+        }
+        if (value != null) {
+            try {
+                return Enum.valueOf(enumClass, value.toString());
+            } catch (IllegalArgumentException ignored) {
+                // 配置文件中的未知枚举值按默认值安全降级。
+            }
         }
         return def;
     }

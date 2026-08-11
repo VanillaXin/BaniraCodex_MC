@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -21,6 +22,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +64,12 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     @Getter
     @Setter
     private boolean showFullTextTooltipWhenTruncated = false;
+
+    /** 显式提示优先于因文本截断自动生成的提示。 */
+    @Getter
+    @Setter
+    @Nullable
+    private Text tooltip;
 
     public LabelWidget(BaniraScreen screen) {
         super(screen);
@@ -106,7 +114,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
         drawLimitedText(args);
 
-        maybeDeferTruncationTooltip(stack);
+        maybeDeferTooltip(stack);
 
         renderChildren(stack, partialTicks);
     }
@@ -127,11 +135,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return wNatural > wFitted;
     }
 
-    private void maybeDeferTruncationTooltip(PoseStack stack) {
-        if (!showFullTextTooltipWhenTruncated || screen == null || !enabled) {
+    private void maybeDeferTooltip(PoseStack stack) {
+        if (screen == null || !enabled) {
             return;
         }
-        if (!isLabelTextTruncated(stack)) {
+        Text tipText = tooltip;
+        if (tipText == null && showFullTextTooltipWhenTruncated && isLabelTextTruncated(stack)) {
+            tipText = text.clone();
+        }
+        if (tipText == null || StringUtils.isNullOrEmptyEx(tipText.content())) {
             return;
         }
         double mx = screen.inputState().mouseX();
@@ -145,15 +157,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         BaniraColorConfig theme = screen.getEffectiveTheme();
         EnumSeason tipSeason = screen.season();
         boolean useTexture = theme.tooltipUseTexture();
-        Font fontForTip = text.font() != null ? text.font() : screen.getFont();
-        Text tipText = text.clone();
+        Font fontForTip = tipText.font() != null ? tipText.font() : screen.getFont();
+        Text deferredText = tipText.clone();
         int mouseX = (int) mx;
         int mouseY = (int) my;
         screen.addDeferredTooltipRender(s -> {
             s.pushPose();
             s.last().pose().setIdentity();
             TooltipWidget.drawPopupMessage(s,
-                    FontDrawArgs.ofPopo(tipText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(deferredText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, tipSeason);
             s.popPose();
         });
@@ -370,7 +382,10 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
 
                 if (args.bgBorderThickness() > 0) {
                     int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-                    AbstractGuiUtils.drawRoundedRectOutLineRough(stack, bgX, bgY, bgWidth, bgHeight, args.bgBorderThickness(), borderArgb, args.bgBorderRadius());
+                    AbstractGuiUtils.drawRoundedRectOutLine(stack, bgX, bgY, bgWidth, bgHeight,
+                            args.bgBorderRadius(), args.bgBorderRadius(), args.bgBorderRadius(), args.bgBorderRadius(),
+                            args.bgBorderThickness(), borderArgb,
+                            ShapeDrawArgs.RoundedCornerMode.FINE);
                 }
             }
 
@@ -458,15 +473,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         net.minecraft.network.chat.Style ellipsisStyle = source.getStyle();
         int suffixLength = line.length() - ellipsisIndex - ellipsis.length();
         if (position == EnumEllipsisPosition.START) {
-            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).setStyle(ellipsisStyle));
             result.append(sliceStyledComponent(source,
                     Math.max(0, original.length() - suffixLength), original.length()));
         } else if (position == EnumEllipsisPosition.END) {
             result.append(sliceStyledComponent(source, 0, ellipsisIndex));
-            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).setStyle(ellipsisStyle));
         } else {
             result.append(sliceStyledComponent(source, 0, ellipsisIndex));
-            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).withStyle(ellipsisStyle));
+            result.append(new net.minecraft.network.chat.TextComponent(ellipsis).setStyle(ellipsisStyle));
             result.append(sliceStyledComponent(source,
                     Math.max(ellipsisIndex, original.length() - suffixLength), original.length()));
         }
@@ -485,8 +500,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             int to = Math.min(end, segmentEnd);
             if (from < to) {
                 result.append(new net.minecraft.network.chat.TextComponent(
-                        segment.substring(from - segmentStart, to - segmentStart))
-                        .withStyle(style));
+                        segment.substring(from - segmentStart, to - segmentStart)).setStyle(style));
             }
             cursor[0] = segmentEnd;
             return Optional.empty();

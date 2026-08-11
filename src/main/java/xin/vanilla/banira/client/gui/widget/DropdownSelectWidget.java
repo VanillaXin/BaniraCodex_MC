@@ -94,6 +94,11 @@ public class DropdownSelectWidget extends InputWidget {
     @Setter
     private boolean multiSelect = false;
 
+    /** 默认严格选择；EDITABLE 模式允许提交预设列表之外的单个值。 */
+    @Getter
+    @Setter
+    private DropdownInputMode inputMode = DropdownInputMode.SELECTION_ONLY;
+
     @Getter
     @Setter
     @Nullable
@@ -106,6 +111,7 @@ public class DropdownSelectWidget extends InputWidget {
     private int dropdownScrollOffset = 0;
 
     private List<String> selectedValues = new ArrayList<>();
+    private boolean customValueDirty;
 
     @Nullable
     private DropdownPreviewOverlayWidget previewOverlayWidget;
@@ -335,6 +341,7 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public DropdownSelectWidget selectedValues(List<String> values) {
         this.selectedValues = values != null ? new ArrayList<>(values) : new ArrayList<>();
+        this.customValueDirty = false;
         updateDisplayValue();
         return this;
     }
@@ -367,7 +374,7 @@ public class DropdownSelectWidget extends InputWidget {
                 .collect(Collectors.toList());
     }
 
-    private String displayLabelForValue(String storedValue) {
+    String displayLabelForValue(String storedValue) {
         for (DropdownOption o : optionEntries) {
             if (o.value().equals(storedValue)) {
                 return o.displayLabel();
@@ -436,7 +443,9 @@ public class DropdownSelectWidget extends InputWidget {
     public void openDropdown() {
         if (dropdownOpen) return;
         dropdownOpen = true;
-        value("");
+        if (inputMode == DropdownInputMode.SELECTION_ONLY) {
+            value("");
+        }
         dropdownScrollOffset = 0;
         if (screen != null) {
             overlayWidget = new DropdownOverlayWidget(screen, this);
@@ -450,7 +459,11 @@ public class DropdownSelectWidget extends InputWidget {
      */
     public void closeDropdown() {
         if (!dropdownOpen) return;
-        updateDisplayValue();
+        if (inputMode == DropdownInputMode.EDITABLE && customValueDirty) {
+            syncCustomValue();
+        } else {
+            updateDisplayValue();
+        }
         dropdownOpen = false;
         if (overlayWidget != null && screen != null) {
             screen.removeOverlayWidget(overlayWidget);
@@ -483,6 +496,7 @@ public class DropdownSelectWidget extends InputWidget {
                 onSelectionChanged.accept(getSelectedValues());
             }
         } else {
+            customValueDirty = false;
             if (selectedValues.contains(option)) {
                 selectedValues.clear();
             } else {
@@ -834,6 +848,7 @@ public class DropdownSelectWidget extends InputWidget {
 
         if (area == 1) {
             selectedValues.clear();
+            customValueDirty = false;
             value("");
             if (onSelectionChanged != null) {
                 onSelectionChanged.accept(getSelectedValues());
@@ -898,7 +913,7 @@ public class DropdownSelectWidget extends InputWidget {
         int currentX = contentLeft - tagScrollOffset;
         Font font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
+            int textW = font.width(displayLabelForValue(selectedValues.get(i)));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
             if (mouseX >= currentX && mouseX < currentX + tagW) return i;
             currentX += tagW + TAG_GAP;
@@ -918,7 +933,7 @@ public class DropdownSelectWidget extends InputWidget {
         int currentX = contentLeft - tagScrollOffset;
         Font font = AbstractGuiUtils.getFont();
         for (int i = 0; i < selectedValues.size(); i++) {
-            int textW = font.width(selectedValues.get(i));
+            int textW = font.width(displayLabelForValue(selectedValues.get(i)));
             int tagW = TAG_PAD + textW + TAG_PAD + TAG_CLOSE_SIZE + TAG_PAD;
             int closeX = currentX + tagW - TAG_PAD - TAG_CLOSE_SIZE;
             int closeY = tagY + (TAG_MIN_HEIGHT - TAG_CLOSE_SIZE) / 2;
@@ -986,6 +1001,35 @@ public class DropdownSelectWidget extends InputWidget {
                 return true;
             }
         }
-        return super.onKeyPress(event);
+        String previousValue = value();
+        boolean consumed = super.onKeyPress(event);
+        if (consumed && inputMode == DropdownInputMode.EDITABLE
+                && !multiSelect && !previousValue.equals(value())) {
+            customValueDirty = true;
+            syncCustomValue();
+        }
+        return consumed;
+    }
+
+    @Override
+    protected boolean onCharTyped(xin.vanilla.banira.client.gui.event.CharInputEvent event) {
+        String previousValue = value();
+        boolean consumed = super.onCharTyped(event);
+        if (consumed && inputMode == DropdownInputMode.EDITABLE
+                && !multiSelect && !previousValue.equals(value())) {
+            customValueDirty = true;
+            syncCustomValue();
+        }
+        return consumed;
+    }
+
+    private void syncCustomValue() {
+        selectedValues.clear();
+        if (!value().isEmpty()) {
+            selectedValues.add(value());
+        }
+        if (onSelectionChanged != null) {
+            onSelectionChanged.accept(getSelectedValues());
+        }
     }
 }

@@ -59,6 +59,20 @@ public class QuickActionMenuVisibilityTest {
     }
 
     @Test
+    public void rightClickRowActionInvalidatesCachedMenuRows() throws Exception {
+        String source = source("QuickActionOverlay.java");
+        if (!source.contains("cachedContextRows")) {
+            return;
+        }
+        int methodStart = source.indexOf("private void openContextMenuRowActions");
+        int methodEnd = source.indexOf("private boolean tryClickContext", methodStart);
+
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+        assertTrue(source.substring(methodStart, methodEnd).contains("invalidateContextMenuCache();"));
+    }
+
+    @Test
     public void longContextRowsUseMiddleEllipsisAndKeepTheFullTooltip() throws Exception {
         String source = source("QuickActionOverlay.java");
         assertTrue(source.contains("ellipsizeMiddle"));

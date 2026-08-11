@@ -1766,6 +1766,7 @@ public final class QuickActionOverlay {
         contextRowActionReturnPage = contextPage;
         contextPage = CTX_PAGE_ROW_ACTION;
         contextScrollPx = 0;
+        invalidateContextMenuCache();
     }
 
     private boolean tryClickContext(double mouseX, double mouseY, int button) {

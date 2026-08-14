@@ -15,6 +15,8 @@ public class HudNotificationFrameContractTest {
     @Test
     public void neoForgeHudLayerOwnsScreenlessNotificationRendering() throws IOException {
         String registrar = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/NeoForgeNotificationLayerRegistrar.java");
+        String modSetup = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/BaniraClientModSetup.java");
+        String clientBootstrap = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/NeoForgeBaniraClientBootstrap.java");
         String handler = read("src/main/java/xin/vanilla/banira/internal/neoforge/client/BaniraClientNeoForgeEventHandler.java");
         String config = read("src/main/resources/banira_codex.mixins.json");
 
@@ -22,6 +24,12 @@ public class HudNotificationFrameContractTest {
         assertTrue(registrar.contains("registerAboveAll"));
         assertTrue(registrar.contains("Minecraft.getInstance().screen == null"));
         assertTrue(registrar.contains("NotificationManager.get().render(graphics)"));
+        assertFalse(registrar.contains("EventBusSubscriber"));
+        assertFalse(modSetup.contains("EventBusSubscriber"));
+        assertTrue(clientBootstrap.contains("modBus.addListener(NeoForgeNotificationLayerRegistrar::onAddGuiLayers)"));
+        assertTrue(clientBootstrap.contains("modBus.addListener(BaniraClientModSetup::onClientSetup)"));
+        assertTrue(clientBootstrap.contains("modBus.addListener(BaniraClientModSetup::onRegisterKeyMappings)"));
+        assertTrue(clientBootstrap.contains("modBus.addListener(BaniraClientModSetup::onRegisterReloadListeners)"));
         assertTrue(config.contains("\"injections.GuiHudLayerMixin\""));
         assertFalse(registrar.contains("RenderGuiEvent"));
         assertTrue(handler.contains("onGuiScreen(ScreenEvent.Render.Pre event)"));

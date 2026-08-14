@@ -2,11 +2,8 @@ package xin.vanilla.banira.internal.neoforge.client;
 
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
@@ -28,7 +25,6 @@ import xin.vanilla.banira.internal.neoforge.util.NeoForgeLogoModifier;
 /**
  * 客户端 Mod 总线（{@code Dist.CLIENT}）：键位注册、通知日志加载、{@link BaniraClientEventHub} 默认回调与 {@link FMLClientSetupEvent} 分发。
  */
-@EventBusSubscriber(modid = Banira.MOD_ID, value = Dist.CLIENT)
 public final class BaniraClientModSetup {
 
     public static final BaniraKeyHandle NOTIFICATION_LOG_KEY = BaniraInput.registerKey(Banira.MOD_ID, "notification_log", GLFWKey.GLFW_KEY_UNKNOWN);
@@ -40,7 +36,6 @@ public final class BaniraClientModSetup {
     private BaniraClientModSetup() {
     }
 
-    @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         BaniraClientDrawBridge.install(NeoForgeBaniraDrawHandle::new);
         LogoModifier.installApplier(NeoForgeLogoModifier::modifyLogo);
@@ -65,12 +60,10 @@ public final class BaniraClientModSetup {
                 BaniraComponent.get().transClientAuto("notification_type_command_feedback"));
     }
 
-    @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         NeoForgeKeyBindingService.INSTANCE.flushPendingRegistrations(event);
     }
 
-    @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(BaniraColorThemeLoader.INSTANCE);
     }

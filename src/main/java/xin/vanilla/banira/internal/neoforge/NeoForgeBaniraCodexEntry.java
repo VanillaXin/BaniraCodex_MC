@@ -42,13 +42,13 @@ public final class NeoForgeBaniraCodexEntry {
         NeoForge.EVENT_BUS.register(NeoForgeBaniraGameEventAdapter.class);
         NetworkInit.register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            ClientBootstrapAccess.init();
+            ClientBootstrapAccess.init(modBus);
         }
     }
 
     private static final class ClientBootstrapAccess {
-        private static void init() {
-            NeoForgeBaniraClientBootstrap.init();
+        private static void init(IEventBus modBus) {
+            NeoForgeBaniraClientBootstrap.init(modBus);
         }
     }
 }

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class CreativeQuickActionInputContractTest {
     @Test
@@ -29,6 +30,8 @@ public class CreativeQuickActionInputContractTest {
         assertTrue(mixin.contains("method = \"mouseClicked\""));
         assertTrue(mixin.contains("method = \"mouseReleased\""));
         assertTrue(mixin.contains("QuickActionOverlay.get().capturesPointer"));
+        assertTrue(mixin.contains("GuiGraphics graphics"));
+        assertFalse(mixin.contains("PoseStack stack"));
         assertTrue(config.contains("injections.CreativeScreenQuickActionMixin"));
     }
 

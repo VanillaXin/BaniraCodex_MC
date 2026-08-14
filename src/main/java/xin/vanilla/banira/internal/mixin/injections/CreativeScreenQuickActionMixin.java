@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.CreativeModeTab;
@@ -14,7 +14,7 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 @Mixin(CreativeModeInventoryScreen.class)
 public abstract class CreativeScreenQuickActionMixin {
     @Inject(method = "checkTabHovering", at = @At("HEAD"), cancellable = true)
-    private void banira$suppressCoveredTabTooltip(PoseStack stack, CreativeModeTab group,
+    private void banira$suppressCoveredTabTooltip(GuiGraphics graphics, CreativeModeTab group,
                                                    int mouseX, int mouseY,
                                                    CallbackInfoReturnable<Boolean> callback) {
         if (banira$captures(mouseX, mouseY)) {

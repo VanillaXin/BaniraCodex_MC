@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.mixin.compat.jei;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,13 +14,13 @@ import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 @Mixin(targets = "mezz.jei.gui.elements.GuiIconToggleButton", remap = false)
 public abstract class GuiIconToggleButtonMixin {
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true, require = 0)
-    private void banira$draw(PoseStack stack, int mouseX, int mouseY,
+    private void banira$draw(GuiGraphics graphics, int mouseX, int mouseY,
                              float partialTicks, CallbackInfo callback) {
         if (JeiCompatibility.shouldSuppress(this)) callback.cancel();
     }
 
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, require = 0)
-    private void banira$drawTooltips(PoseStack stack, int mouseX, int mouseY,
+    private void banira$drawTooltips(GuiGraphics graphics, int mouseX, int mouseY,
                                      CallbackInfo callback) {
         if (JeiCompatibility.shouldSuppress(this)) callback.cancel();
     }

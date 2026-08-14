@@ -35,6 +35,14 @@ public class CreativeQuickActionInputContractTest {
         assertTrue(config.contains("injections.CreativeScreenQuickActionMixin"));
     }
 
+    @Test
+    public void jeiButtonMixinsUseThe1201GuiGraphicsDescriptor() throws Exception {
+        String mixin = source("src/main/java/xin/vanilla/banira/internal/mixin/compat/jei/GuiIconToggleButtonMixin.java");
+
+        assertTrue(mixin.contains("GuiGraphics graphics"));
+        assertFalse(mixin.contains("PoseStack stack"));
+    }
+
     private static String source(String path) throws Exception {
         return new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
     }

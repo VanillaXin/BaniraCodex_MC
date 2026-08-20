@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
+import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.platform.BaniraNetworkPacket;
 import xin.vanilla.banira.platform.BaniraNetworkService;
 
@@ -58,5 +59,11 @@ public enum FabricBaniraNetworkService implements BaniraNetworkService {
         ResourceLocation channel = ResourceLocation.tryParse(channelId);
         return player instanceof ServerPlayer && channel != null
                 && FabricNetworkChannels.hasPlayerChannel((ServerPlayer) player, channel);
+    }
+
+    @Override
+    public boolean isRemoteClientModInstalled(@Nonnull Object player, @Nonnull String modId) {
+        return player instanceof ServerPlayer
+                && PlayerUtils.isRemoteClientModInstalled((ServerPlayer) player, modId);
     }
 }

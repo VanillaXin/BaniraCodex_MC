@@ -11,4 +11,10 @@ public interface ServerPlayerAccessor {
 
     @Accessor(value = "language")
     void banira$language(String language);
+
+    @Accessor(value = "allowsListing")
+    boolean banira$allowsListing();
+
+    @Accessor(value = "allowsListing")
+    void banira$allowsListing(boolean allowsListing);
 }

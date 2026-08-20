@@ -351,7 +351,7 @@ public class Translator implements ITranslator {
      * 获取服务端玩家语言
      */
     public static String getServerPlayerLanguage(ServerPlayer player) {
-        return PlayerLanguageManager.get(player);
+        return PlayerOptionsManager.getLanguage(player);
     }
 
     /**

@@ -58,10 +58,17 @@ public final class PlayerUtils {
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+        try {
+            ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
+            ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+            String language = original.banira$language();
+            boolean allowsListing = original.banira$allowsListing();
 
-        target.banira$language(original.banira$language());
+            target.banira$language(language);
+            target.banira$allowsListing(allowsListing);
+            PlayerOptionsManager.set(targetPlayer, language, allowsListing);
+        } catch (Throwable ignored) {
+        }
     }
 
     // region 玩家信息

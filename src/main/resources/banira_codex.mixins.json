@@ -4,6 +4,7 @@
   "package": "xin.vanilla.banira.internal.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "accessors.ServerPlayerAccessor",
     "injections.ServerPlayerMixin"
   ],
   "client": [

@@ -15,6 +15,7 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
+import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -57,7 +58,16 @@ public final class PlayerUtils {
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        // 1.20.1 不再在 ServerPlayer 中保存可复制的语言字段。
+        try {
+            ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
+            ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+            String language = PlayerOptionsManager.getLanguage(originalPlayer);
+            boolean allowsListing = original.banira$allowsListing();
+
+            target.banira$allowsListing(allowsListing);
+            PlayerOptionsManager.set(targetPlayer, language, allowsListing);
+        } catch (Throwable ignored) {
+        }
     }
 
     // region 玩家信息

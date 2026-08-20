@@ -18,8 +18,11 @@ public class ItemWidgetDepthContractTest {
                 "src/main/java/xin/vanilla/banira/internal/client/BaniraItemRenderBridge.java")),
                 StandardCharsets.UTF_8);
 
-        assertTrue(source.contains("ITEM_DECORATION_DEPTH_OFFSET = 101.0F"));
         assertTrue(source.contains("itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET"));
+        assertTrue(source.contains("RenderSystem.disableDepthTest()"));
+        assertTrue(source.contains("RenderSystem.depthMask(false)"));
+        assertTrue(source.contains("RenderSystem.depthMask(true)"));
+        assertTrue(source.contains("RenderSystem.enableDepthTest()"));
         assertTrue(source.contains("finally"));
         assertTrue(source.contains("itemRenderer.blitOffset = originalBlitOffset"));
     }

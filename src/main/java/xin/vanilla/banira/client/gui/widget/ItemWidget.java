@@ -232,7 +232,16 @@ public class ItemWidget extends BaseWidget {
     public static void renderItem(GuiGraphics graphics, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         renderGuiItemScaled(graphics, itemStack, x, y, 16);
         if (showText && !itemStack.isEmpty()) {
-            graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+            // 立体方块模型可能越过普通装饰深度，数量层单独禁用深度遮挡。
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
+            try {
+                graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+                graphics.flush();
+            } finally {
+                RenderSystem.depthMask(true);
+                RenderSystem.enableDepthTest();
+            }
         }
     }
 }

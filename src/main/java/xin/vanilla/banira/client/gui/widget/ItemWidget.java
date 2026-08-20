@@ -219,15 +219,19 @@ public class ItemWidget extends BaseWidget {
      */
     public static void renderItem(ItemRenderer itemRenderer, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         float originalBlitOffset = itemRenderer.blitOffset;
-        try {
-            renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
-            if (showText) {
-                // 缩放绘制会额外抬高物品模型，装饰层也必须同步前移。
+        renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
+        if (showText) {
+            // 方块物品的立体模型会遮挡数量文字，装饰层绘制期间暂时关闭深度写入与测试。
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
+            try {
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
                 itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+            } finally {
+                itemRenderer.blitOffset = originalBlitOffset;
+                RenderSystem.depthMask(true);
+                RenderSystem.enableDepthTest();
             }
-        } finally {
-            itemRenderer.blitOffset = originalBlitOffset;
         }
     }
 }

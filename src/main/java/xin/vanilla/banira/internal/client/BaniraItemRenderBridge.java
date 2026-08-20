@@ -38,12 +38,16 @@ public final class BaniraItemRenderBridge {
         if (showCount) {
             GuiGraphics graphics = graphics();
             graphics.pose().pushPose();
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
             try {
                 graphics.pose().translate(0, 0, ITEM_DECORATION_DEPTH_OFFSET);
                 graphics.renderItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
                 graphics.flush();
             } finally {
                 graphics.pose().popPose();
+                RenderSystem.depthMask(true);
+                RenderSystem.enableDepthTest();
             }
         }
     }

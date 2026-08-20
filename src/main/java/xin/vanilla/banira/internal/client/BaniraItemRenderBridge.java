@@ -31,16 +31,20 @@ public final class BaniraItemRenderBridge {
     }
 
     public static void renderItem(@Nonnull Font font, @Nonnull ItemStack stack, int x, int y, boolean showCount) {
-        ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
-        float originalBlitOffset = itemRenderer.blitOffset;
-        try {
-            renderGuiItemScaled(stack, x, y, 16);
-            if (showCount) {
+        renderGuiItemScaled(stack, x, y, 16);
+        if (showCount) {
+            ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
+            float originalBlitOffset = itemRenderer.blitOffset;
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
+            try {
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
                 itemRenderer.renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+            } finally {
+                itemRenderer.blitOffset = originalBlitOffset;
+                RenderSystem.depthMask(true);
+                RenderSystem.enableDepthTest();
             }
-        } finally {
-            itemRenderer.blitOffset = originalBlitOffset;
         }
     }
 

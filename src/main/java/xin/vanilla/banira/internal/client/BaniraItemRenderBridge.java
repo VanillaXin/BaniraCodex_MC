@@ -34,11 +34,15 @@ public final class BaniraItemRenderBridge {
         if (showCount) {
             ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
             float originalBlitOffset = itemRenderer.blitOffset;
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
             try {
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
                 itemRenderer.renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
             } finally {
                 itemRenderer.blitOffset = originalBlitOffset;
+                RenderSystem.depthMask(true);
+                RenderSystem.enableDepthTest();
             }
         }
     }

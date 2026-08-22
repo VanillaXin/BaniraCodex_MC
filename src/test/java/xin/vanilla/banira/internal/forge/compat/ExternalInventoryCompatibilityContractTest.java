@@ -29,6 +29,7 @@ public class ExternalInventoryCompatibilityContractTest {
         String values = client.toString();
         assertTrue(values.contains("compat.jei.BookmarkButtonMixin"));
         assertTrue(values.contains("compat.jei.GuiIconToggleButtonMixin"));
+        assertTrue(values.contains("compat.jei.LookupHistoryButtonMixin"));
         assertFalse(values.contains("compat.ftblibrary"));
         assertFalse(values.contains("compat.jei.BookmarkButtonAccessor"));
     }
@@ -103,6 +104,23 @@ public class ExternalInventoryCompatibilityContractTest {
         assertTrue(mixin.contains("offIcon"));
         assertTrue(mixin.contains("onIcon"));
         assertTrue(mixin.contains("toggleState"));
+    }
+
+    @Test
+    public void jeiBridgeAdoptsLookupHistoryAndScalesNativeIcons() throws Exception {
+        String source = source("src/main/java/xin/vanilla/banira/internal/forge/compat/jei/JeiCompatibility.java");
+        assertTrue(source.contains("lookup_history"));
+        assertTrue(source.contains("word.banira_codex.jei_lookup_history"));
+        assertTrue(source.contains("LookupHistoryButtonController"));
+        assertTrue(source.contains("isLookupHistoryEnabled"));
+        assertTrue(source.contains("Math.min((float) size / icon.getWidth()"));
+        assertTrue(source.contains("graphics.pose().last().pose().set(stack.last().pose())"));
+        assertTrue(source.contains("graphics.pose().scale(scale, scale, 1.0F)"));
+        assertFalse(source.contains("if (lookupHistoryController != null)"));
+
+        String mixin = source("src/main/java/xin/vanilla/banira/internal/mixin/compat/jei/LookupHistoryButtonMixin.java");
+        assertTrue(mixin.contains("LookupHistoryButtonController"));
+        assertTrue(mixin.contains("clientConfig"));
     }
 
     @Test

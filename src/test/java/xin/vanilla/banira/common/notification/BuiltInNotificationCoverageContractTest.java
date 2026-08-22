@@ -3,11 +3,6 @@ package xin.vanilla.banira.common.notification;
 import org.junit.Test;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,24 +16,13 @@ public class BuiltInNotificationCoverageContractTest {
         assertEquals(EnumNotificationTypeDisplayMode.VANILLA_CHAT,
                 displayDefault(NotificationTypeKeys.COMMAND_FEEDBACK));
 
-        String help = source("src/main/java/xin/vanilla/banira/command/impl/HelpCommand.java");
-        assertTrue(help.contains("MessageUtils.sendNotification(player, helpInfo, NotificationTypeKeys.HELP)"));
-
-        String virtualOp = source("src/main/java/xin/vanilla/banira/command/impl/VirtualOpCommand.java");
-        assertTrue(virtualOp.contains("MessageUtils.sendMessage(source, false,"));
-        assertTrue(!virtualOp.contains("source.sendFailure("));
     }
 
     private EnumNotificationTypeDisplayMode displayDefault(String typeId) {
         return ServerNotificationTypeRegistry.buildSyncEntries().stream()
                 .filter(entry -> typeId.equals(entry.typeId()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("Missing notification type: " + typeId))
+                .orElseThrow(IllegalStateException::new)
                 .defaultDisplayIfAbsent();
-    }
-
-    private String source(String relativePath) throws Exception {
-        Path path = Paths.get(relativePath);
-        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
     }
 }

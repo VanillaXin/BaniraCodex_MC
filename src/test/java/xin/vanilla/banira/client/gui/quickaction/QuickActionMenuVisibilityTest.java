@@ -50,11 +50,16 @@ public class QuickActionMenuVisibilityTest {
         String source = source("QuickActionOverlay.java");
         assertTrue(source.contains("hiddenMenuItemIds()"));
         assertTrue(source.contains("hiddenMenuKey"));
-        assertTrue(source.contains("CTX_PAGE_ROW_ACTION"));
+        assertTrue(source.contains("QuickActionMenuEditSession"));
         assertTrue(source.contains("openContextMenuRowActions"));
+        assertTrue(source.contains("renderContextRowActionMenu"));
+        assertTrue(source.contains("tryClickContextRowAction"));
         assertTrue(source.contains("quick_action.hide_menu_entry"));
         assertTrue(source.contains("quick_action.hide_menu_item"));
+        assertTrue(source.contains("quick_action.show_menu_entry"));
+        assertTrue(source.contains("quick_action.show_menu_item"));
         assertTrue(source.contains("quick_action.unhide_menu_item"));
+        assertFalse(source.contains("contextPage = CTX_PAGE_ROW_ACTION"));
         assertFalse(source.contains("return hideContextMenuRow(row);"));
     }
 

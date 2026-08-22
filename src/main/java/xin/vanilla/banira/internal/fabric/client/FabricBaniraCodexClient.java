@@ -28,6 +28,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.*;
+import xin.vanilla.banira.internal.fabric.compat.FabricExternalInventoryCompatibility;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -46,8 +47,10 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         BaniraClientOverlayBridge.loadNotificationLog();
         registerOwnNotificationTypes();
         NotificationTypeSettingsStore.get().load();
+        BaniraCodexClientBootstrap.init();
         BaniraClientEventHub.registerCodexDefaults();
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
+        FabricExternalInventoryCompatibility.init();
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(FabricColorThemeReloadListener.INSTANCE);
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {

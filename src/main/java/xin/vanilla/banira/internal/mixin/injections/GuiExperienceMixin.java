@@ -1,15 +1,15 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
-import net.minecraft.client.gui.Font;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.internal.fabric.client.FabricBaniraHudBridge;
 
@@ -23,15 +23,35 @@ public abstract class GuiExperienceMixin {
     @Unique
     private boolean banira$cancelExperienceText;
 
-    @Inject(method = "renderExperienceBar", at = @At("HEAD"))
-    private void banira$beforeExperience(GuiGraphics graphics, int x, CallbackInfo ci) {
+    @WrapMethod(method = "renderExperienceBar")
+    private void banira$renderExperience(GuiGraphics graphics, int x, Operation<Void> original) {
         banira$cancelExperienceBar = FabricBaniraHudBridge.dispatchPre(HudOverlayElement.EXPERIENCE_BAR, graphics.pose());
-        banira$cancelExperienceText = FabricBaniraHudBridge.dispatchPre(HudOverlayElement.EXPERIENCE_TEXT, graphics.pose());
+        banira$cancelExperienceText = FabricBaniraHudBridge.dispatchPre(
+                HudOverlayElement.EXPERIENCE_TEXT, graphics.pose());
+        original.call(graphics, x);
+
+        if (!banira$cancelExperienceBar) {
+            FabricBaniraHudBridge.dispatchPost(HudOverlayElement.EXPERIENCE_BAR, graphics.pose());
+        }
+        if (!banira$cancelExperienceText) {
+            FabricBaniraHudBridge.dispatchPost(HudOverlayElement.EXPERIENCE_TEXT, graphics.pose());
+        }
+    }
+
+    /** 只改变本次渲染读取值，避免把 HUD 兼容逻辑写回玩家状态。 */
+    @ModifyExpressionValue(
+            method = "renderExperienceBar",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;experienceLevel:I"),
+            require = 0
+    )
+    private int banira$experienceLevelForRendering(int original) {
+        return banira$cancelExperienceText ? 0 : original;
     }
 
     @Redirect(
             method = "renderExperienceBar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"),
+            require = 0
     )
     private void banira$drawExperienceBar(GuiGraphics graphics, ResourceLocation texture,
                                           int x, int y, int u, int v, int width, int height) {
@@ -40,22 +60,4 @@ public abstract class GuiExperienceMixin {
         }
     }
 
-    @Redirect(
-            method = "renderExperienceBar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I")
-    )
-    private int banira$drawExperienceText(GuiGraphics graphics, Font font, String text,
-                                          int x, int y, int color, boolean shadow) {
-        return banira$cancelExperienceText ? 0 : graphics.drawString(font, text, x, y, color, shadow);
-    }
-
-    @Inject(method = "renderExperienceBar", at = @At("RETURN"))
-    private void banira$afterExperience(GuiGraphics graphics, int x, CallbackInfo ci) {
-        if (!banira$cancelExperienceBar) {
-            FabricBaniraHudBridge.dispatchPost(HudOverlayElement.EXPERIENCE_BAR, graphics.pose());
-        }
-        if (!banira$cancelExperienceText) {
-            FabricBaniraHudBridge.dispatchPost(HudOverlayElement.EXPERIENCE_TEXT, graphics.pose());
-        }
-    }
 }

@@ -19,7 +19,8 @@ public abstract class ServerPlayerMixin {
     private void banira$afterUpdateOptions(ServerboundClientInformationPacket packet, CallbackInfo ci) {
         try {
             ServerPlayer player = (ServerPlayer) (Object) this;
-            PlayerOptionsManager.set(player, packet.language(), packet.allowsListing());
+            PlayerOptionsManager.set(player, packet.language(), packet.chatVisibility(),
+                    packet.chatColors(), packet.mainHand(), packet.allowsListing());
         } catch (Throwable ignored) {
         }
     }

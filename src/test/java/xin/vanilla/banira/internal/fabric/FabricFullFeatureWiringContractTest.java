@@ -23,6 +23,7 @@ public class FabricFullFeatureWiringContractTest {
         assertTrue(network.contains("HANDLER.register(QuickActionCommandsToServer.class"));
         assertTrue(bootstrap.contains("customActions.reload()"));
         assertTrue(bootstrap.contains("ExternalInventoryButtonManager.get().refreshCurrentScreen()"));
+        assertTrue(client.contains("BaniraCodexClientBootstrap.init()"));
         assertTrue(client.contains("CustomQuickActionManager.get().tickKeyBindings()"));
         assertTrue(client.contains("ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT)"));
         assertTrue(common.contains("ManagedConfigFiles.poll(ManagedConfigFiles.Scope.COMMON)"));

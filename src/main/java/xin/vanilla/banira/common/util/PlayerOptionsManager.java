@@ -1,15 +1,22 @@
 package xin.vanilla.banira.common.util;
 
-import lombok.experimental.Accessors;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.ChatVisiblity;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Accessors(chain = true, fluent = true)
+/**
+ * 保存客户端上报但原版死亡克隆未完整复制的玩家选项。
+ * 这里只补齐 Clone 缺口，不承担通用玩家数据持久化。
+ */
 public final class PlayerOptionsManager {
     private static final String DEFAULT_LANGUAGE = "en_us";
+    private static final ChatVisiblity DEFAULT_CHAT_VISIBILITY = ChatVisiblity.FULL;
+    private static final boolean DEFAULT_CHAT_COLORS = true;
+    private static final HumanoidArm DEFAULT_MAIN_HAND = HumanoidArm.RIGHT;
     private static final boolean DEFAULT_ALLOWS_LISTING = true;
     private static final Map<UUID, PlayerOptions> playerOptionsMap = new ConcurrentHashMap<>();
 
@@ -31,8 +38,23 @@ public final class PlayerOptionsManager {
     public static void setLanguage(UUID uuid, String language) {
         playerOptionsMap.compute(uuid, (key, options) -> new PlayerOptions(
                 language,
+                options != null ? options.chatVisibility() : DEFAULT_CHAT_VISIBILITY,
+                options == null || options.chatColors(),
+                options != null ? options.mainHand() : DEFAULT_MAIN_HAND,
                 options != null ? options.allowsListing() : DEFAULT_ALLOWS_LISTING
         ));
+    }
+
+    public static ChatVisiblity getChatVisibility(UUID uuid) {
+        return getOptions(uuid).chatVisibility();
+    }
+
+    public static boolean getChatColors(UUID uuid) {
+        return getOptions(uuid).chatColors();
+    }
+
+    public static HumanoidArm getMainHand(UUID uuid) {
+        return getOptions(uuid).mainHand();
     }
 
     public static boolean getAllowsListing(ServerPlayer player) {
@@ -50,16 +72,26 @@ public final class PlayerOptionsManager {
     public static void setAllowsListing(UUID uuid, boolean allowsListing) {
         playerOptionsMap.compute(uuid, (key, options) -> new PlayerOptions(
                 options != null ? options.language() : DEFAULT_LANGUAGE,
+                options != null ? options.chatVisibility() : DEFAULT_CHAT_VISIBILITY,
+                options == null || options.chatColors(),
+                options != null ? options.mainHand() : DEFAULT_MAIN_HAND,
                 allowsListing
         ));
     }
 
-    public static void set(ServerPlayer player, String language, boolean allowsListing) {
-        set(player.getUUID(), language, allowsListing);
+    public static void set(ServerPlayer player, String language, ChatVisiblity chatVisibility,
+                           boolean chatColors, HumanoidArm mainHand, boolean allowsListing) {
+        set(player.getUUID(), language, chatVisibility, chatColors, mainHand, allowsListing);
     }
 
-    public static void set(UUID uuid, String language, boolean allowsListing) {
-        playerOptionsMap.put(uuid, new PlayerOptions(language, allowsListing));
+    public static void set(UUID uuid, String language, ChatVisiblity chatVisibility,
+                           boolean chatColors, HumanoidArm mainHand, boolean allowsListing) {
+        playerOptionsMap.put(uuid, new PlayerOptions(
+                language == null ? DEFAULT_LANGUAGE : language,
+                chatVisibility == null ? DEFAULT_CHAT_VISIBILITY : chatVisibility,
+                chatColors,
+                mainHand == null ? DEFAULT_MAIN_HAND : mainHand,
+                allowsListing));
     }
 
     public static void remove(ServerPlayer player) {
@@ -77,10 +109,13 @@ public final class PlayerOptionsManager {
     private static PlayerOptions getOptions(UUID uuid) {
         return playerOptionsMap.getOrDefault(
                 uuid,
-                new PlayerOptions(DEFAULT_LANGUAGE, DEFAULT_ALLOWS_LISTING)
+                new PlayerOptions(DEFAULT_LANGUAGE, DEFAULT_CHAT_VISIBILITY,
+                        DEFAULT_CHAT_COLORS, DEFAULT_MAIN_HAND, DEFAULT_ALLOWS_LISTING)
         );
     }
 
-    private record PlayerOptions(String language, boolean allowsListing) {
+    private record PlayerOptions(String language, ChatVisiblity chatVisibility,
+                                 boolean chatColors, HumanoidArm mainHand,
+                                 boolean allowsListing) {
     }
 }

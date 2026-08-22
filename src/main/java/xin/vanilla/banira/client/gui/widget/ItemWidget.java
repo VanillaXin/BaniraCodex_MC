@@ -31,6 +31,7 @@ import java.util.Optional;
  */
 @Accessors(chain = true, fluent = true)
 public class ItemWidget extends BaseWidget {
+    private static final float ITEM_DECORATION_FOREGROUND_DEPTH = 250.0F;
     @Getter
     private String itemId;
 
@@ -228,15 +229,15 @@ public class ItemWidget extends BaseWidget {
     public static void renderItem(GuiGraphics graphics, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         renderGuiItemScaled(graphics, itemStack, x, y, 16);
         if (showText && !itemStack.isEmpty()) {
-            // 立体方块模型可能越过普通装饰深度，数量层单独禁用深度遮挡。
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
+            PoseStack pose = graphics.pose();
+            pose.pushPose();
             try {
+                // 原版装饰内部还会前移 200；这里确保最终深度高于缩放物品模型。
+                pose.translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH);
                 graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
                 graphics.flush();
             } finally {
-                RenderSystem.depthMask(true);
-                RenderSystem.enableDepthTest();
+                pose.popPose();
             }
         }
     }

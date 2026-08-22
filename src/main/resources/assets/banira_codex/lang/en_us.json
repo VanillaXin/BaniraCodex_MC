@@ -186,6 +186,8 @@
   "word.banira_codex.quick_action.hide_slot": "Hide this slot",
   "word.banira_codex.quick_action.hide_menu_entry": "Hide this entry",
   "word.banira_codex.quick_action.hide_menu_item": "Hide this menu item",
+  "word.banira_codex.quick_action.move_up": "Move up",
+  "word.banira_codex.quick_action.move_down": "Move down",
   "word.banira_codex.quick_action.menu_hidden": "Hidden…",
   "word.banira_codex.quick_action.menu_layout": "Grid…",
   "word.banira_codex.quick_action.menu_position": "Position…",

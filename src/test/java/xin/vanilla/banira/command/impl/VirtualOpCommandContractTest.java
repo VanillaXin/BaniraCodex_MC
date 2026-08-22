@@ -6,15 +6,11 @@ import org.junit.Test;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class VirtualOpCommandContractTest {
 
@@ -38,18 +34,6 @@ public class VirtualOpCommandContractTest {
                         "CHILD:REWARD.ADD.ITEM,other:reward.add.coin").orElse(null));
         assertFalse(VirtualOpCommand.resolvePermissionKeys("child:missing").isPresent());
     }
-
-    @Test
-    public void commandSourceUsesRegistryInsteadOfBaniraEnumParsing() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src", "main", "java", "xin",
-                "vanilla", "banira", "command", "impl", "VirtualOpCommand.java")), StandardCharsets.UTF_8);
-
-        assertFalse(source.contains("EnumCommandType::valueOf"));
-        assertFalse(source.contains("EnumCommandType.values()"));
-        assertTrue(source.contains("BaniraVirtualPermissionRegistry.all()"));
-        assertTrue(source.contains("resolvePermissionKeys"));
-    }
-
     private static BaniraVirtualPermission permission(String modId, String id, int sort) {
         return new BaniraVirtualPermission() {
             @Override

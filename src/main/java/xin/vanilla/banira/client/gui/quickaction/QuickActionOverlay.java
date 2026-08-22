@@ -188,6 +188,10 @@ public final class QuickActionOverlay {
 
     @Nullable
     private String contextTooltipLine;
+    @Nullable
+    private BaniraColorConfig contextTooltipTheme;
+    @Nullable
+    private EnumSeason contextTooltipSeason;
 
     private QuickActionOverlay() {
     }
@@ -662,6 +666,8 @@ public final class QuickActionOverlay {
         pollEditIconDragEnd();
 
         contextTooltipLine = null;
+        contextTooltipTheme = null;
+        contextTooltipSeason = null;
 
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
@@ -774,10 +780,7 @@ public final class QuickActionOverlay {
 
         RenderSystem.disableBlend();
         stack.popPose();
-
-        if (contextTooltipLine != null && !contextTooltipLine.isEmpty()) {
-            screen.renderTooltip(stack, new TextComponent(contextTooltipLine), mouseX, mouseY);
-        }
+        renderContextTooltip(stack, mc, mouseX, mouseY, theme);
 
         renderQuickActionEntryIconTooltipIfHovered(stack, mc, mouseX, mouseY, theme);
     }
@@ -806,24 +809,55 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, entryTheme, season);
     }
 
-    /**
-     * 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。
-     */
+    /** 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。 */
+    private void renderContextTooltip(PoseStack stack, Minecraft mc, int mouseX, int mouseY,
+                                      BaniraColorConfig fallbackTheme) {
+        if (contextTooltipLine == null || contextTooltipLine.isEmpty()) {
+            return;
+        }
+        BaniraColorConfig tooltipTheme = contextTooltipTheme == null ? fallbackTheme : contextTooltipTheme;
+        EnumSeason season = contextTooltipSeason == null ? EnumSeason.AUTO : contextTooltipSeason;
+        FontDrawArgs args = FontDrawArgs.ofPopo(Text.literal(contextTooltipLine).stack(stack).font(mc.font))
+                .x(mouseX)
+                .y(mouseY)
+                .popupUseTexture(tooltipTheme.tooltipUseTexture());
+        TooltipWidget.drawPopupMessage(stack, args, tooltipTheme, season);
+    }
+
+    /** 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。 */
     private BaniraColorConfig contextTheme(BaniraColorConfig fallback) {
-        String entryId = contextEntrySubmenuId != null
-                ? contextEntrySubmenuId
-                : contextUserEntryIdForHide;
-        QuickActionEntry entry = entryId != null
-                ? QuickActionRegistry.get().getEntry(entryId)
-                : null;
+        QuickActionEntry entry = contextThemeEntry();
         return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
     }
 
     private BaniraColorConfig contextRowActionTheme(BaniraColorConfig fallback) {
+        QuickActionEntry entry = contextRowActionEntry();
+        return entry == null ? fallback : BaniraColorConfig.forSeason(entrySeason(entry));
+    }
+
+    @Nullable
+    private QuickActionEntry contextThemeEntry() {
+        String entryId = contextEntrySubmenuId != null
+                ? contextEntrySubmenuId
+                : contextUserEntryIdForHide;
+        return entryId == null ? null : QuickActionRegistry.get().getEntry(entryId);
+    }
+
+    @Nullable
+    private QuickActionEntry contextRowActionEntry() {
         String entryId = contextRowEditSession == null
                 ? null : entryIdFromMenuKey(contextRowEditSession.targetKey());
-        QuickActionEntry entry = entryId == null ? null : QuickActionRegistry.get().getEntry(entryId);
-        return entry == null ? fallback : BaniraColorConfig.forSeason(entrySeason(entry));
+        return entryId == null ? null : QuickActionRegistry.get().getEntry(entryId);
+    }
+
+    private EnumSeason contextThemeSeason() {
+        QuickActionEntry entry = contextThemeEntry();
+        return entry == null ? EnumSeason.AUTO : entrySeason(entry);
+    }
+
+    private EnumSeason contextRowActionSeason() {
+        QuickActionEntry entry = contextRowActionEntry();
+        return entry == null ? EnumSeason.AUTO : entrySeason(entry);
     }
 
     @Nullable
@@ -1715,6 +1749,8 @@ public final class QuickActionOverlay {
                 font.draw(stack, new TextComponent(shown), textX, textY, textColor);
                 if (hi && !shown.equals(full)) {
                     contextTooltipLine = full;
+                    contextTooltipTheme = theme;
+                    contextTooltipSeason = contextThemeSeason();
                 }
             }
         } finally {
@@ -1772,7 +1808,11 @@ public final class QuickActionOverlay {
                     : ctxRowActionX + MENU_TEXT_PAD_X;
             int textY = rowY + (MENU_ROW_H - font.lineHeight) / 2;
             font.draw(stack, new TextComponent(shown), textX, textY, textColor);
-            if (hovered && !shown.equals(row.text)) contextTooltipLine = row.text;
+            if (hovered && !shown.equals(row.text)) {
+                contextTooltipLine = row.text;
+                contextTooltipTheme = theme;
+                contextTooltipSeason = contextRowActionSeason();
+            }
         }
     }
 

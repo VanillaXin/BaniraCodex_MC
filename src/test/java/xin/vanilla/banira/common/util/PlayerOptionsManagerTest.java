@@ -37,6 +37,7 @@ public class PlayerOptionsManagerTest {
     public void combinedUpdateAndRemoveAffectBothOptions() {
         UUID uuid = UUID.randomUUID();
 
+        assertFalse(PlayerOptionsManager.has(uuid));
         PlayerOptionsManager.set(uuid, "ja_jp", ChatVisiblity.SYSTEM,
                 false, HumanoidArm.LEFT);
         assertEquals("ja_jp", PlayerOptionsManager.getLanguage(uuid));
@@ -44,7 +45,9 @@ public class PlayerOptionsManagerTest {
         assertFalse(PlayerOptionsManager.getChatColors(uuid));
         assertEquals(HumanoidArm.LEFT, PlayerOptionsManager.getMainHand(uuid));
 
+        assertTrue(PlayerOptionsManager.has(uuid));
         PlayerOptionsManager.remove(uuid);
+        assertFalse(PlayerOptionsManager.has(uuid));
         assertEquals("en_us", PlayerOptionsManager.getLanguage(uuid));
         assertEquals(ChatVisiblity.FULL, PlayerOptionsManager.getChatVisibility(uuid));
         assertTrue(PlayerOptionsManager.getChatColors(uuid));

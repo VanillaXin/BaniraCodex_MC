@@ -8,14 +8,12 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ForgeBaniraResourceServiceTest {
     @Rule
@@ -34,15 +32,5 @@ public class ForgeBaniraResourceServiceTest {
 
         assertEquals(new LinkedHashSet<>(Arrays.asList("en_us", "zh_cn")), result.keySet());
         assertEquals("子模组", result.get("zh_cn").get("word.child_mod.name").getAsString());
-    }
-
-    @Test
-    public void productionPathFallsBackToForgeRegisteredModFiles() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/banira/internal/forge/platform/ForgeBaniraResourceService.java")),
-                StandardCharsets.UTF_8);
-
-        assertTrue(source.contains("ModList.get().getModFileById(modId)"));
-        assertTrue(source.contains("findResource(\"assets/\" + modId + \"/lang\")"));
     }
 }

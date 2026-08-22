@@ -43,6 +43,8 @@ public class ExternalInventoryCompatibilityContractTest {
         assertTrue(values.contains("compat.ftblibrary.SidebarButtonMixin"));
         assertTrue(values.contains("compat.jei.BookmarkButtonMixin"));
         assertTrue(values.contains("compat.jei.BookmarkButtonAccessor"));
+        assertTrue(values.contains("compat.jei.LookupHistoryButtonMixin"));
+        assertTrue(values.contains("compat.jei.LookupHistoryButtonAccessor"));
 
         String build = source("build.gradle");
         assertTrue(build.contains("modCompileOnly \"curse.maven:ftb-library-fabric"));
@@ -51,6 +53,23 @@ public class ExternalInventoryCompatibilityContractTest {
         String plugin = source("src/main/java/xin/vanilla/banira/internal/fabric/mixin/FabricMixinConfigPlugin.java");
         assertTrue(plugin.contains("isModLoaded(\"ftblibrary\")"));
         assertTrue(plugin.contains("isModLoaded(\"jei\")"));
+    }
+
+    @Test
+    public void jeiBridgeAdoptsLookupHistoryAndScalesNativeIcons() throws Exception {
+        String source = source("src/main/java/xin/vanilla/banira/internal/fabric/compat/jei/JeiCompatibility.java");
+        assertTrue(source.contains("lookup_history"));
+        assertTrue(source.contains("word.banira_codex.jei_lookup_history"));
+        assertTrue(source.contains("isLookupHistoryEnabled"));
+        assertTrue(source.contains("LookupHistoryButtonAccessor"));
+        assertTrue(source.contains("Math.min((float) size / icon.getWidth()"));
+        assertTrue(source.contains("graphics.pose().last().pose().set(stack.last().pose())"));
+        assertTrue(source.contains("graphics.pose().scale(scale, scale, 1.0F)"));
+        assertFalse(source.contains("if (lookupHistoryButton != null)"));
+
+        String build = source("build.gradle");
+        assertTrue(build.contains("jei-238222:7229086"));
+        assertTrue(build.contains("modLocalRuntime \"curse.maven:jei-238222:7229086\""));
     }
 
     private static String source(String path) throws Exception {

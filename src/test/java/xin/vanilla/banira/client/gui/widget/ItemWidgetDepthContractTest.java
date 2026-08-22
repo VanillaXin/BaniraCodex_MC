@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 /**
  * 物品数量和耐久等装饰必须绘制在缩放后的物品模型前方。
@@ -23,16 +24,16 @@ public class ItemWidgetDepthContractTest {
 
         assertDepthGuard(bridge);
         assertDepthGuard(widget);
-        assertTrue(bridge.contains("graphics.pose().translate(0, 0, ITEM_DECORATION_DEPTH_OFFSET)"));
+        assertTrue(bridge.contains("ITEM_DECORATION_FOREGROUND_DEPTH = 250.0F"));
+        assertTrue(bridge.contains("graphics.pose().translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH)"));
         assertTrue(bridge.contains("graphics.pose().popPose()"));
     }
 
     private static void assertDepthGuard(String source) {
+        assertTrue(source.contains("translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH)"));
         assertTrue(source.contains("graphics.renderItemDecorations"));
-        assertTrue(source.contains("RenderSystem.disableDepthTest()"));
-        assertTrue(source.contains("RenderSystem.depthMask(false)"));
-        assertTrue(source.contains("RenderSystem.depthMask(true)"));
-        assertTrue(source.contains("RenderSystem.enableDepthTest()"));
+        assertTrue(source.contains("graphics.flush()"));
+        assertFalse(source.contains("RenderSystem.depthMask(false)"));
         assertTrue(source.contains("finally"));
     }
 }

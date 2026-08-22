@@ -350,8 +350,8 @@ public class Translator implements ITranslator {
     /**
      * 获取服务端玩家语言
      */
-    public static String getServerPlayerLanguage(ServerPlayer player) {
-        return PlayerLanguageManager.get(player);
+    public static String getServerPlayerLanguage(Object player) {
+        return PlayerOptionsManager.getLanguage(player);
     }
 
     /**
@@ -359,8 +359,8 @@ public class Translator implements ITranslator {
      */
     public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            return player instanceof ServerPlayer serverPlayer
-                    ? getServerPlayerLanguage(serverPlayer)
+            return PlayerOptionsManager.has(player)
+                    ? getServerPlayerLanguage(player)
                     : getClientLanguage();
         }
         if ("server".equalsIgnoreCase(language)) {

@@ -11,6 +11,7 @@ import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Forge 的 SimpleChannel 注册实现；公共 NetworkHandler 不直接暴露该类型。
@@ -30,20 +31,17 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
 
     public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
                                               String protocolVersion, boolean optionalClient) {
+        Predicate<String> acceptedVersions = optionalClient
+                ? NetworkRegistry.acceptMissingOr(protocolVersion)
+                : protocolVersion::equals;
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
                 new ResourceLocation(identifier.getNamespace(), channelName),
                 () -> protocolVersion,
-                version -> accepts(protocolVersion, optionalClient, version),
-                version -> accepts(protocolVersion, optionalClient, version)
+                acceptedVersions,
+                acceptedVersions
         );
         ForgeNetworkChannels.installDefault(channel);
         return new ForgeNetworkHandler(channel);
-    }
-
-    private static boolean accepts(String protocolVersion, boolean optionalClient, String version) {
-        return protocolVersion.equals(version)
-                || optionalClient && (NetworkRegistry.ABSENT.equals(version)
-                || NetworkRegistry.ACCEPTVANILLA.equals(version));
     }
 
     @Override

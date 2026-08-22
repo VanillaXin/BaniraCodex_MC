@@ -5,6 +5,7 @@ import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 /** 验证通知类型配置草稿不会直接修改存储对象。 */
 public class NotificationTypeSettingsStoreTest {
@@ -15,7 +16,8 @@ public class NotificationTypeSettingsStoreTest {
                 .durationMs(2500)
                 .positionName("TOP_RIGHT")
                 .animationName("FADE_IN")
-                .displayMode(EnumNotificationTypeDisplayMode.OVERLAY);
+                .displayMode(EnumNotificationTypeDisplayMode.OVERLAY)
+                .displayModeCustomized(true);
 
         NotificationTypeSettingsStore.TypeSettings copy = NotificationTypeSettingsStore.copyOf(source);
         copy.durationMs(5000);
@@ -23,5 +25,6 @@ public class NotificationTypeSettingsStoreTest {
         assertNotSame(source, copy);
         assertEquals(2500, source.durationMs());
         assertEquals(5000, copy.durationMs());
+        assertTrue(copy.displayModeCustomized());
     }
 }

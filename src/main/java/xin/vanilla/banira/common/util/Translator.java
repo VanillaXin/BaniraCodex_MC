@@ -346,7 +346,7 @@ public class Translator implements ITranslator {
      * 获取服务端玩家语言
      */
     public static String getServerPlayerLanguage(Object player) {
-        return PlayerLanguageManager.get(player);
+        return PlayerOptionsManager.getLanguage(player);
     }
 
     /**
@@ -354,7 +354,7 @@ public class Translator implements ITranslator {
      */
     public static String getValidLanguage(@Nullable Object player, @Nullable String language) {
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            return PlayerLanguageManager.has(player)
+            return PlayerOptionsManager.has(player)
                     ? getServerPlayerLanguage(player)
                     : getClientLanguage();
         }

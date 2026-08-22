@@ -3,18 +3,21 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.player.ChatVisibility;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.HandSide;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
+import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerOptionsAccessor;
 import xin.vanilla.banira.internal.server.BaniraServerAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -53,16 +56,27 @@ public final class PlayerUtils {
 
 
     /**
-     * 复制玩家客户端设置
+     * 补齐原版死亡克隆遗漏的客户端选项
      *
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+        try {
+            UUID uuid = originalPlayer.getUUID();
+            String language = PlayerOptionsManager.getLanguage(uuid);
+            ChatVisibility chatVisibility = PlayerOptionsManager.getChatVisibility(uuid);
+            boolean chatColors = PlayerOptionsManager.getChatColors(uuid);
+            HandSide mainHand = PlayerOptionsManager.getMainHand(uuid);
 
-        target.banira$language(original.banira$language());
+            ((ServerPlayerAccessor) targetPlayer).banira$language(language);
+            ServerPlayerOptionsAccessor optionsAccessor = (ServerPlayerOptionsAccessor) targetPlayer;
+            optionsAccessor.banira$setChatVisibility(chatVisibility);
+            optionsAccessor.banira$setChatColors(chatColors);
+            targetPlayer.setMainArm(mainHand);
+            PlayerOptionsManager.set(targetPlayer, language, chatVisibility, chatColors, mainHand);
+        } catch (Throwable ignored) {
+        }
     }
 
     // region 玩家信息

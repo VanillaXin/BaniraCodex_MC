@@ -186,6 +186,8 @@
   "word.banira_codex.quick_action.hide_slot": "隐藏此格",
   "word.banira_codex.quick_action.hide_menu_entry": "隐藏此入口",
   "word.banira_codex.quick_action.hide_menu_item": "隐藏此菜单项",
+  "word.banira_codex.quick_action.move_up": "上移",
+  "word.banira_codex.quick_action.move_down": "下移",
   "word.banira_codex.quick_action.menu_hidden": "已隐藏…",
   "word.banira_codex.quick_action.menu_layout": "网格…",
   "word.banira_codex.quick_action.menu_position": "位置…",

@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.util.IIdentifier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -65,6 +66,12 @@ public class QuickIcon {
     @Setter
     @Nullable
     private Renderer customRenderer;
+
+    @Nullable
+    private IIdentifier externalTextureFactory;
+
+    @Nullable
+    private String externalTexturePath;
 
     @Nonnull
     public static QuickIcon none() {
@@ -117,6 +124,16 @@ public class QuickIcon {
         return q;
     }
 
+    /** 保留外部文件路径，使资源重载释放动态纹理后能够按需重新注册。 */
+    @Nonnull
+    public static QuickIcon externalFile(@Nonnull IIdentifier factory, @Nonnull String path) {
+        QuickIcon q = new QuickIcon();
+        q.kind(Kind.RESOURCE);
+        q.externalTextureFactory = factory;
+        q.externalTexturePath = path;
+        return q;
+    }
+
     /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
     @Nonnull
     public static QuickIcon custom(@Nonnull Renderer renderer) {
@@ -131,6 +148,11 @@ public class QuickIcon {
      */
     @Nullable
     private Texture resolvedResourceTexture() {
+        if (externalTextureFactory != null && externalTexturePath != null
+                && (texture == null || !TextureUtils.isTextureAvailable(texture.location()))) {
+            ResourceLocation location = TextureUtils.loadCustomTexture(externalTextureFactory, externalTexturePath);
+            texture = Texture.of(location);
+        }
         if (texture == null || (texture.uvWidth() > 0 && texture.uvHeight() > 0)) {
             return texture;
         }

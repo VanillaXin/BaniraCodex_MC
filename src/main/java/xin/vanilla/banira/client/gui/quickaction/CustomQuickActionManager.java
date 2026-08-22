@@ -299,8 +299,7 @@ public final class CustomQuickActionManager {
                 case RESOURCE:
                     return id == null ? QuickIcon.item(Items.PAPER) : QuickIcon.resource(id);
                 case EXTERNAL_FILE:
-                    ResourceLocation texture = TextureUtils.loadCustomTexture(Identifier.id(), value);
-                    return QuickIcon.resource(texture);
+                    return QuickIcon.externalFile(Identifier.id(), value);
                 case ITEM:
                 default:
                     Item item = id == null ? Items.PAPER : Registry.ITEM.getOptional(id).orElse(Items.PAPER);

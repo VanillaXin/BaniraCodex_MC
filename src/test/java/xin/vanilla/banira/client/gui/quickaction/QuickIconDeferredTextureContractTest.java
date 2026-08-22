@@ -21,4 +21,19 @@ public class QuickIconDeferredTextureContractTest {
         assertTrue(source.contains("TextureUtils.resolveTextureSizeForDraw"));
         assertTrue(source.contains("Texture resourceTexture = resolvedResourceTexture()"));
     }
+
+    @Test
+    public void externalFileIconRetainsSourceAcrossResourceReloads() throws IOException {
+        String iconSource = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/banira/client/gui/quickaction/QuickIcon.java")),
+                StandardCharsets.UTF_8);
+        String managerSource = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/banira/client/gui/quickaction/CustomQuickActionManager.java")),
+                StandardCharsets.UTF_8);
+
+        assertTrue(iconSource.contains("QuickIcon externalFile"));
+        assertTrue(iconSource.contains("TextureUtils.isTextureAvailable"));
+        assertTrue(iconSource.contains("TextureUtils.loadCustomTexture"));
+        assertTrue(managerSource.contains("QuickIcon.externalFile(Identifier.id(), value)"));
+    }
 }

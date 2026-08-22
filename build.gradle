@@ -65,7 +65,8 @@ dependencies {
 
     // 可选背包按钮兼容只用于编译，Banira 本体不会强制安装这些模组。
     modCompileOnly "curse.maven:ftb-library-fabric-438495:5631428"
-    modCompileOnly "curse.maven:jei-238222:5623551"
+    modCompileOnly "curse.maven:jei-238222:7420583"
+    modLocalRuntime "curse.maven:jei-238222:7420583"
 
     runtimeOnly "org.joml:joml:1.10.4"
 }

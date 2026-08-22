@@ -16,6 +16,8 @@
     "compat.jei.BookmarkButtonAccessor",
     "compat.jei.BookmarkButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
+    "compat.jei.LookupHistoryButtonAccessor",
+    "compat.jei.LookupHistoryButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.MinecraftClientMixin"
   ],

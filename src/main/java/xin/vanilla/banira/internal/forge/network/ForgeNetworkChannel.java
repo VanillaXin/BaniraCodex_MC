@@ -16,6 +16,7 @@ import xin.vanilla.banira.common.network.SplitPacket;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class ForgeNetworkChannel {
@@ -30,19 +31,16 @@ public final class ForgeNetworkChannel {
     public static ForgeNetworkChannel create(String channelName, BaniraIdentifier identifier,
                                              String protocolVersion, boolean optionalClient) {
         ResourceLocation id = new ResourceLocation(identifier.getNamespace(), channelName);
+        Predicate<String> acceptedVersions = optionalClient
+                ? NetworkRegistry.acceptMissingOr(protocolVersion)
+                : protocolVersion::equals;
         SimpleChannel channel = NetworkRegistry.newSimpleChannel(
                 id,
                 () -> protocolVersion,
-                version -> accepts(protocolVersion, optionalClient, version),
-                version -> accepts(protocolVersion, optionalClient, version)
+                acceptedVersions,
+                acceptedVersions
         );
         return new ForgeNetworkChannel(channel, id);
-    }
-
-    private static boolean accepts(String protocolVersion, boolean optionalClient, String version) {
-        return protocolVersion.equals(version)
-                || optionalClient && (NetworkRegistry.ABSENT.equals(version)
-                || NetworkRegistry.ACCEPTVANILLA.equals(version));
     }
 
     private ForgeNetworkChannel(SimpleChannel channel, ResourceLocation channelName) {

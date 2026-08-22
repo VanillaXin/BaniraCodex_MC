@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +30,8 @@ public abstract class GuiExperienceMixin {
 
     @Redirect(
             method = "renderExperienceBar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;blit(Lcom/mojang/blaze3d/vertex/PoseStack;IIIIII)V")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;blit(Lcom/mojang/blaze3d/vertex/PoseStack;IIIIII)V"),
+            require = 0
     )
     private void banira$drawExperienceBar(Gui gui, PoseStack stack, int x, int y,
                                           int u, int v, int width, int height) {
@@ -41,11 +42,11 @@ public abstract class GuiExperienceMixin {
 
     @Redirect(
             method = "renderExperienceBar",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;draw(Lcom/mojang/blaze3d/vertex/PoseStack;Ljava/lang/String;FFI)I")
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;experienceLevel:I"),
+            require = 0
     )
-    private int banira$drawExperienceText(Font font, PoseStack stack, String text,
-                                          float x, float y, int color) {
-        return banira$cancelExperienceText ? 0 : font.draw(stack, text, x, y, color);
+    private int banira$experienceLevel(LocalPlayer player, PoseStack stack, int x) {
+        return banira$cancelExperienceText ? 0 : player.experienceLevel;
     }
 
     @Inject(method = "renderExperienceBar", at = @At("RETURN"))

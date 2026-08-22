@@ -31,7 +31,7 @@ public final class ExternalInventoryButtonManager {
     private final Set<String> adoptedEntryIds = new LinkedHashSet<>();
     private volatile FtbHostBridge ftbHostBridge = FtbHostBridge.NONE;
     private volatile EnumExternalInventoryButtonHost effectiveHost =
-            EnumExternalInventoryButtonHost.ORIGINAL;
+            EnumExternalInventoryButtonHost.BANIRA;
     private boolean refreshing;
 
     public static ExternalInventoryButtonManager get() {
@@ -65,7 +65,7 @@ public final class ExternalInventoryButtonManager {
         try {
             configured = ClientConfig.get().externalInventoryButtonHost();
         } catch (RuntimeException exception) {
-            configured = EnumExternalInventoryButtonHost.ORIGINAL;
+            configured = EnumExternalInventoryButtonHost.BANIRA;
         }
         refresh(configured, screen);
     }

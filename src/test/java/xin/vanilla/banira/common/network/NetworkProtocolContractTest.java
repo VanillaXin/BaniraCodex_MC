@@ -1,11 +1,13 @@
 package xin.vanilla.banira.common.network;
 
+import net.minecraftforge.network.NetworkRegistry;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -15,15 +17,26 @@ import static org.junit.Assert.assertTrue;
  */
 public class NetworkProtocolContractTest {
     @Test
+    public void forgeOptionalPredicateAcceptsMissingEndpointMarker() {
+        Predicate<String> acceptedVersions = NetworkRegistry.acceptMissingOr("1");
+
+        assertTrue(acceptedVersions.test("1"));
+        assertTrue(acceptedVersions.test("ABSENT \uD83E\uDD14"));
+        assertTrue(acceptedVersions.test(NetworkRegistry.ACCEPTVANILLA));
+        assertFalse(acceptedVersions.test("2"));
+    }
+
+    @Test
     public void forgeChannelUsesExactProtocolAndOptionalMarkers() throws Exception {
         Path source = Paths.get(
                 "src/main/java/xin/vanilla/banira/internal/forge/network/ForgeNetworkHandler.java"
         );
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
 
-        assertTrue(text.contains("protocolVersion.equals(version)"));
-        assertTrue(text.contains("NetworkRegistry.ABSENT.equals(version)"));
-        assertTrue(text.contains("NetworkRegistry.ACCEPTVANILLA.equals(version)"));
+        assertTrue(text.contains("NetworkRegistry.acceptMissingOr(protocolVersion)"));
+        assertTrue(text.contains("protocolVersion::equals"));
+        assertFalse(text.contains("NetworkRegistry.ABSENT.equals(version)"));
+        assertFalse(text.contains("NetworkRegistry.ACCEPTVANILLA.equals(version)"));
         assertFalse(text.contains("clientVersion -> true"));
         assertFalse(text.contains("serverVersion -> true"));
     }

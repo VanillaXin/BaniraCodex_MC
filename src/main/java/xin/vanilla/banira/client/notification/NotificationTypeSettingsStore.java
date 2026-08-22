@@ -79,7 +79,8 @@ public final class NotificationTypeSettingsStore {
                             .durationMs(JsonUtils.getLong(o, "durationMs", 0))
                             .positionName(JsonUtils.getString(o, "positionName", ""))
                             .animationName(JsonUtils.getString(o, "animationName", ""))
-                            .displayMode(EnumNotificationTypeDisplayMode.parseOrDefault(JsonUtils.getString(o, "displayMode", "")));
+                            .displayMode(EnumNotificationTypeDisplayMode.parseOrDefault(JsonUtils.getString(o, "displayMode", "")))
+                            .displayModeCustomized(JsonUtils.getBoolean(o, "displayModeCustomized", false));
                     byType.put(NotificationTypeKeys.normalizeOrDefault(e.getKey()), s);
                 }
             }
@@ -104,13 +105,20 @@ public final class NotificationTypeSettingsStore {
         if (mode == null) {
             return;
         }
+        boolean changed = false;
         synchronized (byType) {
-            if (byType.containsKey(t)) {
-                return;
+            TypeSettings existing = byType.get(t);
+            if (existing == null) {
+                byType.put(t, new TypeSettings().displayMode(mode).displayModeCustomized(false));
+                changed = true;
+            } else if (!existing.displayModeCustomized() && existing.displayMode() != mode) {
+                existing.displayMode(mode);
+                changed = true;
             }
-            byType.put(t, new TypeSettings().displayMode(mode));
         }
-        saveAsync();
+        if (changed) {
+            saveAsync();
+        }
     }
 
     public void saveAsync() {
@@ -135,6 +143,7 @@ public final class NotificationTypeSettingsStore {
             o.addProperty("positionName", s.positionName() != null ? s.positionName() : "");
             o.addProperty("animationName", s.animationName() != null ? s.animationName() : "");
             o.addProperty("displayMode", s.displayMode() != null ? s.displayMode().name() : EnumNotificationTypeDisplayMode.OVERLAY.name());
+            o.addProperty("displayModeCustomized", s.displayModeCustomized());
             types.add(e.getKey(), o);
         }
         root.add("types", types);
@@ -168,10 +177,18 @@ public final class NotificationTypeSettingsStore {
      */
     public void replaceAllAndSave(Map<String, TypeSettings> settingsByType) {
         synchronized (byType) {
+            Map<String, TypeSettings> previous = new LinkedHashMap<>(byType);
             byType.clear();
             if (settingsByType != null) {
-                settingsByType.forEach((typeId, settings) ->
-                        byType.put(NotificationTypeKeys.normalizeOrDefault(typeId), copyOf(settings)));
+                settingsByType.forEach((typeId, settings) -> {
+                    String normalized = NotificationTypeKeys.normalizeOrDefault(typeId);
+                    TypeSettings copy = copyOf(settings);
+                    TypeSettings old = previous.get(normalized);
+                    if (old == null || old.displayMode() != copy.displayMode()) {
+                        copy.displayModeCustomized(true);
+                    }
+                    byType.put(normalized, copy);
+                });
             }
         }
         saveAsync();
@@ -186,7 +203,8 @@ public final class NotificationTypeSettingsStore {
                 .animationName(source.animationName() != null ? source.animationName() : "")
                 .displayMode(source.displayMode() != null
                         ? source.displayMode()
-                        : EnumNotificationTypeDisplayMode.OVERLAY);
+                        : EnumNotificationTypeDisplayMode.OVERLAY)
+                .displayModeCustomized(source.displayModeCustomized());
     }
 
     public Set<String> typeIdsFromStored() {
@@ -215,5 +233,7 @@ public final class NotificationTypeSettingsStore {
          * 收到网络通知时的客户端展示方式
          */
         private EnumNotificationTypeDisplayMode displayMode = EnumNotificationTypeDisplayMode.OVERLAY;
+        /** 玩家是否在通知类型管理界面明确保存过该展示方式。 */
+        private boolean displayModeCustomized;
     }
 }

@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -52,16 +54,30 @@ public final class PlayerUtils {
 
 
     /**
-     * 复制玩家客户端设置
+     * 补齐原版死亡克隆遗漏的客户端选项
      *
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        ServerPlayerAccessor original = (ServerPlayerAccessor) originalPlayer;
-        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+        try {
+            ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+            UUID uuid = originalPlayer.getUUID();
+            String language = PlayerOptionsManager.getLanguage(uuid);
+            ChatVisiblity chatVisibility = PlayerOptionsManager.getChatVisibility(uuid);
+            boolean chatColors = PlayerOptionsManager.getChatColors(uuid);
+            HumanoidArm mainHand = PlayerOptionsManager.getMainHand(uuid);
+            boolean allowsListing = PlayerOptionsManager.getAllowsListing(uuid);
 
-        target.banira$language(original.banira$language());
+            target.banira$setChatVisibility(chatVisibility);
+            target.banira$setChatColors(chatColors);
+            target.banira$language(language);
+            target.banira$allowsListing(allowsListing);
+            targetPlayer.setMainArm(mainHand);
+            PlayerOptionsManager.set(targetPlayer, language, chatVisibility,
+                    chatColors, mainHand, allowsListing);
+        } catch (Throwable ignored) {
+        }
     }
 
     // region 玩家信息

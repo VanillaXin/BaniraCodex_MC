@@ -71,6 +71,7 @@ public final class BaniraCodexRuntime {
             ServerPlayer player = event.playerAs(ServerPlayer.class);
             if (player != null) {
                 PlayerUtils.removeRemoteClientDataStatus(player);
+                PlayerOptionsManager.remove(player);
             }
         });
         BaniraEventBus.Player.onLoggedIn(event -> {

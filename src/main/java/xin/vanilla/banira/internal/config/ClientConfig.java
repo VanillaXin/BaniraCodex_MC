@@ -93,7 +93,7 @@ public class ClientConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(zh_cn = "控制已适配模组的背包界面按钮由谁统一显示\n选择 FTB Library 但未安装时自动改由 Banira 显示",
             en_us = "Choose who displays supported third-party inventory buttons\nFalls back to Banira when FTB Library is selected but unavailable")
     private EnumExternalInventoryButtonHost externalInventoryButtonHost =
-            EnumExternalInventoryButtonHost.ORIGINAL;
+            EnumExternalInventoryButtonHost.BANIRA;
 
     public ClientConfig() {
     }

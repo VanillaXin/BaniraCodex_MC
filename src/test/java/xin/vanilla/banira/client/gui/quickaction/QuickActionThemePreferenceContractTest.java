@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -21,5 +22,8 @@ public class QuickActionThemePreferenceContractTest {
         assertTrue(source.contains("renderContextMenu(stack, screen, mc, mouseX, mouseY, contextTheme(theme))"));
         assertTrue(source.contains("BaniraThemes.seasonFor(modId)"));
         assertTrue(source.contains("TooltipWidget.drawPopupMessage(stack, args, entryTheme, season)"));
+        assertTrue(source.contains("renderContextTooltip"));
+        assertTrue(source.contains("TooltipWidget.drawPopupMessage(stack, args, tooltipTheme, season)"));
+        assertFalse(source.contains("graphics.renderTooltip(mc.font, Component.literal(contextTooltipLine)"));
     }
 }

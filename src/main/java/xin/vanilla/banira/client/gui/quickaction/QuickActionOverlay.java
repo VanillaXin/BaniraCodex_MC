@@ -88,8 +88,6 @@ public final class QuickActionOverlay {
      * 托盘根菜单中某注册项的「扩展右键菜单」子页
      */
     private static final int CTX_PAGE_ENTRY_CONTEXT = 4;
-    /** 对某一菜单行再次操作的临时页，用于显式确认隐藏。 */
-    private static final int CTX_PAGE_ROW_ACTION = 5;
     private static final String BANIRA_TEXTURE_NAME = "gui/quick_icon.png";
     private static ResourceLocation BANIRA_TEXTURE = null;
 
@@ -137,7 +135,12 @@ public final class QuickActionOverlay {
     private boolean contextEntryDirect;
     @Nullable
     private CtxRow contextRowAction;
-    private int contextRowActionReturnPage = CTX_PAGE_ROOT;
+    @Nullable
+    private QuickActionMenuEditSession contextRowEditSession;
+    private int ctxRowActionX;
+    private int ctxRowActionY;
+    private int ctxRowActionW;
+    private int ctxRowActionH;
     /**
      * 系统格左键长按打开的菜单：非编辑根页不显示「进入编辑模式」行（编辑模式下首项仍为退出编辑，由 {@link #addExitEditRowWhenLayoutEditMode} 负责）
      */
@@ -206,6 +209,8 @@ public final class QuickActionOverlay {
         contextOpen = false;
         contextMenuKind = ContextMenuKind.NONE;
         contextUserEntryIdForHide = null;
+        contextRowAction = null;
+        contextRowEditSession = null;
         contextOmitEditToggleRow = false;
         contextScrollPx = 0;
         contextScrollbarDragging = false;
@@ -762,6 +767,7 @@ public final class QuickActionOverlay {
 
         if (contextOpen) {
             renderContextMenu(stack, screen, mc, mouseX, mouseY, contextTheme(theme));
+            renderContextRowActionMenu(stack, mc, mouseX, mouseY, contextRowActionTheme(theme));
         }
 
         RenderSystem.disableBlend();
@@ -809,6 +815,21 @@ public final class QuickActionOverlay {
                 ? QuickActionRegistry.get().getEntry(entryId)
                 : null;
         return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
+    }
+
+    private BaniraColorConfig contextRowActionTheme(BaniraColorConfig fallback) {
+        String entryId = contextRowEditSession == null
+                ? null : entryIdFromMenuKey(contextRowEditSession.targetKey());
+        QuickActionEntry entry = entryId == null ? null : QuickActionRegistry.get().getEntry(entryId);
+        return entry == null ? fallback : BaniraColorConfig.forSeason(entrySeason(entry));
+    }
+
+    @Nullable
+    private static String entryIdFromMenuKey(String key) {
+        if (key.startsWith("entry:")) return key.substring("entry:".length());
+        if (!key.startsWith("item:")) return null;
+        int separator = key.indexOf('#', "item:".length());
+        return separator > 0 ? key.substring("item:".length(), separator) : null;
     }
 
     private EnumSeason entrySeason(QuickActionEntry entry) {
@@ -919,6 +940,11 @@ public final class QuickActionOverlay {
                 && mouseX < ctxLayoutX + ctxLayoutW && mouseY < ctxLayoutY + ctxLayoutH) {
             return true;
         }
+        if (contextOpen && contextRowEditSession != null
+                && mouseX >= ctxRowActionX && mouseY >= ctxRowActionY
+                && mouseX < ctxRowActionX + ctxRowActionW && mouseY < ctxRowActionY + ctxRowActionH) {
+            return true;
+        }
 
         int cols = Math.max(1, layout.gridColumns());
         int rows = cols;
@@ -978,17 +1004,26 @@ public final class QuickActionOverlay {
             }
         }
 
+        if (contextOpen && button == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                && tryClickContextRowAction(mouseX, mouseY)) {
+            return true;
+        }
+
         if (contextOpen && button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             layoutContextMenu(buildContextRows(), mc());
             boolean inMenu = mouseX >= ctxLayoutX && mouseY >= ctxLayoutY
                     && mouseX < ctxLayoutX + ctxLayoutW && mouseY < ctxLayoutY + ctxLayoutH;
-            if (!inMenu) {
+            boolean inRowAction = contextRowEditSession != null
+                    && mouseX >= ctxRowActionX && mouseY >= ctxRowActionY
+                    && mouseX < ctxRowActionX + ctxRowActionW && mouseY < ctxRowActionY + ctxRowActionH;
+            if (!inMenu && !inRowAction) {
                 contextOpen = false;
                 contextMenuKind = ContextMenuKind.NONE;
                 contextEntrySubmenuId = null;
                 contextEntryItemOffset = 0;
                 contextEntryDirect = false;
                 contextRowAction = null;
+                contextRowEditSession = null;
                 contextPage = CTX_PAGE_ROOT;
             }
             return true;
@@ -1151,6 +1186,7 @@ public final class QuickActionOverlay {
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
         contextRowAction = null;
+        contextRowEditSession = null;
         contextScrollPx = 0;
         contextX = mx;
         contextY = my;
@@ -1167,6 +1203,7 @@ public final class QuickActionOverlay {
         contextEntryItemOffset = Math.max(0, itemOffset);
         contextEntryDirect = true;
         contextRowAction = null;
+        contextRowEditSession = null;
         contextScrollPx = 0;
         contextClickMouseX = mouseX;
         contextClickMouseY = mouseY;
@@ -1348,42 +1385,6 @@ public final class QuickActionOverlay {
             return L;
         }
 
-        if (contextPage == CTX_PAGE_ROW_ACTION) {
-            CtxRow selected = contextRowAction;
-            if (selected == null || selected.hiddenMenuKey == null) {
-                contextPage = contextRowActionReturnPage;
-            } else {
-                L.add(new CtxRow(trWord("quick_action.back"), true, () -> {
-                    contextPage = contextRowActionReturnPage;
-                    contextRowAction = null;
-                }));
-                QuickActionEntry submenu = selected.entryForSecondaryMenu;
-                if (submenu != null && !submenu.contextMenuItems.isEmpty()) {
-                    L.add(new CtxRow(trWord("quick_action.open_submenu"), true, () -> {
-                        contextEntrySubmenuId = submenu.id();
-                        contextEntryItemOffset = 0;
-                        contextEntryDirect = false;
-                        contextPage = CTX_PAGE_ENTRY_CONTEXT;
-                        contextRowAction = null;
-                        contextScrollPx = 0;
-                    }, submenu.quickIcon()));
-                }
-                String hideKey = selected.hiddenMenuKey.startsWith("entry:")
-                        ? "quick_action.hide_menu_entry" : "quick_action.hide_menu_item";
-                if (layout.layoutEditMode() && selected.hiddenMenuKey.startsWith("entry:")) {
-                    L.add(new CtxRow(trWord("quick_action.move_up"), true, () -> {
-                        if (layout.moveMenuItem(selected.hiddenMenuKey, -1)) markSave();
-                    }, selected.menuIcon));
-                    L.add(new CtxRow(trWord("quick_action.move_down"), true, () -> {
-                        if (layout.moveMenuItem(selected.hiddenMenuKey, 1)) markSave();
-                    }, selected.menuIcon));
-                }
-                L.add(new CtxRow(trWord(hideKey), false, () ->
-                        layout.hiddenMenuItemIds().add(selected.hiddenMenuKey), selected.menuIcon));
-                return L;
-            }
-        }
-
         if (contextPage == CTX_PAGE_ENTRY_CONTEXT) {
             if (contextEntrySubmenuId == null) {
                 contextPage = CTX_PAGE_ROOT;
@@ -1502,6 +1503,71 @@ public final class QuickActionOverlay {
         return L;
     }
 
+    private List<CtxRow> buildContextRowActionRows() {
+        List<CtxRow> rows = new ArrayList<>();
+        QuickActionMenuEditSession session = contextRowEditSession;
+        CtxRow selected = contextRowAction;
+        if (session == null || selected == null || selected.hiddenMenuKey == null) {
+            return rows;
+        }
+        if (!menuTargetExists(session.targetKey())) {
+            closeContextRowActions();
+            return rows;
+        }
+
+        boolean hidden = session.isHidden(layout);
+        QuickActionEntry submenu = selected.entryForSecondaryMenu;
+        if (!hidden && submenu != null && !submenu.contextMenuItems.isEmpty()) {
+            rows.add(new CtxRow(trWord("quick_action.open_submenu"), true, () -> {
+                contextEntrySubmenuId = submenu.id();
+                contextEntryItemOffset = 0;
+                contextEntryDirect = false;
+                contextPage = CTX_PAGE_ENTRY_CONTEXT;
+                contextScrollPx = 0;
+                closeContextRowActions();
+            }, submenu.quickIcon()));
+        }
+        if (!hidden && layout.layoutEditMode() && session.targetKey().startsWith("entry:")) {
+            rows.add(new CtxRow(trWord("quick_action.move_up"), true, () -> {
+                if (session.move(layout, -1)) markSave();
+            }, selected.menuIcon));
+            rows.add(new CtxRow(trWord("quick_action.move_down"), true, () -> {
+                if (session.move(layout, 1)) markSave();
+            }, selected.menuIcon));
+        }
+
+        String visibilityKey;
+        if (hidden) {
+            visibilityKey = session.targetKey().startsWith("entry:")
+                    ? "quick_action.show_menu_entry" : "quick_action.show_menu_item";
+        } else {
+            visibilityKey = session.targetKey().startsWith("entry:")
+                    ? "quick_action.hide_menu_entry" : "quick_action.hide_menu_item";
+        }
+        rows.add(new CtxRow(trWord(visibilityKey), true, () -> {
+            session.toggleVisibility(layout);
+            markSave();
+        }, selected.menuIcon));
+        return rows;
+    }
+
+    private boolean menuTargetExists(String targetKey) {
+        for (QuickActionEntry entry : QuickActionRegistry.get().allEntriesInOrder()) {
+            if (entryMenuKey(entry).equals(targetKey)) return true;
+            for (int index = 0; index < entry.contextMenuItems.size(); index++) {
+                QuickActionContextMenuItem item = entry.contextMenuItems.get(index);
+                if (item != null && itemMenuKey(entry, item, index).equals(targetKey)) return true;
+            }
+        }
+        return false;
+    }
+
+    private void closeContextRowActions() {
+        contextRowAction = null;
+        contextRowEditSession = null;
+        ctxRowActionW = 0;
+        ctxRowActionH = 0;
+    }
     private void resetAnchorPreset() {
         final QuickActionLayout DEFAULT = new QuickActionLayout();
         layout.coordinateModeX(DEFAULT.coordinateModeX());
@@ -1657,8 +1723,93 @@ public final class QuickActionOverlay {
         contextY = y;
     }
 
+    private void renderContextRowActionMenu(PoseStack stack, Minecraft mc,
+                                            int mouseX, int mouseY, BaniraColorConfig theme) {
+        List<CtxRow> rows = buildContextRowActionRows();
+        if (rows.isEmpty()) return;
+        layoutContextRowActionMenu(rows, AbstractGuiUtils.getFont());
+
+        int bg = theme.bgSurface() | 0xFF000000;
+        int border = theme.border() | 0xFF000000;
+        ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, ctxRowActionX, ctxRowActionY,
+                ctxRowActionW, ctxRowActionH, bg);
+        fill.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
+        BaseShapeWidget.drawShape(fill);
+        ShapeDrawArgs outline = ShapeDrawArgs.rect(stack, ctxRowActionX, ctxRowActionY,
+                ctxRowActionW, ctxRowActionH, border);
+        outline.rect().radius(CONTEXT_MENU_CORNER_RADIUS)
+                .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE)
+                .border(CONTEXT_MENU_BORDER_THICKNESS);
+        BaseShapeWidget.drawShape(outline);
+        RenderSystem.enableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        Font font = AbstractGuiUtils.getFont();
+        int textColor = theme.textPrimary() | 0xFF000000;
+        for (int index = 0; index < rows.size(); index++) {
+            CtxRow row = rows.get(index);
+            int rowY = ctxRowActionY + 2 + index * MENU_ROW_H;
+            boolean hovered = mouseX >= ctxRowActionX + 1 && mouseX < ctxRowActionX + ctxRowActionW - 1
+                    && mouseY >= rowY && mouseY < rowY + MENU_ROW_H;
+            if (hovered) {
+                AbstractGuiUtils.fill(stack, ctxRowActionX + 2, rowY,
+                        Math.max(1, ctxRowActionW - 4), MENU_ROW_H,
+                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+            }
+            String shown = ellipsizeMiddle(font, row.text,
+                    contextMenuRowTextMaxWidth(ctxRowActionW - 2, row));
+            if (row.menuIcon != null) {
+                row.menuIcon.renderForMenu(stack, mc,
+                        ctxRowActionX + MENU_TEXT_PAD_X,
+                        rowY + (MENU_ROW_H - MENU_ICON_SIZE) / 2,
+                        MENU_ICON_SIZE);
+            }
+            int textX = row.menuIcon != null
+                    ? ctxRowActionX + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
+                    : ctxRowActionX + MENU_TEXT_PAD_X;
+            int textY = rowY + (MENU_ROW_H - font.lineHeight) / 2;
+            font.draw(stack, shown, textX, textY, textColor);
+            if (hovered && !shown.equals(row.text)) contextTooltipLine = row.text;
+        }
+    }
+
+    private void layoutContextRowActionMenu(List<CtxRow> rows, Font font) {
+        int width = 48;
+        for (CtxRow row : rows) {
+            int iconWidth = row.menuIcon == null ? 0 : MENU_ICON_SIZE + MENU_ICON_GAP;
+            width = Math.max(width, font.width(row.text)
+                    + iconWidth + MENU_TEXT_PAD_X * 2);
+        }
+        width = Math.min(width, Math.min(180, Math.max(48, lastScreenW - 8)));
+        int height = rows.size() * MENU_ROW_H + 4;
+
+        int targetRow = findContextRowIndex(contextRowEditSession == null
+                ? null : contextRowEditSession.targetKey());
+        if (targetRow >= 0) {
+            CtxRow current = buildContextRows().get(targetRow);
+            contextRowAction = current;
+            ctxRowActionY = ctxInnerTop + targetRow * MENU_ROW_H - contextScrollPx;
+        }
+        int right = ctxLayoutX + ctxLayoutW + 2;
+        int left = ctxLayoutX - width - 2;
+        ctxRowActionX = right + width <= lastScreenW - 4 ? right : Math.max(4, left);
+        ctxRowActionY = Math.max(4, Math.min(ctxRowActionY, lastScreenH - height - 4));
+        ctxRowActionW = width;
+        ctxRowActionH = height;
+    }
+
+    private int findContextRowIndex(@Nullable String hiddenMenuKey) {
+        if (hiddenMenuKey == null) return -1;
+        List<CtxRow> rows = buildContextRows();
+        for (int index = 0; index < rows.size(); index++) {
+            if (hiddenMenuKey.equals(rows.get(index).hiddenMenuKey)) return index;
+        }
+        return -1;
+    }
+
     /**
-     * 托盘菜单内：右键可隐藏的行后进入显式操作页，避免误触直接隐藏。
+     * 托盘菜单内：右键可隐藏的行后打开独立操作菜单，一级菜单继续保留用于预览。
      *
      * @return true 表示已处理（含子菜单已打开、滚动条命中等），不应再交给外层关闭逻辑
      */
@@ -1715,9 +1866,30 @@ public final class QuickActionOverlay {
 
     private void openContextMenuRowActions(CtxRow row) {
         contextRowAction = row;
-        contextRowActionReturnPage = contextPage;
-        contextPage = CTX_PAGE_ROW_ACTION;
-        contextScrollPx = 0;
+        contextRowEditSession = new QuickActionMenuEditSession(row.hiddenMenuKey);
+        ctxRowActionX = (int) contextClickMouseX;
+        ctxRowActionY = (int) contextClickMouseY;
+    }
+
+    private boolean tryClickContextRowAction(double mouseX, double mouseY) {
+        if (contextRowEditSession == null) return false;
+        List<CtxRow> rows = buildContextRowActionRows();
+        if (rows.isEmpty()) {
+            closeContextRowActions();
+            return false;
+        }
+        layoutContextRowActionMenu(rows, AbstractGuiUtils.getFont());
+        if (mouseX < ctxRowActionX || mouseY < ctxRowActionY
+                || mouseX >= ctxRowActionX + ctxRowActionW || mouseY >= ctxRowActionY + ctxRowActionH) {
+            return false;
+        }
+        int index = ((int) mouseY - ctxRowActionY - 2) / MENU_ROW_H;
+        if (mouseY < ctxRowActionY + 2 || mouseY >= ctxRowActionY + ctxRowActionH - 2) return true;
+        if (index < 0 || index >= rows.size()) return true;
+        rows.get(index).action.run();
+        markSave();
+        flushSaveIfNeeded();
+        return true;
     }
 
     private boolean tryClickContext(double mouseX, double mouseY, int button) {
@@ -1741,6 +1913,7 @@ public final class QuickActionOverlay {
             contextEntryItemOffset = 0;
             contextEntryDirect = false;
             contextRowAction = null;
+            contextRowEditSession = null;
             contextPage = CTX_PAGE_ROOT;
             return true;
         }
@@ -1766,6 +1939,7 @@ public final class QuickActionOverlay {
             return true;
         }
         CtxRow row = rows.get(idx);
+        closeContextRowActions();
         row.action.run();
         if (!row.keepOpen) {
             contextOpen = false;
@@ -1774,6 +1948,7 @@ public final class QuickActionOverlay {
             contextEntryItemOffset = 0;
             contextEntryDirect = false;
             contextRowAction = null;
+            contextRowEditSession = null;
             contextPage = CTX_PAGE_ROOT;
         }
         markSave();
@@ -1806,6 +1981,7 @@ public final class QuickActionOverlay {
         contextEntryItemOffset = 0;
         contextEntryDirect = false;
         contextRowAction = null;
+        contextRowEditSession = null;
         contextPage = CTX_PAGE_ROOT;
     }
 }

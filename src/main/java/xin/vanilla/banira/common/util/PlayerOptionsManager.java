@@ -25,7 +25,12 @@ public final class PlayerOptionsManager {
     }
 
     public static boolean has(Object player) {
-        return ServerSenderAccess.uuid(player) != null;
+        UUID uuid = ServerSenderAccess.uuid(player);
+        return uuid != null && has(uuid);
+    }
+
+    public static boolean has(UUID uuid) {
+        return uuid != null && playerOptionsMap.containsKey(uuid);
     }
 
     public static String getLanguage(Object player) {

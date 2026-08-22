@@ -20,7 +20,7 @@ import java.util.List;
  * 物品 GUI 绘制桥。物品模型、ItemRenderer 和本地玩家都属于版本/加载器敏感实现细节。
  */
 public final class BaniraItemRenderBridge {
-    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 250.0F;
 
     private BaniraItemRenderBridge() {
     }
@@ -34,15 +34,12 @@ public final class BaniraItemRenderBridge {
         if (showCount) {
             ItemRenderer itemRenderer = BaniraClientRuntime.itemRenderer();
             float originalBlitOffset = itemRenderer.blitOffset;
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
             try {
+                // 装饰层必须越过缩放后的立体方块模型，不能依赖模型内部的深度状态。
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
                 itemRenderer.renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
             } finally {
                 itemRenderer.blitOffset = originalBlitOffset;
-                RenderSystem.depthMask(true);
-                RenderSystem.enableDepthTest();
             }
         }
     }

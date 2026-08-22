@@ -42,8 +42,10 @@ import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static xin.vanilla.banira.client.data.BaniraColorToken.*;
@@ -1312,11 +1314,16 @@ public final class QuickActionOverlay {
      * 系统格菜单
      */
     private void addSystemTrayDropdownRows(List<CtxRow> L) {
+        Map<String, QuickActionEntry> entriesByKey = new LinkedHashMap<>();
         for (QuickActionEntry ent : QuickActionRegistry.get().dropdownEntries()) {
-            if (ent == null) {
-                continue;
-            }
+            if (ent == null) continue;
             String hiddenKey = entryMenuKey(ent);
+            entriesByKey.put(hiddenKey, ent);
+        }
+        layout.syncMenuItemOrder(new ArrayList<>(entriesByKey.keySet()));
+        for (String hiddenKey : layout.menuItemOrder()) {
+            QuickActionEntry ent = entriesByKey.get(hiddenKey);
+            if (ent == null) continue;
             if (layout.hiddenMenuItemIds().contains(hiddenKey)) {
                 continue;
             }
@@ -1391,6 +1398,14 @@ public final class QuickActionOverlay {
                 }
                 String hideKey = selected.hiddenMenuKey.startsWith("entry:")
                         ? "quick_action.hide_menu_entry" : "quick_action.hide_menu_item";
+                if (layout.layoutEditMode() && selected.hiddenMenuKey.startsWith("entry:")) {
+                    L.add(new CtxRow(trWord("quick_action.move_up"), true, () -> {
+                        if (layout.moveMenuItem(selected.hiddenMenuKey, -1)) markSave();
+                    }, selected.menuIcon));
+                    L.add(new CtxRow(trWord("quick_action.move_down"), true, () -> {
+                        if (layout.moveMenuItem(selected.hiddenMenuKey, 1)) markSave();
+                    }, selected.menuIcon));
+                }
                 L.add(new CtxRow(trWord(hideKey), false, () ->
                         layout.hiddenMenuItemIds().add(selected.hiddenMenuKey), selected.menuIcon));
                 return L;
@@ -1490,6 +1505,7 @@ public final class QuickActionOverlay {
                 L.add(new CtxRow(trWord("quick_action.menu_layout"), true, () -> contextPage = CTX_PAGE_LAYOUT));
                 L.add(new CtxRow(trWord("quick_action.menu_position"), true, () -> contextPage = CTX_PAGE_POSITION));
                 L.add(new CtxRow(trWord("quick_action.menu_hidden"), true, () -> contextPage = CTX_PAGE_HIDDEN));
+                addSystemTrayDropdownRows(L);
             } else {
                 addHideSlotRow(L);
                 addEntryContextMenuRows(L, hideTargetEntry);

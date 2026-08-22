@@ -90,6 +90,31 @@ public class QuickActionLayout {
     @Getter
     private final Set<String> hiddenMenuItemIds = new LinkedHashSet<>();
 
+    /** 默认图标右键菜单的稳定顺序，使用菜单行 ID 而不是显示文本。 */
+    @Getter
+    private final List<String> menuItemOrder = new ArrayList<>();
+
+    public void syncMenuItemOrder(@Nonnull List<String> availableKeys) {
+        LinkedHashSet<String> available = new LinkedHashSet<>();
+        for (String key : availableKeys) {
+            if (key != null && !key.isEmpty()) available.add(key);
+        }
+        menuItemOrder.removeIf(key -> !available.contains(key));
+        for (String key : available) {
+            if (!menuItemOrder.contains(key)) menuItemOrder.add(key);
+        }
+    }
+
+    public boolean moveMenuItem(@Nonnull String key, int direction) {
+        int from = menuItemOrder.indexOf(key);
+        int to = from + Integer.signum(direction);
+        if (from < 0 || to < 0 || to >= menuItemOrder.size()) return false;
+        String displaced = menuItemOrder.get(to);
+        menuItemOrder.set(to, key);
+        menuItemOrder.set(from, displaced);
+        return true;
+    }
+
     public QuickActionLayout gridColumns(int v) {
         int c = Math.max(1, Math.min(16, v));
         if (c == this.gridColumns) {
@@ -195,6 +220,9 @@ public class QuickActionLayout {
             hiddenMenu.add(id);
         }
         o.add("hiddenMenuItemIds", hiddenMenu);
+        JsonArray menuOrder = new JsonArray();
+        for (String key : menuItemOrder) menuOrder.add(key);
+        o.add("menuItemOrder", menuOrder);
         return o;
     }
 
@@ -252,6 +280,12 @@ public class QuickActionLayout {
                 if (el.isJsonPrimitive()) {
                     hiddenMenuItemIds.add(el.getAsString());
                 }
+            }
+        }
+        menuItemOrder.clear();
+        if (o.has("menuItemOrder") && o.get("menuItemOrder").isJsonArray()) {
+            for (JsonElement el : o.getAsJsonArray("menuItemOrder")) {
+                if (el.isJsonPrimitive()) menuItemOrder.add(el.getAsString());
             }
         }
         finalizeUserSlotGridAfterLoad();

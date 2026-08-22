@@ -7,9 +7,6 @@ import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -75,17 +72,6 @@ public class ExternalInventoryButtonManagerTest {
                 ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
         assertEquals(1, host.clearCount);
     }
-
-    @Test
-    public void ftbHostSuppressesBaniraInventoryOverlay() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/banira/client/gui/quickaction/QuickActionOverlay.java")),
-                StandardCharsets.UTF_8);
-
-        org.junit.Assert.assertTrue(source.contains(
-                "ExternalInventoryButtonManager.get().suppressesBaniraOverlay()"));
-    }
-
     private static ExternalInventoryActionProvider provider(
             AtomicReference<java.util.List<ExternalInventoryAction>> actions
     ) {

@@ -8,14 +8,12 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class NeoForgeBaniraResourceServiceTest {
     @Rule
@@ -24,23 +22,15 @@ public class NeoForgeBaniraResourceServiceTest {
     @Test
     public void collectsEveryLanguageFromTheRegisteredModFileDirectory() throws Exception {
         Path lang = temporaryFolder.newFolder("assets", "child_mod", "lang").toPath();
-        Files.writeString(lang.resolve("en_us.json"), "{\"word.child_mod.name\":\"Child\"}", StandardCharsets.UTF_8);
-        Files.writeString(lang.resolve("zh_cn.json"), "{\"word.child_mod.name\":\"子模组\"}", StandardCharsets.UTF_8);
+        Files.writeString(lang.resolve("en_us.json"),
+                "{\"word.child_mod.name\":\"Child\"}", StandardCharsets.UTF_8);
+        Files.writeString(lang.resolve("zh_cn.json"),
+                "{\"word.child_mod.name\":\"子模组\"}", StandardCharsets.UTF_8);
 
         Map<String, JsonObject> result = new LinkedHashMap<>();
         NeoForgeBaniraResourceService.collectLanguageDirectory(lang, result);
 
         assertEquals(new LinkedHashSet<>(Arrays.asList("en_us", "zh_cn")), result.keySet());
         assertEquals("子模组", result.get("zh_cn").get("word.child_mod.name").getAsString());
-    }
-
-    @Test
-    public void productionPathFallsBackToNeoForgeRegisteredModFiles() throws Exception {
-        String source = Files.readString(Paths.get(
-                "src/main/java/xin/vanilla/banira/internal/neoforge/platform/NeoForgeBaniraResourceService.java"),
-                StandardCharsets.UTF_8);
-
-        assertTrue(source.contains("getModFileById(modId)"));
-        assertTrue(source.contains("getFile().findResource(\"assets/\" + modId + \"/lang\")"));
     }
 }

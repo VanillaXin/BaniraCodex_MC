@@ -12,7 +12,7 @@ public final class ExternalInventoryButtonPolicy {
             boolean ftbLibraryAvailable
     ) {
         EnumExternalInventoryButtonHost host = configuredHost == null
-                ? EnumExternalInventoryButtonHost.ORIGINAL : configuredHost;
+                ? EnumExternalInventoryButtonHost.BANIRA : configuredHost;
         if (host == EnumExternalInventoryButtonHost.FTB_LIBRARY && !ftbLibraryAvailable) {
             return EnumExternalInventoryButtonHost.BANIRA;
         }

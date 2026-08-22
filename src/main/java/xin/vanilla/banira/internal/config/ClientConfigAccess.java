@@ -24,7 +24,7 @@ final class ClientConfigAccess {
     private static final int DEFAULT_NOTIFICATION_BURST_MAX_EXTRA_DELAY_MS = 20000;
     private static final boolean DEFAULT_USE_CUSTOM_CURSOR = true;
     private static final EnumExternalInventoryButtonHost DEFAULT_EXTERNAL_INVENTORY_BUTTON_HOST =
-            EnumExternalInventoryButtonHost.ORIGINAL;
+            EnumExternalInventoryButtonHost.BANIRA;
 
     private ClientConfigAccess() {
     }

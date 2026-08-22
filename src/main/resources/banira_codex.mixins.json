@@ -2,15 +2,19 @@
   "required": true,
   "minVersion": "0.8",
   "package": "xin.vanilla.banira.internal.mixin",
+  "plugin": "xin.vanilla.banira.internal.fabric.mixin.FabricMixinConfigPlugin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "accessors.ClientInformationPacketAccessor",
     "accessors.MinecraftServerAccessor",
     "accessors.ResourceManagerAccessor",
+    "accessors.ServerPlayerOptionsAccessor",
     "injections.ServerPlayerMixin"
   ],
   "client": [
     "accessors.MinecraftAccessor",
+    "compat.ftblibrary.SidebarButtonMixin",
+    "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.IngameGuiExperienceMixin",
     "injections.MinecraftClientMixin"

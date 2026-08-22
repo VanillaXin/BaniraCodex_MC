@@ -31,7 +31,7 @@ import java.util.List;
  */
 @Accessors(chain = true, fluent = true)
 public class ItemWidget extends BaseWidget {
-    private static final float ITEM_DECORATION_DEPTH_OFFSET = 101.0F;
+    private static final float ITEM_DECORATION_DEPTH_OFFSET = 250.0F;
 
     @Getter
     private String itemId;
@@ -221,16 +221,12 @@ public class ItemWidget extends BaseWidget {
         float originalBlitOffset = itemRenderer.blitOffset;
         renderGuiItemScaled(Minecraft.getInstance(), itemStack, x, y, 16);
         if (showText) {
-            // 方块物品的立体模型会遮挡数量文字，装饰层绘制期间暂时关闭深度写入与测试。
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
+            // 在原版装饰层深度之上绘制数量，避免立体方块模型覆盖文字。
             try {
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
                 itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
             } finally {
                 itemRenderer.blitOffset = originalBlitOffset;
-                RenderSystem.depthMask(true);
-                RenderSystem.enableDepthTest();
             }
         }
     }

@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -19,10 +20,8 @@ public class ItemWidgetDepthContractTest {
                 StandardCharsets.UTF_8);
 
         assertTrue(source.contains("itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET"));
-        assertTrue(source.contains("RenderSystem.disableDepthTest()"));
-        assertTrue(source.contains("RenderSystem.depthMask(false)"));
-        assertTrue(source.contains("RenderSystem.depthMask(true)"));
-        assertTrue(source.contains("RenderSystem.enableDepthTest()"));
+        assertTrue(source.contains("ITEM_DECORATION_DEPTH_OFFSET = 250.0F"));
+        assertFalse(source.contains("RenderSystem.depthMask(false)"));
         assertTrue(source.contains("finally"));
         assertTrue(source.contains("itemRenderer.blitOffset = originalBlitOffset"));
     }

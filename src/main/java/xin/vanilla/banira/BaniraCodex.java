@@ -14,6 +14,7 @@ import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.common.player.PlayerDataManager;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraEventBus;
+import xin.vanilla.banira.common.util.PlayerOptionsManager;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -105,7 +106,10 @@ public final class BaniraCodex {
                 playerDataManager.saveToDisk(event.uuid());
             }
         });
-        BaniraEventBus.Player.onLoggedOut(event -> ServerSenderAccess.removeRemoteClientDataStatus(event.player()));
+        BaniraEventBus.Player.onLoggedOut(event -> {
+            ServerSenderAccess.removeRemoteClientDataStatus(event.player());
+            PlayerOptionsManager.remove(event.player());
+        });
         BaniraEventBus.Player.onLoggedIn(event -> ServerSenderAccess.sendPacket(
                 event.player(),
                 new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries())

@@ -26,6 +26,7 @@ import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
+import xin.vanilla.banira.internal.fabric.compat.FabricExternalInventoryCompatibility;
 
 /**
  * Fabric 客户端入口，将 1.16 回调转换为稳定的 Banira 客户端事件。
@@ -37,6 +38,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         FabricNetworkChannels.registerClientReceivers();
         BaniraKeyBindingService.installRegistrar(KeyBindingHelper::registerKeyBinding);
         BaniraClientModSetup.initOnClientSetup();
+        FabricExternalInventoryCompatibility.init();
         // 新公共输入服务使用独立队列；flush 后子 mod 的晚注册键位会立即交给 Fabric。
         BaniraInput.flushPendingRegistrations();
 

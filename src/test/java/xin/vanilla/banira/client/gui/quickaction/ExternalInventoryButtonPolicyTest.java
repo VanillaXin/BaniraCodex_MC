@@ -8,6 +8,12 @@ import static org.junit.Assert.assertEquals;
 public class ExternalInventoryButtonPolicyTest {
 
     @Test
+    public void missingModeUsesBaniraHost() {
+        assertEquals(EnumExternalInventoryButtonHost.BANIRA,
+                ExternalInventoryButtonPolicy.resolve(null, false));
+    }
+
+    @Test
     public void originalModeNeverAdoptsExternalButtons() {
         assertEquals(EnumExternalInventoryButtonHost.ORIGINAL,
                 ExternalInventoryButtonPolicy.resolve(

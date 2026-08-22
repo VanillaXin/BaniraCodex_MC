@@ -15,6 +15,12 @@ import static org.junit.Assert.assertEquals;
 
 public class ClientConfigAccessTest {
     @Test
+    public void externalInventoryButtonHostDefaultsToBanira() {
+        assertEquals(EnumExternalInventoryButtonHost.BANIRA,
+                ClientConfigAccess.root(null).externalInventoryButtonHost());
+    }
+
+    @Test
     public void externalInventoryButtonHostUsesTheConfigHolder() {
         MapStore store = new MapStore();
         store.values.put("externalInventoryButtonHost", EnumExternalInventoryButtonHost.BANIRA);

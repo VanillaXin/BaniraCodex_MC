@@ -3,7 +3,7 @@
 | [中文](../README.md) | [English](README_en.md) | [日本語](README_ja.md) |
 |:------------------:|:-----------------------:|:-------------------:|
 
-<img src="../assets/logo.png" alt="Banira Codex" width="240" />
+<img src="../assets/logo.png" alt="Banira Codex" width="320" />
 
 # Banira Codex
 

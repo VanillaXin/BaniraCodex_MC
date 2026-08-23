@@ -41,12 +41,12 @@
 
 ## Introduction
 
-Banira Codex provides configuration, networking, events, player data, notifications, input, HUD, and GUI facilities for
-other Minecraft mods.
-
-The project does not attempt to support every Minecraft version and loader with one jar. Each supported combination has
-its own branch and artifact, while dependent mods use public APIs with consistent names, semantics, and structure.
-Switching Minecraft versions or loaders should therefore require little or no loader-specific change in business code.
+Banira Codex supports Minecraft Forge, Fabric, and NeoForge and provides configuration, networking, events, player data,
+notifications, input, HUD, and GUI facilities for other mods.
+The project does not attempt to support every Minecraft version and loader with one jar; each supported combination has
+its own branch and artifact.
+Dependent mods integrate through public APIs with consistent names, semantics, and structure, so switching Minecraft
+versions or loaders usually does not require replacing Forge, Fabric, or NeoForge types in business code.
 
 ## Features
 
@@ -67,11 +67,13 @@ in-game tooltips and generated comments for the meaning and valid range of each 
 
 ### Shared Files
 
-- Shared Vanilla Xin settings: `config/vanilla.xin/common_config.json`
 - Notification history: `config/vanilla.xin/notification_log.json`
 - Notification type display settings: `config/vanilla.xin/notification_type_settings.json`
 - Quick-action layout: `config/vanilla.xin/quick_action.json`
-- Shared player data: `world/vanilla.xin/playerdata/*.nbt`
+- Vanilla Xin Series Common Config: `config/vanilla.xin/common_config.json` (stores shared defaults for language, help
+  pagination, and virtual permissions)
+- Vanilla Xin Series Player Data: `world/vanilla.xin/playerdata/*.nbt` (stores persistent data by player and mod
+  namespace)
 
 ### Mod Files
 
@@ -239,17 +241,18 @@ When changing Minecraft versions or loaders:
 
 ## Building
 
-The docs branch provides a shared batch build entry:
+Minecraft versions and loaders are maintained in separate `forge/*`, `fabric/*`, and `neoforge/*` branches. The docs
+branch provides one batch entry for all maintained branches:
 
 ```bat
 scripts\build-all.bat
 ```
 
-By default, it dynamically builds all local `forge/*`, `fabric/*`, and `neoforge/*` branches. Other namespaces such as
-`dev/*` and `maintenance/*` are excluded. Each branch is built in a detached temporary worktree without switching the
-current checkout. Banira builds also run `publishToMavenLocal`.
+By default, the script builds every local loader branch and excludes other namespaces such as `dev/*` and
+`maintenance/*`. Each branch is built in a detached temporary worktree without switching the current checkout, and
+Banira builds also run `publishToMavenLocal`.
 
-List selected branches and validate JDK discovery without running Gradle:
+List selected branches and validate JDK discovery without running a build:
 
 ```bat
 scripts\build-all.bat -ListOnly
@@ -267,14 +270,20 @@ scripts\build-all.bat -BranchExpression "fabric/18.2"
 Expressions beginning with `!` exclude matching branches. The previous parameter name `-Branches` remains available as
 an alias.
 
-A single code branch can still be built directly:
+After switching to a single target branch, it can also be built directly:
 
-```bash
-./gradlew clean test assemble publishToMavenLocal
+```bat
+gradlew.bat clean test assemble publishToMavenLocal
 ```
+
+Artifacts are collected under `builds/<mod version>/` in the docs worktree, and the matching version is published to
+Maven Local.
+
+Minecraft 1.16.5, 1.18.2, 1.19.2, 1.20.1, and 1.21.1 are currently maintained. NeoForge support starts at 1.21.1. Legacy
+branches under `maintenance/*` are excluded from routine maintenance.
 
 ## License
 
-MIT License
+**MIT License**
 
-Issues and pull requests are welcome.
+If you have any questions or suggestions, feel free to submit Issues or Pull requests.

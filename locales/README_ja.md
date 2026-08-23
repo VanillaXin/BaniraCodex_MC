@@ -39,10 +39,10 @@
 
 ## はじめに
 
-Banira Codex は、他の Minecraft MOD に設定、ネットワーク、イベント、プレイヤーデータ、通知、入力、HUD、GUI などの共通機能を提供します。
-
-1 つの jar ですべての Minecraft バージョンとローダーを同時に支えることは目的としていません。対応する組み合わせごとに独立したブランチと成果物を用意し、依存
-MOD には同じ名前、意味、構造の公開 API を提供します。Minecraft バージョンやローダーを切り替えても、通常は業務ロジックで
+Banira Codex は Minecraft Forge、Fabric、NeoForge に対応し、他の MOD に設定、ネットワーク、イベント、プレイヤーデータ、通知、入力、HUD、GUI
+などの共通機能を提供します。
+1 つの jar ですべての Minecraft バージョンとローダーを同時に支えることは目的とせず、対応する組み合わせごとに独立したブランチと成果物を用意します。
+依存 MOD は同じ名前、意味、構造の公開 API を通して接続するため、Minecraft バージョンやローダーを切り替えても、通常は業務ロジックで
 Forge、Fabric、NeoForge の型を置き換える必要はありません。
 
 ## 特徴
@@ -61,11 +61,11 @@ Forge、Fabric、NeoForge の型を置き換える必要はありません。
 
 ### 共通ファイル
 
-- Vanilla Xin シリーズ共通設定：`config/vanilla.xin/common_config.json`
 - 通知履歴：`config/vanilla.xin/notification_log.json`
 - 通知タイプの表示設定：`config/vanilla.xin/notification_type_settings.json`
 - クイックアクションの配置：`config/vanilla.xin/quick_action.json`
-- Vanilla Xin シリーズのプレイヤーデータ：`world/vanilla.xin/playerdata/*.nbt`
+- Vanilla Xin シリーズ MOD 共通設定 `config/vanilla.xin/common_config.json`（既定言語、ヘルプのページ分割、仮想権限などの共通設定を保存）
+- Vanilla Xin シリーズ MOD プレイヤーデータ `world/vanilla.xin/playerdata/*.nbt`（プレイヤーおよび MOD の名前空間ごとに永続データを保存）
 
 ### モジュールファイル
 
@@ -230,17 +230,17 @@ Minecraft バージョンまたはローダーを変更する場合：
 
 ## ビルド
 
-docs ブランチには共通バッチビルド入口があります。
+Minecraft の各バージョンとローダーは、`forge/*`、`fabric/*`、`neoforge/*` ブランチで個別に管理されます。docs
+ブランチには、保守対象の全ブランチを構築する共通バッチ入口があります。
 
 ```bat
 scripts\build-all.bat
 ```
 
-デフォルトでは、ローカルの `forge/*`、`fabric/*`、`neoforge/*` ブランチを動的にすべて構築します。`dev/*`、`maintenance/*`
-など他の名前空間は含みません。各ブランチは現在の作業ツリーを切り替えず、detached 一時 worktree で構築されます。Banira
-のビルドでは `publishToMavenLocal` も実行します。
+デフォルトではローカルの全ローダーブランチを構築し、`dev/*`、`maintenance/*` など他の名前空間は含みません。各ブランチは現在の作業ツリーを切り替えず、detached
+一時 worktree で構築され、Banira のビルドでは `publishToMavenLocal` も実行します。
 
-Gradle を実行せず、選択されたブランチと JDK 検出だけを確認します。
+ビルドを実行せず、選択されたブランチと JDK 検出だけを確認します。
 
 ```bat
 scripts\build-all.bat -ListOnly
@@ -257,14 +257,19 @@ scripts\build-all.bat -BranchExpression "fabric/18.2"
 
 `!` で始まる式は一致するブランチを除外します。以前のパラメーター名 `-Branches` も別名として利用できます。
 
-単一コードブランチでは、従来どおり直接実行できます。
+単一の対象ブランチへ切り替えた後は、直接ビルドすることもできます。
 
-```bash
-./gradlew clean test assemble publishToMavenLocal
+```bat
+gradlew.bat clean test assemble publishToMavenLocal
 ```
+
+成果物は docs 作業ツリーの `builds/<MOD バージョン>/` に集約され、対応するバージョンが Maven Local に公開されます。
+
+現在は Minecraft 1.16.5、1.18.2、1.19.2、1.20.1、1.21.1 を保守しています。NeoForge は 1.21.1 から対応します。`maintenance/*`
+以下の旧バージョンブランチは通常の保守対象外です。
 
 ## ライセンス
 
-MIT License
+**MIT License**
 
 問題や提案がある場合は、Issue または Pull request を作成してください。

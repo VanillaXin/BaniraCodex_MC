@@ -39,10 +39,10 @@
 
 ## 介绍
 
-Banira Codex 为其他 Minecraft 模组提供配置、网络、事件、玩家数据、通知、输入、HUD 与 GUI 等公共能力。
-
-项目不追求用一个 jar 同时兼容所有 Minecraft 版本和加载器，而是为每个受支持组合维护独立分支与产物，并让依赖方尽可能使用同名、同语义、同结构的公共
-API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需跟着替换 Forge、Fabric 或 NeoForge 类型。
+Banira Codex 适用于 Minecraft Forge、Fabric、NeoForge，为其他模组提供配置、网络、事件、玩家数据、通知、输入、HUD 与 GUI 等公共能力。
+项目不追求用一个 jar 同时兼容所有 Minecraft 版本和加载器，而是为每个受支持组合维护独立分支与产物。
+子模组通过同名、同语义、同结构的公共 API 接入；切换 Minecraft 版本或加载器时，业务代码通常无需跟着替换 Forge、Fabric 或
+NeoForge 类型。
 
 ## 特性
 
@@ -58,11 +58,11 @@ API。依赖方切换 Minecraft 版本或加载器时，业务代码通常无需
 
 ### 通用部分
 
-- 香草芯系列模组通用配置：`config/vanilla.xin/common_config.json`
 - 通知记录：`config/vanilla.xin/notification_log.json`
 - 通知类型显示设置：`config/vanilla.xin/notification_type_settings.json`
 - 快捷入口布局：`config/vanilla.xin/quick_action.json`
-- 香草芯系列玩家数据：`world/vanilla.xin/playerdata/*.nbt`
+- 香草芯系列模组通用配置 `config/vanilla.xin/common_config.json`（保存默认语言、帮助分页和虚拟权限等共享设置）
+- 香草芯系列模组玩家数据 `world/vanilla.xin/playerdata/*.nbt`（按玩家与模组命名空间保存持久数据）
 
 ### 模组部分
 
@@ -226,15 +226,14 @@ GUI 基础设施位于 `xin.vanilla.banira.client.gui`。该部分可供客户�
 
 ## 构建
 
-docs 分支提供统一批量构建脚本：
+各 Minecraft 版本与加载器分别维护在 `forge/*`、`fabric/*`、`neoforge/*` 分支。docs 分支提供统一批量构建脚本：
 
 ```bat
 scripts\build-all.bat
 ```
 
-脚本默认动态构建本地 `forge/*`、`fabric/*`、`neoforge/*` 分支，不会包含 `dev/*`、`maintenance/*` 等其他命名空间。
-每个分支都在 detached 临时 worktree 中构建，不会切换当前工作树。Banira Codex 构建完成后还会执行
-`publishToMavenLocal`。
+脚本默认构建本地全部加载器分支，不包含 `dev/*`、`maintenance/*` 等其他命名空间。每个分支都在 detached 临时 worktree
+中构建，不会切换当前工作树；构建完成后还会执行 `publishToMavenLocal`。
 
 仅检查分支与 JDK 配置，不执行构建：
 
@@ -253,14 +252,18 @@ scripts\build-all.bat -BranchExpression "fabric/18.2"
 
 `!` 开头的表达式用于排除分支；旧参数名 `-Branches` 仍可作为别名使用。
 
-单个代码分支仍可直接执行：
+切换到单个目标分支后也可直接执行：
 
-```bash
-./gradlew clean test assemble publishToMavenLocal
+```bat
+gradlew.bat clean test assemble publishToMavenLocal
 ```
+
+构建产物统一汇总至 docs 工作树的 `builds/<模组版本>/` 目录，并将对应版本发布到 Maven Local。
+
+当前维护 Minecraft 1.16.5、1.18.2、1.19.2、1.20.1 和 1.21.1；NeoForge 从 1.21.1 开始维护。`maintenance/*` 下的旧版本分支不再参与日常维护。
 
 ## 许可证
 
-MIT License
+**MIT License**
 
-如有问题或建议，欢迎提交 Issues 或 Pull requests。
+如有任何问题或建议，欢迎提交 Issues 或 Pull requests。

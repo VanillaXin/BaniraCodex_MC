@@ -24,6 +24,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.ArraySet;
@@ -227,6 +228,9 @@ public class ItemSelectScreen extends BaniraScreen {
 
             int opCode = parseOperationButtonType(btnId);
             ItemWidget iconWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
+            iconWidget.hoverInsets(HoverInsets.partitionCell(
+                    1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE,
+                    OP_BTN_SIZE, OP_BTN_SIZE, 0, OP_BTN_GAP));
             iconWidget.showCountText(false);
             ScreenCoordinate tooltipBounds = new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE);
             if (opCode == ButtonType.TYPE.code()) {
@@ -258,6 +262,10 @@ public class ItemSelectScreen extends BaniraScreen {
                 btn.addChild(tip);
             }
             btn.addChild(iconWidget);
+            TooltipWidget operationTooltip = btn.findChildByType(TooltipWidget.class);
+            if (operationTooltip != null) {
+                operationTooltip.hoverInsets(HoverInsets.fromSpacing(0, OP_BTN_GAP));
+            }
             btn.onClick(b -> handleOperationInternal(opCode));
             addWidget(btn);
         }
@@ -277,6 +285,9 @@ public class ItemSelectScreen extends BaniraScreen {
             btn.text(Text.empty());
 
             ItemWidget itemWidget = new ItemWidget(this, new ScreenCoordinate(1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE));
+            itemWidget.hoverInsets(HoverInsets.partitionCell(
+                    1, 1, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE,
+                    ITEM_BTN_SIZE, ITEM_BTN_SIZE, ITEM_SPACING, ITEM_SPACING));
             itemWidget.showCountText(false);
             itemWidget.visible(false);
             itemWidget.seasonTooltip(useSeasonTooltip);

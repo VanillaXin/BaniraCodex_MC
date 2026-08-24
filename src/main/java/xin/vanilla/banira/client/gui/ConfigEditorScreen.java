@@ -14,6 +14,7 @@ import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.*;
@@ -692,6 +693,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         tooltip.id("tip_" + desc.getPath().replace(".", "_"));
         tooltip.text(ConfigEntryTooltipTexts.guiTooltipComponent(desc, configModId()));
         tooltip.popupAtScreenCoords(true);
+        tooltip.hoverInsets(HoverInsets.fromSpacing(0, ROW_GAP));
         return tooltip;
     }
 

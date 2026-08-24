@@ -257,7 +257,7 @@ public class DebugScreen extends BaniraScreen {
 
     private void addTooltipLabel(int x, int y, String tooltipText) {
         TooltipWidget w = new TooltipWidget(this, new ScreenCoordinate(x, y, 40, 18));
-        w.text(BaniraComponent.get().literal(tooltipText)).vanillaTooltip(true);
+        w.text(BaniraComponent.get().literal(tooltipText)).popupAtScreenCoords(true);
         w.visible(true);
         addWidget(w);
     }

@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.*;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
@@ -51,6 +52,11 @@ public abstract class BaseWidget implements IWidget {
     @Getter
     @Setter
     protected List<ScreenCoordinate> hoveringCoordinates = new ArrayList<>();
+
+    /** 仅扩展悬浮反馈范围，不参与点击、拖动或滚轮命中。 */
+    @Getter
+    @Setter
+    protected HoverInsets hoverInsets = HoverInsets.none();
 
     @Getter
     @Setter
@@ -622,7 +628,7 @@ public abstract class BaseWidget implements IWidget {
     }
 
     public void updateMouseHover(double mouseX, double mouseY) {
-        boolean nowInside = isMouseInside(mouseX, mouseY);
+        boolean nowInside = isMouseInsideHoverBounds(mouseX, mouseY);
         if (nowInside != mouseInside) {
             mouseInside = nowInside;
             MouseEvent evt = MouseEvent.of(mouseX, mouseY, -1);
@@ -632,6 +638,13 @@ public abstract class BaseWidget implements IWidget {
                 onMouseExit(evt);
             }
         }
+    }
+
+    private boolean isMouseInsideHoverBounds(double mouseX, double mouseY) {
+        if (renderCoordinate == null) return false;
+        HoverInsets insets = hoverInsets != null ? hoverInsets : HoverInsets.none();
+        return insets.contains(mouseX, mouseY, absoluteX(), absoluteY(),
+                renderCoordinate.width(), renderCoordinate.height());
     }
 
     /**

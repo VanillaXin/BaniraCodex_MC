@@ -172,6 +172,8 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
         section.contentGap(ROW_GAP);
         section.headerHeight(ROW_HEIGHT);
         section.onExpandChanged(panel -> syncContentHeight());
+        // 由公共外壳统一挂载，避免调用方创建了分组却遗漏加入配置树。
+        parent.addCollapsibleChild(section);
         sections.put(section, new SearchSection(section, parent == rootPanel ? null : parent,
                 title, description));
         return section;

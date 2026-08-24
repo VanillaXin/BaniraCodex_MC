@@ -23,6 +23,7 @@ import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -205,6 +206,7 @@ public class SliderWidget extends BaseWidget {
     private InlineInputMode inlineInputMode = InlineInputMode.SLIDER_ONLY;
     @Nullable
     private NumericInputWidget inlineInputWidget;
+    private boolean syncingInlineInput;
     /**
      * 子组件处理点击时，应获得焦点的目标（供 getFocusTarget 使用）
      */
@@ -286,17 +288,38 @@ public class SliderWidget extends BaseWidget {
     private void bindInlineInput() {
         if (inlineInputWidget == null) return;
         inlineInputWidget.onTextChanged(text -> {
-            if (enabled()) {
-                setValue(inlineInputWidget.parseValue());
+            if (enabled() && !syncingInlineInput && shouldApplyInlineText(text)) {
+                setValueInternal(inlineInputWidget.parseValue(), false);
             }
         });
     }
 
     private void syncInlineInputFromSlider() {
         if (inlineInputWidget != null) {
-            inlineInputWidget.setNumericValue(value);
-            inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
-            inlineInputWidget.decimalPlaces(decimalPlaces);
+            // 属性必须先同步，避免旧范围先把新值裁剪成错误结果。
+            syncingInlineInput = true;
+            try {
+                inlineInputWidget.minValue(minValue).maxValue(maxValue).step(step);
+                inlineInputWidget.decimalPlaces(decimalPlaces);
+                inlineInputWidget.setNumericValue(value);
+            } finally {
+                syncingInlineInput = false;
+            }
+        }
+    }
+
+    static boolean shouldApplyInlineText(String text) {
+        if (text == null) return false;
+        String value = text.trim();
+        if (value.isEmpty() || value.equals("-") || value.equals("+")
+                || value.equals(".") || value.equals("-.") || value.equals("+.")) {
+            return false;
+        }
+        try {
+            new BigDecimal(value);
+            return true;
+        } catch (NumberFormatException ignored) {
+            return false;
         }
     }
 
@@ -328,7 +351,6 @@ public class SliderWidget extends BaseWidget {
         // 仅输入框模式：宽度不足时右键切换
         if (inlineInputMode == InlineInputMode.INPUT_ONLY) {
             ensureInlineInput();
-            syncInlineInputFromSlider();
             if (inlineInputWidget != null) {
                 inlineInputWidget.bounds(new ScreenCoordinate(0, 0, width, height));
                 inlineInputWidget.visible(true);
@@ -340,7 +362,6 @@ public class SliderWidget extends BaseWidget {
         // 输入框+滑块并排模式
         if (inlineInputMode == InlineInputMode.SLIDER_WITH_INPUT) {
             ensureInlineInput();
-            syncInlineInputFromSlider();
             int inputW = Math.min(INLINE_INPUT_W, width - INLINE_INPUT_GAP - 40);
             int sliderW = width - inputW - INLINE_INPUT_GAP;
             if (inlineInputWidget != null) {
@@ -641,12 +662,16 @@ public class SliderWidget extends BaseWidget {
      * 设置数值（会自动裁剪到 min～max 并触发 onValueChanged）
      */
     public void setValue(double value) {
+        setValueInternal(value, true);
+    }
+
+    private void setValueInternal(double value, boolean syncInput) {
         double newValue = Math.max(minValue, Math.min(maxValue, applyStep(value)));
         if (Math.abs(newValue - this.value) > 1e-9) {
             this.value = newValue;
             updateThumb();
-            if (inlineInputWidget != null && inlineInputWidget.visible()) {
-                inlineInputWidget.setNumericValue(this.value);
+            if (syncInput && inlineInputWidget != null && inlineInputWidget.visible()) {
+                syncInlineInputFromSlider();
             }
             if (onValueChanged != null) {
                 onValueChanged.accept(this.value);
@@ -745,8 +770,13 @@ public class SliderWidget extends BaseWidget {
 
         slider.allowInlineInput(false);
 
+        if (input.minValue() != null) slider.minValue(input.minValue());
+        if (input.maxValue() != null) slider.maxValue(input.maxValue());
+        slider.step(input.step());
+        slider.decimalPlaces(input.decimalPlaces());
+
         String inputVal = input.value();
-        if (!StringUtils.isNullOrEmptyEx(inputVal) && !inputVal.trim().equals("-") && !inputVal.trim().equals(".")) {
+        if (shouldApplyInlineText(inputVal)) {
             try {
                 double parsed = Double.parseDouble(inputVal.trim());
                 slider.setValue(parsed);
@@ -757,19 +787,27 @@ public class SliderWidget extends BaseWidget {
             input.setNumericValue(slider.value());
         }
 
-        if (input.minValue() != null) slider.minValue(input.minValue());
-        if (input.maxValue() != null) slider.maxValue(input.maxValue());
-        slider.step(input.step());
-        slider.decimalPlaces(input.decimalPlaces());
+        final boolean[] syncing = {false};
 
         slider.onValueChanged(v -> {
-            if (!input.enabled()) return;
-            input.setNumericValue(v);
+            if (!input.enabled() || syncing[0]) return;
+            syncing[0] = true;
+            try {
+                input.setNumericValue(v);
+            } finally {
+                syncing[0] = false;
+            }
         });
 
         input.onTextChanged(text -> {
-            if (!slider.enabled()) return;
-            slider.setValue(input.parseValue());
+            if (!slider.enabled() || syncing[0] || !shouldApplyInlineText(text)) return;
+            // 双向绑定必须阻止程序化回写再次触发另一侧。
+            syncing[0] = true;
+            try {
+                slider.setValue(input.parseValue());
+            } finally {
+                syncing[0] = false;
+            }
         });
     }
 }

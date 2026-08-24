@@ -29,7 +29,9 @@ import xin.vanilla.banira.common.util.EnvironmentUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ConfigEditorInputLimits;
 import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
+import xin.vanilla.banira.internal.client.ConfigEditorNumberPolicy;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -667,7 +669,7 @@ public class ConfigEditorScreen extends BaniraScreen {
         Object raw = holder.get(desc.getPath());
         String str = (raw instanceof String) ? (String) raw : (raw != null ? raw.toString() : "");
         input.value(str);
-        input.maxLength(256);
+        input.maxLength(ConfigEditorInputLimits.STRING_VALUE);
         input.onTextChanged(v -> {
             modifiedValues.put(desc.getPath(), v);
             markConfigTouched(desc.getPath());
@@ -739,11 +741,8 @@ public class ConfigEditorScreen extends BaniraScreen {
 
         double min = desc.getMinValue() != null ? desc.getMinValue().doubleValue() : 0;
         double max = desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : 100;
-        double step = 1.0;
-        if (desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE) {
-            double minStep = 1.0 / Math.pow(10, desc.getDecimalPlaces());
-            step = Math.max(minStep, (max - min) / 100);
-        }
+        double step = ConfigEditorNumberPolicy.stepFor(
+                desc.getValueType(), min, max, desc.getDecimalPlaces());
 
         Object raw = holder.get(desc.getPath());
         double initVal = 0;

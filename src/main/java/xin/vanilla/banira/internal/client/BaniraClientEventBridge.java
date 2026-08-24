@@ -7,6 +7,7 @@ import xin.vanilla.banira.api.client.hud.BaniraHudRenderContext;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.KeyValue;
 
@@ -20,11 +21,13 @@ public final class BaniraClientEventBridge {
     }
 
     public static void fireGuiChanged(Screen screen) {
+        TooltipWidget.cancelPopupTransition();
         BaniraClientEvents.Client.fireGuiChanged(new BaniraScreenOpenEvent(screenInfo(screen)));
     }
 
     public static void fireDrawScreenPre(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
                                          double mouseX, double mouseY, float partialTick) {
+        TooltipWidget.beginPopupFrame(screen, mouseX, mouseY);
         InputStateManager.instance().handleDrawScreenPre(mouseX, mouseY);
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().tickInteraction(screen, (int) Math.round(mouseX), (int) Math.round(mouseY));
@@ -40,6 +43,7 @@ public final class BaniraClientEventBridge {
         }
         NotificationManager.get().render(nativeGraphics);
         BaniraClientEvents.Client.fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+        TooltipWidget.flushPopupFrame(nativeGraphics);
     }
 
     public static void fireRenderOverlayPost(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,

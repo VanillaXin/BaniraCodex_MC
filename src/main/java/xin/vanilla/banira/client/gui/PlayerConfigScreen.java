@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
@@ -182,6 +183,9 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     protected final void addPlayerRow(CollapsiblePanelWidget parent, BaseWidget row, double height,
                                       @Nullable ITextWidget label, @Nullable TooltipWidget tooltip,
                                       Component title, @Nullable Component description, String... aliases) {
+        if (tooltip != null) {
+            tooltip.hoverInsets(HoverInsets.fromSpacing(0, ROW_GAP));
+        }
         parent.addChildAuto(row, height);
         entries.add(new SearchEntry(row, parent == rootPanel ? null : parent, label, tooltip,
                 title, description, aliases));
@@ -315,12 +319,10 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
                     contentWidth + SCROLL_GAP + SCROLL_WIDTH, listAreaHeight));
         }
 
-        int buttonAreaTop = cardY + cardH - buttonAreaHeight;
-        int zoneWidth = (cardW - CARD_INNER * 2 - BUTTON_GAP) / 2;
-        bottomButtons.get(0).bounds(new ScreenCoordinate(cardX + CARD_INNER,
-                buttonAreaTop + (buttonAreaHeight - BUTTON_HEIGHT) / 2, zoneWidth, BUTTON_HEIGHT));
-        bottomButtons.get(1).bounds(new ScreenCoordinate(cardX + CARD_INNER + zoneWidth + BUTTON_GAP,
-                buttonAreaTop + (buttonAreaHeight - BUTTON_HEIGHT) / 2, zoneWidth, BUTTON_HEIGHT));
+        ScreenCoordinate[] buttonBounds = PlayerConfigActionBarLayout.equalSplitButtons(
+                cardX, cardY, cardW, cardH, CARD_INNER, BUTTON_HEIGHT, BUTTON_GAP);
+        bottomButtons.get(0).bounds(buttonBounds[0]);
+        bottomButtons.get(1).bounds(buttonBounds[1]);
     }
 
     private void updateWidgetPositions() {

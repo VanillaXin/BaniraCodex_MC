@@ -27,6 +27,7 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.EffectSelectScreen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
@@ -149,6 +150,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             TooltipWidget tooltip = new TooltipWidget(this);
             tooltip.id("entry_tooltip_" + i);
             tooltip.popupAtScreenCoords(true);
+            tooltip.hoverInsets(HoverInsets.fromSpacing(0, ROW_GAP));
             row.addChild(tooltip);
             rows.add(row);
             rowTooltips.add(tooltip);

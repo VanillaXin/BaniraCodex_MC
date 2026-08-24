@@ -75,7 +75,7 @@ public final class ConfigEditorRowFactory {
         input.bounds(new ScreenCoordinate(valueStartX(w), 0, valueWidgetWidth(w), rowH));
         Object raw = holder.get(desc.getPath());
         input.value(raw instanceof String ? (String) raw : raw != null ? raw.toString() : "");
-        input.maxLength(256);
+        input.maxLength(ConfigEditorInputLimits.STRING_VALUE);
         input.onTextChanged(v -> editorState.markModified(desc.getPath(), v));
 
         row.addChild(label);
@@ -121,9 +121,8 @@ public final class ConfigEditorRowFactory {
 
         double min = desc.getMinValue() != null ? desc.getMinValue().doubleValue() : 0;
         double max = desc.getMaxValue() != null ? desc.getMaxValue().doubleValue() : 100;
-        double step = desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE
-                ? Math.max(1.0 / Math.pow(10, desc.getDecimalPlaces()), (max - min) / 100)
-                : 1.0;
+        double step = ConfigEditorNumberPolicy.stepFor(
+                desc.getValueType(), min, max, desc.getDecimalPlaces());
         double initVal = initialNumberValue(desc, min, max);
 
         SliderWidget slider = new SliderWidget(screen);

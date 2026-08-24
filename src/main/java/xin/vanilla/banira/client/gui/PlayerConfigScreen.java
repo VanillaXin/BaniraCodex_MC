@@ -335,12 +335,12 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
         int buttonAreaHeight = BUTTON_HEIGHT + CARD_INNER;
         int buttonAreaTop = cardY + cardH - buttonAreaHeight;
 
-        AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, buttonAreaTop - cardY - BUTTON_GAP,
+        AbstractGuiUtils.drawRoundedRect(stack.pose(), cardX, cardY, cardW, buttonAreaTop - cardY - BUTTON_GAP,
                 CARD_RADIUS, CARD_RADIUS, 0, 0, background);
         int half = (cardW - BUTTON_GAP) / 2;
-        AbstractGuiUtils.drawRoundedRect(stack, cardX, buttonAreaTop, half, buttonAreaHeight,
+        AbstractGuiUtils.drawRoundedRect(stack.pose(), cardX, buttonAreaTop, half, buttonAreaHeight,
                 0, 0, CARD_RADIUS, 0, background);
-        AbstractGuiUtils.drawRoundedRect(stack, cardX + half + BUTTON_GAP, buttonAreaTop,
+        AbstractGuiUtils.drawRoundedRect(stack.pose(), cardX + half + BUTTON_GAP, buttonAreaTop,
                 cardW - half - BUTTON_GAP, buttonAreaHeight, 0, 0, 0, CARD_RADIUS, background);
 
         AbstractGuiUtils.enableScissor(contentLeft, listTop,
@@ -363,7 +363,7 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(GuiGraphics stack, float partialTicks) {
+    protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
         renderWidgets(stack, partialTicks);
     }
 

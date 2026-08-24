@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Color;
@@ -241,6 +242,7 @@ public class EffectSelectScreen extends BaniraScreen {
             btn.addChild(labelWidget);
 
             TooltipWidget itemTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, listItemW, ROW_HEIGHT - 2));
+            itemTooltip.hoverInsets(HoverInsets.fromSpacing(0, ITEM_SPACING + 2));
             itemTooltip.text(Text.empty());
             itemTooltip.seasonTooltip(useSeasonTooltip);
             itemTooltip.visible(false);
@@ -345,6 +347,10 @@ public class EffectSelectScreen extends BaniraScreen {
                 amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
                 btn.addChild(amplifierTooltip);
                 btn.addChild(iconWidget);
+            }
+            TooltipWidget operationTooltip = btn.findChildByType(TooltipWidget.class);
+            if (operationTooltip != null) {
+                operationTooltip.hoverInsets(HoverInsets.fromSpacing(0, OP_BTN_GAP));
             }
             btn.onClick(b -> handleOperationInternal(opCode));
             addWidget(btn);

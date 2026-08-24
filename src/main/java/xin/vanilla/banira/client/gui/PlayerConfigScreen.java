@@ -368,16 +368,16 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (delta != 0 && rootPanel != null && rootPanel.visible() && rootPanel.enabled()
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        if (deltaY != 0 && rootPanel != null && rootPanel.visible() && rootPanel.enabled()
                 && rootPanel.isMouseInside(mouseX, mouseY)
-                && rootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, delta))) {
+                && rootPanel.handleMouseScroll(MouseScrollEvent.of(mouseX, mouseY, deltaY))) {
             return true;
         }
-        if (super.mouseScrolled(mouseX, mouseY, delta)) return true;
-        if (scrollbar != null && delta != 0) {
+        if (super.mouseScrolled(mouseX, mouseY, deltaX, deltaY)) return true;
+        if (scrollbar != null && deltaY != 0) {
             double value = Math.max(scrollbar.minValue(),
-                    Math.min(scrollbar.maxValue(), scrollbar.value() - delta * 20));
+                    Math.min(scrollbar.maxValue(), scrollbar.value() - deltaY * 20));
             scrollbar.value(value);
             scrollOffset = value;
             updateWidgetPositions();

@@ -904,7 +904,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     public CollapsiblePanelWidget tooltip(xin.vanilla.banira.common.data.Component tooltip) {
-        this.tooltip = Text.from(tooltip);
+        this.tooltip = tooltip == null ? Text.empty() : Text.from(tooltip);
         return this;
     }
 

@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.client;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
 import xin.vanilla.banira.common.config.ConfigCategoryTitleTexts;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
@@ -76,6 +77,9 @@ public final class ConfigEditorContentTreeBuilder {
         for (ConfigEntryDescriptor desc : node.getEntries()) {
             ConfigEditorEntryWidget adapter = rowFactory.createEntryRow(desc, childWidth, rowHeight);
             if (adapter != null) {
+                if (adapter.tooltipWidget() != null) {
+                    adapter.tooltipWidget().hoverInsets(HoverInsets.fromSpacing(0, rowGap));
+                }
                 editorState.registerEntry(desc.getPath(), adapter);
                 double h = adapter.getWidget().effectiveHeight() > 0 ? adapter.getWidget().effectiveHeight() : rowHeight;
                 panel.addChildAuto(adapter.getWidget(), h);

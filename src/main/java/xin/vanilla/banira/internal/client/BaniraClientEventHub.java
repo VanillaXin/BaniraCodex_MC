@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.network.ModLoadedPresenceStore;
 import xin.vanilla.banira.common.network.packet.ModLoadedToBoth;
@@ -107,6 +108,7 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchMouseClickedPre(@Nonnull BaniraMouseEvent event) {
+        TooltipWidget.cancelPopupTransition();
         BaniraClientEvents.dispatchMouseClickedPre(event);
     }
 

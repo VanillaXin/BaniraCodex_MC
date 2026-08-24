@@ -13,6 +13,7 @@ import xin.vanilla.banira.api.client.input.BaniraKeyPressTracker;
 import xin.vanilla.banira.api.client.input.BaniraMouseClickTracker;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
@@ -105,6 +106,7 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
+        TooltipWidget.cancelPopupTransition();
         dragTracker.press(event.mouseX(), event.mouseY(), event.button());
         event.withClickMetadata(mouseClickTracker.record(event.mouseX(), event.mouseY(), event.button()));
         fire(clientMouseClickedPreCallbacks, event, "client mouse clicked pre");
@@ -164,6 +166,7 @@ public final class BaniraClientEventHub {
         }
 
         public static void fireGuiChanged(@Nonnull BaniraScreenOpenEvent event) {
+            TooltipWidget.cancelPopupTransition();
             resetInputTrackers();
             fire(clientGuiChangedCallbacks, event, "client gui changed");
         }
@@ -250,6 +253,7 @@ public final class BaniraClientEventHub {
 
         public static void fireDrawScreenPreNative(@Nonnull MatrixStack nativeGraphics, @Nonnull Screen screen,
                                                    double mouseX, double mouseY, float partialTick) {
+            TooltipWidget.beginPopupFrame(screen, mouseX, mouseY);
             fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
         }
 
@@ -261,6 +265,7 @@ public final class BaniraClientEventHub {
             }
             NotificationManager.get().render(nativeGraphics);
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+            TooltipWidget.flushPopupFrame(nativeGraphics);
         }
 
         public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull MatrixStack nativeGraphics,

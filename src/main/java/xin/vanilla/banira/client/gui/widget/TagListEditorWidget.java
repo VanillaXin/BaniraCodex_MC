@@ -22,6 +22,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
+import xin.vanilla.banira.internal.client.ConfigEditorInputLimits;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -406,7 +407,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 InputWidget input = new InputWidget(screen);
                 double inputW = confirmBtnX - 2;
                 input.bounds(new ScreenCoordinate(0, inputY, inputW, ADD_INPUT_HEIGHT));
-                input.maxLength(64);
+                input.maxLength(ConfigEditorInputLimits.LIST_ITEM);
                 input.text(Text.literal("输入后按 Enter 或点击添加"));
                 input.value("");
                 addInputWidget = input;
@@ -414,7 +415,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             case KEY_CHORD:
                 KeyCaptureInputWidget keyInput = new KeyCaptureInputWidget(screen);
                 keyInput.bounds(new ScreenCoordinate(0, inputY, confirmBtnX - 2, ADD_INPUT_HEIGHT));
-                keyInput.maxLength(64);
+                keyInput.maxLength(ConfigEditorInputLimits.LIST_ITEM);
                 keyInput.value("");
                 keyInput.onCaptured(value -> confirmAddFromInput());
                 addInputWidget = keyInput;
@@ -583,7 +584,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                 InputWidget input = itemType == ItemType.KEY_CHORD
                         ? new KeyCaptureInputWidget(screen) : new InputWidget(screen);
                 input.bounds(new ScreenCoordinate(0, rowY, listW, TAG_HEIGHT));
-                input.maxLength(itemType == ItemType.TEXT || itemType == ItemType.KEY_CHORD ? 64 : 128);
+                input.maxLength(itemType == ItemType.TEXT || itemType == ItemType.KEY_CHORD
+                        ? ConfigEditorInputLimits.LIST_ITEM : 128);
                 input.value(label);
                 if (input instanceof KeyCaptureInputWidget) {
                     ((KeyCaptureInputWidget) input).onCaptured(value -> commitInlineEdit());

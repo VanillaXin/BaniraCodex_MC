@@ -17,6 +17,7 @@ import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.TransformArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
+import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.data.Color;
@@ -24,6 +25,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
+import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
@@ -171,8 +173,11 @@ public class Notification extends NotificationData {
         n.acceleration(data.acceleration());
         n.decelerationDistance(data.decelerationDistance());
         n.notificationType(data.notificationType() != null ? data.notificationType() : NotificationTypeKeys.DEFAULT);
+
+        EnumNotificationTypeDisplayMode mode = NotificationTypeSettingsStore.get().getOrCreate(NotificationTypeKeys.normalizeOrDefault(n.notificationType())).displayMode();
+        boolean overlay = mode != EnumNotificationTypeDisplayMode.ACTION_BAR && mode != EnumNotificationTypeDisplayMode.VANILLA_CHAT;
         boolean themed = fromNetwork || data.themed();
-        if (themed) {
+        if (overlay && themed) {
             n.applyClientNotificationStyle(n.style());
         } else {
             n.bgColor(data.bgColor());

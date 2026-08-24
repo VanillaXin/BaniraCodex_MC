@@ -17,6 +17,10 @@ import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.tooltip.TooltipBounds;
+import xin.vanilla.banira.client.gui.tooltip.TooltipRequestCollector;
+import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionFrame;
+import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionModel;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
@@ -28,7 +32,9 @@ import xin.vanilla.banira.common.util.ItemUtils;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 提示Widget。提供 drawPopupMessage 等静态绘制方法。
@@ -42,6 +48,19 @@ import java.util.List;
  */
 @Accessors(chain = true, fluent = true)
 public class TooltipWidget extends BaseWidget implements ITextWidget {
+    private static final long TOOLTIP_TRANSITION_NANOS = 140_000_000L;
+    private static final long TOOLTIP_CONTINUITY_NANOS = TOOLTIP_TRANSITION_NANOS;
+    private static final double TOOLTIP_CONTINUITY_DISTANCE = 56.0D;
+    private static final TooltipRequestCollector<PopupRenderData> POPUP_REQUESTS = new TooltipRequestCollector<>();
+    private static final TooltipTransitionModel<String> POPUP_TRANSITION =
+            new TooltipTransitionModel<>(TOOLTIP_TRANSITION_NANOS, TOOLTIP_CONTINUITY_NANOS,
+                    TOOLTIP_CONTINUITY_DISTANCE, 0.35D);
+    private static final Map<String, PopupRenderData> POPUP_CONTENT = new LinkedHashMap<>();
+    private static Object popupScreenToken;
+    private static boolean collectingPopupRequests;
+    private static double popupMouseX = Double.NaN;
+    private static double popupMouseY = Double.NaN;
+
     @Getter
     private Text text = Text.empty();
 
@@ -183,13 +202,85 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                                         @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         FontDrawArgs drawArgs = args.clone();
         boolean useTextureMode = drawArgs.popupUseTexture();
+        BaniraColorConfig resolvedTheme = null;
 
         if (useTextureMode) {
             useTexture(drawArgs, season);
-            drawPopupMessageInternal(stack, drawArgs, null);
         } else {
             useColor(drawArgs, theme, season);
-            drawPopupMessageInternal(stack, drawArgs, resolveTheme(theme, season));
+            resolvedTheme = resolveTheme(theme, season);
+        }
+
+        PopupRenderData request = preparePopupRenderData(drawArgs, resolvedTheme);
+        if (collectingPopupRequests) {
+            POPUP_REQUESTS.submit(request);
+        } else {
+            renderPopup(stack, request, request.bounds);
+        }
+    }
+
+    /** 在屏幕开始绘制时开启本帧 Tooltip 请求收集。 */
+    public static void beginPopupFrame(Object screenToken) {
+        beginPopupFrame(screenToken, Double.NaN, Double.NaN);
+    }
+
+    /** 在屏幕开始绘制时记录当前鼠标位置并开启 Tooltip 请求收集。 */
+    public static void beginPopupFrame(Object screenToken, double mouseX, double mouseY) {
+        if (popupScreenToken != screenToken) {
+            popupScreenToken = screenToken;
+            cancelPopupTransition();
+        }
+        popupMouseX = mouseX;
+        popupMouseY = mouseY;
+        POPUP_REQUESTS.beginFrame(screenToken);
+        collectingPopupRequests = true;
+    }
+
+    /** 点击或切换界面时立即取消悬浮提示连续状态。 */
+    public static void cancelPopupTransition() {
+        POPUP_TRANSITION.reset();
+        POPUP_CONTENT.clear();
+    }
+
+    /** 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。 */
+    public static void flushPopupFrame(PoseStack stack) {
+        collectingPopupRequests = false;
+        long now = System.nanoTime();
+        if (!POPUP_REQUESTS.hasWinner()) {
+            TooltipTransitionFrame<String> frame = POPUP_TRANSITION.resolveMissing(popupMouseX, popupMouseY, now);
+            if (frame == null) {
+                POPUP_CONTENT.clear();
+                return;
+            }
+            renderTransitionFrame(stack, frame, null);
+            return;
+        }
+
+        PopupRenderData target = POPUP_REQUESTS.winner();
+        POPUP_CONTENT.put(target.contentKey, target);
+        TooltipTransitionFrame<String> frame = POPUP_TRANSITION.resolve(
+                target.contentKey, target.bounds, popupMouseX, popupMouseY, now);
+        renderTransitionFrame(stack, frame, target);
+
+        if (frame.progress() >= 1.0D) {
+            POPUP_CONTENT.clear();
+            POPUP_CONTENT.put(target.contentKey, target);
+        }
+    }
+
+    private static void renderTransitionFrame(PoseStack stack, TooltipTransitionFrame<String> frame,
+                                              @Nullable PopupRenderData fallback) {
+        if (frame.bounds().width() < 1.0D || frame.bounds().height() < 1.0D) return;
+        PopupRenderData visible = POPUP_CONTENT.get(frame.contentKey());
+        if (visible == null) visible = fallback;
+        if (visible == null) return;
+
+        stack.pushPose();
+        try {
+            stack.last().pose().setIdentity();
+            renderPopup(stack, visible, frame.bounds());
+        } finally {
+            stack.popPose();
         }
     }
 
@@ -272,7 +363,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         drawItemTooltip(stack, itemStack, x, y, season ? EnumSeason.AUTO : null);
     }
 
-    private static void drawPopupMessageInternal(PoseStack stack, FontDrawArgs args, @Nullable BaniraColorConfig theme) {
+    private static PopupRenderData preparePopupRenderData(FontDrawArgs args, @Nullable BaniraColorConfig theme) {
         boolean useThemeColor = (theme != null);
         float calculatedTextureScale = 1.0f;
         int calculatedPaddingLeft;
@@ -335,8 +426,6 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         final int finalCalculatedPaddingRight = calculatedPaddingRight;
         final int finalCalculatedPaddingTop = calculatedPaddingTop;
         final int finalCalculatedPaddingBottom = calculatedPaddingBottom;
-        final float textureScale = calculatedTextureScale;
-
         int msgWidth = textWidth;
         int msgHeight = textHeight;
         double adjustedX = args.x();
@@ -387,58 +476,118 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        final double finalAdjustedX = adjustedX;
-        final double finalAdjustedY = adjustedY;
-        final int finalMsgWidth = msgWidth;
-        final int finalMsgHeight = msgHeight;
-        final int finalMaxWidthForText = finalMaxWidth;
+        String contentKey = args.text().content(false) + '\u0000'
+                + args.text().font().getClass().getName() + '\u0000' + args.fontSize();
+        return new PopupRenderData(
+                contentKey,
+                args,
+                theme,
+                useThemeColor,
+                ninePatchInfo,
+                calculatedTextureScale,
+                calculatedPaddingLeft,
+                calculatedPaddingRight,
+                calculatedPaddingTop,
+                calculatedPaddingBottom,
+                finalMaxWidth,
+                new TooltipBounds(adjustedX, adjustedY, msgWidth, msgHeight)
+        );
+    }
 
-        AbstractGuiUtils.renderByDepth(args.text().stack(), EnumRenderDepth.TOOLTIP, (s) -> {
-            if (args.texture() != null && ninePatchInfo != null) {
+    private static void renderPopup(PoseStack stack, PopupRenderData data, TooltipBounds bounds) {
+        FontDrawArgs args = data.args;
+        int drawX = (int) Math.round(bounds.x());
+        int drawY = (int) Math.round(bounds.y());
+        int drawWidth = Math.max(1, (int) Math.round(bounds.width()));
+        int drawHeight = Math.max(1, (int) Math.round(bounds.height()));
+        args.text().stack(stack);
+
+        AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.TOOLTIP, (s) -> {
+            if (args.texture() != null && data.ninePatchInfo != null) {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
-                NinePatchImageWidget.drawNinePatch(s, args.texture(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, textureScale);
+                NinePatchImageWidget.drawNinePatch(s, args.texture(), drawX, drawY, drawWidth, drawHeight, data.textureScale);
                 RenderSystem.disableBlend();
             } else if (args.texture() != null) {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 Texture tex = args.texture();
-                ImageWidget.blit(s, tex, (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight);
+                ImageWidget.blit(s, tex, drawX, drawY, drawWidth, drawHeight);
                 RenderSystem.disableBlend();
-            } else if (useThemeColor && theme != null) {
+            } else if (data.useThemeColor && data.theme != null) {
                 int radius = args.bgBorderRadius();
                 int borderThickness = args.bgBorderThickness();
                 ShapeDrawArgs.RoundedCornerMode cornerMode = args.popupCornerMode() != null ? args.popupCornerMode() : ShapeDrawArgs.RoundedCornerMode.FINE;
-                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBg());
+                ShapeDrawArgs fillArgs = ShapeDrawArgs.rect(s, drawX, drawY, drawWidth, drawHeight, data.theme.popupBg());
                 fillArgs.rect().radius(radius).cornerMode(cornerMode);
                 BaseShapeWidget.drawShape(fillArgs);
                 if (borderThickness > 0) {
-                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, (float) finalAdjustedX, (float) finalAdjustedY, finalMsgWidth, finalMsgHeight, theme.popupBorder());
+                    ShapeDrawArgs borderArgs = ShapeDrawArgs.rect(s, drawX, drawY, drawWidth, drawHeight, data.theme.popupBorder());
                     borderArgs.rect().radius(radius).border(borderThickness).cornerMode(cornerMode);
                     BaseShapeWidget.drawShape(borderArgs);
                 }
             } else {
                 int borderRadius = args.bgBorderRadius();
                 int borderThickness = args.bgBorderThickness();
-                AbstractGuiUtils.drawRoundedRect(args.text().stack(), (int) finalAdjustedX, (int) finalAdjustedY, finalMsgWidth, finalMsgHeight, args.bgArgb(), borderRadius);
+                AbstractGuiUtils.drawRoundedRect(s, drawX, drawY, drawWidth, drawHeight, args.bgArgb(), borderRadius);
                 int borderArgb = ColorUtils.softenArgb(args.bgArgb());
-                AbstractGuiUtils.drawRoundedRectOutLine(args.text().stack(),
-                        (float) finalAdjustedX, (float) finalAdjustedY,
-                        finalMsgWidth, finalMsgHeight,
+                AbstractGuiUtils.drawRoundedRectOutLine(s,
+                        drawX, drawY,
+                        drawWidth, drawHeight,
                         borderRadius, borderRadius, borderRadius, borderRadius,
                         borderThickness, borderArgb,
                         ShapeDrawArgs.RoundedCornerMode.FINE);
             }
 
             FontDrawArgs clone = args.clone()
-                    .x(finalAdjustedX).y(finalAdjustedY)
+                    .x(drawX).y(drawY)
                     .bgArgb(0x00000000).position(EnumEllipsisPosition.MIDDLE)
-                    .paddingLeft(finalCalculatedPaddingLeft).paddingRight(finalCalculatedPaddingRight)
-                    .paddingTop(finalCalculatedPaddingTop).paddingBottom(finalCalculatedPaddingBottom);
-            if (args.wrap() && finalMaxWidthForText > 0) clone.maxWidth(finalMaxWidthForText);
+                    .paddingLeft(data.paddingLeft).paddingRight(data.paddingRight)
+                    .paddingTop(data.paddingTop).paddingBottom(data.paddingBottom);
+            if (args.wrap() && data.maxWidthForText > 0) clone.maxWidth(data.maxWidthForText);
             else if (args.maxWidth() > 0) clone.maxWidth(args.maxWidth());
-            LabelWidget.drawLimitedText(clone);
+            // 文本不参与缩放，只裁掉仍在过渡边界之外的部分。
+            AbstractGuiUtils.pushScissor(drawX, drawY, drawWidth, drawHeight);
+            try {
+                LabelWidget.drawLimitedText(clone);
+            } finally {
+                AbstractGuiUtils.popScissor();
+            }
         });
+    }
+
+    private static final class PopupRenderData {
+        private final String contentKey;
+        private final FontDrawArgs args;
+        private final BaniraColorConfig theme;
+        private final boolean useThemeColor;
+        private final TextureUtils.NinePatchInfo ninePatchInfo;
+        private final float textureScale;
+        private final int paddingLeft;
+        private final int paddingRight;
+        private final int paddingTop;
+        private final int paddingBottom;
+        private final int maxWidthForText;
+        private final TooltipBounds bounds;
+
+        private PopupRenderData(String contentKey, FontDrawArgs args, BaniraColorConfig theme,
+                                boolean useThemeColor, TextureUtils.NinePatchInfo ninePatchInfo,
+                                float textureScale, int paddingLeft, int paddingRight,
+                                int paddingTop, int paddingBottom, int maxWidthForText,
+                                TooltipBounds bounds) {
+            this.contentKey = contentKey;
+            this.args = args;
+            this.theme = theme;
+            this.useThemeColor = useThemeColor;
+            this.ninePatchInfo = ninePatchInfo;
+            this.textureScale = textureScale;
+            this.paddingLeft = paddingLeft;
+            this.paddingRight = paddingRight;
+            this.paddingTop = paddingTop;
+            this.paddingBottom = paddingBottom;
+            this.maxWidthForText = maxWidthForText;
+            this.bounds = bounds;
+        }
     }
 
     public TooltipWidget text(String text) {

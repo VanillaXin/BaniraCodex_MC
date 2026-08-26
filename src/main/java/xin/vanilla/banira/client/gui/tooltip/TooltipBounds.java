@@ -34,12 +34,14 @@ public final class TooltipBounds {
         return new TooltipBounds(x + width / 2.0D, y + height / 2.0D, 0.0D, 0.0D);
     }
 
-    /** 将边界收缩到指定的 GUI 坐标点。 */
-    public TooltipBounds collapseTo(double targetX, double targetY) {
-        if (Double.isNaN(targetX) || Double.isNaN(targetY)) {
+    /** 保持完整宽度，并向最接近鼠标的水平边缘收缩。 */
+    public TooltipBounds collapseToVerticalEdge(double pointerY) {
+        if (Double.isNaN(pointerY)) {
             return collapseToCenter();
         }
-        return new TooltipBounds(targetX, targetY, 0.0D, 0.0D);
+        double centerY = y + height / 2.0D;
+        double edgeY = pointerY <= centerY ? y : y + height;
+        return new TooltipBounds(x, edgeY, width, 0.0D);
     }
 
     public double x() {

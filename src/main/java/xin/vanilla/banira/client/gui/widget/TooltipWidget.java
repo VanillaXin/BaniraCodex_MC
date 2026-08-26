@@ -246,9 +246,21 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
     /** 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。 */
     public static void flushPopupFrame(PoseStack stack) {
+        flushPopupFrame(stack, true);
+    }
+
+    /**
+     * 刷新晚于默认屏幕后置事件提交的 Tooltip；本轮没有提交时不推进消失动画。
+     */
+    public static void flushSubmittedPopupFrame(PoseStack stack) {
+        flushPopupFrame(stack, false);
+    }
+
+    private static void flushPopupFrame(PoseStack stack, boolean resolveMissing) {
         collectingPopupRequests = false;
         long now = System.nanoTime();
         if (!POPUP_REQUESTS.hasWinner()) {
+            if (!resolveMissing) return;
             TooltipTransitionFrame<String> frame = POPUP_TRANSITION.resolveMissing(popupMouseX, popupMouseY, now);
             if (frame == null) {
                 POPUP_CONTENT.clear();

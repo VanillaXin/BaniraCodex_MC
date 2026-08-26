@@ -135,7 +135,7 @@ public final class BaniraClientForgeEventHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPost(ScreenEvent.DrawScreenEvent.Post event) {
         BaniraClientEventHub.Client.fireDrawScreenPostNative(
                 event.getPoseStack(),

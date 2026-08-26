@@ -256,6 +256,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         flushPopupFrame(stack, false);
     }
 
+    /** 高版本渲染回调可直接提交 GuiGraphics，无需调用方拆取矩阵栈。 */
+    public static void flushSubmittedPopupFrame(GuiGraphics graphics) {
+        flushSubmittedPopupFrame(graphics.pose());
+    }
+
     private static void flushPopupFrame(PoseStack stack, boolean resolveMissing) {
         collectingPopupRequests = false;
         long now = System.nanoTime();

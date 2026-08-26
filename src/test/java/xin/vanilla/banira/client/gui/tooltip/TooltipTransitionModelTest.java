@@ -12,15 +12,20 @@ public class TooltipTransitionModelTest {
     private static final long MS = 1_000_000L;
 
     @Test
-    public void firstTooltipAppearsAtItsTargetBounds() {
+    public void firstTooltipExpandsFromPointerPosition() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS, 0.35D);
         TooltipBounds target = new TooltipBounds(20, 30, 80, 24);
 
-        TooltipTransitionFrame<String> frame = model.resolve("a", target, 100 * MS);
+        TooltipTransitionFrame<String> start = model.resolve("a", target, 12, 18, 100 * MS);
+        TooltipTransitionFrame<String> middle = model.resolve("a", target, 12, 18, 170 * MS);
 
-        assertEquals(target, frame.bounds());
-        assertEquals("a", frame.contentKey());
-        assertEquals(1.0D, frame.progress(), 0.0001D);
+        assertEquals(new TooltipBounds(12, 18, 0, 0), start.bounds());
+        assertEquals("a", start.contentKey());
+        assertEquals(0.0D, start.progress(), 0.0001D);
+        assertTrue(middle.bounds().x() > 12 && middle.bounds().x() < target.x());
+        assertTrue(middle.bounds().y() > 18 && middle.bounds().y() < target.y());
+        assertTrue(middle.bounds().width() > 0 && middle.bounds().width() < target.width());
+        assertTrue(middle.bounds().height() > 0 && middle.bounds().height() < target.height());
     }
 
     @Test
@@ -127,9 +132,9 @@ public class TooltipTransitionModelTest {
 
         assertNull(model.resolveMissing(12, 10, 211 * MS));
         TooltipTransitionFrame<String> fresh = model.resolve("b", b, 12, 10, 220 * MS);
-        assertEquals(b, fresh.bounds());
+        assertEquals(new TooltipBounds(12, 10, 0, 0), fresh.bounds());
         assertEquals("b", fresh.contentKey());
-        assertEquals(1.0D, fresh.progress(), 0.0001D);
+        assertEquals(0.0D, fresh.progress(), 0.0001D);
     }
 
     @Test
@@ -142,8 +147,8 @@ public class TooltipTransitionModelTest {
 
         assertNull(model.resolveMissing(70, 10, 40 * MS));
         TooltipTransitionFrame<String> fresh = model.resolve("b", b, 70, 10, 50 * MS);
-        assertEquals(b, fresh.bounds());
-        assertEquals(1.0D, fresh.progress(), 0.0001D);
+        assertEquals(new TooltipBounds(70, 10, 0, 0), fresh.bounds());
+        assertEquals(0.0D, fresh.progress(), 0.0001D);
     }
 
     @Test
@@ -159,22 +164,23 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
-    public void missingTooltipShrinksSmoothlyAroundItsCenter() {
+    public void missingTooltipShrinksSmoothlyTowardPointerPosition() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
                 100 * MS, 200 * MS, 56.0D, 0.35D);
         TooltipBounds original = new TooltipBounds(20, 30, 100, 40);
         model.resolve("a", original, 10, 10, 0L);
+        model.resolve("a", original, 10, 10, 100 * MS);
 
-        TooltipTransitionFrame<String> start = model.resolveMissing(12, 10, 10 * MS);
-        TooltipTransitionFrame<String> middle = model.resolveMissing(12, 10, 60 * MS);
+        TooltipTransitionFrame<String> start = model.resolveMissing(12, 14, 110 * MS);
+        TooltipTransitionFrame<String> middle = model.resolveMissing(12, 14, 160 * MS);
 
         assertEquals(original, start.bounds());
         assertTrue(middle.bounds().width() > 0 && middle.bounds().width() < original.width());
         assertTrue(middle.bounds().height() > 0 && middle.bounds().height() < original.height());
-        assertEquals(original.x() + original.width() / 2.0D,
-                middle.bounds().x() + middle.bounds().width() / 2.0D, 0.0001D);
-        assertEquals(original.y() + original.height() / 2.0D,
-                middle.bounds().y() + middle.bounds().height() / 2.0D, 0.0001D);
+        assertTrue(middle.bounds().x() > 12 && middle.bounds().x() < original.x());
+        assertTrue(middle.bounds().y() > 14 && middle.bounds().y() < original.y());
+        TooltipTransitionFrame<String> end = model.resolveMissing(12, 14, 210 * MS);
+        assertEquals(new TooltipBounds(12, 14, 0, 0), end.bounds());
     }
 
     @Test

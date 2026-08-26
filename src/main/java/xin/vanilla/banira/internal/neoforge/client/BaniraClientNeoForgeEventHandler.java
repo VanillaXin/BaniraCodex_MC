@@ -92,7 +92,7 @@ public final class BaniraClientNeoForgeEventHandler {
         );
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPost(ScreenEvent.Render.Post event) {
         BaniraClientEventHub.Client.fireDrawScreenPostNative(
                 event.getGuiGraphics(),

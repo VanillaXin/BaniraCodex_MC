@@ -44,7 +44,7 @@ public final class TooltipTransitionModel<K> {
         boolean continuityExpired = continuityExpired(nowNanos) || pointerMovedTooFar(pointerX, pointerY);
         if (!initialized || continuityExpired) {
             initialize(contentKey, bounds, pointerX, pointerY, nowNanos);
-            return frame(bounds, contentKey, 1.0D);
+            return currentFrame(nowNanos);
         }
         missingSince = Long.MIN_VALUE;
         collapsingMissing = false;
@@ -65,7 +65,7 @@ public final class TooltipTransitionModel<K> {
         return currentFrame(nowNanos);
     }
 
-    /** 空白间隙内继续返回上一 Tooltip；超时或鼠标移动过远时结束连续状态。 */
+    /** 离开 Tooltip 区域后向鼠标位置收缩；超时或鼠标移动过远时结束连续状态。 */
     public TooltipTransitionFrame<K> resolveMissing(double pointerX, double pointerY, long nowNanos) {
         if (!initialized) return null;
         if (missingSince == Long.MIN_VALUE) missingSince = nowNanos;
@@ -76,7 +76,7 @@ public final class TooltipTransitionModel<K> {
         if (!collapsingMissing) {
             TooltipTransitionFrame<K> current = currentFrame(nowNanos);
             startBounds = current.bounds();
-            targetBounds = current.bounds().collapseToCenter();
+            targetBounds = current.bounds().collapseTo(pointerX, pointerY);
             previousContentKey = current.contentKey();
             targetContentKey = current.contentKey();
             transitionStartedAt = nowNanos;
@@ -107,11 +107,15 @@ public final class TooltipTransitionModel<K> {
 
     private void initialize(K contentKey, TooltipBounds bounds,
                             double pointerX, double pointerY, long nowNanos) {
-        startBounds = bounds;
+        startBounds = pointerAvailable(pointerX, pointerY)
+                ? bounds.collapseTo(pointerX, pointerY)
+                : bounds;
         targetBounds = bounds;
         previousContentKey = contentKey;
         targetContentKey = contentKey;
-        transitionStartedAt = nowNanos - durationNanos;
+        transitionStartedAt = pointerAvailable(pointerX, pointerY)
+                ? nowNanos
+                : nowNanos - durationNanos;
         missingSince = Long.MIN_VALUE;
         initialized = true;
         collapsingMissing = false;
@@ -131,10 +135,14 @@ public final class TooltipTransitionModel<K> {
     }
 
     private void rememberPointer(double pointerX, double pointerY) {
-        if (!Double.isNaN(pointerX) && !Double.isNaN(pointerY)) {
+        if (pointerAvailable(pointerX, pointerY)) {
             lastPointerX = pointerX;
             lastPointerY = pointerY;
         }
+    }
+
+    private boolean pointerAvailable(double pointerX, double pointerY) {
+        return !Double.isNaN(pointerX) && !Double.isNaN(pointerY);
     }
 
     private void updateMovingTarget(TooltipBounds bounds, TooltipTransitionFrame<K> current, long nowNanos) {

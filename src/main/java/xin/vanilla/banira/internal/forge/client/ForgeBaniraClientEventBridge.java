@@ -117,7 +117,7 @@ public final class ForgeBaniraClientEventBridge {
     }
 
     @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
         BaniraClientEventHub.Client.fireDrawScreenPostNative(
                 event.getMatrixStack(),

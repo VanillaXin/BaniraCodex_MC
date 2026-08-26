@@ -19,6 +19,7 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.tooltip.TooltipBounds;
+import xin.vanilla.banira.client.gui.tooltip.TooltipPlacement;
 import xin.vanilla.banira.client.gui.tooltip.TooltipRequestCollector;
 import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionFrame;
 import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionModel;
@@ -464,22 +465,12 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            adjustedX = args.x() - msgWidth / 2.0;
-            adjustedY = args.y() - msgHeight - 5;
-
-            boolean hasTopSpace = adjustedY >= args.marginTop();
-            boolean hasLeftSpace = adjustedX >= args.marginLeft();
-            boolean hasRightSpace = adjustedX + msgWidth <= screenWidth - args.marginRight();
-
-            if (!hasTopSpace) {
-                adjustedY = args.y() + 1 + 5;
-            } else {
-                if (!hasLeftSpace) adjustedX = args.marginLeft();
-                else if (!hasRightSpace) adjustedX = screenWidth - msgWidth - args.marginRight();
-            }
-
-            adjustedX = Math.max(args.marginLeft(), Math.min(adjustedX, screenWidth - msgWidth - args.marginRight()));
-            adjustedY = Math.max(args.marginTop(), Math.min(adjustedY, screenHeight - msgHeight - args.marginBottom()));
+            TooltipBounds placement = TooltipPlacement.place(
+                    args.x(), args.y(), msgWidth, msgHeight,
+                    screenWidth, screenHeight,
+                    args.marginLeft(), args.marginRight(), args.marginTop(), args.marginBottom());
+            adjustedX = placement.x();
+            adjustedY = placement.y();
 
             if (args.wrap()) {
                 int actualAvailableWidth = screenWidth - (int) adjustedX - args.marginRight();

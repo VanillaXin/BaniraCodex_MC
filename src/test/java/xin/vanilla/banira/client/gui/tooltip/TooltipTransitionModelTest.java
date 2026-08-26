@@ -12,20 +12,35 @@ public class TooltipTransitionModelTest {
     private static final long MS = 1_000_000L;
 
     @Test
-    public void firstTooltipExpandsFromPointerPosition() {
+    public void firstTooltipAbovePointerExpandsFromItsBottomEdge() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS, 0.35D);
         TooltipBounds target = new TooltipBounds(20, 30, 80, 24);
 
-        TooltipTransitionFrame<String> start = model.resolve("a", target, 12, 18, 100 * MS);
-        TooltipTransitionFrame<String> middle = model.resolve("a", target, 12, 18, 170 * MS);
+        TooltipTransitionFrame<String> start = model.resolve("a", target, 60, 70, 100 * MS);
+        TooltipTransitionFrame<String> middle = model.resolve("a", target, 60, 70, 170 * MS);
 
-        assertEquals(new TooltipBounds(12, 18, 0, 0), start.bounds());
+        assertEquals(new TooltipBounds(20, 54, 80, 0), start.bounds());
         assertEquals("a", start.contentKey());
         assertEquals(0.0D, start.progress(), 0.0001D);
-        assertTrue(middle.bounds().x() > 12 && middle.bounds().x() < target.x());
-        assertTrue(middle.bounds().y() > 18 && middle.bounds().y() < target.y());
-        assertTrue(middle.bounds().width() > 0 && middle.bounds().width() < target.width());
+        assertEquals(target.x(), middle.bounds().x(), 0.0001D);
+        assertEquals(target.width(), middle.bounds().width(), 0.0001D);
+        assertTrue(middle.bounds().y() > target.y() && middle.bounds().y() < 54);
         assertTrue(middle.bounds().height() > 0 && middle.bounds().height() < target.height());
+    }
+
+    @Test
+    public void firstTooltipBelowPointerExpandsFromItsTopEdge() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipBounds target = new TooltipBounds(20, 30, 80, 24);
+
+        TooltipTransitionFrame<String> start = model.resolve("below", target, 60, 18, 0L);
+        TooltipBounds middle = model.resolve("below", target, 60, 18, 50 * MS).bounds();
+
+        assertEquals(new TooltipBounds(20, 30, 80, 0), start.bounds());
+        assertEquals(target.x(), middle.x(), 0.0001D);
+        assertEquals(target.y(), middle.y(), 0.0001D);
+        assertEquals(target.width(), middle.width(), 0.0001D);
+        assertTrue(middle.height() > 0 && middle.height() < target.height());
     }
 
     @Test
@@ -132,7 +147,7 @@ public class TooltipTransitionModelTest {
 
         assertNull(model.resolveMissing(12, 10, 211 * MS));
         TooltipTransitionFrame<String> fresh = model.resolve("b", b, 12, 10, 220 * MS);
-        assertEquals(new TooltipBounds(12, 10, 0, 0), fresh.bounds());
+        assertEquals(new TooltipBounds(100, 50, 100, 0), fresh.bounds());
         assertEquals("b", fresh.contentKey());
         assertEquals(0.0D, fresh.progress(), 0.0001D);
     }
@@ -147,7 +162,7 @@ public class TooltipTransitionModelTest {
 
         assertNull(model.resolveMissing(70, 10, 40 * MS));
         TooltipTransitionFrame<String> fresh = model.resolve("b", b, 70, 10, 50 * MS);
-        assertEquals(new TooltipBounds(70, 10, 0, 0), fresh.bounds());
+        assertEquals(new TooltipBounds(100, 50, 100, 0), fresh.bounds());
         assertEquals(0.0D, fresh.progress(), 0.0001D);
     }
 
@@ -164,23 +179,23 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
-    public void missingTooltipShrinksSmoothlyTowardPointerPosition() {
+    public void missingTooltipShrinksTowardThePointerFacingVerticalEdge() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
                 100 * MS, 200 * MS, 56.0D, 0.35D);
         TooltipBounds original = new TooltipBounds(20, 30, 100, 40);
-        model.resolve("a", original, 10, 10, 0L);
-        model.resolve("a", original, 10, 10, 100 * MS);
+        model.resolve("a", original, 70, 80, 0L);
+        model.resolve("a", original, 70, 80, 100 * MS);
 
-        TooltipTransitionFrame<String> start = model.resolveMissing(12, 14, 110 * MS);
-        TooltipTransitionFrame<String> middle = model.resolveMissing(12, 14, 160 * MS);
+        TooltipTransitionFrame<String> start = model.resolveMissing(72, 78, 110 * MS);
+        TooltipTransitionFrame<String> middle = model.resolveMissing(72, 78, 160 * MS);
 
         assertEquals(original, start.bounds());
-        assertTrue(middle.bounds().width() > 0 && middle.bounds().width() < original.width());
+        assertEquals(original.x(), middle.bounds().x(), 0.0001D);
+        assertEquals(original.width(), middle.bounds().width(), 0.0001D);
         assertTrue(middle.bounds().height() > 0 && middle.bounds().height() < original.height());
-        assertTrue(middle.bounds().x() > 12 && middle.bounds().x() < original.x());
-        assertTrue(middle.bounds().y() > 14 && middle.bounds().y() < original.y());
-        TooltipTransitionFrame<String> end = model.resolveMissing(12, 14, 210 * MS);
-        assertEquals(new TooltipBounds(12, 14, 0, 0), end.bounds());
+        assertTrue(middle.bounds().y() > original.y() && middle.bounds().y() < 70);
+        TooltipTransitionFrame<String> end = model.resolveMissing(72, 78, 210 * MS);
+        assertEquals(new TooltipBounds(20, 70, 100, 0), end.bounds());
     }
 
     @Test

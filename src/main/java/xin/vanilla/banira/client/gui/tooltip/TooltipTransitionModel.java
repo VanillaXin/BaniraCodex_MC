@@ -65,7 +65,7 @@ public final class TooltipTransitionModel<K> {
         return currentFrame(nowNanos);
     }
 
-    /** 离开 Tooltip 区域后向鼠标位置收缩；超时或鼠标移动过远时结束连续状态。 */
+    /** 离开 Tooltip 区域后向靠近鼠标的水平边缘收缩。 */
     public TooltipTransitionFrame<K> resolveMissing(double pointerX, double pointerY, long nowNanos) {
         if (!initialized) return null;
         if (missingSince == Long.MIN_VALUE) missingSince = nowNanos;
@@ -76,7 +76,7 @@ public final class TooltipTransitionModel<K> {
         if (!collapsingMissing) {
             TooltipTransitionFrame<K> current = currentFrame(nowNanos);
             startBounds = current.bounds();
-            targetBounds = current.bounds().collapseTo(pointerX, pointerY);
+            targetBounds = current.bounds().collapseToVerticalEdge(pointerY);
             previousContentKey = current.contentKey();
             targetContentKey = current.contentKey();
             transitionStartedAt = nowNanos;
@@ -108,7 +108,7 @@ public final class TooltipTransitionModel<K> {
     private void initialize(K contentKey, TooltipBounds bounds,
                             double pointerX, double pointerY, long nowNanos) {
         startBounds = pointerAvailable(pointerX, pointerY)
-                ? bounds.collapseTo(pointerX, pointerY)
+                ? bounds.collapseToVerticalEdge(pointerY)
                 : bounds;
         targetBounds = bounds;
         previousContentKey = contentKey;

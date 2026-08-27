@@ -16,6 +16,7 @@ public final class TooltipTransitionModel<K> {
     private K previousContentKey;
     private K targetContentKey;
     private long transitionStartedAt;
+    private long contentTransitionStartedAt;
     private long missingSince = Long.MIN_VALUE;
     private double lastPointerX = Double.NaN;
     private double lastPointerY = Double.NaN;
@@ -56,6 +57,7 @@ public final class TooltipTransitionModel<K> {
             previousContentKey = current.contentKey();
             targetContentKey = contentKey;
             transitionStartedAt = nowNanos;
+            contentTransitionStartedAt = nowNanos;
             rememberPointer(pointerX, pointerY);
             return frame(startBounds, previousContentKey, 0.0D);
         }
@@ -99,6 +101,7 @@ public final class TooltipTransitionModel<K> {
         previousContentKey = null;
         targetContentKey = null;
         transitionStartedAt = 0L;
+        contentTransitionStartedAt = 0L;
         missingSince = Long.MIN_VALUE;
         lastPointerX = Double.NaN;
         lastPointerY = Double.NaN;
@@ -116,6 +119,7 @@ public final class TooltipTransitionModel<K> {
         transitionStartedAt = pointerAvailable(pointerX, pointerY)
                 ? nowNanos
                 : nowNanos - durationNanos;
+        contentTransitionStartedAt = transitionStartedAt;
         missingSince = Long.MIN_VALUE;
         initialized = true;
         collapsingMissing = false;
@@ -154,7 +158,6 @@ public final class TooltipTransitionModel<K> {
             startBounds = current.bounds();
             targetBounds = bounds;
             transitionStartedAt = nowNanos;
-            previousContentKey = current.contentKey();
         } else if (dx != 0.0D || dy != 0.0D) {
             startBounds = startBounds.translate(dx, dy);
             targetBounds = bounds;
@@ -164,11 +167,15 @@ public final class TooltipTransitionModel<K> {
     private TooltipTransitionFrame<K> currentFrame(long nowNanos) {
         double linear = Math.max(0.0D, Math.min(1.0D,
                 (nowNanos - transitionStartedAt) / (double) durationNanos));
+        double contentLinear = Math.max(0.0D, Math.min(1.0D,
+                (nowNanos - contentTransitionStartedAt) / (double) durationNanos));
         double eased = 1.0D - Math.pow(1.0D - linear, 3.0D);
         TooltipBounds currentBounds = startBounds.interpolate(targetBounds, eased);
-        K visibleContent = linear < contentSwitchProgress ? previousContentKey : targetContentKey;
+        K visibleContent = contentLinear < contentSwitchProgress ? previousContentKey : targetContentKey;
         if (linear >= 1.0D) {
             startBounds = targetBounds;
+        }
+        if (contentLinear >= 1.0D) {
             previousContentKey = targetContentKey;
         }
         return frame(currentBounds, visibleContent, linear);

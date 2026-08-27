@@ -134,7 +134,7 @@ public final class NotificationManager {
         if (target == null) {
             return false;
         }
-        target.absorbDuplicateFrom(incoming);
+        target.absorbDuplicateFrom(incoming, nowMs);
         target.coalesceLastActivityMs(nowMs);
         return true;
     }

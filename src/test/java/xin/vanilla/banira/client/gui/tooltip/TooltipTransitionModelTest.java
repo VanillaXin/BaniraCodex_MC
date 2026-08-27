@@ -11,6 +11,26 @@ public class TooltipTransitionModelTest {
 
     private static final long MS = 1_000_000L;
 
+    private static final class Payload {
+        private final String key;
+        private final String text;
+
+        private Payload(String key, String text) {
+            this.key = key;
+            this.text = text;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof Payload && key.equals(((Payload) obj).key);
+        }
+
+        @Override
+        public int hashCode() {
+            return key.hashCode();
+        }
+    }
+
     @Test
     public void firstTooltipAbovePointerExpandsFromItsBottomEdge() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS, 0.35D);
@@ -79,6 +99,37 @@ public class TooltipTransitionModelTest {
 
         assertEquals("a", model.resolve("b", new TooltipBounds(0, 0, 82, 24), 30 * MS).contentKey());
         assertEquals("b", model.resolve("b", new TooltipBounds(0, 0, 84, 24), 50 * MS).contentKey());
+    }
+
+    @Test
+    public void visibleContentUsesTheLatestPayloadForItsLogicalKey() {
+        TooltipTransitionModel<Payload> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
+        TooltipBounds b = new TooltipBounds(0, 0, 80, 24);
+        Payload first = new Payload("a", "first");
+        Payload staleTarget = new Payload("b", "stale");
+        Payload latestTarget = new Payload("b", "latest");
+
+        model.resolve(first, a, 0L);
+        model.resolve(staleTarget, b, 110 * MS);
+        TooltipTransitionFrame<Payload> frame = model.resolve(latestTarget, b, 150 * MS);
+
+        assertEquals("latest", frame.contentKey().text);
+    }
+
+    @Test
+    public void customAnchorDrivesEntryAndExitWithoutCollapsingToZero() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS, 0.35D);
+        TooltipBounds target = new TooltipBounds(40, 20, 100, 30);
+        TooltipBounds anchor = new TooltipBounds(81, 34, 18, 16);
+
+        assertEquals(anchor, model.resolve("a", target, anchor, 90, 55, 0L).bounds());
+        model.resolve("a", target, anchor, 90, 55, 100 * MS);
+        assertEquals(target, model.resolveMissing(90, 55, 100 * MS).bounds());
+        TooltipBounds shrinking = model.resolveMissing(90, 55, 150 * MS).bounds();
+
+        assertTrue(shrinking.width() > anchor.width() && shrinking.width() < target.width());
+        assertTrue(shrinking.height() > anchor.height() && shrinking.height() < target.height());
     }
 
     @Test

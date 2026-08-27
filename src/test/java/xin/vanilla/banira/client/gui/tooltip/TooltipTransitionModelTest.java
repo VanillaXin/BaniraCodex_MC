@@ -71,6 +71,17 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
+    public void movingTargetSizeDoesNotKeepOldContentVisible() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
+        model.resolve("a", a, 0L);
+        model.resolve("b", new TooltipBounds(0, 0, 80, 24), 10 * MS);
+
+        assertEquals("a", model.resolve("b", new TooltipBounds(0, 0, 82, 24), 30 * MS).contentKey());
+        assertEquals("b", model.resolve("b", new TooltipBounds(0, 0, 84, 24), 50 * MS).contentKey());
+    }
+
+    @Test
     public void retargetingStartsFromCurrentAnimatedBounds() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);

@@ -45,4 +45,33 @@ public class TooltipPlacementTest {
 
         assertEquals(new TooltipBounds(4, 4, 232, 172), bounds);
     }
+
+    @Test
+    public void keepsTooltipInsideWhenPointerLeavesThroughTop() {
+        TooltipBounds bounds = TooltipPlacement.place(
+                100, -12, 40, 20,
+                240, 180, 4, 4, 4, 4);
+
+        assertEquals(new TooltipBounds(80, 4, 40, 20), bounds);
+    }
+
+    @Test
+    public void keepsTooltipInsideWhenPointerLeavesThroughBottom() {
+        TooltipBounds bounds = TooltipPlacement.place(
+                100, 196, 40, 20,
+                240, 180, 4, 4, 4, 4);
+
+        assertEquals(new TooltipBounds(80, 156, 40, 20), bounds);
+    }
+
+    @Test
+    public void createsOneCharacterAnchorOnTheSameSideAsTheTooltip() {
+        TooltipBounds above = new TooltipBounds(60, 35, 80, 30);
+        TooltipBounds below = new TooltipBounds(60, 106, 80, 30);
+
+        assertEquals(new TooltipBounds(91, 49, 18, 16),
+                TooltipPlacement.anchor(above, 100, 70, 18, 16, 240, 180, 4, 4, 4, 4));
+        assertEquals(new TooltipBounds(91, 106, 18, 16),
+                TooltipPlacement.anchor(below, 100, 100, 18, 16, 240, 180, 4, 4, 4, 4));
+    }
 }

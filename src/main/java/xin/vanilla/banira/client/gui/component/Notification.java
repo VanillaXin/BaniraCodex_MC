@@ -44,8 +44,7 @@ public class Notification extends NotificationData {
     private static final float CLOSE_BTN = 11f;
     private static final float CLOSE_GAP = 4f;
 
-    // 实际开始渲染时间
-    private long startTime = -1;
+    private final transient NotificationAnimationState animationState = new NotificationAnimationState();
     // 动画渲染时的临时状态
     private transient int renderAlpha = -1;
     private transient double renderScale = 1.0;
@@ -192,7 +191,7 @@ public class Notification extends NotificationData {
     /**
      * 将另一条相同键的通知合并进本条：增加次数、刷新文案与停留时间。
      */
-    public void absorbDuplicateFrom(Notification incoming) {
+    public void absorbDuplicateFrom(Notification incoming, long nowMs) {
         this.coalesceCount(this.coalesceCount() + 1);
         Component rebuilt = this.mergeBaseComponent().clone();
         if (this.coalesceCount() > 1) {
@@ -205,9 +204,9 @@ public class Notification extends NotificationData {
             this.component(rebuilt);
             this.updateRichLayout();
         }
-        this.startTime(-1);
         this.scheduledTime(Math.min(this.scheduledTime(), incoming.scheduledTime()));
         this.durationTime(Math.max(this.durationTime(), incoming.durationTime()));
+        this.animationState.merge(nowMs, this.durationTime(), this.animationTime());
     }
 
     private void applyClientNotificationStyle(EnumNotificationStyle style) {
@@ -300,8 +299,10 @@ public class Notification extends NotificationData {
     public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo,
                          long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
-        if (this.startTime < 0) this.startTime = currentTime;
         if (currentTime < this.scheduledTime()) return;
+        if (!this.animationState.started()) {
+            this.animationState.start(currentTime, this.animationTime(), this.durationTime());
+        }
 
         double progress = this.calculateProgress(currentTime);
         if (progress < 0) {
@@ -310,6 +311,7 @@ public class Notification extends NotificationData {
         }
 
         this.applyAnimationEffect(coordinate, progress);
+        this.applyMergeAnimation(currentTime);
         this.handlePositionTransition(coordinate, currentTime);
 
         if (!this.isVisible(coordinate, screenInfo)) {
@@ -321,17 +323,17 @@ public class Notification extends NotificationData {
     }
 
     private double calculateProgress(long currentTime) {
-        long elapsed = currentTime - this.startTime();
-        long totalTime = this.animationTime() * 2 + this.durationTime();
+        return this.animationState.visibility(currentTime, this.animationTime());
+    }
 
-        if (elapsed > totalTime) return -1;
-
-        if (elapsed < this.animationTime()) {
-            return (double) elapsed / this.animationTime();
-        } else if (elapsed < this.animationTime() + this.durationTime()) {
-            return 1.0;
-        } else {
-            return 1.0 - (double) (elapsed - this.animationTime() - this.durationTime()) / this.animationTime();
+    private void applyMergeAnimation(long currentTime) {
+        double emphasis = this.animationState.mergeEmphasis(currentTime);
+        if (emphasis <= 0.0D) {
+            return;
+        }
+        this.renderScale *= 1.0D + emphasis * 0.018D;
+        if (this.renderScaleCenter == null) {
+            this.renderScaleCenter = this.position();
         }
     }
 

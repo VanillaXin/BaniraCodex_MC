@@ -239,6 +239,19 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         collectingPopupRequests = true;
     }
 
+    /**
+     * 仅在当前没有收集者时开启后置 Tooltip 帧。
+     *
+     * @return 是否由调用方取得帧所有权；仅所有者需要调用 {@code flushSubmittedPopupFrame}
+     */
+    public static boolean beginPopupFrameIfIdle(Object screenToken, double mouseX, double mouseY) {
+        if (collectingPopupRequests) {
+            return false;
+        }
+        beginPopupFrame(screenToken, mouseX, mouseY);
+        return true;
+    }
+
     /** 点击或切换界面时立即取消悬浮提示连续状态。 */
     public static void cancelPopupTransition() {
         POPUP_TRANSITION.reset();

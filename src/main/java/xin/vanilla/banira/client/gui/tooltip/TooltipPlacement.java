@@ -26,9 +26,29 @@ public final class TooltipPlacement {
         } else if (belowY + height <= screenHeight - marginBottom) {
             y = belowY;
         } else {
-            y = clamp(aboveY, marginTop, maxY);
+            y = aboveY;
         }
-        return new TooltipBounds(x, y, width, height);
+        return new TooltipBounds(x, clamp(y, marginTop, maxY), width, height);
+    }
+
+    /** 计算与完整气泡位于鼠标同侧的一字气泡锚点。 */
+    public static TooltipBounds anchor(TooltipBounds target, double pointerX, double pointerY,
+                                       double width, double height,
+                                       double screenWidth, double screenHeight,
+                                       double marginLeft, double marginRight,
+                                       double marginTop, double marginBottom) {
+        double availableWidth = Math.max(0.0D, screenWidth - marginLeft - marginRight);
+        double availableHeight = Math.max(0.0D, screenHeight - marginTop - marginBottom);
+        double anchorWidth = Math.min(Math.max(1.0D, width), availableWidth);
+        double anchorHeight = Math.min(Math.max(1.0D, height), availableHeight);
+        double maxX = Math.max(marginLeft, screenWidth - marginRight - anchorWidth);
+        double maxY = Math.max(marginTop, screenHeight - marginBottom - anchorHeight);
+        double x = clamp(pointerX - anchorWidth / 2.0D, marginLeft, maxX);
+        boolean abovePointer = target.y() + target.height() <= pointerY;
+        double y = abovePointer
+                ? target.y() + target.height() - anchorHeight
+                : target.y();
+        return new TooltipBounds(x, clamp(y, marginTop, maxY), anchorWidth, anchorHeight);
     }
 
     private static double clamp(double value, double minimum, double maximum) {

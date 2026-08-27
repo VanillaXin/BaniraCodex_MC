@@ -34,9 +34,7 @@ import xin.vanilla.banira.common.util.ItemUtils;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 提示Widget。提供 drawPopupMessage 等静态绘制方法。
@@ -54,10 +52,9 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     private static final long TOOLTIP_CONTINUITY_NANOS = TOOLTIP_TRANSITION_NANOS;
     private static final double TOOLTIP_CONTINUITY_DISTANCE = 56.0D;
     private static final TooltipRequestCollector<PopupRenderData> POPUP_REQUESTS = new TooltipRequestCollector<>();
-    private static final TooltipTransitionModel<String> POPUP_TRANSITION =
+    private static final TooltipTransitionModel<PopupRenderData> POPUP_TRANSITION =
             new TooltipTransitionModel<>(TOOLTIP_TRANSITION_NANOS, TOOLTIP_CONTINUITY_NANOS,
                     TOOLTIP_CONTINUITY_DISTANCE, 0.35D);
-    private static final Map<String, PopupRenderData> POPUP_CONTENT = new LinkedHashMap<>();
     private static Object popupScreenToken;
     private static boolean collectingPopupRequests;
     private static double popupMouseX = Double.NaN;
@@ -254,7 +251,6 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /** 点击或切换界面时立即取消悬浮提示连续状态。 */
     public static void cancelPopupTransition() {
         POPUP_TRANSITION.reset();
-        POPUP_CONTENT.clear();
     }
 
     /** 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。 */
@@ -274,32 +270,23 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         long now = System.nanoTime();
         if (!POPUP_REQUESTS.hasWinner()) {
             if (!resolveMissing) return;
-            TooltipTransitionFrame<String> frame = POPUP_TRANSITION.resolveMissing(popupMouseX, popupMouseY, now);
+            TooltipTransitionFrame<PopupRenderData> frame = POPUP_TRANSITION.resolveMissing(popupMouseX, popupMouseY, now);
             if (frame == null) {
-                POPUP_CONTENT.clear();
                 return;
             }
-            renderTransitionFrame(stack, frame, null);
+            renderTransitionFrame(stack, frame);
             return;
         }
 
         PopupRenderData target = POPUP_REQUESTS.winner();
-        POPUP_CONTENT.put(target.contentKey, target);
-        TooltipTransitionFrame<String> frame = POPUP_TRANSITION.resolve(
-                target.contentKey, target.bounds, popupMouseX, popupMouseY, now);
-        renderTransitionFrame(stack, frame, target);
-
-        if (frame.progress() >= 1.0D) {
-            POPUP_CONTENT.clear();
-            POPUP_CONTENT.put(target.contentKey, target);
-        }
+        TooltipTransitionFrame<PopupRenderData> frame = POPUP_TRANSITION.resolve(
+                target, target.bounds, target.restingBounds, popupMouseX, popupMouseY, now);
+        renderTransitionFrame(stack, frame);
     }
 
-    private static void renderTransitionFrame(MatrixStack stack, TooltipTransitionFrame<String> frame,
-                                              @Nullable PopupRenderData fallback) {
+    private static void renderTransitionFrame(MatrixStack stack, TooltipTransitionFrame<PopupRenderData> frame) {
         if (frame.bounds().width() < 1.0D || frame.bounds().height() < 1.0D) return;
-        PopupRenderData visible = POPUP_CONTENT.get(frame.contentKey());
-        if (visible == null) visible = fallback;
+        PopupRenderData visible = frame.contentKey();
         if (visible == null) return;
 
         stack.pushPose();
@@ -495,6 +482,20 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
         String contentKey = args.text().content(false) + '\u0000'
                 + args.text().font().getClass().getName() + '\u0000' + args.fontSize();
+        TooltipBounds bounds = new TooltipBounds(adjustedX, adjustedY, msgWidth, msgHeight);
+        int anchorLineHeight = args.text().font().lineHeight;
+        float anchorScale = args.fontSize() > 0 ? args.fontSize() / anchorLineHeight : 1.0F;
+        int anchorWidth = Math.min(msgWidth, Math.max(1,
+                (int) Math.ceil(args.text().font().width("字") * anchorScale)
+                        + calculatedPaddingLeft + calculatedPaddingRight));
+        int anchorHeight = Math.min(msgHeight, Math.max(1,
+                (int) Math.ceil(args.fontSize() > 0 ? args.fontSize() : anchorLineHeight)
+                        + calculatedPaddingTop + calculatedPaddingBottom));
+        KeyValue<Integer, Integer> screenSize = AbstractGuiUtils.getScreenSize();
+        TooltipBounds restingBounds = TooltipPlacement.anchor(
+                bounds, args.x(), args.y(), anchorWidth, anchorHeight,
+                screenSize.key(), screenSize.val(),
+                args.marginLeft(), args.marginRight(), args.marginTop(), args.marginBottom());
         return new PopupRenderData(
                 contentKey,
                 args,
@@ -507,7 +508,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 calculatedPaddingTop,
                 calculatedPaddingBottom,
                 finalMaxWidth,
-                new TooltipBounds(adjustedX, adjustedY, msgWidth, msgHeight)
+                bounds,
+                restingBounds
         );
     }
 
@@ -586,12 +588,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         private final int paddingBottom;
         private final int maxWidthForText;
         private final TooltipBounds bounds;
+        private final TooltipBounds restingBounds;
 
         private PopupRenderData(String contentKey, FontDrawArgs args, BaniraColorConfig theme,
                                 boolean useThemeColor, TextureUtils.NinePatchInfo ninePatchInfo,
-                                float textureScale, int paddingLeft, int paddingRight,
-                                int paddingTop, int paddingBottom, int maxWidthForText,
-                                TooltipBounds bounds) {
+                                 float textureScale, int paddingLeft, int paddingRight,
+                                 int paddingTop, int paddingBottom, int maxWidthForText,
+                                 TooltipBounds bounds, TooltipBounds restingBounds) {
             this.contentKey = contentKey;
             this.args = args;
             this.theme = theme;
@@ -604,6 +607,18 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             this.paddingBottom = paddingBottom;
             this.maxWidthForText = maxWidthForText;
             this.bounds = bounds;
+            this.restingBounds = restingBounds;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof PopupRenderData
+                    && contentKey.equals(((PopupRenderData) obj).contentKey);
+        }
+
+        @Override
+        public int hashCode() {
+            return contentKey.hashCode();
         }
     }
 

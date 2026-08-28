@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
@@ -136,6 +137,15 @@ public class FontDrawArgs implements Cloneable {
     /** 富文本自身已有颜色时，不使用气泡主题色覆盖。 */
     private boolean preserveTextStyles = false;
 
+    /** Tooltip 默认文字色；透明时不执行最终颜色解析。 */
+    private int popupTextColorArgb;
+
+    /** Tooltip 背景色，用于保持显式颜色的可读性。 */
+    private int[] popupTextBackgroundArgb = new int[0];
+
+    /** 显式黑白中性色是否需要替换为当前 Tooltip 默认文字色。 */
+    private EnumTooltipTextColorPolicy popupTextColorPolicy = EnumTooltipTextColorPolicy.PRESERVE;
+
     private static final int POPUP_PADDING_TOP = 4, POPUP_PADDING_BOTTOM = 4, POPUP_PADDING_LEFT = 8, POPUP_PADDING_RIGHT = 8;
 
     private FontDrawArgs(Text text) {
@@ -146,6 +156,7 @@ public class FontDrawArgs implements Cloneable {
         try {
             FontDrawArgs cloned = (FontDrawArgs) super.clone();
             cloned.text = this.text.clone();
+            cloned.popupTextBackgroundArgb = this.popupTextBackgroundArgb.clone();
             return cloned;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();

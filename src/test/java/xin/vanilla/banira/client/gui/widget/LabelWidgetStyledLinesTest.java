@@ -9,9 +9,10 @@ import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Color;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,6 +49,22 @@ public class LabelWidgetStyledLinesTest {
         Component rendered = args.text().toComponent().toVanilla();
         assertNotNull(rendered.getStyle().getColor());
         assertEquals(0x55FFFF, rendered.getStyle().getColor().getValue());
+    }
+
+    @Test
+    public void popupThemeColorAppliesOnlyToUnstyledTooltipText() {
+        MutableComponent original = Component.empty()
+                .append(Component.literal("Plain"))
+                .append(Component.literal(" Rare").withStyle(ChatFormatting.AQUA));
+        Text text = new Text(BaniraComponent.get().object(original));
+        FontDrawArgs args = FontDrawArgs.ofPopo(text).preserveTextStyles(true);
+
+        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFF245A36));
+
+        List<Component> wrapped = LabelWidget.preserveStyledOutputLines(
+                args.text().toComponent().toVanilla(), Arrays.asList("Plain", "Rare"));
+        assertEquals(Arrays.asList(0x245A36), visibleColors(wrapped.get(0)));
+        assertEquals(Arrays.asList(0x55FFFF), visibleColors(wrapped.get(1)));
     }
 
     @Test
@@ -114,5 +131,16 @@ public class LabelWidgetStyledLinesTest {
         }, net.minecraft.network.chat.Style.EMPTY);
         assertNotNull(color[0]);
         return color[0];
+    }
+
+    private static List<Integer> visibleColors(Component component) {
+        List<Integer> colors = new ArrayList<>();
+        component.visit((style, segment) -> {
+            if (!segment.isEmpty()) {
+                colors.add(style.getColor() == null ? null : style.getColor().getValue());
+            }
+            return Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return colors;
     }
 }

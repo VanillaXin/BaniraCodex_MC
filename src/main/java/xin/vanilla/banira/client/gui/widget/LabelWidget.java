@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.tooltip.TooltipTextColorResolver;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -305,7 +306,6 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             } else {
                 lines.addAll(Arrays.asList(originalLines));
             }
-
             int actualMaxLine = args.maxLine();
             if (actualMaxLine <= 0 || actualMaxLine >= lines.size()) {
                 actualMaxLine = lines.size();
@@ -366,6 +366,11 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                             line, ellipsis, args.position());
                 } else {
                     renderedLine = textTemplate.text(line).toComponent().toVanilla(Translator.getClientLanguage());
+                }
+                if ((args.popupTextColorArgb() >>> 24) != 0) {
+                    renderedLine = TooltipTextColorResolver.resolve(renderedLine,
+                            args.popupTextColorArgb(), args.popupTextBackgroundArgb(),
+                            args.popupTextColorPolicy());
                 }
                 renderedLines[i] = renderedLine;
                 int width = font.width(renderedLine);

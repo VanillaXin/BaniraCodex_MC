@@ -369,7 +369,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             }
         }
 
-        boolean cacheable = text.toComponent().getChildren().isEmpty();
+        boolean cacheable = !args.preserveTextStyles() && text.toComponent().getChildren().isEmpty();
         TextLayoutCacheKey cacheKey = new TextLayoutCacheKey(font, content, scale, drawX, drawY, availableWidth,
                 args.maxLine(), args.wrap(), args.position(), args.paddingLeft(), args.paddingRight(),
                 args.paddingTop(), args.paddingBottom());
@@ -383,16 +383,13 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
 
         List<String> outputLines = collectOutputLines(args, font, content, availableWidth);
-        String[] originalLines = StringUtils.replaceLineBreak(content).split("\n");
-        List<net.minecraft.network.chat.Component> styledSourceLines = splitStyledLines(
-                text.toComponent().toVanilla(Translator.getClientLanguage()));
+        net.minecraft.network.chat.Component styledSource =
+                text.toComponent().toVanilla(Translator.getClientLanguage());
+        List<net.minecraft.network.chat.Component> styledOutputLines = args.preserveTextStyles()
+                ? preserveStyledOutputLines(styledSource, outputLines)
+                : java.util.Collections.emptyList();
         String ellipsis = "...";
         int ellipsisWidth = font.width(ellipsis);
-        boolean preserveStyledComponent = outputLines.size() == 1 && !cacheable;
-        boolean preserveStyledLines = !cacheable
-                && styledSourceLines.size() == originalLines.length
-                && outputLines.size() == originalLines.length
-                && outputLines.equals(Arrays.asList(originalLines));
         String[] processedLines = new String[outputLines.size()];
         net.minecraft.network.chat.Component[] renderedLines =
                 new net.minecraft.network.chat.Component[outputLines.size()];
@@ -403,11 +400,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             String line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, outputLines.get(i));
             processedLines[i] = line;
             net.minecraft.network.chat.Component renderedLine;
-            if (preserveStyledLines) {
-                renderedLine = styledLine(styledSourceLines.get(i), originalLines[i],
+            if (i < styledOutputLines.size()) {
+                renderedLine = styledLine(styledOutputLines.get(i), outputLines.get(i),
                         line, ellipsis, args.position());
-            } else if (preserveStyledComponent) {
-                renderedLine = styledLine(text, line, ellipsis, args.position());
             } else {
                 renderedLine = net.minecraft.network.chat.Component.literal(line);
             }
@@ -507,6 +502,47 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }, net.minecraft.network.chat.Style.EMPTY);
         lines.add(current[0]);
         return lines;
+    }
+
+    /**
+     * 将自动换行或最大行数处理后的纯文本行重新映射到原始富文本片段。
+     * 每一行独立映射，避免其中一行换行后整组 Tooltip 都退化为无样式文本。
+     */
+    static List<net.minecraft.network.chat.Component> preserveStyledOutputLines(
+            net.minecraft.network.chat.Component source, List<String> outputLines) {
+        List<net.minecraft.network.chat.Component> sourceLines = splitStyledLines(source);
+        List<net.minecraft.network.chat.Component> result = new ArrayList<>(outputLines.size());
+        int sourceLineIndex = 0;
+        int searchFrom = 0;
+
+        for (String outputLine : outputLines) {
+            net.minecraft.network.chat.Component mapped = null;
+            if (!"...".equals(outputLine)) {
+                for (int lineIndex = sourceLineIndex; lineIndex < sourceLines.size(); lineIndex++) {
+                    net.minecraft.network.chat.Component sourceLine = sourceLines.get(lineIndex);
+                    String sourceText = sourceLine.getString();
+                    int from = lineIndex == sourceLineIndex ? searchFrom : 0;
+                    int match = sourceText.indexOf(outputLine, Math.min(from, sourceText.length()));
+                    if (match < 0) continue;
+
+                    mapped = sliceStyledComponent(sourceLine, match, match + outputLine.length());
+                    sourceLineIndex = lineIndex;
+                    searchFrom = match + outputLine.length();
+                    if (searchFrom >= sourceText.length()) {
+                        sourceLineIndex++;
+                        searchFrom = 0;
+                    }
+                    break;
+                }
+            }
+            if (mapped == null) {
+                net.minecraft.network.chat.Style fallbackStyle = sourceLineIndex < sourceLines.size()
+                        ? sourceLines.get(sourceLineIndex).getStyle() : source.getStyle();
+                mapped = net.minecraft.network.chat.Component.literal(outputLine).withStyle(fallbackStyle);
+            }
+            result.add(mapped);
+        }
+        return result;
     }
 
     private static net.minecraft.network.chat.MutableComponent sliceStyledComponent(

@@ -224,6 +224,11 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
     /** 在屏幕开始绘制时记录当前鼠标位置并开启 Tooltip 请求收集。 */
     public static void beginPopupFrame(Object screenToken, double mouseX, double mouseY) {
+        POPUP_TRANSITION.discardSavedState();
+        beginPopupFrameInternal(screenToken, mouseX, mouseY);
+    }
+
+    private static void beginPopupFrameInternal(Object screenToken, double mouseX, double mouseY) {
         if (popupScreenToken != screenToken) {
             popupScreenToken = screenToken;
             cancelPopupTransition();
@@ -243,7 +248,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         if (collectingPopupRequests) {
             return false;
         }
-        beginPopupFrame(screenToken, mouseX, mouseY);
+        // 晚于默认后置回调的子 Mod 仍属于同一实际渲染帧，不能提交此前的空刷新。
+        beginPopupFrameInternal(screenToken, mouseX, mouseY);
         return true;
     }
 
@@ -269,6 +275,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         long now = System.nanoTime();
         if (!POPUP_REQUESTS.hasWinner()) {
             if (!resolveMissing) return;
+            POPUP_TRANSITION.saveState();
             TooltipTransitionFrame<PopupRenderData> frame = POPUP_TRANSITION.resolveMissing(popupMouseX, popupMouseY, now);
             if (frame == null) {
                 return;
@@ -278,6 +285,9 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         }
 
         PopupRenderData target = POPUP_REQUESTS.winner();
+        if (!resolveMissing) {
+            POPUP_TRANSITION.restoreSavedState();
+        }
         TooltipTransitionFrame<PopupRenderData> frame = POPUP_TRANSITION.resolve(
                 target, target.bounds, target.restingBounds, popupMouseX, popupMouseY, now);
         renderTransitionFrame(stack, frame);

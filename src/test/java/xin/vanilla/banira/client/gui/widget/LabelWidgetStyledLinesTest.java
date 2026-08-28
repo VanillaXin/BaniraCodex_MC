@@ -12,6 +12,7 @@ import xin.vanilla.banira.common.data.Color;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -68,5 +69,51 @@ public class LabelWidgetStyledLinesTest {
             return Optional.empty();
         }, net.minecraft.network.chat.Style.EMPTY);
         assertEquals(Integer.valueOf(0x55FFFF), firstVisibleColor[0]);
+    }
+
+    @Test
+    public void wrappingOneTooltipLineKeepsColorsOnEveryOutputLine() {
+        MutableComponent source = new TextComponent("")
+                .append(new TextComponent("Rare item").withStyle(ChatFormatting.AQUA))
+                .append(new TextComponent("\n"))
+                .append(new TextComponent("Long description").withStyle(ChatFormatting.GRAY));
+
+        List<Component> rendered = LabelWidget.preserveStyledOutputLines(
+                source, Arrays.asList("Rare item", "Long", "description"));
+
+        assertEquals(3, rendered.size());
+        assertEquals(0x55FFFF, firstVisibleColor(rendered.get(0)));
+        assertEquals(0xAAAAAA, firstVisibleColor(rendered.get(1)));
+        assertEquals(0xAAAAAA, firstVisibleColor(rendered.get(2)));
+    }
+
+    @Test
+    public void convertedItemTooltipKeepsRarityAndDescriptionColorsAfterWrapping() {
+        xin.vanilla.banira.common.data.Component tooltip = BaniraComponent.get().empty();
+        tooltip.append(BaniraComponent.get().object(
+                new TextComponent("Rare item").withStyle(ChatFormatting.AQUA)));
+        tooltip.append("\n");
+        tooltip.append(BaniraComponent.get().object(
+                new TextComponent("Long description").withStyle(ChatFormatting.GRAY)));
+
+        Component source = new Text(tooltip).toComponent().toVanilla();
+        List<Component> rendered = LabelWidget.preserveStyledOutputLines(
+                source, Arrays.asList("Rare item", "Long", "description"));
+
+        assertEquals(0x55FFFF, firstVisibleColor(rendered.get(0)));
+        assertEquals(0xAAAAAA, firstVisibleColor(rendered.get(1)));
+        assertEquals(0xAAAAAA, firstVisibleColor(rendered.get(2)));
+    }
+
+    private static int firstVisibleColor(Component component) {
+        Integer[] color = {null};
+        component.visit((style, segment) -> {
+            if (!segment.isEmpty() && color[0] == null && style.getColor() != null) {
+                color[0] = style.getColor().getValue();
+            }
+            return Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        assertNotNull(color[0]);
+        return color[0];
     }
 }

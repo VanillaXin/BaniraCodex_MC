@@ -6,7 +6,9 @@ import net.minecraft.network.chat.MutableComponent;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.tooltip.TooltipTextColorResolver;
 import xin.vanilla.banira.common.data.Color;
 
 import java.util.ArrayList;
@@ -44,11 +46,12 @@ public class LabelWidgetStyledLinesTest {
         Text text = new Text(BaniraComponent.get().object(original));
         FontDrawArgs args = FontDrawArgs.ofPopo(text).preserveTextStyles(true);
 
-        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFFFFFFFF));
+        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFFFFFFFF), new int[]{0xFF18212B});
 
-        Component rendered = args.text().toComponent().toVanilla();
-        assertNotNull(rendered.getStyle().getColor());
-        assertEquals(0x55FFFF, rendered.getStyle().getColor().getValue());
+        Component rendered = TooltipTextColorResolver.resolve(
+                args.text().toComponent().toVanilla(), args.popupTextColorArgb(),
+                args.popupTextBackgroundArgb(), args.popupTextColorPolicy());
+        assertEquals(0x55FFFF, firstVisibleColor(rendered));
     }
 
     @Test
@@ -59,12 +62,16 @@ public class LabelWidgetStyledLinesTest {
         Text text = new Text(BaniraComponent.get().object(original));
         FontDrawArgs args = FontDrawArgs.ofPopo(text).preserveTextStyles(true);
 
-        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFF245A36));
+        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFFE2F4EF), new int[]{0xFF18212B});
 
         List<Component> wrapped = LabelWidget.preserveStyledOutputLines(
                 args.text().toComponent().toVanilla(), Arrays.asList("Plain", "Rare"));
-        assertEquals(Arrays.asList(0x245A36), visibleColors(wrapped.get(0)));
-        assertEquals(Arrays.asList(0x55FFFF), visibleColors(wrapped.get(1)));
+        assertEquals(Arrays.asList(0xE2F4EF), visibleColors(TooltipTextColorResolver.resolve(
+                wrapped.get(0), args.popupTextColorArgb(), args.popupTextBackgroundArgb(),
+                EnumTooltipTextColorPolicy.PRESERVE)));
+        assertEquals(Arrays.asList(0x55FFFF), visibleColors(TooltipTextColorResolver.resolve(
+                wrapped.get(1), args.popupTextColorArgb(), args.popupTextBackgroundArgb(),
+                EnumTooltipTextColorPolicy.PRESERVE)));
     }
 
     @Test

@@ -37,6 +37,20 @@ public class ColorUtilsContrastTest {
     }
 
     @Test
+    public void textColorAdaptsAgainstEveryRepresentativeTextureBackground() {
+        int[] backgrounds = {0xFFFFF4C2, 0xFFF4E7B1, 0xFFFFE8C8};
+
+        int result = ColorUtils.ensureReadableTextArgb(
+                0xFFFFD700, backgrounds);
+
+        for (int background : backgrounds) {
+            assertTrue(ColorUtils.contrastRatio(result, background) >= 4.5);
+        }
+        assertNotEquals(0xFF000000, result);
+        assertNotEquals(0xFFFFFFFF, result);
+    }
+
+    @Test
     public void readableSemanticColorIsPreserved() {
         int result = ColorUtils.ensureReadableTextArgb(0xFF7A1F1F, 0xFFFFE5E5);
 

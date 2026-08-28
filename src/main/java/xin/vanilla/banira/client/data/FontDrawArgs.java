@@ -20,7 +20,7 @@ public class FontDrawArgs implements Cloneable {
     /**
      * 消息内容
      */
-    private final Text text;
+    private Text text;
     /**
      * 鼠标坐标X
      */
@@ -124,6 +124,9 @@ public class FontDrawArgs implements Cloneable {
      */
     private boolean popupPaddingAuto = false;
 
+    /** 富文本自身已有颜色时，不使用气泡主题色覆盖。 */
+    private boolean preserveTextStyles = false;
+
     private static final int POPUP_PADDING_TOP = 4, POPUP_PADDING_BOTTOM = 4, POPUP_PADDING_LEFT = 8, POPUP_PADDING_RIGHT = 8;
 
     private FontDrawArgs(Text text) {
@@ -132,7 +135,9 @@ public class FontDrawArgs implements Cloneable {
 
     public FontDrawArgs clone() {
         try {
-            return (FontDrawArgs) super.clone();
+            FontDrawArgs cloned = (FontDrawArgs) super.clone();
+            cloned.text = this.text.clone();
+            return cloned;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }

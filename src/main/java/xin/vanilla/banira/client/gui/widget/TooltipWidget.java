@@ -54,7 +54,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     private static final TooltipRequestCollector<PopupRenderData> POPUP_REQUESTS = new TooltipRequestCollector<>();
     private static final TooltipTransitionModel<PopupRenderData> POPUP_TRANSITION =
             new TooltipTransitionModel<>(TOOLTIP_TRANSITION_NANOS, TOOLTIP_CONTINUITY_NANOS,
-                    TOOLTIP_CONTINUITY_DISTANCE, 0.35D);
+                    TOOLTIP_CONTINUITY_DISTANCE);
     private static Object popupScreenToken;
     private static boolean collectingPopupRequests;
     private static double popupMouseX = Double.NaN;
@@ -309,7 +309,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     private static void useColor(FontDrawArgs drawArgs, @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         BaniraColorConfig resolved = resolveTheme(theme, season);
         drawArgs.bgArgb(resolved.popupBg()).bgBorderRadius(2).bgBorderThickness(1).texture(null);
-        drawArgs.text().color(Color.argb(resolved.textPrimary()));
+        applyPopupTextColor(drawArgs, Color.argb(resolved.textPrimary()));
+    }
+
+    static void applyPopupTextColor(FontDrawArgs drawArgs, Color color) {
+        if (!drawArgs.preserveTextStyles()) {
+            drawArgs.text().color(color);
+        }
     }
 
     private static BaniraColorConfig resolveTheme(@Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
@@ -362,7 +368,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         }
         Text tooltipText = new Text(tooltipComponent);
         FontRenderer font = itemStack.getItem().getFontRenderer(itemStack);
-        FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font)).x(x).y(y);
+        FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font))
+                .x(x).y(y).preserveTextStyles(true);
         if (season != null) {
             drawPopupMessageWithSeasonTexture(stack, drawArgs, season);
         } else {
@@ -414,7 +421,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
         if (ninePatchInfo != null) {
             Color color = Color.argb(ninePatchInfo.textColor);
-            if (!color.isEmpty()) args.text().color(color);
+            if (!color.isEmpty()) applyPopupTextColor(args, color);
             FontRenderer font = args.text().font();
             float targetFontSize = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
             if (ninePatchInfo.rightGuideHeight > 0) {

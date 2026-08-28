@@ -33,7 +33,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void firstTooltipAbovePointerExpandsFromItsBottomEdge() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS);
         TooltipBounds target = new TooltipBounds(20, 30, 80, 24);
 
         TooltipTransitionFrame<String> start = model.resolve("a", target, 60, 70, 100 * MS);
@@ -50,7 +50,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void firstTooltipBelowPointerExpandsFromItsTopEdge() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds target = new TooltipBounds(20, 30, 80, 24);
 
         TooltipTransitionFrame<String> start = model.resolve("below", target, 60, 18, 0L);
@@ -65,7 +65,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void switchingTooltipInterpolatesPositionAndSize() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(140 * MS, 40 * MS);
         model.resolve("a", new TooltipBounds(20, 20, 80, 20), 0L);
         model.resolve("b", new TooltipBounds(180, 120, 160, 60), 10 * MS);
 
@@ -79,31 +79,31 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
-    public void contentChangesAfterThirtyFivePercentWithoutScalingText() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+    public void contentChangesImmediatelyWithoutScalingText() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(0, 0, 100, 40);
         model.resolve("a", a, 0L);
         model.resolve("b", b, 10 * MS);
 
-        assertEquals("a", model.resolve("b", b, 40 * MS).contentKey());
+        assertEquals("b", model.resolve("b", b, 40 * MS).contentKey());
         assertEquals("b", model.resolve("b", b, 50 * MS).contentKey());
     }
 
     @Test
     public void movingTargetSizeDoesNotKeepOldContentVisible() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         model.resolve("a", a, 0L);
         model.resolve("b", new TooltipBounds(0, 0, 80, 24), 10 * MS);
 
-        assertEquals("a", model.resolve("b", new TooltipBounds(0, 0, 82, 24), 30 * MS).contentKey());
+        assertEquals("b", model.resolve("b", new TooltipBounds(0, 0, 82, 24), 30 * MS).contentKey());
         assertEquals("b", model.resolve("b", new TooltipBounds(0, 0, 84, 24), 50 * MS).contentKey());
     }
 
     @Test
     public void visibleContentUsesTheLatestPayloadForItsLogicalKey() {
-        TooltipTransitionModel<Payload> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<Payload> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(0, 0, 80, 24);
         Payload first = new Payload("a", "first");
@@ -118,8 +118,23 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
+    public void latestSubmittedPayloadIsVisibleImmediatelyWhileBoundsRetarget() {
+        TooltipTransitionModel<Payload> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
+        TooltipBounds firstBounds = new TooltipBounds(0, 0, 40, 20);
+        TooltipBounds secondBounds = new TooltipBounds(30, 10, 90, 30);
+        Payload first = new Payload("first", "First tooltip");
+        Payload second = new Payload("second", "Second tooltip");
+
+        model.resolve(first, firstBounds, 0L);
+        TooltipTransitionFrame<Payload> switched = model.resolve(second, secondBounds, 10 * MS);
+
+        assertEquals("Second tooltip", switched.contentKey().text);
+        assertEquals(firstBounds, switched.bounds());
+    }
+
+    @Test
     public void customAnchorDrivesEntryAndExitWithoutCollapsingToZero() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS);
         TooltipBounds target = new TooltipBounds(40, 20, 100, 30);
         TooltipBounds anchor = new TooltipBounds(81, 34, 18, 16);
 
@@ -134,7 +149,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void retargetingStartsFromCurrentAnimatedBounds() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         TooltipBounds c = new TooltipBounds(30, 140, 60, 80);
@@ -149,7 +164,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void movingAnchorDoesNotRestartAnActiveTransition() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 0L);
@@ -166,7 +181,7 @@ public class TooltipTransitionModelTest {
 
     @Test
     public void briefMissingFrameKeepsContinuityButLongGapResets() {
-        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS, 0.35D);
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 0L);
@@ -183,7 +198,7 @@ public class TooltipTransitionModelTest {
     @Test
     public void nearbyTooltipKeepsVisibleContinuityAcrossControlGap() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 10, 10, 0L);
@@ -195,13 +210,13 @@ public class TooltipTransitionModelTest {
 
         TooltipTransitionFrame<String> switched = model.resolve("b", b, 30, 10, 190 * MS);
         assertEquals(shrunken.bounds(), switched.bounds());
-        assertEquals("a", switched.contentKey());
+        assertEquals("b", switched.contentKey());
     }
 
     @Test
     public void tooltipGapExpiresAfterGracePeriod() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 10, 10, 0L);
@@ -217,7 +232,7 @@ public class TooltipTransitionModelTest {
     @Test
     public void movingTooFarAcrossEmptySpaceCancelsContinuity() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 10, 10, 0L);
@@ -231,7 +246,7 @@ public class TooltipTransitionModelTest {
     @Test
     public void gapDistanceStartsFromTheMostRecentTooltipPointer() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);
         TooltipBounds b = new TooltipBounds(100, 50, 100, 50);
         model.resolve("a", a, 10, 10, 0L);
@@ -243,7 +258,7 @@ public class TooltipTransitionModelTest {
     @Test
     public void missingTooltipShrinksTowardThePointerFacingVerticalEdge() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds original = new TooltipBounds(20, 30, 100, 40);
         model.resolve("a", original, 70, 80, 0L);
         model.resolve("a", original, 70, 80, 100 * MS);
@@ -263,7 +278,7 @@ public class TooltipTransitionModelTest {
     @Test
     public void tooltipAfterGapContinuesFromCurrentShrunkenBounds() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(
-                100 * MS, 200 * MS, 56.0D, 0.35D);
+                100 * MS, 200 * MS, 56.0D);
         TooltipBounds a = new TooltipBounds(20, 30, 100, 40);
         TooltipBounds b = new TooltipBounds(160, 80, 140, 60);
         model.resolve("a", a, 10, 10, 0L);
@@ -273,6 +288,6 @@ public class TooltipTransitionModelTest {
         TooltipTransitionFrame<String> switched = model.resolve("b", b, 14, 10, 60 * MS);
 
         assertEquals(shrunken.bounds(), switched.bounds());
-        assertEquals("a", switched.contentKey());
+        assertEquals("b", switched.contentKey());
     }
 }

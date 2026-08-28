@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -189,11 +192,15 @@ public final class TextureUtils {
          */
         public final int textColor;
 
+        /** 文字内容区中覆盖主要面积的背景代表色。 */
+        public final int[] textBackgroundColors;
+
         public NinePatchInfo(int texWidth, int texHeight,
                              int[] horizontalDivisions, int[] verticalDivisions,
                              boolean[] horizontalStretchable, boolean[] verticalStretchable,
                              int rightGuideHeight, int rightGuideTopPadding, int rightGuideBottomPadding,
-                             int bottomGuideLeftPadding, int bottomGuideRightPadding, int textColor) {
+                             int bottomGuideLeftPadding, int bottomGuideRightPadding, int textColor,
+                             int[] textBackgroundColors) {
             this.texWidth = texWidth;
             this.texHeight = texHeight;
             this.horizontalDivisions = horizontalDivisions;
@@ -206,6 +213,7 @@ public final class TextureUtils {
             this.bottomGuideLeftPadding = bottomGuideLeftPadding;
             this.bottomGuideRightPadding = bottomGuideRightPadding;
             this.textColor = textColor;
+            this.textBackgroundColors = textBackgroundColors;
         }
     }
 
@@ -513,6 +521,19 @@ public final class TextureUtils {
             textColor = bottomRightColor.getArgb();
         }
 
+        int sampleStartX = Math.min(contentEndX, contentStartX + bottomGuideLeftPadding);
+        int sampleEndX = Math.max(sampleStartX, contentEndX - bottomGuideRightPadding);
+        int sampleStartY = Math.min(contentEndY, contentStartY + rightGuideTopPadding);
+        int sampleEndY = Math.max(sampleStartY, contentEndY - rightGuideBottomPadding);
+        int[] textAreaPixels = new int[(sampleEndX - sampleStartX + 1) * (sampleEndY - sampleStartY + 1)];
+        int pixelIndex = 0;
+        for (int y = sampleStartY; y <= sampleEndY; y++) {
+            for (int x = sampleStartX; x <= sampleEndX; x++) {
+                textAreaPixels[pixelIndex++] = Color.fromAbgr(image.getPixelRGBA(x, y)).argb();
+            }
+        }
+        int[] textBackgroundColors = representativeBackgroundColors(textAreaPixels);
+
         // 转换为数组
         int[] hDivs = horizontalDivs.stream().mapToInt(i -> i).toArray();
         int[] vDivs = verticalDivs.stream().mapToInt(i -> i).toArray();
@@ -528,9 +549,75 @@ public final class TextureUtils {
         // 使用纹理范围的尺寸
         NinePatchInfo info = new NinePatchInfo(textureWidth, textureHeight, hDivs, vDivs, hStretch, vStretch,
                 rightGuideHeight, rightGuideTopPadding, rightGuideBottomPadding,
-                bottomGuideLeftPadding, bottomGuideRightPadding, textColor);
+                bottomGuideLeftPadding, bottomGuideRightPadding, textColor, textBackgroundColors);
         NINE_PATCH_CACHE.put(texture, info);
         return info;
+    }
+
+    static int[] representativeBackgroundColors(int[] pixels) {
+        Map<Integer, BackgroundBucket> buckets = new HashMap<>();
+        int total = 0;
+        if (pixels != null) {
+            for (int argb : pixels) {
+                int alpha = (argb >>> 24) & 0xFF;
+                if (alpha < 32) {
+                    continue;
+                }
+                if (alpha < 255) {
+                    accumulateBackground(buckets, compositeOver(argb, 0x000000));
+                    accumulateBackground(buckets, compositeOver(argb, 0xFFFFFF));
+                    total += 2;
+                } else {
+                    accumulateBackground(buckets, argb);
+                    total++;
+                }
+            }
+        }
+        if (total == 0) {
+            return new int[0];
+        }
+        List<BackgroundBucket> sorted = new ArrayList<>(buckets.values());
+        sorted.sort((left, right) -> Integer.compare(right.count, left.count));
+        List<Integer> colors = new ArrayList<>();
+        int covered = 0;
+        for (BackgroundBucket bucket : sorted) {
+            colors.add(0xFF000000
+                    | ((int) (bucket.red / bucket.count) << 16)
+                    | ((int) (bucket.green / bucket.count) << 8)
+                    | (int) (bucket.blue / bucket.count));
+            covered += bucket.count;
+            if (covered * 10 >= total * 9 || colors.size() >= 8) {
+                break;
+            }
+        }
+        return colors.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private static void accumulateBackground(Map<Integer, BackgroundBucket> buckets, int argb) {
+        int key = (((argb >> 16) & 0xFF) >> 4) << 8
+                | (((argb >> 8) & 0xFF) >> 4) << 4
+                | ((argb & 0xFF) >> 4);
+        BackgroundBucket bucket = buckets.computeIfAbsent(key, ignored -> new BackgroundBucket());
+        bucket.count++;
+        bucket.red += (argb >> 16) & 0xFF;
+        bucket.green += (argb >> 8) & 0xFF;
+        bucket.blue += argb & 0xFF;
+    }
+
+    private static int compositeOver(int argb, int backgroundRgb) {
+        int alpha = (argb >>> 24) & 0xFF;
+        int inverse = 255 - alpha;
+        int red = (((argb >> 16) & 0xFF) * alpha + ((backgroundRgb >> 16) & 0xFF) * inverse + 127) / 255;
+        int green = (((argb >> 8) & 0xFF) * alpha + ((backgroundRgb >> 8) & 0xFF) * inverse + 127) / 255;
+        int blue = ((argb & 0xFF) * alpha + (backgroundRgb & 0xFF) * inverse + 127) / 255;
+        return 0xFF000000 | (red << 16) | (green << 8) | blue;
+    }
+
+    private static final class BackgroundBucket {
+        private int count;
+        private long red;
+        private long green;
+        private long blue;
     }
 
     /**

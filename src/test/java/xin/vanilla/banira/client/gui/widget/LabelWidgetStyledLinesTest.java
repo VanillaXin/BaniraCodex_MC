@@ -1,0 +1,71 @@
+package xin.vanilla.banira.client.gui.widget;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import org.junit.Test;
+import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.common.data.Color;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+public class LabelWidgetStyledLinesTest {
+
+    @Test
+    public void splittingLinesPreservesEachSegmentsColor() {
+        MutableComponent source = Component.empty()
+                .append(Component.literal("Rare item").withStyle(ChatFormatting.AQUA))
+                .append(Component.literal("\n"))
+                .append(Component.literal("Description").withStyle(ChatFormatting.GRAY));
+
+        List<Component> lines = LabelWidget.splitStyledLines(source);
+
+        assertEquals(2, lines.size());
+        assertEquals("Rare item", lines.get(0).getString());
+        assertEquals("Description", lines.get(1).getString());
+        assertNotNull(lines.get(0).getSiblings().get(0).getStyle().getColor());
+        assertNotNull(lines.get(1).getSiblings().get(0).getStyle().getColor());
+        assertEquals(0x55FFFF, lines.get(0).getSiblings().get(0).getStyle().getColor().getValue());
+        assertEquals(0xAAAAAA, lines.get(1).getSiblings().get(0).getStyle().getColor().getValue());
+    }
+
+    @Test
+    public void popupThemeColorDoesNotOverwriteRichTooltipStyles() {
+        MutableComponent original = Component.literal("Rare item")
+                .withStyle(ChatFormatting.AQUA);
+        Text text = new Text(BaniraComponent.get().object(original));
+        FontDrawArgs args = FontDrawArgs.ofPopo(text).preserveTextStyles(true);
+
+        TooltipWidget.applyPopupTextColor(args, Color.argb(0xFFFFFFFF));
+
+        Component rendered = args.text().toComponent().toVanilla();
+        assertNotNull(rendered.getStyle().getColor());
+        assertEquals(0x55FFFF, rendered.getStyle().getColor().getValue());
+    }
+
+    @Test
+    public void truncatingAStyledLineKeepsItsColor() {
+        Component original = Component.literal("Rare item")
+                .withStyle(ChatFormatting.AQUA);
+
+        Component rendered = LabelWidget.styledLine(
+                original, "Rare item", "Rare...", "...",
+                xin.vanilla.banira.client.enums.EnumEllipsisPosition.END);
+
+        assertEquals("Rare...", rendered.getString());
+        Integer[] firstVisibleColor = {null};
+        rendered.visit((style, segment) -> {
+            if (!segment.isEmpty() && firstVisibleColor[0] == null && style.getColor() != null) {
+                firstVisibleColor[0] = style.getColor().getValue();
+            }
+            return Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        assertEquals(Integer.valueOf(0x55FFFF), firstVisibleColor[0]);
+    }
+}

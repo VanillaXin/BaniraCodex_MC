@@ -20,6 +20,7 @@ public final class TooltipTransitionModel<K> {
     private double lastPointerY = Double.NaN;
     private boolean initialized;
     private boolean collapsingMissing;
+    private SavedState<K> savedState;
 
     public TooltipTransitionModel(long durationNanos, long continuityNanos) {
         this(durationNanos, continuityNanos, Double.POSITIVE_INFINITY);
@@ -112,6 +113,37 @@ public final class TooltipTransitionModel<K> {
         lastPointerX = Double.NaN;
         lastPointerY = Double.NaN;
         collapsingMissing = false;
+        savedState = null;
+    }
+
+    /** 保存一次可能被同帧晚提交撤销的空刷新前状态。 */
+    public void saveState() {
+        if (savedState == null) {
+            savedState = new SavedState<>(startBounds, targetBounds, restingBounds,
+                    targetContentKey, transitionStartedAt, missingSince,
+                    lastPointerX, lastPointerY, initialized, collapsingMissing);
+        }
+    }
+
+    /** 恢复最近保存的状态；没有保存状态时不做任何处理。 */
+    public void restoreSavedState() {
+        if (savedState == null) return;
+        startBounds = savedState.startBounds;
+        targetBounds = savedState.targetBounds;
+        restingBounds = savedState.restingBounds;
+        targetContentKey = savedState.targetContentKey;
+        transitionStartedAt = savedState.transitionStartedAt;
+        missingSince = savedState.missingSince;
+        lastPointerX = savedState.lastPointerX;
+        lastPointerY = savedState.lastPointerY;
+        initialized = savedState.initialized;
+        collapsingMissing = savedState.collapsingMissing;
+        savedState = null;
+    }
+
+    /** 下一次常规渲染帧开始后，先前的空刷新不再允许被撤销。 */
+    public void discardSavedState() {
+        savedState = null;
     }
 
     private void initialize(K contentKey, TooltipBounds bounds, TooltipBounds restingBounds,
@@ -180,5 +212,35 @@ public final class TooltipTransitionModel<K> {
 
     private TooltipTransitionFrame<K> frame(TooltipBounds bounds, K contentKey, double progress) {
         return new TooltipTransitionFrame<>(bounds, contentKey, progress);
+    }
+
+    private static final class SavedState<K> {
+        private final TooltipBounds startBounds;
+        private final TooltipBounds targetBounds;
+        private final TooltipBounds restingBounds;
+        private final K targetContentKey;
+        private final long transitionStartedAt;
+        private final long missingSince;
+        private final double lastPointerX;
+        private final double lastPointerY;
+        private final boolean initialized;
+        private final boolean collapsingMissing;
+
+        private SavedState(TooltipBounds startBounds, TooltipBounds targetBounds,
+                           TooltipBounds restingBounds, K targetContentKey,
+                           long transitionStartedAt, long missingSince,
+                           double lastPointerX, double lastPointerY,
+                           boolean initialized, boolean collapsingMissing) {
+            this.startBounds = startBounds;
+            this.targetBounds = targetBounds;
+            this.restingBounds = restingBounds;
+            this.targetContentKey = targetContentKey;
+            this.transitionStartedAt = transitionStartedAt;
+            this.missingSince = missingSince;
+            this.lastPointerX = lastPointerX;
+            this.lastPointerY = lastPointerY;
+            this.initialized = initialized;
+            this.collapsingMissing = collapsingMissing;
+        }
     }
 }

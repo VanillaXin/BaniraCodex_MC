@@ -293,7 +293,6 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             drawY = 0;
         }
 
-        Text textTemplate = text.copyWithoutChildren();
         EnumAlignment alignment = args.align() != null ? args.align() : text.align();
         float alignWidth = layout.availableWidth > 0 ? layout.availableWidth : layout.maxLineWidth;
         boolean hasShadow = text.shadow();
@@ -330,10 +329,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                 }
             }
 
-            boolean preserveStyledComponent = layout.lines.length == 1;
-            net.minecraft.network.chat.Component renderedText = preserveStyledComponent
-                    ? styledLine(text, line, "...", args.position())
-                    : textTemplate.text(line).toComponent().toVanilla(Translator.getClientLanguage());
+            net.minecraft.network.chat.Component renderedText = layout.renderedLines[index];
             if (hasShadow) {
                 layout.font.drawShadow(stack, renderedText, (float) drawX + xOffset, yPos, textColor);
             } else {
@@ -387,19 +383,35 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
 
         List<String> outputLines = collectOutputLines(args, font, content, availableWidth);
+        String[] originalLines = StringUtils.replaceLineBreak(content).split("\n");
+        List<net.minecraft.network.chat.Component> styledSourceLines = splitStyledLines(
+                text.toComponent().toVanilla(Translator.getClientLanguage()));
         String ellipsis = "...";
         int ellipsisWidth = font.width(ellipsis);
         boolean preserveStyledComponent = outputLines.size() == 1 && !cacheable;
+        boolean preserveStyledLines = !cacheable
+                && styledSourceLines.size() == originalLines.length
+                && outputLines.size() == originalLines.length
+                && outputLines.equals(Arrays.asList(originalLines));
         String[] processedLines = new String[outputLines.size()];
+        net.minecraft.network.chat.Component[] renderedLines =
+                new net.minecraft.network.chat.Component[outputLines.size()];
         int[] lineWidths = new int[outputLines.size()];
         int maxLineWidth = 0;
 
         for (int i = 0; i < outputLines.size(); i++) {
             String line = ellipsisString(args, ellipsis, font, ellipsisWidth, availableWidth, outputLines.get(i));
             processedLines[i] = line;
-            net.minecraft.network.chat.Component renderedLine = preserveStyledComponent
-                    ? styledLine(text, line, ellipsis, args.position())
-                    : net.minecraft.network.chat.Component.literal(line);
+            net.minecraft.network.chat.Component renderedLine;
+            if (preserveStyledLines) {
+                renderedLine = styledLine(styledSourceLines.get(i), originalLines[i],
+                        line, ellipsis, args.position());
+            } else if (preserveStyledComponent) {
+                renderedLine = styledLine(text, line, ellipsis, args.position());
+            } else {
+                renderedLine = net.minecraft.network.chat.Component.literal(line);
+            }
+            renderedLines[i] = renderedLine;
             int width = font.width(renderedLine);
             lineWidths[i] = width;
             if (width > maxLineWidth) {
@@ -415,7 +427,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         float totalHeight = processedLines.length * actualLineHeight;
         int finalWidth = (int) Math.ceil(maxLineWidth * scale) + args.paddingLeft() + args.paddingRight();
         int finalHeight = (int) totalHeight + args.paddingTop() + args.paddingBottom();
-        TextLayout layout = new TextLayout(font, scale, drawX, drawY, availableWidth, processedLines, lineWidths,
+        TextLayout layout = new TextLayout(font, scale, drawX, drawY, availableWidth,
+                processedLines, renderedLines, lineWidths,
                 maxLineWidth, actualLineHeight, finalWidth, finalHeight);
         if (cacheable) {
             synchronized (TEXT_LAYOUT_CACHE_LOCK) {
@@ -432,15 +445,19 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             Text text, String line, String ellipsis, EnumEllipsisPosition position) {
         net.minecraft.network.chat.Component source =
                 text.toComponent().toVanilla(Translator.getClientLanguage());
-        String original = text.content();
+        return styledLine(source, text.content(), line, ellipsis, position);
+    }
+
+    static net.minecraft.network.chat.Component styledLine(
+            net.minecraft.network.chat.Component source, String original,
+            String line, String ellipsis, EnumEllipsisPosition position) {
         if (line.equals(original)) {
             return source;
         }
 
         int ellipsisIndex = line.indexOf(ellipsis);
         if (ellipsisIndex < 0) {
-            return text.copyWithoutChildren().text(line).toComponent()
-                    .toVanilla(Translator.getClientLanguage());
+            return sliceStyledComponent(source, 0, Math.min(line.length(), original.length()));
         }
 
         net.minecraft.network.chat.MutableComponent result =
@@ -461,6 +478,35 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                     Math.max(ellipsisIndex, original.length() - suffixLength), original.length()));
         }
         return result;
+    }
+
+    /** 按换行拆分富文本，同时保留每个字符片段的原版样式。 */
+    static List<net.minecraft.network.chat.Component> splitStyledLines(
+            net.minecraft.network.chat.Component source) {
+        List<net.minecraft.network.chat.Component> lines = new ArrayList<>();
+        net.minecraft.network.chat.MutableComponent[] current = {
+                net.minecraft.network.chat.Component.empty()
+        };
+        source.visit((style, segment) -> {
+            int start = 0;
+            for (int i = 0; i <= segment.length(); i++) {
+                if (i < segment.length() && segment.charAt(i) != '\n') {
+                    continue;
+                }
+                if (i > start) {
+                    current[0].append(net.minecraft.network.chat.Component.literal(
+                            segment.substring(start, i)).withStyle(style));
+                }
+                if (i < segment.length()) {
+                    lines.add(current[0]);
+                    current[0] = net.minecraft.network.chat.Component.empty();
+                }
+                start = i + 1;
+            }
+            return Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        lines.add(current[0]);
+        return lines;
     }
 
     private static net.minecraft.network.chat.MutableComponent sliceStyledComponent(
@@ -538,6 +584,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         private final double drawY;
         private final int availableWidth;
         private final String[] lines;
+        private final net.minecraft.network.chat.Component[] renderedLines;
         private final int[] lineWidths;
         private final int maxLineWidth;
         private final float lineHeight;
@@ -545,7 +592,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         private final int finalHeight;
 
         private TextLayout(Font font, float scale, double drawX, double drawY, int availableWidth,
-                           String[] lines, int[] lineWidths, int maxLineWidth, float lineHeight,
+                           String[] lines, net.minecraft.network.chat.Component[] renderedLines,
+                           int[] lineWidths, int maxLineWidth, float lineHeight,
                            int finalWidth, int finalHeight) {
             this.font = font;
             this.scale = scale;
@@ -553,6 +601,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             this.drawY = drawY;
             this.availableWidth = availableWidth;
             this.lines = lines;
+            this.renderedLines = renderedLines;
             this.lineWidths = lineWidths;
             this.maxLineWidth = maxLineWidth;
             this.lineHeight = lineHeight;

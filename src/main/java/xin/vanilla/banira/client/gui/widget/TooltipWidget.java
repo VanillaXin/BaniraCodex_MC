@@ -13,6 +13,7 @@ import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -315,21 +316,26 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     private static void useTexture(FontDrawArgs drawArgs, @Nullable EnumSeason season) {
+        EnumSeason resolvedSeason = BaniraColorConfig.resolveEffectiveSeason(season);
+        BaniraColorConfig resolvedTheme = BaniraColorConfig.forSeason(resolvedSeason);
         if (drawArgs.texture() == null) {
-            EnumSeason s = BaniraColorConfig.resolveEffectiveSeason(season);
-            drawArgs.texture(Texture.of(TextureUtils.loadCustomTexture(Identifier.id(), getSeasonTexturePath(s))));
+            drawArgs.texture(Texture.of(TextureUtils.loadCustomTexture(
+                    Identifier.id(), getSeasonTexturePath(resolvedSeason))));
         }
+        applyPopupTextColor(drawArgs, Color.argb(resolvedTheme.textPrimary()),
+                new int[]{resolvedTheme.popupBg()});
         drawArgs.bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
     }
 
     private static void useColor(FontDrawArgs drawArgs, @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         BaniraColorConfig resolved = resolveTheme(theme, season);
         drawArgs.bgArgb(resolved.popupBg()).bgBorderRadius(2).bgBorderThickness(1).texture(null);
-        applyPopupTextColor(drawArgs, Color.argb(resolved.textPrimary()));
+        applyPopupTextColor(drawArgs, Color.argb(resolved.textPrimary()), new int[]{resolved.popupBg()});
     }
 
-    static void applyPopupTextColor(FontDrawArgs drawArgs, Color color) {
+    static void applyPopupTextColor(FontDrawArgs drawArgs, Color color, int[] backgroundArgb) {
         drawArgs.text().color(color);
+        drawArgs.popupTextColorArgb(color.argb()).popupTextBackgroundArgb(backgroundArgb);
     }
 
     private static BaniraColorConfig resolveTheme(@Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
@@ -406,7 +412,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         Text tooltipText = new Text(tooltipComponent);
         Font font = AbstractGuiUtils.getFont();
         FontDrawArgs drawArgs = FontDrawArgs.ofPopo(tooltipText.stack(stack).font(font))
-                .x(x).y(y).preserveTextStyles(true);
+                .x(x).y(y).preserveTextStyles(true)
+                .popupTextColorPolicy(EnumTooltipTextColorPolicy.REPLACE_BLACK_AND_WHITE);
         if (season != null) {
             drawPopupMessageWithSeasonTexture(stack, drawArgs, season);
         } else {
@@ -449,9 +456,20 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
         final TextureUtils.NinePatchInfo ninePatchInfo = args.texture() != null ? TextureUtils.parseNinePatch(args.texture()) : null;
 
+        if (args.texture() != null) {
+            Color textureTextColor = Color.argb(args.text().colorArgb());
+            if (ninePatchInfo != null) {
+                Color markerColor = Color.argb(ninePatchInfo.textColor);
+                if (!markerColor.isEmpty()) {
+                    textureTextColor = markerColor;
+                }
+            }
+            int[] textureBackgrounds = ninePatchInfo != null && ninePatchInfo.textBackgroundColors.length > 0
+                    ? ninePatchInfo.textBackgroundColors : args.popupTextBackgroundArgb();
+            applyPopupTextColor(args, textureTextColor, textureBackgrounds);
+        }
+
         if (ninePatchInfo != null) {
-            Color color = Color.argb(ninePatchInfo.textColor);
-            if (!color.isEmpty()) applyPopupTextColor(args, color);
             Font font = args.text().font();
             float targetFontSize = args.fontSize() > 0 ? args.fontSize() : font.lineHeight;
             if (ninePatchInfo.rightGuideHeight > 0) {

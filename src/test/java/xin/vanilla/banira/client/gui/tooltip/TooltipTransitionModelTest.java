@@ -133,6 +133,25 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
+    public void lateSubmissionRestoresStateBeforeSpeculativeMissingFlush() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
+        TooltipBounds target = new TooltipBounds(20, 30, 100, 40);
+        TooltipBounds resting = new TooltipBounds(20, 54, 100, 16);
+
+        model.resolve("button", target, resting, 70, 80, 0L);
+        model.resolve("button", target, resting, 70, 80, 100 * MS);
+
+        model.saveState();
+        model.resolveMissing(70, 80, 110 * MS);
+        model.restoreSavedState();
+        TooltipTransitionFrame<String> late = model.resolve(
+                "button", target, resting, 70, 80, 112 * MS);
+
+        assertEquals(target, late.bounds());
+        assertEquals("button", late.contentKey());
+    }
+
+    @Test
     public void customAnchorDrivesEntryAndExitWithoutCollapsingToZero() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS);
         TooltipBounds target = new TooltipBounds(40, 20, 100, 30);

@@ -19,4 +19,16 @@ public class FontDrawArgsCloneTest {
         assertEquals("source", source.text().original().text());
         assertEquals("changed", cloned.text().original().text());
     }
+
+    @Test
+    public void cloneOwnsAnIndependentTooltipBackgroundPalette() {
+        FontDrawArgs source = FontDrawArgs.of(Text.literal("source"))
+                .popupTextBackgroundArgb(new int[]{0xFFF0FFF0, 0xFFE0EEE0});
+
+        FontDrawArgs cloned = source.clone();
+        cloned.popupTextBackgroundArgb()[0] = 0xFF000000;
+
+        assertNotSame(source.popupTextBackgroundArgb(), cloned.popupTextBackgroundArgb());
+        assertEquals(0xFFF0FFF0, source.popupTextBackgroundArgb()[0]);
+    }
 }

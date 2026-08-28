@@ -9,32 +9,28 @@ public final class TooltipTransitionModel<K> {
     private final long durationNanos;
     private final long continuityNanos;
     private final double maxPointerDistanceSquared;
-    private final double contentSwitchProgress;
 
     private TooltipBounds startBounds;
     private TooltipBounds targetBounds;
     private TooltipBounds restingBounds;
-    private K previousContentKey;
     private K targetContentKey;
     private long transitionStartedAt;
-    private long contentTransitionStartedAt;
     private long missingSince = Long.MIN_VALUE;
     private double lastPointerX = Double.NaN;
     private double lastPointerY = Double.NaN;
     private boolean initialized;
     private boolean collapsingMissing;
 
-    public TooltipTransitionModel(long durationNanos, long continuityNanos, double contentSwitchProgress) {
-        this(durationNanos, continuityNanos, Double.POSITIVE_INFINITY, contentSwitchProgress);
+    public TooltipTransitionModel(long durationNanos, long continuityNanos) {
+        this(durationNanos, continuityNanos, Double.POSITIVE_INFINITY);
     }
 
     public TooltipTransitionModel(long durationNanos, long continuityNanos,
-                                  double maxPointerDistance, double contentSwitchProgress) {
+                                  double maxPointerDistance) {
         this.durationNanos = Math.max(1L, durationNanos);
         this.continuityNanos = Math.max(0L, continuityNanos);
         double distance = Math.max(0.0D, maxPointerDistance);
         this.maxPointerDistanceSquared = distance * distance;
-        this.contentSwitchProgress = Math.max(0.0D, Math.min(1.0D, contentSwitchProgress));
     }
 
     public TooltipTransitionFrame<K> resolve(K contentKey, TooltipBounds bounds, long nowNanos) {
@@ -64,13 +60,11 @@ public final class TooltipTransitionModel<K> {
         if (!Objects.equals(targetContentKey, contentKey)) {
             startBounds = current.bounds();
             targetBounds = bounds;
-            previousContentKey = current.contentKey();
             targetContentKey = contentKey;
             this.restingBounds = restingBounds;
             transitionStartedAt = nowNanos;
-            contentTransitionStartedAt = nowNanos;
             rememberPointer(pointerX, pointerY);
-            return frame(startBounds, previousContentKey, 0.0D);
+            return frame(startBounds, targetContentKey, 0.0D);
         }
 
         // 同一逻辑内容也可能每帧携带新的渲染载荷，不能继续持有首次提交的对象。
@@ -81,7 +75,7 @@ public final class TooltipTransitionModel<K> {
         return currentFrame(nowNanos);
     }
 
-    /** 离开 Tooltip 区域后向靠近鼠标的水平边缘收缩。 */
+    /** 离开 Tooltip 区域后向靠近鼠标的竖向边缘收缩。 */
     public TooltipTransitionFrame<K> resolveMissing(double pointerX, double pointerY, long nowNanos) {
         if (!initialized) return null;
         if (missingSince == Long.MIN_VALUE) missingSince = nowNanos;
@@ -93,11 +87,10 @@ public final class TooltipTransitionModel<K> {
             TooltipTransitionFrame<K> current = currentFrame(nowNanos);
             startBounds = current.bounds();
             targetBounds = restingBounds;
-            previousContentKey = current.contentKey();
             targetContentKey = current.contentKey();
             transitionStartedAt = nowNanos;
             collapsingMissing = true;
-            return frame(startBounds, previousContentKey, 0.0D);
+            return frame(startBounds, targetContentKey, 0.0D);
         }
         return currentFrame(nowNanos);
     }
@@ -113,10 +106,8 @@ public final class TooltipTransitionModel<K> {
         startBounds = null;
         targetBounds = null;
         restingBounds = null;
-        previousContentKey = null;
         targetContentKey = null;
         transitionStartedAt = 0L;
-        contentTransitionStartedAt = 0L;
         missingSince = Long.MIN_VALUE;
         lastPointerX = Double.NaN;
         lastPointerY = Double.NaN;
@@ -128,12 +119,10 @@ public final class TooltipTransitionModel<K> {
         startBounds = restingBounds;
         targetBounds = bounds;
         this.restingBounds = restingBounds;
-        previousContentKey = contentKey;
         targetContentKey = contentKey;
         transitionStartedAt = pointerAvailable(pointerX, pointerY)
                 ? nowNanos
                 : nowNanos - durationNanos;
-        contentTransitionStartedAt = transitionStartedAt;
         missingSince = Long.MIN_VALUE;
         initialized = true;
         collapsingMissing = false;
@@ -181,18 +170,12 @@ public final class TooltipTransitionModel<K> {
     private TooltipTransitionFrame<K> currentFrame(long nowNanos) {
         double linear = Math.max(0.0D, Math.min(1.0D,
                 (nowNanos - transitionStartedAt) / (double) durationNanos));
-        double contentLinear = Math.max(0.0D, Math.min(1.0D,
-                (nowNanos - contentTransitionStartedAt) / (double) durationNanos));
         double eased = 1.0D - Math.pow(1.0D - linear, 3.0D);
         TooltipBounds currentBounds = startBounds.interpolate(targetBounds, eased);
-        K visibleContent = contentLinear < contentSwitchProgress ? previousContentKey : targetContentKey;
         if (linear >= 1.0D) {
             startBounds = targetBounds;
         }
-        if (contentLinear >= 1.0D) {
-            previousContentKey = targetContentKey;
-        }
-        return frame(currentBounds, visibleContent, linear);
+        return frame(currentBounds, targetContentKey, linear);
     }
 
     private TooltipTransitionFrame<K> frame(TooltipBounds bounds, K contentKey, double progress) {

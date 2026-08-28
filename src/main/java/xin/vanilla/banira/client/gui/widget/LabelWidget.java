@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.tooltip.TooltipTextColorResolver;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -405,6 +406,11 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
                         line, ellipsis, args.position());
             } else {
                 renderedLine = new net.minecraft.network.chat.TextComponent(line);
+            }
+            if ((args.popupTextColorArgb() >>> 24) != 0) {
+                renderedLine = TooltipTextColorResolver.resolve(renderedLine,
+                        args.popupTextColorArgb(), args.popupTextBackgroundArgb(),
+                        args.popupTextColorPolicy());
             }
             renderedLines[i] = renderedLine;
             int width = font.width(renderedLine);

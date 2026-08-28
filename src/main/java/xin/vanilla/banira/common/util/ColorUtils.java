@@ -185,6 +185,31 @@ public final class ColorUtils {
     }
 
     /**
+     * 针对纹理文字区域中的多个代表背景色调整文字色。
+     */
+    public static int ensureReadableTextArgb(int textArgb, int[] backgroundArgb) {
+        if (backgroundArgb == null || backgroundArgb.length == 0) {
+            return textArgb;
+        }
+        if (isReadableAgainstAll(textArgb, backgroundArgb)) {
+            return textArgb;
+        }
+        int darkened = blendUntilReadable(textArgb, backgroundArgb, 0x000000);
+        int lightened = blendUntilReadable(textArgb, backgroundArgb, 0xFFFFFF);
+        if (darkened != -1 && lightened != -1) {
+            return colorDistanceSquared(textArgb, darkened) <= colorDistanceSquared(textArgb, lightened)
+                    ? darkened : lightened;
+        }
+        if (darkened != -1) {
+            return darkened;
+        }
+        if (lightened != -1) {
+            return lightened;
+        }
+        return bestEffortReadableColor(textArgb, backgroundArgb);
+    }
+
+    /**
      * 创建只用于绘制的可读副本，不污染通知日志中保存的原始颜色。
      */
     public static Component readableComponentCopy(Component component, int backgroundArgb) {
@@ -202,6 +227,20 @@ public final class ColorUtils {
      */
     public static net.minecraft.network.chat.Component readableVanillaComponentCopy(
             net.minecraft.network.chat.Component component, int backgroundArgb) {
+        if (component == null) {
+            return new TextComponent("");
+        }
+        MutableComponent result = new TextComponent("");
+        component.visit((style, text) -> {
+            appendReadableVanillaSegments(result, style, text, backgroundArgb);
+            return Optional.empty();
+        }, Style.EMPTY);
+        return result;
+    }
+
+    /** 对纹理文字区域的多个代表背景色应用同一套富文本和旧格式码规则。 */
+    public static net.minecraft.network.chat.Component readableVanillaComponentCopy(
+            net.minecraft.network.chat.Component component, int[] backgroundArgb) {
         if (component == null) {
             return new TextComponent("");
         }
@@ -245,6 +284,39 @@ public final class ColorUtils {
         appendVanillaSegment(target, segment, currentStyle);
     }
 
+    private static void appendReadableVanillaSegments(MutableComponent target, Style sourceStyle,
+                                                      String text, int[] backgroundArgb) {
+        Style baseStyle = readableStyle(sourceStyle, backgroundArgb);
+        Style currentStyle = baseStyle;
+        StringBuilder segment = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (current != '\u00A7' || i + 1 >= text.length()) {
+                segment.append(current);
+                continue;
+            }
+            appendVanillaSegment(target, segment, currentStyle);
+            char code = Character.toLowerCase(text.charAt(++i));
+            ChatFormatting formatting = ChatFormatting.getByCode(code);
+            if (formatting == null) {
+                segment.append('\u00A7').append(code);
+                continue;
+            }
+            if (formatting == ChatFormatting.RESET) {
+                currentStyle = baseStyle;
+                continue;
+            }
+            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            Integer legacyColor = legacyColorArgb(code);
+            if (legacyColor != null) {
+                int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
+                currentStyle = currentStyle.withColor(
+                        net.minecraft.network.chat.TextColor.fromRgb(readable & 0x00FFFFFF));
+            }
+        }
+        appendVanillaSegment(target, segment, currentStyle);
+    }
+
     private static void appendVanillaSegment(MutableComponent target, StringBuilder segment, Style style) {
         if (segment.length() == 0) {
             return;
@@ -259,6 +331,14 @@ public final class ColorUtils {
         }
         int readable = ensureReadableTextArgb(0xFF000000 | style.getColor().getValue(), backgroundArgb);
         return style.withColor(TextColor.fromRgb(readable & 0x00FFFFFF));
+    }
+
+    private static Style readableStyle(Style style, int[] backgroundArgb) {
+        if (style == null || style.getColor() == null) {
+            return style != null ? style : Style.EMPTY;
+        }
+        int readable = ensureReadableTextArgb(0xFF000000 | style.getColor().getValue(), backgroundArgb);
+        return style.withColor(net.minecraft.network.chat.TextColor.fromRgb(readable & 0x00FFFFFF));
     }
 
     private static void adjustComponentColors(Component component, int backgroundArgb) {
@@ -292,6 +372,62 @@ public final class ColorUtils {
             }
         }
         return blendRgb(textArgb, targetRgb, high);
+    }
+
+    private static int blendUntilReadable(int textArgb, int[] backgroundArgb, int targetRgb) {
+        int target = (textArgb & 0xFF000000) | targetRgb;
+        if (!isReadableAgainstAll(target, backgroundArgb)) {
+            return -1;
+        }
+        double low = 0.0;
+        double high = 1.0;
+        for (int i = 0; i < 24; i++) {
+            double mid = (low + high) * 0.5;
+            int candidate = blendRgb(textArgb, targetRgb, mid);
+            if (isReadableAgainstAll(candidate, backgroundArgb)) {
+                high = mid;
+            } else {
+                low = mid;
+            }
+        }
+        return blendRgb(textArgb, targetRgb, high);
+    }
+
+    private static boolean isReadableAgainstAll(int textArgb, int[] backgroundArgb) {
+        for (int background : backgroundArgb) {
+            if (contrastRatio(textArgb, background) < MIN_READABLE_CONTRAST) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int bestEffortReadableColor(int textArgb, int[] backgroundArgb) {
+        int best = textArgb;
+        double bestContrast = minimumContrast(textArgb, backgroundArgb);
+        long bestDistance = 0;
+        for (int targetRgb : new int[]{0x000000, 0xFFFFFF}) {
+            for (int step = 1; step <= 255; step++) {
+                int candidate = blendRgb(textArgb, targetRgb, step / 255.0);
+                double contrast = minimumContrast(candidate, backgroundArgb);
+                long distance = colorDistanceSquared(textArgb, candidate);
+                if (contrast > bestContrast + 0.000001
+                        || (Math.abs(contrast - bestContrast) <= 0.000001 && distance < bestDistance)) {
+                    best = candidate;
+                    bestContrast = contrast;
+                    bestDistance = distance;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static double minimumContrast(int textArgb, int[] backgroundArgb) {
+        double result = Double.MAX_VALUE;
+        for (int background : backgroundArgb) {
+            result = Math.min(result, contrastRatio(textArgb, background));
+        }
+        return result;
     }
 
     private static int blendRgb(int argb, int targetRgb, double amount) {

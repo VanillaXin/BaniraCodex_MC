@@ -329,9 +329,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     static void applyPopupTextColor(FontDrawArgs drawArgs, Color color) {
-        if (!drawArgs.preserveTextStyles()) {
-            drawArgs.text().color(color);
-        }
+        drawArgs.text().color(color);
     }
 
     private static BaniraColorConfig resolveTheme(@Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {

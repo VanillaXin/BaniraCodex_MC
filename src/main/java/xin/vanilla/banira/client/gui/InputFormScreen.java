@@ -43,6 +43,7 @@ public class InputFormScreen extends BaniraScreen {
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
     private Text runningErrorText = Text.empty();
     private final List<String> inputValues = new ArrayList<>();
+    private final Map<Integer, List<String>> dropdownInputValues = new HashMap<>();
 
     @Nullable
     private ButtonWidget submitButtonWidget;
@@ -115,6 +116,8 @@ public class InputFormScreen extends BaniraScreen {
          */
         @Nullable
         private List<DropdownOption> dropdownOptionEntries;
+        @Nullable
+        private List<String> dropdownDefaultValues;
         private boolean dropdownMultiSelect;
         private DropdownInputMode dropdownInputMode = DropdownInputMode.SELECTION_ONLY;
         private Function<Results, String> validator = s -> "";
@@ -170,17 +173,40 @@ public class InputFormScreen extends BaniraScreen {
             return this;
         }
 
+        /**
+         * 设置多选下拉的默认值。选项始终按独立元素保存，不使用显示文本反向解析。
+         */
+        public Widget defaultValues(Collection<String> values) {
+            this.dropdownDefaultValues = values != null ? new ArrayList<>(values) : new ArrayList<>();
+            return this;
+        }
+
+        public Widget defaultValues(String... values) {
+            return defaultValues(values != null ? Arrays.asList(values) : Collections.emptyList());
+        }
+
+        public Widget defaultValues(Enum<?>... values) {
+            List<String> names = values == null ? Collections.emptyList()
+                    : Arrays.stream(values).map(Enum::name).collect(Collectors.toList());
+            return defaultValues(names);
+        }
+
         public String defaultValue() {
             return this.defaultValue;
         }
 
         public Widget defaultValue(String... defaultValue) {
-            this.defaultValue = String.join(", ", defaultValue);
+            List<String> values = defaultValue != null ? Arrays.asList(defaultValue) : Collections.emptyList();
+            this.dropdownDefaultValues = new ArrayList<>(values);
+            this.defaultValue = String.join(", ", values);
             return this;
         }
 
         public Widget defaultValue(Enum<?>... defaultValue) {
-            this.defaultValue = Arrays.stream(defaultValue).map(Enum::name).collect(Collectors.joining(", "));
+            List<String> values = defaultValue == null ? Collections.emptyList()
+                    : Arrays.stream(defaultValue).map(Enum::name).collect(Collectors.toList());
+            this.dropdownDefaultValues = new ArrayList<>(values);
+            this.defaultValue = String.join(", ", values);
             return this;
         }
     }
@@ -249,33 +275,42 @@ public class InputFormScreen extends BaniraScreen {
     public static class Results {
         private Map<String, String> nameMap = new HashMap<>();
         private Map<Integer, String> indexMap = new HashMap<>();
+        private Map<String, List<String>> nameListMap = new HashMap<>();
+        private Map<Integer, List<String>> indexListMap = new HashMap<>();
         private String curName = "";
         private int curIndex = -1;
         private String runningResult;
 
         public String value() {
             if (!StringUtils.isNullOrEmptyEx(this.curName)) {
-                return this.nameMap.get(this.curName);
+                return value(this.curName);
             } else if (this.curIndex >= 0) {
-                return this.indexMap.get(this.curIndex);
+                return value(this.curIndex);
             } else if (this.nameMap.size() == 1) {
-                return this.nameMap.values().iterator().next();
+                return value(this.nameMap.keySet().iterator().next());
+            } else if (this.nameListMap.size() == 1) {
+                return value(this.nameListMap.keySet().iterator().next());
             } else if (this.indexMap.size() == 1) {
-                return this.indexMap.values().iterator().next();
+                return value(this.indexMap.keySet().iterator().next());
+            } else if (this.indexListMap.size() == 1) {
+                return value(this.indexListMap.keySet().iterator().next());
             } else {
                 return null;
             }
         }
 
         public String value(String name) {
+            rejectStructuredValue(name, null);
             return this.nameMap.getOrDefault(name, null);
         }
 
         public String value(int index) {
+            rejectStructuredValue(null, index);
             return this.indexMap.getOrDefault(index, null);
         }
 
         public String value(String name, int index) {
+            rejectStructuredValue(name, index);
             if (this.nameMap.containsKey(name)) {
                 return this.nameMap.get(name);
             } else {
@@ -284,11 +319,18 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         public String firstValue() {
-            return this.indexMap.getOrDefault(0, null);
+            return value(0);
         }
 
         public String lastValue() {
-            return this.indexMap.getOrDefault(this.indexMap.size() - 1, null);
+            int index = -1;
+            for (Integer candidate : this.indexMap.keySet()) {
+                index = Math.max(index, candidate);
+            }
+            for (Integer candidate : this.indexListMap.keySet()) {
+                index = Math.max(index, candidate);
+            }
+            return index >= 0 ? value(index) : null;
         }
 
         public Results value(String name, int index, String value) {
@@ -297,6 +339,51 @@ public class InputFormScreen extends BaniraScreen {
             }
             this.indexMap.put(index, value);
             return this;
+        }
+
+        public List<String> values() {
+            if (!StringUtils.isNullOrEmptyEx(this.curName)) {
+                return values(this.curName);
+            } else if (this.curIndex >= 0) {
+                return values(this.curIndex);
+            } else if (this.nameListMap.size() == 1) {
+                return copyValues(this.nameListMap.values().iterator().next());
+            } else if (this.indexListMap.size() == 1) {
+                return copyValues(this.indexListMap.values().iterator().next());
+            }
+            return Collections.emptyList();
+        }
+
+        public List<String> values(String name) {
+            return copyValues(this.nameListMap.get(name));
+        }
+
+        public List<String> values(int index) {
+            return copyValues(this.indexListMap.get(index));
+        }
+
+        public List<String> values(String name, int index) {
+            return this.nameListMap.containsKey(name) ? values(name) : values(index);
+        }
+
+        public Results values(String name, int index, List<String> values) {
+            List<String> copy = copyValues(values);
+            if (!StringUtils.isNullOrEmptyEx(name)) {
+                this.nameListMap.put(name, copy);
+            }
+            this.indexListMap.put(index, copy);
+            return this;
+        }
+
+        private static List<String> copyValues(@Nullable List<String> values) {
+            return values != null ? new ArrayList<>(values) : Collections.emptyList();
+        }
+
+        private void rejectStructuredValue(@Nullable String name, @Nullable Integer index) {
+            if ((name != null && this.nameListMap.containsKey(name))
+                    || (index != null && this.indexListMap.containsKey(index))) {
+                throw new IllegalStateException("Multi-select results must be read with values(...)");
+            }
         }
 
         public Results runningResult(String s) {
@@ -310,7 +397,8 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         public boolean isEmpty() {
-            return this.nameMap.isEmpty() && this.indexMap.isEmpty();
+            return this.nameMap.isEmpty() && this.indexMap.isEmpty()
+                    && this.nameListMap.isEmpty() && this.indexListMap.isEmpty();
         }
     }
 
@@ -542,11 +630,14 @@ public class InputFormScreen extends BaniraScreen {
                 dd.inputMode(widget.dropdownInputMode());
                 dd.text(widget.hint());
                 dd.maxLength(widget.maxLength());
-                dd.selectedValues(parseDropdownInitialValues(widget, currentValue));
+                List<String> selectedValues = dropdownInputValues.computeIfAbsent(i,
+                        ignored -> initialDropdownValues(widget, currentValue));
+                dd.selectedValues(selectedValues);
                 dd.enabled(!widget.disabled());
 
                 int finalI = i;
                 dd.onSelectionChanged(values -> {
+                    dropdownInputValues.put(finalI, new ArrayList<>(values));
                     String joined = joinDropdownValues(values, widget.dropdownMultiSelect());
                     if (finalI < inputValues.size()) {
                         inputValues.set(finalI, joined);
@@ -716,24 +807,26 @@ public class InputFormScreen extends BaniraScreen {
                     val = "";
                 }
             }
-            r.value(args.getWidgets().get(i).name(), i, val);
+            if (field.input() instanceof DropdownSelectWidget) {
+                DropdownSelectWidget dropdown = (DropdownSelectWidget) field.input();
+                if (dropdown.multiSelect()) {
+                    r.values(args.getWidgets().get(i).name(), i, dropdown.getSelectedValues());
+                } else {
+                    r.value(args.getWidgets().get(i).name(), i, val);
+                }
+            } else {
+                r.value(args.getWidgets().get(i).name(), i, val);
+            }
         }
         return r;
     }
 
-    private static List<String> parseDropdownInitialValues(Widget widget, String currentValue) {
+    private static List<String> initialDropdownValues(Widget widget, String currentValue) {
+        if (widget.dropdownMultiSelect() && widget.dropdownDefaultValues() != null) {
+            return new ArrayList<>(widget.dropdownDefaultValues());
+        }
         if (StringUtils.isNullOrEmptyEx(currentValue)) {
             return new ArrayList<>();
-        }
-        if (widget.dropdownMultiSelect()) {
-            List<String> list = new ArrayList<>();
-            for (String part : currentValue.split(",")) {
-                String t = part.trim();
-                if (StringUtils.isNotNullOrEmpty(t)) {
-                    list.add(t);
-                }
-            }
-            return list;
         }
         return Collections.singletonList(currentValue);
     }
@@ -838,7 +931,16 @@ public class InputFormScreen extends BaniraScreen {
             InputField field = inputFields.get(i);
             String val = inputFieldValueString(field);
             if (val != null) {
-                results.value(args.getWidgets().get(i).name(), i, val);
+                if (field.input() instanceof DropdownSelectWidget) {
+                    DropdownSelectWidget dropdown = (DropdownSelectWidget) field.input();
+                    if (dropdown.multiSelect()) {
+                        results.values(args.getWidgets().get(i).name(), i, dropdown.getSelectedValues());
+                    } else {
+                        results.value(args.getWidgets().get(i).name(), i, val);
+                    }
+                } else {
+                    results.value(args.getWidgets().get(i).name(), i, val);
+                }
             }
         }
 

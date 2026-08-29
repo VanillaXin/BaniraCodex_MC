@@ -427,7 +427,7 @@ public class DebugScreen extends BaniraScreen {
                                 .type(InputFormScreen.WidgetType.DROPDOWN)
                                 .dropdownOptions(EnumMCColor.class)
                                 .dropdownMultiSelect(true)
-                                .defaultValue(EnumMCColor.BLACK, EnumMCColor.BLUE)
+                                .defaultValues(EnumMCColor.BLACK, EnumMCColor.BLUE)
                                 .allowEmpty(true))
                         .addWidget(new InputFormScreen.Widget()
                                 .name("color")

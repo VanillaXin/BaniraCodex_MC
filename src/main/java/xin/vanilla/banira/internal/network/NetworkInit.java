@@ -15,7 +15,9 @@ import xin.vanilla.banira.internal.network.packet.DimensionToClient;
 import java.util.ArrayList;
 
 public final class NetworkInit {
-    public static final NetworkHandler HANDLER = NetworkHandler.create("main_network", BaniraIdentifier.of(Banira.MOD_ID, "main_network"));
+    public static final String PROTOCOL_VERSION = "2";
+    public static final NetworkHandler HANDLER = NetworkHandler.create(
+            "main_network", BaniraIdentifier.of(Banira.MOD_ID, "main_network"), PROTOCOL_VERSION, true);
 
     public static final int REQUEST_ADVANCEMENT_DATA = 1;
     public static final int REQUEST_DIMENSION_DATA = 2;

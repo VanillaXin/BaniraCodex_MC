@@ -65,7 +65,9 @@ public class ConfigListSpecHelperTest {
                 List.of("0.14", 0.55, 1.2), desc));
         assertEquals(List.of(0.1, 0.6), ConfigListSpecHelper.normalizeListForGui(
                 List.of("0.14", 0.55, 1.2), desc));
-        assertEquals(List.of(0.1, 0.6), ConfigListSpecHelper.parseNetworkCsv("0.14, 0.55, bad, 1.2", desc));
+        assertEquals(List.of(0.1, 0.6), ConfigListSpecHelper.parseNetworkList("[0.14,0.55]", desc));
+        assertThrows(IllegalArgumentException.class,
+                () -> ConfigListSpecHelper.parseNetworkList("[0.14,0.55,\"bad\",1.2]", desc));
     }
 
     @Test
@@ -78,15 +80,19 @@ public class ConfigListSpecHelperTest {
                 List.of("alpha", Mode.BETA, "missing"), desc));
         assertEquals(List.of(Mode.ALPHA, Mode.BETA), ConfigListSpecHelper.listFromGuiItems(
                 List.of("ALPHA", "beta", "missing"), desc));
-        assertEquals(List.of(Mode.ALPHA, Mode.BETA), ConfigListSpecHelper.parseNetworkCsv(
-                "alpha, missing, BETA", desc));
+        assertEquals(List.of(Mode.ALPHA, Mode.BETA), ConfigListSpecHelper.parseNetworkList(
+                "[\"alpha\",\"BETA\"]", desc));
+        assertThrows(IllegalArgumentException.class,
+                () -> ConfigListSpecHelper.parseNetworkList("[\"alpha\",\"missing\",\"BETA\"]", desc));
     }
 
     @Test
-    public void booleanNetworkCsvRejectsInvalidBooleanTokens() {
+    public void booleanNetworkListRejectsInvalidBooleanTokens() {
         ConfigEntryDescriptor desc = descriptor(ConfigValueType.BOOLEAN_LIST, null, null, null, 2);
 
-        assertEquals(List.of(true, false), ConfigListSpecHelper.parseNetworkCsv("true, maybe, false", desc));
+        assertEquals(List.of(true, false), ConfigListSpecHelper.parseNetworkList("[true,false]", desc));
+        assertThrows(IllegalArgumentException.class,
+                () -> ConfigListSpecHelper.parseNetworkList("[true,\"maybe\",false]", desc));
     }
 
     private static ConfigEntryDescriptor descriptor(ConfigValueType type,

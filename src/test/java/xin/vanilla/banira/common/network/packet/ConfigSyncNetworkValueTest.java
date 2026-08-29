@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 
 public class ConfigSyncNetworkValueTest {
 
@@ -17,7 +18,17 @@ public class ConfigSyncNetworkValueTest {
     public void encodesScalarEnumsAndListsForNetwork() {
         assertEquals("true", ConfigSyncToServer.encodeConfigValue(true));
         assertEquals("BETA", ConfigSyncToServer.encodeConfigValue(Mode.BETA));
-        assertEquals("1,BETA,text", ConfigSyncToServer.encodeConfigValue(List.of(1, Mode.BETA, "text")));
+        assertEquals("[1,\"BETA\",\"text\"]", ConfigSyncToServer.encodeConfigValue(List.of(1, Mode.BETA, "text")));
+    }
+
+    @Test
+    public void stringListsRoundTripWithoutLosingContent() {
+        ConfigHolder holder = holder();
+        List<String> expected = List.of("a,b", " c ", "", "quote \" and slash \\", "line\nbreak");
+
+        String encoded = ConfigSyncToServer.encodeConfigValue(expected);
+
+        assertEquals(expected, ConfigSyncToServer.decodeNetworkValue(holder, "strings", encoded));
     }
 
     @Test
@@ -49,12 +60,41 @@ public class ConfigSyncNetworkValueTest {
     }
 
     @Test
-    public void decodesListsWithFilteringAndRuntimeTypes() {
+    public void decodesStrictStructuredListsWithRuntimeTypes() {
         ConfigHolder holder = holder();
 
-        assertEquals(List.of(1, 5), ConfigSyncToServer.decodeNetworkValue(holder, "ints", "1, 9, bad, 5"));
-        assertEquals(List.of(true, false), ConfigSyncToServer.decodeNetworkValue(holder, "flags", "true, maybe, false"));
-        assertEquals(List.of(Mode.ALPHA, Mode.BETA), ConfigSyncToServer.decodeNetworkValue(holder, "modes", "alpha, missing, BETA"));
+        assertEquals(List.of(1, 5), ConfigSyncToServer.decodeNetworkValue(holder, "ints", "[1,5]"));
+        assertEquals(List.of(true, false), ConfigSyncToServer.decodeNetworkValue(holder, "flags", "[true,false]"));
+        assertEquals(List.of(Mode.ALPHA, Mode.BETA), ConfigSyncToServer.decodeNetworkValue(holder, "modes", "[\"alpha\",\"BETA\"]"));
+    }
+
+    @Test
+    public void rejectsLegacyCsvAndPartiallyInvalidLists() {
+        ConfigHolder holder = holder();
+
+        assertEquals("1,5", ConfigSyncToServer.decodeNetworkValue(holder, "ints", "1,5"));
+        assertEquals("[1,9,\"bad\",5]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "ints", "[1,9,\"bad\",5]"));
+        assertEquals("[true,\"maybe\",false]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "flags", "[true,\"maybe\",false]"));
+        assertEquals("[\"ok\",1]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "strings", "[\"ok\",1]"));
+        assertEquals("[1,5] trailing",
+                ConfigSyncToServer.decodeNetworkValue(holder, "ints", "[1,5] trailing"));
+        assertEquals("['a,b']",
+                ConfigSyncToServer.decodeNetworkValue(holder, "strings", "['a,b']"));
+        assertEquals("[unquoted]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "strings", "[unquoted]"));
+        assertEquals("[1/*comment*/,2]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "ints", "[1/*comment*/,2]"));
+        assertEquals("[1e400]",
+                ConfigSyncToServer.decodeNetworkValue(holder, "doubles", "[1e400]"));
+    }
+
+    @Test
+    public void rejectsUnsupportedListElementTypesBeforeSending() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ConfigSyncToServer.encodeConfigValue(List.of(new Object())));
     }
 
     @Test
@@ -68,7 +108,9 @@ public class ConfigSyncNetworkValueTest {
                 .value("count", 0, v -> v instanceof Integer i && i >= 0 && i <= 5)
                 .value("ratio", 0.0, v -> v instanceof Double d && d >= 0.0 && d <= 1.0)
                 .value("mode", Mode.ALPHA, v -> v instanceof Mode)
+                .value("strings", List.of(), listValidator(ConfigValueType.STRING_LIST, null, null, null, 2))
                 .value("ints", List.of(), listValidator(ConfigValueType.INTEGER_LIST, null, 0, 5, 2))
+                .value("doubles", List.of(), listValidator(ConfigValueType.DOUBLE_LIST, null, null, null, 2))
                 .value("flags", List.of(), listValidator(ConfigValueType.BOOLEAN_LIST, null, null, null, 2))
                 .value("modes", List.of(), listValidator(ConfigValueType.ENUM_LIST, Mode.class, null, null, 2));
         return ConfigHolder.create(
@@ -81,7 +123,9 @@ public class ConfigSyncNetworkValueTest {
                         descriptor("count", ConfigValueType.INTEGER, null, 0, 5, 2),
                         descriptor("ratio", ConfigValueType.DOUBLE, null, 0.0, 1.0, 2),
                         descriptor("mode", ConfigValueType.ENUM, Mode.class, null, null, 2),
+                        descriptor("strings", ConfigValueType.STRING_LIST, null, null, null, 2),
                         descriptor("ints", ConfigValueType.INTEGER_LIST, null, 0, 5, 2),
+                        descriptor("doubles", ConfigValueType.DOUBLE_LIST, null, null, null, 2),
                         descriptor("flags", ConfigValueType.BOOLEAN_LIST, null, null, null, 2),
                         descriptor("modes", ConfigValueType.ENUM_LIST, Mode.class, null, null, 2)
                 ),

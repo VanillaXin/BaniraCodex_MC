@@ -1,15 +1,21 @@
 package xin.vanilla.banira.common.config;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.common.util.JsonUtils;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * 根据 {@code List<T>} 泛型与注解解析列表配置项类型，并生成 Forge 列表校验器与规范化默认值。
@@ -259,17 +265,19 @@ public final class ConfigListSpecHelper {
     }
 
     private static Double coerceToDouble(Object o) {
+        final double value;
         if (o instanceof Number) {
-            return ((Number) o).doubleValue();
-        }
-        if (o instanceof String) {
+            value = ((Number) o).doubleValue();
+        } else if (o instanceof String) {
             try {
-                return Double.parseDouble(((String) o).trim());
+                value = Double.parseDouble(((String) o).trim());
             } catch (NumberFormatException ignored) {
                 return null;
             }
+        } else {
+            return null;
         }
-        return null;
+        return isFinite(value) ? value : null;
     }
 
     private static boolean inIntegerRange(int v, Number min, Number max) {
@@ -288,6 +296,9 @@ public final class ConfigListSpecHelper {
 
     private static boolean inDoubleRange(double v, Number min, Number max, int decimalPlaces) {
         double x = roundDouble(v, decimalPlaces);
+        if (!isFinite(x)) {
+            return false;
+        }
         if (min != null && x < min.doubleValue()) {
             return false;
         }
@@ -299,7 +310,11 @@ public final class ConfigListSpecHelper {
             return v;
         }
         double factor = Math.pow(10, decimalPlaces);
-        return Math.round(v * factor) / factor;
+        double scaled = v * factor;
+        if (!isFinite(factor) || !isFinite(scaled)) {
+            return Double.NaN;
+        }
+        return Math.round(scaled) / factor;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -419,39 +434,64 @@ public final class ConfigListSpecHelper {
     }
 
     /**
-     * 解析网络同步用的逗号分隔字符串为列表（与 {@link xin.vanilla.banira.common.network.packet.ConfigSyncToServer#encodeConfigValue} 成对）。
+     * 将网络同步用的列表编码为严格 JSON 数组。
      */
-    public static List<?> parseNetworkCsv(String csv, ConfigEntryDescriptor desc) {
-        if (csv == null || csv.isEmpty()) {
-            return Collections.emptyList();
+    public static String encodeNetworkList(List<?> values) {
+        JsonArray array = new JsonArray();
+        for (Object value : values) {
+            if (value instanceof Enum<?>) {
+                array.add(((Enum<?>) value).name());
+            } else if (value instanceof Boolean) {
+                array.add((Boolean) value);
+            } else if (value instanceof Number) {
+                Number number = (Number) value;
+                if (!isFinite(number.doubleValue())) {
+                    throw new IllegalArgumentException("Config list numbers must be finite");
+                }
+                array.add(number);
+            } else if (value instanceof CharSequence || value instanceof Character) {
+                array.add(String.valueOf(value));
+            } else {
+                throw new IllegalArgumentException("Unsupported config list element: "
+                        + (value == null ? "null" : value.getClass().getName()));
+            }
         }
-        List<String> parts = Arrays.stream(csv.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+        return JsonUtils.GSON.toJson(array);
+    }
+
+    /**
+     * 解析网络同步用的严格 JSON 数组。数组结构、元素类型或约束任一不合法时拒绝整项配置。
+     */
+    public static List<?> parseNetworkList(String encoded, ConfigEntryDescriptor desc) {
+        final JsonElement root;
+        try {
+            JsonReader reader = new JsonReader(new StringReader(encoded != null ? encoded : ""));
+            reader.setLenient(false);
+            root = JsonUtils.GSON.getAdapter(JsonElement.class).read(reader);
+            if (reader.peek() != JsonToken.END_DOCUMENT) {
+                throw new IllegalArgumentException("Trailing data after config list JSON");
+            }
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalArgumentException("Invalid config list JSON", e);
+        }
+        if (root == null || !root.isJsonArray()) {
+            throw new IllegalArgumentException("Config list must be a JSON array");
+        }
+
         ConfigEntryDescriptor.ConfigValueType lt = desc.getValueType();
         Class<? extends Enum<?>> ec = desc.getEnumClass();
         Number min = desc.getMinValue();
         Number max = desc.getMaxValue();
         int dp = desc.getDecimalPlaces();
-        List<Object> out = new ArrayList<>(parts.size());
-        for (String t : parts) {
-            Object raw;
-            switch (lt) {
-                case STRING_LIST:
-                case INTEGER_LIST:
-                case LONG_LIST:
-                case DOUBLE_LIST:
-                case BOOLEAN_LIST:
-                case ENUM_LIST:
-                    raw = t;
-                    break;
-                default:
-                    raw = t;
-            }
+        JsonArray array = root.getAsJsonArray();
+        List<Object> out = new ArrayList<>(array.size());
+        for (JsonElement element : array) {
+            Object raw = strictNetworkElement(element, lt);
             Object coerced = coerceListElement(raw, lt, ec, min, max, dp);
             if (coerced != null) {
                 out.add(coerced);
+            } else {
+                throw new IllegalArgumentException("Invalid config list element: " + element);
             }
         }
         if (lt == ConfigEntryDescriptor.ConfigValueType.STRING_LIST) {
@@ -462,5 +502,39 @@ public final class ConfigListSpecHelper {
             return strs;
         }
         return out;
+    }
+
+    private static Object strictNetworkElement(JsonElement element,
+                                               ConfigEntryDescriptor.ConfigValueType listType) {
+        if (element == null || !element.isJsonPrimitive()) {
+            throw new IllegalArgumentException("Config list elements must be scalar values");
+        }
+        JsonPrimitive primitive = element.getAsJsonPrimitive();
+        switch (listType) {
+            case STRING_LIST:
+            case ENUM_LIST:
+                if (!primitive.isString()) {
+                    throw new IllegalArgumentException("Config list element must be a string");
+                }
+                return primitive.getAsString();
+            case BOOLEAN_LIST:
+                if (!primitive.isBoolean()) {
+                    throw new IllegalArgumentException("Config list element must be a boolean");
+                }
+                return primitive.getAsBoolean();
+            case INTEGER_LIST:
+            case LONG_LIST:
+            case DOUBLE_LIST:
+                if (!primitive.isNumber()) {
+                    throw new IllegalArgumentException("Config list element must be a number");
+                }
+                return primitive.getAsString();
+            default:
+                throw new IllegalArgumentException("Not a list config type: " + listType);
+        }
+    }
+
+    private static boolean isFinite(double value) {
+        return !Double.isNaN(value) && !Double.isInfinite(value);
     }
 }

@@ -26,6 +26,15 @@ public class NetworkHandler {
         return new NetworkHandler(BaniraPlatforms.get().networkService().registrar(channelName, identifier));
     }
 
+    /**
+     * 创建带明确协议版本的网络处理器。
+     */
+    public static NetworkHandler create(String channelName, BaniraIdentifier identifier,
+                                        String protocolVersion, boolean optionalClient) {
+        return new NetworkHandler(BaniraPlatforms.get().networkService()
+                .registrar(channelName, identifier, protocolVersion, optionalClient));
+    }
+
     private NetworkHandler(NetworkPacketRegistrar registrar) {
         this.registrar = registrar;
     }

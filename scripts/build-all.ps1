@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [switch]$PublishToMavenLocal,
+    [switch]$SkipPublishToMavenLocal,
     [switch]$ListOnly,
     [string]$LocalInputsRoot,
     [Alias("Branches")]
@@ -237,7 +237,7 @@ $worktreeBase = Join-Path (Split-Path $repoRoot -Parent) (
 $localInputs = Find-LocalInputsRoot
 $branches = Select-BuildBranches
 $tasks = @("clean", "test", "assemble")
-if ($PublishToMavenLocal) {
+if (-not $SkipPublishToMavenLocal) {
     $tasks += "publishToMavenLocal"
 }
 

@@ -238,7 +238,11 @@ scripts\build-all.bat
 ```
 
 デフォルトではローカルの全ローダーブランチを構築し、`dev/*`、`maintenance/*` など他の名前空間は含みません。各ブランチは現在の作業ツリーを切り替えず、detached
-一時 worktree で構築され、Banira のビルドでは `publishToMavenLocal` も実行します。
+一時 worktree で構築され、Banira のビルドでは `publishToMavenLocal` も実行します。Maven Local を更新しない場合のみ、明示的に発行をスキップできます。
+
+```bat
+scripts\build-all.bat -SkipPublishToMavenLocal
+```
 
 ビルドを実行せず、選択されたブランチと JDK 検出だけを確認します。
 

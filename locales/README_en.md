@@ -250,7 +250,11 @@ scripts\build-all.bat
 
 By default, the script builds every local loader branch and excludes other namespaces such as `dev/*` and
 `maintenance/*`. Each branch is built in a detached temporary worktree without switching the current checkout, and
-Banira builds also run `publishToMavenLocal`.
+Banira builds also run `publishToMavenLocal`. Skip that step explicitly only when Maven Local must remain unchanged:
+
+```bat
+scripts\build-all.bat -SkipPublishToMavenLocal
+```
 
 List selected branches and validate JDK discovery without running a build:
 

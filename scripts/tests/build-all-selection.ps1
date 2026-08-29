@@ -73,6 +73,19 @@ if ($fabric16Line -notmatch "Target Java 8 \(.+\), Gradle 9\.2\.1 on Java 21 \(.
     throw "Fabric 1.16.5 must use Java 21 to run Gradle and Loom while retaining the Java 8 target: $fabric16Line"
 }
 
+$defaultTaskOutput = @(& $buildScript -ListOnly -BranchExpression @("fabric/20.1") 6>&1 |
+        ForEach-Object { "$_" }) -join "`n"
+if ($defaultTaskOutput -notmatch "Tasks: clean test assemble publishToMavenLocal") {
+    throw "Banira PowerShell builds must publish to Maven Local by default: $defaultTaskOutput"
+}
+
+$skipTaskOutput = @(& $buildScript -ListOnly -SkipPublishToMavenLocal `
+        -BranchExpression @("fabric/20.1") 6>&1 | ForEach-Object { "$_" }) -join "`n"
+if ($skipTaskOutput -notmatch "Tasks: clean test assemble(?:\r?\n|$)" -or
+        $skipTaskOutput -match "Tasks: .*publishToMavenLocal") {
+    throw "SkipPublishToMavenLocal must omit only the publication task: $skipTaskOutput"
+}
+
 $buildScriptSource = Get-Content -LiteralPath $buildScript -Raw -Encoding UTF8
 foreach ($requiredHelper in @(
         "Test-WorktreeRegistered",

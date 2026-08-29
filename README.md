@@ -235,6 +235,12 @@ scripts\build-all.bat
 脚本默认构建本地全部加载器分支，不包含 `dev/*`、`maintenance/*` 等其他命名空间。每个分支都在 detached 临时 worktree
 中构建，不会切换当前工作树；构建完成后还会执行 `publishToMavenLocal`。
 
+仅在不希望更新 Maven Local 时显式跳过发布：
+
+```bat
+scripts\build-all.bat -SkipPublishToMavenLocal
+```
+
 仅检查分支与 JDK 配置，不执行构建：
 
 ```bat

@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class NetworkHandlerTest {
 
@@ -54,6 +55,17 @@ public class NetworkHandlerTest {
         assertEquals(List.of(FirstPacket.class, TestSplitPacket.class, SecondPacket.class), service.packetClasses("split"));
     }
 
+    @Test
+    public void versionedChannelUsesExplicitProtocolContract() {
+        RecordingNetworkService service = new RecordingNetworkService();
+        BaniraPlatforms.install(new TestBaniraPlatform().networkService(service));
+
+        NetworkHandler.create("versioned", BaniraIdentifier.of("network_test", "versioned"), "2", true);
+
+        assertEquals("2", service.protocolVersion);
+        assertTrue(service.optionalClient);
+    }
+
     private static <MSG extends INetworkPacket> BiConsumer<MSG, BaniraPacketBuffer> noopEncoder() {
         return (packet, buffer) -> {
         };
@@ -69,11 +81,24 @@ public class NetworkHandlerTest {
 
     private static final class RecordingNetworkService implements BaniraNetworkService {
         private final Map<String, List<Registration>> registrations = new LinkedHashMap<>();
+        private String protocolVersion;
+        private boolean optionalClient;
 
         @Override
         public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName, @Nonnull BaniraIdentifier identifier) {
             registrations.computeIfAbsent(channelName, ignored -> new ArrayList<>());
             return new RecordingRegistrar(registrations.get(channelName));
+        }
+
+
+        @Override
+        public @Nonnull NetworkPacketRegistrar registrar(@Nonnull String channelName,
+                                                         @Nonnull BaniraIdentifier identifier,
+                                                         @Nonnull String protocolVersion,
+                                                         boolean optionalClient) {
+            this.protocolVersion = protocolVersion;
+            this.optionalClient = optionalClient;
+            return registrar(channelName, identifier);
         }
 
         List<Integer> packetIds(String channelName) {

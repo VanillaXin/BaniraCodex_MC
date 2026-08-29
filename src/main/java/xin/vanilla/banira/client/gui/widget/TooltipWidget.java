@@ -20,6 +20,7 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.tooltip.TooltipBounds;
+import xin.vanilla.banira.client.gui.tooltip.TooltipContentClip;
 import xin.vanilla.banira.client.gui.tooltip.TooltipPlacement;
 import xin.vanilla.banira.client.gui.tooltip.TooltipRequestCollector;
 import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionFrame;
@@ -604,12 +605,21 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                     .paddingTop(data.paddingTop).paddingBottom(data.paddingBottom);
             if (args.wrap() && data.maxWidthForText > 0) clone.maxWidth(data.maxWidthForText);
             else if (args.maxWidth() > 0) clone.maxWidth(args.maxWidth());
-            // 文本不参与缩放，只裁掉仍在过渡边界之外的部分。
-            AbstractGuiUtils.pushScissor(drawX, drawY, drawWidth, drawHeight);
-            try {
-                LabelWidget.drawLimitedText(clone);
-            } finally {
-                AbstractGuiUtils.popScissor();
+            // 文本不参与缩放，并始终限制在当前动画帧的有效内容区内。
+            TooltipBounds contentClip = TooltipContentClip.inset(
+                    new TooltipBounds(drawX, drawY, drawWidth, drawHeight),
+                    data.paddingLeft, data.paddingRight, data.paddingTop, data.paddingBottom);
+            int clipWidth = (int) Math.floor(contentClip.width());
+            int clipHeight = (int) Math.floor(contentClip.height());
+            if (clipWidth > 0 && clipHeight > 0) {
+                AbstractGuiUtils.pushScissor(
+                        (int) Math.round(contentClip.x()), (int) Math.round(contentClip.y()),
+                        clipWidth, clipHeight);
+                try {
+                    LabelWidget.drawLimitedText(clone);
+                } finally {
+                    AbstractGuiUtils.popScissor();
+                }
             }
         });
     }

@@ -70,6 +70,29 @@ public class ConfigSyncToServerTest {
         assertEquals(Boolean.TRUE, values.get("flag"));
     }
 
+    @Test
+    public void stringListsRoundTripWithoutLosingElementBoundaries() {
+        List<String> expected = Arrays.asList("a,b", " c ", "", "quote \" and slash \\", "line\nbreak");
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("strings", Collections.emptyList());
+        ConfigHolder holder = holder(values, listDescriptor("strings", ConfigEntryDescriptor.ConfigValueType.STRING_LIST));
+
+        String encoded = ConfigSyncToServer.encodeConfigValue(expected);
+
+        assertEquals(expected, ConfigSyncToServer.decodeNetworkValue(holder, "strings", encoded));
+    }
+
+    @Test
+    public void legacyAndLenientListFormatsAreRejected() {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("strings", Collections.emptyList());
+        ConfigHolder holder = holder(values, listDescriptor("strings", ConfigEntryDescriptor.ConfigValueType.STRING_LIST));
+
+        assertEquals("a,b", ConfigSyncToServer.decodeNetworkValue(holder, "strings", "a,b"));
+        assertEquals("['a,b']", ConfigSyncToServer.decodeNetworkValue(holder, "strings", "['a,b']"));
+        assertEquals("[unquoted]", ConfigSyncToServer.decodeNetworkValue(holder, "strings", "[unquoted]"));
+    }
+
     private static ConfigHolder holder(Map<String, Object> values, ConfigEntryDescriptor... descriptors) {
         return ConfigHolder.create("test", "test-common.toml", ConfigScope.COMMON,
                 new MapStore(values, descriptors), Arrays.asList(descriptors), Collections.emptyMap(), Collections.emptyMap());
@@ -90,6 +113,14 @@ public class ConfigSyncToServerTest {
                 .path(path)
                 .valueType(ConfigEntryDescriptor.ConfigValueType.BOOLEAN)
                 .defaultValue(Boolean.FALSE)
+                .build();
+    }
+
+    private static ConfigEntryDescriptor listDescriptor(String path, ConfigEntryDescriptor.ConfigValueType type) {
+        return ConfigEntryDescriptor.builder()
+                .path(path)
+                .valueType(type)
+                .defaultValue(Collections.emptyList())
                 .build();
     }
 

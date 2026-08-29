@@ -16,7 +16,6 @@ import xin.vanilla.banira.internal.server.ServerSenderAccess;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
@@ -123,20 +122,12 @@ public class ConfigSyncToServer implements NetworkPacket {
      */
     public static String encodeConfigValue(Object value) {
         if (value instanceof List) {
-            List<?> list = (List<?>) value;
-            return list.stream().map(ConfigSyncToServer::encodeListElement).collect(Collectors.joining(","));
+            return ConfigListSpecHelper.encodeNetworkList((List<?>) value);
         }
         if (value instanceof Enum) {
             return ((Enum<?>) value).name();
         }
         return String.valueOf(value);
-    }
-
-    private static String encodeListElement(Object o) {
-        if (o instanceof Enum) {
-            return ((Enum<?>) o).name();
-        }
-        return String.valueOf(o);
     }
 
     /**
@@ -173,7 +164,7 @@ public class ConfigSyncToServer implements NetworkPacket {
                 case DOUBLE_LIST:
                 case BOOLEAN_LIST:
                 case ENUM_LIST:
-                    return ConfigListSpecHelper.parseNetworkCsv(value, desc);
+                    return ConfigListSpecHelper.parseNetworkList(value, desc);
                 default:
                     return value;
             }

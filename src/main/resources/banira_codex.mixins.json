@@ -2,6 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "xin.vanilla.banira.internal.mixin",
+  "plugin": "xin.vanilla.banira.internal.mixin.OptionalCompatibilityMixinPlugin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "banira_codex.refmap.json",
   "mixins": [

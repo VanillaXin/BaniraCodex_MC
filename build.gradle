@@ -30,6 +30,11 @@ loom {
 
 repositories {
     maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+    maven {
         name = "CurseMaven"
         url = "https://www.cursemaven.com"
         content { includeGroup "curse.maven" }
@@ -51,6 +56,7 @@ repositories {
 }
 
 dependencies {
+    modRuntimeOnly "maven.modrinth:spark:XhFbpH8f"
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()

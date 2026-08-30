@@ -82,6 +82,11 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+    maven {
         name = "Curse Maven"
         url = "https://www.cursemaven.com"
         content {
@@ -94,6 +99,7 @@ repositories {
 }
 
 dependencies {
+    runtimeOnly fg.deobf("maven.modrinth:spark:9NSIbttL")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'

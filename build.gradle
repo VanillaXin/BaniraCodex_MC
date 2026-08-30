@@ -51,6 +51,11 @@ configurations {
 
 repositories {
     maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+    maven {
         name = "Curse Maven"
         url = "https://www.cursemaven.com"
         content {
@@ -63,6 +68,7 @@ repositories {
 }
 
 dependencies {
+    runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     implementation "net.neoforged:neoforge:${neo_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.34'

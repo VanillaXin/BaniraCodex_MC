@@ -43,7 +43,17 @@ repositories {
     // }
 }
 
+repositories {
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+}
+
 dependencies {
+    // Development runtime performance mod; not bundled into published artifacts.
+    modRuntimeOnly "maven.modrinth:AANobbMI:74Y5Z8fo"
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()

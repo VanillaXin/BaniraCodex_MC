@@ -1,10 +1,10 @@
 package xin.vanilla.banira.internal.server.dev;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.event.BaniraEvents;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
@@ -18,9 +18,11 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /** 真实专服内验证 Banira 事件、配置热重载、玩家数据、文件操作与 Spark 归档。 */
 public final class BaniraNetworkSmokeServerRunner {
+    private static final long SPARK_SAMPLE_SECONDS = 3L;
     private static int eventTicks;
     private static boolean ready;
     private static boolean finished;
@@ -44,7 +46,7 @@ public final class BaniraNetworkSmokeServerRunner {
             if (finished) { shutdownWhenIdle(server); return; }
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
-            ServerPlayerEntity player = server.getPlayerList().getPlayers().get(0);
+            ServerPlayer player = server.getPlayerList().getPlayers().get(0);
             if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) firstPhase(server, player);
             else if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) secondPhase(player);
             else throw new IllegalStateException("Unknown smoke phase " + BaniraNetworkSmokeStatus.phase());
@@ -55,7 +57,7 @@ public final class BaniraNetworkSmokeServerRunner {
         }
     }
 
-    private static void firstPhase(MinecraftServer server, ServerPlayerEntity player) throws Exception {
+    private static void firstPhase(MinecraftServer server, ServerPlayer player) throws Exception {
         if (spark != null) return;
         if (!eventVerified) {
             BaniraNetworkSmokeStatus.append("PASS event-bridge");
@@ -72,9 +74,9 @@ public final class BaniraNetworkSmokeServerRunner {
         }
         if (CustomConfig.getHelpNumPerPage() != 23) return;
         BaniraNetworkSmokeStatus.append("PASS config-hot-reload");
-        BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).putString("network_smoke", "persisted");
-        BaniraCodex.playerDataManager.saveToDisk(player.getUUID());
-        if (!"persisted".equals(BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).getString("network_smoke"))) throw new IllegalStateException("Player data was not written");
+        BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).putString("network_smoke", "persisted");
+        BaniraServerRuntime.playerDataManager().saveToDisk(player.getUUID());
+        if (!"persisted".equals(BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).getString("network_smoke"))) throw new IllegalStateException("Player data was not written");
         BaniraNetworkSmokeStatus.append("PASS player-data-file");
         Path file = CustomConfig.getConfigDirectory().resolve("network-smoke.txt");
         Files.write(file, "Banira network smoke".getBytes(StandardCharsets.UTF_8));
@@ -86,8 +88,8 @@ public final class BaniraNetworkSmokeServerRunner {
         finished = true;
     }
 
-    private static void secondPhase(ServerPlayerEntity player) {
-        if (!"persisted".equals(BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).getString("network_smoke"))) throw new IllegalStateException("Player data did not survive restart");
+    private static void secondPhase(ServerPlayer player) {
+        if (!"persisted".equals(BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).getString("network_smoke"))) throw new IllegalStateException("Player data did not survive restart");
         BaniraNetworkSmokeStatus.append("PASS persisted-player-data");
         BaniraNetworkSmokeStatus.append("FINISHED phase-two");
         finished = true;
@@ -103,33 +105,56 @@ public final class BaniraNetworkSmokeServerRunner {
         private final Future<?> future;
         private final MinecraftServer server;
         private final Path report;
+        private final long startedAt = System.nanoTime();
         private boolean written;
+        private boolean stopRequested;
         private ReflectiveSparkProfile(Object sampler, Future<?> future, Object platform, Object plugin, MinecraftServer server, Path report) { this.sampler=sampler; this.future=future; this.platform=platform; this.plugin=plugin; this.server=server; this.report=report; }
         private static ReflectiveSparkProfile start(MinecraftServer server) {
             try {
                 Object plugin = plugin(); ClassLoader loader = plugin.getClass().getClassLoader(); Class<?> base = base(plugin);
                 Field platformField = base.getDeclaredField("platform"); platformField.setAccessible(true); Object platform = platformField.get(plugin);
                 Class<?> builderType = Class.forName("me.lucko.spark.common.sampler.SamplerBuilder", true, loader); Object builder = builderType.getConstructor().newInstance();
-                builderType.getMethod("samplingInterval", double.class).invoke(builder, 10.0D); builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, 20L, TimeUnit.SECONDS); builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
-                Class<?> dumper = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader); Field gameThread = base.getDeclaredField("threadDumper"); gameThread.setAccessible(true); Object value = gameThread.get(plugin); value.getClass().getMethod("ensureSetup").invoke(value); builderType.getMethod("threadDumper", dumper).invoke(builder, base.getMethod("getDefaultThreadDumper").invoke(plugin));
+                builderType.getMethod("samplingInterval", double.class).invoke(builder, 10.0D); builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, SPARK_SAMPLE_SECONDS, TimeUnit.SECONDS); builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
+                Class<?> dumper = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
+                Class<?> gameThread = Class.forName("me.lucko.spark.common.sampler.ThreadDumper$GameThread", true, loader);
+                Object gameThreadDumper = gameThread.getConstructor().newInstance();
+                gameThread.getMethod("setThread", Thread.class).invoke(gameThreadDumper, Thread.currentThread());
+                builderType.getMethod("threadDumper", dumper).invoke(builder, gameThread.getMethod("get").invoke(gameThreadDumper));
                 Class<?> grouper = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader); builderType.getMethod("threadGrouper", grouper).invoke(builder, grouper.getField("BY_POOL").get(null));
+                Object container = platform.getClass().getMethod("getSamplerContainer").invoke(platform);
+                // Spark starts its configured background profiler with the server. The smoke owns this short, exportable sample.
+                method(container.getClass(), "stopActiveSampler", 1).invoke(container, false);
                 Object sampler = method(builderType, "start", 1).invoke(builder, platform); Future<?> future = (Future<?>) method(sampler.getClass(), "getFuture", 0).invoke(sampler);
+                method(container.getClass(), "setActiveSampler", 1).invoke(container, sampler);
                 String path = System.getProperty("banira.networkSmoke.sparkReport", "").trim(); if (path.isEmpty()) throw new IllegalStateException("Missing Spark report path");
                 return new ReflectiveSparkProfile(sampler, future, platform, plugin, server, Paths.get(path).toAbsolutePath());
             } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to start Spark sampler", error); }
         }
         private boolean writeWhenComplete() {
-            if (written || !future.isDone()) return false;
+            if (!stopRequested && System.nanoTime() - startedAt >= TimeUnit.SECONDS.toNanos(SPARK_SAMPLE_SECONDS)) {
+                try {
+                    method(sampler.getClass(), "stop", 1).invoke(sampler, false);
+                    stopRequested = true;
+                } catch (ReflectiveOperationException error) {
+                    throw new IllegalStateException("Unable to stop Spark sampler", error);
+                }
+            }
+            // Spark 1.10 leaves its future incomplete after an explicit stop(false), even though its data is exportable.
+            if (written || (!stopRequested && !future.isDone())) return false;
             try {
-                ClassLoader loader=plugin.getClass().getClassLoader(); Class<?> source=Class.forName("net.minecraft.command.ICommandSource", true, loader); Class<?> base=Class.forName("me.lucko.spark.forge.plugin.ForgeSparkPlugin", true, loader); Class<?> sender=Class.forName("me.lucko.spark.forge.ForgeCommandSender", true, loader);
-                Object commandSender=sender.getConstructor(source, base).newInstance(server, plugin); Class<?> order=Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader); Class<?> disambiguator=Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader); Class<?> merge=Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
-                Object mergeMode=merge.getMethod("sameMethod", disambiguator).invoke(null, disambiguator.getConstructor().newInstance()); Object lookup=base.getMethod("createClassSourceLookup").invoke(plugin);
-                Object proto=method(sampler.getClass(), "toProto", 6).invoke(sampler, platform, commandSender, order.getField("BY_TIME").get(null), "Banira network smoke", mergeMode, lookup); byte[] bytes=(byte[]) proto.getClass().getMethod("toByteArray").invoke(proto);
+                ClassLoader loader=plugin.getClass().getClassLoader(); Class<?> propsType=Class.forName("me.lucko.spark.common.sampler.Sampler$ExportProps", true, loader); Object props=propsType.getConstructor().newInstance();
+                Class<?> senderData=Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader); propsType.getMethod("creator", senderData).invoke(props, senderData.getConstructor(String.class, java.util.UUID.class).newInstance("Banira network smoke", null));
+                Class<?> disambiguator=Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader); Class<?> merge=Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+                Supplier<Object> mergeMode=() -> createMergeMode(merge, disambiguator); propsType.getMethod("mergeMode", Supplier.class).invoke(props, mergeMode);
+                propsType.getMethod("classSourceLookup", Supplier.class).invoke(props, (Supplier<Object>) () -> createClassSourceLookup(plugin));
+                Object proto=method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props); byte[] bytes=(byte[]) proto.getClass().getMethod("toByteArray").invoke(proto);
                 if (bytes.length == 0) throw new IllegalStateException("Spark report was empty"); Files.createDirectories(report.getParent()); Files.write(report, bytes); written=true; return true;
             } catch (ReflectiveOperationException | java.io.IOException error) { throw new IllegalStateException("Unable to write Spark report", error); }
         }
         private static Object plugin() throws ReflectiveOperationException { Field field=MinecraftForge.EVENT_BUS.getClass().getDeclaredField("listeners"); field.setAccessible(true); Object listeners=field.get(MinecraftForge.EVENT_BUS); for(Object candidate:((Map<?,?>)listeners).keySet()) if(candidate!=null && candidate.getClass().getName().equals("me.lucko.spark.forge.plugin.ForgeServerSparkPlugin")) return candidate; throw new IllegalStateException("Spark server plugin was not registered"); }
         private static Class<?> base(Object plugin) { Class<?> type=plugin.getClass(); while(type!=null && !type.getName().equals("me.lucko.spark.forge.plugin.ForgeSparkPlugin")) type=type.getSuperclass(); if(type==null) throw new IllegalStateException("Spark base plugin was not found"); return type; }
+        private static Object createMergeMode(Class<?> merge, Class<?> disambiguator) { try { return merge.getMethod("sameMethod", disambiguator).invoke(null, disambiguator.getConstructor().newInstance()); } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to create Spark merge mode", error); } }
+        private static Object createClassSourceLookup(Object plugin) { try { return plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin); } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to create Spark class source lookup", error); } }
         private static Method method(Class<?> type,String name,int count) { for(Method method:type.getMethods()) if(method.getName().equals(name) && method.getParameterCount()==count) return method; throw new IllegalStateException("Missing Spark method "+name); }
     }
 }

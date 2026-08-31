@@ -13,12 +13,14 @@ if (smokeChild) {
     String phase = project.property('banira.networkSmoke.phase').toString()
     String status = project.property('banira.networkSmoke.status').toString()
     String report = project.property('banira.networkSmoke.sparkReport').toString()
+    String clientReport = project.findProperty('banira.networkSmoke.clientSparkReport')?.toString() ?: ''
     loom.runs {
         configureEach {
             property 'banira.networkSmoke', 'true'
             property 'banira.networkSmoke.phase', phase
             property 'banira.networkSmoke.status', status
             property 'banira.networkSmoke.sparkReport', report
+            property 'banira.networkSmoke.clientSparkReport', clientReport
         }
         server {
             runDir project.relativePath(smokeServerDir)
@@ -53,13 +55,14 @@ def waitFor = { Process process, File status, String marker, File log, int timeo
     }
     throw new GradleException("Timed out waiting for '${marker}':\n${tailUtf8(log)}")
 }
-def start = { String task, String phase, File status, File report, File log ->
+def start = { String task, String phase, File status, File report, File clientReport, File log ->
     File childRoot = new File(smokeRoot, task == 'runServer' ? 'server-gradle' : 'client-gradle')
     File wrapper = file("${projectDir}/${System.getProperty('os.name').toLowerCase().contains('windows') ? 'gradlew.bat' : 'gradlew'}")
     List<String> command = System.getProperty('os.name').toLowerCase().contains('windows') ? ['cmd.exe', '/d', '/c', wrapper.absolutePath] : [wrapper.absolutePath]
     command.addAll([task, '--no-daemon', '--console=plain', '--project-cache-dir', new File(childRoot, 'project-cache').absolutePath,
                     '-Pbanira.networkSmoke.child=true', "-Pbanira.networkSmoke.phase=${phase}", "-Pbanira.networkSmoke.status=${status.absolutePath}",
-                    "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}"])
+                    "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.clientSparkReport=${clientReport.absolutePath}",
+                    "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}"])
     log.parentFile.mkdirs()
     ProcessBuilder builder = new ProcessBuilder(command.collect { it.toString() })
     builder.directory(projectDir)
@@ -86,17 +89,20 @@ tasks.register('networkSmoke') {
             File serverStatus = new File(evidence, "server-${phase}.status")
             File clientStatus = new File(evidence, "client-${phase}.status")
             File report = new File(evidence, "spark-report-${phase}.sparkprofile")
+            File clientReport = new File(evidence, "spark-client-report-${phase}.sparkprofile")
             File serverLog = new File(evidence, "server-${phase}.log")
             File clientLog = new File(evidence, "client-${phase}.log")
             Process server = null
             Process client = null
             try {
-                server = start('runServer', phase, serverStatus, report, serverLog)
+                server = start('runServer', phase, serverStatus, report, clientReport, serverLog)
                 waitFor(server, serverStatus, 'PASS server-ready', serverLog, 180)
-                client = start('runClient', phase, clientStatus, report, clientLog)
+                client = start('runClient', phase, clientStatus, report, clientReport, clientLog)
                 if (phase == 'phase-one') {
                     waitFor(server, serverStatus, 'PASS spark-report-written', serverLog, 120)
                     if (!report.isFile() || report.length() == 0L) throw new GradleException("Spark report was not written: ${report}")
+                    waitFor(client, clientStatus, 'PASS client-ui-spark-report-written', clientLog, 120)
+                    if (!clientReport.isFile() || clientReport.length() == 0L) throw new GradleException("Client Spark report was not written: ${clientReport}")
                 }
                 waitFor(client, clientStatus, "FINISHED ${phase}", clientLog, 180)
                 if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) throw new GradleException("Client failed:\n${tailUtf8(clientLog)}")

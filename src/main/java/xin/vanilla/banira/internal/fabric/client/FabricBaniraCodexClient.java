@@ -25,6 +25,7 @@ import xin.vanilla.banira.internal.client.BaniraClientGuiService;
 import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
+import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 import xin.vanilla.banira.internal.fabric.compat.FabricExternalInventoryCompatibility;
 
@@ -54,6 +55,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             }
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            BaniraNetworkSmokeClientRunner.tick(client);
             BaniraScheduler.dispatchClientTick();
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraClientGuiService.handleClientTickEnd(client.screen == null);

@@ -21,7 +21,7 @@ public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacke
 
     @Override
     public String readUtf() {
-        return delegate.readUtf();
+        return delegate.readUtf(32767);
     }
 
     @Override

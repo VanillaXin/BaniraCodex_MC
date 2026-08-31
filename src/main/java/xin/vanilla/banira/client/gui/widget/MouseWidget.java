@@ -117,8 +117,7 @@ public class MouseWidget extends BaseWidget {
 
     private void drawCursor(PoseStack stack, int mouseX, int mouseY) {
         if (this.drawCount % 10 == 0) {
-            int pixelColor = AbstractGuiUtils.getPixelArgb(mouseX, mouseY);
-            float bgBrightness = ColorUtils.getBrightnessFromArgb(pixelColor);
+            float bgBrightness = ColorUtils.getBrightnessFromArgb(screen.getEffectiveTheme().bgSurface());
             boolean useDark = bgBrightness < BRIGHTNESS_THRESHOLD;
             this.curColorMain = useDark ? getDarkMain() : getLightMain();
             this.curColorPressed = useDark ? getDarkPressed() : getLightPressed();

@@ -19,6 +19,7 @@ import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**
@@ -50,6 +51,7 @@ public final class BaniraClientForgeEventHandler {
             BaniraScheduler.dispatchClientTick();
             BaniraClientOverlayBridge.tickOutOfScreenNotifications();
             ExternalInventoryButtonSmokeRunner.onClientTick();
+            BaniraNetworkSmokeClientRunner.tick();
         }
     }
 

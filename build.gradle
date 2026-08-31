@@ -251,3 +251,4 @@ tasks.withType(PublishToMavenLocal).configureEach {
 
 apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
+apply from: "gradle/spark-profile-report.gradle"

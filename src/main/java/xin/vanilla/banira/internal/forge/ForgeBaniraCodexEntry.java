@@ -5,6 +5,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -12,6 +13,7 @@ import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraCommandAdapter;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraGameEventAdapter;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraLifecycleAdapter;
+import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.internal.forge.client.ForgeBaniraClientBootstrap;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -39,6 +41,8 @@ public final class ForgeBaniraCodexEntry {
         MinecraftForge.EVENT_BUS.register(ForgeBaniraCommandAdapter.class);
         MinecraftForge.EVENT_BUS.register(ForgeBaniraGameEventAdapter.class);
         NetworkInit.register();
+        BaniraCodex.bootstrapCommon();
+        BaniraNetworkSmokeServerRunner.register();
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ForgeBaniraClientBootstrap::init);
     }
 }

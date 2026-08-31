@@ -4,6 +4,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Set;
 
@@ -16,13 +17,9 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                 && !mixinClassName.contains(".compat.ipn.")) {
             return true;
         }
-        try {
-            Class.forName(targetClassName, false,
-                    OptionalCompatibilityMixinPlugin.class.getClassLoader());
-            return true;
-        } catch (ClassNotFoundException | LinkageError ignored) {
-            return false;
-        }
+        String resource = targetClassName.replace('.', '/') + ".class";
+        URL target = OptionalCompatibilityMixinPlugin.class.getClassLoader().getResource(resource);
+        return target != null;
     }
 
     @Override

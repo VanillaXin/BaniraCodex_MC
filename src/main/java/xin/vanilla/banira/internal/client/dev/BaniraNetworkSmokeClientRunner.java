@@ -18,8 +18,8 @@ public final class BaniraNetworkSmokeClientRunner {
         if (!connected && ++ticks >= 20) {
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");
             int port = Integer.getInteger("banira.networkSmoke.port", 25579);
-            ServerData server = new ServerData("Banira Network Smoke", host + ':' + port, false);
-            ConnectScreen.startConnecting(client.screen, client, ServerAddress.parseString(server.ip), server);
+            ServerData server = new ServerData("Banira Network Smoke", host + ':' + port, ServerData.Type.OTHER);
+            ConnectScreen.startConnecting(client.screen, client, ServerAddress.parseString(server.ip), server, false, null);
             connected = true; ticks = 0; return;
         }
         if (client.player == null || client.getSingleplayerServer() != null) {

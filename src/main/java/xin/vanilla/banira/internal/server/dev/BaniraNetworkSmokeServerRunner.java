@@ -120,7 +120,11 @@ public final class BaniraNetworkSmokeServerRunner {
                 Object gameThreadDumper = gameThread.getConstructor().newInstance();
                 gameThread.getMethod("setThread", Thread.class).invoke(gameThreadDumper, Thread.currentThread());
                 builderType.getMethod("threadDumper", dumper).invoke(builder, gameThread.getMethod("get").invoke(gameThreadDumper));
-                Class<?> grouper = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader); builderType.getMethod("threadGrouper", grouper).invoke(builder, grouper.getField("BY_POOL").get(null));
+                Class<?> grouper = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader);
+                Method grouperMethod = method(builderType, "threadGrouper", 1);
+                Object grouperValue = threadGrouper(grouper);
+                if (Supplier.class.isAssignableFrom(grouperMethod.getParameterTypes()[0]) && !(grouperValue instanceof Supplier)) grouperValue = (Supplier<Object>) () -> threadGrouper(grouper);
+                grouperMethod.invoke(builder, grouperValue);
                 Object container = platform.getClass().getMethod("getSamplerContainer").invoke(platform);
                 // Spark starts its configured background profiler with the server. The smoke owns this short, exportable sample.
                 method(container.getClass(), "stopActiveSampler", 1).invoke(container, false);
@@ -144,8 +148,7 @@ public final class BaniraNetworkSmokeServerRunner {
             try {
                 ClassLoader loader=plugin.getClass().getClassLoader(); Class<?> propsType=Class.forName("me.lucko.spark.common.sampler.Sampler$ExportProps", true, loader); Object props=propsType.getConstructor().newInstance();
                 Class<?> senderData=Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader); propsType.getMethod("creator", senderData).invoke(props, senderData.getConstructor(String.class, java.util.UUID.class).newInstance("Banira network smoke", null));
-                Class<?> disambiguator=Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader); Class<?> merge=Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
-                Supplier<Object> mergeMode=() -> createMergeMode(merge, disambiguator); propsType.getMethod("mergeMode", Supplier.class).invoke(props, mergeMode);
+                configureMerge(propsType, props, loader);
                 propsType.getMethod("classSourceLookup", Supplier.class).invoke(props, (Supplier<Object>) () -> createClassSourceLookup(plugin));
                 Object proto=method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props); byte[] bytes=(byte[]) proto.getClass().getMethod("toByteArray").invoke(proto);
                 if (bytes.length == 0) throw new IllegalStateException("Spark report was empty"); Files.createDirectories(report.getParent()); Files.write(report, bytes); written=true; return true;
@@ -153,6 +156,18 @@ public final class BaniraNetworkSmokeServerRunner {
         }
         private static Object plugin() throws ReflectiveOperationException { Field field=MinecraftForge.EVENT_BUS.getClass().getDeclaredField("listeners"); field.setAccessible(true); Object listeners=field.get(MinecraftForge.EVENT_BUS); for(Object candidate:((Map<?,?>)listeners).keySet()) if(candidate!=null && candidate.getClass().getName().equals("me.lucko.spark.forge.plugin.ForgeServerSparkPlugin")) return candidate; throw new IllegalStateException("Spark server plugin was not registered"); }
         private static Class<?> base(Object plugin) { Class<?> type=plugin.getClass(); while(type!=null && !type.getName().equals("me.lucko.spark.forge.plugin.ForgeSparkPlugin")) type=type.getSuperclass(); if(type==null) throw new IllegalStateException("Spark base plugin was not found"); return type; }
+        private static Object threadGrouper(Class<?> type) { try { return type.getField("BY_POOL").get(null); } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to create Spark thread grouper", error); } }
+        private static void configureMerge(Class<?> propsType, Object props, ClassLoader loader) throws ReflectiveOperationException {
+            try {
+                Class<?> strategy = Class.forName("me.lucko.spark.common.sampler.java.MergeStrategy", true, loader);
+                propsType.getMethod("mergeStrategy", strategy).invoke(props, strategy.getField("SAME_METHOD").get(null));
+            } catch (ClassNotFoundException ignored) {
+                Class<?> disambiguator = Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader);
+                Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+                Supplier<Object> mergeMode = () -> createMergeMode(merge, disambiguator);
+                propsType.getMethod("mergeMode", Supplier.class).invoke(props, mergeMode);
+            }
+        }
         private static Object createMergeMode(Class<?> merge, Class<?> disambiguator) { try { return merge.getMethod("sameMethod", disambiguator).invoke(null, disambiguator.getConstructor().newInstance()); } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to create Spark merge mode", error); } }
         private static Object createClassSourceLookup(Object plugin) { try { return plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin); } catch (ReflectiveOperationException error) { throw new IllegalStateException("Unable to create Spark class source lookup", error); } }
         private static Method method(Class<?> type,String name,int count) { for(Method method:type.getMethods()) if(method.getName().equals(name) && method.getParameterCount()==count) return method; throw new IllegalStateException("Missing Spark method "+name); }

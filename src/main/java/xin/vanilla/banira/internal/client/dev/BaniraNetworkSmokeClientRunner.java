@@ -1,8 +1,9 @@
 package xin.vanilla.banira.internal.client.dev;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.ConnectingScreen;
+import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 /** 自动加入独立专服，使通用服务端能力在真实远端连接下运行。 */
@@ -17,7 +18,8 @@ public final class BaniraNetworkSmokeClientRunner {
         if (!connected && ++ticks >= 20) {
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");
             int port = Integer.getInteger("banira.networkSmoke.port", 25579);
-            client.setScreen(new ConnectingScreen(client.screen, client, new ServerData("Banira Network Smoke", host + ':' + port, false)));
+            ServerData server = new ServerData("Banira Network Smoke", host + ':' + port, false);
+            ConnectScreen.startConnecting(client.screen, client, ServerAddress.parseString(server.ip), server);
             connected = true; ticks = 0; return;
         }
         if (client.player == null || client.getSingleplayerServer() != null) {

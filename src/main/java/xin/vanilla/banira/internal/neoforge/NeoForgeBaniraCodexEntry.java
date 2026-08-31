@@ -17,6 +17,7 @@ import xin.vanilla.banira.internal.neoforge.config.NeoForgeConfigAdapter;
 import xin.vanilla.banira.internal.neoforge.platform.NeoForgeBaniraPlatform;
 import xin.vanilla.banira.internal.neoforge.network.NeoForgeNetworkChannels;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 /**
@@ -41,6 +42,7 @@ public final class NeoForgeBaniraCodexEntry {
         NeoForge.EVENT_BUS.register(NeoForgeBaniraCommandAdapter.class);
         NeoForge.EVENT_BUS.register(NeoForgeBaniraGameEventAdapter.class);
         NetworkInit.register();
+        BaniraNetworkSmokeServerRunner.register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientBootstrapAccess.init(modBus);
         }

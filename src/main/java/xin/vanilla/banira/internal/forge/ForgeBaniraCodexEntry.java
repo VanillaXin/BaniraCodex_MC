@@ -13,6 +13,7 @@ import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.internal.forge.client.ForgeBaniraClientBootstrap;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraEventBridge;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
@@ -36,6 +37,7 @@ public final class ForgeBaniraCodexEntry {
         BaniraScheduler.init();
         NetworkInit.register();
         BaniraCodex.bootstrapCommon();
+        BaniraNetworkSmokeServerRunner.register();
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ForgeBaniraClientBootstrap::init);
     }

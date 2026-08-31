@@ -21,6 +21,7 @@ import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonSmokeRunner;
 import xin.vanilla.banira.internal.client.*;
+import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 
 /**
  * Forge 1.16.5 客户端事件桥；只在这里接触 Forge 原生事件和 MatrixStack。
@@ -49,6 +50,7 @@ public final class ForgeBaniraClientEventBridge {
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);
             BaniraClientGuiService.handleClientTickEnd(!BaniraClientAccess.hasScreen());
             ExternalInventoryButtonSmokeRunner.onClientTick();
+            BaniraNetworkSmokeClientRunner.tick();
         }
     }
 

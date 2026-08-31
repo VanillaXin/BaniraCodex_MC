@@ -10,7 +10,7 @@ import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.resource.BaniraResourceAccess;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -327,7 +327,7 @@ public class Translator implements ITranslator {
      */
     public static String getClientLanguage() {
         if (BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-            String languageCode = BaniraClientRuntime.selectedLanguageCode();
+            String languageCode = ClientRuntimeBridge.selectedLanguageCode();
             if (StringUtils.isNotNullOrEmpty(languageCode)) {
                 return normalizeLanguageCode(languageCode);
             }

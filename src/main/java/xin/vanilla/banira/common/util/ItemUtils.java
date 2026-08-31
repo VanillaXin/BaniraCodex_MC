@@ -20,7 +20,7 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;
@@ -623,7 +623,7 @@ public final class ItemUtils {
 
             // 获取描述, 仅客户端
             try {
-                Player player = BaniraClientRuntime.localPlayer();
+                Player player = ClientRuntimeBridge.localPlayer();
                 if (player != null) {
                     List<net.minecraft.network.chat.Component> tooltip = stack.getTooltipLines(
                             player,
@@ -849,7 +849,7 @@ public final class ItemUtils {
     @Nonnull
     public static List<ItemStack> getAllPlayerItems() {
         try {
-            Player player = BaniraClientRuntime.localPlayer();
+            Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
                 return getAllPlayerItems(player);
             }
@@ -1237,7 +1237,7 @@ public final class ItemUtils {
     @Nonnull
     public static List<Component> getItemTooltip(@Nonnull ItemStack itemStack, boolean advanced) {
         try {
-            Player player = BaniraClientRuntime.localPlayer();
+            Player player = ClientRuntimeBridge.localPlayer();
             return getItemTooltip(itemStack, player, advanced);
         } catch (Exception e) {
             LOGGER.debug("Failed to get client player for tooltip", e);

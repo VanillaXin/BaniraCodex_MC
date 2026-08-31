@@ -125,7 +125,7 @@ public final class BaniraNetworkSmokeClientRunner {
                 builderType.getMethod("threadDumper", dumperType).invoke(builder,
                         pluginType.getMethod("getDefaultThreadDumper").invoke(plugin));
                 Class<?> grouperType = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader);
-                builderType.getMethod("threadGrouper", Supplier.class).invoke(builder, grouperType.getField("BY_POOL").get(null));
+                threadGrouper(builderType, builder, grouperType);
                 Object sampler = method(builderType, "start", 1).invoke(builder, platform);
                 method(samplerContainer.getClass(), "setActiveSampler", 1).invoke(samplerContainer, sampler);
                 Future<?> future = (Future<?>) method(sampler.getClass(), "getFuture", 0).invoke(sampler);
@@ -143,17 +143,7 @@ public final class BaniraNetworkSmokeClientRunner {
             if (written || !future.isDone()) return false;
             try {
                 ClassLoader loader = sampler.getClass().getClassLoader();
-                Class<?> propsType = Class.forName("me.lucko.spark.common.sampler.Sampler$ExportProps", true, loader);
-                Object props = propsType.getConstructor().newInstance();
-                Class<?> senderDataType = Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader);
-                Object creator = senderDataType.getConstructor(String.class, java.util.UUID.class)
-                        .newInstance("Banira client UI smoke", null);
-                propsType.getMethod("creator", senderDataType).invoke(props, creator);
-                Class<?> strategyType = Class.forName("me.lucko.spark.common.sampler.java.MergeStrategy", true, loader);
-                propsType.getMethod("mergeStrategy", strategyType).invoke(props, strategyType.getField("SAME_METHOD").get(null));
-                propsType.getMethod("classSourceLookup", Supplier.class).invoke(props,
-                        (Supplier<Object>) () -> classSourceLookup(platform));
-                Object proto = method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props);
+                Object proto = exportProto(loader);
                 byte[] bytes = (byte[]) proto.getClass().getMethod("toByteArray").invoke(proto);
                 if (bytes.length == 0) throw new IllegalStateException("Client Spark report was empty");
                 Files.createDirectories(reportPath.getParent());
@@ -178,6 +168,78 @@ public final class BaniraNetworkSmokeClientRunner {
             } catch (ReflectiveOperationException error) {
                 throw new IllegalStateException("Unable to create client Spark class source lookup", error);
             }
+        }
+
+        private static void threadGrouper(Class<?> builderType, Object builder, Class<?> grouperType)
+                throws ReflectiveOperationException {
+            Object grouper = grouperType.getField("BY_POOL").get(null);
+            try {
+                builderType.getMethod("threadGrouper", Supplier.class).invoke(builder, grouper);
+            } catch (NoSuchMethodException ignored) {
+                builderType.getMethod("threadGrouper", grouperType).invoke(builder, grouper);
+            }
+        }
+
+        private Object exportProto(ClassLoader loader) throws ReflectiveOperationException {
+            Class<?> propsType = Class.forName("me.lucko.spark.common.sampler.Sampler$ExportProps", true, loader);
+            try {
+                Object props = propsType.getConstructor().newInstance();
+                Class<?> senderDataType = Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader);
+                Object creator = senderDataType.getConstructor(String.class, java.util.UUID.class)
+                        .newInstance("Banira client UI smoke", null);
+                propsType.getMethod("creator", senderDataType).invoke(props, creator);
+                Class<?> strategyType = Class.forName("me.lucko.spark.common.sampler.java.MergeStrategy", true, loader);
+                propsType.getMethod("mergeStrategy", strategyType).invoke(props, strategyType.getField("SAME_METHOD").get(null));
+                propsType.getMethod("classSourceLookup", Supplier.class).invoke(props,
+                        (Supplier<Object>) () -> classSourceLookup(platform));
+                return method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props);
+            } catch (ClassNotFoundException | NoSuchMethodException ignored) {
+                try {
+                    Object props = propsType.getConstructor().newInstance();
+                    Class<?> senderDataType = Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader);
+                    Object creator = senderDataType.getConstructor(String.class, java.util.UUID.class)
+                            .newInstance("Banira client UI smoke", null);
+                    propsType.getMethod("creator", senderDataType).invoke(props, creator);
+                    propsType.getMethod("comment", String.class).invoke(props, "Banira client UI smoke");
+                    propsType.getMethod("mergeMode", Supplier.class).invoke(props,
+                            (Supplier<Object>) () -> legacyMergeModeUnchecked(loader));
+                    propsType.getMethod("classSourceLookup", Supplier.class).invoke(props,
+                            (Supplier<Object>) () -> classSourceLookup(platform));
+                    return method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props);
+                } catch (NoSuchMethodException noSupplierProps) {
+                    return exportLegacyProto(loader, propsType);
+                }
+            }
+        }
+
+        private Object exportLegacyProto(ClassLoader loader, Class<?> propsType) throws ReflectiveOperationException {
+                Class<?> platformInfo = Class.forName("me.lucko.spark.common.platform.PlatformInfo", true, loader);
+                Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
+                Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
+                Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+                Class<?> lookup = Class.forName("me.lucko.spark.common.util.ClassSourceLookup", true, loader);
+                Class<?> fabricSender = Class.forName("me.lucko.spark.fabric.FabricCommandSender", true, loader);
+                Object commandSender = fabricSender.getConstructors()[0].newInstance(Minecraft.getInstance().player, plugin);
+                Object props = propsType.getConstructor(platformInfo, sender, java.util.Comparator.class, String.class, merge, lookup)
+                        .newInstance(plugin.getClass().getMethod("getPlatformInfo").invoke(plugin), commandSender,
+                                order.getField("BY_TIME").get(null), "Banira client UI smoke", legacyMergeMode(loader),
+                                plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin));
+                return method(sampler.getClass(), "toProto", 1).invoke(sampler, props);
+        }
+
+        private static Object legacyMergeModeUnchecked(ClassLoader loader) {
+            try {
+                return legacyMergeMode(loader);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Unable to create legacy Spark merge mode", error);
+            }
+        }
+
+        private static Object legacyMergeMode(ClassLoader loader) throws ReflectiveOperationException {
+            Class<?> disambiguator = Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader);
+            Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+            Object methodDisambiguator = disambiguator.getConstructor().newInstance();
+            return merge.getMethod("sameMethod", disambiguator).invoke(null, methodDisambiguator);
         }
 
         private static Method method(Class<?> type, String name, int parameters) {

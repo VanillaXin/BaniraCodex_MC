@@ -23,6 +23,7 @@ import xin.vanilla.banira.internal.common.BaniraPaths;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.internal.fabric.platform.FabricBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -53,6 +54,7 @@ public class BaniraCodex implements ModInitializer {
         NetworkInit.register();
         registerFabricEvents();
         BaniraCodexRuntime.bootstrap();
+        BaniraNetworkSmokeServerRunner.register();
         BaniraLifecycle.dispatchCommonSetup(BaniraCommonSetupEvent.immediate());
     }
 

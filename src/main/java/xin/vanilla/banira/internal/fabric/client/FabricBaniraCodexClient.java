@@ -28,6 +28,7 @@ import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.*;
+import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.fabric.compat.FabricExternalInventoryCompatibility;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
@@ -66,6 +67,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             }
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            BaniraNetworkSmokeClientRunner.tick(client);
             BaniraScheduler.dispatchClientTick();
             ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT);
             BaniraClientEventHub.dispatchClientTick(BaniraClientTickEvent.END);

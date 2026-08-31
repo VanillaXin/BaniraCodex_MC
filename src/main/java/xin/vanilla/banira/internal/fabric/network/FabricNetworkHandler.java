@@ -30,6 +30,7 @@ import java.util.function.Function;
  * Fabric channel 适配器；每个 Banira channel 独立维护 packet id。
  */
 public final class FabricNetworkHandler implements NetworkPacketRegistrar {
+    private static final int MAX_PROTOCOL_LENGTH = 256;
     private final ResourceLocation channel;
     private final String protocolVersion;
     private final CustomPacketPayload.Type<FabricPayload> payloadType;
@@ -83,7 +84,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
             throw new IllegalArgumentException("Unregistered Banira packet: " + packet.getClass().getName());
         }
         FriendlyByteBuf buffer = registryBuffer(Unpooled.buffer());
-        buffer.writeUtf(protocolVersion);
+        buffer.writeUtf(protocolVersion, MAX_PROTOCOL_LENGTH);
         buffer.writeVarInt(registration.packetId);
         registration.encodeUntyped(packet, new FabricPacketBuffer(buffer));
         return buffer;
@@ -155,7 +156,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
     }
 
     private void receive(FriendlyByteBuf buffer, BaniraNetworkContext context) {
-        String remoteProtocol = buffer.readUtf();
+        String remoteProtocol = buffer.readUtf(MAX_PROTOCOL_LENGTH);
         if (!protocolVersion.equals(remoteProtocol)) {
             context.markHandled();
             return;

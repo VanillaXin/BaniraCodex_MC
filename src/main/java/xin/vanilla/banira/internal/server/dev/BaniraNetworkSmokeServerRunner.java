@@ -22,6 +22,11 @@ import java.util.concurrent.TimeUnit;
 
 /** 真实专服内验证 Banira 事件、配置热重载、玩家数据、文件服务与 Spark 报告。 */
 public final class BaniraNetworkSmokeServerRunner {
+    private static final int WORKLOAD_OPERATIONS_PER_TICK = 512;
+    private static final String[] WORKLOAD_MOD_IDS = {
+            "network_smoke_0", "network_smoke_1", "network_smoke_2", "network_smoke_3",
+            "network_smoke_4", "network_smoke_5", "network_smoke_6", "network_smoke_7"
+    };
     private static boolean ready;
     private static boolean finished;
     private static boolean failed;
@@ -30,6 +35,7 @@ public final class BaniraNetworkSmokeServerRunner {
     private static int eventTicks;
     private static int shutdownTicks;
     private static ReflectiveSparkProfile spark;
+    private static BaniraNetworkSmokeWorkload workload;
 
     private BaniraNetworkSmokeServerRunner() {
     }
@@ -75,7 +81,10 @@ public final class BaniraNetworkSmokeServerRunner {
     }
 
     private static void firstPhase(MinecraftServer server, ServerPlayer player) throws Exception {
-        if (spark != null) return;
+        if (spark != null) {
+            runSustainedWorkload(player);
+            return;
+        }
         if (!eventVerified) {
             eventVerified = true;
             BaniraNetworkSmokeStatus.append("PASS event-bridge");
@@ -104,7 +113,25 @@ public final class BaniraNetworkSmokeServerRunner {
         }
         BaniraNetworkSmokeStatus.append("PASS file-operation");
         spark = ReflectiveSparkProfile.start(server);
+        workload = new BaniraNetworkSmokeWorkload(eventTicks);
         BaniraNetworkSmokeStatus.append("PASS spark-profiler-active");
+        BaniraNetworkSmokeStatus.append("START sustained-core-workload");
+    }
+
+    private static void runSustainedWorkload(ServerPlayer player) {
+        if (workload == null) throw new IllegalStateException("Missing sustained workload state");
+        for (int slot = 0; slot < WORKLOAD_OPERATIONS_PER_TICK; slot++) {
+            BaniraCodex.playerDataManager.getOrCreate(player.getUUID(), WORKLOAD_MOD_IDS[slot % WORKLOAD_MOD_IDS.length])
+                    .putInt("workload_tick", workload.elapsedTicksAt(eventTicks));
+            if (CustomConfig.getHelpNumPerPage() != 23) {
+                throw new IllegalStateException("Hot-reloaded configuration changed during workload");
+            }
+        }
+        if (workload.shouldPollConfigAt(eventTicks)) {
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.COMMON);
+        }
+        if (!workload.completeAt(eventTicks)) return;
+        BaniraNetworkSmokeStatus.append("PASS sustained-core-workload");
         BaniraNetworkSmokeStatus.append("FINISHED phase-one");
         finished = true;
     }

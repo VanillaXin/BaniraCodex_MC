@@ -17,11 +17,11 @@ if (smokeChild) {
         systemProperty 'banira.networkSmoke.sparkReport', project.property('banira.networkSmoke.sparkReport').toString()
         systemProperty 'banira.networkSmoke.clientSparkReport', project.findProperty('banira.networkSmoke.clientSparkReport')?.toString() ?: ''
     }
-    minecraft.runs.server {
+    runs.server {
         workingDirectory smokeServerDir
         arguments.addAll(['--nogui', '--port', smokePort.toString()])
     }
-    minecraft.runs.client {
+    runs.client {
         workingDirectory smokeClientDir
         systemProperty 'banira.networkSmoke.host', '127.0.0.1'
         systemProperty 'banira.networkSmoke.port', smokePort.toString()

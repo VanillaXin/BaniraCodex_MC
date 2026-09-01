@@ -118,7 +118,7 @@ public final class BaniraNetworkSmokeClientRunner {
                 Class<?> dumperType = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
                 builderType.getMethod("threadDumper", dumperType).invoke(builder, threadDumper(plugin, base, dumperType));
                 Class<?> grouperType = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader);
-                builderType.getMethod("threadGrouper", grouperType).invoke(builder, grouperType.getField("BY_POOL").get(null));
+                configureThreadGrouper(builderType, builder, grouperType);
                 Object sampler = method(builderType, "start", 1).invoke(builder, platform);
                 Future<?> future = (Future<?>) method(sampler.getClass(), "getFuture", 0).invoke(sampler);
                 String configured = System.getProperty("banira.networkSmoke.clientSparkReport", "").trim();
@@ -203,6 +203,24 @@ public final class BaniraNetworkSmokeClientRunner {
                 // Some Spark releases do not expose an initialized game-thread dumper on the client plugin.
             }
             return dumperType.getField("ALL").get(null);
+        }
+
+        private static void configureThreadGrouper(Class<?> builderType, Object builder, Class<?> grouperType) throws ReflectiveOperationException {
+            Object byPool = grouperType.getField("BY_POOL").get(null);
+            for (Method candidate : builderType.getMethods()) {
+                if (!candidate.getName().equals("threadGrouper") || candidate.getParameterCount() != 1) continue;
+                Class<?> parameterType = candidate.getParameterTypes()[0];
+                if (parameterType.isInstance(byPool)) {
+                    candidate.invoke(builder, byPool);
+                    return;
+                }
+                if (Supplier.class.isAssignableFrom(parameterType)) {
+                    Supplier<Object> supplier = byPool instanceof Supplier ? (Supplier<Object>) byPool : () -> byPool;
+                    candidate.invoke(builder, supplier);
+                    return;
+                }
+            }
+            throw new NoSuchMethodException("Missing compatible Spark threadGrouper method");
         }
 
         private static Object commandSender(Class<?> senderType, ClassLoader loader) throws ReflectiveOperationException {

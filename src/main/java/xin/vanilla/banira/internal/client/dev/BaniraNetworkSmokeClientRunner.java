@@ -157,14 +157,23 @@ public final class BaniraNetworkSmokeClientRunner {
                 Object creator = senderData.getConstructor(String.class, UUID.class).newInstance("Banira client UI smoke", null);
                 propsType.getMethod("creator", senderData).invoke(props, creator);
                 propsType.getMethod("comment", String.class).invoke(props, "Banira client UI smoke");
-                propsType.getMethod("mergeMode", Supplier.class).invoke(props, (Supplier<Object>) () -> mergeModeUnchecked(loader));
+                configureExportMerge(propsType, props, loader);
                 propsType.getMethod("classSourceLookup", Supplier.class).invoke(props, (Supplier<Object>) () -> classSourceLookup());
                 return method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props);
-            } catch (NoSuchMethodException ignored) {
+            } catch (ClassNotFoundException | NoSuchMethodException ignored) {
                 Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
                 Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
                 return method(sampler.getClass(), "toProto", 6).invoke(sampler, platform, commandSender(sender, loader),
                         order.getField("BY_TIME").get(null), "Banira client UI smoke", mergeMode(loader), classSourceLookup());
+            }
+        }
+
+        private static void configureExportMerge(Class<?> propsType, Object props, ClassLoader loader) throws ReflectiveOperationException {
+            try {
+                Class<?> strategyType = Class.forName("me.lucko.spark.common.sampler.java.MergeStrategy", true, loader);
+                propsType.getMethod("mergeStrategy", strategyType).invoke(props, strategyType.getField("SAME_METHOD").get(null));
+            } catch (ClassNotFoundException | NoSuchMethodException ignored) {
+                propsType.getMethod("mergeMode", Supplier.class).invoke(props, (Supplier<Object>) () -> mergeModeUnchecked(loader));
             }
         }
 

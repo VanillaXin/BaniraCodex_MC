@@ -15,12 +15,13 @@ if (smokeChild) {
         systemProperty 'banira.networkSmoke.phase', project.property('banira.networkSmoke.phase').toString()
         systemProperty 'banira.networkSmoke.status', project.property('banira.networkSmoke.status').toString()
         systemProperty 'banira.networkSmoke.sparkReport', project.property('banira.networkSmoke.sparkReport').toString()
+        systemProperty 'banira.networkSmoke.clientSparkReport', project.findProperty('banira.networkSmoke.clientSparkReport')?.toString() ?: ''
     }
-    runs.server {
+    minecraft.runs.server {
         workingDirectory smokeServerDir
         arguments.addAll(['--nogui', '--port', smokePort.toString()])
     }
-    runs.client {
+    minecraft.runs.client {
         workingDirectory smokeClientDir
         systemProperty 'banira.networkSmoke.host', '127.0.0.1'
         systemProperty 'banira.networkSmoke.port', smokePort.toString()
@@ -53,14 +54,14 @@ def stageChildProject = { String task ->
     }
     childProject
 }
-def start = { String task, String phase, File status, File report, File log ->
+def start = { String task, String phase, File status, File report, File clientReport, File log ->
     File childRoot = new File(smokeRoot, task == 'runServer' ? 'server-gradle' : 'client-gradle')
     File childProject = stageChildProject(task)
     File wrapper = new File(childProject, System.getProperty('os.name').toLowerCase().contains('windows') ? 'gradlew.bat' : 'gradlew')
     List<String> command = System.getProperty('os.name').toLowerCase().contains('windows') ? ['cmd.exe', '/d', '/c', wrapper.absolutePath] : [wrapper.absolutePath]
     command.addAll([task, '--no-daemon', '--console=plain', '--project-cache-dir', new File(childRoot, 'project-cache').absolutePath,
                     '-Pbanira.networkSmoke.child=true', "-Pbanira.networkSmoke.phase=${phase}", "-Pbanira.networkSmoke.status=${status.absolutePath}",
-                    "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}",
+                    "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.clientSparkReport=${clientReport.absolutePath}", "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}",
                     "-Pbanira.networkSmoke.root=${smokeRoot.absolutePath}"])
     log.parentFile.mkdirs(); ProcessBuilder builder = new ProcessBuilder(command.collect { it.toString() })
     builder.directory(childProject); builder.redirectErrorStream(true); builder.redirectOutput(log); builder.start()
@@ -71,8 +72,6 @@ tasks.register('networkSmoke') {
     description = 'Runs Banira managed-config, player-data, file, event, remote-client, and Spark smoke.'
     doLast {
         if (smokeChild) throw new GradleException('networkSmoke cannot run as a child')
-        // Keep the isolated NeoGradle projects and caches: they are expensive to prepare and
-        // independent from the disposable server/client game state and smoke evidence.
         delete smokeServerDir
         delete smokeClientDir
         delete file("${smokeRoot}/evidence")
@@ -82,13 +81,16 @@ tasks.register('networkSmoke') {
         File evidence = file("${smokeRoot}/evidence/${DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())}"); evidence.mkdirs()
         ['phase-one', 'phase-two'].each { phase ->
             File serverStatus = new File(evidence, "server-${phase}.status"); File clientStatus = new File(evidence, "client-${phase}.status")
-            File report = new File(evidence, "spark-report-${phase}.sparkprofile"); File serverLog = new File(evidence, "server-${phase}.log"); File clientLog = new File(evidence, "client-${phase}.log")
+            File report = new File(evidence, "spark-report-${phase}.sparkprofile"); File clientReport = new File(evidence, "spark-client-report-${phase}.sparkprofile"); File serverLog = new File(evidence, "server-${phase}.log"); File clientLog = new File(evidence, "client-${phase}.log")
             Process server = null; Process client = null
             try {
-                server = start('runServer', phase, serverStatus, report, serverLog); waitFor(server, serverStatus, 'PASS server-ready', serverLog, 180)
-                client = start('runClient', phase, clientStatus, report, clientLog)
+                server = start('runServer', phase, serverStatus, report, clientReport, serverLog); waitFor(server, serverStatus, 'PASS server-ready', serverLog, 180)
+                client = start('runClient', phase, clientStatus, report, clientReport, clientLog)
                 waitFor(client, clientStatus, 'PASS remote-login', clientLog, 240)
-                if (phase == 'phase-one') { waitFor(server, serverStatus, 'PASS spark-report-written', serverLog, 80); if (!report.isFile() || report.length() == 0L) throw new GradleException("Spark report was not written: ${report}") }
+                if (phase == 'phase-one') {
+                    waitFor(server, serverStatus, 'PASS spark-report-written', serverLog, 180); if (!report.isFile() || report.length() == 0L) throw new GradleException("Spark report was not written: ${report}")
+                    waitFor(client, clientStatus, 'PASS client-ui-spark-report-written', clientLog, 120); if (!clientReport.isFile() || clientReport.length() == 0L) throw new GradleException("Client Spark report was not written: ${clientReport}")
+                }
                 waitFor(client, clientStatus, "FINISHED ${phase}", clientLog, 180); if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) throw new GradleException("Client failed:\n${tailUtf8(clientLog)}")
                 waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30); if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
                 def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /** 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。 */
 public final class BaniraNetworkSmokeClientRunner {
@@ -136,14 +137,7 @@ public final class BaniraNetworkSmokeClientRunner {
             if (written || !future.isDone()) return false;
             try {
                 ClassLoader loader = plugin.getClass().getClassLoader();
-                Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
-                Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
-                Class<?> disambiguator = Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader);
-                Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
-                Object mergeMode = merge.getMethod("sameMethod", disambiguator).invoke(null, disambiguator.getConstructor().newInstance());
-                Object lookup = base(plugin).getMethod("createClassSourceLookup").invoke(plugin);
-                Object proto = method(sampler.getClass(), "toProto", 6).invoke(sampler, platform, commandSender(sender, loader),
-                        order.getField("BY_TIME").get(null), "Banira client UI smoke", mergeMode, lookup);
+                Object proto = exportProto(loader);
                 byte[] bytes = (byte[]) proto.getClass().getMethod("toByteArray").invoke(proto);
                 if (bytes.length == 0) throw new IllegalStateException("Client Spark report was empty");
                 Files.createDirectories(report.getParent());
@@ -155,6 +149,47 @@ public final class BaniraNetworkSmokeClientRunner {
             }
         }
 
+        private Object exportProto(ClassLoader loader) throws ReflectiveOperationException {
+            try {
+                Class<?> propsType = Class.forName("me.lucko.spark.common.sampler.Sampler$ExportProps", true, loader);
+                Object props = propsType.getConstructor().newInstance();
+                Class<?> senderData = Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader);
+                Object creator = senderData.getConstructor(String.class, UUID.class).newInstance("Banira client UI smoke", null);
+                propsType.getMethod("creator", senderData).invoke(props, creator);
+                propsType.getMethod("comment", String.class).invoke(props, "Banira client UI smoke");
+                propsType.getMethod("mergeMode", Supplier.class).invoke(props, (Supplier<Object>) () -> mergeModeUnchecked(loader));
+                propsType.getMethod("classSourceLookup", Supplier.class).invoke(props, (Supplier<Object>) () -> classSourceLookup());
+                return method(sampler.getClass(), "toProto", 2).invoke(sampler, platform, props);
+            } catch (NoSuchMethodException ignored) {
+                Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
+                Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
+                return method(sampler.getClass(), "toProto", 6).invoke(sampler, platform, commandSender(sender, loader),
+                        order.getField("BY_TIME").get(null), "Banira client UI smoke", mergeMode(loader), classSourceLookup());
+            }
+        }
+
+        private Object classSourceLookup() {
+            try {
+                return base(plugin).getMethod("createClassSourceLookup").invoke(plugin);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Unable to create Spark class source lookup", error);
+            }
+        }
+
+        private static Object mergeModeUnchecked(ClassLoader loader) {
+            try {
+                return mergeMode(loader);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Unable to create Spark merge mode", error);
+            }
+        }
+
+        private static Object mergeMode(ClassLoader loader) throws ReflectiveOperationException {
+            Class<?> disambiguator = Class.forName("me.lucko.spark.common.util.MethodDisambiguator", true, loader);
+            Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+            return merge.getMethod("sameMethod", disambiguator).invoke(null, disambiguator.getConstructor().newInstance());
+        }
+
         private static Object threadDumper(Object plugin, Class<?> base, Class<?> dumperType) throws ReflectiveOperationException {
             try {
                 Field gameThread = base.getDeclaredField("threadDumper");
@@ -164,8 +199,8 @@ public final class BaniraNetworkSmokeClientRunner {
                     value.getClass().getMethod("ensureSetup").invoke(value);
                     return base.getMethod("getDefaultThreadDumper").invoke(plugin);
                 }
-            } catch (java.lang.reflect.InvocationTargetException ignored) {
-                // The 1.6 client plugin can be registered before its game-thread dumper is initialized.
+            } catch (NoSuchFieldException | java.lang.reflect.InvocationTargetException ignored) {
+                // Some Spark releases do not expose an initialized game-thread dumper on the client plugin.
             }
             return dumperType.getField("ALL").get(null);
         }

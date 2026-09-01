@@ -9,9 +9,11 @@ import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -111,28 +113,46 @@ public final class BaniraNetworkSmokeClientRunner {
                 pluginType.getMethod("enable").invoke(plugin);
                 Object platform = platform(plugin);
                 ClassLoader loader = platform.getClass().getClassLoader();
-                Object samplerContainer = platform.getClass().getMethod("getSamplerContainer").invoke(platform);
-                method(samplerContainer.getClass(), "stopActiveSampler", 1).invoke(samplerContainer, true);
                 Class<?> builderType = Class.forName("me.lucko.spark.common.sampler.SamplerBuilder", true, loader);
                 Object builder = builderType.getConstructor().newInstance();
+                Object sampler = startSampler(plugin, platform, pluginType, builderType, builder, loader);
+                Future<?> future = (Future<?>) method(sampler.getClass(), "getFuture", 0).invoke(sampler);
+                return new ReflectiveClientSparkProfile(plugin, platform, sampler, future, Paths.get(configured).toAbsolutePath());
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Unable to start client Spark sampler for network smoke", error);
+            }
+        }
+
+        private static Object startSampler(Object plugin, Object platform, Class<?> pluginType, Class<?> builderType,
+                                           Object builder, ClassLoader loader) throws ReflectiveOperationException {
+            Class<?> dumperType = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
+            builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, 20L, TimeUnit.SECONDS);
+            builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
+            Object dumper;
+            try {
+                dumper = pluginType.getMethod("getDefaultThreadDumper").invoke(plugin);
+            } catch (java.lang.reflect.InvocationTargetException ignored) {
+                dumper = dumperType.getField("ALL").get(null);
+            }
+            builderType.getMethod("threadDumper", dumperType).invoke(builder, dumper);
+            Class<?> grouperType = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader);
+            threadGrouper(builderType, builder, grouperType);
+            try {
+                Object samplerContainer = platform.getClass().getMethod("getSamplerContainer").invoke(platform);
+                method(samplerContainer.getClass(), "stopActiveSampler", 1).invoke(samplerContainer, true);
                 Class<?> modeType = Class.forName("me.lucko.spark.common.sampler.SamplerMode", true, loader);
                 Object executionMode = Enum.valueOf((Class) modeType, "EXECUTION");
                 builderType.getMethod("mode", modeType).invoke(builder, executionMode);
                 builderType.getMethod("samplingInterval", double.class).invoke(builder,
                         ((Number) modeType.getMethod("defaultInterval").invoke(executionMode)).doubleValue());
-                builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, 20L, TimeUnit.SECONDS);
-                builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
-                Class<?> dumperType = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
-                builderType.getMethod("threadDumper", dumperType).invoke(builder,
-                        pluginType.getMethod("getDefaultThreadDumper").invoke(plugin));
-                Class<?> grouperType = Class.forName("me.lucko.spark.common.sampler.ThreadGrouper", true, loader);
-                threadGrouper(builderType, builder, grouperType);
                 Object sampler = method(builderType, "start", 1).invoke(builder, platform);
                 method(samplerContainer.getClass(), "setActiveSampler", 1).invoke(samplerContainer, sampler);
-                Future<?> future = (Future<?>) method(sampler.getClass(), "getFuture", 0).invoke(sampler);
-                return new ReflectiveClientSparkProfile(plugin, platform, sampler, future, Paths.get(configured).toAbsolutePath());
-            } catch (ReflectiveOperationException error) {
-                throw new IllegalStateException("Unable to start client Spark sampler for network smoke", error);
+                return sampler;
+            } catch (NoSuchMethodException ignored) {
+                builderType.getMethod("samplingInterval", double.class).invoke(builder, 4.0D);
+                Object sampler = method(builderType, "start", 0).invoke(builder);
+                method(sampler.getClass(), "start", 0).invoke(sampler);
+                return sampler;
             }
         }
 
@@ -219,13 +239,36 @@ public final class BaniraNetworkSmokeClientRunner {
                 Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
                 Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
                 Class<?> lookup = Class.forName("me.lucko.spark.common.util.ClassSourceLookup", true, loader);
-                Class<?> fabricSender = Class.forName("me.lucko.spark.fabric.FabricCommandSender", true, loader);
-                Object commandSender = fabricSender.getConstructors()[0].newInstance(Minecraft.getInstance().player, plugin);
+                Object commandSender = legacyCommandSender(sender, senderData(loader));
                 Object props = propsType.getConstructor(platformInfo, sender, java.util.Comparator.class, String.class, merge, lookup)
                         .newInstance(plugin.getClass().getMethod("getPlatformInfo").invoke(plugin), commandSender,
                                 order.getField("BY_TIME").get(null), "Banira client UI smoke", legacyMergeMode(loader),
                                 plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin));
                 return method(sampler.getClass(), "toProto", 1).invoke(sampler, props);
+        }
+
+        private static Object legacyCommandSender(Class<?> senderType, final Class<?> senderDataType) {
+            return Proxy.newProxyInstance(senderType.getClassLoader(), new Class<?>[]{senderType}, (proxy, method, args) -> {
+                String name = method.getName();
+                if ("getName".equals(name)) return "Banira client UI smoke";
+                if ("getUniqueId".equals(name)) return null;
+                if ("hasPermission".equals(name)) return true;
+                if ("sendMessage".equals(name)) return null;
+                if ("toData".equals(name)) return senderDataType.getConstructor(String.class, UUID.class)
+                        .newInstance("Banira client UI smoke", null);
+                if ("toString".equals(name)) return "Banira client UI smoke";
+                if ("hashCode".equals(name)) return System.identityHashCode(proxy);
+                if ("equals".equals(name)) return proxy == args[0];
+                return null;
+            });
+        }
+
+        private static Class<?> senderData(ClassLoader loader) {
+            try {
+                return Class.forName("me.lucko.spark.common.command.sender.CommandSender$Data", true, loader);
+            } catch (ClassNotFoundException error) {
+                throw new IllegalStateException("Unable to load legacy Spark sender metadata", error);
+            }
         }
 
         private static Object legacyMergeModeUnchecked(ClassLoader loader) {

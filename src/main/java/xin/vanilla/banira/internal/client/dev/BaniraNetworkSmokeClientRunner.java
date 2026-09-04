@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraftforge.common.MinecraftForge;
 import xin.vanilla.banira.internal.DebugScreen;
+import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeProfilePlan;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 import java.lang.reflect.Field;
@@ -26,6 +27,11 @@ public final class BaniraNetworkSmokeClientRunner {
     private static boolean connected;
     private static boolean finished;
     private static boolean uiOpened;
+    private static int uiCycles;
+    private static int lastUiCycleTick;
+    private static long uiWorkloadTotalNanos;
+    private static long uiWorkloadMaxNanos;
+    private static boolean uiWorkloadReported;
     private static ReflectiveClientSparkProfile spark;
 
     private BaniraNetworkSmokeClientRunner() {
@@ -69,12 +75,27 @@ public final class BaniraNetworkSmokeClientRunner {
             client.setScreen(new DebugScreen());
             BaniraNetworkSmokeStatus.append("PASS client-ui-opened");
         }
+        if (client.screen instanceof DebugScreen
+                && BaniraNetworkSmokeProfilePlan.isCycleDue(ticks, lastUiCycleTick)) {
+            long startedAt = System.nanoTime();
+            ((DebugScreen) client.screen).runNetworkSmokeCycle(++uiCycles);
+            long elapsed = System.nanoTime() - startedAt;
+            uiWorkloadTotalNanos += elapsed;
+            uiWorkloadMaxNanos = Math.max(uiWorkloadMaxNanos, elapsed);
+            lastUiCycleTick = ticks;
+        }
         if (spark == null && ticks >= 20) {
             spark = ReflectiveClientSparkProfile.start();
             BaniraNetworkSmokeStatus.append("PASS client-ui-spark-profiler-active");
         }
         if (spark != null && spark.writeWhenComplete()) {
             BaniraNetworkSmokeStatus.append("PASS client-ui-spark-report-written");
+        }
+        if (!uiWorkloadReported && spark != null && !BaniraNetworkSmokeProfilePlan.shouldContinue(spark.written(), uiCycles)) {
+            uiWorkloadReported = true;
+            long averageNanos = uiCycles == 0 ? 0L : uiWorkloadTotalNanos / uiCycles;
+            BaniraNetworkSmokeStatus.append("PASS client-ui-sustained-workload cycles=" + uiCycles
+                    + " average-ns=" + averageNanos + " max-ns=" + uiWorkloadMaxNanos);
         }
     }
 

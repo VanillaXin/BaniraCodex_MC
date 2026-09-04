@@ -99,8 +99,9 @@ tasks.register('networkSmoke') {
                 }
                 waitFor(client, clientStatus, "FINISHED ${phase}", clientLog, 180); if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) throw new GradleException("Client failed:\n${tailUtf8(clientLog)}")
                 waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30); if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
-                def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
+                def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS sustained-workload', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
                 expected.each { marker -> if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}") }
+                if (phase == 'phase-one' && !readUtf8(clientStatus).contains('PASS client-ui-sustained-workload')) throw new GradleException("Missing client UI sustained workload marker:\n${readUtf8(clientStatus)}")
             } finally { destroy(client); destroy(server) }
         }
         def crashes = fileTree(smokeRoot) { include '**/crash-reports/crash-*.txt' }.files

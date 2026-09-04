@@ -7,6 +7,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.event.BaniraEvents;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
+import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeProfilePlan;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 import java.lang.reflect.Field;
@@ -26,7 +27,15 @@ public final class BaniraNetworkSmokeServerRunner {
     private static boolean finished;
     private static boolean configReloadRequested;
     private static boolean eventVerified;
+    private static boolean sustainedWorkloadStarted;
+    private static boolean sparkReportWritten;
     private static int shutdownTicks;
+    private static int sustainedCycles;
+    private static int lastSustainedWorkloadTick;
+    private static int pendingHelpNumPerPage = -1;
+    private static int completedConfigReloads;
+    private static long sustainedWorkloadTotalNanos;
+    private static long sustainedWorkloadMaxNanos;
     private static ReflectiveSparkProfile spark;
 
     private BaniraNetworkSmokeServerRunner() { }
@@ -40,7 +49,10 @@ public final class BaniraNetworkSmokeServerRunner {
     private static void onTick(MinecraftServer server) {
         try {
             if (server == null || !server.isRunning()) return;
-            if (spark != null && spark.writeWhenComplete()) BaniraNetworkSmokeStatus.append("PASS spark-report-written");
+            if (spark != null && spark.writeWhenComplete()) {
+                sparkReportWritten = true;
+                BaniraNetworkSmokeStatus.append("PASS spark-report-written");
+            }
             if (finished) { shutdownWhenIdle(server); return; }
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
@@ -56,10 +68,23 @@ public final class BaniraNetworkSmokeServerRunner {
     }
 
     private static void firstPhase(MinecraftServer server, ServerPlayerEntity player) throws Exception {
-        if (spark != null) return;
         if (!eventVerified) {
             BaniraNetworkSmokeStatus.append("PASS event-bridge");
             eventVerified = true;
+        }
+        if (sustainedWorkloadStarted) {
+            if (BaniraNetworkSmokeProfilePlan.isCycleDue(eventTicks, lastSustainedWorkloadTick)) {
+                runSustainedWorkload(player);
+                lastSustainedWorkloadTick = eventTicks;
+            }
+            if (BaniraNetworkSmokeProfilePlan.shouldContinue(sparkReportWritten, sustainedCycles)) return;
+            long averageNanos = sustainedCycles == 0 ? 0L : sustainedWorkloadTotalNanos / sustainedCycles;
+            BaniraNetworkSmokeStatus.append("PASS sustained-workload cycles=" + sustainedCycles
+                    + " config-reloads=" + completedConfigReloads
+                    + " average-ns=" + averageNanos + " max-ns=" + sustainedWorkloadMaxNanos);
+            BaniraNetworkSmokeStatus.append("FINISHED phase-one");
+            finished = true;
+            return;
         }
         if (!configReloadRequested) {
             Path config = CustomConfig.getConfigDirectory().resolve(CustomConfig.FILE_NAME);
@@ -80,10 +105,44 @@ public final class BaniraNetworkSmokeServerRunner {
         Files.write(file, "Banira network smoke".getBytes(StandardCharsets.UTF_8));
         if (!"Banira network smoke".equals(new String(Files.readAllBytes(file), StandardCharsets.UTF_8))) throw new IllegalStateException("Managed file operation failed");
         BaniraNetworkSmokeStatus.append("PASS file-operation");
-        spark = ReflectiveSparkProfile.start(server);
-        BaniraNetworkSmokeStatus.append("PASS spark-profiler-active");
-        BaniraNetworkSmokeStatus.append("FINISHED phase-one");
-        finished = true;
+        if (!sustainedWorkloadStarted) {
+            sustainedWorkloadStarted = true;
+            lastSustainedWorkloadTick = eventTicks;
+            spark = ReflectiveSparkProfile.start(server);
+            BaniraNetworkSmokeStatus.append("PASS spark-profiler-active");
+            return;
+        }
+    }
+
+    private static void runSustainedWorkload(ServerPlayerEntity player) throws Exception {
+        long startedAt = System.nanoTime();
+        int cycle = ++sustainedCycles;
+        if (pendingHelpNumPerPage >= 0 && CustomConfig.getHelpNumPerPage() == pendingHelpNumPerPage) {
+            pendingHelpNumPerPage = -1;
+            completedConfigReloads++;
+        }
+        if (BaniraNetworkSmokeProfilePlan.shouldScheduleConfigReload(pendingHelpNumPerPage >= 0, cycle)) {
+            int helpNumPerPage = CustomConfig.getHelpNumPerPage() == 23 ? 24 : 23;
+            Path config = CustomConfig.getConfigDirectory().resolve(CustomConfig.FILE_NAME);
+            Files.write(config, ("{\"player\":{},\"server\":{\"virtual_permission\":{},\"help_num_per_page\":" + helpNumPerPage
+                    + ",\"virtual_op_permission\":4,\"default_language\":\"en_us\"}}").getBytes(StandardCharsets.UTF_8));
+            ManagedConfigFiles.poll(ManagedConfigFiles.Scope.COMMON);
+            pendingHelpNumPerPage = helpNumPerPage;
+        }
+        BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).putInt("network_smoke_cycle", cycle);
+        BaniraCodex.playerDataManager.saveToDisk(player.getUUID());
+        if (BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).getInt("network_smoke_cycle") != cycle) {
+            throw new IllegalStateException("Player data cycle was not persisted");
+        }
+        Path file = CustomConfig.getConfigDirectory().resolve("network-smoke-cycle.txt");
+        String content = "Banira network smoke cycle " + cycle + "\n" + player.getUUID();
+        Files.write(file, content.getBytes(StandardCharsets.UTF_8));
+        if (!content.equals(new String(Files.readAllBytes(file), StandardCharsets.UTF_8))) {
+            throw new IllegalStateException("Managed file cycle was not persisted");
+        }
+        long elapsed = System.nanoTime() - startedAt;
+        sustainedWorkloadTotalNanos += elapsed;
+        sustainedWorkloadMaxNanos = Math.max(sustainedWorkloadMaxNanos, elapsed);
     }
 
     private static void secondPhase(ServerPlayerEntity player) {

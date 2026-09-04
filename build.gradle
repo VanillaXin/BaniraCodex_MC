@@ -119,12 +119,13 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:textrues-embeddium-options-910506:${textrues_embeddium_options_id}")
     }
 
-    // jei
-    implementation fg.deobf("curse.maven:jei-238222:${jei_id}")
-
-    // ftb
-    implementation fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
-    implementation fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
+    // Optional inventory integrations are available for development but are never production dependencies.
+    compileOnly fg.deobf("curse.maven:jei-238222:${jei_id}")
+    runtimeOnly fg.deobf("curse.maven:jei-238222:${jei_id}")
+    compileOnly fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
+    runtimeOnly fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
+    compileOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
+    runtimeOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
 }
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.

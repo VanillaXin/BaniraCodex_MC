@@ -64,6 +64,18 @@ public class DebugScreen extends BaniraScreen {
         super(BaniraComponent.get().empty().toVanilla());
     }
 
+    /** Exercises the same visible widget tree with bounded state changes for the dev-only smoke. */
+    public void runNetworkSmokeCycle(int cycle) {
+        EnumSeason[] seasons = EnumSeason.values();
+        season(seasons[cycle % seasons.length]);
+        contentLines = 1 + cycle % 4;
+        contentLength = 16 + cycle % 32;
+        fontSize = 8 + cycle % 4;
+        warp = (cycle & 1) == 0;
+        genContent();
+        refreshWidget();
+    }
+
     @Override
     protected void refreshWidget() {
         super.refreshWidget();

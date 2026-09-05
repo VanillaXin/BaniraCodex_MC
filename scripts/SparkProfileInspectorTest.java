@@ -12,7 +12,6 @@ import java.util.List;
 
 /** Standalone regression tests: compile with the inspector, then pass one or more Spark runtime jars. */
 public final class SparkProfileInspectorTest {
-    private static final String PROTO = "me.lucko.spark.proto.SparkSamplerProtos$";
     private static int failures;
 
     public static void main(String[] args) throws Exception {
@@ -21,7 +20,7 @@ public final class SparkProfileInspectorTest {
         for (String arg : args) {
             final Path jar = Paths.get(arg);
             try (URLClassLoader loader = new URLClassLoader(new URL[]{jar.toUri().toURL()}, null)) {
-                final boolean legacy = Arrays.stream(loader.loadClass(PROTO + "ThreadNode").getMethods())
+                final boolean legacy = Arrays.stream(loader.loadClass(proto(loader) + "ThreadNode").getMethods())
                         .anyMatch(method -> method.getName().equals("getTime") && method.getParameterCount() == 0);
                 String schema = legacy ? "legacy" : "modern";
                 System.out.println("Spark runtime=" + jar + " schema=" + schema);
@@ -85,7 +84,7 @@ public final class SparkProfileInspectorTest {
                         Object builder = builder(loader, "ThreadNode");
                         call(builder, "setName", String.class, "deep");
                         call(builder, "addTimes", double.class, 1.0);
-                        Class<?> nodeType = loader.loadClass(PROTO + "StackTraceNode");
+                        Class<?> nodeType = loader.loadClass(proto(loader) + "StackTraceNode");
                         for (int n = 0; n < 5000; n++) {
                             Object nb = builder(loader, "StackTraceNode");
                             call(nb, "setClassName", String.class, "app.Recursive");
@@ -106,10 +105,10 @@ public final class SparkProfileInspectorTest {
                             malformed(loader, 0), "cycle"));
                     check("modern allocation mode", () -> {
                         Object metadata = builder(loader, "SamplerMetadata");
-                        Class<?> mode = loader.loadClass(PROTO + "SamplerMetadata$SamplerMode");
+                        Class<?> mode = loader.loadClass(proto(loader) + "SamplerMetadata$SamplerMode");
                         call(metadata, "setSamplerMode", mode, mode.getField("ALLOCATION").get(null));
                         Object report = builder(loader, "SamplerData");
-                        call(report, "setMetadata", loader.loadClass(PROTO + "SamplerMetadata"), build(metadata));
+                        call(report, "setMetadata", loader.loadClass(proto(loader) + "SamplerMetadata"), build(metadata));
                         rejects(jar, build(report), "Unsupported sampler mode");
                     });
                 }
@@ -126,7 +125,7 @@ public final class SparkProfileInspectorTest {
         call(node, "addChildrenRefs", int.class, childRef);
         Object thread = builder(loader, "ThreadNode");
         call(thread, "addTimes", double.class, 1.0);
-        call(thread, "addChildren", loader.loadClass(PROTO + "StackTraceNode"), build(node));
+        call(thread, "addChildren", loader.loadClass(proto(loader) + "StackTraceNode"), build(node));
         call(thread, "addChildrenRefs", int.class, 0);
         return report(loader, 10000, build(thread));
     }
@@ -136,7 +135,7 @@ public final class SparkProfileInspectorTest {
         call(thread, "setName", String.class, name);
         times(thread, legacy, time);
         List<Object> nodes = new ArrayList<Object>();
-        Class<?> nodeType = loader.loadClass(PROTO + "StackTraceNode");
+        Class<?> nodeType = loader.loadClass(proto(loader) + "StackTraceNode");
         for (Spec root : roots) {
             Object value = buildNode(loader, legacy, root, nodes);
             if (legacy) call(thread, "addChildren", nodeType, value);
@@ -155,7 +154,7 @@ public final class SparkProfileInspectorTest {
         times(node, legacy, spec.time);
         for (Spec child : spec.children) {
             Object value = buildNode(loader, legacy, child, nodes);
-            if (legacy) call(node, "addChildren", loader.loadClass(PROTO + "StackTraceNode"), value);
+            if (legacy) call(node, "addChildren", loader.loadClass(proto(loader) + "StackTraceNode"), value);
             else call(node, "addChildrenRefs", int.class, nodes.size() - 1);
         }
         Object value = build(node);
@@ -175,8 +174,8 @@ public final class SparkProfileInspectorTest {
         Object metadata = builder(loader, "SamplerMetadata");
         call(metadata, "setInterval", int.class, interval);
         Object report = builder(loader, "SamplerData");
-        call(report, "setMetadata", loader.loadClass(PROTO + "SamplerMetadata"), build(metadata));
-        for (Object thread : threads) call(report, "addThreads", loader.loadClass(PROTO + "ThreadNode"), thread);
+        call(report, "setMetadata", loader.loadClass(proto(loader) + "SamplerMetadata"), build(metadata));
+        for (Object thread : threads) call(report, "addThreads", loader.loadClass(proto(loader) + "ThreadNode"), thread);
         return build(report);
     }
 
@@ -206,8 +205,18 @@ public final class SparkProfileInspectorTest {
         throw new AssertionError("Expected rejection containing: " + expected);
     }
 
+    private static String proto(ClassLoader loader) throws ClassNotFoundException {
+        try {
+            loader.loadClass("me.lucko.spark.proto.SparkSamplerProtos$SamplerData");
+            return "me.lucko.spark.proto.SparkSamplerProtos$";
+        } catch (ClassNotFoundException ignored) {
+            loader.loadClass("me.lucko.spark.proto.SparkProtos$SamplerData");
+            return "me.lucko.spark.proto.SparkProtos$";
+        }
+    }
+
     private static Object builder(ClassLoader loader, String type) throws Exception {
-        return loader.loadClass(PROTO + type).getMethod("newBuilder").invoke(null);
+        return loader.loadClass(proto(loader) + type).getMethod("newBuilder").invoke(null);
     }
 
     private static Object build(Object builder) throws Exception {

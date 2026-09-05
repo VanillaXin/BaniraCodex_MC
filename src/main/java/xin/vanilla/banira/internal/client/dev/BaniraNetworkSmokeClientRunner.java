@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.neoforged.neoforge.common.NeoForge;
+import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.internal.DebugScreen;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
@@ -34,6 +35,10 @@ public final class BaniraNetworkSmokeClientRunner {
 
     public static void tick(Minecraft client) {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
+        if (!connected && client.getOverlay() != null) {
+            ticks = 0;
+            return;
+        }
         if (!connected && ++ticks >= 20) {
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");
             int port = Integer.getInteger("banira.networkSmoke.port", 25579);
@@ -47,7 +52,16 @@ public final class BaniraNetworkSmokeClientRunner {
             if (++ticks > 1400) fail(client, "remote login timed out");
             return;
         }
-        if (state.markRemoteLogin()) BaniraNetworkSmokeStatus.append("PASS remote-login");
+        if (state.markRemoteLogin()) {
+            if (!Boolean.parseBoolean(System.getProperty("banira.devInventoryIntegrations", "true"))) {
+                if (BaniraEnvironment.isModLoaded("jei")) {
+                    fail(client, "JEI is loaded while development inventory integrations are disabled");
+                    return;
+                }
+                BaniraNetworkSmokeStatus.append("PASS optional-inventory-absent");
+            }
+            BaniraNetworkSmokeStatus.append("PASS remote-login");
+        }
         ticks++;
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);

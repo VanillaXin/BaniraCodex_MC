@@ -80,7 +80,9 @@ dependencies {
     runtimeOnly "curse.maven:embeddium-908741:${embeddium_id}"
     runtimeOnly "curse.maven:rubidium-extra-654373:${rubidium_extra_id}"
     compileOnly "curse.maven:jei-238222:${jei_id}"
-    localRuntime "curse.maven:jei-238222:${jei_id}"
+    if ((project.findProperty('banira.devInventoryIntegrations') ?: 'true').toString().toBoolean()) {
+        localRuntime "curse.maven:jei-238222:${jei_id}"
+    }
 }
 
 tasks.withType(ProcessResources).configureEach {

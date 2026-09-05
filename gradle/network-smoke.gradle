@@ -21,6 +21,7 @@ if (smokeChild) {
             property 'banira.networkSmoke.status', status
             property 'banira.networkSmoke.sparkReport', report
             property 'banira.networkSmoke.clientSparkReport', clientReport
+            property 'banira.networkSmoke.serverStatus', project.property('banira.networkSmoke.serverStatus').toString()
         }
         server {
             runDir project.relativePath(smokeServerDir)
@@ -82,7 +83,8 @@ def start = { String task, String phase, File status, File report, File clientRe
     command.addAll([task, '--no-daemon', '--console=plain', '--project-cache-dir', new File(childRoot, 'project-cache').absolutePath,
                     '-Pbanira.networkSmoke.child=true', "-Pbanira.networkSmoke.phase=${phase}", "-Pbanira.networkSmoke.status=${status.absolutePath}",
                     "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.clientSparkReport=${clientReport.absolutePath}",
-                    "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}"])
+                    "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}",
+                    "-Pbanira.networkSmoke.serverStatus=${new File(status.parentFile, 'server-' + phase + '.status').absolutePath}"])
     log.parentFile.mkdirs()
     ProcessBuilder builder = new ProcessBuilder(command.collect { it.toString() })
     builder.directory(projectDir)
@@ -96,7 +98,8 @@ tasks.register('networkSmoke') {
     description = 'Runs Banira managed-config, player-data, file, event, remote-client, and Spark smoke.'
     doLast {
         if (smokeChild) throw new GradleException('networkSmoke cannot run as a child')
-        delete smokeRoot
+        // Reset the fixture only; preserve previous reports and child Gradle caches.
+        delete smokeServerDir, smokeClientDir
         smokeServerDir.mkdirs()
         smokeClientDir.mkdirs()
         new File(smokeServerDir, 'eula.txt').setText('eula=true' + System.lineSeparator(), 'UTF-8')
@@ -126,14 +129,16 @@ tasks.register('networkSmoke') {
                     if (!report.isFile() || report.length() == 0L) throw new GradleException("Spark report was not written: ${report}")
                     waitFor(client, clientStatus, 'PASS client-ui-spark-report-written', clientLog, 120)
                     if (!clientReport.isFile() || clientReport.length() == 0L) throw new GradleException("Client Spark report was not written: ${clientReport}")
+                    waitFor(client, clientStatus, 'PASS client-ui-sustained-workload', clientLog, 120)
                 }
                 waitFor(client, clientStatus, "FINISHED ${phase}", clientLog, 180)
                 if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) throw new GradleException("Client failed:\n${tailUtf8(clientLog)}")
                 waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30)
                 if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
                 def expected = phase == 'phase-one'
-                        ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown']
-                        : ['PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
+                        ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'START sustained-core-workload', 'PASS sustained-core-workload', 'PASS sustained-workload', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown']
+                        : ['PASS persisted-final-cycle', 'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
+                if (!readUtf8(clientStatus).contains('PASS remote-login')) throw new GradleException("Missing remote login: ${clientStatus}")
                 expected.each { marker ->
                     if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}")
                 }

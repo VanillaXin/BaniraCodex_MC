@@ -44,6 +44,10 @@ public final class BaniraNetworkSmokeClientRunner {
     public static void tick() {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
         Minecraft client = Minecraft.getInstance();
+        if (!connected && client.getOverlay() != null) {
+            ticks = 0;
+            return;
+        }
         if (!connected) {
             if (++ticks < 20) return;
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");

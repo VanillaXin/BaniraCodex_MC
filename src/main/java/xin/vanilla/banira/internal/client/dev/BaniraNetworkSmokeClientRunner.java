@@ -151,7 +151,6 @@ public final class BaniraNetworkSmokeClientRunner {
             } catch (NoSuchMethodException ignored) {
                 builderType.getMethod("samplingInterval", double.class).invoke(builder, 4.0D);
                 Object sampler = method(builderType, "start", 0).invoke(builder);
-                method(sampler.getClass(), "start", 0).invoke(sampler);
                 return sampler;
             }
         }

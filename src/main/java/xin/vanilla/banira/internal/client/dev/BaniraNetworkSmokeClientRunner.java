@@ -6,15 +6,17 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.neoforged.neoforge.common.NeoForge;
 import xin.vanilla.banira.api.BaniraEnvironment;
-import xin.vanilla.banira.internal.DebugScreen;
+import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeProfilePlan;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -25,10 +27,17 @@ import java.util.function.Supplier;
 public final class BaniraNetworkSmokeClientRunner {
     private static int ticks;
     private static boolean connected;
+    private static final NetworkSmokeClientState state = new NetworkSmokeClientState();
     private static boolean finished;
     private static boolean uiOpened;
+    private static BaniraNetworkSmokeScreen uiScreen;
+    private static int uiCycles;
+    private static int lastUiCycleTick;
+    private static long uiWorkloadTotalNanos;
+    private static long uiWorkloadMaxNanos;
+    private static boolean uiWorkloadReported;
+    private static long serverWaitStartedAt;
     private static ReflectiveClientSparkProfile spark;
-    private static final NetworkSmokeClientState state = new NetworkSmokeClientState();
 
     private BaniraNetworkSmokeClientRunner() {
     }
@@ -39,7 +48,8 @@ public final class BaniraNetworkSmokeClientRunner {
             ticks = 0;
             return;
         }
-        if (!connected && ++ticks >= 20) {
+        if (!connected) {
+            if (++ticks < 20) return;
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");
             int port = Integer.getInteger("banira.networkSmoke.port", 25579);
             ServerData server = new ServerData("Banira Network Smoke", host + ':' + port, ServerData.Type.OTHER);
@@ -60,28 +70,41 @@ public final class BaniraNetworkSmokeClientRunner {
                 }
                 BaniraNetworkSmokeStatus.append("PASS optional-inventory-absent");
             }
+            ticks = 0;
             BaniraNetworkSmokeStatus.append("PASS remote-login");
         }
         ticks++;
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);
-            if (spark == null || !spark.written()) {
-                if (ticks > 900) fail(client, "client UI Spark profile timed out");
+            if (spark == null || !spark.written() || !uiWorkloadReported) {
+                if (ticks > 900) fail(client, "client UI Spark profile/workload timed out cycles=" + uiCycles
+                        + " report-written=" + (spark != null && spark.written()) + " " + uiScreen.workloadSummary());
                 return;
             }
         }
-        if (ticks >= 500) {
-            finished = true;
-            BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
-            client.stop();
-        }
+        if (!serverFinished(client)) return;
+        finished = true;
+        BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
+        client.stop();
     }
 
     private static void runClientUiWorkload(Minecraft client) {
-        if (!uiOpened) {
-            uiOpened = true;
-            client.setScreen(new DebugScreen());
+        if (uiScreen == null) {
+            uiScreen = new BaniraNetworkSmokeScreen();
+            client.setScreen(uiScreen);
+        }
+        if (!uiOpened && client.screen == uiScreen) {
             BaniraNetworkSmokeStatus.append("PASS client-ui-opened");
+            uiOpened = true;
+        }
+        if (client.screen == uiScreen
+                && BaniraNetworkSmokeProfilePlan.isCycleDue(ticks, lastUiCycleTick)) {
+            long startedAt = System.nanoTime();
+            uiScreen.runNetworkSmokeCycle(++uiCycles);
+            long elapsed = System.nanoTime() - startedAt;
+            uiWorkloadTotalNanos += elapsed;
+            uiWorkloadMaxNanos = Math.max(uiWorkloadMaxNanos, elapsed);
+            lastUiCycleTick = ticks;
         }
         if (spark == null && ticks >= 20) {
             spark = ReflectiveClientSparkProfile.start();
@@ -90,6 +113,48 @@ public final class BaniraNetworkSmokeClientRunner {
         if (spark != null && spark.writeWhenComplete()) {
             BaniraNetworkSmokeStatus.append("PASS client-ui-spark-report-written");
         }
+        if (!uiWorkloadReported && client.screen == uiScreen && spark != null
+                && !BaniraNetworkSmokeProfilePlan.shouldContinue(spark.written(), uiCycles)
+                && uiScreen.workloadVerified()) {
+            long averageNanos = uiCycles == 0 ? 0L : uiWorkloadTotalNanos / uiCycles;
+            BaniraNetworkSmokeStatus.append("PASS client-ui-sustained-workload cycles=" + uiCycles
+                    + " average-ns=" + averageNanos + " max-ns=" + uiWorkloadMaxNanos
+                    + " " + uiScreen.workloadSummary());
+            uiWorkloadReported = true;
+        }
+    }
+
+    private static boolean serverFinished(Minecraft client) {
+        if (serverWaitStartedAt == 0L) serverWaitStartedAt = System.nanoTime();
+        String configured = System.getProperty("banira.networkSmoke.serverStatus", "").trim();
+        if (configured.isEmpty()) {
+            fail(client, "missing server status path");
+            return false;
+        }
+        String expected = "FINISHED " + BaniraNetworkSmokeStatus.phase();
+        try {
+            Path status = Paths.get(configured);
+            if (Files.isRegularFile(status)) {
+                List<String> lines = Files.readAllLines(status, StandardCharsets.UTF_8);
+                for (String line : lines) {
+                    if (line.startsWith("FAIL ")) {
+                        fail(client, "server reported " + line);
+                        return false;
+                    }
+                }
+                if (lines.contains(expected)) {
+                    BaniraNetworkSmokeStatus.append("PASS server-finished " + BaniraNetworkSmokeStatus.phase());
+                    return true;
+                }
+            }
+        } catch (java.io.IOException | java.nio.file.InvalidPathException error) {
+            fail(client, "unable to read server status: " + error);
+            return false;
+        }
+        if (System.nanoTime() - serverWaitStartedAt > TimeUnit.SECONDS.toNanos(90)) {
+            fail(client, "timed out waiting for server " + expected);
+        }
+        return false;
     }
 
     private static void fail(Minecraft client, String reason) {

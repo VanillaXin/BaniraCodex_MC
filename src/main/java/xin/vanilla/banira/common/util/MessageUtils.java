@@ -10,17 +10,21 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.NotificationData;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.enums.EnumNotificationVanillaFallback;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
+import xin.vanilla.banira.common.notification.NotificationBatch;
+import xin.vanilla.banira.common.notification.NotificationBudget;
 import xin.vanilla.banira.common.notification.ServerNotificationTypeRegistry;
 import xin.vanilla.banira.internal.command.BaniraCommandAccess;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.server.BaniraServerAccess;
+
+import java.util.List;
+import java.util.Objects;
 
 public final class MessageUtils {
     private MessageUtils() {
@@ -170,6 +174,23 @@ public final class MessageUtils {
     // region 指定通知类型 — sendNotification / broadcastNotification
 
     /**
+     * Preflights all whole-entry pages before submitting any of them in order.
+     * A normal return means submission, not client acknowledgement. Validation
+     * errors propagate; transport failures report accepted pages and never retry.
+     */
+    public static void sendNotificationBatch(ServerPlayerEntity player, Component prefix, List<Component> entries,
+                                             Component separator, EnumNotificationStyle style, String notificationType) {
+        Objects.requireNonNull(player, "player");
+        String tid = NotificationBudget.notificationType(notificationType);
+        ServerNotificationTypeRegistry.ensureKnown(tid);
+        EnumPosition position = ServerNotificationTypeRegistry.defaultPosition(tid);
+        EnumMoveType animation = ServerNotificationTypeRegistry.defaultAnimation(tid);
+        NotificationBatch.send(prefix, entries, separator, Translator.getPlayerLanguage(player),
+                payload -> sendPreparedNotification(player, payload, position, animation, 5000L, style,
+                        EnumNotificationVanillaFallback.CHAT, tid));
+    }
+
+    /**
      * 向指定玩家发送通知（指定 {@code notificationType}，位置与动画取服务端该类型登记默认值，5s、NORMAL、聊天栏回退）
      */
     public static void sendNotification(ServerPlayerEntity player, Component component, String notificationType) {
@@ -206,28 +227,36 @@ public final class MessageUtils {
      * 向指定玩家发送通知（完整参数，含 {@code notificationType}）
      */
     public static void sendNotification(ServerPlayerEntity player, Component component, EnumPosition position, EnumMoveType animation, long durationTimeMs, EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback, String notificationType) {
-        String tid = NotificationTypeKeys.normalizeOrDefault(notificationType);
+        Objects.requireNonNull(player, "player");
+        String tid = NotificationBudget.notificationType(notificationType);
         ServerNotificationTypeRegistry.ensureKnown(tid);
-        Component payload = notificationPayloadForPlayer(player, component);
+        NotificationBudget.Payload payload = NotificationBudget.prepare(
+                notificationPayloadForPlayer(player, component), Translator.getPlayerLanguage(player));
+        sendPreparedNotification(player, payload, position, animation, durationTimeMs, style, vanillaFallback, tid);
+    }
+
+    private static void sendPreparedNotification(ServerPlayerEntity player, NotificationBudget.Payload payload,
+                                                 EnumPosition position, EnumMoveType animation, long durationTimeMs,
+                                                 EnumNotificationStyle style, EnumNotificationVanillaFallback vanillaFallback,
+                                                 String tid) {
         if (!PlayerUtils.isRemoteClientModInstalled(player, BaniraCodex.MODID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
-                sendActionBarMessage(player, payload);
+                BaniraServerAccess.sendActionBarMessage(player, payload.vanillaMessage());
             } else {
-                sendMessage(player, payload);
+                BaniraServerAccess.sendPlayerMessage(player, payload.vanillaMessage());
             }
             return;
         }
         String uuid = PlayerUtils.getPlayerUUIDString(player);
         if (CustomConfig.notificationReceiveModeVanillaMessage.equals(CustomConfig.getPlayerNotificationReceiveMode(uuid))) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
-                sendActionBarMessage(player, payload);
+                BaniraServerAccess.sendActionBarMessage(player, payload.vanillaMessage());
             } else {
-                sendMessage(player, payload);
+                BaniraServerAccess.sendPlayerMessage(player, payload.vanillaMessage());
             }
             return;
         }
-        NotificationData data = NotificationData.of(payload, position, animation, durationTimeMs, style, tid);
-        PacketUtils.sendPacketToPlayer(new NotificationToClient(data), player);
+        PacketUtils.sendPacketToPlayer(new NotificationToClient(payload, position, animation, durationTimeMs, style, tid), player);
     }
 
     /**
@@ -371,7 +400,7 @@ public final class MessageUtils {
      * 为发往指定玩家的通知克隆组件并绑定语言，保留子节点、换行与点击/悬停等结构（经 {@link AbstractComponent#serialize} 网络传输）
      */
     public static Component notificationPayloadForPlayer(ServerPlayerEntity player, Component component) {
-        if (component == null || component.isEmpty()) {
+        if (component == null) {
             return BaniraComponent.get().literal("");
         }
         Component copy = component.clone();

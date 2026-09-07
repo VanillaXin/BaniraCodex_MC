@@ -105,6 +105,10 @@ tasks.register('networkSmoke') {
                 def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS sustained-workload', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-final-cycle', 'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
                 expected.each { marker -> if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}") }
                 if (phase == 'phase-one' && !readUtf8(clientStatus).contains('PASS client-ui-sustained-workload')) throw new GradleException("Missing client UI sustained workload marker:\n${readUtf8(clientStatus)}")
+                if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client')
+                        || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {
+                    throw new GradleException('Native notification batch did not complete on both ends')
+                }
             } finally { destroy(client); destroy(server) }
         }
         def crashes = fileTree(smokeRoot) { include '**/crash-reports/crash-*.txt' }.files

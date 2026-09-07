@@ -35,6 +35,9 @@ public final class BaniraNetworkSmokeClientRunner {
     private static boolean uiWorkloadReported;
     private static long serverWaitStartedAt;
     private static ReflectiveClientSparkProfile spark;
+    private static boolean chatListenerRegistered;
+    private static final java.util.List<String> vanillaDetails = new java.util.ArrayList<>();
+    private static int vanillaPages;
 
     private BaniraNetworkSmokeClientRunner() {
     }
@@ -42,6 +45,10 @@ public final class BaniraNetworkSmokeClientRunner {
     public static void tick() {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
         Minecraft client = Minecraft.getInstance();
+        if (!chatListenerRegistered) {
+            MinecraftForge.EVENT_BUS.addListener(BaniraNetworkSmokeClientRunner::receiveVanillaNotification);
+            chatListenerRegistered = true;
+        }
         if (!connected && client.getOverlay() != null) {
             ticks = 0;
             return;
@@ -74,9 +81,35 @@ public final class BaniraNetworkSmokeClientRunner {
             }
         }
         if (!serverFinished(client)) return;
+        if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
+            int expected = xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.ENTRIES;
+            if (vanillaDetails.size() < expected) {
+                if (ticks > 600) fail(client, "native notification details timed out: " + vanillaDetails.size());
+                return;
+            }
+            if (vanillaDetails.size() != expected || vanillaPages < 2) {
+                fail(client, "native notification batch count invalid");
+                return;
+            }
+            for (int index = 0; index < expected; index++) {
+                if (!xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.text(index).equals(vanillaDetails.get(index))) {
+                    fail(client, "native notification detail changed/reordered at " + index);
+                    return;
+                }
+            }
+            BaniraNetworkSmokeStatus.append("PASS vanilla-notification-details-client entries=" + expected + " pages=" + vanillaPages);
+        }
         finished = true;
         BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
         client.stop();
+    }
+
+    private static void receiveVanillaNotification(net.minecraftforge.client.event.ClientChatReceivedEvent event) {
+        String message = event.getMessage().getString();
+        String prefix = xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.PREFIX;
+        if (!message.startsWith(prefix)) return;
+        vanillaPages++;
+        java.util.Collections.addAll(vanillaDetails, message.substring(prefix.length()).split("\\|", -1));
     }
 
     private static void runClientUiWorkload(Minecraft client) {

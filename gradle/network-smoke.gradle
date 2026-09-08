@@ -69,11 +69,11 @@ def waitFor = { Process process, File status, String marker, File log, int timeo
 def stageChildProject = { String task ->
     File childRoot = new File(smokeRoot, task == 'runServer' ? 'server-gradle' : 'client-gradle')
     File childProject = new File(childRoot, 'project')
-    copy {
-        from projectDir
-        into childProject
-        include 'build.gradle', 'settings.gradle', 'gradle.properties', 'jdks.properties', 'gradlew', 'gradlew.bat'
-        include 'gradle/**', 'src/**'
+    project.sync { spec ->
+        spec.from projectDir
+        spec.into childProject
+        spec.include 'build.gradle', 'settings.gradle', 'gradle.properties', 'jdks.properties', 'gradlew', 'gradlew.bat'
+        spec.include 'gradle/**', 'src/**'
     }
     childProject
 }
@@ -126,6 +126,10 @@ tasks.register('networkSmoke') {
                 waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30); if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
                 def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS sustained-workload', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-final-cycle', 'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
                 expected.each { marker -> if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}") }
+                if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client')
+                        || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {
+                    throw new GradleException('Native notification batch did not complete on both ends')
+                }
             } finally { destroy(client); destroy(server) }
         }
         def crashes = fileTree(smokeRoot) { include '**/crash-reports/crash-*.txt' }.files

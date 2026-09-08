@@ -37,13 +37,29 @@ public final class BaniraNetworkSmokeClientRunner {
     private static long uiWorkloadMaxNanos;
     private static boolean uiWorkloadReported;
     private static long serverWaitStartedAt;
+    private static String loginView = "";
     private static ReflectiveClientSparkProfile spark;
+    private static boolean chatListenerRegistered;
+    private static final java.util.List<String> vanillaDetails = new java.util.ArrayList<>();
+    private static int vanillaPages;
 
     private BaniraNetworkSmokeClientRunner() {
     }
 
     public static void tick(Minecraft client) {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
+        if (client.player == null) {
+            String view = "screen=" + (client.screen == null ? "none" : client.screen.getClass().getName())
+                    + " overlay=" + (client.getOverlay() == null ? "none" : client.getOverlay().getClass().getName());
+            if (!view.equals(loginView)) {
+                BaniraNetworkSmokeStatus.append("INFO login-view " + view);
+                loginView = view;
+            }
+        }
+        if (!chatListenerRegistered) {
+            NeoForge.EVENT_BUS.addListener(BaniraNetworkSmokeClientRunner::receiveVanillaNotification);
+            chatListenerRegistered = true;
+        }
         if (!connected && client.getOverlay() != null) {
             ticks = 0;
             return;
@@ -59,7 +75,7 @@ public final class BaniraNetworkSmokeClientRunner {
             return;
         }
         if (client.player == null || client.getSingleplayerServer() != null) {
-            if (++ticks > 1400) fail(client, "remote login timed out");
+            if (++ticks > 1400) fail(client, "remote login timed out " + loginView);
             return;
         }
         if (state.markRemoteLogin()) {
@@ -83,9 +99,35 @@ public final class BaniraNetworkSmokeClientRunner {
             }
         }
         if (!serverFinished(client)) return;
+        if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
+            int expected = xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.ENTRIES;
+            if (vanillaDetails.size() < expected) {
+                if (ticks > 600) fail(client, "native notification details timed out: " + vanillaDetails.size());
+                return;
+            }
+            if (vanillaDetails.size() != expected || vanillaPages < 2) {
+                fail(client, "native notification batch count invalid");
+                return;
+            }
+            for (int index = 0; index < expected; index++) {
+                if (!xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.text(index).equals(vanillaDetails.get(index))) {
+                    fail(client, "native notification detail changed/reordered at " + index);
+                    return;
+                }
+            }
+            BaniraNetworkSmokeStatus.append("PASS vanilla-notification-details-client entries=" + expected + " pages=" + vanillaPages);
+        }
         finished = true;
         BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
         client.stop();
+    }
+
+    private static void receiveVanillaNotification(net.neoforged.neoforge.client.event.ClientChatReceivedEvent.System event) {
+        String message = event.getMessage().getString();
+        String prefix = xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.PREFIX;
+        if (!message.startsWith(prefix)) return;
+        vanillaPages++;
+        java.util.Collections.addAll(vanillaDetails, message.substring(prefix.length()).split("\\|", -1));
     }
 
     private static void runClientUiWorkload(Minecraft client) {

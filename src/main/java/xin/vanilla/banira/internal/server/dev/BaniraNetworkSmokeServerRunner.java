@@ -164,6 +164,7 @@ public final class BaniraNetworkSmokeServerRunner {
     }
 
     private static void secondPhase(ServerPlayer player) throws Exception {
+        if (!xin.vanilla.banira.common.util.PlayerUtils.isRemoteClientModInstalled(player, xin.vanilla.banira.api.Banira.MOD_ID)) return;
         java.util.Properties checkpoint = new java.util.Properties();
         try (java.io.Reader reader = Files.newBufferedReader(
                 CustomConfig.getConfigDirectory().resolve("network-smoke-checkpoint.properties"), StandardCharsets.UTF_8)) {
@@ -178,10 +179,32 @@ public final class BaniraNetworkSmokeServerRunner {
             throw new IllegalStateException("Final player data cycle did not survive restart");
         }
         if (CustomConfig.getHelpNumPerPage() != expectedHelp) throw new IllegalStateException("Final config reload did not survive restart");
+        sendVanillaNotificationBatch(player);
         BaniraNetworkSmokeStatus.append("PASS persisted-final-cycle cycle=" + expectedCycle + " help=" + expectedHelp);
         BaniraNetworkSmokeStatus.append("PASS persisted-player-data");
         BaniraNetworkSmokeStatus.append("FINISHED phase-two");
         finished = true;
+    }
+
+    private static void sendVanillaNotificationBatch(ServerPlayer player) {
+        String uuid = player.getUUID().toString();
+        String previous = CustomConfig.getPlayerNotificationReceiveMode(uuid);
+        CustomConfig.setPlayerNotificationReceiveMode(uuid, CustomConfig.notificationReceiveModeVanillaMessage);
+        try {
+            java.util.List<xin.vanilla.banira.common.data.Component> entries = new java.util.ArrayList<>();
+            for (int index = 0; index < xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.ENTRIES; index++) {
+                entries.add(xin.vanilla.banira.BaniraComponent.get().literal(
+                        xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.text(index)).color(0xFF00FF00));
+            }
+            xin.vanilla.banira.common.util.MessageUtils.sendNotificationBatch(player,
+                    xin.vanilla.banira.BaniraComponent.get().literal(
+                            xin.vanilla.banira.internal.dev.BaniraNetworkSmokeNotificationFixture.PREFIX),
+                    entries, xin.vanilla.banira.BaniraComponent.get().literal("|"),
+                    xin.vanilla.banira.common.enums.EnumNotificationStyle.SUCCESS, "banira_codex.network_smoke");
+            BaniraNetworkSmokeStatus.append("PASS vanilla-notification-batch-submitted entries=256 client-installed=true");
+        } finally {
+            CustomConfig.setPlayerNotificationReceiveMode(uuid, previous);
+        }
     }
 
     private static void shutdownWhenIdle(MinecraftServer server) {

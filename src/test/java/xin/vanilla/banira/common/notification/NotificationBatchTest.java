@@ -30,6 +30,8 @@ import static xin.vanilla.banira.common.network.packet.NotificationToClientBudge
 public class NotificationBatchTest {
     @BeforeClass
     public static void installPlatform() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
         BaniraPlatforms.install(new TestBaniraPlatform());
     }
 
@@ -186,6 +188,113 @@ public class NotificationBatchTest {
         String frozen = payload.vanillaJson();
         payload.vanillaMessage().getSiblings().clear();
         assertEquals(frozen, payload.vanillaJson());
+    }
+
+    @Test
+    public void nativeOriginalRoundTripsThroughActualNotificationPacket() {
+        var original = net.minecraft.network.chat.Component.literal("original")
+                .withStyle(net.minecraft.network.chat.Style.EMPTY.withColor(0x55ff55)
+                        .withBold(true).withItalic(true).withUnderlined(true)
+                        .withStrikethrough(true).withObfuscated(true)
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/help"))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, net.minecraft.network.chat.Component.literal("details"))))
+                .append(net.minecraft.network.chat.Component.literal(" sibling").withStyle(
+                        net.minecraft.network.chat.Style.EMPTY.withColor(0xff5555).withItalic(true)));
+        Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
+        String originalJson = net.minecraft.network.chat.Component.Serializer.toJson(original);
+        NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
+        var packet = new xin.vanilla.banira.common.network.packet.NotificationToClient(payload,
+                xin.vanilla.banira.common.enums.EnumPosition.TOP_RIGHT,
+                xin.vanilla.banira.common.enums.EnumMoveType.AUTO, 5000,
+                xin.vanilla.banira.common.enums.EnumNotificationStyle.NORMAL, "default");
+        FriendlyByteBuf nativeBuffer = new FriendlyByteBuf(Unpooled.buffer());
+        try {
+            var buffer = xin.vanilla.banira.common.network.packet.NotificationToClientBudgetTest.adapt(nativeBuffer);
+            packet.toBytes(buffer);
+            var decodedPacket = new xin.vanilla.banira.common.network.packet.NotificationToClient(buffer);
+            Component decoded = BaniraComponent.get().deserialize(
+                    JsonParser.parseString(decodedPacket.componentJson()).getAsJsonObject());
+            assertNotNull(decoded.original());
+            assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+                    (net.minecraft.network.chat.Component) decoded.original()));
+            assertEquals("original sibling", decoded.toChat("zh_cn").getString());
+            var style = decoded.toChat("zh_cn").getStyle();
+            assertTrue(style.isBold());
+            assertTrue(style.isItalic());
+            assertTrue(style.isUnderlined());
+            assertTrue(style.isStrikethrough());
+            assertTrue(style.isObfuscated());
+            assertEquals(original.getStyle().getClickEvent(), style.getClickEvent());
+            assertEquals(original.getStyle().getHoverEvent(), style.getHoverEvent());
+            source.bold(false);
+            Component disabledBold = BaniraComponent.get().deserialize(source.toJson());
+            assertFalse(disabledBold.toChat("zh_cn").getStyle().isBold());
+            assertTrue(disabledBold.toChat("zh_cn").getStyle().isUnderlined());
+            source.italic(false).underlined(false).strikethrough(false).obfuscated(false);
+            var disabled = BaniraComponent.get().deserialize(source.toJson()).toChat("zh_cn").getStyle();
+            assertFalse(disabled.isBold());
+            assertFalse(disabled.isItalic());
+            assertFalse(disabled.isUnderlined());
+            assertFalse(disabled.isStrikethrough());
+            assertFalse(disabled.isObfuscated());
+            assertEquals(0, nativeBuffer.readableBytes());
+        } finally {
+            nativeBuffer.release();
+        }
+        Component parent = text("parent");
+        parent.getChildren().add(source);
+        parent.getArgs().add(source);
+        Component nested = BaniraComponent.get().deserialize(parent.toJson());
+        assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+                (net.minecraft.network.chat.Component) nested.getChildren().get(0).original()));
+        assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+                (net.minecraft.network.chat.Component) nested.getArgs().get(0).original()));
+        Component plain = text("plain");
+        JsonObject plainBefore = plain.toJson();
+        plain.bold(false).italic(false).underlined(false).strikethrough(false).obfuscated(false);
+        assertEquals(plainBefore, plain.toJson());
+        assertEquals(net.minecraft.network.chat.Style.EMPTY.withBold(false).withItalic(false)
+                .withUnderlined(false).withStrikethrough(false).withObfuscated(false), plain.getStyle());
+    }
+
+    @Test
+    public void decodedNativeSiblingsAllowBaniraChildrenWithoutMutatingOriginal() {
+        var original = net.minecraft.network.chat.Component.Serializer.fromJson(
+                "{\"text\":\"root\",\"extra\":[{\"text\":\" sibling\"}]}");
+        Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
+        source.getChildren().add(text(" child"));
+        assertEquals("root sibling child", source.toVanilla("zh_cn").getString());
+        assertEquals("root sibling", original.getString());
+        assertEquals("root sibling child", source.toVanilla("zh_cn").getString());
+        NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
+        assertEquals("root sibling child", payload.vanillaMessage().getString());
+        assertEquals("root sibling", original.getString());
+    }
+
+    @Test
+    public void nativeEnchantedItemHoverSurvivesNestedOriginalRoundTrip() {
+        var item = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD);
+        item.enchant(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 2);
+        var original = net.minecraft.network.chat.Component.literal("enchanted reward")
+                .withStyle(net.minecraft.network.chat.Style.EMPTY.withHoverEvent(
+                        new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item))));
+        String expected = net.minecraft.network.chat.Component.Serializer.toJson(original);
+        Component parent = text("parent");
+        parent.getChildren().add(BaniraComponent.get().object(original));
+        parent.getArgs().add(BaniraComponent.get().object(original));
+        NotificationBudget.Payload payload = NotificationBudget.prepare(parent, "zh_cn");
+        Component decoded = BaniraComponent.get().deserialize(
+                JsonParser.parseString(payload.componentJson()).getAsJsonObject());
+        for (Component nested : Arrays.asList(decoded.getChildren().get(0), decoded.getArgs().get(0))) {
+            assertNotNull(nested.original());
+            var restored = (net.minecraft.network.chat.Component) nested.original();
+            assertEquals(expected, net.minecraft.network.chat.Component.Serializer.toJson(restored));
+            var restoredItem = nested.toChat("zh_cn").getStyle().getHoverEvent()
+                    .getValue(HoverEvent.Action.SHOW_ITEM).getItemStack();
+            assertEquals(net.minecraft.world.item.Items.DIAMOND_SWORD, restoredItem.getItem());
+            assertEquals(2, net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
+                    net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, restoredItem));
+        }
     }
 
     private static Component expansion(int copies) {

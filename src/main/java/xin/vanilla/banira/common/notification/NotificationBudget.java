@@ -27,6 +27,12 @@ public final class NotificationBudget {
         return json;
     }
 
+    private static String componentJson(Component component, RegistryAccess registries) {
+        String json = JsonUtils.toString(component.toJson(registries));
+        validateUtf8(json, MAX_COMPONENT_JSON_BYTES, "Banira component JSON");
+        return json;
+    }
+
     public static String notificationType(String type) {
         String normalized = NotificationTypeKeys.normalizeOrDefault(type);
         validateUtf8(normalized, MAX_TYPE_ID_BYTES, "notification type");
@@ -46,7 +52,7 @@ public final class NotificationBudget {
         Objects.requireNonNull(registries, "registries");
         Component copy = Objects.requireNonNull(component, "component").clone().languageCodeIfEmpty(language);
         detachNativeReferences(copy, language, registries);
-        String componentJson = componentJson(copy);
+        String componentJson = componentJson(copy, registries);
         String vanillaJson = net.minecraft.network.chat.Component.Serializer.toJson(copy.toChat(language), registries);
         // Measure the conservative common budget again after native translation/formatting.
         validateUtf8(vanillaJson, MAX_COMPONENT_JSON_BYTES, "vanilla component JSON");

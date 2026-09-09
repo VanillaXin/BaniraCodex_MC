@@ -199,6 +199,63 @@ public class NotificationBatchTest {
         return BaniraComponent.get().literal(value).languageCode("zh_cn");
     }
 
+    @Test
+    public void originalRichTextSurvivesCustomNotificationRoundTrip() {
+        net.minecraft.util.text.IFormattableTextComponent original = new StringTextComponent("original")
+                .withStyle(net.minecraft.util.text.Style.EMPTY.withColor(net.minecraft.util.text.Color.fromRgb(0x55ff55))
+                        .withBold(true).setUnderlined(true)
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/help"))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new StringTextComponent("details"))))
+                .append(new StringTextComponent(" sibling").withStyle(net.minecraft.util.text.Style.EMPTY
+                        .withColor(net.minecraft.util.text.Color.fromRgb(0xff5555)).withItalic(true)));
+        Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
+        NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
+        xin.vanilla.banira.common.network.packet.NotificationToClient packet =
+                new xin.vanilla.banira.common.network.packet.NotificationToClient(payload,
+                        xin.vanilla.banira.common.enums.EnumPosition.TOP_RIGHT,
+                        xin.vanilla.banira.common.enums.EnumMoveType.AUTO, 5000,
+                        xin.vanilla.banira.common.enums.EnumNotificationStyle.NORMAL, "default");
+        PacketBuffer nativeBuffer = new PacketBuffer(Unpooled.buffer());
+        try {
+            xin.vanilla.banira.common.network.BaniraPacketBuffer buffer =
+                    xin.vanilla.banira.common.network.packet.NotificationToClientBudgetTest.adapt(nativeBuffer);
+            packet.toBytes(buffer);
+            xin.vanilla.banira.common.network.packet.NotificationToClient decodedPacket =
+                    new xin.vanilla.banira.common.network.packet.NotificationToClient(buffer);
+            Component decoded = BaniraComponent.get().deserialize(new JsonParser().parse(decodedPacket.componentJson()).getAsJsonObject());
+            assertNotNull(decoded.original());
+            assertEquals(ITextComponent.Serializer.toJson(original),
+                    ITextComponent.Serializer.toJson((ITextComponent) decoded.original()));
+            assertEquals("original sibling", decoded.toChat("zh_cn").getString());
+            assertTrue(decoded.toChat("zh_cn").getStyle().isBold());
+            assertTrue(decoded.toChat("zh_cn").getStyle().isUnderlined());
+            source.bold(false);
+            Component explicitlyDisabled = BaniraComponent.get().deserialize(source.toJson());
+            assertFalse(explicitlyDisabled.toChat("zh_cn").getStyle().isBold());
+            assertTrue(explicitlyDisabled.toChat("zh_cn").getStyle().isUnderlined());
+            assertEquals(0, nativeBuffer.readableBytes());
+        } finally {
+            nativeBuffer.release();
+        }
+        Component parent = text("parent");
+        parent.getChildren().add(source);
+        parent.getArgs().add(source);
+        Component nested = BaniraComponent.get().deserialize(parent.toJson());
+        assertNotNull(nested.getChildren().get(0).original());
+        assertNotNull(nested.getArgs().get(0).original());
+    }
+
+    @Test
+    public void decodedNativeSiblingsAllowBaniraChildrenWithoutMutatingOriginal() {
+        net.minecraft.util.text.IFormattableTextComponent original = new StringTextComponent("root")
+                .append(new StringTextComponent(" sibling"));
+        Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
+        source.getChildren().add(text(" child"));
+        NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
+        assertEquals("root sibling child", payload.vanillaMessage().getString());
+        assertEquals("root sibling", original.getString());
+    }
+
     private static void assertLegalNativeEncoding(NotificationBudget.Payload page) {
         assertTrue(page.componentJson().getBytes(StandardCharsets.UTF_8).length <= 16384);
         assertTrue(page.vanillaJson().getBytes(StandardCharsets.UTF_8).length <= 16384);

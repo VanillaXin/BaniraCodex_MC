@@ -17,7 +17,8 @@
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.IngameGuiExperienceMixin",
-    "injections.MinecraftClientMixin"
+    "injections.MinecraftClientMixin",
+    "injections.NetworkSmokeChatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

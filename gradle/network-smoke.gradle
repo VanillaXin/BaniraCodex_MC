@@ -138,6 +138,10 @@ tasks.register('networkSmoke') {
                 expected.each { marker ->
                     if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}")
                 }
+                if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client entries=256 pages=5')
+                        || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {
+                    throw new GradleException('Native notification batch did not complete on both ends')
+                }
             } finally {
                 destroy(client)
                 destroy(server)

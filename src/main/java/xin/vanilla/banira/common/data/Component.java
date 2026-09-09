@@ -487,6 +487,17 @@ public final class Component implements Cloneable, Serializable {
         Style style = Style.EMPTY;
         if (!this.color().isEmpty() && this.color().rgb() != 0xFFFFFF)
             style = style.withColor(net.minecraft.network.chat.TextColor.fromRgb(color().rgb()));
+        if (this.i18nType == EnumI18nType.ORIGINAL) {
+            // Vanilla 1.16 has no strike/obfuscation setters; its codec preserves nullable flags.
+            JsonObject flags = new JsonObject();
+            if (this.bold != null) flags.addProperty("bold", this.bold);
+            if (this.italic != null) flags.addProperty("italic", this.italic);
+            if (this.underlined != null) flags.addProperty("underlined", this.underlined);
+            if (this.strikethrough != null) flags.addProperty("strikethrough", this.strikethrough);
+            if (this.obfuscated != null) flags.addProperty("obfuscated", this.obfuscated);
+            return new Style.Serializer().deserialize(flags, Style.class, null).applyTo(style)
+                    .withClickEvent(this.clickEvent).withHoverEvent(this.hoverEvent);
+        }
         style = style.withBold(this.bold())
                 .withItalic(this.italic())
                 .withClickEvent(this.clickEvent)
@@ -589,7 +600,7 @@ public final class Component implements Cloneable, Serializable {
     public net.minecraft.network.chat.Component toVanilla(String languageCode) {
         List<MutableComponent> components = new ArrayList<>();
         if (this.i18nType == EnumI18nType.ORIGINAL) {
-            components.add((MutableComponent) this.original);
+            components.add(((net.minecraft.network.chat.Component) this.original).copy());
         } else {
             // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
             if (!this.color().isEmpty()) {
@@ -910,6 +921,16 @@ public final class Component implements Cloneable, Serializable {
         Component result = new Component();
         result.text(JsonUtils.getString(jsonObject, "text"));
         result.i18nType(EnumI18nType.valueOf(JsonUtils.getString(jsonObject, "i18nType")));
+        if (result.i18nType() == EnumI18nType.ORIGINAL) {
+            if (!jsonObject.has("original")) {
+                throw new IllegalArgumentException("Missing original native component");
+            }
+            net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.Serializer.fromJson(jsonObject.get("original").toString());
+            if (original == null) {
+                throw new IllegalArgumentException("Invalid original native component");
+            }
+            result.original(original);
+        }
         result.modId(JsonUtils.getString(jsonObject, "modId", null));
         result.translationFallback(JsonUtils.getString(jsonObject, "translationFallback", null));
         result.languageCode(JsonUtils.getString(jsonObject, "languageCode", null));
@@ -920,11 +941,12 @@ public final class Component implements Cloneable, Serializable {
             result.bgColor(xin.vanilla.banira.common.data.Color.argb(JsonUtils.getInt(jsonObject, "bgColor")));
         }
         result.shadow(JsonUtils.getBoolean(jsonObject, "shadow", false));
-        result.bold(JsonUtils.getBoolean(jsonObject, "bold", false));
-        result.italic(JsonUtils.getBoolean(jsonObject, "italic", false));
-        result.underlined(JsonUtils.getBoolean(jsonObject, "underlined", false));
-        result.strikethrough(JsonUtils.getBoolean(jsonObject, "strikethrough", false));
-        result.obfuscated(JsonUtils.getBoolean(jsonObject, "obfuscated", false));
+        boolean nativeStyle = result.i18nType() == EnumI18nType.ORIGINAL;
+        result.bold(nativeStyle && !jsonObject.has("bold") ? null : Boolean.valueOf(JsonUtils.getBoolean(jsonObject, "bold", false)));
+        result.italic(nativeStyle && !jsonObject.has("italic") ? null : Boolean.valueOf(JsonUtils.getBoolean(jsonObject, "italic", false)));
+        result.underlined(nativeStyle && !jsonObject.has("underlined") ? null : Boolean.valueOf(JsonUtils.getBoolean(jsonObject, "underlined", false)));
+        result.strikethrough(nativeStyle && !jsonObject.has("strikethrough") ? null : Boolean.valueOf(JsonUtils.getBoolean(jsonObject, "strikethrough", false)));
+        result.obfuscated(nativeStyle && !jsonObject.has("obfuscated") ? null : Boolean.valueOf(JsonUtils.getBoolean(jsonObject, "obfuscated", false)));
         String clickAction = JsonUtils.getString(jsonObject, "clickEvent.action", "");
         String clickValue = JsonUtils.getString(jsonObject, "clickEvent.value", "");
         if (StringUtils.isNotNullOrEmpty(clickAction) && StringUtils.isNotNullOrEmpty(clickValue)) {
@@ -947,6 +969,13 @@ public final class Component implements Cloneable, Serializable {
         JsonObject result = new JsonObject();
         JsonUtils.set(result, "text", component.text());
         JsonUtils.set(result, "i18nType", component.i18nType().name());
+        if (component.i18nType() == EnumI18nType.ORIGINAL) {
+            if (!(component.original() instanceof net.minecraft.network.chat.Component)) {
+                throw new IllegalArgumentException("Original component is not native rich text");
+            }
+            result.add("original", new com.google.gson.JsonParser().parse(
+                    net.minecraft.network.chat.Component.Serializer.toJson((net.minecraft.network.chat.Component) component.original())));
+        }
         if (!component.isModIdEmpty()) {
             JsonUtils.set(result, "modId", component.modId());
         }
@@ -968,19 +997,19 @@ public final class Component implements Cloneable, Serializable {
         if (component.shadow()) {
             JsonUtils.set(result, "shadow", component.shadow());
         }
-        if (component.bold()) {
+        if (component.bold() || component.i18nType() == EnumI18nType.ORIGINAL && component.bold != null) {
             JsonUtils.set(result, "bold", component.bold());
         }
-        if (component.italic()) {
+        if (component.italic() || component.i18nType() == EnumI18nType.ORIGINAL && component.italic != null) {
             JsonUtils.set(result, "italic", component.italic());
         }
-        if (component.underlined()) {
+        if (component.underlined() || component.i18nType() == EnumI18nType.ORIGINAL && component.underlined != null) {
             JsonUtils.set(result, "underlined", component.underlined());
         }
-        if (component.strikethrough()) {
+        if (component.strikethrough() || component.i18nType() == EnumI18nType.ORIGINAL && component.strikethrough != null) {
             JsonUtils.set(result, "strikethrough", component.strikethrough());
         }
-        if (component.obfuscated()) {
+        if (component.obfuscated() || component.i18nType() == EnumI18nType.ORIGINAL && component.obfuscated != null) {
             JsonUtils.set(result, "obfuscated", component.obfuscated());
         }
         if (component.clickEvent() != null) {

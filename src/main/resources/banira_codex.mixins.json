@@ -6,6 +6,10 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "banira_codex.refmap.json",
   "mixins": [
+    "injections.ForgeConfigFileMixin",
+    "injections.ForgeConfigSpecMixin",
+    "injections.ForgeConfigWatchMixin",
+    "injections.ForgeConfigUnloadMixin",
     "accessors.NetworkRegistryAccessor",
     "accessors.ResourceManagerAccessor",
     "accessors.ServerPlayerAccessor",

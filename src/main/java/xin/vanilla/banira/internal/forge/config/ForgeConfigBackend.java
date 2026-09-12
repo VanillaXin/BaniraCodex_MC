@@ -1,8 +1,12 @@
 package xin.vanilla.banira.internal.forge.config;
 
+import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.io.ParsingException;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.ConfigValueStore;
+import xin.vanilla.banira.common.config.ConfigHolder;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -16,6 +20,9 @@ final class ForgeConfigBackend implements ConfigValueStore {
 
     @Nullable
     private ModConfig modConfig;
+    private volatile ForgeConfigFile managedFile;
+    private ConfigHolder holder;
+    private long notifiedRevision;
 
     ForgeConfigBackend(ForgeConfigSpec spec, Map<String, ForgeConfigSpec.ConfigValue<?>> values) {
         this.spec = spec;
@@ -26,6 +33,34 @@ final class ForgeConfigBackend implements ConfigValueStore {
         this.modConfig = modConfig;
     }
 
+    void setHolder(ConfigHolder holder) { this.holder = holder; }
+
+    ForgeConfigReloadGate reloadGate(Runnable callback) {
+        ForgeConfigFile file = managedFile;
+        return new ForgeConfigReloadGate(file::hasExternalChange, callback);
+    }
+
+    CommentedFileConfig wrap(CommentedFileConfig file) {
+        ForgeConfigFile managed = new ForgeConfigFile(file, spec, this::prepare);
+        managedFile = managed;
+        return managed;
+    }
+
+    private void prepare(CommentedConfig candidate) {
+        for (String path : values.keySet()) {
+            ForgeConfigSpec.ValueSpec definition = valueSpec(path);
+            if (!candidate.contains(path)) {
+                if (managedFile != null && managedFile.hasLoaded()) throw new ParsingException("Missing config value at " + path);
+                candidate.set(path, definition.getDefault());
+            }
+            if (!definition.test(candidate.get(path))) {
+                throw new ParsingException("Invalid config value at " + path + ": " + candidate.get(path));
+            }
+            String comment = definition.getComment();
+            if (comment != null) candidate.setComment(path, comment);
+        }
+    }
+
     @Override
     public Set<String> paths() {
         return values.keySet();
@@ -34,17 +69,32 @@ final class ForgeConfigBackend implements ConfigValueStore {
     @Nullable
     @Override
     public Object get(String path) {
-        ForgeConfigSpec.ConfigValue<?> value = values.get(path);
-        return value != null ? value.get() : null;
+        synchronized (valueLock()) {
+            ForgeConfigSpec.ConfigValue<?> value = values.get(path);
+            Object result = value != null ? value.get() : null;
+            return result instanceof java.util.List ? new java.util.ArrayList<>((java.util.List<?>) result) : result;
+        }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void set(String path, Object value) {
-        ForgeConfigSpec.ConfigValue configValue = values.get(path);
-        if (configValue != null) {
-            configValue.set(value);
+        ForgeConfigFile file = managedFile;
+        if (file != null) {
+            file.load();
+            notifyExternalReload(file);
         }
+        synchronized (valueLock()) {
+            ForgeConfigSpec.ConfigValue configValue = values.get(path);
+            if (configValue != null) {
+                configValue.set(value);
+            }
+        }
+    }
+
+    private Object valueLock() {
+        ForgeConfigFile file = managedFile;
+        return file != null ? file : this;
     }
 
     @Override
@@ -74,6 +124,18 @@ final class ForgeConfigBackend implements ConfigValueStore {
     public void save() {
         if (modConfig != null) {
             modConfig.save();
+        } else if (managedFile != null) {
+            managedFile.save();
+        }
+        if (managedFile != null) notifyExternalReload(managedFile);
+    }
+
+    private void notifyExternalReload(ForgeConfigFile file) {
+        long revision = file.externalRevision();
+        if (holder != null && revision != notifiedRevision) {
+            notifiedRevision = revision;
+            // No file monitor is held while subscribers run, including reentrant configuration readers.
+            holder.acceptExternalReload();
         }
     }
 

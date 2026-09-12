@@ -30,6 +30,7 @@ public final class ForgeBaniraCodexEntry {
         BaniraPlatforms.get().configService().register(ClientConfig.class, BaniraCodex.MODID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.register(modBus);
         modBus.addListener((FMLCommonSetupEvent event) ->
                 BaniraEventBus.dispatchCommonSetup(BaniraCommonSetupEvent.withWorkQueue(event::enqueueWork)));
 

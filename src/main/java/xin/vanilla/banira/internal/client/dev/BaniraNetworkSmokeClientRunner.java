@@ -72,6 +72,12 @@ public final class BaniraNetworkSmokeClientRunner {
             BaniraNetworkSmokeStatus.append("PASS remote-login");
         }
         ticks++;
+        try {
+            if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(true)) return;
+        } catch (Exception exception) {
+            fail(client, "Forge config transaction smoke failed: " + exception);
+            return;
+        }
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);
             if (spark == null || !spark.written() || !uiWorkloadReported) {

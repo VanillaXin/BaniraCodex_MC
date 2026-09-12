@@ -1,0 +1,320 @@
+package xin.vanilla.banira.internal.forge.config;
+
+import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.io.ConfigWriter;
+import com.electronwill.nightconfig.core.io.ParsingException;
+import com.electronwill.nightconfig.core.io.WritingException;
+import com.electronwill.nightconfig.core.io.WritingMode;
+import com.electronwill.nightconfig.core.utils.CommentedConfigWrapper;
+import com.electronwill.nightconfig.toml.TomlFormat;
+import com.electronwill.nightconfig.toml.TomlParser;
+import net.minecraftforge.common.ForgeConfigSpec;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+
+/** Keeps Forge's file lifecycle while isolating parsing and synchronous disk commits. */
+public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfig> implements CommentedFileConfig {
+    private final CommentedFileConfig bootstrap;
+    private final ForgeConfigSpec spec;
+    private final Consumer<CommentedConfig> validator;
+    private final ConfigWriter writer;
+    private byte[] acceptedBytes;
+    private boolean closed;
+    private long externalRevision;
+
+    ForgeConfigFile(CommentedFileConfig bootstrap, ForgeConfigSpec spec, Consumer<CommentedConfig> validator) {
+        this(bootstrap, spec, validator, TomlFormat.instance().createWriter());
+    }
+
+    ForgeConfigFile(CommentedFileConfig bootstrap, ForgeConfigSpec spec, Consumer<CommentedConfig> validator,
+                    ConfigWriter writer) {
+        super(TomlFormat.instance().createConfig(LinkedHashMap::new));
+        this.bootstrap = bootstrap;
+        this.spec = spec;
+        this.validator = validator;
+        this.writer = writer;
+    }
+
+    synchronized boolean hasExternalChange() {
+        return !closed && !Arrays.equals(acceptedBytes, readBytes());
+    }
+
+    synchronized long externalRevision() { return externalRevision; }
+    synchronized boolean hasLoaded() { return acceptedBytes != null; }
+
+    public void saveOnUnload() {
+        try {
+            save();
+        } catch (ParsingException | WritingException exception) {
+            org.apache.logging.log4j.LogManager.getLogger().warn("Leaving externally changed config untouched while unloading {}", getNioPath(), exception);
+        }
+    }
+
+    public boolean belongsTo(ForgeConfigSpec owner) {
+        return owner == spec;
+    }
+
+    @Override
+    public synchronized void load() {
+        requireOpen();
+        if (acceptedBytes == null && !Files.exists(getNioPath())) {
+            // Preserve Forge's defaultconfig and missing-file policy before the first publication.
+            bootstrap.load();
+        }
+        byte[] bytes = readBytes();
+        if (!Arrays.equals(bytes, acceptedBytes)) {
+            CommentedConfig candidate = parse(bytes);
+            if (acceptedBytes == null) {
+                CommentedConfig original = new TomlParser().parse(new String(bytes, StandardCharsets.UTF_8));
+                ConfigWriter comparison = TomlFormat.instance().createWriter();
+                if (!comparison.writeToString(candidate).equals(comparison.writeToString(original))) {
+                    commit(candidate, bytes);
+                    return;
+                }
+            }
+            publishExternal(candidate, bytes);
+        }
+    }
+
+    @Override
+    public synchronized void save() {
+        requireLoaded();
+        byte[] disk = readBytes();
+        if (!Arrays.equals(disk, acceptedBytes)) {
+            // A delayed save must not turn an external edit back into an older in-memory snapshot.
+            publishExternal(parse(disk), disk);
+            return;
+        }
+        commit(copy(config), disk);
+    }
+
+    private CommentedConfig parse(byte[] bytes) {
+        CommentedConfig candidate = new TomlParser().parse(new String(bytes, StandardCharsets.UTF_8));
+        try {
+            validator.accept(candidate);
+        } catch (ParsingException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new ParsingException("Invalid config structure in " + getNioPath(), exception);
+        }
+        return candidate;
+    }
+
+    private CommentedConfig candidateForEdit() {
+        requireLoaded();
+        byte[] disk = readBytes();
+        if (!Arrays.equals(disk, acceptedBytes)) throw new WritingException("External config change must be reloaded before editing: " + getNioPath());
+        return copy(config);
+    }
+
+    private void commit(CommentedConfig candidate, byte[] expectedBytes) {
+        validator.accept(candidate);
+        Path temporary = null;
+        try {
+            temporary = Files.createTempFile(getNioPath().toAbsolutePath().getParent(), ".banira-config-", ".tmp");
+            writer.write(candidate, temporary, WritingMode.REPLACE, StandardCharsets.UTF_8);
+            byte[] written = Files.readAllBytes(temporary);
+            if (!Arrays.equals(expectedBytes, readBytes())) {
+                throw new WritingException("Config changed during save; keeping external file: " + getNioPath());
+            }
+            Files.move(temporary, getNioPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            temporary = null;
+            publish(candidate, written);
+        } catch (IOException exception) {
+            throw new WritingException("Cannot commit config " + getNioPath(), exception);
+        } finally {
+            if (temporary != null) {
+                try {
+                    Files.deleteIfExists(temporary);
+                } catch (IOException ignored) {
+                    // Never replace the original file merely to remove an abandoned staging file.
+                }
+            }
+        }
+    }
+
+    private void publish(CommentedConfig candidate, byte[] bytes) {
+        config.clear();
+        config.clearComments();
+        config.putAll(candidate);
+        config.putAllComments(candidate);
+        acceptedBytes = bytes;
+        spec.afterReload();
+    }
+
+    private void publishExternal(CommentedConfig candidate, byte[] bytes) {
+        boolean reloaded = acceptedBytes != null;
+        publish(candidate, bytes);
+        if (reloaded) externalRevision++;
+    }
+
+    private byte[] readBytes() {
+        try {
+            return Files.readAllBytes(getNioPath());
+        } catch (IOException exception) {
+            throw new ParsingException("Cannot read config " + getNioPath(), exception);
+        }
+    }
+
+    private void requireOpen() {
+        if (closed) throw new IllegalStateException("Config is closed: " + getNioPath());
+    }
+
+    private void requireLoaded() {
+        requireOpen();
+        if (acceptedBytes == null) throw new IllegalStateException("Config has not been loaded: " + getNioPath());
+    }
+
+    @Override
+    public synchronized <T> T set(List<String> path, Object value) {
+        CommentedConfig candidate = candidateForEdit();
+        T previous = candidate.set(path, copyValue(value));
+        if (Objects.deepEquals(previous, value)) return previous;
+        commit(candidate, acceptedBytes);
+        return previous;
+    }
+
+    @Override
+    public synchronized boolean add(List<String> path, Object value) {
+        CommentedConfig candidate = candidateForEdit();
+        boolean added = candidate.add(path, copyValue(value));
+        if (added) commit(candidate, acceptedBytes);
+        return added;
+    }
+
+    @Override
+    public synchronized <T> T remove(List<String> path) {
+        CommentedConfig candidate = candidateForEdit();
+        T previous = candidate.remove(path);
+        commit(candidate, acceptedBytes);
+        return previous;
+    }
+
+    @Override
+    public synchronized void clear() {
+        candidateForEdit();
+        commit(createSubConfig(), acceptedBytes);
+    }
+
+    @Override
+    public synchronized String setComment(List<String> path, String comment) {
+        CommentedConfig candidate = candidateForEdit();
+        String previous = candidate.setComment(path, comment);
+        commit(candidate, acceptedBytes);
+        return previous;
+    }
+
+    @Override
+    public synchronized String removeComment(List<String> path) {
+        CommentedConfig candidate = candidateForEdit();
+        String previous = candidate.removeComment(path);
+        commit(candidate, acceptedBytes);
+        return previous;
+    }
+
+    @Override
+    public synchronized void clearComments() {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.clearComments();
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized void putAll(UnmodifiableConfig values) {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.putAll(copy(values));
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized void addAll(UnmodifiableConfig values) {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.addAll(copy(values));
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized void removeAll(UnmodifiableConfig values) {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.removeAll(values);
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized void putAllComments(UnmodifiableCommentedConfig comments) {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.putAllComments(comments);
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized void putAllComments(Map<String, UnmodifiableCommentedConfig.CommentNode> comments) {
+        CommentedConfig candidate = candidateForEdit();
+        candidate.putAllComments(comments);
+        commit(candidate, acceptedBytes);
+    }
+
+    @Override
+    public synchronized Map<String, UnmodifiableCommentedConfig.CommentNode> getComments() {
+        return copy(config).getComments();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public synchronized <T> T getRaw(List<String> path) {
+        return (T) copyValue(config.getRaw(path));
+    }
+
+    @Override public synchronized boolean contains(List<String> path) { return config.contains(path); }
+    @Override public synchronized boolean isNull(List<String> path) { return config.isNull(path); }
+    @Override public synchronized int size() { return config.size(); }
+    @Override public synchronized boolean isEmpty() { return config.isEmpty(); }
+    @Override public synchronized String getComment(List<String> path) { return config.getComment(path); }
+    @Override public synchronized boolean containsComment(List<String> path) { return config.containsComment(path); }
+    @Override public synchronized Map<String, Object> valueMap() { return copy(config).valueMap(); }
+    @Override public synchronized Map<String, String> commentMap() { return new LinkedHashMap<>(config.commentMap()); }
+    @Override public synchronized Set<? extends CommentedConfig.Entry> entrySet() { return copy(config).entrySet(); }
+    @Override public CommentedConfig createSubConfig() { return TomlFormat.instance().createConfig(LinkedHashMap::new); }
+    @Override public File getFile() { return bootstrap.getFile(); }
+    @Override public Path getNioPath() { return bootstrap.getNioPath(); }
+    @Override public synchronized void close() { closed = true; bootstrap.close(); }
+
+    static CommentedConfig copy(UnmodifiableConfig source) {
+        CommentedConfig result = TomlFormat.instance().createConfig(LinkedHashMap::new);
+        source.valueMap().forEach((key, value) -> result.valueMap().put(key, copyValue(value)));
+        if (source instanceof UnmodifiableCommentedConfig) result.putAllComments((UnmodifiableCommentedConfig) source);
+        return result;
+    }
+
+    private static Object copyValue(Object value) {
+        if (value instanceof Config) return copy((Config) value);
+        if (value instanceof List) {
+            List<Object> result = new ArrayList<>();
+            for (Object item : (List<?>) value) result.add(copyValue(item));
+            return result;
+        }
+        if (value instanceof Map) {
+            Map<Object, Object> result = new LinkedHashMap<>();
+            ((Map<?, ?>) value).forEach((key, item) -> result.put(key, copyValue(item)));
+            return result;
+        }
+        return value;
+    }
+}

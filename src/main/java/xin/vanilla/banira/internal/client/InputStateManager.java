@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
+import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.data.FixedList;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -414,6 +416,24 @@ public final class InputStateManager implements BaniraInputState {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         tick();
+    }
+
+    /** Overrides only the in-memory coordinates; no polling, events or native cursor calls. */
+    public void runDevRenderAt(double x, double y, Runnable render) {
+        if (BaniraEnvironment.isProduction()) {
+            throw new IllegalStateException("Dev render scopes are unavailable in production");
+        }
+        Objects.requireNonNull(render, "render");
+        double previousX = mouseX;
+        double previousY = mouseY;
+        mouseX = x;
+        mouseY = y;
+        try {
+            render.run();
+        } finally {
+            mouseX = previousX;
+            mouseY = previousY;
+        }
     }
 
     public void handleKeyPressed(int keyCode) {

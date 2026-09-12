@@ -90,6 +90,11 @@ public abstract class BaniraScreen extends Screen {
         return font;
     }
 
+    /** Development-only render scope; leaves cursor, events and deferred flushing to the caller. */
+    public final void runDevRenderAt(double x, double y, Runnable render) {
+        InputStateManager.instance().runDevRenderAt(x, y, render);
+    }
+
     protected MouseWidget cursor;
     protected PopupOption popupOption;
 

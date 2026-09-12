@@ -199,6 +199,52 @@ public class ForgeConfigFileTest {
     }
 
     @Test
+    public void saveReportsFirstExternalRevisionAfterTheSameBackendWrapsAnotherFile() throws Exception {
+        assertFirstExternalRevisionAfterRebind(false);
+    }
+
+    @Test
+    public void editReportsFirstExternalRevisionAfterTheSameBackendWrapsAnotherFile() throws Exception {
+        assertFirstExternalRevisionAfterRebind(true);
+    }
+
+    private void assertFirstExternalRevisionAfterRebind(boolean editBeforeSave) throws Exception {
+        Path firstPath = file();
+        Fixture fixture = new Fixture(firstPath);
+        List<Set<String>> reloads = new ArrayList<>();
+        List<Set<String>> saves = new ArrayList<>();
+        fixture.holder.onReloaded(reloads::add);
+        fixture.holder.onSaved(saves::add);
+        try (CommentedFileConfig first = fixture.file) {
+            write(firstPath, DOCUMENT.replace("limit = 100", "limit = 321"));
+            fixture.holder.save();
+            assertEquals(Collections.singletonList(Collections.singleton("base.chunk.limit")), reloads);
+        }
+
+        Path secondPath = temporary.newFile("second.toml").toPath();
+        write(secondPath, DOCUMENT);
+        try (ForgeConfigFile second = fixture.rebind(secondPath)) {
+            reloads.clear();
+            saves.clear();
+            write(secondPath, DOCUMENT.replace("limit = 100", "limit = 222"));
+            if (editBeforeSave) fixture.holder.set("other.enabled", true);
+            fixture.holder.save();
+            assertEquals(222, ((Number) fixture.holder.get("base.chunk.limit")).intValue());
+            assertEquals(Collections.singletonList(Collections.singleton("base.chunk.limit")), reloads);
+            if (editBeforeSave) {
+                assertEquals(Collections.singletonList(Collections.singleton("other.enabled")), saves);
+            } else {
+                assertTrue(saves.isEmpty());
+            }
+            second.load();
+            fixture.holder.acceptExternalReload();
+            fixture.holder.save();
+            assertEquals("The later watcher delivery must not duplicate the reload", 1, reloads.size());
+            assertEquals(DOCUMENT.replace("limit = 100", "limit = 321"), read(firstPath));
+        }
+    }
+
+    @Test
     public void invalidExternalFileDoesNotPreventUnloadCleanup() throws Exception {
         Path path = file();
         try (ForgeConfigFile config = (ForgeConfigFile) open(path)) {
@@ -239,20 +285,35 @@ public class ForgeConfigFileTest {
     private static final class Fixture {
         final CommentedFileConfig file;
         final ConfigHolder holder;
+        final ForgeConfigSpec spec;
+        final ForgeConfigBackend backend;
 
         Fixture(Path path) {
             ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
             Map<String, ForgeConfigSpec.ConfigValue<?>> values = new LinkedHashMap<>();
             values.put("base.chunk.limit", builder.defineInRange("base.chunk.limit", 100, 0, 1000));
             values.put("other.enabled", builder.define("other.enabled", false));
-            ForgeConfigSpec spec = builder.build();
-            ForgeConfigBackend backend = new ForgeConfigBackend(spec, values);
+            spec = builder.build();
+            backend = new ForgeConfigBackend(spec, values);
             file = backend.wrap(CommentedFileConfig.of(path));
             file.load();
             spec.setConfig(file);
             holder = ConfigHolder.create("test", "test", ConfigScope.COMMON, backend,
                     Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
             backend.setHolder(holder);
+        }
+
+        ForgeConfigFile rebind(Path path) {
+            ForgeConfigFile next = (ForgeConfigFile) backend.wrap(CommentedFileConfig.of(path));
+            try {
+                next.load();
+                spec.setConfig(next);
+                holder.acceptInitialExternalLoad();
+                return next;
+            } catch (RuntimeException | Error failure) {
+                next.close();
+                throw failure;
+            }
         }
     }
 

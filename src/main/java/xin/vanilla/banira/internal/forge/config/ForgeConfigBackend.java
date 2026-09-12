@@ -43,6 +43,7 @@ final class ForgeConfigBackend implements ConfigValueStore {
     CommentedFileConfig wrap(CommentedFileConfig file) {
         ForgeConfigFile managed = new ForgeConfigFile(file, spec, this::prepare);
         managedFile = managed;
+        notifiedRevision = 0;
         return managed;
     }
 

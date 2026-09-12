@@ -34,6 +34,7 @@ public final class ForgeBaniraCodexEntry {
         BaniraConfig.register(ClientConfig.class, Banira.MOD_ID);
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.register(modBus);
         modBus.addListener(ForgeBaniraLifecycleAdapter::dispatchCommonSetup);
 
         MinecraftForge.EVENT_BUS.register(ForgeBaniraCommandAdapter.class);

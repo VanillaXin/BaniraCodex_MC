@@ -165,6 +165,11 @@ public final class ForgeConfigAdapter {
     }
 
     private static void onConfigReloading(ModConfigEvent.Reloading event) {
+        ForgeConfigValueStore backend = BACKEND_BY_CONFIG.get(event.getConfig());
+        if (backend != null) {
+            backend.acceptReload();
+            return;
+        }
         ConfigHolder holder = HOLDER_BY_CONFIG.get(event.getConfig());
         if (holder != null) holder.acceptExternalReload();
     }

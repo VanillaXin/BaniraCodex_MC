@@ -53,6 +53,7 @@ public class ConfigHolder implements BaniraConfigHandle {
     private final List<Consumer<Set<String>>> savedListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> reloadedListeners = new CopyOnWriteArrayList<>();
     private final Map<String, Object> loadedSnapshot = new LinkedHashMap<>();
+    private long loadedSnapshotRevision;
 
     /**
      * 供各加载器配置服务创建统一 holder。
@@ -169,6 +170,7 @@ public class ConfigHolder implements BaniraConfigHandle {
         for (String path : valueStore.paths()) {
             loadedSnapshot.put(path, snapshotValueSafely(path));
         }
+        loadedSnapshotRevision++;
     }
 
     private Object snapshotValueSafely(String path) {
@@ -215,7 +217,12 @@ public class ConfigHolder implements BaniraConfigHandle {
     public synchronized void set(String path, Object value) {
         if (valueStore.paths().contains(path)) {
             Object previous = valueStore.get(path);
+            long previousRevision = loadedSnapshotRevision;
             valueStore.set(path, value);
+            // A backend write can accept an external load before applying the local value.
+            if (previousRevision != loadedSnapshotRevision) {
+                previous = loadedSnapshot.get(path);
+            }
             if (!Objects.deepEquals(previous, valueStore.get(path))) {
                 pendingChangedPaths.add(path);
             }

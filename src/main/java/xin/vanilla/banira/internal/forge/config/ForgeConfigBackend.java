@@ -131,6 +131,16 @@ final class ForgeConfigBackend implements ConfigValueStore {
         if (managedFile != null) notifyExternalReload(managedFile);
     }
 
+    void acceptReload() {
+        if (holder == null) return;
+        synchronized (holder) {
+            ForgeConfigFile file = managedFile;
+            // Native events and a local write can both observe the same external revision.
+            if (file != null) notifyExternalReload(file);
+            else holder.acceptExternalReload();
+        }
+    }
+
     private void notifyExternalReload(ForgeConfigFile file) {
         long revision = file.externalRevision();
         if (holder != null && revision != notifiedRevision) {

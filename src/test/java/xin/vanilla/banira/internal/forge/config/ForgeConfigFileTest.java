@@ -282,6 +282,79 @@ public class ForgeConfigFileTest {
         assertTrue(read(path).contains("enabled = false"));
     }
 
+    @Test
+    public void localWriteBackToPreviousValueNotifiesSaveAfterPendingExternalReload() throws Exception {
+        Path path = file();
+        Fixture fixture = new Fixture(path);
+        java.util.List<Integer> reloads = new java.util.ArrayList<>();
+        java.util.List<Integer> saves = new java.util.ArrayList<>();
+        try (CommentedFileConfig config = fixture.file) {
+            fixture.holder.onReloaded(paths -> reloads.add(fixture.holder.get("base.chunk.limit")));
+            fixture.holder.onSaved(paths -> saves.add(fixture.holder.get("base.chunk.limit")));
+            write(path, DOCUMENT.replace("limit = 100", "limit = 321"));
+            fixture.holder.set("base.chunk.limit", 100);
+            fixture.holder.save();
+            assertEquals(Collections.singletonList(321), reloads);
+            assertEquals(Collections.singletonList(100), saves);
+            assertTrue(read(path).contains("limit = 100"));
+        }
+    }
+
+    @Test
+    public void acceptingPendingExternalValueDoesNotNotifyALocalSave() throws Exception {
+        Path path = file();
+        Fixture fixture = new Fixture(path);
+        java.util.List<java.util.Set<String>> saves = new java.util.ArrayList<>();
+        try (CommentedFileConfig config = fixture.file) {
+            fixture.holder.onSaved(saves::add);
+            write(path, DOCUMENT.replace("limit = 100", "limit = 321"));
+            fixture.holder.set("base.chunk.limit", 321);
+            fixture.holder.save();
+            assertTrue(saves.isEmpty());
+            assertEquals(321, ((Number) fixture.holder.get("base.chunk.limit")).intValue());
+        }
+    }
+
+    @Test
+    public void delayedExternalEventDoesNotDiscardLocalSave() throws Exception {
+        Path path = file();
+        Fixture fixture = new Fixture(path);
+        List<String> events = new ArrayList<>();
+        try (CommentedFileConfig config = fixture.file) {
+            fixture.holder.onReloaded(paths -> events.add("reload:" + fixture.holder.get("base.chunk.limit")));
+            fixture.holder.onSaved(paths -> events.add("save:" + fixture.holder.get("base.chunk.limit")));
+            write(path, DOCUMENT.replace("limit = 100", "limit = 321"));
+            config.load();
+            fixture.holder.set("base.chunk.limit", 100);
+            fixture.backend.acceptReload();
+            fixture.holder.save();
+
+            assertEquals(Arrays.asList("reload:321", "save:100"), events);
+            assertTrue(read(path).contains("limit = 100"));
+        }
+    }
+
+    @Test
+    public void repeatedExternalEventDoesNotDiscardAnUnrelatedPendingEdit() throws Exception {
+        Path path = file();
+        Fixture fixture = new Fixture(path);
+        List<Set<String>> saves = new ArrayList<>();
+        List<Integer> reloads = new ArrayList<>();
+        try (CommentedFileConfig config = fixture.file) {
+            fixture.holder.onReloaded(paths -> reloads.add(fixture.holder.get("base.chunk.limit")));
+            fixture.holder.onSaved(saves::add);
+            write(path, DOCUMENT.replace("limit = 100", "limit = 321"));
+            config.load();
+            fixture.backend.acceptReload();
+            fixture.holder.set("other.enabled", true);
+            fixture.backend.acceptReload();
+            fixture.holder.save();
+
+            assertEquals(Collections.singletonList(321), reloads);
+            assertEquals(Collections.singletonList(Collections.singleton("other.enabled")), saves);
+        }
+    }
+
     private static final class Fixture {
         final CommentedFileConfig file;
         final ConfigHolder holder;

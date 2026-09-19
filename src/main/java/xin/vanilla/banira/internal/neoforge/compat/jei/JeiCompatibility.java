@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
-import mezz.jei.gui.input.InputType;
-import mezz.jei.gui.input.UserInput;
+import mezz.jei.common.input.InputType;
+import mezz.jei.common.input.UserInput;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
 import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
 import net.minecraft.client.Minecraft;
@@ -118,9 +118,19 @@ public final class JeiCompatibility {
 
     private static void drawLookupHistoryIcon(PoseStack stack, int x, int y, int size) {
         IClientConfig config = lookupHistoryConfig;
-        IDrawable icon = config != null && config.isLookupHistoryEnabled()
+        IDrawable icon = isLookupHistoryEnabled(config)
                 ? lookupHistoryOnIcon : lookupHistoryOffIcon;
         drawNativeIcon(stack, x, y, size, icon);
+    }
+
+    private static boolean isLookupHistoryEnabled(@Nullable IClientConfig config) {
+        if (config == null) return false;
+        try {
+            Object value = config.getClass().getMethod("lookupHistoryEnabled").invoke(config);
+            return Boolean.TRUE.equals(value.getClass().getMethod("get").invoke(value));
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return false;
+        }
     }
 
     private static void drawNativeIcon(PoseStack stack, int x, int y, int size,

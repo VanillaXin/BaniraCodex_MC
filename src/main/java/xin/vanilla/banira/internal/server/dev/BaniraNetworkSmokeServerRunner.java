@@ -59,6 +59,7 @@ public final class BaniraNetworkSmokeServerRunner {
             if (finished) { shutdownWhenIdle(server); return; }
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
+            if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(false)) return;
             ServerPlayer player = server.getPlayerList().getPlayers().get(0);
             if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) firstPhase(server, player);
             else if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) secondPhase(player);

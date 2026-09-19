@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.forge.config;
 
 import xin.vanilla.banira.api.Banira;
 
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
@@ -52,6 +53,8 @@ public final class ForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
     private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = new IdentityHashMap<>();
+    private static final Map<ModConfig, ForgeConfigValueStore> BACKEND_BY_CONFIG = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<ModConfig, ForgeConfigReloadGate> RELOAD_GATES = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Set<IEventBus> CONFIG_EVENT_BUSES =
             Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -81,17 +84,88 @@ public final class ForgeConfigAdapter {
         ForgeConfigValueStore valueStore = new ForgeConfigValueStore(spec, valueMap);
         ConfigHolder holder = ConfigHolder.create(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
                 categoryTitleSpecs);
+        valueStore.setHolder(holder);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModContainer container = resolveContainer(modId);
-        ModConfig modConfig = new ModConfig(toForgeType(configScope), spec, container, fileName);
+        ModConfig modConfig = new ForgeManagedModConfig(toForgeType(configScope), spec, container, fileName);
         container.addConfig(modConfig);
         valueStore.bindModConfig(modConfig);
+        BACKEND_BY_CONFIG.put(modConfig, valueStore);
 
         HOLDER_MAP.put(configClass, holder);
         HOLDER_BY_CONFIG.put(modConfig, holder);
         registerConfigEventListeners();
         ConfigRegistry.registerHolder(holder);
+    }
+
+    public static CommentedFileConfig wrapFile(ModConfig config, CommentedFileConfig file) {
+        ForgeConfigValueStore backend = BACKEND_BY_CONFIG.get(config);
+        return backend == null ? file : backend.wrap(file);
+    }
+
+    public static void watch(com.electronwill.nightconfig.core.file.FileWatcher watcher, ModConfig config,
+                             java.nio.file.Path path, Runnable callback) throws java.io.IOException {
+        ForgeConfigValueStore backend = BACKEND_BY_CONFIG.get(config);
+        if (backend == null) {
+            watcher.addWatch(path, callback);
+            return;
+        }
+        ForgeConfigReloadGate gate = backend.reloadGate(callback);
+        ForgeConfigReloadGate previous = RELOAD_GATES.put(config, gate);
+        if (previous != null) previous.close();
+        boolean registered = false;
+        try {
+            watcher.addWatch(path, gate);
+            registered = true;
+            ForgeConfigWatch.add(path, gate);
+        } catch (java.io.IOException | RuntimeException error) {
+            RELOAD_GATES.remove(config, gate);
+            gate.close();
+            ForgeConfigWatch.remove(path);
+            if (registered) {
+                try { watcher.removeWatch(path); }
+                catch (RuntimeException cleanup) { error.addSuppressed(cleanup); }
+            }
+            throw error;
+        }
+    }
+
+    public static void unwatch(ModConfig config, java.nio.file.Path path) {
+        ForgeConfigReloadGate gate = RELOAD_GATES.remove(config);
+        if (gate == null) return;
+        gate.close();
+        try {
+            com.electronwill.nightconfig.core.file.FileWatcher.defaultInstance().removeWatch(path);
+        } finally {
+            ForgeConfigWatch.remove(path);
+        }
+    }
+
+    static void releaseFile(ModConfig config, ForgeConfigFile file) {
+        try {
+            unwatch(config, file.getNioPath());
+        } finally {
+            ForgeConfigValueStore backend = BACKEND_BY_CONFIG.get(config);
+            if (backend != null) backend.detach(file);
+            file.close();
+            ForgeConfigSmoke.released(file);
+        }
+    }
+
+    public static void releaseReplacedFile(ForgeConfigSpec spec, com.electronwill.nightconfig.core.Config previous,
+                                          com.electronwill.nightconfig.core.CommentedConfig next) {
+        if (previous == next || !(previous instanceof ForgeConfigFile file) || !file.belongsTo(spec)) return;
+        for (Map.Entry<ModConfig, ForgeConfigValueStore> entry : BACKEND_BY_CONFIG.entrySet()) {
+            ModConfig owner = entry.getKey();
+            if (owner.getSpec() == spec) {
+                // The replacement reader may already own the registration and its new delivery gate.
+                if (entry.getValue().owns(file)) releaseFile(owner, file);
+                else file.close();
+                return;
+            }
+        }
+        file.close();
     }
 
     @SuppressWarnings("removal")
@@ -110,6 +184,11 @@ public final class ForgeConfigAdapter {
     }
 
     private static void onConfigReloading(ModConfigEvent.Reloading event) {
+        ForgeConfigValueStore backend = BACKEND_BY_CONFIG.get(event.getConfig());
+        if (backend != null) {
+            backend.acceptReload();
+            return;
+        }
         ConfigHolder holder = HOLDER_BY_CONFIG.get(event.getConfig());
         if (holder != null) holder.acceptExternalReload();
     }

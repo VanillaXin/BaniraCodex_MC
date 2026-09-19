@@ -90,6 +90,17 @@ tasks.register('networkSmoke') {
         def profilerJar = sparkRuntime()
         if (profilerJar == null) throw new GradleException('Unable to resolve the Spark runtime jar for network smoke evidence.')
         new File(evidence, 'spark-runtime-phase-one.txt').setText(profilerJar.absolutePath + System.lineSeparator(), 'UTF-8')
+        def sha256 = { File input -> java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString() }
+        def sources = fileTree(projectDir) {
+            include 'src/**', 'scripts/**', 'gradle/**', 'build.gradle', 'settings.gradle', 'gradle.properties'
+        }.files.sort { it.path }
+        new File(evidence, 'source-state.json').setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                commit: providers.exec { commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.get().trim(),
+                files: sources.collectEntries { source ->
+                    [(projectDir.toPath().relativize(source.toPath()).toString().replace('\\', '/')): sha256(source)]
+                },
+                runtimeJars: [(profilerJar.absolutePath): sha256(profilerJar)]
+        ])) + System.lineSeparator(), 'UTF-8')
         ['phase-one', 'phase-two'].each { phase ->
             File serverStatus = new File(evidence, "server-${phase}.status"); File clientStatus = new File(evidence, "client-${phase}.status")
             File report = new File(evidence, "spark-report-${phase}.sparkprofile"); File clientReport = new File(evidence, "spark-client-report-${phase}.sparkprofile"); File serverLog = new File(evidence, "server-${phase}.log"); File clientLog = new File(evidence, "client-${phase}.log")
@@ -105,6 +116,13 @@ tasks.register('networkSmoke') {
                 waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30); if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
                 def expected = phase == 'phase-one' ? ['PASS event-bridge', 'PASS config-hot-reload', 'PASS player-data-file', 'PASS file-operation', 'PASS spark-profiler-active', 'PASS sustained-workload', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown'] : ['PASS persisted-final-cycle', 'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown']
                 expected.each { marker -> if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}") }
+                ['PASS forge-server-config-loaded', 'PASS forge-server-config-unload-edit value=74', 'PASS forge-server-config-released'].each { marker ->
+                    if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}")
+                }
+                String configMarker = phase == 'phase-one' ? 'PASS forge-config-transaction cycles=20' : 'PASS forge-config-restart'
+                [serverStatus, clientStatus].each { status ->
+                    if (!readUtf8(status).contains(configMarker)) throw new GradleException("Missing '${configMarker}':\n${readUtf8(status)}")
+                }
                 if (phase == 'phase-one' && !readUtf8(clientStatus).contains('PASS client-ui-sustained-workload')) throw new GradleException("Missing client UI sustained workload marker:\n${readUtf8(clientStatus)}")
                 if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client')
                         || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {

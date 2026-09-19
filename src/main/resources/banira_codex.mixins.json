@@ -5,6 +5,7 @@
   "plugin": "xin.vanilla.banira.internal.mixin.OptionalCompatibilityMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "injections.ForgeConfigSpecMixin",
     "accessors.ServerPlayerAccessor",
     "injections.ServerPlayerMixin"
   ],

@@ -6,7 +6,8 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "accessors.ServerPlayerAccessor",
-    "injections.ServerPlayerMixin"
+    "injections.ServerPlayerMixin",
+    "injections.ConnectionReadOrderMixin"
   ],
   "client": [
     "compat.ftblibrary.SidebarButtonMixin",

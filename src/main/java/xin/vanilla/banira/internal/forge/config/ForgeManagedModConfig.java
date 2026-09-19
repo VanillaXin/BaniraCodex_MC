@@ -37,10 +37,7 @@ final class ForgeManagedModConfig extends ModConfig {
                             ClassLoader previous = thread.getContextClassLoader();
                             try {
                                 thread.setContextClassLoader(loader);
-                                if (config.getSpec().isCorrecting()) return;
-                                file.load();
-                                config.getSpec().afterReload();
-                                container.dispatchConfigEvent(IConfigEvent.reloading(config));
+                                reload(config, file, () -> container.dispatchConfigEvent(IConfigEvent.reloading(config)));
                             } finally {
                                 thread.setContextClassLoader(previous);
                             }
@@ -62,6 +59,13 @@ final class ForgeManagedModConfig extends ModConfig {
                 if (config.getConfigData() instanceof ForgeConfigFile file) ForgeConfigAdapter.releaseFile(config, file);
             }
         };
+    }
+
+    static void reload(ModConfig config, CommentedFileConfig file, Runnable dispatchReload) {
+        if (config.getSpec().isCorrecting()) return;
+        file.load();
+        // The managed file already invalidates caches under its monitor before publication ends.
+        dispatchReload.run();
     }
 
     static CommentedFileConfig bootstrap(Path path, Path defaults) {

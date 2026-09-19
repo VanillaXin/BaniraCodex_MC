@@ -9,6 +9,7 @@
     "injections.ForgeConfigFileMixin",
     "injections.ForgeConfigSpecMixin",
     "injections.ForgeConfigWatchMixin",
+    "injections.ForgeConfigWatcherMixin",
     "injections.ForgeConfigUnloadMixin",
     "accessors.NetworkRegistryAccessor",
     "accessors.ResourceManagerAccessor",

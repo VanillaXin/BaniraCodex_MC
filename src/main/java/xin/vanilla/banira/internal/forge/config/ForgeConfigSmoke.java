@@ -60,6 +60,7 @@ public final class ForgeConfigSmoke {
             return true;
         }
         if (stage == 0) {
+            verifyNativeWatcherBridge(mod, file, key);
             unsubscribe = holder.onReloaded(paths -> {
                 holder.get(key);
                 RELOADS.incrementAndGet();
@@ -117,5 +118,26 @@ public final class ForgeConfigSmoke {
 
     private static CommentedConfig snapshot(ForgeConfigFile file) {
         return new TomlParser().parse(TomlFormat.instance().createWriter().writeToString(file));
+    }
+
+    private static void verifyNativeWatcherBridge(ModConfig mod, ForgeConfigFile file, String key) throws Exception {
+        Class<?> type = Class.forName("net.minecraftforge.fml.config.ConfigFileTypeHandler$ConfigWatcher");
+        java.lang.reflect.Constructor<?> constructor = type.getDeclaredConstructor(ModConfig.class,
+                com.electronwill.nightconfig.core.file.CommentedFileConfig.class, ClassLoader.class);
+        constructor.setAccessible(true);
+        Object watcher = constructor.newInstance(mod, file, Thread.currentThread().getContextClassLoader());
+        java.lang.reflect.Method redirect = Arrays.stream(type.getDeclaredMethods())
+                .filter(method -> method.getName().contains("banira$watcherReload"))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Native watcher redirect was not transformed"));
+        redirect.setAccessible(true);
+        net.minecraftforge.common.ForgeConfigSpec.ConfigValue<?> value = mod.getSpec().getValues().get(key);
+        Object expected = value.get();
+        redirect.invoke(watcher, mod.getSpec());
+        java.lang.reflect.Field cache = net.minecraftforge.common.ForgeConfigSpec.ConfigValue.class.getDeclaredField("cachedValue");
+        cache.setAccessible(true);
+        if (!java.util.Objects.equals(expected, cache.get(value))) {
+            throw new IllegalStateException("Native watcher invalidated the managed cache outside the file monitor");
+        }
+        BaniraNetworkSmokeStatus.append("PASS forge-native-watcher-cache file=" + mod.getFileName());
     }
 }

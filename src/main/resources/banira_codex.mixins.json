@@ -9,7 +9,8 @@
     "accessors.NetworkRegistryAccessor",
     "accessors.ServerPlayerAccessor",
     "accessors.SimpleChannelAccessor",
-    "injections.ServerPlayerMixin"
+    "injections.ServerPlayerMixin",
+    "injections.ConnectionReadOrderMixin"
   ],
   "client": [
     "compat.ftblibrary.SidebarButtonMixin",

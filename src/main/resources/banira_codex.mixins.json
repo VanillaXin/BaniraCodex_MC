@@ -9,7 +9,8 @@
     "accessors.MinecraftServerAccessor",
     "accessors.ResourceManagerAccessor",
     "accessors.ServerPlayerOptionsAccessor",
-    "injections.ServerPlayerMixin"
+    "injections.ServerPlayerMixin",
+    "injections.ConnectionReadOrderMixin"
   ],
   "client": [
     "accessors.MinecraftAccessor",

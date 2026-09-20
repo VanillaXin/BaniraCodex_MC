@@ -19,6 +19,8 @@ def javaVer = 8
 
 apply plugin: 'org.spongepowered.mixin'
 
+apply from: 'gradle/config-view-processor.gradle'
+
 group = mod_group_id
 version = mod_version
 
@@ -108,6 +110,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     testImplementation 'junit:junit:4.13.2'
 
     runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")

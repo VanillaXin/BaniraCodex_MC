@@ -46,6 +46,12 @@ public final class BaniraNetworkSmokeClientRunner {
             ticks = 0;
             return;
         }
+        try {
+            if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(true)) return;
+        } catch (Exception error) {
+            fail(client, "generated config smoke: " + error);
+            return;
+        }
         if (!connected) {
             if (++ticks < 20) return;
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");

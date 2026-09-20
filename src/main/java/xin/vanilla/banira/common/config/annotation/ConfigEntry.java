@@ -32,6 +32,21 @@ public @interface ConfigEntry {
      */
     String category() default "";
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface Access {
+        NullPolicy nulls() default NullPolicy.DEFAULT;
+
+        EmptyPolicy emptyString() default EmptyPolicy.KEEP;
+
+        /** Enum parser must be a public static method accepting Object. */
+        String enumParser() default "";
+
+        enum NullPolicy { DEFAULT, KEEP }
+
+        enum EmptyPolicy { KEEP, DEFAULT }
+    }
+
     /**
      * 通过 GUI/网络修改<strong>服务端</strong>上该配置项时，如何判定权限。
      */
@@ -58,7 +73,7 @@ public @interface ConfigEntry {
         EditPermissionPolicy policy() default EditPermissionPolicy.INHERIT;
 
         /**
-         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.commands.CommandSourceStack#hasPermission(int)} 一致；
+         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.command.CommandSource#hasPermission(int)} 一致；
          * {@code -1} 表示 FIELD_OVERRIDE 时仍沿用全局「修改服务端配置」的权限等级
          */
         int permissionLevel() default -1;

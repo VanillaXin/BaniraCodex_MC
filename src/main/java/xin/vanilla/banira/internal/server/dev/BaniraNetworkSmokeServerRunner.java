@@ -69,6 +69,7 @@ public final class BaniraNetworkSmokeServerRunner {
                 BaniraNetworkSmokeStatus.append("PASS spark-report-written");
             }
             if (finished) { shutdownWhenIdle(server); return; }
+            if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(false)) return;
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
             ServerPlayer player = server.getPlayerList().getPlayers().get(0);

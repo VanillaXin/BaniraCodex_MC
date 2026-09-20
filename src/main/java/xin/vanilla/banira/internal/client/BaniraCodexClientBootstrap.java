@@ -1,5 +1,7 @@
 package xin.vanilla.banira.internal.client;
 
+import xin.vanilla.banira.api.BaniraConfigs;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.BaniraCodex;
@@ -42,9 +44,9 @@ public final class BaniraCodexClientBootstrap {
             customActions.registerScreen(BaniraCodex.MODID + ":notification_types",
                     parent -> new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen((net.minecraft.client.gui.screen.Screen) parent)));
             customActions.reload();
-            ClientConfig.get().holder().onSaved(changed ->
+            BaniraConfigs.holder(ClientConfig.class).onSaved(changed ->
                     ExternalInventoryButtonManager.get().refreshCurrentScreen());
-            ClientConfig.get().holder().onReloaded(changed ->
+            BaniraConfigs.holder(ClientConfig.class).onReloaded(changed ->
                     ExternalInventoryButtonManager.get().refreshCurrentScreen());
         });
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);

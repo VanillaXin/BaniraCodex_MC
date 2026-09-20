@@ -11,7 +11,8 @@ public class ConfigViewBaselineTest {
     @Test
     public void emptyAndNullStringsKeepTheirPerFieldMeaning() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(CommonConfig.class);
-        CommonConfig.RootView view = CommonConfigAccess.root(fixture.holder);
+        GeneratedConfigSchemaTest.bind(CommonConfig.class, fixture.holder);
+        CommonConfigView view = CommonConfigView.get();
         fixture.values.put("help.helpHeader", "");
         fixture.values.put("command.commandPrefix", "");
         assertEquals("", view.help().helpHeader());
@@ -28,7 +29,8 @@ public class ConfigViewBaselineTest {
     @Test
     public void clientConversionStillAcceptsLegacyNumbersAndUnknownEnums() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(ClientConfig.class);
-        ClientConfig.RootView view = ClientConfigAccess.root(fixture.holder);
+        GeneratedConfigSchemaTest.bind(ClientConfig.class, fixture.holder);
+        ClientConfigView view = ClientConfigView.get();
         fixture.values.put("guiThemeStyle", "not-a-season");
         fixture.values.put("notificationLogMaxEntries", 17L);
         assertEquals(EnumSeason.AUTO, view.guiThemeStyle());
@@ -47,10 +49,12 @@ public class ConfigViewBaselineTest {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(CommonConfig.class);
         Map<String, Object> baseline = new LinkedHashMap<>();
         baseline.put("schema", fixture.schema());
-        baseline.put("unbound", ConfigBaselineFixture.readView(CommonConfigAccess.root(null), CommonConfig.RootView.class));
-        baseline.put("defaults", ConfigBaselineFixture.readView(CommonConfigAccess.root(fixture.holder), CommonConfig.RootView.class));
+        GeneratedConfigSchemaTest.bind(CommonConfig.class, null);
+        baseline.put("unbound", GeneratedConfigSchemaTest.read(CommonConfigView.get()));
+        GeneratedConfigSchemaTest.bind(CommonConfig.class, fixture.holder);
+        baseline.put("defaults", GeneratedConfigSchemaTest.read(CommonConfigView.get()));
         fixture.nonDefaultValues();
-        baseline.put("changed", ConfigBaselineFixture.readView(CommonConfigAccess.root(fixture.holder), CommonConfig.RootView.class));
+        baseline.put("changed", GeneratedConfigSchemaTest.read(CommonConfigView.get()));
         ConfigBaselineFixture.assertSnapshot("common", baseline);
     }
 
@@ -59,10 +63,12 @@ public class ConfigViewBaselineTest {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(ClientConfig.class);
         Map<String, Object> baseline = new LinkedHashMap<>();
         baseline.put("schema", fixture.schema());
-        baseline.put("unbound", ConfigBaselineFixture.readView(ClientConfigAccess.root(null), ClientConfig.RootView.class));
-        baseline.put("defaults", ConfigBaselineFixture.readView(ClientConfigAccess.root(fixture.holder), ClientConfig.RootView.class));
+        GeneratedConfigSchemaTest.bind(ClientConfig.class, null);
+        baseline.put("unbound", GeneratedConfigSchemaTest.read(ClientConfigView.get()));
+        GeneratedConfigSchemaTest.bind(ClientConfig.class, fixture.holder);
+        baseline.put("defaults", GeneratedConfigSchemaTest.read(ClientConfigView.get()));
         fixture.nonDefaultValues();
-        baseline.put("changed", ConfigBaselineFixture.readView(ClientConfigAccess.root(fixture.holder), ClientConfig.RootView.class));
+        baseline.put("changed", GeneratedConfigSchemaTest.read(ClientConfigView.get()));
         ConfigBaselineFixture.assertSnapshot("client", baseline);
     }
 }

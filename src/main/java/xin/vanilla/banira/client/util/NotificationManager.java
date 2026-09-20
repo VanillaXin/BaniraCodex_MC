@@ -23,6 +23,7 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -127,7 +128,7 @@ public final class NotificationManager {
     }
 
     private void applyBurstStagger(Notification n, long nowMs) {
-        ClientConfig.RootView cfg = ClientConfig.get();
+        ClientConfigView cfg = ClientConfig.get();
         int stagger = cfg.notificationBurstStaggerMs();
         if (stagger <= 0) {
             return;

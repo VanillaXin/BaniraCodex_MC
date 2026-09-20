@@ -1,5 +1,7 @@
 package xin.vanilla.banira.internal.forge.config;
 
+import xin.vanilla.banira.api.BaniraConfigs;
+
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModContainer;
@@ -39,10 +41,10 @@ import java.util.function.Predicate;
  * ForgeConfigAdapter.register(CommonConfig.class, BaniraCodex.MODID);
  *
  * // 3. 使用
- * CommonConfig.RootView config = CommonConfig.get();
+ * CommonConfigView config = CommonConfig.get();
  * String h = config.help().helpHeader();
  * config.help().helpHeader("new");
- * // 或直接 holder：config.holder().set("help.helpHeader", "new");
+ * // 或直接 holder：BaniraConfigs.holder(CommonConfig.class).set("help.helpHeader", "new");
  * }</pre>
  */
 public final class ForgeConfigAdapter {

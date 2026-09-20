@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.api.BaniraConfigs;
+
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -64,11 +66,11 @@ public class CodexNavigationScreen extends BaniraScreen {
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "codex_navigation_client_config",
-                () -> ConfigEditorScreen.open(ClientConfig.get().holder(), this));
+                () -> ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "codex_navigation_common_config",
-                () -> ConfigEditorScreen.open(CommonConfig.get().holder(), this));
+                () -> ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this));
         y += BTN_H + BTN_GAP;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",

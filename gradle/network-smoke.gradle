@@ -107,6 +107,8 @@ tasks.register('networkSmoke') {
                 String configMarker = phase == 'phase-one' ? 'PASS forge-config-transaction cycles=20' : 'PASS forge-config-restart'
                 [serverStatus, clientStatus].each { status ->
                     if (!readUtf8(status).contains(configMarker)) throw new GradleException("Missing '${configMarker}':\n${readUtf8(status)}")
+                    String viewMarker = phase == 'phase-one' ? 'PASS generated-config-view-reload cycles=20' : 'PASS generated-config-view-restart'
+                    if (!readUtf8(status).contains(viewMarker)) throw new GradleException("Missing '${viewMarker}':\n${readUtf8(status)}")
                 }
                 if (phase == 'phase-one' && !readUtf8(clientStatus).contains('PASS client-ui-sustained-workload')) throw new GradleException("Missing client UI sustained workload marker:\n${readUtf8(clientStatus)}")
                 if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client')

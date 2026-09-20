@@ -15,21 +15,24 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 /**
  * 客户端专用配置（Forge CLIENT）
  * <p>
- * 运行时通过 {@link #get()} 返回的 {@link RootView} 读写 {@link ConfigHolder}（路径由代理按字段名推导）。
+ * 运行时通过 {@link #get()} 返回的 {@link ClientConfigView} 读写 {@link ConfigHolder}（由配置声明生成强类型视图）。
  */
-@Config(name = "banira_codex-client", type = ConfigScope.CLIENT)
+@Config(name = "banira_codex-client", type = ConfigScope.CLIENT,
+        generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class ClientConfig implements ConfigData {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.Tooltip(zh_cn = "GUI 主题样式：AUTO 与界面「自动」一致时按日历季节；\n可固定为春夏秋冬之一以覆盖日历",
             en_us = "GUI theme style: with screen season on Auto, uses calendar season unless you pick a fixed season here.")
+    @ConfigEntry.Access(enumParser = "valueOfDefault")
     private EnumSeason guiThemeStyle = EnumSeason.AUTO;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.Tooltip(zh_cn = "GUI 夜间配色：关闭则始终用日间主题；总是夜晚；\n指定时间段按本机时钟；自动则在游戏内按世界昼夜，\n主菜单等无世界时用本机 6:00–18:00 为日间",
             en_us = "GUI night palette: Off (day only); Always night; Scheduled uses local clock; Auto uses world day/night in-game, else local 6:00–18:00 as day.")
+    @ConfigEntry.Access(enumParser = "valueOfDefault")
     private EnumGuiNightMode guiNightMode = EnumGuiNightMode.OFF;
 
     @Getter(AccessLevel.NONE)
@@ -97,59 +100,8 @@ public class ClientConfig implements ConfigData {
     public ClientConfig() {
     }
 
-    public static RootView get() {
-        return ClientConfigAccess.root(BaniraConfigHandles.holder(ClientConfig.class));
+    public static ClientConfigView get() {
+        return ClientConfigView.get();
     }
 
-    // region 运行时视图接口
-
-    public interface RootView {
-        EnumSeason guiThemeStyle();
-
-        RootView guiThemeStyle(EnumSeason value);
-
-        EnumGuiNightMode guiNightMode();
-
-        RootView guiNightMode(EnumGuiNightMode value);
-
-        int guiNightModeStartMinute();
-
-        RootView guiNightModeStartMinute(int value);
-
-        int guiNightModeEndMinute();
-
-        RootView guiNightModeEndMinute(int value);
-
-        int notificationLogMaxEntries();
-
-        RootView notificationLogMaxEntries(int value);
-
-        int notificationMergeWindowMs();
-
-        RootView notificationMergeWindowMs(int value);
-
-        int notificationBurstThreshold();
-
-        RootView notificationBurstThreshold(int value);
-
-        int notificationBurstStaggerMs();
-
-        RootView notificationBurstStaggerMs(int value);
-
-        int notificationBurstMaxExtraDelayMs();
-
-        RootView notificationBurstMaxExtraDelayMs(int value);
-
-        boolean useCustomCursor();
-
-        RootView useCustomCursor(boolean value);
-
-        EnumExternalInventoryButtonHost externalInventoryButtonHost();
-
-        RootView externalInventoryButtonHost(EnumExternalInventoryButtonHost value);
-
-        ConfigHolder holder();
-    }
-
-    // endregion 运行时视图接口
 }

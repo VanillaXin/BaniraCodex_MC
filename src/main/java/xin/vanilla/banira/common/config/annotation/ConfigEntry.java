@@ -32,6 +32,21 @@ public @interface ConfigEntry {
      */
     String category() default "";
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface Access {
+        NullPolicy nulls() default NullPolicy.DEFAULT;
+
+        EmptyPolicy emptyString() default EmptyPolicy.KEEP;
+
+        /** Enum parser must be a public static method accepting Object. */
+        String enumParser() default "";
+
+        enum NullPolicy { DEFAULT, KEEP }
+
+        enum EmptyPolicy { KEEP, DEFAULT }
+    }
+
     /**
      * 通过 GUI/网络修改<strong>服务端</strong>上该配置项时，如何判定权限。
      */

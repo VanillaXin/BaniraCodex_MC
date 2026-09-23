@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * 配置项注解，类似 Fabric Cloth Config 的 @ConfigEntry
  * <p>
- * {@link java.util.List} 字段须带元素泛型，以便生成 Forge 列表校验与 GUI：
+ * {@link java.util.List} 字段须带元素泛型，以便生成配置后端列表校验与 GUI：
  * {@code List<String>}、{@code List<Integer>}、{@code List<Long>}、{@code List<Double>}、
  * {@code List<Boolean>}、{@code List<枚举类型>}；原始 {@code List} 视为字符串列表。
  * </p>
@@ -31,6 +31,21 @@ public @interface ConfigEntry {
      * 配置项所属分类（用于 GUI 分组）
      */
     String category() default "";
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface Access {
+        NullPolicy nulls() default NullPolicy.DEFAULT;
+
+        EmptyPolicy emptyString() default EmptyPolicy.KEEP;
+
+        /** Enum parser must be a public static method accepting Object. */
+        String enumParser() default "";
+
+        enum NullPolicy { DEFAULT, KEEP }
+
+        enum EmptyPolicy { KEEP, DEFAULT }
+    }
 
     /**
      * 通过 GUI/网络修改<strong>服务端</strong>上该配置项时，如何判定权限。
@@ -58,7 +73,7 @@ public @interface ConfigEntry {
         EditPermissionPolicy policy() default EditPermissionPolicy.INHERIT;
 
         /**
-         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.commands.CommandSourceStack#hasPermission(int)} (int)} 一致；
+         * 所需权限等级（0–4），与指令来源 {@link net.minecraft.commands.CommandSourceStack#hasPermission(int)} 一致；
          * {@code -1} 表示 FIELD_OVERRIDE 时仍沿用全局「修改服务端配置」的权限等级
          */
         int permissionLevel() default -1;

@@ -108,6 +108,18 @@ tasks.register('networkSmoke') {
                         + "level-name=network-smoke-world${System.lineSeparator()}view-distance=4${System.lineSeparator()}", 'UTF-8')
         File evidence = file("${smokeRoot}/evidence/${DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())}")
         evidence.mkdirs()
+        def sha256 = { File path -> java.security.MessageDigest.getInstance('SHA-256').digest(path.bytes).encodeHex().toString() }
+        def inputs = [:]
+        (fileTree('src').files + fileTree('gradle').files + fileTree('scripts').files
+                + [file('build.gradle'), file('settings.gradle'), file('gradle.properties')]).findAll { it.isFile() }.each {
+            inputs[project.relativePath(it).replace('\\', '/')] = sha256(it)
+        }
+        def jars = [:]
+        (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll {
+            it.isFile() && it.name.endsWith('.jar')
+        }.each { jars[it.absolutePath] = sha256(it) }
+        new File(evidence, 'source-state.json').setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([files: inputs, runtimeJars: jars])), 'UTF-8')
         def profilerJar = sparkRuntime()
         if (profilerJar == null) throw new GradleException('Unable to resolve the Spark runtime jar for network smoke evidence.')
         new File(evidence, 'spark-runtime-phase-one.txt').setText(profilerJar.absolutePath + System.lineSeparator(), 'UTF-8')
@@ -141,6 +153,10 @@ tasks.register('networkSmoke') {
                 if (!readUtf8(clientStatus).contains('PASS remote-login')) throw new GradleException("Missing remote login: ${clientStatus}")
                 expected.each { marker ->
                     if (!readUtf8(serverStatus).contains(marker)) throw new GradleException("Missing '${marker}':\n${readUtf8(serverStatus)}")
+                }
+                String viewMarker = phase == 'phase-one' ? 'PASS generated-config-view-rebind cycles=20' : 'PASS generated-config-view-restart'
+                [serverStatus, clientStatus].each { status ->
+                    if (!readUtf8(status).contains(viewMarker)) throw new GradleException("Missing '${viewMarker}':\n${readUtf8(status)}")
                 }
                 if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client entries=256 pages=5')
                         || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {

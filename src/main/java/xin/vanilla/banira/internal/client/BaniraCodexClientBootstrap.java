@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -45,9 +46,9 @@ public final class BaniraCodexClientBootstrap {
             customActions.registerScreen(Banira.MOD_ID + ":notification_types",
                     parent -> new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen((net.minecraft.client.gui.screens.Screen) parent)));
             customActions.reload();
-            ClientConfig.get().holder().onSaved(changed ->
+            BaniraConfigs.holder(ClientConfig.class).onSaved(changed ->
                     ExternalInventoryButtonManager.get().refreshCurrentScreen());
-            ClientConfig.get().holder().onReloaded(changed ->
+            BaniraConfigs.holder(ClientConfig.class).onReloaded(changed ->
                     ExternalInventoryButtonManager.get().refreshCurrentScreen());
         });
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);

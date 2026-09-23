@@ -17,6 +17,21 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ConfigEntry {
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface Access {
+        NullPolicy nulls() default NullPolicy.DEFAULT;
+
+        EmptyPolicy emptyString() default EmptyPolicy.KEEP;
+
+        /** Enum parser must be a public static method accepting Object. */
+        String enumParser() default "";
+
+        enum NullPolicy { DEFAULT, KEEP }
+
+        enum EmptyPolicy { KEEP, DEFAULT }
+    }
+
     /**
      * 配置项键名，为空则使用字段名
      */

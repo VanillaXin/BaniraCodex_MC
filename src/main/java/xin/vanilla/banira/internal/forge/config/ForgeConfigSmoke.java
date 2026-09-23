@@ -10,6 +10,8 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
+import xin.vanilla.banira.internal.config.CommonConfigView;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,8 @@ public final class ForgeConfigSmoke {
     private static long started;
     private static byte[] validBytes;
     private static Runnable unsubscribe;
+    private static java.util.function.IntSupplier retainedRead;
+    private static java.util.function.IntConsumer retainedWrite;
 
     private ForgeConfigSmoke() { }
 
@@ -52,10 +56,23 @@ public final class ForgeConfigSmoke {
         ForgeConfigFile file = (ForgeConfigFile) mod.getConfigData();
         if (!mod.getSpec().isCorrect(file)) throw new IllegalStateException("Config spec bridge not active");
         ConfigHolder holder = ForgeConfigAdapter.getHolder(client ? ClientConfig.class : CommonConfig.class);
+        if (retainedRead == null) {
+            if (client) {
+                ClientConfigView retained = ClientConfigView.get();
+                retainedRead = retained::notificationLogMaxEntries;
+                retainedWrite = retained::notificationLogMaxEntries;
+            } else {
+                CommonConfigView.HelpView retained = CommonConfigView.get().help();
+                retainedRead = retained::helpInfoNumPerPage;
+                retainedWrite = retained::helpInfoNumPerPage;
+            }
+        }
         Path checkpoint = file.getNioPath().resolveSibling(name + ".smoke-expected");
         if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
             CommentedConfig expected = new TomlParser().parse(new String(Files.readAllBytes(checkpoint), StandardCharsets.UTF_8));
             if (!expected.valueMap().equals(snapshot(file).valueMap())) throw new IllegalStateException("Complete config snapshot changed after restart");
+            if (retainedRead.getAsInt() != ((Number) expected.get(key)).intValue()) throw new IllegalStateException("Generated config view changed after restart");
+            BaniraNetworkSmokeStatus.append("PASS generated-config-view-restart file=" + name);
             BaniraNetworkSmokeStatus.append("PASS forge-config-restart file=" + name);
             stage = 4;
             return true;
@@ -71,6 +88,7 @@ public final class ForgeConfigSmoke {
         }
         if (stage == 1) {
             if (((Number) holder.get(key)).intValue() != 30 + cycles || RELOADS.get() <= cycles) return false;
+            if (retainedRead.getAsInt() != 30 + cycles) throw new IllegalStateException("Retained generated view missed external reload");
             if (!Arrays.asList("minecraft:arrow", "tick, clazz -> tick >= 5").equals(file.get("smokeUnknown.items"))) {
                 throw new IllegalStateException("Unknown category or comma expression was lost");
             }
@@ -98,12 +116,14 @@ public final class ForgeConfigSmoke {
             stage = 3;
         }
         file.load();
-        holder.set(key, 61);
+        retainedWrite.accept(61);
         holder.save();
+        if (retainedRead.getAsInt() != 61 || ((Number) holder.get(key)).intValue() != 61) throw new IllegalStateException("Generated view write missed current holder");
         Files.write(checkpoint, TomlFormat.instance().createWriter().writeToString(snapshot(file)).getBytes(StandardCharsets.UTF_8));
         unsubscribe.run();
         stage = 4;
         BaniraNetworkSmokeStatus.append("PASS forge-config-transaction cycles=" + cycles + " reloads=" + RELOADS.get() + " file=" + name);
+        BaniraNetworkSmokeStatus.append("PASS generated-config-view-reload cycles=" + cycles + " file=" + name);
         return true;
     }
 

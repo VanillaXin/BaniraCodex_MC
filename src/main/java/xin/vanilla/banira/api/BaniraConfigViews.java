@@ -1,6 +1,9 @@
 package xin.vanilla.banira.api;
 
 import xin.vanilla.banira.platform.BaniraConfigHandle;
+import xin.vanilla.banira.common.config.annotation.Config;
+import xin.vanilla.banira.common.config.view.ConfigViewBinding;
+import xin.vanilla.banira.common.config.view.ConfigViewField;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,6 +26,15 @@ public final class BaniraConfigViews {
     }
 
     private BaniraConfigViews() {
+    }
+
+    public static ConfigViewBinding binding(Class<?> configClass, ConfigViewField<?>... fields) {
+        Config config = Objects.requireNonNull(configClass, "configClass").getAnnotation(Config.class);
+        if (config == null) {
+            throw new IllegalArgumentException("Missing @Config: " + configClass.getName());
+        }
+        return new ConfigViewBinding(configClass, () -> BaniraConfigs.handle(configClass),
+                config.viewUnbound(), fields);
     }
 
     @Nonnull

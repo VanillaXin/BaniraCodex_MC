@@ -23,4 +23,10 @@ public @interface Config {
      * 配置类型
      */
     ConfigScope type() default ConfigScope.COMMON;
+
+    boolean generateView() default false;
+
+    UnboundAccess viewUnbound() default UnboundAccess.REQUIRE_REGISTERED;
+
+    enum UnboundAccess { REQUIRE_REGISTERED, DEFAULTS }
 }

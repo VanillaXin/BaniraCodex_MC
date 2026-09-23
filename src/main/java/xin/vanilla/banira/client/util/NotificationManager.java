@@ -27,6 +27,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.File;
@@ -144,7 +145,7 @@ public final class NotificationManager {
     }
 
     private void applyBurstStagger(Notification n, long nowMs) {
-        ClientConfig.RootView cfg = ClientConfig.get();
+        ClientConfigView cfg = ClientConfig.get();
         int stagger = cfg.notificationBurstStaggerMs();
         if (stagger <= 0) {
             return;

@@ -5,6 +5,8 @@ plugins {
 
 def javaVer = 21
 
+apply from: 'gradle/config-view-processor.gradle'
+
 group = 'xin.vanilla.banira'
 
 version = project.mod_version

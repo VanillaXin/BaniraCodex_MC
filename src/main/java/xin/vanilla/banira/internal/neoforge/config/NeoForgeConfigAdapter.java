@@ -28,22 +28,21 @@ import java.util.function.Predicate;
  * 使用方式：
  * <pre>{@code
  * // 1. 定义配置类（与 Fabric 相同结构）
- * &#64;Getter &#64;Setter &#64;Accessors(fluent = true)
- * &#64;Config(name = "mymod-server")
+ * &#64;Config(name = "mymod-server", generateView = true)
  * public class CommonConfig implements ConfigData {
  *     &#64;ConfigEntry.Gui.CollapsibleObject
  *     private HelpCategory help = new HelpCategory();
- *     // ... 嵌套分类与 TestConfig 相同风格；运行时取值见 CommonConfig.get().help().helpHeader() 等
+ *     // ... 运行时使用生成的 CommonConfigView
  * }
  *
- * // 2. 注册（Forge）
+ * // 2. 注册（NeoForge）
  * NeoForgeConfigAdapter.register(CommonConfig.class, Banira.MOD_ID);
  *
  * // 3. 使用
- * CommonConfig.RootView config = CommonConfig.get();
+ * CommonConfigView config = CommonConfigView.get();
  * String h = config.help().helpHeader();
  * config.help().helpHeader("new");
- * // 或直接 holder：config.holder().set("help.helpHeader", "new");
+ * // 或通过 BaniraConfigs.handle(CommonConfig.class) 访问配置句柄
  * }</pre>
  */
 public final class NeoForgeConfigAdapter {

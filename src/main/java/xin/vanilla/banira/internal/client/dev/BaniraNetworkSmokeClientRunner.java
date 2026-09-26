@@ -89,6 +89,12 @@ public final class BaniraNetworkSmokeClientRunner {
             ticks = 0;
             BaniraNetworkSmokeStatus.append("PASS remote-login");
         }
+        try {
+            if (!xin.vanilla.banira.internal.neoforge.config.NeoForgeConfigViewSmoke.step(true)) return;
+        } catch (Exception error) {
+            fail(client, "generated config view: " + error);
+            return;
+        }
         ticks++;
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);

@@ -8,6 +8,8 @@ plugins {
 
 def javaVer = 21
 
+apply from: 'gradle/config-view-processor.gradle'
+
 group = mod_group_id
 version = mod_version
 

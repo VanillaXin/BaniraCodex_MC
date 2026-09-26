@@ -62,6 +62,7 @@ public final class BaniraNetworkSmokeServerRunner {
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
             ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+            if (!xin.vanilla.banira.internal.neoforge.config.NeoForgeConfigViewSmoke.step(false)) return;
             if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) firstPhase(server, player);
             else if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) secondPhase(player);
             else throw new IllegalStateException("Unknown smoke phase " + BaniraNetworkSmokeStatus.phase());

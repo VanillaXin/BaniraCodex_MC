@@ -1,0 +1,160 @@
+{
+  "schema": {
+    "command.commandHelp": {
+      "type": "STRING",
+      "default": "help",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "command.commandLanguage": {
+      "type": "STRING",
+      "default": "language",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "command.commandPrefix": {
+      "type": "STRING",
+      "default": "banira",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "command.commandVirtualOp": {
+      "type": "STRING",
+      "default": "virtual_op",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "help.helpHeader": {
+      "type": "STRING",
+      "default": "-----\u003d\u003d\u003d\u003d %s Help (%d/%d) \u003d\u003d\u003d\u003d-----",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "help.helpInfoNumPerPage": {
+      "type": "INTEGER",
+      "default": 10,
+      "min": 1,
+      "max": 100,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "language.defaultLanguage": {
+      "type": "STRING",
+      "default": "en_us",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "permission.editServerConfigPermission": {
+      "type": "INTEGER",
+      "default": 2,
+      "min": 0,
+      "max": 4,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "permission.editServerConfigVirtualPermissionKey": {
+      "type": "STRING",
+      "default": "banira_codex:EDIT_SERVER_CONFIG",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "permission.virtualOpPermission": {
+      "type": "INTEGER",
+      "default": 4,
+      "min": 0,
+      "max": 4,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    }
+  },
+  "unbound": {
+    "command.commandHelp": "help",
+    "command.commandLanguage": null,
+    "command.commandPrefix": "banira",
+    "command.commandVirtualOp": null,
+    "help.helpHeader": null,
+    "help.helpInfoNumPerPage": 10,
+    "language.defaultLanguage": "en_us",
+    "permission.editServerConfigPermission": 2,
+    "permission.editServerConfigVirtualPermissionKey": "banira_codex:EDIT_SERVER_CONFIG",
+    "permission.virtualOpPermission": 4
+  },
+  "defaults": {
+    "command.commandHelp": "help",
+    "command.commandLanguage": "language",
+    "command.commandPrefix": "banira",
+    "command.commandVirtualOp": "virtual_op",
+    "help.helpHeader": "-----\u003d\u003d\u003d\u003d %s Help (%d/%d) \u003d\u003d\u003d\u003d-----",
+    "help.helpInfoNumPerPage": 10,
+    "language.defaultLanguage": "en_us",
+    "permission.editServerConfigPermission": 2,
+    "permission.editServerConfigVirtualPermissionKey": "banira_codex:EDIT_SERVER_CONFIG",
+    "permission.virtualOpPermission": 4
+  },
+  "changed": {
+    "command.commandHelp": "baseline,command.commandHelp",
+    "command.commandLanguage": "baseline,command.commandLanguage",
+    "command.commandPrefix": "baseline,command.commandPrefix",
+    "command.commandVirtualOp": "baseline,command.commandVirtualOp",
+    "help.helpHeader": "baseline,help.helpHeader",
+    "help.helpInfoNumPerPage": 7,
+    "language.defaultLanguage": "baseline,language.defaultLanguage",
+    "permission.editServerConfigPermission": 7,
+    "permission.editServerConfigVirtualPermissionKey": "baseline,permission.editServerConfigVirtualPermissionKey",
+    "permission.virtualOpPermission": 7
+  }
+}

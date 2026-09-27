@@ -11,6 +11,9 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,11 +27,29 @@ public final class NotificationLogStore {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String LOG_FILE_NAME = "notification_log.json";
 
+    private static class WriterHolder {
+        private static final NotificationLogWriter WRITER = new NotificationLogWriter(
+                CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME));
+        static {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    WRITER.close();
+                } catch (IOException error) {
+                    LOGGER.warn("Failed to flush notification log on shutdown", error);
+                }
+            }, "BaniraCodex-NotificationLogFlush"));
+        }
+    }
+
     private NotificationLogStore() {
     }
 
     public static List<NotificationLogEntry> load(int maxEntries) {
         Path path = CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME);
+        return load(path, maxEntries);
+    }
+
+    static List<NotificationLogEntry> load(Path path, int maxEntries) {
         File file = path.toFile();
         if (!file.exists()) {
             return new ArrayList<>();
@@ -53,7 +74,8 @@ public final class NotificationLogStore {
                         .durationTime(JsonUtils.getLong(obj, "durationTime", 5000))
                         .styleName(JsonUtils.getString(obj, "styleName", "NORMAL"))
                         .notificationType(JsonUtils.getString(obj, "notificationType", NotificationTypeKeys.DEFAULT))
-                        .source(JsonUtils.getString(obj, "source", "local")));
+                        .source(JsonUtils.getString(obj, "source", "local"))
+                        .read(JsonUtils.getBoolean(obj, "read", true)));
             }
             trimToMax(entries, maxEntries);
             return entries;
@@ -64,33 +86,44 @@ public final class NotificationLogStore {
     }
 
     public static void saveAsync(List<NotificationLogEntry> snapshot) {
-        new Thread(() -> save(snapshot), "BaniraCodex-NotificationLogSave").start();
+        WriterHolder.WRITER.submit(snapshot);
     }
 
-    private static void save(List<NotificationLogEntry> snapshot) {
+    public static void flush() throws IOException {
+        WriterHolder.WRITER.flush();
+    }
+
+    static void save(Path path, List<NotificationLogEntry> snapshot) throws IOException {
+        Path dir = path.toAbsolutePath().getParent();
+        Files.createDirectories(dir);
+        JsonObject root = new JsonObject();
+        JsonArray arr = new JsonArray();
+        for (NotificationLogEntry e : snapshot) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", e.id());
+            obj.addProperty("timestamp", e.timestamp());
+            obj.addProperty("componentJson", e.componentJson());
+            obj.addProperty("positionName", e.positionName());
+            obj.addProperty("animationName", e.animationName());
+            obj.addProperty("durationTime", e.durationTime());
+            obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
+            obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
+            obj.addProperty("source", e.source());
+            obj.addProperty("read", e.read());
+            arr.add(obj);
+        }
+        root.add("entries", arr);
+        root.addProperty("version", 2);
+        Path temporary = Files.createTempFile(dir, "notification-log-", ".tmp");
         try {
-            Path dir = CustomConfig.getConfigDirectory();
-            Files.createDirectories(dir);
-            Path path = dir.resolve(LOG_FILE_NAME);
-            JsonObject root = new JsonObject();
-            JsonArray arr = new JsonArray();
-            for (NotificationLogEntry e : snapshot) {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("id", e.id());
-                obj.addProperty("timestamp", e.timestamp());
-                obj.addProperty("componentJson", e.componentJson());
-                obj.addProperty("positionName", e.positionName());
-                obj.addProperty("animationName", e.animationName());
-                obj.addProperty("durationTime", e.durationTime());
-                obj.addProperty("styleName", e.styleName() != null ? e.styleName() : "NORMAL");
-                obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
-                obj.addProperty("source", e.source());
-                arr.add(obj);
+            Files.write(temporary, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
+            try {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
             }
-            root.add("entries", arr);
-            Files.write(path, JsonUtils.toPrettyString(root).getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to save notification log: {}", e.getMessage());
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 

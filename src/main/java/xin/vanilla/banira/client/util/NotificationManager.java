@@ -13,6 +13,10 @@ import xin.vanilla.banira.client.notification.NotificationClientDisplay;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.client.notification.NotificationHistory;
+import xin.vanilla.banira.client.notification.NotificationMuteState;
+import xin.vanilla.banira.client.notification.NotificationRegionLayout;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -26,13 +30,14 @@ import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
-    private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
+    private final NotificationHistory history = new NotificationHistory();
+    private final NotificationMuteState muteState = new NotificationMuteState(System::nanoTime);
+    private final AtomicLong nextLogId = new AtomicLong(System.currentTimeMillis());
     private static final NotificationManager instance = new NotificationManager();
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
@@ -51,27 +56,24 @@ public final class NotificationManager {
     public void addNotification(Notification notification, boolean fromNetwork) {
         NotificationTypeRegistry.ensureKnown(notification.notificationType());
         applyTypeSettings(notification);
-        long logId = System.currentTimeMillis() ^ (long) System.nanoTime();
-        if (logId == 0) {
-            logId = System.currentTimeMillis();
-        }
+        long logId = nextLogId.incrementAndGet();
         notification.logEntryId(logId);
+        appendLog(notification, fromNetwork);
         if (!isTypeHidden(notification.notificationType())) {
             if (NotificationClientDisplay.deliverVanillaIfConfigured(notification.component(), notification.notificationType())) {
                 // 已由原版聊天/操作栏展示，不加入浮层
-            } else {
+            } else if (!muteState.muted()) {
                 long nowMs = System.currentTimeMillis();
                 ensureCoalesceFields(notification);
                 if (tryMergeOverlayDuplicate(notification, nowMs)) {
-                    appendLog(notification, fromNetwork);
                     return;
                 }
+                if (countActiveNotifications() >= ClientConfig.get().notificationRegions().queueLimit()) return;
                 applyBurstStagger(notification, nowMs);
                 notification.coalesceLastActivityMs(nowMs);
                 this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
             }
         }
-        appendLog(notification, fromNetwork);
     }
 
     private static void ensureCoalesceFields(Notification n) {
@@ -182,10 +184,44 @@ public final class NotificationManager {
     }
 
     public List<NotificationLogEntry> getLog() {
-        return Collections.unmodifiableList(new ArrayList<>(log));
+        return history.snapshot();
     }
 
-    private void appendLog(Notification notification, boolean fromNetwork) {
+    public int unreadCount() {
+        return history.unreadCount();
+    }
+
+    public long historyRevision() {
+        return history.revision();
+    }
+
+    public synchronized boolean markRead(long id) {
+        if (!history.markRead(id)) return false;
+        saveLogAsync();
+        return true;
+    }
+
+    public synchronized boolean markAllRead() {
+        if (!history.markAllRead()) return false;
+        saveLogAsync();
+        return true;
+    }
+
+    public boolean overlaysMuted() {
+        return muteState.muted();
+    }
+
+    public void muteForFiveMinutes() {
+        muteState.muteForFiveMinutes();
+        long now = System.currentTimeMillis();
+        for (List<Notification> group : notifications.values()) {
+            for (Notification notification : group) notification.dismissAnimated(now);
+        }
+        frameDrawOrder.clear();
+        frameHoverStyle = null;
+    }
+
+    private synchronized void appendLog(Notification notification, boolean fromNetwork) {
         String componentJson = JsonUtils.toString(AbstractComponent.serialize(notification.component()));
         NotificationLogEntry entry = new NotificationLogEntry()
                 .id(notification.logEntryId())
@@ -197,19 +233,14 @@ public final class NotificationManager {
                 .styleName(notification.style() != null ? notification.style().name() : "NORMAL")
                 .notificationType(notification.notificationType() != null ? notification.notificationType() : NotificationTypeKeys.DEFAULT)
                 .source(fromNetwork ? "network" : "local");
-        synchronized (log) {
-            log.add(0, entry);
-            NotificationLogStore.trimToMax(log, notificationLogMaxEntries());
-        }
+        history.append(entry, notificationLogMaxEntries());
         saveLogAsync();
     }
 
-    public void loadLog() {
+    public synchronized void loadLog() {
         List<NotificationLogEntry> loaded = NotificationLogStore.load(notificationLogMaxEntries());
-        synchronized (log) {
-            log.clear();
-            log.addAll(loaded);
-        }
+        history.replace(loaded, notificationLogMaxEntries());
+        for (NotificationLogEntry entry : loaded) nextLogId.accumulateAndGet(entry.id(), Math::max);
     }
 
     private static int notificationLogMaxEntries() {
@@ -217,11 +248,7 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        List<NotificationLogEntry> snapshot;
-        synchronized (log) {
-            snapshot = new ArrayList<>(log);
-        }
-        NotificationLogStore.saveAsync(snapshot);
+        NotificationLogStore.saveAsync(history.snapshot());
     }
 
     public void render(PoseStack stack) {
@@ -239,44 +266,31 @@ public final class NotificationManager {
         double my = mouse.val();
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
+            entry.getValue().forEach(n -> n.advance(currentTime));
             entry.getValue().removeIf(Notification::finished);
+        }
 
-            EnumPosition pos = entry.getKey();
-            List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
-
-            boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
-                    || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
-            ScreenCoordinate preInfo = new ScreenCoordinate()
-                    .y(stacksDown ? 0 : screenInfo.height())
-                    .height(0);
-
-            int i = 0;
-            Iterator<Notification> iter = list.iterator();
-            while (iter.hasNext()) {
-                Notification n = iter.next();
-
-                if (n.finished()) {
-                    iter.remove();
-                    continue;
-                }
-
-                if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
-                    preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
-                }
-
-                ScreenCoordinate lastInfo = n.calculatePosition(screenInfo, preInfo);
-
-                if (this.shouldSkipRendering(pos, lastInfo, screenInfo)) {
-                    break;
-                }
-
-                frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
-
-                preInfo.y(n.lastY());
-                preInfo.width(n.cachedWidth());
-                preInfo.height(n.cachedHeight());
-            }
+        ClientConfigView.NotificationRegionsView regions = ClientConfig.get().notificationRegions();
+        NotificationRegionLayout layout = new NotificationRegionLayout(regions.visibleLimit());
+        List<Notification> pending = new ArrayList<>();
+        for (List<Notification> group : notifications.values()) pending.addAll(group);
+        EnumMap<EnumPosition, Integer> indices = new EnumMap<>(EnumPosition.class);
+        for (Notification n : NotificationRegionLayout.admissionOrder(pending, item -> item.lastRenderTime() > 0)) {
+            if (n.finished() || n.scheduledTime() > currentTime) continue;
+            EnumPosition pos = n.position();
+            int[] settings = regionSettings(pos);
+            NotificationRegionLayout.Rect region = NotificationRegionLayout.region(pos, scaledSize.key(), scaledSize.val(),
+                    settings[0], settings[1], regions.margin());
+            n.fitToRegion(region.width, region.height);
+            NotificationRegionLayout.Rect target = layout.place(pos, region, (int) Math.ceil(n.cachedWidth()),
+                    (int) Math.ceil(n.cachedHeight()), (int) Math.max(0, n.margin()), settings[2]);
+            if (target == null) continue;
+            int index = indices.getOrDefault(pos, 0);
+            indices.put(pos, index + 1);
+            frameDrawOrder.add(n);
+            n.index(index).renderInRegion(stack, target, region, currentTime);
+            layout.follow(pos, region, new NotificationRegionLayout.Rect((int) Math.floor(n.hitX()), (int) Math.floor(n.hitY()),
+                    (int) Math.ceil(n.hitW()), (int) Math.ceil(n.hitH())), (int) Math.max(0, n.margin()));
         }
 
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
@@ -287,11 +301,17 @@ public final class NotificationManager {
             if (!n.containsPoint(mx, my)) {
                 continue;
             }
+            if (n.isCloseHit(mx, my)) {
+                NotificationStyleInteractionHelper.renderTextTooltip(stack, (int) mx, (int) my,
+                        BaniraComponent.get().transClientAuto("notification_mute_five_minutes"),
+                        n.notificationTheme());
+                break;
+            }
             Style st = n.styleAtTextPoint(mx, my);
             if (st != null && st.getHoverEvent() != null) {
                 frameHoverStyle = st;
-                break;
             }
+            break;
         }
 
         if (frameHoverStyle != null) {
@@ -320,7 +340,7 @@ public final class NotificationManager {
                 continue;
             }
             if (n.isCloseHit(guiMouseX, guiMouseY)) {
-                n.dismiss();
+                muteForFiveMinutes();
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);
@@ -353,21 +373,19 @@ public final class NotificationManager {
         prevLeftDown = down;
     }
 
-    private boolean shouldSkipRendering(EnumPosition pos, ScreenCoordinate coordinate, ScreenCoordinate screenInfo) {
-        switch (pos) {
-            case TOP_LEFT:
-            case TOP_CENTER:
-            case TOP_RIGHT:
-            case LEFT_CENTER:
-            case RIGHT_CENTER:
-            case CENTER:
-                return coordinate.y() + coordinate.height() > screenInfo.height();
-            case BOTTOM_LEFT:
-            case BOTTOM_CENTER:
-            case BOTTOM_RIGHT:
-                return coordinate.y() < 0;
-            default:
-                return false;
+    private static int[] regionSettings(EnumPosition position) {
+        ClientConfigView.NotificationRegionsView cfg = ClientConfig.get().notificationRegions();
+        switch (position) {
+            case TOP_LEFT: return new int[]{cfg.topLeft().widthPercent(), cfg.topLeft().heightPercent(), cfg.topLeft().visibleLimit()};
+            case TOP_CENTER: return new int[]{cfg.topCenter().widthPercent(), cfg.topCenter().heightPercent(), cfg.topCenter().visibleLimit()};
+            case TOP_RIGHT: return new int[]{cfg.topRight().widthPercent(), cfg.topRight().heightPercent(), cfg.topRight().visibleLimit()};
+            case LEFT_CENTER: return new int[]{cfg.leftCenter().widthPercent(), cfg.leftCenter().heightPercent(), cfg.leftCenter().visibleLimit()};
+            case RIGHT_CENTER: return new int[]{cfg.rightCenter().widthPercent(), cfg.rightCenter().heightPercent(), cfg.rightCenter().visibleLimit()};
+            case BOTTOM_LEFT: return new int[]{cfg.bottomLeft().widthPercent(), cfg.bottomLeft().heightPercent(), cfg.bottomLeft().visibleLimit()};
+            case BOTTOM_CENTER: return new int[]{cfg.bottomCenter().widthPercent(), cfg.bottomCenter().heightPercent(), cfg.bottomCenter().visibleLimit()};
+            case BOTTOM_RIGHT: return new int[]{cfg.bottomRight().widthPercent(), cfg.bottomRight().heightPercent(), cfg.bottomRight().visibleLimit()};
+            case CENTER: return new int[]{cfg.center().widthPercent(), cfg.center().heightPercent(), cfg.center().visibleLimit()};
+            default: throw new IllegalArgumentException("Unsupported notification position: " + position);
         }
     }
 }

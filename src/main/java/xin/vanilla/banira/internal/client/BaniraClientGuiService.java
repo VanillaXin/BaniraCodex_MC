@@ -7,6 +7,7 @@ import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**
@@ -22,6 +23,7 @@ public final class BaniraClientGuiService {
         ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT);
         NotificationManager.get().tickOutOfScreenClick();
         InputStateManager.handleClientTickEnd(noScreenOpen);
+        NotificationUnreadHud.tick();
         NotificationLogScreen.openHotkeyScreenIfPressed();
     }
 

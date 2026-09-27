@@ -154,6 +154,11 @@ tasks.register('networkSmoke') {
                 [serverStatus, clientStatus].each { status ->
                     if (!readUtf8(status).contains(viewMarker)) throw new GradleException("Missing '${viewMarker}':\n${readUtf8(status)}")
                 }
+                if (phase == 'phase-one' && !readUtf8(clientStatus).contains('PASS client-ui-sustained-workload')) throw new GradleException("Missing client UI sustained workload marker:\n${readUtf8(clientStatus)}")
+                String readMarker = phase == 'phase-one' ? 'PASS notification-read-ui' : 'PASS notification-read-restart'
+                String regionMarker = phase == 'phase-one' ? 'PASS notification-regions queue=8' : 'PASS notification-region-restart'
+                if (!readUtf8(clientStatus).contains(regionMarker)) throw new GradleException("Missing notification region marker: ${regionMarker}")
+                if (!readUtf8(clientStatus).contains(readMarker)) throw new GradleException("Missing '${readMarker}':\n${readUtf8(clientStatus)}")
                 if (phase == 'phase-two' && (!readUtf8(clientStatus).contains('PASS vanilla-notification-details-client entries=256 pages=5')
                         || !readUtf8(serverStatus).contains('PASS vanilla-notification-batch-submitted'))) {
                     throw new GradleException('Native notification batch did not complete on both ends')

@@ -42,14 +42,23 @@ public final class BaniraNetworkSmokeClientRunner {
 
     public static void tick(Minecraft client) {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
-        if (!connected && client.getOverlay() != null) {
-            ticks = 0;
+        if ("notification-ui".equals(BaniraNetworkSmokeStatus.phase())
+                || "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase())) {
+            if (client.getOverlay() != null || ++ticks < 20) return;
+            try {
+                boolean regionUi = "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase());
+                if (regionUi ? NotificationRegionSmoke.tick(client) : NotificationReadSmoke.tick(client)) {
+                    finished = true;
+                    BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
+                    client.stop();
+                }
+            } catch (Exception error) {
+                fail(client, "notification UI smoke failed: " + error);
+            }
             return;
         }
-        try {
-            if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(true)) return;
-        } catch (Exception error) {
-            fail(client, "generated config smoke: " + error);
+        if (!connected && client.getOverlay() != null) {
+            ticks = 0;
             return;
         }
         if (!connected) {
@@ -71,6 +80,14 @@ public final class BaniraNetworkSmokeClientRunner {
             BaniraNetworkSmokeStatus.append("PASS remote-login");
         }
         ticks++;
+        try {
+            if (!NotificationRegionSmoke.tick(client)) return;
+            if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(true)) return;
+            if (!NotificationReadSmoke.tick(client)) return;
+        } catch (Exception exception) {
+            fail(client, "config/notification state smoke failed: " + exception);
+            return;
+        }
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);
             if (spark == null || !spark.written() || !uiWorkloadReported) {

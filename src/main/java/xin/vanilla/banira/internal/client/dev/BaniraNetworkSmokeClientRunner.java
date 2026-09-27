@@ -45,6 +45,19 @@ public final class BaniraNetworkSmokeClientRunner {
     public static void tick() {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
         Minecraft client = Minecraft.getInstance();
+        if ("notification-ui".equals(BaniraNetworkSmokeStatus.phase())) {
+            if (client.getOverlay() != null || ++ticks < 20) return;
+            try {
+                if (NotificationReadSmoke.tick(client)) {
+                    finished = true;
+                    BaniraNetworkSmokeStatus.append("FINISHED notification-ui");
+                    client.stop();
+                }
+            } catch (Exception error) {
+                fail(client, "notification UI smoke failed: " + error);
+            }
+            return;
+        }
         if (!chatListenerRegistered) {
             MinecraftForge.EVENT_BUS.addListener(BaniraNetworkSmokeClientRunner::receiveVanillaNotification);
             chatListenerRegistered = true;
@@ -74,8 +87,9 @@ public final class BaniraNetworkSmokeClientRunner {
         ticks++;
         try {
             if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(true)) return;
+            if (!NotificationReadSmoke.tick(client)) return;
         } catch (Exception exception) {
-            fail(client, "Forge config transaction smoke failed: " + exception);
+            fail(client, "config/notification state smoke failed: " + exception);
             return;
         }
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {

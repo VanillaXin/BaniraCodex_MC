@@ -248,7 +248,7 @@ public class Notification extends NotificationData {
         this.ensureReadableComponentColors();
     }
 
-    private BaniraColorConfig notificationTheme() {
+    public BaniraColorConfig notificationTheme() {
         String type = notificationType();
         int separator = type != null ? type.indexOf(':') : -1;
         if (separator < 0 && type != null) {
@@ -583,6 +583,14 @@ public class Notification extends NotificationData {
 
     public void dismiss() {
         this.finished = true;
+    }
+
+    public void dismissAnimated(long nowMs) {
+        if (!animationState.started()) {
+            dismiss();
+        } else {
+            animationState.dismiss(nowMs, animationTime());
+        }
     }
 
     @Nullable

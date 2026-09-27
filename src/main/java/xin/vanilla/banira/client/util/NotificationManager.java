@@ -13,6 +13,9 @@ import xin.vanilla.banira.client.notification.NotificationClientDisplay;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.client.notification.NotificationHistory;
+import xin.vanilla.banira.client.notification.NotificationMuteState;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -26,13 +29,15 @@ import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
-    private final List<NotificationLogEntry> log = new CopyOnWriteArrayList<>();
+    private final NotificationHistory history = new NotificationHistory();
+    private final NotificationMuteState muteState = new NotificationMuteState(System::nanoTime);
+    private final AtomicLong nextLogId = new AtomicLong(System.currentTimeMillis());
     private static final NotificationManager instance = new NotificationManager();
 
     private final List<Notification> frameDrawOrder = new ArrayList<>();
@@ -51,19 +56,16 @@ public final class NotificationManager {
     public void addNotification(Notification notification, boolean fromNetwork) {
         NotificationTypeRegistry.ensureKnown(notification.notificationType());
         applyTypeSettings(notification);
-        long logId = System.currentTimeMillis() ^ (long) System.nanoTime();
-        if (logId == 0) {
-            logId = System.currentTimeMillis();
-        }
+        long logId = nextLogId.incrementAndGet();
         notification.logEntryId(logId);
+        appendLog(notification, fromNetwork);
         if (!isTypeHidden(notification.notificationType())) {
             if (NotificationClientDisplay.deliverVanillaIfConfigured(notification.component(), notification.notificationType())) {
                 // 已由原版聊天/操作栏展示，不加入浮层
-            } else {
+            } else if (!muteState.muted()) {
                 long nowMs = System.currentTimeMillis();
                 ensureCoalesceFields(notification);
                 if (tryMergeOverlayDuplicate(notification, nowMs)) {
-                    appendLog(notification, fromNetwork);
                     return;
                 }
                 applyBurstStagger(notification, nowMs);
@@ -71,7 +73,6 @@ public final class NotificationManager {
                 this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
             }
         }
-        appendLog(notification, fromNetwork);
     }
 
     private static void ensureCoalesceFields(Notification n) {
@@ -182,10 +183,44 @@ public final class NotificationManager {
     }
 
     public List<NotificationLogEntry> getLog() {
-        return Collections.unmodifiableList(new ArrayList<>(log));
+        return history.snapshot();
     }
 
-    private void appendLog(Notification notification, boolean fromNetwork) {
+    public int unreadCount() {
+        return history.unreadCount();
+    }
+
+    public long historyRevision() {
+        return history.revision();
+    }
+
+    public synchronized boolean markRead(long id) {
+        if (!history.markRead(id)) return false;
+        saveLogAsync();
+        return true;
+    }
+
+    public synchronized boolean markAllRead() {
+        if (!history.markAllRead()) return false;
+        saveLogAsync();
+        return true;
+    }
+
+    public boolean overlaysMuted() {
+        return muteState.muted();
+    }
+
+    public void muteForFiveMinutes() {
+        muteState.muteForFiveMinutes();
+        long now = System.currentTimeMillis();
+        for (List<Notification> group : notifications.values()) {
+            for (Notification notification : group) notification.dismissAnimated(now);
+        }
+        frameDrawOrder.clear();
+        frameHoverStyle = null;
+    }
+
+    private synchronized void appendLog(Notification notification, boolean fromNetwork) {
         String componentJson = JsonUtils.toString(AbstractComponent.serialize(notification.component()));
         NotificationLogEntry entry = new NotificationLogEntry()
                 .id(notification.logEntryId())
@@ -197,19 +232,14 @@ public final class NotificationManager {
                 .styleName(notification.style() != null ? notification.style().name() : "NORMAL")
                 .notificationType(notification.notificationType() != null ? notification.notificationType() : NotificationTypeKeys.DEFAULT)
                 .source(fromNetwork ? "network" : "local");
-        synchronized (log) {
-            log.add(0, entry);
-            NotificationLogStore.trimToMax(log, notificationLogMaxEntries());
-        }
+        history.append(entry, notificationLogMaxEntries());
         saveLogAsync();
     }
 
-    public void loadLog() {
+    public synchronized void loadLog() {
         List<NotificationLogEntry> loaded = NotificationLogStore.load(notificationLogMaxEntries());
-        synchronized (log) {
-            log.clear();
-            log.addAll(loaded);
-        }
+        history.replace(loaded, notificationLogMaxEntries());
+        for (NotificationLogEntry entry : loaded) nextLogId.accumulateAndGet(entry.id(), Math::max);
     }
 
     private static int notificationLogMaxEntries() {
@@ -217,11 +247,7 @@ public final class NotificationManager {
     }
 
     private void saveLogAsync() {
-        List<NotificationLogEntry> snapshot;
-        synchronized (log) {
-            snapshot = new ArrayList<>(log);
-        }
-        NotificationLogStore.saveAsync(snapshot);
+        NotificationLogStore.saveAsync(history.snapshot());
     }
 
     public void render(MatrixStack stack) {
@@ -287,11 +313,17 @@ public final class NotificationManager {
             if (!n.containsPoint(mx, my)) {
                 continue;
             }
+            if (n.isCloseHit(mx, my)) {
+                NotificationStyleInteractionHelper.renderTextTooltip(stack, (int) mx, (int) my,
+                        BaniraComponent.get().transClientAuto("notification_mute_five_minutes"),
+                        n.notificationTheme());
+                break;
+            }
             Style st = n.styleAtTextPoint(mx, my);
             if (st != null && st.getHoverEvent() != null) {
                 frameHoverStyle = st;
-                break;
             }
+            break;
         }
 
         if (frameHoverStyle != null) {
@@ -320,7 +352,7 @@ public final class NotificationManager {
                 continue;
             }
             if (n.isCloseHit(guiMouseX, guiMouseY)) {
-                n.dismiss();
+                muteForFiveMinutes();
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);

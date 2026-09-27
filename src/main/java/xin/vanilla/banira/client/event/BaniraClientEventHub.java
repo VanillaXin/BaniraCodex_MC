@@ -272,6 +272,7 @@ public final class BaniraClientEventHub {
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
                 NotificationManager.get().render(nativeGraphics);
+                xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }

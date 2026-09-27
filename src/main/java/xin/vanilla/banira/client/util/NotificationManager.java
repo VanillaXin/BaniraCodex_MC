@@ -15,6 +15,7 @@ import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
 import xin.vanilla.banira.client.notification.NotificationHistory;
 import xin.vanilla.banira.client.notification.NotificationMuteState;
+import xin.vanilla.banira.client.notification.NotificationRegionLayout;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
@@ -30,7 +31,6 @@ import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Accessors(fluent = true)
 public final class NotificationManager {
@@ -68,6 +68,7 @@ public final class NotificationManager {
                 if (tryMergeOverlayDuplicate(notification, nowMs)) {
                     return;
                 }
+                if (countActiveNotifications() >= ClientConfig.get().notificationRegions().queueLimit()) return;
                 applyBurstStagger(notification, nowMs);
                 notification.coalesceLastActivityMs(nowMs);
                 this.notifications.computeIfAbsent(notification.position(), k -> new ArrayList<>()).add(notification);
@@ -265,44 +266,31 @@ public final class NotificationManager {
         double my = mouse.val();
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
+            entry.getValue().forEach(n -> n.advance(currentTime));
             entry.getValue().removeIf(Notification::finished);
+        }
 
-            EnumPosition pos = entry.getKey();
-            List<Notification> list = entry.getValue().stream().filter(n -> n.scheduledTime() <= currentTime).collect(Collectors.toList());
-
-            boolean stacksDown = pos == EnumPosition.TOP_LEFT || pos == EnumPosition.TOP_CENTER || pos == EnumPosition.TOP_RIGHT
-                    || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER || pos == EnumPosition.CENTER;
-            ScreenCoordinate preInfo = new ScreenCoordinate()
-                    .y(stacksDown ? 0 : screenInfo.height())
-                    .height(0);
-
-            int i = 0;
-            Iterator<Notification> iter = list.iterator();
-            while (iter.hasNext()) {
-                Notification n = iter.next();
-
-                if (n.finished()) {
-                    iter.remove();
-                    continue;
-                }
-
-                if (i == 0 && (pos == EnumPosition.CENTER || pos == EnumPosition.LEFT_CENTER || pos == EnumPosition.RIGHT_CENTER)) {
-                    preInfo.y((screenInfo.height() - n.cachedHeight()) / 2 - n.margin());
-                }
-
-                ScreenCoordinate lastInfo = n.calculatePosition(screenInfo, preInfo);
-
-                if (this.shouldSkipRendering(pos, lastInfo, screenInfo)) {
-                    break;
-                }
-
-                frameDrawOrder.add(n);
-                n.index(i++).render(stack, preInfo, screenInfo, currentTime);
-
-                preInfo.y(n.lastY());
-                preInfo.width(n.cachedWidth());
-                preInfo.height(n.cachedHeight());
-            }
+        ClientConfigView.NotificationRegionsView regions = ClientConfig.get().notificationRegions();
+        NotificationRegionLayout layout = new NotificationRegionLayout(regions.visibleLimit());
+        List<Notification> pending = new ArrayList<>();
+        for (List<Notification> group : notifications.values()) pending.addAll(group);
+        EnumMap<EnumPosition, Integer> indices = new EnumMap<>(EnumPosition.class);
+        for (Notification n : NotificationRegionLayout.admissionOrder(pending, item -> item.lastRenderTime() > 0)) {
+            if (n.finished() || n.scheduledTime() > currentTime) continue;
+            EnumPosition pos = n.position();
+            int[] settings = regionSettings(pos);
+            NotificationRegionLayout.Rect region = NotificationRegionLayout.region(pos, scaledSize.key(), scaledSize.val(),
+                    settings[0], settings[1], regions.margin());
+            n.fitToRegion(region.width, region.height);
+            NotificationRegionLayout.Rect target = layout.place(pos, region, (int) Math.ceil(n.cachedWidth()),
+                    (int) Math.ceil(n.cachedHeight()), (int) Math.max(0, n.margin()), settings[2]);
+            if (target == null) continue;
+            int index = indices.getOrDefault(pos, 0);
+            indices.put(pos, index + 1);
+            frameDrawOrder.add(n);
+            n.index(index).renderInRegion(stack, target, region, currentTime);
+            layout.follow(pos, region, new NotificationRegionLayout.Rect((int) Math.floor(n.hitX()), (int) Math.floor(n.hitY()),
+                    (int) Math.ceil(n.hitW()), (int) Math.ceil(n.hitH())), (int) Math.max(0, n.margin()));
         }
 
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
@@ -385,21 +373,19 @@ public final class NotificationManager {
         prevLeftDown = down;
     }
 
-    private boolean shouldSkipRendering(EnumPosition pos, ScreenCoordinate coordinate, ScreenCoordinate screenInfo) {
-        switch (pos) {
-            case TOP_LEFT:
-            case TOP_CENTER:
-            case TOP_RIGHT:
-            case LEFT_CENTER:
-            case RIGHT_CENTER:
-            case CENTER:
-                return coordinate.y() + coordinate.height() > screenInfo.height();
-            case BOTTOM_LEFT:
-            case BOTTOM_CENTER:
-            case BOTTOM_RIGHT:
-                return coordinate.y() < 0;
-            default:
-                return false;
+    private static int[] regionSettings(EnumPosition position) {
+        ClientConfigView.NotificationRegionsView cfg = ClientConfig.get().notificationRegions();
+        switch (position) {
+            case TOP_LEFT: return new int[]{cfg.topLeft().widthPercent(), cfg.topLeft().heightPercent(), cfg.topLeft().visibleLimit()};
+            case TOP_CENTER: return new int[]{cfg.topCenter().widthPercent(), cfg.topCenter().heightPercent(), cfg.topCenter().visibleLimit()};
+            case TOP_RIGHT: return new int[]{cfg.topRight().widthPercent(), cfg.topRight().heightPercent(), cfg.topRight().visibleLimit()};
+            case LEFT_CENTER: return new int[]{cfg.leftCenter().widthPercent(), cfg.leftCenter().heightPercent(), cfg.leftCenter().visibleLimit()};
+            case RIGHT_CENTER: return new int[]{cfg.rightCenter().widthPercent(), cfg.rightCenter().heightPercent(), cfg.rightCenter().visibleLimit()};
+            case BOTTOM_LEFT: return new int[]{cfg.bottomLeft().widthPercent(), cfg.bottomLeft().heightPercent(), cfg.bottomLeft().visibleLimit()};
+            case BOTTOM_CENTER: return new int[]{cfg.bottomCenter().widthPercent(), cfg.bottomCenter().heightPercent(), cfg.bottomCenter().visibleLimit()};
+            case BOTTOM_RIGHT: return new int[]{cfg.bottomRight().widthPercent(), cfg.bottomRight().heightPercent(), cfg.bottomRight().visibleLimit()};
+            case CENTER: return new int[]{cfg.center().widthPercent(), cfg.center().heightPercent(), cfg.center().visibleLimit()};
+            default: throw new IllegalArgumentException("Unsupported notification position: " + position);
         }
     }
 }

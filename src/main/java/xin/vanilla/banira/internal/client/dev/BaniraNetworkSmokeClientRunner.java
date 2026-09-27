@@ -45,12 +45,14 @@ public final class BaniraNetworkSmokeClientRunner {
     public static void tick() {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
         Minecraft client = Minecraft.getInstance();
-        if ("notification-ui".equals(BaniraNetworkSmokeStatus.phase())) {
+        if ("notification-ui".equals(BaniraNetworkSmokeStatus.phase())
+                || "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase())) {
             if (client.getOverlay() != null || ++ticks < 20) return;
             try {
-                if (NotificationReadSmoke.tick(client)) {
+                boolean regionUi = "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase());
+                if (regionUi ? NotificationRegionSmoke.tick(client) : NotificationReadSmoke.tick(client)) {
                     finished = true;
-                    BaniraNetworkSmokeStatus.append("FINISHED notification-ui");
+                    BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
                     client.stop();
                 }
             } catch (Exception error) {
@@ -86,6 +88,7 @@ public final class BaniraNetworkSmokeClientRunner {
         }
         ticks++;
         try {
+            if (!NotificationRegionSmoke.tick(client)) return;
             if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(true)) return;
             if (!NotificationReadSmoke.tick(client)) return;
         } catch (Exception exception) {

@@ -1,4 +1,11 @@
 {
+  "word.banira_codex.notification_hud_position": "未读通知位置",
+  "word.banira_codex.notification_hud_settings": "设置",
+  "word.banira_codex.notification_hud_drag": "拖动调整位置",
+  "word.banira_codex.enum_notification_hud_mode_hold": "按住按键显示",
+  "word.banira_codex.enum_notification_hud_mode_toggle": "按下按键切换",
+  "word.banira_codex.enum_notification_hud_mode_always": "始终显示",
+  "word.banira_codex.enum_notification_hud_mode_off": "隐藏",
   "sidebar_button.banira_codex.external_inventory_button": "快捷入口",
   "key.banira_codex.categories": "香草志",
   "key.banira_codex.codex_navigation": "打开香草志设置",

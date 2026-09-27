@@ -1,4 +1,11 @@
 {
+  "word.banira_codex.notification_hud_position": "Unread HUD position",
+  "word.banira_codex.notification_hud_settings": "Settings",
+  "word.banira_codex.notification_hud_drag": "Drag to move",
+  "word.banira_codex.enum_notification_hud_mode_hold": "Hold shortcut",
+  "word.banira_codex.enum_notification_hud_mode_toggle": "Toggle with shortcut",
+  "word.banira_codex.enum_notification_hud_mode_always": "Always visible",
+  "word.banira_codex.enum_notification_hud_mode_off": "Hidden",
   "sidebar_button.banira_codex.external_inventory_button": "Quick action",
   "key.banira_codex.categories": "Banira Codex",
   "key.banira_codex.codex_navigation": "Open Banira Codex Hub",

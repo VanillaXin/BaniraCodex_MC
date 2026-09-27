@@ -8,6 +8,27 @@ import static org.junit.Assert.assertTrue;
 public class NotificationAnimationStateTest {
 
     @Test
+    public void dismissDuringEntryExitsFromCurrentVisibility() {
+        NotificationAnimationState state = new NotificationAnimationState();
+        state.start(1000, 600, 5000);
+        state.dismiss(1300, 600);
+        assertEquals(0.5D, state.visibility(1300, 600), 0.0001D);
+        assertEquals(0.25D, state.visibility(1600, 600), 0.0001D);
+        assertTrue(state.visibility(1901, 600) < 0);
+    }
+
+    @Test
+    public void repeatedDismissAndMergeCannotRestartExit() {
+        NotificationAnimationState state = new NotificationAnimationState();
+        state.start(0, 600, 5000);
+        state.dismiss(1000, 600);
+        state.dismiss(1100, 600);
+        state.merge(1200, 5000, 600);
+        assertEquals(0.5D, state.visibility(1300, 600), 0.0001D);
+        assertTrue(state.visibility(1601, 600) < 0);
+    }
+
+    @Test
     public void mergeDuringHoldExtendsLifetimeWithoutRestartingEntry() {
         NotificationAnimationState state = new NotificationAnimationState();
         state.start(1_000L, 600L, 5_000L);

@@ -60,27 +60,32 @@ public class CodexNavigationScreen extends BaniraScreen {
         int innerH = height - CARD_MARGIN * 2;
         int btnW = Math.min(340, width - CARD_MARGIN * 2);
         int cx = (width - btnW) / 2;
-        int contentH = 5 * BTN_H + 4 * BTN_GAP;
+        int gap = Math.max(2, Math.min(BTN_GAP, (innerH - 6 * BTN_H) / 5));
+        int contentH = 6 * BTN_H + 5 * gap;
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
         addNavButton(cx, y, btnW, "codex_navigation_notification_log",
                 () -> BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
-        y += BTN_H + BTN_GAP;
+        y += BTN_H + gap;
 
         addNavButton(cx, y, btnW, "codex_navigation_client_config",
                 () -> ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this));
-        y += BTN_H + BTN_GAP;
+        y += BTN_H + gap;
 
         addNavButton(cx, y, btnW, "codex_navigation_common_config",
                 () -> ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this));
-        y += BTN_H + BTN_GAP;
+        y += BTN_H + gap;
 
         addNavButton(cx, y, btnW, "custom_player_config_title",
                 () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
-        y += BTN_H + BTN_GAP;
+        y += BTN_H + gap;
 
         addNavButton(cx, y, btnW, "custom_quick_action_title",
                 () -> BaniraClientRuntime.setScreen(new CustomQuickActionConfigScreen(this)));
+
+        y += BTN_H + gap;
+        addNavButton(cx, y, btnW, "notification_hud_position",
+                () -> BaniraClientRuntime.setScreen(new NotificationHudPositionScreen(this)));
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");

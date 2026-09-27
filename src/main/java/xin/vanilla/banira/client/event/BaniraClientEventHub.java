@@ -118,6 +118,7 @@ public final class BaniraClientEventHub {
         Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
         Client.onKeyReleasedPost(event -> InputStateManager.instance().handleKeyReleased(event.keyCode()));
         Client.onClientTick(event -> {
+            if (event == BaniraClientTickEvent.END) xin.vanilla.banira.client.notification.NotificationUnreadHud.tick();
             if (event == BaniraClientTickEvent.END && BaniraClientRuntime.currentScreen() == null) {
                 InputStateManager.instance().handleScreenClosed();
             }
@@ -351,6 +352,7 @@ public final class BaniraClientEventHub {
                                                        float partialTick, boolean screenOpen) {
             if (element == HudOverlayElement.ALL && !screenOpen) {
                 NotificationManager.get().render(nativeGraphics);
+                xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 /** 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。 */
 public final class BaniraNetworkSmokeClientRunner {
     private static int ticks;
+    private static boolean notificationReady;
     private static boolean connected;
     private static boolean joined;
     private static boolean finished;
@@ -76,12 +77,19 @@ public final class BaniraNetworkSmokeClientRunner {
         }
         ticks++;
         try {
-            if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(true)) return;
-        } catch (Exception exception) {
-            fail(client, "Forge config transaction smoke failed: " + exception);
+            if (!NotificationRegionSmoke.tick(client)) return;
+            if (!BaniraNetworkSmokeStatus.notificationsOnly()
+                    && !xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(true)) return;
+            if (!NotificationReadSmoke.tick(client)) return;
+            if (BaniraNetworkSmokeStatus.notificationsOnly() && !notificationReady) {
+                notificationReady = true;
+                BaniraNetworkSmokeStatus.append("PASS notification-client-ready");
+            }
+        } catch (Exception error) {
+            fail(client, "notification smoke failed: " + error);
             return;
         }
-        if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
+        if (!BaniraNetworkSmokeStatus.notificationsOnly() && "phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);
             if (spark == null || !spark.written() || !uiWorkloadReported) {
                 if (ticks > 900) fail(client, "client UI Spark profile/workload timed out cycles=" + uiCycles

@@ -86,18 +86,20 @@ public final class NotificationStyleInteractionHelper {
             return;
         }
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
+        renderTextTooltip(stack, mouseX, mouseY, BaniraComponent.get().object(tip), theme);
+    }
+
+    public static void renderTextTooltip(PoseStack stack, int mouseX, int mouseY,
+                                         xin.vanilla.banira.common.data.Component component, BaniraColorConfig theme) {
         Screen screen = BaniraClientRuntime.currentScreen();
         EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
-        boolean useTexture = theme.tooltipUseTexture();
-
-        xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
-        Text tipText = new Text(wrapped);
+        Text tipText = new Text(component);
 
         stack.pushPose();
         stack.last().pose().setIdentity();
         try {
             TooltipWidget.drawPopupMessage(stack,
-                    FontDrawArgs.ofPopo(tipText.stack(stack).font(AbstractGuiUtils.getFont())).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(AbstractGuiUtils.getFont())).x(mouseX).y(mouseY).popupUseTexture(theme.tooltipUseTexture()),
                     theme, season);
         } finally {
             stack.popPose();

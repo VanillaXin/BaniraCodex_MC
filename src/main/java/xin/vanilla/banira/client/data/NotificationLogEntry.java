@@ -30,6 +30,19 @@ public class NotificationLogEntry {
     private String styleName = "NORMAL";
     private String notificationType = NotificationTypeKeys.DEFAULT;
     private String source; // "network" | "local"
+    private boolean read;
+
+    public NotificationLogEntry(long id, long timestamp, String componentJson, String positionName,
+                                String animationName, long durationTime, String styleName,
+                                String notificationType, String source) {
+        this(id, timestamp, componentJson, positionName, animationName, durationTime, styleName,
+                notificationType, source, false);
+    }
+
+    public NotificationLogEntry copy() {
+        return new NotificationLogEntry(id, timestamp, componentJson, positionName, animationName,
+                durationTime, styleName, notificationType, source, read);
+    }
 
     public Component component() {
         if (componentJson == null || componentJson.isEmpty()) return BaniraComponent.get().empty();

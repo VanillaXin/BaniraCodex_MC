@@ -87,6 +87,9 @@ public class Notification extends NotificationData {
     private transient List<FormattedCharSequence> richDrawLines = new ArrayList<>();
     private transient int richTextMaxLineW;
     private transient int richDefaultTextArgb = 0xFFFFFFFF;
+    private transient int layoutMaxWidth;
+    private transient int layoutMaxHeight;
+    private transient xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect renderClip;
     /**
      * 最近一次绘制在 GUI 坐标下的外接矩形（用于点击检测）
      */
@@ -248,7 +251,7 @@ public class Notification extends NotificationData {
         this.ensureReadableComponentColors();
     }
 
-    private BaniraColorConfig notificationTheme() {
+    public BaniraColorConfig notificationTheme() {
         String type = notificationType();
         int separator = type != null ? type.indexOf(':') : -1;
         if (separator < 0 && type != null) {
@@ -269,7 +272,7 @@ public class Notification extends NotificationData {
         Font font = AbstractGuiUtils.getFont();
         int sw = AbstractGuiUtils.getGuiScaledSize().key();
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
-        int maxTextW = Math.max(40, sw - reserve);
+        int maxTextW = layoutMaxWidth > 0 ? Math.max(1, layoutMaxWidth - reserve) : Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
         this.vanillaDrawText = ColorUtils.readableVanillaComponentCopy(
                 this.component().toVanilla(lang), this.bgColor().argb());
@@ -277,6 +280,13 @@ public class Notification extends NotificationData {
                 ? 0xFFFFFFFF : this.component().color().argb();
         this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
+        if (layoutMaxHeight > 0) {
+            int maxLines = Math.max(1, (int) ((layoutMaxHeight - padding() * 2) / font.lineHeight));
+            if (richDrawLines.size() > maxLines) {
+                richDrawLines = new ArrayList<>(richDrawLines.subList(0, maxLines));
+                richDrawLines.set(maxLines - 1, new net.minecraft.network.chat.TextComponent("...").getVisualOrderText());
+            }
+        }
         this.richTextMaxLineW = 0;
         for (FormattedCharSequence line : this.richDrawLines) {
             this.richTextMaxLineW = Math.max(this.richTextMaxLineW, font.width(line));
@@ -285,6 +295,41 @@ public class Notification extends NotificationData {
         double textH = this.richDrawLines.size() * lineH;
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
+    }
+
+    public void fitToRegion(int width, int height) {
+        if (layoutMaxWidth != width || layoutMaxHeight != height) {
+            layoutMaxWidth = width;
+            layoutMaxHeight = height;
+            updateRichLayout();
+        }
+    }
+
+    public void advance(long nowMs) {
+        if (animationState.started() && calculateProgress(nowMs) < 0) finished = true;
+    }
+
+    public void renderInRegion(PoseStack stack,
+            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
+            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
+        if (finished || nowMs < scheduledTime()) return;
+        if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
+        double progress = calculateProgress(nowMs);
+        if (progress < 0) { finished = true; return; }
+        renderClip = region;
+        ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
+        applyAnimationEffect(coordinate, progress);
+        applyMergeAnimation(nowMs);
+        handlePositionTransition(coordinate, nowMs);
+        AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
+        try {
+            doRender(stack, coordinate);
+        } finally {
+            AbstractGuiUtils.popScissor();
+        }
+        lastY = coordinate.y();
+        lastIndex = index;
+        lastRenderTime = nowMs;
     }
 
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
@@ -573,7 +618,8 @@ public class Notification extends NotificationData {
     }
 
     public boolean containsPoint(double guiMouseX, double guiMouseY) {
-        return guiMouseX >= this.hitX && guiMouseY >= this.hitY
+        return (renderClip == null || renderClip.contains(guiMouseX, guiMouseY))
+                && guiMouseX >= this.hitX && guiMouseY >= this.hitY
                 && guiMouseX < this.hitX + this.hitW && guiMouseY < this.hitY + this.hitH;
     }
 
@@ -589,6 +635,14 @@ public class Notification extends NotificationData {
 
     public void dismiss() {
         this.finished = true;
+    }
+
+    public void dismissAnimated(long nowMs) {
+        if (!animationState.started()) {
+            dismiss();
+        } else {
+            animationState.dismiss(nowMs, animationTime());
+        }
     }
 
     @Nullable

@@ -67,6 +67,7 @@ public final class BaniraClientEventHub {
         BaniraClientEvents.Client.onMouseReleasedPost(event -> InputStateManager.instance().handleMouseReleased(event.mouseX(), event.mouseY(), event.button()));
         BaniraClientEvents.Client.onMouseScrolledPre(event -> InputStateManager.instance().handleMouseScrolled(event.mouseX(), event.mouseY(), event.scrollDelta()));
         BaniraClientEvents.Client.onClientTick(event -> {
+            if (event == BaniraClientTickEvent.END) xin.vanilla.banira.client.notification.NotificationUnreadHud.tick();
             if (event == BaniraClientTickEvent.END && BaniraClientRuntime.currentScreen() == null) {
                 InputStateManager.instance().handleScreenClosed();
             }

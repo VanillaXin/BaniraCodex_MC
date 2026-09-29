@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 /** 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。 */
 public final class BaniraNetworkSmokeClientRunner {
     private static int ticks;
+    private static boolean notificationReady;
     private static boolean connected;
     private static boolean joined;
     private static boolean finished;
@@ -47,12 +48,6 @@ public final class BaniraNetworkSmokeClientRunner {
             ticks = 0;
             return;
         }
-        try {
-            if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(true)) return;
-        } catch (Exception error) {
-            fail(client, "generated config smoke: " + error);
-            return;
-        }
         if (!connected) {
             if (++ticks < 20) return;
             String host = System.getProperty("banira.networkSmoke.host", "127.0.0.1");
@@ -73,7 +68,20 @@ public final class BaniraNetworkSmokeClientRunner {
             BaniraNetworkSmokeStatus.append("PASS remote-login");
         }
         ticks++;
-        if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
+        try {
+            if (!NotificationRegionSmoke.tick(client)) return;
+            if (!BaniraNetworkSmokeStatus.notificationsOnly()
+                    && !xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(true)) return;
+            if (!NotificationReadSmoke.tick(client)) return;
+            if (BaniraNetworkSmokeStatus.notificationsOnly() && !notificationReady) {
+                notificationReady = true;
+                BaniraNetworkSmokeStatus.append("PASS notification-client-ready");
+            }
+        } catch (Exception error) {
+            fail(client, "notification smoke failed: " + error);
+            return;
+        }
+        if (!BaniraNetworkSmokeStatus.notificationsOnly() && "phase-one".equals(BaniraNetworkSmokeStatus.phase())) {
             runClientUiWorkload(client);
             if (spark == null || !spark.written() || !uiWorkloadReported) {
                 if (ticks > 900) fail(client, "client UI Spark profile/workload timed out cycles=" + uiCycles

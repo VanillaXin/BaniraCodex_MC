@@ -76,6 +76,8 @@ public class NotificationLogScreen extends BaniraScreen {
      */
     private int listHoverIndex = -1;
     private long pendingSelectLogEntryId;
+    private long historyRevision = -1;
+    private ButtonWidget markAllReadButton;
 
     /**
      * 详情正文：原版组件换行后的行，用于绘制与 Hover/Click 命中（与 {@link xin.vanilla.banira.client.gui.component.Notification} 一致）
@@ -131,9 +133,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @Override
     protected void onInit() {
-        allLogEntries = new ArrayList<>(NotificationManager.get().getLog());
-        applyFilter();
-        if (selectedIndex >= filteredEntries.size()) selectedIndex = -1;
+        refreshHistory();
     }
 
     private void applyPendingLogSelection() {
@@ -144,7 +144,7 @@ public class NotificationLogScreen extends BaniraScreen {
         pendingSelectLogEntryId = 0L;
         for (int i = 0; i < filteredEntries.size(); i++) {
             if (filteredEntries.get(i).id() == selectId) {
-                selectedIndex = i;
+                selectEntry(i);
                 int row = Math.max(0, i - visibleRows + 1);
                 scrollValue = row;
                 if (scrollbarWidget != null) {
@@ -153,18 +153,6 @@ public class NotificationLogScreen extends BaniraScreen {
                 }
                 break;
             }
-        }
-    }
-
-    private void applyFilter() {
-        filteredEntries = allLogEntries.stream()
-                .filter(this::entryMatchesSearch)
-                .collect(Collectors.toList());
-        scrollValue = 0;
-        selectedIndex = filteredEntries.isEmpty() ? -1 : 0;
-        if (scrollbarWidget != null) {
-            scrollbarWidget.value(0);
-            scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
         }
     }
 
@@ -207,7 +195,7 @@ public class NotificationLogScreen extends BaniraScreen {
         filteredEntries = allLogEntries.stream()
                 .filter(this::entryMatchesSearch)
                 .collect(Collectors.toList());
-        if (prevId >= 0L) {
+        if (prevId != -1L) {
             for (int i = 0; i < filteredEntries.size(); i++) {
                 if (filteredEntries.get(i).id() == prevId) {
                     selectedIndex = i;
@@ -220,7 +208,7 @@ public class NotificationLogScreen extends BaniraScreen {
                 }
             }
         }
-        selectedIndex = filteredEntries.isEmpty() ? -1 : 0;
+        selectedIndex = -1;
         scrollValue = 0;
         if (scrollbarWidget != null) {
             scrollbarWidget.value(0);
@@ -242,6 +230,37 @@ public class NotificationLogScreen extends BaniraScreen {
         scrollValue = Math.max(0, Math.min(maxScroll, scrollValue));
     }
 
+    private void selectEntry(int index) {
+        selectedIndex = index;
+        NotificationManager.get().markRead(filteredEntries.get(index).id());
+        refreshHistory();
+    }
+
+    private void refreshHistory() {
+        NotificationManager manager = NotificationManager.get();
+        long revision = manager.historyRevision();
+        if (revision == historyRevision) return;
+        Long selectedId = selectedIndex >= 0 && selectedIndex < filteredEntries.size()
+                ? filteredEntries.get(selectedIndex).id() : null;
+        int top = (int) scrollValue;
+        Long topId = top > 0 && top < filteredEntries.size() ? filteredEntries.get(top).id() : null;
+        allLogEntries = new ArrayList<>(manager.getLog());
+        filteredEntries = allLogEntries.stream().filter(this::entryMatchesSearch).collect(Collectors.toList());
+        selectedIndex = -1;
+        for (int i = 0; i < filteredEntries.size(); i++) {
+            long id = filteredEntries.get(i).id();
+            if (selectedId != null && id == selectedId) selectedIndex = i;
+            if (topId != null && id == topId) scrollValue = i;
+        }
+        scrollValue = Math.max(0, Math.min(scrollValue, Math.max(0, filteredEntries.size() - visibleRows)));
+        if (scrollbarWidget != null) {
+            scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
+            scrollbarWidget.value(scrollValue);
+        }
+        if (markAllReadButton != null) markAllReadButton.enabled(manager.unreadCount() > 0);
+        historyRevision = revision;
+    }
+
     @Override
     protected void initWidgets() {
         int w = width;
@@ -261,7 +280,7 @@ public class NotificationLogScreen extends BaniraScreen {
         listX = leftX + PANEL_MARGIN;
         listY = leftY + PANEL_MARGIN + SEARCH_BOX_H + 6;
         listW = leftW - PANEL_MARGIN * 2 - SCROLL_W - SCROLL_GAP;
-        int listAreaH = leftH - PANEL_MARGIN - SEARCH_BOX_H - 6 - PANEL_MARGIN - TYPE_CFG_BTN_H - TYPE_CFG_BTN_GAP;
+        int listAreaH = leftH - PANEL_MARGIN - SEARCH_BOX_H - 6 - PANEL_MARGIN - 2 * (TYPE_CFG_BTN_H + TYPE_CFG_BTN_GAP);
         visibleRows = Math.max(1, listAreaH / LIST_ROW_HEIGHT);
         listH = visibleRows * LIST_ROW_HEIGHT;
 
@@ -270,7 +289,7 @@ public class NotificationLogScreen extends BaniraScreen {
         searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
         searchInput.text(Text.transAuto(BaniraCodex.MODID, "notification_log_search_hint"));
         searchInput.onTextChanged(this::applySearchAndReselect);
-        searchInput.value("");
+        searchInput.value(searchQuery);
         addWidget(searchInput);
 
         scrollbarWidget = new ScrollbarWidget(this);
@@ -281,6 +300,7 @@ public class NotificationLogScreen extends BaniraScreen {
         scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
         scrollbarWidget.visibleSize(visibleRows);
         scrollbarWidget.scrollStep(1.0);
+        scrollbarWidget.value(scrollValue);
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         scrollbarWidget.onValueChanged(v -> scrollValue = v);
         addWidget(scrollbarWidget);
@@ -298,11 +318,37 @@ public class NotificationLogScreen extends BaniraScreen {
         typeCfgBtn.id("type_cfg");
         typeCfgBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
         typeCfgBtn.bounds(new ScreenCoordinate(listX, leftY + leftH - PANEL_MARGIN - TYPE_CFG_BTN_H, Math.min(listW, 180), TYPE_CFG_BTN_H));
+        fitFooterButton(typeCfgBtn, BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
         typeCfgBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(
                 new NotificationTypeConfigScreen.Args().parentScreen(this))));
         addWidget(typeCfgBtn);
 
+        markAllReadButton = new ButtonWidget(this);
+        markAllReadButton.id("mark_all_read");
+        markAllReadButton.text(BaniraComponent.get().transClientAuto("notification_log_mark_all_read").toString());
+        markAllReadButton.bounds(new ScreenCoordinate(listX,
+                leftY + leftH - PANEL_MARGIN - 2 * TYPE_CFG_BTN_H - TYPE_CFG_BTN_GAP,
+                Math.min(listW, 180), TYPE_CFG_BTN_H));
+        fitFooterButton(markAllReadButton, BaniraComponent.get().transClientAuto("notification_log_mark_all_read").toString());
+        markAllReadButton.enabled(NotificationManager.get().unreadCount() > 0);
+        markAllReadButton.onClick(b -> {
+            NotificationManager.get().markAllRead();
+            refreshHistory();
+        });
+        addWidget(markAllReadButton);
+
         applyPendingLogSelection();
+    }
+
+    private void fitFooterButton(ButtonWidget button, String label) {
+        int textWidth = Math.max(1, (int) button.bounds().width() - 12);
+        if (font.width(label) <= textWidth) return;
+        button.text(font.plainSubstrByWidth(label, Math.max(0, textWidth - font.width("..."))) + "...");
+        TooltipWidget tooltip = new TooltipWidget(this);
+        tooltip.bounds(new ScreenCoordinate(0, 0, button.bounds().width(), button.bounds().height()));
+        tooltip.text(label);
+        tooltip.popupAtScreenCoords(true);
+        button.addChild(tooltip);
     }
 
     @Override
@@ -347,7 +393,7 @@ public class NotificationLogScreen extends BaniraScreen {
                 int relativeRow = (int) ((my - listY) / LIST_ROW_HEIGHT);
                 int clickedIndex = startIndex + relativeRow;
                 if (clickedIndex >= 0 && clickedIndex < filteredEntries.size()) {
-                    selectedIndex = clickedIndex;
+                    selectEntry(clickedIndex);
                     eventArgs.consumed(true);
                 }
             }
@@ -357,6 +403,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @Override
     public void onRender(PoseStack stack, float partialTicks) {
+        refreshHistory();
         BaniraColorConfig theme = getEffectiveTheme();
 
         ShapeDrawArgs leftBg = ShapeDrawArgs.rect(stack, leftX, leftY, leftW, leftH, theme.panelBg());
@@ -418,8 +465,11 @@ public class NotificationLogScreen extends BaniraScreen {
         ShapeDrawArgs accentRect = ShapeDrawArgs.rect(stack, x, y, accentW, h, accentColor);
         BaseShapeWidget.drawShape(accentRect);
 
-        int textX = x + 6 + accentW;
-        int textW = w - 12 - accentW;
+        if (!entry.read()) {
+            BaseShapeWidget.drawShape(ShapeDrawArgs.rect(stack, x + 7, y + (h - 4) / 2, 4, 4, theme.accent()));
+        }
+        int textX = x + 15;
+        int textW = Math.max(1, w - 21);
         String language = Translator.getClientLanguage();
         Component rowComponent = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
@@ -452,7 +502,8 @@ public class NotificationLogScreen extends BaniraScreen {
         }
 
         NotificationLogEntry entry = filteredEntries.get(selectedIndex);
-        String timeStr = DateUtils.toDateTimeString(new Date(entry.timestamp()));
+        String timeStr = DateUtils.toDateTimeString(new Date(entry.timestamp())) + "  "
+                + BaniraComponent.get().transClientAuto(entry.read() ? "notification_log_read" : "notification_log_unread").toString();
 
         int curY = y;
 

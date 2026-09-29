@@ -112,6 +112,7 @@ public final class BaniraClientEventHub {
         Client.onKeyPressedPre(event -> InputStateManager.instance().handleKeyPressed(event.keyCode()));
         Client.onKeyReleasedPost(event -> InputStateManager.instance().handleKeyReleased(event.keyCode()));
         Client.onClientTick(event -> {
+            if (event == BaniraClientTickEvent.END) xin.vanilla.banira.client.notification.NotificationUnreadHud.tick();
             if (event == BaniraClientTickEvent.END && BaniraClientRuntime.currentScreen() == null) {
                 InputStateManager.instance().handleScreenClosed();
             }

@@ -71,7 +71,7 @@ public final class TooltipTransitionModel<K> {
         // 同一逻辑内容也可能每帧携带新的渲染载荷，不能继续持有首次提交的对象。
         targetContentKey = contentKey;
         this.restingBounds = restingBounds;
-        updateMovingTarget(bounds, current, nowNanos);
+        updateMovingTarget(bounds, current, pointerY, nowNanos);
         rememberPointer(pointerX, pointerY);
         return currentFrame(nowNanos);
     }
@@ -184,12 +184,16 @@ public final class TooltipTransitionModel<K> {
         return !Double.isNaN(pointerX) && !Double.isNaN(pointerY);
     }
 
-    private void updateMovingTarget(TooltipBounds bounds, TooltipTransitionFrame<K> current, long nowNanos) {
+    private void updateMovingTarget(TooltipBounds bounds, TooltipTransitionFrame<K> current,
+                                    double pointerY, long nowNanos) {
         double dx = bounds.x() - targetBounds.x();
         double dy = bounds.y() - targetBounds.y();
         boolean sizeChanged = Double.compare(bounds.width(), targetBounds.width()) != 0
                 || Double.compare(bounds.height(), targetBounds.height()) != 0;
-        if (sizeChanged) {
+        int previousSide = verticalSide(targetBounds, lastPointerY);
+        int nextSide = verticalSide(bounds, pointerY);
+        boolean flipped = previousSide != 0 && nextSide != 0 && previousSide != nextSide;
+        if (sizeChanged || flipped) {
             startBounds = current.bounds();
             targetBounds = bounds;
             transitionStartedAt = nowNanos;
@@ -197,6 +201,13 @@ public final class TooltipTransitionModel<K> {
             startBounds = startBounds.translate(dx, dy);
             targetBounds = bounds;
         }
+    }
+
+    private static int verticalSide(TooltipBounds bounds, double pointerY) {
+        if (Double.isNaN(pointerY)) return 0;
+        if (bounds.y() + bounds.height() <= pointerY) return -1;
+        if (bounds.y() >= pointerY) return 1;
+        return 0;
     }
 
     private TooltipTransitionFrame<K> currentFrame(long nowNanos) {

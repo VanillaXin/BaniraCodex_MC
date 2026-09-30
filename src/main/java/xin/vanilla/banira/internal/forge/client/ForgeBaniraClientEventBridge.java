@@ -51,6 +51,7 @@ public final class ForgeBaniraClientEventBridge {
             BaniraClientGuiService.handleClientTickEnd(!BaniraClientAccess.hasScreen());
             ExternalInventoryButtonSmokeRunner.onClientTick();
             BaniraNetworkSmokeClientRunner.tick();
+            xin.vanilla.banira.internal.client.dev.BaniraScriptSmokeClientRunner.tick();
         }
     }
 

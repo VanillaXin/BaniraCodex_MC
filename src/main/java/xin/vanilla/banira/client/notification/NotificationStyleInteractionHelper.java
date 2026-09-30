@@ -101,17 +101,20 @@ public final class NotificationStyleInteractionHelper {
         PoseStack stack = graphics.pose();
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
-        EnumSeason season = mc.screen instanceof BaniraScreen ? ((BaniraScreen) mc.screen).season() : EnumSeason.AUTO;
-        boolean useTexture = theme.tooltipUseTexture();
+        renderTextTooltip(stack, mouseX, mouseY, BaniraComponent.get().object(tip), theme);
+    }
 
-        xin.vanilla.banira.common.data.Component wrapped = BaniraComponent.get().object(tip);
-        Text tipText = new Text(wrapped);
+    public static void renderTextTooltip(PoseStack stack, int mouseX, int mouseY,
+                                         xin.vanilla.banira.common.data.Component component, BaniraColorConfig theme) {
+        Screen screen = Minecraft.getInstance().screen;
+        EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
+        Text tipText = new Text(component);
 
         stack.pushPose();
         stack.last().pose().identity();
         try {
             TooltipWidget.drawPopupMessage(stack,
-                    FontDrawArgs.ofPopo(tipText.stack(stack).font(mc.font)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
+                    FontDrawArgs.ofPopo(tipText.stack(stack).font(Minecraft.getInstance().font)).x(mouseX).y(mouseY).popupUseTexture(theme.tooltipUseTexture()),
                     theme, season);
         } finally {
             stack.popPose();

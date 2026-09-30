@@ -44,6 +44,7 @@ public final class BaniraClientOverlayBridge {
 
     public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
         NotificationManager.get().render(graphics);
+        xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }
 
     /** Fabric HUD 回调保留统一签名，具体事件分发由加载器入口完成。 */

@@ -49,6 +49,19 @@ public final class BaniraNetworkSmokeClientRunner {
     public static void tick() {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
         Minecraft client = Minecraft.getInstance();
+        if ("tooltip-ui".equals(BaniraNetworkSmokeStatus.phase())) {
+            if (client.getOverlay() != null || ++ticks < 20) return;
+            try {
+                if (TooltipTransitionSmoke.tick(client)) {
+                    finished = true;
+                    BaniraNetworkSmokeStatus.append("FINISHED tooltip-ui");
+                    client.stop();
+                }
+            } catch (Exception error) {
+                fail(client, "tooltip UI smoke failed: " + error);
+            }
+            return;
+        }
         if (!joined) {
             String view = "screen=" + (client.screen == null ? "none" : client.screen.getClass().getName())
                     + " overlay=" + (client.getOverlay() == null ? "none" : client.getOverlay().getClass().getName());

@@ -226,6 +226,11 @@ public class ConfigHolder implements BaniraConfigHandle {
         return (T) value;
     }
 
+    /** Compare the current stored value, including unsaved edits, without returning a mutable value. */
+    public synchronized boolean matchesStoredValue(String path, Object expected) {
+        return valueStore.matchesStoredValue(path, expected);
+    }
+
     @Override
     public synchronized void set(String path, Object value) {
         set(path, value, ConfigEditOrigin.API);

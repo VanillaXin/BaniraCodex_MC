@@ -15,6 +15,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.Objects;
+import java.util.RandomAccess;
 
 final class ForgeConfigBackend implements ConfigValueStore {
     private final ForgeConfigSpec spec;
@@ -76,6 +79,26 @@ final class ForgeConfigBackend implements ConfigValueStore {
             ForgeConfigSpec.ConfigValue<?> value = values.get(path);
             Object result = value != null ? value.get() : null;
             return result instanceof java.util.List ? new java.util.ArrayList<>((java.util.List<?>) result) : result;
+        }
+    }
+
+    @Override
+    public boolean matchesStoredValue(String path, Object expected) {
+        synchronized (valueLock()) {
+            ForgeConfigSpec.ConfigValue<?> value = values.get(path);
+            if (value == null) return false;
+            Object current = value.get();
+            // Java 8 AbstractList.equals allocates iterators even for immutable array-backed lists.
+            if (current instanceof List && current instanceof RandomAccess
+                    && expected instanceof List && expected instanceof RandomAccess) {
+                List<?> left = (List<?>) current, right = (List<?>) expected;
+                if (left.size() != right.size()) return false;
+                for (int i = 0; i < left.size(); i++) {
+                    if (!Objects.equals(left.get(i), right.get(i))) return false;
+                }
+                return true;
+            }
+            return Objects.deepEquals(current, expected);
         }
     }
 

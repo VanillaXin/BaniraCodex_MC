@@ -14,6 +14,11 @@ public interface ConfigValueStore {
     @Nullable
     Object get(String path);
 
+    /** Compare stored values without exposing them; no display or runtime type conversion. */
+    default boolean matchesStoredValue(String path, Object expected) {
+        return paths().contains(path) && java.util.Objects.deepEquals(get(path), expected);
+    }
+
     void set(String path, Object value);
 
     /** Apply a validated batch without partial writes; unsupported backends must opt in. */

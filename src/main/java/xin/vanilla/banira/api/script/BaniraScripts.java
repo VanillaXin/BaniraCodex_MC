@@ -8,4 +8,10 @@ public final class BaniraScripts {
                                            ScriptLimits limits, Executor ownerExecutor) {
         return new DefaultScriptSession<>(ownerId, contract, apiVersion, limits, ownerExecutor);
     }
+
+    /** Preparation validates constructors without initializing classes; create() runs on the owner thread. */
+    public static <T> ScriptSession<ScriptFactory<T>> openFactorySession(String ownerId, Class<T> contract,
+            String apiVersion, ScriptLimits limits, Executor ownerExecutor) {
+        return DefaultScriptSession.factories(ownerId, contract, apiVersion, limits, ownerExecutor);
+    }
 }

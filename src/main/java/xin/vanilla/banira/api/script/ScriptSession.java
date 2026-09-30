@@ -9,6 +9,11 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface ScriptSession<T> extends AutoCloseable {
     CompletableFuture<PreparedScripts<T>> prepare(List<ScriptSource> sources);
+    default CompletableFuture<PreparedScripts<T>> prepareGroups(List<ScriptSourceGroup> sources) {
+        CompletableFuture<PreparedScripts<T>> result = new CompletableFuture<>();
+        result.completeExceptionally(new UnsupportedOperationException("Source groups are not supported by this session"));
+        return result;
+    }
     boolean publish(PreparedScripts<T> candidate);
     Map<String, T> active();
     @Override void close();

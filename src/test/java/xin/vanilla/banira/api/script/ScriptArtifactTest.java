@@ -70,6 +70,33 @@ public class ScriptArtifactTest {
                 Object provider = ServiceLoader.load(factory, loader).iterator().next();
                 assertTrue(provider.getClass().getName().startsWith("xin.vanilla.banira.internal.shaded."));
             } finally { ((AutoCloseable) session).close(); }
+            Class<?> groupType = loader.loadClass("xin.vanilla.banira.api.script.ScriptSourceGroup");
+            Class<?> factoryType = loader.loadClass("xin.vanilla.banira.api.script.ScriptFactory");
+            BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
+            Object factorySession = api.getMethod("openFactorySession", String.class, Class.class, String.class, limits, Executor.class)
+                    .invoke(null, "artifact-factory", IntPredicate.class, "1", limits.getMethod("defaults").invoke(null), (Executor) owner::add);
+            try {
+                Map<String, String> sources = new LinkedHashMap<>();
+                sources.put("Task.java", "package xin.vanilla.banira.generated; public class Task implements java.util.function.IntPredicate {"
+                        + " public boolean test(int value){return Helper.accept(this, value);} public int limit(){return 5;} }");
+                sources.put("Helper.java", "package xin.vanilla.banira.generated; class Helper {"
+                        + " static boolean accept(Task task, int value){return value >= task.limit();} }");
+                Object group = groupType.getConstructor(String.class, String.class, Map.class).newInstance(
+                        "test", "xin.vanilla.banira.generated.Task", sources);
+                CompletableFuture<?> prepared = (CompletableFuture<?>) sessionType.getMethod("prepareGroups", List.class)
+                        .invoke(factorySession, Collections.singletonList(group));
+                Runnable completion = owner.poll(10, TimeUnit.SECONDS);
+                assertNotNull(completion);
+                completion.run();
+                Object candidate = prepared.get(1, TimeUnit.SECONDS);
+                assertEquals(true, sessionType.getMethod("publish", candidateType).invoke(factorySession, candidate));
+                Object factory = ((Map<?, ?>) sessionType.getMethod("active").invoke(factorySession)).get("test");
+                IntPredicate first = (IntPredicate) factoryType.getMethod("create").invoke(factory);
+                IntPredicate second = (IntPredicate) factoryType.getMethod("create").invoke(factory);
+                assertNotSame(first, second);
+                assertTrue(first.test(5));
+                assertFalse(second.test(4));
+            } finally { ((AutoCloseable) factorySession).close(); }
         }
     }
 }

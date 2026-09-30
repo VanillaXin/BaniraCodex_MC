@@ -2,7 +2,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-def smokeRoot = file(project.findProperty('banira.networkSmoke.root') ?: "${projectDir}/run-network-smoke")
+def notificationOnly = (project.findProperty('banira.networkSmoke.notificationsOnly') ?: 'false').toString().toBoolean() ||
+        gradle.startParameter.taskNames.any { it.tokenize(':').last() == 'notificationSmoke' }
+def smokeRoot = file(project.findProperty('banira.networkSmoke.root') ?:
+        "${projectDir}/${notificationOnly ? 'run-notification-smoke' : 'run-network-smoke'}")
 def smokeServerDir = file("${smokeRoot}/server")
 def smokeClientDir = file("${smokeRoot}/client")
 def smokePort = 25579
@@ -13,6 +16,8 @@ if (smokeChild) {
     layout.buildDirectory.set(file(project.property('banira.networkSmoke.buildDir')))
     runs.configureEach {
         systemProperty 'banira.networkSmoke', 'true'
+        systemProperty 'banira.networkSmoke.notificationsOnly', notificationOnly.toString()
+        systemProperty 'banira.networkSmoke.clientStatus', project.findProperty('banira.networkSmoke.clientStatus')?.toString() ?: ''
         systemProperty 'banira.networkSmoke.phase', project.property('banira.networkSmoke.phase').toString()
         systemProperty 'banira.networkSmoke.status', project.property('banira.networkSmoke.status').toString()
         systemProperty 'banira.networkSmoke.sparkReport', project.property('banira.networkSmoke.sparkReport').toString()
@@ -83,7 +88,9 @@ def start = { String task, String phase, File status, File report, File clientRe
     File wrapper = new File(childProject, System.getProperty('os.name').toLowerCase().contains('windows') ? 'gradlew.bat' : 'gradlew')
     List<String> command = System.getProperty('os.name').toLowerCase().contains('windows') ? ['cmd.exe', '/d', '/c', wrapper.absolutePath] : [wrapper.absolutePath]
     command.addAll([task, '--no-daemon', '--console=plain', '--project-cache-dir', new File(childRoot, 'project-cache').absolutePath,
-                    '-Pbanira.networkSmoke.child=true', "-Pbanira.networkSmoke.phase=${phase}", "-Pbanira.networkSmoke.status=${status.absolutePath}",
+                    '-Pbanira.networkSmoke.child=true', "-Pbanira.networkSmoke.notificationsOnly=${notificationOnly}",
+                    "-Pbanira.networkSmoke.clientStatus=${new File(status.parentFile, 'client-' + phase + '.status').absolutePath}",
+                    "-Pbanira.networkSmoke.phase=${phase}", "-Pbanira.networkSmoke.status=${status.absolutePath}",
                     "-Pbanira.networkSmoke.sparkReport=${report.absolutePath}", "-Pbanira.networkSmoke.clientSparkReport=${clientReport.absolutePath}", "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}",
                     "-Pbanira.devInventoryIntegrations=${devInventoryIntegrations}",
                     "-Pbanira.networkSmoke.root=${smokeRoot.absolutePath}"])
@@ -150,5 +157,57 @@ tasks.register('networkSmoke') {
         def crashes = fileTree(smokeRoot) { include '**/crash-reports/crash-*.txt' }.files
         if (!crashes.isEmpty()) throw new GradleException("Network smoke created crash reports: ${crashes*.absolutePath}")
         logger.lifecycle("Banira network smoke FINISHED: ${evidence}")
+    }
+}
+
+tasks.register('notificationSmoke') {
+    group = 'verification'
+    description = 'Runs only notification state, HUD, region, routing and restart checks on a real remote client.'
+    doLast {
+        if (smokeChild || !notificationOnly) throw new GradleException('Invalid notification smoke invocation')
+        [smokeServerDir, smokeClientDir].each { dir ->
+            if (!dir.canonicalFile.toPath().startsWith(smokeRoot.canonicalFile.toPath())) {
+                throw new GradleException("Fixture outside smoke root: ${dir}")
+            }
+        }
+        delete smokeServerDir, smokeClientDir
+        smokeServerDir.mkdirs(); smokeClientDir.mkdirs()
+        new File(smokeServerDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        new File(smokeServerDir, 'server.properties').setText("online-mode=false\nserver-port=${smokePort}\nlevel-name=notification-smoke-world\nview-distance=2\n", 'UTF-8')
+        File evidence = new File(smokeRoot, "evidence/${DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())}")
+        evidence.mkdirs()
+        def sha = { File input -> java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString() }
+        def sources = fileTree(projectDir) { include 'src/**', 'gradle/**', 'build.gradle', 'settings.gradle', 'gradle.properties' }.files
+        new File(evidence, 'source-state.json').setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(
+                sources.collectEntries { [(project.relativePath(it).replace('\\', '/')): sha(it)] })), 'UTF-8')
+        ['phase-one', 'phase-two'].each { phase ->
+            File serverStatus = new File(evidence, "server-${phase}.status")
+            File clientStatus = new File(evidence, "client-${phase}.status")
+            File serverLog = new File(evidence, "server-${phase}.log")
+            File clientLog = new File(evidence, "client-${phase}.log")
+            Process server = null; Process client = null
+            try {
+                server = start('runServer', phase, serverStatus, new File(evidence, 'unused-server'), new File(evidence, 'unused-client'), serverLog)
+                waitFor(server, serverStatus, 'PASS server-ready', serverLog, 180)
+                client = start('runClient', phase, clientStatus, new File(evidence, 'unused-server'), new File(evidence, 'unused-client'), clientLog)
+                waitFor(client, clientStatus, "FINISHED ${phase}", clientLog, 180)
+                if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) throw new GradleException("Client failed:\n${tailUtf8(clientLog)}")
+                waitFor(server, serverStatus, "FINISHED ${phase}", serverLog, 30)
+                if (!server.waitFor(60, TimeUnit.SECONDS) || server.exitValue() != 0) throw new GradleException("Server failed:\n${tailUtf8(serverLog)}")
+                def markers = ['PASS remote-login', 'PASS notification-client-ready',
+                    phase == 'phase-one' ? 'PASS notification-regions queue=8' : 'PASS notification-region-restart',
+                    phase == 'phase-one' ? 'PASS notification-read-ui' : 'PASS notification-read-restart']
+                if (phase == 'phase-two') markers.add('PASS vanilla-notification-details-client entries=256 pages=5')
+                markers.each { if (!readUtf8(clientStatus).contains(it)) throw new GradleException("Missing notification marker: ${it}") }
+                ['PASS notification-only-server', 'PASS server-shutdown'].each {
+                    if (!readUtf8(serverStatus).contains(it)) throw new GradleException("Missing server marker: ${it}")
+                }
+                String combined = readUtf8(serverStatus) + readUtf8(clientStatus)
+                ['spark-profiler-active', 'generated-config-view', 'forge-config-', 'sustained-workload', 'PASS file-operation', 'PASS player-data-file'].each {
+                    if (combined.contains(it)) throw new GradleException("Unrelated workload ran in notification suite: ${it}")
+                }
+            } finally { destroy(client); destroy(server) }
+        }
+        logger.lifecycle("Banira notification smoke FINISHED: ${evidence}")
     }
 }

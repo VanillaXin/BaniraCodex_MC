@@ -86,14 +86,20 @@ final class JaninoCompiler {
                     throw new IllegalArgumentException("Entrypoint must be a public concrete implementation of the contract");
                 }
                 Constructor<? extends T> constructor = type.asSubclass(contract).getConstructor();
-                factories.put(group.getId(), () -> {
-                    checkAccess.run();
-                    try {
-                        T instance = constructor.newInstance();
+                factories.put(group.getId(), new ScriptFactory<T>() {
+                    @Override public Class<? extends T> entryType() {
                         checkAccess.run();
-                        return instance;
-                    } catch (ReflectiveOperationException | RuntimeException | LinkageError error) {
-                        throw failure(group, "instantiate", error);
+                        return constructor.getDeclaringClass();
+                    }
+                    @Override public T create() {
+                        checkAccess.run();
+                        try {
+                            T instance = constructor.newInstance();
+                            checkAccess.run();
+                            return instance;
+                        } catch (ReflectiveOperationException | RuntimeException | LinkageError error) {
+                            throw failure(group, "instantiate", error);
+                        }
                     }
                 });
             } catch (ReflectiveOperationException | RuntimeException | LinkageError error) {

@@ -42,6 +42,10 @@ public class ScriptFactorySessionTest {
             assertEquals(0, CONSTRUCTIONS.get());
             assertTrue(session.publish(prepared));
             ScriptFactory<Counter> factory = session.active().get("a");
+            assertEquals(NS + "Task", factory.entryType().getName());
+            assertTrue(Counter.class.isAssignableFrom(factory.entryType()));
+            assertEquals(0, INITIALIZATIONS.get());
+            assertEquals(0, CONSTRUCTIONS.get());
             Counter a = factory.create();
             Counter b = factory.create();
             assertNotSame(a, b);
@@ -86,9 +90,12 @@ public class ScriptFactorySessionTest {
         try {
             ScriptFactory<Counter> factory = prepare(session, owner, group("a", "Task", "")).scripts().get("a");
             assertFailure(CompletableFuture.supplyAsync(factory::create));
+            assertFailure(CompletableFuture.supplyAsync(factory::entryType));
             assertEquals(1, factory.create().next());
             session.close();
             try { factory.create(); fail("Closed factory accepted"); }
+            catch (IllegalStateException expected) { }
+            try { factory.entryType(); fail("Closed factory type accepted"); }
             catch (IllegalStateException expected) { }
         } finally { session.close(); }
     }

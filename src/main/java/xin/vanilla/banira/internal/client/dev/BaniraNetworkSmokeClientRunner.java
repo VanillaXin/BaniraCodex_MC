@@ -42,18 +42,22 @@ public final class BaniraNetworkSmokeClientRunner {
 
     public static void tick(Minecraft client) {
         if (!BaniraNetworkSmokeStatus.enabled() || finished) return;
-        if ("notification-ui".equals(BaniraNetworkSmokeStatus.phase())
+        if ("tooltip-ui".equals(BaniraNetworkSmokeStatus.phase())
+                || "notification-ui".equals(BaniraNetworkSmokeStatus.phase())
                 || "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase())) {
             if (client.getOverlay() != null || ++ticks < 20) return;
             try {
                 boolean regionUi = "notification-region-ui".equals(BaniraNetworkSmokeStatus.phase());
-                if (regionUi ? NotificationRegionSmoke.tick(client) : NotificationReadSmoke.tick(client)) {
+                boolean complete = "tooltip-ui".equals(BaniraNetworkSmokeStatus.phase())
+                        ? TooltipTransitionSmoke.tick(client)
+                        : regionUi ? NotificationRegionSmoke.tick(client) : NotificationReadSmoke.tick(client);
+                if (complete) {
                     finished = true;
                     BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
                     client.stop();
                 }
             } catch (Exception error) {
-                fail(client, "notification UI smoke failed: " + error);
+                fail(client, "client UI smoke failed: " + error);
             }
             return;
         }

@@ -199,6 +199,62 @@ public class TooltipTransitionModelTest {
     }
 
     @Test
+    public void sameContentFlipsBelowWithoutJumpingOrShrinking() {
+        assertVerticalFlip(50, 44);
+    }
+
+    @Test
+    public void sameContentFlipsAboveWithoutJumpingOrShrinking() {
+        assertVerticalFlip(44, 50);
+    }
+
+    private void assertVerticalFlip(double fromPointerY, double toPointerY) {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS);
+        TooltipBounds from = placement(fromPointerY);
+        TooltipBounds to = placement(toPointerY);
+        model.resolve("same", from, 120, fromPointerY, 0L);
+        model.resolve("same", from, 120, fromPointerY, 100 * MS);
+
+        TooltipTransitionFrame<String> start = model.resolve("same", to, 120, toPointerY, 200 * MS);
+        assertEquals(from, start.bounds());
+        assertEquals(0.0D, start.progress(), 0.0001D);
+        TooltipBounds middle = model.resolve("same", to, 120, toPointerY, 250 * MS).bounds();
+        assertTrue(middle.y() > Math.min(from.y(), to.y()));
+        assertTrue(middle.y() < Math.max(from.y(), to.y()));
+        assertEquals(to.width(), middle.width(), 0.0001D);
+        assertEquals(to.height(), middle.height(), 0.0001D);
+        assertEquals(to, model.resolve("same", to, 120, toPointerY, 300 * MS).bounds());
+    }
+
+    @Test
+    public void reversingVerticalFlipStartsAtTheCurrentVisiblePosition() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS);
+        model.resolve("same", placement(50), 120, 50, 0L);
+        model.resolve("same", placement(44), 120, 44, 200 * MS);
+        TooltipBounds middle = model.resolve("same", placement(44), 120, 44, 240 * MS).bounds();
+
+        assertEquals(middle, model.resolve("same", placement(50), 120, 50, 240 * MS).bounds());
+        assertEquals(placement(50), model.resolve("same", placement(50), 120, 50, 340 * MS).bounds());
+    }
+
+    @Test
+    public void followingPointerDuringFlipKeepsItsOriginalDeadline() {
+        TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 100 * MS);
+        model.resolve("same", placement(50), 120, 50, 0L);
+        model.resolve("same", placement(44), 120, 44, 200 * MS);
+        TooltipTransitionFrame<String> before = model.resolve("same", placement(44), 120, 44, 240 * MS);
+        TooltipTransitionFrame<String> moved = model.resolve("same", placement(43), 120, 43, 240 * MS);
+
+        assertEquals(before.bounds().translate(0, -1), moved.bounds());
+        assertEquals(before.progress(), moved.progress(), 0.0001D);
+        assertEquals(placement(43), model.resolve("same", placement(43), 120, 43, 300 * MS).bounds());
+    }
+
+    private static TooltipBounds placement(double pointerY) {
+        return TooltipPlacement.place(120, pointerY, 80, 36, 240, 180, 4, 4, 4, 4);
+    }
+
+    @Test
     public void briefMissingFrameKeepsContinuityButLongGapResets() {
         TooltipTransitionModel<String> model = new TooltipTransitionModel<>(100 * MS, 40 * MS);
         TooltipBounds a = new TooltipBounds(0, 0, 40, 20);

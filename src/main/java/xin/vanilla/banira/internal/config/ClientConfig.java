@@ -1,5 +1,12 @@
 package xin.vanilla.banira.internal.config;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import xin.vanilla.banira.common.enums.EnumNotificationHudMode;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -43,6 +50,14 @@ public class ClientConfig implements ConfigData {
     @ConfigEntry.BoundedDiscrete(min = 1, max = 10000)
     private int notificationLogMaxEntries = 500;
 
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "未读通知 HUD", en_us = "Unread notification HUD")
+    private NotificationHudCategory notificationHud = new NotificationHudCategory();
+
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域\n重叠区域共享空间，无法放下的气泡等待显示", en_us = "Notification regions\nOverlapping regions share space; bubbles wait until space is available")
+    private NotificationRegionsCategory notificationRegions = new NotificationRegionsCategory();
+
     @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：相同类型且内容一致时，\n在此时间窗（毫秒）内到达的重复项合并为一条并显示次数\n0 关闭合并",
             en_us = "HUD notifications: duplicate same type + content within this window (ms) merge into one with a count; 0 disables.")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 60000)
@@ -77,6 +92,96 @@ public class ClientConfig implements ConfigData {
 
     public static ClientConfigView get() {
         return ClientConfigView.get();
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class NotificationHudCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式\n无未读通知时隐藏", en_us = "Display mode\nHidden when no notifications are unread")
+        private EnumNotificationHudMode mode = EnumNotificationHudMode.HOLD;
+
+        @ConfigEntry.Gui.KeyChords
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示按键\n点击录入组合键，不拦截原版按键行为", en_us = "Display shortcuts\nCapture a key combination; vanilla key actions remain available")
+        private List<String> keys = new ArrayList<>(Arrays.asList("Tab"));
+
+        @ConfigEntry.BoundedDouble(min = 0, max = 1, decimalPlaces = 3)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "水平位置\n0为最左侧，1为最右侧", en_us = "Horizontal position\n0 is left; 1 is right")
+        private double x = 0;
+
+        @ConfigEntry.BoundedDouble(min = 0, max = 1, decimalPlaces = 3)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "垂直位置\n0为顶部，1为底部", en_us = "Vertical position\n0 is top; 1 is bottom")
+        private double y = .5;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class NotificationRegionCategory {
+        @ConfigEntry.BoundedDiscrete(min = 10, max = 100)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "区域宽度，占屏幕宽度的百分比", en_us = "Region width as a percentage of the screen")
+        private int widthPercent = 30;
+
+        @ConfigEntry.BoundedDiscrete(min = 10, max = 100)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "区域高度，占屏幕高度的百分比", en_us = "Region height as a percentage of the screen")
+        private int heightPercent = 32;
+
+        @ConfigEntry.BoundedDiscrete(min = 1, max = 10)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "此区域同时显示的气泡上限", en_us = "Maximum visible bubbles in this region")
+        private int visibleLimit = 3;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class NotificationRegionsCategory {
+        @ConfigEntry.BoundedDiscrete(min = 1, max = 20)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "全部区域同时显示的气泡上限", en_us = "Maximum visible bubbles across all regions")
+        private int visibleLimit = 6;
+
+        @ConfigEntry.BoundedDiscrete(min = 1, max = 500)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "浮层队列上限，包含正在显示的气泡\n满载时新消息只记入历史和未读数量", en_us = "Overlay queue capacity, including visible bubbles\nWhen full, new messages still enter history and unread counts")
+        private int queueLimit = 64;
+
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 64)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "区域与屏幕边缘的间距", en_us = "Margin between notification regions and screen edges")
+        private int margin = 6;
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "左上", en_us = "Top left")
+        private NotificationRegionCategory topLeft = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "顶部居中", en_us = "Top center")
+        private NotificationRegionCategory topCenter = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "右上", en_us = "Top right")
+        private NotificationRegionCategory topRight = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "左侧居中", en_us = "Left center")
+        private NotificationRegionCategory leftCenter = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "中心", en_us = "Center")
+        private NotificationRegionCategory center = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "右侧居中", en_us = "Right center")
+        private NotificationRegionCategory rightCenter = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "左下", en_us = "Bottom left")
+        private NotificationRegionCategory bottomLeft = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "底部居中", en_us = "Bottom center")
+        private NotificationRegionCategory bottomCenter = new NotificationRegionCategory();
+
+        @ConfigEntry.Gui.CollapsibleObject
+        @ConfigEntry.Gui.Tooltip(zh_cn = "右下", en_us = "Bottom right")
+        private NotificationRegionCategory bottomRight = new NotificationRegionCategory();
     }
 
 }

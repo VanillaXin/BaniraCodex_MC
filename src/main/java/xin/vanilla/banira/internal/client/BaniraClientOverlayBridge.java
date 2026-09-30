@@ -43,6 +43,7 @@ public final class BaniraClientOverlayBridge {
 
     public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
         NotificationManager.get().render(graphics);
+        xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }
 
     public static void tickScreenInteraction(@Nonnull Screen screen, double mouseX, double mouseY) {

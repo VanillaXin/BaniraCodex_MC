@@ -49,7 +49,7 @@ public final class ForgeConfigSmoke {
     private ForgeConfigSmoke() { }
 
     public static void register(IEventBus bus) {
-        if (!BaniraNetworkSmokeStatus.enabled()) return;
+        if (!BaniraNetworkSmokeStatus.enabled() || BaniraNetworkSmokeStatus.notificationsOnly()) return;
         bus.addListener((ModConfigEvent.Loading event) -> CONFIGS.put(event.getConfig().getFileName(), event.getConfig()));
         ForgeConfigAdapter.register(ServerFixture.class, "banira_codex");
         bus.addListener((ModConfigEvent.Unloading event) -> {

@@ -11,6 +11,14 @@ final class NotificationAnimationState {
     private long holdUntil = -1L;
     private long mergeStartedAt = -1L;
     private double mergeStartVisibility = 1.0D;
+    private long dismissedAt = -1L;
+    private double dismissVisibility;
+
+    void dismiss(long nowMs, long animationTimeMs) {
+        if (dismissedAt >= 0L) return;
+        dismissVisibility = clamp01(visibility(nowMs, animationTimeMs));
+        dismissedAt = nowMs;
+    }
 
     boolean started() {
         return startedAt >= 0L;
@@ -25,7 +33,7 @@ final class NotificationAnimationState {
     }
 
     void merge(long nowMs, long durationTimeMs, long animationTimeMs) {
-        if (!started()) {
+        if (!started() || dismissedAt >= 0L) {
             return;
         }
         double currentVisibility = visibility(nowMs, animationTimeMs);
@@ -40,6 +48,12 @@ final class NotificationAnimationState {
     }
 
     double visibility(long nowMs, long animationTimeMs) {
+        if (dismissedAt >= 0L) {
+            long elapsed = nowMs - dismissedAt;
+            long duration = nonNegative(animationTimeMs);
+            return duration == 0L || elapsed > duration ? -1.0D
+                    : dismissVisibility * clamp01(1.0D - elapsed / (double) duration);
+        }
         if (!started()) {
             return 0.0D;
         }

@@ -7,7 +7,7 @@ import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
 
 /**
  * 将无界面通知注册为 Forge 1.21.1 HUD 的最上层。
@@ -24,7 +24,7 @@ public final class ForgeNotificationLayerRegistrar {
     public static void onAddGuiLayers(AddGuiOverlayLayersEvent event) {
         event.getLayeredDraw().add(NOTIFICATION_LAYER, (graphics, deltaTracker) -> {
             if (Minecraft.getInstance().screen == null) {
-                NotificationManager.get().render(graphics);
+                BaniraClientOverlayBridge.renderHudOverlay(graphics);
             }
         });
     }

@@ -59,8 +59,18 @@ public final class BaniraNetworkSmokeServerRunner {
             if (finished) { shutdownWhenIdle(server); return; }
             if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
-            if (!xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(false)) return;
+            if (!BaniraNetworkSmokeStatus.notificationsOnly()
+                    && !xin.vanilla.banira.internal.forge.config.ForgeConfigSmoke.tick(false)) return;
             ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+            if (BaniraNetworkSmokeStatus.notificationsOnly()) {
+                if (eventTicks % 10 != 0 || !BaniraNetworkSmokeStatus.notificationClientReady()) return;
+                if (!xin.vanilla.banira.common.util.PlayerUtils.isRemoteClientModInstalled(player, xin.vanilla.banira.api.Banira.MOD_ID)) return;
+                if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) sendVanillaNotificationBatch(player);
+                BaniraNetworkSmokeStatus.append("PASS notification-only-server");
+                BaniraNetworkSmokeStatus.append("FINISHED " + BaniraNetworkSmokeStatus.phase());
+                finished = true;
+                return;
+            }
             if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) firstPhase(server, player);
             else if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) secondPhase(player);
             else throw new IllegalStateException("Unknown smoke phase " + BaniraNetworkSmokeStatus.phase());

@@ -34,4 +34,11 @@ public final class BaniraClientScreenService {
             ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(configName);
         }
     }
+
+    public static void applyRemoteConfigSnapshot(String configName, java.util.Map<String, Object> snapshot) {
+        Screen open = Minecraft.getInstance().screen;
+        if (open instanceof ConfigEditorScreen) {
+            ((ConfigEditorScreen) open).applyRemoteSnapshot(configName, snapshot);
+        }
+    }
 }

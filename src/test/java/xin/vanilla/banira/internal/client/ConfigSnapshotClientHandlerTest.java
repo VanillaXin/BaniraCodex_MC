@@ -20,9 +20,10 @@ public class ConfigSnapshotClientHandlerTest {
                 .valueType(ConfigEntryDescriptor.ConfigValueType.STRING_LIST)
                 .defaultValue(Collections.emptyList()).build();
         ConfigHolder holder = holder(values, descriptor);
-        ConfigSnapshotClientHandler.applyValidatedSnapshot(holder,
+        Map<String, Object> remote = ConfigSnapshotClientHandler.decodeValidatedSnapshot(holder,
                 Collections.singletonMap("rules", "[\"script:serverOnly\",\"minecraft:arrow\"]"));
-        assertEquals(Arrays.asList("script:serverOnly", "minecraft:arrow"), values.get("rules"));
+        assertEquals(Arrays.asList("script:serverOnly", "minecraft:arrow"), remote.get("rules"));
+        assertEquals(Collections.emptyList(), values.get("rules"));
     }
 
     @Test
@@ -39,7 +40,7 @@ public class ConfigSnapshotClientHandlerTest {
         snapshot.put("second", "99");
 
         try {
-            ConfigSnapshotClientHandler.applyValidatedSnapshot(holder, snapshot);
+            ConfigSnapshotClientHandler.decodeValidatedSnapshot(holder, snapshot);
             fail("expected invalid snapshot value");
         } catch (IllegalArgumentException expected) {
             assertEquals(Integer.valueOf(1), values.get("first"));
@@ -48,7 +49,7 @@ public class ConfigSnapshotClientHandlerTest {
     }
 
     @Test
-    public void validSnapshotAppliesTogether() {
+    public void validSnapshotDecodesTogetherWithoutChangingLocalValues() {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("first", 1);
         values.put("enabled", Boolean.FALSE);
@@ -60,10 +61,11 @@ public class ConfigSnapshotClientHandlerTest {
         snapshot.put("first", "7");
         snapshot.put("enabled", "true");
 
-        ConfigSnapshotClientHandler.applyValidatedSnapshot(holder, snapshot);
-
-        assertEquals(Integer.valueOf(7), values.get("first"));
-        assertEquals(Boolean.TRUE, values.get("enabled"));
+        Map<String, Object> remote = ConfigSnapshotClientHandler.decodeValidatedSnapshot(holder, snapshot);
+        assertEquals(Integer.valueOf(7), remote.get("first"));
+        assertEquals(Boolean.TRUE, remote.get("enabled"));
+        assertEquals(Integer.valueOf(1), values.get("first"));
+        assertEquals(Boolean.FALSE, values.get("enabled"));
     }
 
     private static ConfigHolder holder(Map<String, Object> values, ConfigEntryDescriptor... descriptors) {

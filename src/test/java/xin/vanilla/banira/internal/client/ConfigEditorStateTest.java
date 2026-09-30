@@ -117,6 +117,8 @@ public class ConfigEditorStateTest {
             values.put(path, value);
         }
 
+        @Override public void setAll(Map<String, Object> changes) { values.putAll(changes); }
+
         @Override
         public Class<?> valueClass(String path) {
             Object value = values.get(path);

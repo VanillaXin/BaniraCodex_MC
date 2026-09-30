@@ -13,6 +13,18 @@ import static org.junit.Assert.*;
 
 public class ConfigSnapshotClientHandlerTest {
 
+    @Test public void serverRuleReferencesDisplayWithoutALocalScriptCatalog() {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("rules", Collections.emptyList());
+        ConfigEntryDescriptor descriptor = ConfigEntryDescriptor.builder().path("rules")
+                .valueType(ConfigEntryDescriptor.ConfigValueType.STRING_LIST)
+                .defaultValue(Collections.emptyList()).build();
+        ConfigHolder holder = holder(values, descriptor);
+        ConfigSnapshotClientHandler.applyValidatedSnapshot(holder,
+                Collections.singletonMap("rules", "[\"script:serverOnly\",\"minecraft:arrow\"]"));
+        assertEquals(Arrays.asList("script:serverOnly", "minecraft:arrow"), values.get("rules"));
+    }
+
     @Test
     public void invalidSnapshotDoesNotPartiallyApply() {
         Map<String, Object> values = new LinkedHashMap<>();

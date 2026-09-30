@@ -286,8 +286,8 @@ public class ConfigEditorScreen extends BaniraScreen {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
-        editorState.applyModifiedToHolder();
         try {
+            editorState.applyModifiedToHolder();
             holder.save();
             editorState.markClean();
             ConfigEditorNotifier.show("config_editor_save_success", 2000);

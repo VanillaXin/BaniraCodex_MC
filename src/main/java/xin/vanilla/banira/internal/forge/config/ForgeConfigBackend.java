@@ -7,6 +7,8 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigEditSnapshot;
+import xin.vanilla.banira.common.config.ConfigCommitResult;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -96,6 +98,35 @@ final class ForgeConfigBackend implements ConfigValueStore {
     private Object valueLock() {
         ForgeConfigFile file = managedFile;
         return file != null ? file : this;
+    }
+
+    @Override
+    public ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
+        if (!values.keySet().containsAll(paths)) throw new IllegalArgumentException("Unknown config path");
+        return requireManagedFile().snapshotForEdit(paths);
+    }
+
+    @Override
+    public ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes) {
+        changes.forEach((path, value) -> {
+            if (!validate(path, value)) throw new IllegalArgumentException("Invalid config value: " + path);
+        });
+        return requireManagedFile().compareAndSetAll(expected, changes);
+    }
+
+    @Override
+    public void setAll(Map<String, Object> changes) {
+        ForgeConfigFile file = requireManagedFile();
+        ConfigEditSnapshot snapshot = file.snapshotForEdit(changes.keySet());
+        if (compareAndSetAll(snapshot, changes) == ConfigCommitResult.CONFLICT) {
+            throw new IllegalStateException("Config changed during batch edit");
+        }
+    }
+
+    private ForgeConfigFile requireManagedFile() {
+        ForgeConfigFile file = managedFile;
+        if (file == null) throw new IllegalStateException("Config file has not been bound");
+        return file;
     }
 
     @Override

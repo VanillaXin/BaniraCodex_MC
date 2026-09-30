@@ -90,9 +90,7 @@ public final class ConfigEditorState {
     }
 
     public void applyModifiedToHolder() {
-        for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
-            holder.set(e.getKey(), e.getValue());
-        }
+        holder.setAll(modifiedValues, xin.vanilla.banira.common.config.ConfigEditOrigin.UI);
     }
 
     public boolean hasInvalidEntryWidgets() {

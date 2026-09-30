@@ -14,6 +14,25 @@ import static org.junit.Assert.*;
 public class ConfigSyncToServerTest {
 
     @Test
+    public void remoteGuardRejectsEveryFieldBeforeAnyWrite() {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("first", 1);
+        values.put("second", 2);
+        ConfigHolder holder = holder(values, integerDescriptor("first", 0, 10), integerDescriptor("second", 0, 10));
+        holder.onEdit((origin, changes) -> {
+            assertEquals(xin.vanilla.banira.common.config.ConfigEditOrigin.REMOTE, origin);
+            assertEquals(2, changes.size());
+            throw new IllegalArgumentException("Local scripts only");
+        });
+        Map<String, String> changes = new LinkedHashMap<>();
+        changes.put("first", "5");
+        changes.put("second", "6");
+        assertThrows(IllegalArgumentException.class, () -> ConfigSyncToServer.applyValidatedChanges(holder, changes));
+        assertEquals(Integer.valueOf(1), values.get("first"));
+        assertEquals(Integer.valueOf(2), values.get("second"));
+    }
+
+    @Test
     public void appliesChangesOnlyAfterAllValuesValidate() {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("first", 1);
@@ -149,6 +168,8 @@ public class ConfigSyncToServerTest {
         public void set(String path, Object value) {
             values.put(path, value);
         }
+
+        @Override public void setAll(Map<String, Object> changes) { values.putAll(changes); }
 
         @Override
         public Class<?> valueClass(String path) {

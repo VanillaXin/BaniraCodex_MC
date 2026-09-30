@@ -13,6 +13,8 @@ import com.electronwill.nightconfig.core.utils.CommentedConfigWrapper;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraftforge.common.ForgeConfigSpec;
+import xin.vanilla.banira.common.config.ConfigEditSnapshot;
+import xin.vanilla.banira.common.config.ConfigCommitResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -102,7 +104,7 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
             publishExternal(parse(disk), disk);
             return;
         }
-        commit(copy(config), disk);
+        // Every mutation commits synchronously; an unchanged save has nothing left to flush.
     }
 
     private CommentedConfig parse(byte[] bytes) {
@@ -132,7 +134,7 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
             writer.write(candidate, temporary, WritingMode.REPLACE, StandardCharsets.UTF_8);
             byte[] written = Files.readAllBytes(temporary);
             if (!Arrays.equals(expectedBytes, readBytes())) {
-                throw new WritingException("Config changed during save; keeping external file: " + getNioPath());
+                throw new EditConflict("Config changed during save; keeping external file: " + getNioPath());
             }
             Files.move(temporary, getNioPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             temporary = null;
@@ -180,6 +182,49 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
     private void requireLoaded() {
         requireOpen();
         if (acceptedBytes == null) throw new IllegalStateException("Config has not been loaded: " + getNioPath());
+    }
+
+    public synchronized ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
+        requireLoaded();
+        byte[] disk = readBytes();
+        if (!Arrays.equals(disk, acceptedBytes)) {
+            throw new IllegalStateException("Reload externally changed config before taking an edit snapshot");
+        }
+        Map<String, Object> values = new LinkedHashMap<>();
+        for (String path : paths) {
+            if (!config.contains(path)) throw new IllegalArgumentException("Unknown config path: " + path);
+            values.put(path, copyValue(config.get(path)));
+        }
+        return new ConfigEditSnapshot(this, getNioPath().getFileName().toString(), disk, values);
+    }
+
+    public synchronized ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes) {
+        requireLoaded();
+        if (!expected.belongsTo(this)) throw new IllegalArgumentException("Snapshot belongs to a different file");
+        if (!expected.getValues().keySet().containsAll(changes.keySet())) {
+            throw new IllegalArgumentException("Edit includes paths outside its snapshot");
+        }
+        byte[] original = expected.getSourceBytes();
+        if (!Arrays.equals(original, acceptedBytes) || !Arrays.equals(original, readBytes())) {
+            return ConfigCommitResult.CONFLICT;
+        }
+        CommentedConfig candidate = copy(config);
+        boolean changed = false;
+        for (Map.Entry<String, Object> edit : changes.entrySet()) {
+            Object previous = candidate.set(edit.getKey(), copyValue(edit.getValue()));
+            changed |= !Objects.deepEquals(previous, edit.getValue());
+        }
+        if (!changed) return ConfigCommitResult.UNCHANGED;
+        try {
+            commit(candidate, original);
+            return ConfigCommitResult.APPLIED;
+        } catch (EditConflict conflict) {
+            return ConfigCommitResult.CONFLICT;
+        }
+    }
+
+    private static final class EditConflict extends WritingException {
+        EditConflict(String message) { super(message); }
     }
 
     @Override

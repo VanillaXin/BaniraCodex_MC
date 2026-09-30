@@ -38,9 +38,11 @@ public final class ConfigEditorSyncService {
     }
 
     public static void applyEncodedValues(ConfigHolder holder, Map<String, String> encodedPayload) {
+        Map<String, Object> changes = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : encodedPayload.entrySet()) {
-            holder.set(entry.getKey(), decodeValue(holder, entry.getKey(), entry.getValue()));
+            changes.put(entry.getKey(), decodeValue(holder, entry.getKey(), entry.getValue()));
         }
+        holder.setAll(changes, xin.vanilla.banira.common.config.ConfigEditOrigin.UI);
     }
 
     private static Object decodeValue(ConfigHolder holder, String path, String value) {

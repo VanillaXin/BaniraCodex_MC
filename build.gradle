@@ -229,7 +229,6 @@ afterEvaluate {
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）
 
 apply from: "gradle/embedded-compiler.gradle"
-apply from: "gradle/script-smoke.gradle"
 apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"

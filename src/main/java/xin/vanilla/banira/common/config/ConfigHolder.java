@@ -276,6 +276,10 @@ public class ConfigHolder implements BaniraConfigHandle {
         return valueStore.snapshotForEdit(new LinkedHashSet<>(paths));
     }
 
+    public synchronized ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        return valueStore.snapshotForRead(new LinkedHashSet<>(paths));
+    }
+
     /** Local-only backup/migration boundary. Successful changes are already persisted and notified. */
     public ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes, ConfigEditOrigin origin) {
         ConfigCommitResult result;

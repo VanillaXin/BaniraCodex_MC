@@ -51,8 +51,8 @@ public final class EntityUtils {
         if (!BaniraPlatforms.isInstalled()) {
             return null;
         }
-        String id = BaniraPlatforms.get().registryService().entityTypeKey(entityType);
-        return id != null ? ResourceLocation.tryParse(id) : null;
+        Object id = BaniraPlatforms.get().registryService().entityTypeKeyObject(entityType);
+        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
     }
 
     /**

@@ -4,11 +4,11 @@ import java.security.*;
 import java.util.*;
 
 /** Local-only file revision used for backups and compare-and-commit edits. */
-public final class ConfigEditSnapshot {
+public final class ConfigEditSnapshot implements ConfigReadSnapshot {
     private final Object owner;
     private final String fileName;
     private final byte[] sourceBytes;
-    private final String revision;
+    private volatile String revision;
     private final Map<String, Object> values;
 
     public ConfigEditSnapshot(Object owner, String fileName, byte[] sourceBytes, Map<String, Object> values) {
@@ -16,18 +16,27 @@ public final class ConfigEditSnapshot {
         this.fileName = Objects.requireNonNull(fileName, "fileName");
         this.sourceBytes = sourceBytes.clone();
         this.values = immutableValues(values);
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(this.sourceBytes);
-            StringBuilder hex = new StringBuilder(64);
-            for (byte b : hash) hex.append(String.format(Locale.ROOT, "%02x", b & 255));
-            revision = hex.toString();
-        } catch (NoSuchAlgorithmException error) { throw new IllegalStateException(error); }
     }
 
     public boolean belongsTo(Object owner) { return this.owner == owner; }
     public String getFileName() { return fileName; }
     public byte[] getSourceBytes() { return sourceBytes.clone(); }
-    public String getRevision() { return revision; }
+    public String getRevision() {
+        String result = revision;
+        if (result != null) return result;
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(this.sourceBytes);
+            char[] hex = new char[hash.length * 2];
+            String digits = "0123456789abcdef";
+            for (int i = 0; i < hash.length; i++) {
+                hex[i * 2] = digits.charAt((hash[i] & 255) >>> 4);
+                hex[i * 2 + 1] = digits.charAt(hash[i] & 15);
+            }
+            result = new String(hex);
+            revision = result;
+            return result;
+        } catch (NoSuchAlgorithmException error) { throw new IllegalStateException(error); }
+    }
     public Map<String, Object> getValues() { return values; }
 
     static Map<String, Object> immutableValues(Map<String, Object> values) {

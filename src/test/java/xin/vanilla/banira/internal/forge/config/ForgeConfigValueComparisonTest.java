@@ -56,6 +56,38 @@ public class ForgeConfigValueComparisonTest {
 
     private enum Mode { ALL, NONE }
 
+    @Test public void readSnapshotsCaptureNativeValuesAndRejectClosedFiles() throws Exception {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ForgeConfigSpec.ConfigValue<List<? extends String>> rules = builder.defineList("rules", Collections.singletonList("initial"), v -> v instanceof String);
+        ForgeConfigSpec spec = builder.build();
+        ForgeConfigBackend backend = new ForgeConfigBackend(spec, Collections.singletonMap("rules", rules));
+        ConfigHolder holder = ConfigHolder.create("test", "read", ConfigScope.COMMON, backend,
+                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+        backend.setHolder(holder);
+        CommentedFileConfig file = backend.wrap(CommentedFileConfig.of(temporary.newFile("read.toml")));
+        try {
+            file.load(); spec.setConfig(file); holder.acceptInitialExternalLoad(); file.save();
+            rules.set(new ArrayList<>(Collections.singletonList("unsaved")));
+            byte[] before = Files.readAllBytes(file.getNioPath());
+            ConfigReadSnapshot read = holder.snapshotForRead(Collections.singleton("rules"));
+            ((List<String>) rules.get()).set(0, "later");
+            assertEquals(Collections.singletonList("unsaved"), read.getValues().get("rules"));
+            assertEquals(Collections.singletonList("later"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
+            assertArrayEquals(before, Files.readAllBytes(file.getNioPath()));
+            // Runtime capture depends on memory; disk changes still require the normal reload.
+            Files.write(file.getNioPath(), "rules=[\"external\"]\n".getBytes(StandardCharsets.UTF_8));
+            assertThrows(IllegalStateException.class, () -> holder.snapshotForEdit(Collections.singleton("rules")));
+            assertEquals(Collections.singletonList("later"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
+            file.load();
+            assertEquals(Collections.singletonList("external"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
+            file.close();
+            assertThrows(IllegalStateException.class, () -> holder.snapshotForRead(Collections.singleton("rules")));
+            file = backend.wrap(CommentedFileConfig.of(temporary.newFile("read-replacement.toml")));
+            file.load(); spec.setConfig(file); holder.acceptInitialExternalLoad();
+            assertEquals(Collections.singletonList("initial"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
+        } finally { file.close(); }
+    }
+
     @Test public void comparesLiveStoredValuesWithoutCopyingOrExposingLists() throws Exception {
         List<String> expected = new ArrayList<>();
         for (int i = 0; i < 1024; i++) expected.add("rule:" + i);

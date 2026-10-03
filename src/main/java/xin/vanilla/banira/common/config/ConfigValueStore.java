@@ -43,6 +43,15 @@ public interface ConfigValueStore {
         throw new UnsupportedOperationException("Local config snapshots are not supported");
     }
 
+    default ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        Map<String, Object> values = new java.util.LinkedHashMap<>();
+        for (String path : paths) {
+            if (!paths().contains(path)) throw new IllegalArgumentException("Unknown config path: " + path);
+            values.put(path, get(path));
+        }
+        return ConfigReadSnapshot.of(values);
+    }
+
     default ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes) {
         throw new UnsupportedOperationException("Compare-and-commit config edits are not supported");
     }

@@ -9,6 +9,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class ConfigHolderSavedListenerTest {
+    @Test public void readSnapshotFreezesMemoryValuesWithoutAnEditBackend() {
+        MapStore store = new MapStore();
+        List<String> original = new ArrayList<>(Arrays.asList("a,b", "c"));
+        store.values.put("rules", original);
+        ConfigHolder holder = holder(store);
+        ConfigReadSnapshot first = holder.snapshotForRead(Collections.singleton("rules"));
+        original.set(0, "changed");
+        assertEquals(Arrays.asList("a,b", "c"), first.getValues().get("rules"));
+        assertEquals(Arrays.asList("changed", "c"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
+        assertThrows(UnsupportedOperationException.class, () -> first.getValues().clear());
+        assertThrows(UnsupportedOperationException.class, () -> ((List<?>) first.getValues().get("rules")).clear());
+        assertThrows(IllegalArgumentException.class, () -> holder.snapshotForRead(Collections.singleton("missing")));
+    }
 
     @Test public void preparedGenericComparisonPreservesOrderingNestedValuesAndOptInEnumNames() {
         MapStore store = new MapStore();

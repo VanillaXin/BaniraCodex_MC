@@ -10,6 +10,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigEditSnapshot;
 import xin.vanilla.banira.common.config.ConfigCommitResult;
 import xin.vanilla.banira.common.config.ConfigValueExpectation;
+import xin.vanilla.banira.common.config.ConfigReadSnapshot;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -139,6 +140,25 @@ final class ForgeConfigBackend implements ConfigValueStore {
     public ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
         if (!values.keySet().containsAll(paths)) throw new IllegalArgumentException("Unknown config path");
         return requireManagedFile().snapshotForEdit(paths);
+    }
+
+    @Override
+    public ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        while (true) {
+            Object lock = valueLock();
+            synchronized (lock) {
+                if (lock != valueLock()) continue;
+                if (lock instanceof ForgeConfigFile && !((ForgeConfigFile) lock).isOpen())
+                    throw new IllegalStateException("Config file is closed");
+                Map<String, Object> captured = new LinkedHashMap<>();
+                for (String path : paths) {
+                    ForgeConfigSpec.ConfigValue<?> value = values.get(path);
+                    if (value == null) throw new IllegalArgumentException("Unknown config path: " + path);
+                    captured.put(path, value.get());
+                }
+                return ConfigReadSnapshot.of(captured);
+            }
+        }
     }
 
     @Override

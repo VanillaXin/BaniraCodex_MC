@@ -60,6 +60,7 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
 
     synchronized long externalRevision() { return externalRevision; }
     synchronized boolean hasLoaded() { return acceptedBytes != null; }
+    synchronized boolean isOpen() { return !closed; }
 
     public void saveOnUnload() {
         try {

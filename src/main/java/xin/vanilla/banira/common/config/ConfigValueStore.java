@@ -3,6 +3,7 @@ package xin.vanilla.banira.common.config;
 import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 /**
  * 配置值的加载器无关存取接口。
@@ -17,6 +18,18 @@ public interface ConfigValueStore {
     /** Compare stored values without exposing them; no display or runtime type conversion. */
     default boolean matchesStoredValue(String path, Object expected) {
         return paths().contains(path) && java.util.Objects.deepEquals(get(path), expected);
+    }
+
+    /** Freeze expectations once, but read current values on every call; enum names are opt-in. */
+    default BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        ConfigValueExpectation expectation = new ConfigValueExpectation(expected, allowEnumNames);
+        return () -> {
+            for (int i = 0; i < expectation.size(); i++) {
+                String path = expectation.path(i);
+                if (!paths().contains(path) || !expectation.matches(i, get(path))) return false;
+            }
+            return true;
+        };
     }
 
     void set(String path, Object value);

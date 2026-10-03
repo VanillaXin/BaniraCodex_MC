@@ -231,6 +231,12 @@ public class ConfigHolder implements BaniraConfigHandle {
         return valueStore.matchesStoredValue(path, expected);
     }
 
+    /** One holder lock covers the complete live comparison, without caching its result. */
+    public synchronized java.util.function.BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        java.util.function.BooleanSupplier match = valueStore.prepareStoredMatch(expected, allowEnumNames);
+        return () -> { synchronized (ConfigHolder.this) { return match.getAsBoolean(); } };
+    }
+
     @Override
     public synchronized void set(String path, Object value) {
         set(path, value, ConfigEditOrigin.API);

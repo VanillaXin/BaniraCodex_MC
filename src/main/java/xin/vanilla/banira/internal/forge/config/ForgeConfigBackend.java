@@ -9,15 +9,14 @@ import xin.vanilla.banira.common.config.ConfigValueStore;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigEditSnapshot;
 import xin.vanilla.banira.common.config.ConfigCommitResult;
+import xin.vanilla.banira.common.config.ConfigValueExpectation;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.List;
-import java.util.Objects;
-import java.util.RandomAccess;
+import java.util.function.BooleanSupplier;
 
 final class ForgeConfigBackend implements ConfigValueStore {
     private final ForgeConfigSpec spec;
@@ -87,19 +86,32 @@ final class ForgeConfigBackend implements ConfigValueStore {
         synchronized (valueLock()) {
             ForgeConfigSpec.ConfigValue<?> value = values.get(path);
             if (value == null) return false;
-            Object current = value.get();
-            // Java 8 AbstractList.equals allocates iterators even for immutable array-backed lists.
-            if (current instanceof List && current instanceof RandomAccess
-                    && expected instanceof List && expected instanceof RandomAccess) {
-                List<?> left = (List<?>) current, right = (List<?>) expected;
-                if (left.size() != right.size()) return false;
-                for (int i = 0; i < left.size(); i++) {
-                    if (!Objects.equals(left.get(i), right.get(i))) return false;
-                }
-                return true;
-            }
-            return Objects.deepEquals(current, expected);
+            return ConfigValueExpectation.storedEquals(value.get(), expected);
         }
+    }
+
+    @Override
+    public BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        ConfigValueExpectation expectation = new ConfigValueExpectation(expected, allowEnumNames);
+        ForgeConfigSpec.ConfigValue<?>[] handles = new ForgeConfigSpec.ConfigValue<?>[expectation.size()];
+        for (int i = 0; i < handles.length; i++) {
+            handles[i] = values.get(expectation.path(i));
+            if (handles[i] == null) return () -> false;
+        }
+        return () -> {
+            while (true) {
+                Object lock = valueLock();
+                synchronized (lock) {
+                    // Wrapping a replacement file changes the monitor; never use a retired lock.
+                    if (lock != valueLock()) continue;
+                    if (lock instanceof ForgeConfigFile && !((ForgeConfigFile) lock).isOpen()) return false;
+                    for (int i = 0; i < handles.length; i++) {
+                        if (!expectation.matches(i, handles[i].get())) return false;
+                    }
+                    return true;
+                }
+            }
+        };
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

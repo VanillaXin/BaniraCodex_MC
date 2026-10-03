@@ -10,6 +10,27 @@ import static org.junit.Assert.*;
 
 public class ConfigHolderSavedListenerTest {
 
+    @Test public void preparedGenericComparisonPreservesOrderingNestedValuesAndOptInEnumNames() {
+        MapStore store = new MapStore();
+        List<Object> nested = new ArrayList<>(Arrays.asList("a", new ArrayList<>(Arrays.asList("b", "c"))));
+        store.values.put("rules", nested);
+        store.values.put("mode", "COMMON");
+        ConfigHolder holder = holder(store);
+        Map<String, Object> expected = new LinkedHashMap<>();
+        expected.put("rules", nested); expected.put("mode", ConfigScope.COMMON);
+        java.util.function.BooleanSupplier match = holder.prepareStoredMatch(expected, true);
+        assertTrue(match.getAsBoolean());
+        assertFalse(holder.prepareStoredMatch(expected, false).getAsBoolean());
+        assertFalse(holder.matchesStoredValue("mode", ConfigScope.COMMON));
+        expected.clear();
+        ((List<String>) nested.get(1)).set(0, "changed");
+        assertFalse(match.getAsBoolean());
+        ((List<String>) nested.get(1)).set(0, "b"); assertTrue(match.getAsBoolean());
+        Collections.swap((List<?>) nested.get(1), 0, 1); assertFalse(match.getAsBoolean());
+        Collections.swap((List<?>) nested.get(1), 0, 1); assertTrue(match.getAsBoolean());
+        store.values.remove("mode"); assertFalse(match.getAsBoolean());
+    }
+
     @Test
     public void reportsChangedPathsOnlyAfterSuccessfulSave() {
         MapStore store = new MapStore();

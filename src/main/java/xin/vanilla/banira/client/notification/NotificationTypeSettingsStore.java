@@ -238,7 +238,9 @@ public final class NotificationTypeSettingsStore {
          * 收到网络通知时的客户端展示方式
          */
         private EnumNotificationTypeDisplayMode displayMode = EnumNotificationTypeDisplayMode.OVERLAY;
-        /** 玩家是否在通知类型管理界面明确保存过该展示方式。 */
+        /**
+         * 玩家是否在通知类型管理界面明确保存过该展示方式。
+         */
         private boolean displayModeCustomized;
     }
 }

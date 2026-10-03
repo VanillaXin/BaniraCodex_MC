@@ -8,7 +8,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompatibility;
 
-/** 在接管模式下屏蔽 IPN 设置与编辑器按钮的原生绘制。 */
+/**
+ * 在接管模式下屏蔽 IPN 设置与编辑器按钮的原生绘制。
+ */
 @Pseudo
 @Mixin(targets = "org.anti_ad.mc.ipnext.gui.inject.base.SortButtonWidget", remap = false)
 public abstract class IpnButtonMixin {

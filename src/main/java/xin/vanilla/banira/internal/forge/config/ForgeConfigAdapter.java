@@ -1,14 +1,12 @@
 package xin.vanilla.banira.internal.forge.config;
 
-import xin.vanilla.banira.api.BaniraConfigs;
-
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;

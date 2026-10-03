@@ -234,7 +234,9 @@ public final class ColorUtils {
         return result;
     }
 
-    /** 对纹理文字区域的多个代表背景色应用同一套富文本和旧格式码规则。 */
+    /**
+     * 对纹理文字区域的多个代表背景色应用同一套富文本和旧格式码规则。
+     */
     public static ITextComponent readableVanillaComponentCopy(
             ITextComponent component, int[] backgroundArgb) {
         if (component == null) {

@@ -2,7 +2,9 @@ package xin.vanilla.banira.common.config;
 
 import java.util.Map;
 
-/** Frozen runtime values without file revisions or edit authority. */
+/**
+ * Frozen runtime values without file revisions or edit authority.
+ */
 public interface ConfigReadSnapshot {
     Map<String, Object> getValues();
 

@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** 自定义快捷入口右键菜单中的无图标动作项。 */
+/**
+ * 自定义快捷入口右键菜单中的无图标动作项。
+ */
 @Data
 @Accessors(chain = true)
 public class CustomQuickActionMenuItem {

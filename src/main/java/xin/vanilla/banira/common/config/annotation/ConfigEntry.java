@@ -39,12 +39,14 @@ public @interface ConfigEntry {
 
         EmptyPolicy emptyString() default EmptyPolicy.KEEP;
 
-        /** Enum parser must be a public static method accepting Object. */
+        /**
+         * Enum parser must be a public static method accepting Object.
+         */
         String enumParser() default "";
 
-        enum NullPolicy { DEFAULT, KEEP }
+        enum NullPolicy {DEFAULT, KEEP}
 
-        enum EmptyPolicy { KEEP, DEFAULT }
+        enum EmptyPolicy {KEEP, DEFAULT}
     }
 
     /**
@@ -208,7 +210,9 @@ public @interface ConfigEntry {
         @interface CollapsibleObject {
         }
 
-        /** 将字符串列表作为组合键列表编辑，界面通过实际按键捕获内容。 */
+        /**
+         * 将字符串列表作为组合键列表编辑，界面通过实际按键捕获内容。
+         */
         @Retention(RetentionPolicy.RUNTIME)
         @Target(ElementType.FIELD)
         @interface KeyChords {

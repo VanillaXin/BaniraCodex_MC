@@ -1326,7 +1326,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         return "";
     }
 
-    /** 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。 */
+    /**
+     * 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。
+     */
     private String displayValue(String rawValue) {
         return password ? mask(rawValue.length()) : rawValue;
     }

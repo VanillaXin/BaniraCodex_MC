@@ -13,11 +13,11 @@ import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.internal.forge.client.ForgeBaniraClientBootstrap;
 import xin.vanilla.banira.internal.forge.event.ForgeBaniraEventBridge;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraPlatform;
 import xin.vanilla.banira.internal.network.NetworkInit;
+import xin.vanilla.banira.internal.server.dev.BaniraNetworkSmokeServerRunner;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 @Mod(BaniraCodex.MODID)

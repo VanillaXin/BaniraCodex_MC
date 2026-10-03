@@ -16,23 +16,16 @@ import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryActionProvider;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
-import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+import xin.vanilla.banira.client.gui.quickaction.*;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
-/** Forge 1.16.5 FTB Library 侧边栏与 Banira 快捷入口之间的双向桥。 */
+/**
+ * Forge 1.16.5 FTB Library 侧边栏与 Banira 快捷入口之间的双向桥。
+ */
 public final class FtbLibraryCompatibility implements ExternalInventoryButtonManager.FtbHostBridge {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final ResourceLocation GROUP_ID =
@@ -101,12 +94,16 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
         }
     }
 
-    /** 清除 FTB 留给侧边按钮的区域，使 JEI 收藏区重新使用完整高度。 */
+    /**
+     * 清除 FTB 留给侧边按钮的区域，使 JEI 收藏区重新使用完整高度。
+     */
     public static void clearReservedArea() {
         SidebarGroupGuiButton.lastDrawnArea = new Rectangle2d(0, 0, 0, 0);
     }
 
-    /** 返回 true 表示该按钮属于 Banira 动态组，调用方应取消 FTB 原处理。 */
+    /**
+     * 返回 true 表示该按钮属于 Banira 动态组，调用方应取消 FTB 原处理。
+     */
     public static boolean activateHostedButton(Object value, boolean shiftDown) {
         if (!(value instanceof SidebarButton)) return false;
         ExternalInventoryAction action = HOSTED_ACTIONS.get(((SidebarButton) value).id);

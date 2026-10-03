@@ -21,7 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** Opt-in client-only check of the real popup renderer at deterministic animation times. */
+/**
+ * Opt-in client-only check of the real popup renderer at deterministic animation times.
+ */
 final class TooltipTransitionSmoke extends Screen {
     private static TooltipTransitionSmoke screen;
     private int stage;

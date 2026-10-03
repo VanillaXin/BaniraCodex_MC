@@ -7,7 +7,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompatibility;
 
-/** 在接管模式下让已隐藏的 IPN 按钮不再占用鼠标命中区域。 */
+/**
+ * 在接管模式下让已隐藏的 IPN 按钮不再占用鼠标命中区域。
+ */
 @Pseudo
 @Mixin(targets = "org.anti_ad.mc.ipnext.gui.inject.base.ProfileButtonWidget", remap = false)
 public abstract class IpnProfileButtonClickMixin {

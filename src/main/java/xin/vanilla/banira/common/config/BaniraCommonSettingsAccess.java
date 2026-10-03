@@ -1,8 +1,7 @@
 package xin.vanilla.banira.common.config;
 
-import xin.vanilla.banira.api.BaniraConfigs;
-
 import xin.vanilla.banira.api.BaniraCommonSettings;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CommonConfigView;
 

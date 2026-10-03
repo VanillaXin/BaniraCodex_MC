@@ -17,15 +17,14 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.quickaction.*;
-import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.client.util.InputStateManager;
-import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
@@ -37,13 +36,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
-/** 加载、注册并执行玩家自定义快捷入口。 */
+/**
+ * 加载、注册并执行玩家自定义快捷入口。
+ */
 public final class CustomQuickActionManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final CustomQuickActionManager INSTANCE = new CustomQuickActionManager();
     private static final String FILE_NAME = "quick_actions.json";
     private static final String ENTRY_PREFIX = BaniraCodex.MODID + ":custom/";
-    private static final Type DEFINITION_LIST = new TypeToken<List<CustomQuickActionDefinition>>() { }.getType();
+    private static final Type DEFINITION_LIST = new TypeToken<List<CustomQuickActionDefinition>>() {
+    }.getType();
 
     private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
     private final Set<String> registeredIds = new HashSet<>();

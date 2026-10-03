@@ -20,7 +20,9 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
-/** Forge 1.16.5 Inventory Profiles Next 设置与布局编辑入口兼容桥。 */
+/**
+ * Forge 1.16.5 Inventory Profiles Next 设置与布局编辑入口兼容桥。
+ */
 public final class InventoryProfilesNextCompatibility {
     public static final String SOURCE_ID = "inventory_profiles_next";
     private static final ResourceLocation BUTTON_TEXTURE = new ResourceLocation(

@@ -19,11 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class TextureUtils {
@@ -192,7 +188,9 @@ public final class TextureUtils {
          */
         public final int textColor;
 
-        /** 文字内容区中覆盖主要面积的背景代表色。 */
+        /**
+         * 文字内容区中覆盖主要面积的背景代表色。
+         */
         public final int[] textBackgroundColors;
 
         public NinePatchInfo(int texWidth, int texHeight,

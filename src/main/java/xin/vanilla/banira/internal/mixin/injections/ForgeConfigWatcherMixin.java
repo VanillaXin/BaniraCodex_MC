@@ -11,7 +11,9 @@ import xin.vanilla.banira.internal.forge.config.ForgeConfigFile;
 
 @Mixin(targets = "net.minecraftforge.fml.config.ConfigFileTypeHandler$ConfigWatcher", remap = false)
 public abstract class ForgeConfigWatcherMixin {
-    @Shadow @Final private CommentedFileConfig commentedFileConfig;
+    @Shadow
+    @Final
+    private CommentedFileConfig commentedFileConfig;
 
     @Redirect(method = "run", at = @At(value = "INVOKE",
             target = "Lnet/minecraftforge/common/ForgeConfigSpec;afterReload()V"))

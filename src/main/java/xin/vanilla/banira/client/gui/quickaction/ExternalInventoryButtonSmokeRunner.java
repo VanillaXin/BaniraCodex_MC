@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-/** 仅由显式开发参数启用的外部背包按钮截图烟测。 */
+/**
+ * 仅由显式开发参数启用的外部背包按钮截图烟测。
+ */
 public final class ExternalInventoryButtonSmokeRunner {
     private static final String ENABLED_PROPERTY = "banira.externalButtonsSmoke";
     private static final String REQUESTED_HOST =

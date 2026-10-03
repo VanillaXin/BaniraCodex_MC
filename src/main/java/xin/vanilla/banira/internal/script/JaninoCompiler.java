@@ -5,7 +5,11 @@ import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.compiler.util.resource.*;
 import org.codehaus.janino.ClassLoaderIClassLoader;
 import org.codehaus.janino.Compiler;
-import xin.vanilla.banira.api.script.*;
+import xin.vanilla.banira.api.script.ScriptCompilationException;
+import xin.vanilla.banira.api.script.ScriptDiagnostic;
+import xin.vanilla.banira.api.script.ScriptFactory;
+import xin.vanilla.banira.api.script.ScriptSourceGroup;
+
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
@@ -20,7 +24,8 @@ final class JaninoCompiler {
         for (ScriptSourceGroup group : groups) {
             try {
                 // JDK contracts use the bootstrap loader (null); Janino requires an actual loader object.
-                ClassLoader lookup = parent == null ? new ClassLoader(null) { } : parent;
+                ClassLoader lookup = parent == null ? new ClassLoader(null) {
+                } : parent;
                 Compiler compiler = new Compiler(ResourceFinder.EMPTY_RESOURCE_FINDER, new ClassLoaderIClassLoader(lookup));
                 compiler.setSourceVersion(8);
                 compiler.setTargetVersion(8);
@@ -31,11 +36,18 @@ final class JaninoCompiler {
                 compiler.setClassFileCreator(new ResourceCreator() {
                     private final MapResourceCreator delegate = new MapResourceCreator(output);
                     private final Set<String> written = new HashSet<>();
-                    @Override public OutputStream createResource(String name) {
-                        if (!written.add(name)) throw new IllegalArgumentException("Duplicate generated class: " + name);
+
+                    @Override
+                    public OutputStream createResource(String name) {
+                        if (!written.add(name))
+                            throw new IllegalArgumentException("Duplicate generated class: " + name);
                         return delegate.createResource(name);
                     }
-                    @Override public boolean deleteResource(String name) { return delegate.deleteResource(name); }
+
+                    @Override
+                    public boolean deleteResource(String name) {
+                        return delegate.deleteResource(name);
+                    }
                 });
                 compiler.setClassFileFinder(ResourceFinder.EMPTY_RESOURCE_FINDER);
                 List<Resource> resources = new ArrayList<>();
@@ -69,9 +81,10 @@ final class JaninoCompiler {
     }
 
     <T> Map<String, ScriptFactory<T>> factories(List<ScriptSourceGroup> groups, Map<String, byte[]> bytecodes,
-                                               Class<T> contract, Runnable checkAccess) {
+                                                Class<T> contract, Runnable checkAccess) {
         ClassLoader loader = new ClassLoader(contract.getClassLoader()) {
-            @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+            @Override
+            protected Class<?> findClass(String name) throws ClassNotFoundException {
                 byte[] code = bytecodes.get(name);
                 if (code == null) throw new ClassNotFoundException(name);
                 return defineClass(name, code, 0, code.length);
@@ -89,11 +102,14 @@ final class JaninoCompiler {
                 }
                 Constructor<? extends T> constructor = type.asSubclass(contract).getConstructor();
                 factories.put(group.getId(), new ScriptFactory<T>() {
-                    @Override public Class<? extends T> entryType() {
+                    @Override
+                    public Class<? extends T> entryType() {
                         checkAccess.run();
                         return constructor.getDeclaringClass();
                     }
-                    @Override public T create() {
+
+                    @Override
+                    public T create() {
                         checkAccess.run();
                         try {
                             T instance = constructor.newInstance();

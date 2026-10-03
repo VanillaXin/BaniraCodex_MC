@@ -28,5 +28,5 @@ public @interface Config {
 
     UnboundAccess viewUnbound() default UnboundAccess.REQUIRE_REGISTERED;
 
-    enum UnboundAccess { REQUIRE_REGISTERED, DEFAULTS }
+    enum UnboundAccess {REQUIRE_REGISTERED, DEFAULTS}
 }

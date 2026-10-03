@@ -11,7 +11,8 @@ import xin.vanilla.banira.internal.forge.config.ForgeConfigFile;
 public abstract class ForgeConfigUnloadMixin {
     @Redirect(method = "closeConfig", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/fml/config/ModConfig;save()V"))
     private void banira$preserveInvalidFileAndFinishUnloading(ModConfig config) {
-        if (config.getConfigData() instanceof ForgeConfigFile) ((ForgeConfigFile) config.getConfigData()).saveOnUnload();
+        if (config.getConfigData() instanceof ForgeConfigFile)
+            ((ForgeConfigFile) config.getConfigData()).saveOnUnload();
         else config.save();
     }
 }

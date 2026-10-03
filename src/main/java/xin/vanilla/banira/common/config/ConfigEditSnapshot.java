@@ -1,9 +1,12 @@
 package xin.vanilla.banira.common.config;
 
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-/** Local-only file revision used for backups and compare-and-commit edits. */
+/**
+ * Local-only file revision used for backups and compare-and-commit edits.
+ */
 public final class ConfigEditSnapshot implements ConfigReadSnapshot {
     private final Object owner;
     private final String fileName;
@@ -18,9 +21,18 @@ public final class ConfigEditSnapshot implements ConfigReadSnapshot {
         this.values = immutableValues(values);
     }
 
-    public boolean belongsTo(Object owner) { return this.owner == owner; }
-    public String getFileName() { return fileName; }
-    public byte[] getSourceBytes() { return sourceBytes.clone(); }
+    public boolean belongsTo(Object owner) {
+        return this.owner == owner;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public byte[] getSourceBytes() {
+        return sourceBytes.clone();
+    }
+
     public String getRevision() {
         String result = revision;
         if (result != null) return result;
@@ -35,9 +47,14 @@ public final class ConfigEditSnapshot implements ConfigReadSnapshot {
             result = new String(hex);
             revision = result;
             return result;
-        } catch (NoSuchAlgorithmException error) { throw new IllegalStateException(error); }
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException(error);
+        }
     }
-    public Map<String, Object> getValues() { return values; }
+
+    public Map<String, Object> getValues() {
+        return values;
+    }
 
     static Map<String, Object> immutableValues(Map<String, Object> values) {
         Map<String, Object> copy = new LinkedHashMap<>();

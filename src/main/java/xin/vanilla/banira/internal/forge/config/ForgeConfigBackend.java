@@ -5,12 +5,7 @@ import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.ParsingException;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
-import xin.vanilla.banira.common.config.ConfigValueStore;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigEditSnapshot;
-import xin.vanilla.banira.common.config.ConfigCommitResult;
-import xin.vanilla.banira.common.config.ConfigValueExpectation;
-import xin.vanilla.banira.common.config.ConfigReadSnapshot;
+import xin.vanilla.banira.common.config.*;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -38,7 +33,9 @@ final class ForgeConfigBackend implements ConfigValueStore {
         this.modConfig = modConfig;
     }
 
-    void setHolder(ConfigHolder holder) { this.holder = holder; }
+    void setHolder(ConfigHolder holder) {
+        this.holder = holder;
+    }
 
     ForgeConfigReloadGate reloadGate(Runnable callback) {
         ForgeConfigFile file = managedFile;
@@ -56,7 +53,8 @@ final class ForgeConfigBackend implements ConfigValueStore {
         for (String path : values.keySet()) {
             ForgeConfigSpec.ValueSpec definition = valueSpec(path);
             if (!candidate.contains(path)) {
-                if (managedFile != null && managedFile.hasLoaded()) throw new ParsingException("Missing config value at " + path);
+                if (managedFile != null && managedFile.hasLoaded())
+                    throw new ParsingException("Missing config value at " + path);
                 candidate.set(path, definition.getDefault());
             }
             if (!definition.test(candidate.get(path))) {

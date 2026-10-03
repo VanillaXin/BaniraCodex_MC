@@ -2,7 +2,9 @@ package xin.vanilla.banira.internal.forge.config;
 
 import java.util.function.BooleanSupplier;
 
-/** A registration owns one delivery gate shared by the native and supplemental watchers. */
+/**
+ * A registration owns one delivery gate shared by the native and supplemental watchers.
+ */
 final class ForgeConfigReloadGate implements Runnable, AutoCloseable {
     private final BooleanSupplier changed;
     private final Runnable callback;
@@ -19,5 +21,7 @@ final class ForgeConfigReloadGate implements Runnable, AutoCloseable {
     }
 
     @Override
-    public synchronized void close() { active = false; }
+    public synchronized void close() {
+        active = false;
+    }
 }

@@ -7,7 +7,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -179,7 +178,9 @@ public final class ForgeBaniraClientEventBridge {
         BaniraClientGuiService.handleKeyboard(baniraEvent);
     }
 
-    /** 游戏内没有打开界面时，Forge 不会触发 GuiScreenEvent。 */
+    /**
+     * 游戏内没有打开界面时，Forge 不会触发 GuiScreenEvent。
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGlobalKeyInput(InputEvent.KeyInputEvent event) {

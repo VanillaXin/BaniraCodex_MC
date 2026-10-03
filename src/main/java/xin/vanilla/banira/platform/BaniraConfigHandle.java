@@ -35,8 +35,11 @@ public interface BaniraConfigHandle {
 
     boolean setIfValid(String path, Object value);
 
-    /** 配置文件被外部热重载后的变化通知。 */
+    /**
+     * 配置文件被外部热重载后的变化通知。
+     */
     default Runnable onReloaded(Consumer<Set<String>> listener) {
-        return () -> { };
+        return () -> {
+        };
     }
 }

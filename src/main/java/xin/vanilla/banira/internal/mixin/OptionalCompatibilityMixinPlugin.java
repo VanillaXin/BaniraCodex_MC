@@ -8,7 +8,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.Set;
 
-/** Prevents optional third-party mixins from resolving classes that are not installed. */
+/**
+ * Prevents optional third-party mixins from resolving classes that are not installed.
+ */
 public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {

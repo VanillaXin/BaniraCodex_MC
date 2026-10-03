@@ -4,16 +4,15 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
-import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
 import xin.vanilla.banira.client.gui.widget.InputWidget;
@@ -380,7 +379,9 @@ public class ConfigEditorScreen extends BaniraScreen {
         editorState.refreshEntriesFromHolder(configName);
     }
 
-    /** Server snapshots belong to this editor session, never to the local runtime configuration. */
+    /**
+     * Server snapshots belong to this editor session, never to the local runtime configuration.
+     */
     public void applyRemoteSnapshot(String configName, Map<String, Object> snapshot) {
         editorState.acceptRemoteSnapshot(configName, snapshot);
     }

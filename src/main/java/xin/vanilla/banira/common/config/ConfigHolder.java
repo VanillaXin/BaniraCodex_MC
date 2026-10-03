@@ -142,7 +142,9 @@ public class ConfigHolder implements BaniraConfigHandle {
         return () -> savedListeners.remove(listener);
     }
 
-    /** 外部配置文件重载成功后触发；返回值用于注销监听。 */
+    /**
+     * 外部配置文件重载成功后触发；返回值用于注销监听。
+     */
     @Override
     public Runnable onReloaded(Consumer<Set<String>> listener) {
         Objects.requireNonNull(listener, "listener");
@@ -150,13 +152,17 @@ public class ConfigHolder implements BaniraConfigHandle {
         return () -> reloadedListeners.remove(listener);
     }
 
-    /** Forge 初次装载配置文件时只建立基线，不把它当成玩家热修改。 */
+    /**
+     * Forge 初次装载配置文件时只建立基线，不把它当成玩家热修改。
+     */
     public synchronized void acceptInitialExternalLoad() {
         pendingChangedPaths.clear();
         captureLoadedSnapshot();
     }
 
-    /** Forge 已将磁盘值写入 ConfigValue 后，计算真实变化并废弃尚未保存的旧内存改动。 */
+    /**
+     * Forge 已将磁盘值写入 ConfigValue 后，计算真实变化并废弃尚未保存的旧内存改动。
+     */
     public synchronized void acceptExternalReload() {
         Set<String> changed = new LinkedHashSet<>();
         for (String path : valueStore.paths()) {
@@ -226,15 +232,23 @@ public class ConfigHolder implements BaniraConfigHandle {
         return (T) value;
     }
 
-    /** Compare the current stored value, including unsaved edits, without returning a mutable value. */
+    /**
+     * Compare the current stored value, including unsaved edits, without returning a mutable value.
+     */
     public synchronized boolean matchesStoredValue(String path, Object expected) {
         return valueStore.matchesStoredValue(path, expected);
     }
 
-    /** One holder lock covers the complete live comparison, without caching its result. */
+    /**
+     * One holder lock covers the complete live comparison, without caching its result.
+     */
     public synchronized java.util.function.BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
         java.util.function.BooleanSupplier match = valueStore.prepareStoredMatch(expected, allowEnumNames);
-        return () -> { synchronized (ConfigHolder.this) { return match.getAsBoolean(); } };
+        return () -> {
+            synchronized (ConfigHolder.this) {
+                return match.getAsBoolean();
+            }
+        };
     }
 
     @Override
@@ -259,7 +273,9 @@ public class ConfigHolder implements BaniraConfigHandle {
         }
     }
 
-    /** Validates every field and guard before the backend commits the batch. Call save to notify listeners. */
+    /**
+     * Validates every field and guard before the backend commits the batch. Call save to notify listeners.
+     */
     public synchronized void setAll(Map<String, Object> changes, ConfigEditOrigin origin) {
         requireWritable();
         Map<String, Object> edits = guardedChanges(changes, origin);
@@ -280,7 +296,9 @@ public class ConfigHolder implements BaniraConfigHandle {
         return valueStore.snapshotForRead(new LinkedHashSet<>(paths));
     }
 
-    /** Local-only backup/migration boundary. Successful changes are already persisted and notified. */
+    /**
+     * Local-only backup/migration boundary. Successful changes are already persisted and notified.
+     */
     public ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes, ConfigEditOrigin origin) {
         ConfigCommitResult result;
         Set<String> changed = Collections.emptySet();
@@ -322,7 +340,9 @@ public class ConfigHolder implements BaniraConfigHandle {
         validatingEdits = true;
         try {
             for (ConfigEditGuard guard : editGuards) guard.validate(origin, edits);
-        } finally { validatingEdits = false; }
+        } finally {
+            validatingEdits = false;
+        }
         return edits;
     }
 

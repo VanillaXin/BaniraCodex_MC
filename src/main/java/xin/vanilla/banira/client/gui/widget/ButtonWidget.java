@@ -276,7 +276,9 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     @Getter
     private PresetStyle presetStyle = null;
 
-    /** 可选的内容图标，与文本一起居中绘制。 */
+    /**
+     * 可选的内容图标，与文本一起居中绘制。
+     */
     @Getter
     @Setter
     @Nullable
@@ -478,7 +480,9 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return this;
     }
 
-    /** 使用当前主题的错误语义色绘制危险操作按钮。 */
+    /**
+     * 使用当前主题的错误语义色绘制危险操作按钮。
+     */
     public ButtonWidget dangerStyle() {
         this.dangerStyle = true;
         if (screen != null) {

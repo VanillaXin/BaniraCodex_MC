@@ -7,7 +7,9 @@ import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.internal.DebugScreen;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeProfilePlan;
 
-/** Render instrumentation and deterministic tooltip content for the dev-only network smoke. */
+/**
+ * Render instrumentation and deterministic tooltip content for the dev-only network smoke.
+ */
 final class BaniraNetworkSmokeScreen extends DebugScreen {
     private int cycle;
     private Text tooltipText = Text.empty();

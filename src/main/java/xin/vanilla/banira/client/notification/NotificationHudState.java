@@ -21,9 +21,13 @@ public final class NotificationHudState {
         previousDown = down;
     }
 
-    public boolean visible(int unread) { return shown && unread > 0; }
+    public boolean visible(int unread) {
+        return shown && unread > 0;
+    }
 
-    public static String countLabel(int unread) { return unread > 99 ? "99+" : Integer.toString(Math.max(0, unread)); }
+    public static String countLabel(int unread) {
+        return unread > 99 ? "99+" : Integer.toString(Math.max(0, unread));
+    }
 
     public static int position(double relative, int screenSize, int size) {
         return (int) Math.round(Math.max(0, Math.min(1, relative)) * Math.max(0, screenSize - size));

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.util.ScreenShotHelper;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
@@ -21,7 +21,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-/** Runs only within the existing opt-in development smoke, using its isolated client data. */
+/**
+ * Runs only within the existing opt-in development smoke, using its isolated client data.
+ */
 final class NotificationReadSmoke {
     private static final String TYPE = "banira_codex:read_smoke";
     private static int ticks;
@@ -30,7 +32,8 @@ final class NotificationReadSmoke {
     private static NotificationLogScreen screen;
     private static long selectedId;
 
-    private NotificationReadSmoke() { }
+    private NotificationReadSmoke() {
+    }
 
     static boolean tick(Minecraft client) throws Exception {
         if (finished) return true;
@@ -78,7 +81,8 @@ final class NotificationReadSmoke {
                 Notification muted = add("Received during mute", false);
                 require(manager.unreadCount() == 3, "muted notification was not recorded as unread");
                 Map<?, ?> overlays = (Map<?, ?>) field(manager, "notifications");
-                for (Object group : overlays.values()) require(!((List<?>) group).contains(muted), "muted bubble was queued");
+                for (Object group : overlays.values())
+                    require(!((List<?>) group).contains(muted), "muted bubble was queued");
                 break;
             case 60:
                 screenshot(client);
@@ -88,7 +92,7 @@ final class NotificationReadSmoke {
                 add("Unread after mark-all", false);
                 NotificationLogStore.flush();
                 require(NotificationLogStore.load(500).stream()
-                        .filter(e -> TYPE.equals(e.notificationType()) && !e.read()).count() == 1,
+                                .filter(e -> TYPE.equals(e.notificationType()) && !e.read()).count() == 1,
                         "flushed read states differ from memory");
                 BaniraNetworkSmokeStatus.append("PASS notification-read-ui duplicates=2 selected-stable=true muted-arrival=true mark-all=true");
                 client.setScreen(null);

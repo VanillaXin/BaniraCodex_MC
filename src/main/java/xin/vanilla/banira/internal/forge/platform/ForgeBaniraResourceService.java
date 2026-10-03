@@ -5,18 +5,18 @@ import net.minecraft.resources.IResourceManager;
 import net.minecraft.resources.IResourcePack;
 import net.minecraft.resources.ResourcePackType;
 import net.minecraft.util.ResourceLocation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.mixin.accessors.ResourceManagerAccessor;
 
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,7 +49,9 @@ public final class ForgeBaniraResourceService {
         return result;
     }
 
-    /** 启动早期资源管理器尚未就绪时，直接从 Forge 已登记的模组文件读取语言。 */
+    /**
+     * 启动早期资源管理器尚未就绪时，直接从 Forge 已登记的模组文件读取语言。
+     */
     private static void collectRegisteredModLanguages(String modId, Map<String, JsonObject> result) {
         try {
             ModFileInfo modFile = ModList.get().getModFileById(modId);

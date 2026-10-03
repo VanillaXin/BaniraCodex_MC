@@ -44,11 +44,7 @@ import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
@@ -809,7 +805,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, entryTheme, season);
     }
 
-    /** 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。 */
+    /**
+     * 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。
+     */
     private void renderContextTooltip(MatrixStack stack, int mouseX, int mouseY,
                                       BaniraColorConfig fallbackTheme) {
         if (contextTooltipLine == null || contextTooltipLine.isEmpty()) {
@@ -824,7 +822,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, tooltipTheme, season);
     }
 
-    /** 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。 */
+    /**
+     * 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。
+     */
     private BaniraColorConfig contextTheme(BaniraColorConfig fallback) {
         QuickActionEntry entry = contextThemeEntry();
         return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
@@ -961,7 +961,9 @@ public final class QuickActionOverlay {
         return Minecraft.getInstance();
     }
 
-    /** 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。 */
+    /**
+     * 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。
+     */
     public boolean capturesPointer(Screen screen, double mouseX, double mouseY) {
         if (!isSupportedInventoryScreen(screen)) {
             return false;
@@ -1228,7 +1230,9 @@ public final class QuickActionOverlay {
         contextY = my;
     }
 
-    /** 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。 */
+    /**
+     * 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。
+     */
     void openCustomEntryMenu(String entryId, double mouseX, double mouseY, int itemOffset) {
         contextMenuKind = ContextMenuKind.TRAY;
         contextUserEntryIdForHide = null;
@@ -1278,7 +1282,9 @@ public final class QuickActionOverlay {
          */
         @Nullable
         final QuickActionEntry entryForSecondaryMenu;
-        /** 可右键隐藏的菜单行标识；结构行保持为空。 */
+        /**
+         * 可右键隐藏的菜单行标识；结构行保持为空。
+         */
         @Nullable
         final String hiddenMenuKey;
 
@@ -1604,6 +1610,7 @@ public final class QuickActionOverlay {
         ctxRowActionW = 0;
         ctxRowActionH = 0;
     }
+
     private void resetAnchorPreset() {
         final QuickActionLayout DEFAULT = new QuickActionLayout();
         layout.coordinateModeX(DEFAULT.coordinateModeX());

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.api.script;
 
 import org.junit.Test;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,6 +11,7 @@ public class ScriptFactorySessionTest {
     public interface Counter { int next(); }
     public static final AtomicInteger INITIALIZATIONS = new AtomicInteger();
     public static final AtomicInteger CONSTRUCTIONS = new AtomicInteger();
+    public static volatile boolean failRetainedConstructor;
     private static final String NS = "xin.vanilla.banira.generated.";
 
     private ScriptSession<ScriptFactory<Counter>> session(BlockingQueue<Runnable> owner) {
@@ -164,7 +166,84 @@ public class ScriptFactorySessionTest {
             catch (ScriptCompilationException expected) {
                 assertEquals("broken", expected.getDiagnostics().get(0).getScriptId());
                 assertEquals("instantiate", expected.getDiagnostics().get(0).getPhase());
+                assertEquals("Broken.java", expected.getDiagnostics().get(0).getFileName());
             }
+        }
+    }
+
+    @Test public void activeFactoryReleasesSourceTextButKeepsHelpersAndConstructorDiagnostics() throws Exception {
+        RetainedFactory retained = prepareRetainedFactory();
+        try {
+            WeakReference<Object> control = new WeakReference<>(new Object());
+            for (int attempt = 0; attempt < 100 && (control.get() != null || retained.sourceCharacters() != 0); attempt++) {
+                System.gc();
+                Thread.sleep(50);
+            }
+            assertNull("Unreachable GC control was not collected", control.get());
+            System.out.println("factory-source-retention characters=" + retained.originalCharacters
+                    + " remaining=" + retained.sourceCharacters());
+            assertNull("Active factory retained the compiled source group", retained.group.get());
+            assertEquals("Active factory retained compiled source text", 0, retained.sourceCharacters());
+            ScriptFactory<Counter> factory = retained.session.active().get("retained");
+            assertEquals(NS + "RetainedTask", factory.entryType().getName());
+            // The helper has not been loaded before the sources were collected.
+            assertEquals(42, factory.create().next());
+            failRetainedConstructor = true;
+            try { factory.create(); fail("Broken constructor accepted after source collection"); }
+            catch (ScriptCompilationException expected) {
+                ScriptDiagnostic diagnostic = expected.getDiagnostics().get(0);
+                assertEquals("retained", diagnostic.getScriptId());
+                assertEquals("rules/RetainedTask.java", diagnostic.getFileName());
+                assertEquals("instantiate", diagnostic.getPhase());
+                assertEquals(-1, diagnostic.getLine());
+                assertEquals(-1, diagnostic.getColumn());
+                assertTrue(expected.getCause() instanceof java.lang.reflect.InvocationTargetException);
+            }
+        } finally {
+            failRetainedConstructor = false;
+            retained.session.close();
+        }
+    }
+
+    private RetainedFactory prepareRetainedFactory() throws Exception {
+        BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
+        ScriptSession<ScriptFactory<Counter>> session = session(owner);
+        try {
+            char[] padding = new char[200 * 1024];
+            Arrays.fill(padding, 'x');
+            String comment = "/*" + new String(padding) + "*/";
+            String entry = comment + "package xin.vanilla.banira.generated; public class RetainedTask implements "
+                    + Counter.class.getCanonicalName() + " { public RetainedTask(){ if ("
+                    + getClass().getName() + ".failRetainedConstructor) throw new IllegalStateException(\"broken\"); }"
+                    + " public int next(){ return RetainedHelper.value(); }}";
+            String helper = comment + "package xin.vanilla.banira.generated; class RetainedHelper { static int value(){ return 42; }}";
+            Map<String, String> files = new LinkedHashMap<>();
+            files.put("rules/RetainedTask.java", entry);
+            files.put("helpers/RetainedHelper.java", helper);
+            ScriptSourceGroup group = new ScriptSourceGroup("retained", NS + "RetainedTask", files);
+            assertTrue(session.publish(prepare(session, owner, group)));
+            return new RetainedFactory(session, group, entry, helper);
+        } catch (Exception | Error failure) {
+            session.close();
+            throw failure;
+        }
+    }
+
+    private static final class RetainedFactory {
+        final ScriptSession<ScriptFactory<Counter>> session;
+        final WeakReference<ScriptSourceGroup> group;
+        final WeakReference<String> entry, helper;
+        final int originalCharacters;
+        RetainedFactory(ScriptSession<ScriptFactory<Counter>> session, ScriptSourceGroup group, String entry, String helper) {
+            this.session = session;
+            this.group = new WeakReference<>(group);
+            this.entry = new WeakReference<>(entry);
+            this.helper = new WeakReference<>(helper);
+            originalCharacters = entry.length() + helper.length();
+        }
+        int sourceCharacters() {
+            String a = entry.get(), b = helper.get();
+            return (a == null ? 0 : a.length()) + (b == null ? 0 : b.length());
         }
     }
 

@@ -79,6 +79,8 @@ final class JaninoCompiler {
         };
         Map<String, ScriptFactory<T>> factories = new LinkedHashMap<>();
         for (ScriptSourceGroup group : groups) {
+            String scriptId = group.getId();
+            String sourceFile = entryFile(group);
             try {
                 Class<?> type = Class.forName(group.getEntryClassName(), false, loader);
                 if (type.getClassLoader() != loader || !contract.isAssignableFrom(type)
@@ -98,7 +100,7 @@ final class JaninoCompiler {
                             checkAccess.run();
                             return instance;
                         } catch (ReflectiveOperationException | RuntimeException | LinkageError error) {
-                            throw failure(group, "instantiate", error);
+                            throw failure(scriptId, sourceFile, "instantiate", error);
                         }
                     }
                 });
@@ -118,7 +120,11 @@ final class JaninoCompiler {
     }
 
     private static ScriptCompilationException failure(ScriptSourceGroup group, String phase, Throwable error) {
-        return new ScriptCompilationException(new ScriptDiagnostic(group.getId(), entryFile(group),
+        return failure(group.getId(), entryFile(group), phase, error);
+    }
+
+    private static ScriptCompilationException failure(String scriptId, String sourceFile, String phase, Throwable error) {
+        return new ScriptCompilationException(new ScriptDiagnostic(scriptId, sourceFile,
                 -1, -1, phase, error.toString()), error);
     }
 }

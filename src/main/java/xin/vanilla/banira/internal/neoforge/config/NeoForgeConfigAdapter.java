@@ -49,6 +49,7 @@ public final class NeoForgeConfigAdapter {
 
     private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
     private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = new IdentityHashMap<>();
+    private static final Map<ModConfig, NeoForgeConfigValueStore> STORE_BY_CONFIG = new IdentityHashMap<>();
     private static IEventBus modEventBus;
     private static ModContainer activeContainer;
     private static boolean configListenersRegistered;
@@ -90,15 +91,17 @@ public final class NeoForgeConfigAdapter {
         NeoForgeConfigValueStore valueStore = new NeoForgeConfigValueStore(spec, valueMap);
         ConfigHolder holder = ConfigHolder.create(modId, configName, configScope, valueStore, descriptors, categoryTooltips,
                 categoryTitleSpecs);
+        valueStore.setHolder(holder);
 
         String fileName = configName.endsWith(".toml") ? configName : configName + ".toml";
         ModContainer container = resolveContainer(modId);
         ModConfig modConfig = ConfigTracker.INSTANCE.registerConfig(
-                toForgeType(configScope), spec, container, fileName);
+                toForgeType(configScope), new NeoForgeManagedConfigSpec(spec, valueStore), container, fileName);
         valueStore.bindModConfig(modConfig);
 
         HOLDER_MAP.put(configClass, holder);
         HOLDER_BY_CONFIG.put(modConfig, holder);
+        STORE_BY_CONFIG.put(modConfig, valueStore);
         ConfigRegistry.registerHolder(holder);
     }
 
@@ -109,7 +112,8 @@ public final class NeoForgeConfigAdapter {
 
     private static void onConfigReloading(ModConfigEvent.Reloading event) {
         ConfigHolder holder = HOLDER_BY_CONFIG.get(event.getConfig());
-        if (holder != null) holder.acceptExternalReload();
+        NeoForgeConfigValueStore store = STORE_BY_CONFIG.get(event.getConfig());
+        if (store != null) store.acceptReload();
     }
 
     private static ModContainer resolveContainer(String modId) {

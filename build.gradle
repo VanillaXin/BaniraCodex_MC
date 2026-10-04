@@ -3,6 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
+    id 'com.gradleup.shadow' version '8.3.8'
     id 'net.neoforged.gradle.userdev' version '7.0.181'
 }
 
@@ -172,15 +173,16 @@ publishing {
 
 afterEvaluate {
     publishing.publications.named('mavenJava', MavenPublication) {
-        artifact tasks.jar
+        artifact tasks.shadowJar
         artifact tasks.named('sourcesJar')
     }
     tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
-        dependsOn 'jar', 'sourcesJar'
+        dependsOn 'shadowJar', 'sourcesJar'
     }
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）
 
 apply from: "gradle/publish-local-fingerprint.gradle"
+apply from: "gradle/embedded-compiler.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"

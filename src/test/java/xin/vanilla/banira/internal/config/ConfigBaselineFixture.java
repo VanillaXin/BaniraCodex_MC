@@ -152,6 +152,12 @@ final class ConfigBaselineFixture implements ConfigValueStore {
         values.put(path, copy(value));
         written.add(path);
     }
+    @Override public void setAll(Map<String, Object> changes) {
+        Map<String, Object> copied = new LinkedHashMap<>();
+        changes.forEach((path, value) -> copied.put(path, copy(value)));
+        values.putAll(copied);
+        written.addAll(changes.keySet());
+    }
     @Override public Class<?> valueClass(String path) {
         Object value = defaults.get(path);
         if (value instanceof Enum) return ((Enum<?>) value).getDeclaringClass();

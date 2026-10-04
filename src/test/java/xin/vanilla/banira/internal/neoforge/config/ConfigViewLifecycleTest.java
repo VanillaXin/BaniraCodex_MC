@@ -41,6 +41,30 @@ public class ConfigViewLifecycleTest {
     @Test public void retainedCommonCategoryFollowsReloadReplacementAndUnload() throws Exception { verify(false); }
     @Test public void retainedClientRootFollowsReloadReplacementAndUnload() throws Exception { verify(true); }
 
+    @Test public void sealedNativeRecordMirrorsAtomicCommitsAndRejectsInvalidReloadBeforeUnload() throws Exception {
+        net.neoforged.fml.loading.FMLPaths.loadAbsolutePaths(temporary.getRoot().toPath());
+        try (Fixture fixture = new Fixture(CommonConfig.class, temporary.newFile("native.toml").toPath())) {
+            String key = "help.helpInfoNumPerPage";
+            xin.vanilla.banira.common.config.ConfigReadSnapshot before = fixture.holder.snapshotForRead(java.util.Collections.singleton(key));
+            assertEquals(xin.vanilla.banira.common.config.ConfigCommitResult.APPLIED, fixture.holder.compareAndSetAll(
+                    fixture.holder.snapshotForEdit(java.util.Collections.singleton(key)), java.util.Collections.singletonMap(key, 23),
+                    xin.vanilla.banira.common.config.ConfigEditOrigin.API));
+            assertEquals(23, ((Number) fixture.nativeFile.get(key)).intValue());
+            fixture.nativeFile.save();
+            assertEquals(23, ((Number) new TomlParser().parse(new String(Files.readAllBytes(fixture.path), StandardCharsets.UTF_8)).get(key)).intValue());
+            assertEquals(10, ((Number) before.getValues().get(key)).intValue());
+            CommentedConfig invalid = new TomlParser().parse(new String(Files.readAllBytes(fixture.path), StandardCharsets.UTF_8));
+            invalid.set(key, "wrong type");
+            byte[] external = TomlFormat.instance().createWriter().writeToString(invalid).getBytes(StandardCharsets.UTF_8);
+            Files.write(fixture.path, external);
+            assertThrows(com.electronwill.nightconfig.core.io.ParsingException.class, () -> fixture.managed.acceptConfig(fixture.loaded));
+            assertEquals(23, ((Number) fixture.holder.get(key)).intValue());
+            assertArrayEquals(external, Files.readAllBytes(fixture.path));
+            fixture.managed.acceptConfig(null);
+            assertThrows(IllegalStateException.class, () -> fixture.holder.snapshotForEdit(java.util.Collections.singleton(key)));
+        }
+    }
+
     private void verify(boolean client) throws Exception {
         net.neoforged.fml.loading.FMLPaths.loadAbsolutePaths(temporary.getRoot().toPath());
         Class<?> type = client ? ClientConfig.class : CommonConfig.class;
@@ -102,7 +126,10 @@ public class ConfigViewLifecycleTest {
         final ConfigHolder holder;
         final NeoForgeConfigValueStore backend;
         final CommentedFileConfig file;
+        final CommentedFileConfig nativeFile;
         final ModConfigSpec spec;
+        final NeoForgeManagedConfigSpec managed;
+        final net.neoforged.fml.config.IConfigSpec.ILoadedConfig loaded;
 
         Fixture(Class<?> type, Path path) throws Exception {
             this.path = path;
@@ -119,10 +146,13 @@ public class ConfigViewLifecycleTest {
             backend = new NeoForgeConfigValueStore(spec, values);
             Config annotation = type.getAnnotation(Config.class);
             holder = ConfigHolder.create("fixture", annotation.name(), annotation.type(), backend, descriptors, tooltips, titles);
-            file = CommentedFileConfig.builder(path).sync().build();
-            file.load();
-            spec.correct(file);
-            file.save();
+            backend.setHolder(holder);
+            nativeFile = CommentedFileConfig.builder(path).sync().build();
+            nativeFile.load();
+            spec.correct(nativeFile);
+            nativeFile.save();
+            managed = new NeoForgeManagedConfigSpec(spec, backend,
+                    loaded -> LoadedConfigFixture.bind(spec, loaded));
             net.neoforged.neoforgespi.language.IModInfo info =
                     (net.neoforged.neoforgespi.language.IModInfo) java.lang.reflect.Proxy.newProxyInstance(
                             getClass().getClassLoader(),
@@ -141,22 +171,24 @@ public class ConfigViewLifecycleTest {
                             net.neoforged.fml.ModContainer.class, String.class, java.util.concurrent.locks.ReentrantLock.class);
             constructor.setAccessible(true);
             net.neoforged.fml.config.ModConfig config = constructor.newInstance(
-                    net.neoforged.fml.config.ModConfig.Type.COMMON, spec, container, path.getFileName().toString(),
+                    net.neoforged.fml.config.ModConfig.Type.COMMON, managed, container, path.getFileName().toString(),
                     new java.util.concurrent.locks.ReentrantLock());
             Class<?> loadedType = Class.forName("net.neoforged.fml.config.LoadedConfig");
             java.lang.reflect.Constructor<?> loadedConstructor = loadedType.getDeclaredConstructor(
                     CommentedConfig.class, Path.class, net.neoforged.fml.config.ModConfig.class);
             loadedConstructor.setAccessible(true);
-            net.neoforged.fml.config.IConfigSpec.ILoadedConfig loaded =
-                    (net.neoforged.fml.config.IConfigSpec.ILoadedConfig) loadedConstructor.newInstance(file, path, config);
+            loaded =
+                    (net.neoforged.fml.config.IConfigSpec.ILoadedConfig) loadedConstructor.newInstance(nativeFile, path, config);
             java.lang.reflect.Field loadedField = net.neoforged.fml.config.ModConfig.class.getDeclaredField("loadedConfig");
             loadedField.setAccessible(true);
             loadedField.set(config, loaded);
             backend.bindModConfig(config);
-            spec.acceptConfig(loaded);
+            managed.validateSpec(config);
+            managed.acceptConfig(loaded);
+            file = backend.managedFile();
             holder.acceptInitialExternalLoad();
         }
 
-        public void close() { file.close(); }
+        public void close() { file.close(); nativeFile.close(); }
     }
 }

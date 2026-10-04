@@ -460,7 +460,9 @@ public final class CommandUtils {
             return 0;
         }
 
-        if (!holder.setIfValid(path, parsed)) {
+        try {
+            holder.set(path, parsed, xin.vanilla.banira.common.config.ConfigEditOrigin.COMMAND);
+        } catch (IllegalArgumentException | IllegalStateException error) {
             MessageUtils.sendMessage(source, false, BaniraComponent.get().transAuto("config_value_set_error", configKey, configValue));
             return 0;
         }

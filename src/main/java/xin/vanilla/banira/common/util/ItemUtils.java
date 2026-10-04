@@ -1,5 +1,7 @@
 package xin.vanilla.banira.common.util;
 
+import xin.vanilla.banira.platform.BaniraPlatforms;
+
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
@@ -91,8 +93,11 @@ public final class ItemUtils {
     @Nullable
     public static ResourceLocation getItemRegistry(Item item) {
         if (item == null) return null;
-        String key = Banira.platform().registryService().itemKey(item);
-        return key != null ? ResourceLocation.tryParse(key) : null;
+        if (!BaniraPlatforms.isInstalled()) {
+            return null;
+        }
+        Object id = BaniraPlatforms.get().registryService().itemKeyObject(item);
+        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
     }
 
     /**

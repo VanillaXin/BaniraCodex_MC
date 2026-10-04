@@ -1,5 +1,8 @@
 package xin.vanilla.banira.common.util;
 
+import xin.vanilla.banira.platform.BaniraPlatforms;
+
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -48,8 +51,11 @@ public final class EntityUtils {
         if (entityType == null) {
             return null;
         }
-        String id = Banira.platform().registryService().entityTypeKey(entityType);
-        return id != null ? ResourceLocation.tryParse(id) : null;
+        if (!BaniraPlatforms.isInstalled()) {
+            return null;
+        }
+        Object id = BaniraPlatforms.get().registryService().entityTypeKeyObject(entityType);
+        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
     }
 
     /**

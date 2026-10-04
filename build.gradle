@@ -1,9 +1,11 @@
 plugins {
     id 'fabric-loom' version '1.15-SNAPSHOT'
     id 'maven-publish'
+    id 'com.gradleup.shadow' version '9.2.2'
 }
 
 apply from: 'gradle/config-view-processor.gradle'
+apply from: 'gradle/embedded-compiler.gradle'
 
 def javaVer = 17
 

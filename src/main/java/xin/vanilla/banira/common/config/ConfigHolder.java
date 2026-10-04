@@ -54,6 +54,8 @@ public class ConfigHolder implements BaniraConfigHandle {
     private final List<Consumer<Set<String>>> reloadedListeners = new CopyOnWriteArrayList<>();
     private final Map<String, Object> loadedSnapshot = new LinkedHashMap<>();
     private long loadedSnapshotRevision;
+    private final List<ConfigEditGuard> editGuards = new CopyOnWriteArrayList<>();
+    private boolean validatingEdits;
 
     /**
      * 供各加载器配置服务创建统一 holder。
@@ -103,14 +105,25 @@ public class ConfigHolder implements BaniraConfigHandle {
         return categoryTitleSpecs.get(categoryPath);
     }
 
-    public synchronized void save() {
-        valueStore.save();
-        captureLoadedSnapshot();
-        if (pendingChangedPaths.isEmpty()) {
-            return;
+    public void save() {
+        Set<String> changedPaths;
+        synchronized (this) {
+            requireWritable();
+            valueStore.save();
+            captureLoadedSnapshot();
+            changedPaths = drainChangedPaths();
         }
-        Set<String> changedPaths = Collections.unmodifiableSet(new LinkedHashSet<>(pendingChangedPaths));
+        notifySaved(changedPaths);
+    }
+
+    private Set<String> drainChangedPaths() {
+        Set<String> changed = Collections.unmodifiableSet(new LinkedHashSet<>(pendingChangedPaths));
         pendingChangedPaths.clear();
+        return changed;
+    }
+
+    private void notifySaved(Set<String> changedPaths) {
+        if (changedPaths.isEmpty()) return;
         for (Consumer<Set<String>> listener : savedListeners) {
             try {
                 listener.accept(changedPaths);
@@ -213,12 +226,29 @@ public class ConfigHolder implements BaniraConfigHandle {
         return (T) value;
     }
 
+    /** Compare the current stored value, including unsaved edits, without returning a mutable value. */
+    public synchronized boolean matchesStoredValue(String path, Object expected) {
+        return valueStore.matchesStoredValue(path, expected);
+    }
+
+    /** One holder lock covers the complete live comparison, without caching its result. */
+    public synchronized java.util.function.BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        java.util.function.BooleanSupplier match = valueStore.prepareStoredMatch(expected, allowEnumNames);
+        return () -> { synchronized (ConfigHolder.this) { return match.getAsBoolean(); } };
+    }
+
     @Override
     public synchronized void set(String path, Object value) {
+        set(path, value, ConfigEditOrigin.API);
+    }
+
+    public synchronized void set(String path, Object value, ConfigEditOrigin origin) {
+        requireWritable();
         if (valueStore.paths().contains(path)) {
+            Map<String, Object> edit = guardedChanges(Collections.singletonMap(path, value), origin);
             Object previous = valueStore.get(path);
             long previousRevision = loadedSnapshotRevision;
-            valueStore.set(path, value);
+            valueStore.set(path, edit.get(path));
             // A backend write can accept an external load before applying the local value.
             if (previousRevision != loadedSnapshotRevision) {
                 previous = loadedSnapshot.get(path);
@@ -227,6 +257,73 @@ public class ConfigHolder implements BaniraConfigHandle {
                 pendingChangedPaths.add(path);
             }
         }
+    }
+
+    /** Validates every field and guard before the backend commits the batch. Call save to notify listeners. */
+    public synchronized void setAll(Map<String, Object> changes, ConfigEditOrigin origin) {
+        requireWritable();
+        Map<String, Object> edits = guardedChanges(changes, origin);
+        if (edits.isEmpty()) return;
+        Map<String, Object> previous = new LinkedHashMap<>();
+        edits.keySet().forEach(path -> previous.put(path, snapshotValue(valueStore.get(path))));
+        valueStore.setAll(edits);
+        edits.keySet().forEach(path -> {
+            if (!Objects.deepEquals(previous.get(path), valueStore.get(path))) pendingChangedPaths.add(path);
+        });
+    }
+
+    public synchronized ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
+        return valueStore.snapshotForEdit(new LinkedHashSet<>(paths));
+    }
+
+    public synchronized ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        return valueStore.snapshotForRead(new LinkedHashSet<>(paths));
+    }
+
+    /** Local-only backup/migration boundary. Successful changes are already persisted and notified. */
+    public ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes, ConfigEditOrigin origin) {
+        ConfigCommitResult result;
+        Set<String> changed = Collections.emptySet();
+        synchronized (this) {
+            requireWritable();
+            Map<String, Object> edits = guardedChanges(changes, origin);
+            Map<String, Object> previous = new LinkedHashMap<>();
+            edits.keySet().forEach(path -> previous.put(path, snapshotValue(valueStore.get(path))));
+            result = valueStore.compareAndSetAll(expected, edits);
+            if (result == ConfigCommitResult.APPLIED) {
+                edits.keySet().forEach(path -> {
+                    if (!Objects.deepEquals(previous.get(path), valueStore.get(path))) pendingChangedPaths.add(path);
+                });
+                captureLoadedSnapshot();
+                changed = drainChangedPaths();
+            }
+        }
+        notifySaved(changed);
+        return result;
+    }
+
+    public Runnable onEdit(ConfigEditGuard guard) {
+        editGuards.add(Objects.requireNonNull(guard, "guard"));
+        return () -> editGuards.remove(guard);
+    }
+
+    private void requireWritable() {
+        if (validatingEdits) throw new IllegalStateException("Config edit guards cannot write configuration");
+    }
+
+    private Map<String, Object> guardedChanges(Map<String, Object> changes, ConfigEditOrigin origin) {
+        Objects.requireNonNull(origin, "origin");
+        Map<String, Object> edits = ConfigEditSnapshot.immutableValues(changes);
+        edits.forEach((path, value) -> {
+            if (!valueStore.paths().contains(path) || !valueStore.validate(path, value)) {
+                throw new IllegalArgumentException("Invalid config value: " + path);
+            }
+        });
+        validatingEdits = true;
+        try {
+            for (ConfigEditGuard guard : editGuards) guard.validate(origin, edits);
+        } finally { validatingEdits = false; }
+        return edits;
     }
 
     @Override

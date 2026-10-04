@@ -7,12 +7,17 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigEditSnapshot;
+import xin.vanilla.banira.common.config.ConfigCommitResult;
+import xin.vanilla.banira.common.config.ConfigValueExpectation;
+import xin.vanilla.banira.common.config.ConfigReadSnapshot;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 final class ForgeConfigValueStore implements ConfigValueStore {
     private final ForgeConfigSpec spec;
@@ -84,6 +89,39 @@ final class ForgeConfigValueStore implements ConfigValueStore {
         }
     }
 
+    @Override
+    public boolean matchesStoredValue(String path, Object expected) {
+        synchronized (valueLock()) {
+            ForgeConfigSpec.ConfigValue<?> value = values.get(path);
+            if (value == null) return false;
+            return ConfigValueExpectation.storedEquals(value.get(), expected);
+        }
+    }
+
+    @Override
+    public BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        ConfigValueExpectation expectation = new ConfigValueExpectation(expected, allowEnumNames);
+        ForgeConfigSpec.ConfigValue<?>[] handles = new ForgeConfigSpec.ConfigValue<?>[expectation.size()];
+        for (int i = 0; i < handles.length; i++) {
+            handles[i] = values.get(expectation.path(i));
+            if (handles[i] == null) return () -> false;
+        }
+        return () -> {
+            while (true) {
+                Object lock = valueLock();
+                synchronized (lock) {
+                    // Wrapping a replacement file changes the monitor; never use a retired lock.
+                    if (lock != valueLock()) continue;
+                    if (lock instanceof ForgeConfigFile && !((ForgeConfigFile) lock).isOpen()) return false;
+                    for (int i = 0; i < handles.length; i++) {
+                        if (!expectation.matches(i, handles[i].get())) return false;
+                    }
+                    return true;
+                }
+            }
+        };
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void set(String path, Object value) {
@@ -103,6 +141,54 @@ final class ForgeConfigValueStore implements ConfigValueStore {
     private Object valueLock() {
         ForgeConfigFile file = managedFile;
         return file != null ? file : this;
+    }
+
+    @Override
+    public ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
+        if (!values.keySet().containsAll(paths)) throw new IllegalArgumentException("Unknown config path");
+        return requireManagedFile().snapshotForEdit(paths);
+    }
+
+    @Override
+    public ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        while (true) {
+            Object lock = valueLock();
+            synchronized (lock) {
+                if (lock != valueLock()) continue;
+                if (lock instanceof ForgeConfigFile && !((ForgeConfigFile) lock).isOpen())
+                    throw new IllegalStateException("Config file is closed");
+                Map<String, Object> captured = new LinkedHashMap<>();
+                for (String path : paths) {
+                    ForgeConfigSpec.ConfigValue<?> value = values.get(path);
+                    if (value == null) throw new IllegalArgumentException("Unknown config path: " + path);
+                    captured.put(path, value.get());
+                }
+                return ConfigReadSnapshot.of(captured);
+            }
+        }
+    }
+
+    @Override
+    public ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes) {
+        changes.forEach((path, value) -> {
+            if (!validate(path, value)) throw new IllegalArgumentException("Invalid config value: " + path);
+        });
+        return requireManagedFile().compareAndSetAll(expected, changes);
+    }
+
+    @Override
+    public void setAll(Map<String, Object> changes) {
+        ForgeConfigFile file = requireManagedFile();
+        ConfigEditSnapshot snapshot = file.snapshotForEdit(changes.keySet());
+        if (compareAndSetAll(snapshot, changes) == ConfigCommitResult.CONFLICT) {
+            throw new IllegalStateException("Config changed during batch edit");
+        }
+    }
+
+    private ForgeConfigFile requireManagedFile() {
+        ForgeConfigFile file = managedFile;
+        if (file == null) throw new IllegalStateException("Config file has not been bound");
+        return file;
     }
 
     @Override

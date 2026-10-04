@@ -104,9 +104,7 @@ public class ConfigSyncToServer implements NetworkPacket {
             }
             parsedChanges.put(e.getKey(), parsed);
         }
-        for (Map.Entry<String, Object> e : parsedChanges.entrySet()) {
-            holder.set(e.getKey(), e.getValue());
-        }
+        holder.setAll(parsedChanges, xin.vanilla.banira.common.config.ConfigEditOrigin.REMOTE);
     }
 
     private static void sendNotify(Object sender, String langKey, long durationMs, Object... args) {

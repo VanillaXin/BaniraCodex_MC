@@ -22,19 +22,18 @@ public final class ConfigSnapshotClientHandler {
             return;
         }
         try {
-            applyValidatedSnapshot(holder, packet.snapshot());
-            holder.save();
+            Map<String, Object> snapshot = decodeValidatedSnapshot(holder, packet.snapshot());
+            BaniraClientScreenService.applyRemoteConfigSnapshot(packet.configName(), snapshot);
         } catch (Exception ex) {
             LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
             ConfigEditorNotifier.show("config_editor_fetch_apply_failed", 4000,
                     ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
             return;
         }
-        BaniraClientScreenService.refreshOpenConfigEditor(packet.configName());
         ConfigEditorNotifier.show("config_editor_fetch_applied", 3000, String.valueOf(packet.snapshot().size()));
     }
 
-    static void applyValidatedSnapshot(ConfigHolder holder, Map<String, String> snapshot) {
+    static Map<String, Object> decodeValidatedSnapshot(ConfigHolder holder, Map<String, String> snapshot) {
         Map<String, Object> parsedSnapshot = new LinkedHashMap<>();
         for (Map.Entry<String, String> e : snapshot.entrySet()) {
             Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
@@ -43,8 +42,6 @@ public final class ConfigSnapshotClientHandler {
             }
             parsedSnapshot.put(e.getKey(), parsed);
         }
-        for (Map.Entry<String, Object> e : parsedSnapshot.entrySet()) {
-            holder.set(e.getKey(), e.getValue());
-        }
+        return parsedSnapshot;
     }
 }

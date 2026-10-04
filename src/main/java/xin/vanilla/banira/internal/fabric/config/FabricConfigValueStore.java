@@ -1,15 +1,15 @@
 package xin.vanilla.banira.internal.fabric.config;
 
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
-import xin.vanilla.banira.common.config.ConfigListSpecHelper;
-import xin.vanilla.banira.common.config.ConfigValueStore;
+import xin.vanilla.banira.common.config.*;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 
 /**
  * Fabric 配置后端，读写 Banira 描述符覆盖的 TOML 子集。
@@ -21,13 +21,14 @@ final class FabricConfigValueStore implements ConfigValueStore {
     private final Path file;
     private final Map<String, ConfigEntryDescriptor> descriptors;
     private final Map<String, Object> values = new LinkedHashMap<>();
+    private byte[] acceptedBytes;
 
     FabricConfigValueStore(Path file, List<ConfigEntryDescriptor> descriptors) {
-        this.file = file;
+        this.file = file.toAbsolutePath().normalize();
         Map<String, ConfigEntryDescriptor> byPath = new LinkedHashMap<>();
         for (ConfigEntryDescriptor descriptor : descriptors) {
             byPath.put(descriptor.getPath(), descriptor);
-            values.put(descriptor.getPath(), descriptor.getDefaultValue());
+            values.put(descriptor.getPath(), copyValue(descriptor.getDefaultValue()));
         }
         this.descriptors = Collections.unmodifiableMap(byPath);
         load();
@@ -35,21 +36,97 @@ final class FabricConfigValueStore implements ConfigValueStore {
 
     @Override
     public Set<String> paths() {
-        return Collections.unmodifiableSet(values.keySet());
+        return descriptors.keySet();
     }
 
     @Nullable
     @Override
-    public Object get(String path) {
-        return values.get(path);
+    public synchronized Object get(String path) {
+        return copyValue(values.get(path));
     }
 
     @Override
-    public void set(String path, Object value) {
+    public synchronized void set(String path, Object value) {
         Object normalized = normalize(path, value);
         if (normalized != null) {
-            values.put(path, normalized);
+            setAll(Collections.singletonMap(path, normalized));
         }
+    }
+
+    @Override
+    public synchronized boolean matchesStoredValue(String path, Object expected) {
+        return descriptors.containsKey(path) && ConfigValueExpectation.storedEquals(values.get(path), expected);
+    }
+
+    @Override
+    public BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
+        ConfigValueExpectation expectation = new ConfigValueExpectation(expected, allowEnumNames);
+        if (!descriptors.keySet().containsAll(expected.keySet())) return () -> false;
+        return () -> {
+            synchronized (this) {
+                for (int i = 0; i < expectation.size(); i++) {
+                    if (!expectation.matches(i, values.get(expectation.path(i)))) return false;
+                }
+                return true;
+            }
+        };
+    }
+
+    @Override
+    public synchronized ConfigReadSnapshot snapshotForRead(Set<String> paths) {
+        return ConfigReadSnapshot.of(capture(paths));
+    }
+
+    @Override
+    public synchronized ConfigEditSnapshot snapshotForEdit(Set<String> paths) {
+        byte[] disk = readBytes();
+        if (!Arrays.equals(disk, acceptedBytes)) {
+            throw new IllegalStateException("Reload externally changed config before editing: " + file);
+        }
+        return new ConfigEditSnapshot(this, file.getFileName().toString(), disk, capture(paths));
+    }
+
+    private Map<String, Object> capture(Set<String> paths) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        for (String path : paths) {
+            if (!descriptors.containsKey(path)) throw new IllegalArgumentException("Unknown config path: " + path);
+            snapshot.put(path, values.get(path));
+        }
+        return snapshot;
+    }
+
+    @Override
+    public synchronized void setAll(Map<String, Object> changes) {
+        ConfigEditSnapshot snapshot = snapshotForEdit(changes.keySet());
+        if (compareAndSetAll(snapshot, changes) == ConfigCommitResult.CONFLICT) {
+            throw new IllegalStateException("Config changed during batch edit: " + file);
+        }
+    }
+
+    @Override
+    public synchronized ConfigCommitResult compareAndSetAll(ConfigEditSnapshot expected, Map<String, Object> changes) {
+        if (!expected.belongsTo(this)) throw new IllegalArgumentException("Snapshot belongs to a different file");
+        if (!expected.getValues().keySet().containsAll(changes.keySet())) {
+            throw new IllegalArgumentException("Edit includes paths outside its snapshot");
+        }
+        Map<String, Object> candidate = new LinkedHashMap<>(values);
+        for (Map.Entry<String, Object> edit : changes.entrySet()) {
+            Object normalized = normalize(edit.getKey(), edit.getValue());
+            if (normalized == null) throw new IllegalArgumentException("Invalid config value: " + edit.getKey());
+            candidate.put(edit.getKey(), normalized);
+        }
+        byte[] original = expected.getSourceBytes();
+        if (!Arrays.equals(original, acceptedBytes) || !Arrays.equals(original, readBytes())
+                || !expected.getValues().entrySet().stream()
+                .allMatch(entry -> ConfigValueExpectation.storedEquals(values.get(entry.getKey()), entry.getValue()))) {
+            return ConfigCommitResult.CONFLICT;
+        }
+        if (candidate.equals(values)) return ConfigCommitResult.UNCHANGED;
+        return commit(candidate, original) ? ConfigCommitResult.APPLIED : ConfigCommitResult.CONFLICT;
+    }
+
+    private static Object copyValue(Object value) {
+        return value instanceof List<?> ? new ArrayList<>((List<?>) value) : value;
     }
 
     @Override
@@ -62,7 +139,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
     @Override
     public Object defaultValue(String path) {
         ConfigEntryDescriptor descriptor = descriptors.get(path);
-        return descriptor != null ? descriptor.getDefaultValue() : null;
+        return descriptor != null ? copyValue(descriptor.getDefaultValue()) : null;
     }
 
     @Override
@@ -95,53 +172,89 @@ final class FabricConfigValueStore implements ConfigValueStore {
     }
 
     @Override
-    public void save() {
+    public synchronized void save() {
+        if (!Arrays.equals(acceptedBytes, readBytes())) {
+            throw new IllegalStateException("External config change must be reloaded before saving: " + file);
+        }
+    }
+
+    private byte[] readBytes() {
+        try {
+            return Files.exists(file) ? Files.readAllBytes(file) : null;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read config: " + file, e);
+        }
+    }
+
+    private boolean commit(Map<String, Object> candidate, byte[] expectedBytes) {
+        Path staged = null;
         try {
             Files.createDirectories(file.getParent());
-            Files.write(file, renderToml().getBytes(StandardCharsets.UTF_8));
+            staged = Files.createTempFile(file.getParent(), ".banira-config-", ".tmp");
+            byte[] written = renderToml(candidate).getBytes(StandardCharsets.UTF_8);
+            Files.write(staged, written);
+            if (!Arrays.equals(expectedBytes, readBytes())) return false;
+            Files.move(staged, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            staged = null;
+            values.clear();
+            values.putAll(candidate);
+            acceptedBytes = written;
+            xin.vanilla.banira.internal.config.ManagedConfigFiles.markWritten(file);
+            return true;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to save config: " + file, e);
+            throw new IllegalStateException("Failed to commit config: " + file, e);
+        } finally {
+            if (staged != null) {
+                try { Files.deleteIfExists(staged); }
+                catch (IOException ignored) { }
+            }
         }
     }
 
     private void load() {
         if (Files.isRegularFile(file)) {
-            loadToml();
+            reload();
             return;
         }
-        save();
+        if (!commit(new LinkedHashMap<>(values), null)) {
+            throw new IllegalStateException("Config appeared during initial save: " + file);
+        }
     }
 
-    private void loadToml() {
+    synchronized void reload() {
+        byte[] bytes = readBytes();
+        if (Arrays.equals(bytes, acceptedBytes)) return;
+        if (bytes == null) throw new IllegalStateException("Missing config: " + file);
+        Map<String, Object> candidate = new LinkedHashMap<>();
+        descriptors.forEach((path, descriptor) -> candidate.put(path, copyValue(descriptor.getDefaultValue())));
         String table = "";
-        try {
-            for (String originalLine : Files.readAllLines(file, StandardCharsets.UTF_8)) {
-                String line = stripTomlComment(originalLine).trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-                if (line.startsWith("[") && line.endsWith("]")) {
-                    table = line.substring(1, line.length() - 1).trim();
-                    continue;
-                }
-                int equals = findUnquoted(line, '=');
-                if (equals <= 0) {
-                    continue;
-                }
-                String key = line.substring(0, equals).trim();
-                String path = table.isEmpty() ? key : table + "." + key;
-                ConfigEntryDescriptor descriptor = descriptors.get(path);
-                if (descriptor == null) {
-                    continue;
-                }
-                Object parsed = parseToml(descriptor, line.substring(equals + 1).trim());
-                if (parsed != null && validate(path, parsed)) {
-                    values.put(path, parsed);
-                }
+        for (String originalLine : new String(bytes, StandardCharsets.UTF_8).split("\\r?\\n")) {
+            String line = stripTomlComment(originalLine).trim();
+            if (line.isEmpty()) {
+                continue;
             }
-        } catch (IOException ignored) {
-            // 读取失败时保留描述符默认值，避免损坏的本地文件阻止游戏启动。
+            if (line.startsWith("[") && line.endsWith("]")) {
+                table = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            int equals = findUnquoted(line, '=');
+            if (equals <= 0) {
+                continue;
+            }
+            String key = line.substring(0, equals).trim();
+            String path = table.isEmpty() ? key : table + "." + key;
+            ConfigEntryDescriptor descriptor = descriptors.get(path);
+            if (descriptor == null) {
+                continue;
+            }
+            Object parsed = parseToml(descriptor, line.substring(equals + 1).trim());
+            Object normalized = normalize(path, parsed);
+            if (normalized == null) throw new IllegalArgumentException("Invalid config value: " + path);
+            candidate.put(path, normalized);
         }
+        values.clear();
+        values.putAll(candidate);
+        acceptedBytes = bytes;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -226,7 +339,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
         return result;
     }
 
-    private String renderToml() {
+    private String renderToml(Map<String, Object> candidate) {
         Map<String, List<String>> byTable = new LinkedHashMap<>();
         for (String path : descriptors.keySet()) {
             int dot = path.lastIndexOf('.');
@@ -236,15 +349,15 @@ final class FabricConfigValueStore implements ConfigValueStore {
         StringBuilder out = new StringBuilder("# Banira Codex config\n");
         List<String> rootPaths = byTable.remove("");
         if (rootPaths != null) {
-            appendTomlTable(out, "", rootPaths);
+            appendTomlTable(out, "", rootPaths, candidate);
         }
         for (Map.Entry<String, List<String>> table : byTable.entrySet()) {
-            appendTomlTable(out, table.getKey(), table.getValue());
+            appendTomlTable(out, table.getKey(), table.getValue(), candidate);
         }
         return out.toString();
     }
 
-    private void appendTomlTable(StringBuilder out, String table, List<String> paths) {
+    private void appendTomlTable(StringBuilder out, String table, List<String> paths, Map<String, Object> candidate) {
         if (!table.isEmpty()) {
             out.append('\n').append('[').append(table).append("]\n");
         }
@@ -252,7 +365,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
             int dot = path.lastIndexOf('.');
             String key = dot < 0 ? path : path.substring(dot + 1);
             out.append(key).append(" = ")
-                    .append(encodeToml(descriptors.get(path), values.get(path)))
+                    .append(encodeToml(descriptors.get(path), candidate.get(path)))
                     .append('\n');
         }
     }

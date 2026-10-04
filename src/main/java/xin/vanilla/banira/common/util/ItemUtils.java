@@ -99,8 +99,8 @@ public final class ItemUtils {
         if (!BaniraPlatforms.isInstalled()) {
             return null;
         }
-        String id = BaniraPlatforms.get().registryService().itemKey(item);
-        return id != null ? ResourceLocation.tryParse(id) : null;
+        Object id = BaniraPlatforms.get().registryService().itemKeyObject(item);
+        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
     }
 
     /**

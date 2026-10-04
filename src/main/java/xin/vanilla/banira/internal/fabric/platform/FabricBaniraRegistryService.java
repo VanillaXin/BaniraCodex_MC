@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * Fabric 1.19.2 注册表适配层；公开 API 只暴露 Object 与字符串 id。
+ * Fabric 注册表适配层；公开 API 只暴露 Object 与字符串 id。
  */
 public enum FabricBaniraRegistryService implements BaniraRegistryService {
     INSTANCE;
@@ -46,6 +46,11 @@ public enum FabricBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
+    public @Nullable Object itemKeyObject(@Nullable Object item) {
+        return item instanceof Item ? Registry.ITEM.getKey((Item) item) : null;
+    }
+
+    @Override
     public @Nullable Object item(@Nullable String id) {
         ResourceLocation location = parse(id);
         return location != null ? Registry.ITEM.get(location) : null;
@@ -69,6 +74,11 @@ public enum FabricBaniraRegistryService implements BaniraRegistryService {
     public @Nullable String entityTypeKey(@Nullable Object entityType) {
         ResourceLocation key = entityType instanceof EntityType ? Registry.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
         return key != null ? key.toString() : null;
+    }
+
+    @Override
+    public @Nullable Object entityTypeKeyObject(@Nullable Object entityType) {
+        return entityType instanceof EntityType ? Registry.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
     }
 
     @Override

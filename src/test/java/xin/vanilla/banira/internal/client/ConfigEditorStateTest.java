@@ -12,6 +12,39 @@ import static org.junit.Assert.assertEquals;
 
 public class ConfigEditorStateTest {
 
+    @Test public void remoteSnapshotStaysInEditorAcrossRebuildAndCannotBeSavedLocally() {
+        ConfigHolder holder = holder();
+        ConfigEditorState state = new ConfigEditorState(holder);
+        TestWidget widget = new TestWidget("a");
+        state.registerEntry("first", widget);
+        state.acceptRemoteSnapshot("wrong", Collections.singletonMap("first", "ignored"));
+        assertEquals("a", widget.value);
+        state.acceptRemoteSnapshot(holder.getConfigName(), Collections.singletonMap("first", "script:serverOnly"));
+        assertEquals("script:serverOnly", widget.value);
+        assertEquals("a", holder.get("first"));
+        assertEquals(0, state.pendingChangeCount());
+        state.refreshEntriesFromHolder(holder.getConfigName());
+        assertEquals("script:serverOnly", widget.value);
+        widget.value = "script:changed";
+        state.markModified("first", widget.value);
+        assertEquals("script:changed", state.collectTouchedPathsForSync().get("first"));
+        state.markClean();
+        state.clearEntries();
+        TestWidget rebuilt = new TestWidget("a");
+        state.registerEntry("first", rebuilt);
+        assertEquals("script:changed", rebuilt.value);
+        state.collectModifiedFromWidgets();
+        try {
+            state.applyModifiedToHolder();
+            org.junit.Assert.fail("Remote editor must never save into local configuration");
+        } catch (IllegalStateException expected) { }
+        assertEquals("a", holder.get("first"));
+        ConfigEditorState reopened = new ConfigEditorState(holder);
+        TestWidget local = new TestWidget(holder.get("first"));
+        reopened.registerEntry("first", local);
+        assertEquals("a", local.value);
+    }
+
     @Test
     public void countsOnlyValuesDifferentFromOpeningBaseline() {
         ConfigEditorState state = new ConfigEditorState(holder());
@@ -116,6 +149,8 @@ public class ConfigEditorStateTest {
         public void set(String path, Object value) {
             values.put(path, value);
         }
+
+        @Override public void setAll(Map<String, Object> changes) { values.putAll(changes); }
 
         @Override
         public Class<?> valueClass(String path) {

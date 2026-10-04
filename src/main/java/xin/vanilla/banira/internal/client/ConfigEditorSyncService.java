@@ -1,7 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.network.packet.ConfigFetchRequestToServer;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
@@ -37,21 +36,4 @@ public final class ConfigEditorSyncService {
         PacketUtils.sendPacketToServer(new ConfigFetchRequestToServer(holder.getConfigName()));
     }
 
-    public static void applyEncodedValues(ConfigHolder holder, Map<String, String> encodedPayload) {
-        for (Map.Entry<String, String> entry : encodedPayload.entrySet()) {
-            holder.set(entry.getKey(), decodeValue(holder, entry.getKey(), entry.getValue()));
-        }
-    }
-
-    private static Object decodeValue(ConfigHolder holder, String path, String value) {
-        Object decoded = ConfigSyncToServer.decodeNetworkValue(holder, path, value);
-        ConfigEntryDescriptor desc = holder.getDescriptor(path);
-        if (desc != null && desc.getValueType() == ConfigEntryDescriptor.ConfigValueType.DOUBLE && decoded instanceof Double) {
-            double d = (Double) decoded;
-            int dp = desc.getDecimalPlaces();
-            double factor = Math.pow(10, dp);
-            return Math.round(d * factor) / factor;
-        }
-        return decoded;
-    }
 }

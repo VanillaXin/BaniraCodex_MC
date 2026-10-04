@@ -12,6 +12,12 @@ import javax.annotation.Nullable;
  * Banira-owned screen operations that still need native Minecraft screen types.
  */
 public final class BaniraClientScreenService {
+    public static void applyRemoteConfigSnapshot(String configName, java.util.Map<String, Object> snapshot) {
+        Screen open = Minecraft.getInstance().screen;
+        if (open instanceof ConfigEditorScreen) {
+            ((ConfigEditorScreen) open).applyRemoteSnapshot(configName, snapshot);
+        }
+    }
 
     private BaniraClientScreenService() {
     }

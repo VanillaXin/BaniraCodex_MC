@@ -34,17 +34,26 @@ final class FabricConfigAdapter {
         // Fabric 的模组配置与原版约定一致，直接位于游戏 config 根目录
         Path configDirectory = BaniraPlatforms.get().configDir();
         Path file = configDirectory.resolve(config.name() + ".toml");
+        FabricConfigValueStore store = new FabricConfigValueStore(file, descriptors);
         ConfigHolder holder = ConfigHolder.create(
                 modId,
                 config.name(),
                 config.type(),
-                new FabricConfigValueStore(file, descriptors),
+                store,
                 descriptors,
                 categoryTooltips,
                 categoryTitleSpecs
         );
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
+        xin.vanilla.banira.internal.config.ManagedConfigFiles.register(file,
+                config.type() == ConfigScope.CLIENT
+                        ? xin.vanilla.banira.internal.config.ManagedConfigFiles.Scope.CLIENT
+                        : xin.vanilla.banira.internal.config.ManagedConfigFiles.Scope.COMMON,
+                () -> {
+                    store.reload();
+                    holder.acceptExternalReload();
+                });
     }
 
     static <T> T view(Class<?> configClass, Class<T> viewClass) {

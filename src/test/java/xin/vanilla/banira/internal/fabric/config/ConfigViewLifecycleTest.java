@@ -97,7 +97,7 @@ public class ConfigViewLifecycleTest {
         assertEquals(2, retained.rules().size());
         Path file = directory.resolve("typed-fixture.toml");
         byte[] before = Files.readAllBytes(file);
-        assertFalse(new String(before, StandardCharsets.UTF_8).contains("0.125"));
+        assertTrue(new String(before, StandardCharsets.UTF_8).contains("0.125"));
         root.handle().save();
         FabricConfigAdapter.register(TypedFixture.class, "test");
         assertEquals(Arrays.asList("tick, clazz -> tick >= 5", "a,b"), retained.rules());

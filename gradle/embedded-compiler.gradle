@@ -1,0 +1,45 @@
+// Only the compiler is embedded; optional game integrations stay external.
+configurations { embeddedCompiler; scriptCompilerCollision }
+configurations.implementation.extendsFrom(configurations.embeddedCompiler)
+repositories { mavenCentral() }
+dependencies {
+    embeddedCompiler 'org.codehaus.janino:janino:3.1.12'
+    embeddedCompiler 'org.codehaus.janino:commons-compiler:3.1.12'
+    scriptCompilerCollision 'org.codehaus.janino:janino:3.0.16'
+    scriptCompilerCollision 'org.codehaus.janino:commons-compiler:3.0.16'
+}
+
+tasks.named('jar', Jar).configure {
+    destinationDirectory.set(layout.buildDirectory.dir('unshaded'))
+    archiveClassifier.set('unshaded')
+}
+tasks.named('shadowJar').configure {
+    archiveBaseName.set(mod_id)
+    archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
+    archiveClassifier.set('')
+    destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
+    configurations = [project.configurations.embeddedCompiler]
+    relocate 'org.codehaus.janino', 'xin.vanilla.banira.internal.shaded.janino'
+    relocate 'org.codehaus.commons', 'xin.vanilla.banira.internal.shaded.commons'
+    mergeServiceFiles()
+    manifest.inheritFrom(tasks.jar.manifest)
+    finalizedBy 'reobfShadowJar'
+}
+reobf { shadowJar {} }
+tasks.named('assemble').configure { dependsOn 'shadowJar' }
+tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
+    dependsOn 'reobfShadowJar'
+}
+
+tasks.register('scriptArtifactTest', Test) {
+    dependsOn 'reobfShadowJar', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter { includeTestsMatching '*ScriptArtifactTest' }
+    inputs.file(tasks.shadowJar.archiveFile)
+    inputs.files(configurations.scriptCompilerCollision)
+    doFirst {
+        systemProperty 'banira.scriptArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
+        systemProperty 'banira.scriptCollision', configurations.scriptCompilerCollision.asPath
+    }
+}

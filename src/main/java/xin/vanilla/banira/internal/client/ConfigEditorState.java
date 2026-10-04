@@ -15,6 +15,7 @@ public final class ConfigEditorState {
     private final Map<String, ConfigEditorEntryWidget> entryWidgets = new LinkedHashMap<>();
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
     private final Map<String, Object> baselineValues = new LinkedHashMap<>();
+    private Map<String, Object> remoteValues;
 
     public ConfigEditorState(ConfigHolder holder) {
         this.holder = holder;
@@ -33,6 +34,9 @@ public final class ConfigEditorState {
 
     public void registerEntry(String path, ConfigEditorEntryWidget widget) {
         if (path != null && widget != null) {
+            if (remoteValues != null && remoteValues.containsKey(path)) {
+                widget.setValue(snapshot(remoteValues.get(path)));
+            }
             entryWidgets.put(path, widget);
             baselineValues.put(path, snapshot(widget.getValue()));
         }
@@ -86,13 +90,27 @@ public final class ConfigEditorState {
         clearPendingChanges();
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
             baselineValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
+            if (remoteValues != null) remoteValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
         }
     }
 
     public void applyModifiedToHolder() {
-        for (Map.Entry<String, Object> e : modifiedValues.entrySet()) {
-            holder.set(e.getKey(), e.getValue());
-        }
+        if (isRemoteSnapshot()) throw new IllegalStateException("Remote configuration must be sent to its server");
+        holder.setAll(modifiedValues, xin.vanilla.banira.common.config.ConfigEditOrigin.UI);
+    }
+
+    public boolean isRemoteSnapshot() {
+        return remoteValues != null;
+    }
+
+    public void acceptRemoteSnapshot(String configName, Map<String, Object> values) {
+        if (!holder.getConfigName().equals(configName)) return;
+        remoteValues = new LinkedHashMap<>();
+        values.forEach((path, value) -> remoteValues.put(path, snapshot(value)));
+        entryWidgets.forEach((path, widget) -> {
+            if (remoteValues.containsKey(path)) widget.setValue(snapshot(remoteValues.get(path)));
+        });
+        markClean();
     }
 
     public boolean hasInvalidEntryWidgets() {
@@ -128,7 +146,7 @@ public final class ConfigEditorState {
                     map.put(path, v);
                 }
             } else {
-                Object v = holder.get(path);
+                Object v = remoteValues != null ? remoteValues.get(path) : holder.get(path);
                 if (v != null) {
                     map.put(path, v);
                 }
@@ -138,7 +156,7 @@ public final class ConfigEditorState {
     }
 
     public void refreshEntriesFromHolder(String configName) {
-        if (!holder.getConfigName().equals(configName)) {
+        if (isRemoteSnapshot() || !holder.getConfigName().equals(configName)) {
             return;
         }
         for (Map.Entry<String, ConfigEditorEntryWidget> e : entryWidgets.entrySet()) {

@@ -284,13 +284,17 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void saveConfig() {
+        if (editorState.isRemoteSnapshot()) {
+            syncToServer();
+            return;
+        }
         editorState.collectModifiedFromWidgets();
         if (editorState.hasInvalidEntryWidgets()) {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
         }
-        editorState.applyModifiedToHolder();
         try {
+            editorState.applyModifiedToHolder();
             holder.save();
             editorState.markClean();
             ConfigEditorNotifier.show("config_editor_save_success", 2000);
@@ -300,6 +304,10 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void syncToServer() {
+        if (!ConfigEditorSyncService.hasServerConnection()) {
+            ConfigEditorNotifier.show("config_editor_sync_not_connected", 3500);
+            return;
+        }
         if (editorState.hasInvalidEntryWidgets()) {
             ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
             return;
@@ -312,7 +320,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            ConfigEditorSyncService.applyEncodedValues(holder, toSync);
             editorState.markClean();
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_failed", 4000,
@@ -340,7 +347,6 @@ public class ConfigEditorScreen extends BaniraScreen {
         Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
         try {
             ConfigEditorSyncService.sendSync(holder, toSync);
-            ConfigEditorSyncService.applyEncodedValues(holder, toSync);
             editorState.markClean();
         } catch (Exception ex) {
             ConfigEditorNotifier.show("config_editor_sync_full_failed", 4000,
@@ -375,6 +381,10 @@ public class ConfigEditorScreen extends BaniraScreen {
             return;
         }
         editorState.refreshEntriesFromHolder(configName);
+    }
+
+    public void applyRemoteSnapshot(String configName, Map<String, Object> snapshot) {
+        editorState.acceptRemoteSnapshot(configName, snapshot);
     }
 
     @Override

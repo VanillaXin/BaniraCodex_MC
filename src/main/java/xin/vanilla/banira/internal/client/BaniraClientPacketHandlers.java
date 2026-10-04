@@ -37,40 +37,7 @@ public final class BaniraClientPacketHandlers {
     }
 
     public static void applyConfigSnapshot(ConfigSnapshotToClient packet) {
-        ConfigHolder holder = ConfigRegistry.get(packet.configName());
-        if (holder == null) {
-            return;
-        }
-        try {
-            Map<String, Object> parsedSnapshot = new LinkedHashMap<>();
-            for (Map.Entry<String, String> e : packet.snapshot().entrySet()) {
-                Object parsed = ConfigSyncToServer.decodeNetworkValue(holder, e.getKey(), e.getValue());
-                if (!holder.validate(e.getKey(), parsed)) {
-                    throw new IllegalArgumentException("Invalid config value: " + e.getKey());
-                }
-                parsedSnapshot.put(e.getKey(), parsed);
-            }
-            for (Map.Entry<String, Object> e : parsedSnapshot.entrySet()) {
-                holder.set(e.getKey(), e.getValue());
-            }
-            holder.save();
-        } catch (Exception ex) {
-            LOGGER.error("Failed to apply config snapshot for {}", packet.configName(), ex);
-            Notification err = Notification.ofComponent(
-                    BaniraComponent.get().transClientAuto("config_editor_fetch_apply_failed",
-                            ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
-            err.position(EnumPosition.TOP_RIGHT).durationTime(4000);
-            BaniraNotifications.show(err);
-            return;
-        }
-        Screen open = BaniraClientRuntime.currentScreen();
-        if (open instanceof ConfigEditorScreen screen) {
-            screen.refreshUIFromHolderAfterRemoteFetch(packet.configName());
-        }
-        Notification ok = Notification.ofComponent(
-                BaniraComponent.get().transClientAuto("config_editor_fetch_applied", packet.snapshot().size()));
-        ok.position(EnumPosition.TOP_RIGHT).durationTime(3000);
-        BaniraNotifications.show(ok);
+        ConfigSnapshotClientHandler.apply(packet);
     }
 
     public static void applyNotificationTypes(NotificationTypesSyncToClient packet) {

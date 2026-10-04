@@ -1,0 +1,37 @@
+// Only the compiler is embedded; optional game integrations stay external.
+configurations { embeddedCompiler; scriptCompilerCollision }
+configurations.implementation.extendsFrom(configurations.embeddedCompiler)
+repositories { mavenCentral() }
+
+dependencies {
+    embeddedCompiler 'org.codehaus.janino:janino:3.1.12'
+    embeddedCompiler 'org.codehaus.janino:commons-compiler:3.1.12'
+    scriptCompilerCollision 'org.codehaus.janino:janino:3.0.16'
+    scriptCompilerCollision 'org.codehaus.janino:commons-compiler:3.0.16'
+}
+
+tasks.named('shadowJar').configure {
+    archiveClassifier.set('shaded-dev')
+    destinationDirectory.set(layout.buildDirectory.dir('shaded'))
+    configurations = [project.configurations.embeddedCompiler]
+    relocate 'org.codehaus.janino', 'xin.vanilla.banira.internal.shaded.janino'
+    relocate 'org.codehaus.commons', 'xin.vanilla.banira.internal.shaded.commons'
+    mergeServiceFiles()
+}
+tasks.named('remapJar').configure {
+    dependsOn 'shadowJar'
+    inputFile.set(tasks.shadowJar.archiveFile)
+}
+
+tasks.register('scriptArtifactTest', Test) {
+    dependsOn 'remapJar', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter { includeTestsMatching '*ScriptArtifactTest' }
+    inputs.file(tasks.remapJar.archiveFile)
+    inputs.files(configurations.scriptCompilerCollision)
+    doFirst {
+        systemProperty 'banira.scriptArtifact', tasks.remapJar.archiveFile.get().asFile.absolutePath
+        systemProperty 'banira.scriptCollision', configurations.scriptCompilerCollision.asPath
+    }
+}

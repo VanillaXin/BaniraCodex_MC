@@ -97,9 +97,7 @@ public class ConfigSyncToServer implements NetworkPacket {
                     }
                     parsedChanges.put(e.getKey(), parsed);
                 }
-                for (Map.Entry<String, Object> e : parsedChanges.entrySet()) {
-                    holder.set(e.getKey(), e.getValue());
-                }
+                holder.setAll(parsedChanges, xin.vanilla.banira.common.config.ConfigEditOrigin.REMOTE);
                 saveConfig(holder);
                 sendNotify(sender, "config_editor_sync_server_ok", NOTIFY_OK_MS,
                         String.valueOf(packet.changes.size()));
@@ -109,6 +107,18 @@ public class ConfigSyncToServer implements NetworkPacket {
             }
         });
         ctx.markHandled();
+    }
+
+    static void applyValidatedChanges(ConfigHolder holder, Map<String, String> changes) {
+        Map<String, Object> parsedChanges = new HashMap<>();
+        for (Map.Entry<String, String> e : changes.entrySet()) {
+            Object parsed = decodeNetworkValue(holder, e.getKey(), e.getValue());
+            if (!holder.validate(e.getKey(), parsed)) {
+                throw new IllegalArgumentException("Invalid config value: " + e.getKey());
+            }
+            parsedChanges.put(e.getKey(), parsed);
+        }
+        holder.setAll(parsedChanges, xin.vanilla.banira.common.config.ConfigEditOrigin.REMOTE);
     }
 
     private static void sendNotify(Object sender, String langKey, long durationMs, Object... args) {

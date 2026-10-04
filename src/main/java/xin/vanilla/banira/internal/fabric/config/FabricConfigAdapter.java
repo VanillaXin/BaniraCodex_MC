@@ -47,12 +47,14 @@ final class FabricConfigAdapter {
         );
         HOLDER_MAP.put(configClass, holder);
         ConfigRegistry.registerHolder(holder);
-        ManagedConfigFiles.Scope scope = config.type() == ConfigScope.CLIENT
-                ? ManagedConfigFiles.Scope.CLIENT : ManagedConfigFiles.Scope.COMMON;
-        ManagedConfigFiles.register(file, scope, () -> {
-            store.reloadFromDisk();
-            holder.acceptExternalReload();
-        });
+        xin.vanilla.banira.internal.config.ManagedConfigFiles.register(file,
+                config.type() == ConfigScope.CLIENT
+                        ? xin.vanilla.banira.internal.config.ManagedConfigFiles.Scope.CLIENT
+                        : xin.vanilla.banira.internal.config.ManagedConfigFiles.Scope.COMMON,
+                () -> {
+                    store.reload();
+                    holder.acceptExternalReload();
+                });
     }
 
     static <T> T view(Class<?> configClass, Class<T> viewClass) {

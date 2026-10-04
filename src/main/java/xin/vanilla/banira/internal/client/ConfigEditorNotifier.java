@@ -6,7 +6,7 @@ import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 /**
- * 配置界面共用的轻量通知入口。
+ * Small notification helper for config editor actions.
  */
 public final class ConfigEditorNotifier {
     private ConfigEditorNotifier() {

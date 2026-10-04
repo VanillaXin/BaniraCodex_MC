@@ -39,13 +39,18 @@ public enum ForgeBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
-    public @Nullable String itemKey(@Nullable Object item) {
-        ResourceLocation key = item instanceof Item ? ForgeRegistries.ITEMS.getKey((Item) item) : null;
+    public String itemKey(Object item) {
+        ResourceLocation key = itemKeyObject(item);
         return key != null ? key.toString() : null;
     }
 
     @Override
-    public @Nullable Object item(@Nullable String id) {
+    public ResourceLocation itemKeyObject(Object item) {
+        return item instanceof Item && ForgeRegistries.ITEMS != null ? ForgeRegistries.ITEMS.getKey((Item) item) : null;
+    }
+
+    @Override
+    public Object item(String id) {
         ResourceLocation location = parse(id);
         return location != null ? ForgeRegistries.ITEMS.getValue(location) : null;
     }
@@ -70,13 +75,19 @@ public enum ForgeBaniraRegistryService implements BaniraRegistryService {
     }
 
     @Override
-    public @Nullable String entityTypeKey(@Nullable Object entityType) {
-        ResourceLocation key = entityType instanceof EntityType ? ForgeRegistries.ENTITY_TYPES.getKey((EntityType<?>) entityType) : null;
+    public String entityTypeKey(Object entityType) {
+        ResourceLocation key = entityTypeKeyObject(entityType);
         return key != null ? key.toString() : null;
     }
 
     @Override
-    public @Nullable Object entityType(@Nullable String id) {
+    public ResourceLocation entityTypeKeyObject(Object entityType) {
+        return entityType instanceof EntityType && ForgeRegistries.ENTITY_TYPES != null
+                ? ForgeRegistries.ENTITY_TYPES.getKey((EntityType<?>) entityType) : null;
+    }
+
+    @Override
+    public Object entityType(String id) {
         ResourceLocation location = parse(id);
         return location != null ? ForgeRegistries.ENTITY_TYPES.getValue(location) : null;
     }

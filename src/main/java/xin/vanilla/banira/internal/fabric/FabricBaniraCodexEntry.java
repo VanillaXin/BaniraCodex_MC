@@ -63,11 +63,6 @@ public final class FabricBaniraCodexEntry implements ModInitializer {
         ServerWorldEvents.UNLOAD.register((server, world) -> BaniraEventBus.dispatchWorldUnload(worldEvent(world)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 BaniraEventBus.dispatchPlayerLoggedIn(playerEvent(handler.player)));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            BaniraPlayerEvent event = playerEvent(handler.player);
-            BaniraEventBus.dispatchPlayerSave(event);
-            BaniraEventBus.dispatchPlayerLoggedOut(event);
-        });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
                 BaniraEventBus.dispatchPlayerChangedDimension(new BaniraPlayerDimensionEvent(
                         player,

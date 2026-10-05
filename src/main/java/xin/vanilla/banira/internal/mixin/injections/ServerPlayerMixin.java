@@ -3,14 +3,27 @@ package xin.vanilla.banira.internal.mixin.injections;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.common.util.PlayerOptionsManager;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.fabric.event.ServerPlayerLogoutState;
 
 @Mixin(ServerPlayer.class)
-public abstract class ServerPlayerMixin {
+public abstract class ServerPlayerMixin implements ServerPlayerLogoutState {
+    @Unique
+    private boolean banira$logoutDispatched;
+
+    @Override
+    @Unique
+    public boolean banira$beginLogout() {
+        if (banira$logoutDispatched) return false;
+        banira$logoutDispatched = true;
+        return true;
+    }
+
     @Inject(
             method = "updateOptions",
             at = @At("TAIL"),

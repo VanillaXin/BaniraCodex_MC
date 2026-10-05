@@ -24,9 +24,7 @@ import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionManager;
 import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
-import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
-import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.*;
 import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
@@ -57,13 +55,6 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.player != null) {
                 BaniraClientEventHub.dispatchClientPlayerLoggedIn(client.player);
-            }
-        });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            if (client.player != null) {
-                BaniraClientEventHub.dispatchClientPlayerLoggedOut(client.player);
-                AdvancementUtils.clearAdvancementData();
-                PlayerUtils.removeRemoteServerDataStatus(client.player);
             }
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

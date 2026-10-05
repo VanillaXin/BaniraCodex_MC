@@ -59,8 +59,8 @@ public class CodexNavigationScreen extends BaniraScreen {
         int innerH = height - CARD_MARGIN * 2;
         int btnW = Math.min(340, width - CARD_MARGIN * 2);
         int cx = (width - btnW) / 2;
-        int gap = Math.max(2, Math.min(BTN_GAP, (innerH - 6 * BTN_H) / 5));
-        int contentH = 6 * BTN_H + 5 * gap;
+        int gap = Math.max(2, Math.min(BTN_GAP, (innerH - 5 * BTN_H) / 4));
+        int contentH = 5 * BTN_H + 4 * gap;
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
         addNavButton(cx, y, btnW, "codex_navigation_notification_log",
@@ -81,10 +81,6 @@ public class CodexNavigationScreen extends BaniraScreen {
 
         addNavButton(cx, y, btnW, "custom_quick_action_title",
                 () -> BaniraClientRuntime.setScreen(new CustomQuickActionConfigScreen(this)));
-
-        y += BTN_H + gap;
-        addNavButton(cx, y, btnW, "notification_hud_position",
-                () -> BaniraClientRuntime.setScreen(new NotificationHudPositionScreen(this)));
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");

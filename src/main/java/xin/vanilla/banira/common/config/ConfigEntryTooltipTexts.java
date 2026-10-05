@@ -5,6 +5,8 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.common.util.ITranslator;
+import xin.vanilla.banira.common.enums.EnumI18nType;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,24 @@ import java.util.Map;
 public final class ConfigEntryTooltipTexts {
 
     private ConfigEntryTooltipTexts() {
+    }
+
+    public static boolean hasGuiTooltip(ConfigEntryDescriptor desc, String modId) {
+        return desc != null && (resourceTooltip(desc, modId) != null || hasGuiTooltip(desc));
+    }
+
+    private static Component resourceTooltip(ConfigEntryDescriptor desc, String modId) {
+        String key = desc.getTooltipTranslationKey();
+        if (StringUtils.isNullOrEmptyEx(key)) {
+            if (StringUtils.isNullOrEmptyEx(desc.getPath())) return null;
+            key = "config." + desc.getPath() + ".description";
+        }
+        ITranslator translator = Translator.of(modId);
+        String translated = translator.translate(EnumI18nType.WORD, key);
+        if (StringUtils.isNullOrEmptyEx(translated) || translated.equals(translator.getKey(EnumI18nType.WORD, key))) {
+            return null;
+        }
+        return new ScopedComponent(modId).transClientAuto(key);
     }
 
     public static boolean hasGuiTooltip(ConfigEntryDescriptor desc) {
@@ -46,6 +66,8 @@ public final class ConfigEntryTooltipTexts {
         if (desc == null) {
             return BaniraComponent.get().literal("");
         }
+        Component resource = resourceTooltip(desc, modId);
+        if (resource != null) return resource;
         switch (desc.getTooltipGuiKind()) {
             case TRANSLATION_KEY:
                 return new ScopedComponent(modId).transClientAuto(desc.getTooltipTranslationKey());

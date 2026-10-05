@@ -42,6 +42,7 @@
   "word.banira_codex.config_editor_save": "保存",
   "word.banira_codex.config_editor_save_success": "配置已保存",
   "word.banira_codex.config_editor_save_tooltip": "将修改保存到本地配置文件",
+  "word.banira_codex.config.notificationHud.mode.description": "显示模式",
   "word.banira_codex.config_editor_save_tooltip_network": "单击：保存当前修改，拉取服务端配置后仅保存到服务端\n长按：从服务端拉取最新配置并刷新本界面",
   "word.banira_codex.config_editor_sync": "同步至服务端",
   "word.banira_codex.config_editor_sync_tooltip": "单击：仅同步本会话内改动过的配置项\n长按：上传全部配置项至服务端",

@@ -273,7 +273,7 @@ public final class ConfigEditorRowFactory {
     }
 
     private void addTooltip(ConfigEditorEntryRowWidget row, ConfigEntryDescriptor desc, double x, double y, double w, int rowH) {
-        if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc)) {
+        if (!ConfigEntryTooltipTexts.hasGuiTooltip(desc, configModId())) {
             return;
         }
         TooltipWidget tooltip = new TooltipWidget(screen, new ScreenCoordinate(x, y, labelTextWidth(w), rowH));

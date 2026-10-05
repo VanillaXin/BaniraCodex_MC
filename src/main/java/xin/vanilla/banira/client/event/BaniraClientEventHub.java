@@ -263,6 +263,9 @@ public final class BaniraClientEventHub {
                 QuickActionOverlay.get().flushSaveIfNeeded();
             }
             NotificationManager.get().render(nativeGraphics);
+            if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+                xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
+            }
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
             TooltipWidget.flushPopupFrame(nativeGraphics);
         }

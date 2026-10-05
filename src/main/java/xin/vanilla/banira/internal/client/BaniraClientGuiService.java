@@ -40,6 +40,7 @@ public final class BaniraClientGuiService {
 
     public static boolean handleMouseClicked(Screen screen, BaniraMouseEvent event) {
         InputStateManager.handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
+        if (NotificationUnreadHud.handleClick(event.mouseX(), event.mouseY(), event.button())) return true;
         if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
             return true;
         }

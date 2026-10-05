@@ -5,8 +5,8 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.*;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -15,20 +15,21 @@ import java.util.function.Consumer;
 public final class BaniraEventBus {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final List<Consumer<BaniraServerEvent>> serverStartingCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraServerEvent>> serverStartedCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraServerEvent>> serverStoppingCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraServerEvent>> serverTickCallbacks = new ArrayList<>();
+    // Mod construction can register concurrently; dispatch keeps one stable snapshot.
+    private static final List<Consumer<BaniraServerEvent>> serverStartingCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStartedCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverStoppingCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraServerEvent>> serverTickCallbacks = new CopyOnWriteArrayList<>();
 
-    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedInCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedOutCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraPlayerDimensionEvent>> playerChangedDimensionCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraPlayerEvent>> playerSaveCallbacks = new ArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedInCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerLoggedOutCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraPlayerDimensionEvent>> playerChangedDimensionCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraPlayerEvent>> playerSaveCallbacks = new CopyOnWriteArrayList<>();
 
-    private static final List<Runnable> worldSaveCallbacks = new ArrayList<>();
-    private static final List<Runnable> chunkSaveCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraWorldEvent>> worldUnloadCallbacks = new ArrayList<>();
-    private static final List<Consumer<BaniraWorldEvent>> worldTickCallbacks = new ArrayList<>();
+    private static final List<Runnable> worldSaveCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Runnable> chunkSaveCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldUnloadCallbacks = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<BaniraWorldEvent>> worldTickCallbacks = new CopyOnWriteArrayList<>();
 
     private BaniraEventBus() {
     }

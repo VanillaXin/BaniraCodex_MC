@@ -55,7 +55,7 @@ public class ClientConfig implements ConfigData {
     private NotificationHudCategory notificationHud = new NotificationHudCategory();
 
     @ConfigEntry.Gui.CollapsibleObject
-    @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域\n重叠区域共享空间，无法放下的气泡等待显示", en_us = "Notification regions\nOverlapping regions share space; bubbles wait until space is available")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域", en_us = "Notification regions")
     private NotificationRegionsCategory notificationRegions = new NotificationRegionsCategory();
 
     @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：相同类型且内容一致时，\n在此时间窗（毫秒）内到达的重复项合并为一条并显示次数\n0 关闭合并",

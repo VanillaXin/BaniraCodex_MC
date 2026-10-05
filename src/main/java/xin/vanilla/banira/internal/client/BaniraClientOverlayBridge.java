@@ -40,6 +40,9 @@ public final class BaniraClientOverlayBridge {
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
         NotificationManager.get().render(graphics);
+        if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+            xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
+        }
     }
 
     public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
@@ -49,9 +52,10 @@ public final class BaniraClientOverlayBridge {
 
     /** Fabric HUD 回调保留统一签名，具体事件分发由加载器入口完成。 */
     public static void renderHud(@Nonnull GuiGraphics graphics, float partialTick) {
-        renderHudOverlay(graphics);
+        boolean screenOpen = BaniraClientRuntime.currentScreen() != null;
+        if (!screenOpen) renderHudOverlay(graphics);
         BaniraClientEventHub.Client.fireRenderOverlayPostNative(
-                HudOverlayElement.ALL, graphics.pose(), partialTick, false);
+                HudOverlayElement.ALL, graphics.pose(), partialTick, screenOpen);
     }
 
     public static void tickScreenInteraction(@Nonnull Screen screen, double mouseX, double mouseY) {
@@ -61,6 +65,7 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static boolean handleMouseClicked(@Nullable Screen screen, double mouseX, double mouseY, int button) {
+        if (xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(mouseX, mouseY, button)) return true;
         if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, mouseX, mouseY, button)) {
             return true;
         }

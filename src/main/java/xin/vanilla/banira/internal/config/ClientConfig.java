@@ -67,7 +67,7 @@ public class ClientConfig implements ConfigData {
     private NotificationHudCategory notificationHud = new NotificationHudCategory();
 
     @ConfigEntry.Gui.CollapsibleObject
-    @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域\n重叠区域共享空间，无法放下的气泡等待显示", en_us = "Notification regions\nOverlapping regions share space; bubbles wait until space is available")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域", en_us = "Notification regions")
     private NotificationRegionsCategory notificationRegions = new NotificationRegionsCategory();
 
     @Getter(AccessLevel.NONE)

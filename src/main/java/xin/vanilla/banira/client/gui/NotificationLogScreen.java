@@ -49,8 +49,8 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final float CLOSE_BTN_SIZE = 10f;
     private static final int SCREEN_CARD_MARGIN = 16;
     private static final float CLOSE_BTN_PAD = 6f;
-    private static final int TYPE_CFG_BTN_H = 22;
-    private static final int TYPE_CFG_BTN_GAP = 6;
+    private static final int TOOLBAR_SIZE = 20;
+    private static final int TOOLBAR_GAP = 4;
     private static final double LEFT_RATIO = 0.38;
     private static final int DETAIL_AFTER_TIME_GAP = 4;
     private static final int DETAIL_AFTER_META_GAP = 8;
@@ -279,15 +279,16 @@ public class NotificationLogScreen extends BaniraScreen {
         rightY = margin;
 
         listX = leftX + PANEL_MARGIN;
-        listY = leftY + PANEL_MARGIN + SEARCH_BOX_H + 6;
+        listY = leftY + PANEL_MARGIN + TOOLBAR_SIZE + TOOLBAR_GAP + SEARCH_BOX_H + 6;
         listW = leftW - PANEL_MARGIN * 2 - SCROLL_W - SCROLL_GAP;
-        int listAreaH = leftH - PANEL_MARGIN - SEARCH_BOX_H - 6 - PANEL_MARGIN - 2 * (TYPE_CFG_BTN_H + TYPE_CFG_BTN_GAP);
+        int listAreaH = leftH - PANEL_MARGIN - TOOLBAR_SIZE - TOOLBAR_GAP - SEARCH_BOX_H - 6 - PANEL_MARGIN;
         visibleRows = Math.max(1, listAreaH / LIST_ROW_HEIGHT);
         listH = visibleRows * LIST_ROW_HEIGHT;
 
         searchInput = new InputWidget(this);
         searchInput.id("notification_log_search");
-        searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN, listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
+        searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN + TOOLBAR_SIZE + TOOLBAR_GAP,
+                listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
         searchInput.text(Text.transAuto(BaniraCodex.MODID, "notification_log_search_hint"));
         searchInput.onTextChanged(this::applySearchAndReselect);
         searchInput.value(searchQuery);
@@ -315,41 +316,38 @@ public class NotificationLogScreen extends BaniraScreen {
         closeBtn.onClick(b -> onClose());
         addWidget(closeBtn);
 
-        ButtonWidget typeCfgBtn = new ButtonWidget(this);
-        typeCfgBtn.id("type_cfg");
-        typeCfgBtn.text(BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
-        typeCfgBtn.bounds(new ScreenCoordinate(listX, leftY + leftH - PANEL_MARGIN - TYPE_CFG_BTN_H, Math.min(listW, 180), TYPE_CFG_BTN_H));
-        fitFooterButton(typeCfgBtn, BaniraComponent.get().transClientAuto("notification_type_config_open").toString());
+        ButtonWidget typeCfgBtn = toolbarButton("type_cfg", "notification_type_config_open",
+                ButtonWidget.PresetStyle.SETTINGS, 1);
         typeCfgBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(
                 new NotificationTypeConfigScreen.Args().parentScreen(this))));
-        addWidget(typeCfgBtn);
-
-        markAllReadButton = new ButtonWidget(this);
-        markAllReadButton.id("mark_all_read");
-        markAllReadButton.text(BaniraComponent.get().transClientAuto("notification_log_mark_all_read").toString());
-        markAllReadButton.bounds(new ScreenCoordinate(listX,
-                leftY + leftH - PANEL_MARGIN - 2 * TYPE_CFG_BTN_H - TYPE_CFG_BTN_GAP,
-                Math.min(listW, 180), TYPE_CFG_BTN_H));
-        fitFooterButton(markAllReadButton, BaniraComponent.get().transClientAuto("notification_log_mark_all_read").toString());
+        markAllReadButton = toolbarButton("mark_all_read", "notification_log_mark_all_read",
+                ButtonWidget.PresetStyle.CHECK, 0);
         markAllReadButton.enabled(NotificationManager.get().unreadCount() > 0);
         markAllReadButton.onClick(b -> {
             NotificationManager.get().markAllRead();
             refreshHistory();
         });
-        addWidget(markAllReadButton);
+        ButtonWidget positionBtn = toolbarButton("hud_position", "notification_hud_position",
+                ButtonWidget.PresetStyle.MOVE, 2);
+        positionBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationHudPositionScreen(this)));
 
         applyPendingLogSelection();
     }
 
-    private void fitFooterButton(ButtonWidget button, String label) {
-        int textWidth = Math.max(1, (int) button.bounds().width() - 12);
-        if (font.width(label) <= textWidth) return;
-        button.text(font.plainSubstrByWidth(label, Math.max(0, textWidth - font.width("..."))) + "...");
+    private ButtonWidget toolbarButton(String id, String key, ButtonWidget.PresetStyle style, int index) {
+        ButtonWidget button = new ButtonWidget(this);
+        button.id(id);
+        int size = Math.min(TOOLBAR_SIZE, Math.max(12, (leftW - PANEL_MARGIN * 2 - TOOLBAR_GAP * 2) / 3));
+        button.bounds(new ScreenCoordinate(listX + index * (size + TOOLBAR_GAP),
+                leftY + PANEL_MARGIN, size, TOOLBAR_SIZE));
+        button.presetStyle(style).padding(4);
         TooltipWidget tooltip = new TooltipWidget(this);
         tooltip.bounds(new ScreenCoordinate(0, 0, button.bounds().width(), button.bounds().height()));
-        tooltip.text(label);
+        tooltip.text(BaniraComponent.get().transClientAuto(key));
         tooltip.popupAtScreenCoords(true);
         button.addChild(tooltip);
+        addWidget(button);
+        return button;
     }
 
     @Override

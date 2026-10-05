@@ -42,6 +42,7 @@
   "word.banira_codex.config_editor_save": "Save",
   "word.banira_codex.config_editor_save_success": "Config saved",
   "word.banira_codex.config_editor_save_tooltip": "Save changes to the local config file",
+  "word.banira_codex.config.notificationHud.mode.description": "Display mode",
   "word.banira_codex.config_editor_save_tooltip_network": "Click: save changes; after fetching server settings, save only to that server\nLong-press: fetch latest config from the server and refresh this screen",
   "word.banira_codex.config_editor_sync": "Sync to Server",
   "word.banira_codex.config_editor_sync_tooltip": "Click: sync only items changed in this session\nLong-press: upload all items on this screen to the server",

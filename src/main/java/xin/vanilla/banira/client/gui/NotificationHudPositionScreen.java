@@ -34,15 +34,13 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
     protected void initWidgets() {
         dragging = false;
         controls.clear();
-        int w = Math.min(100, (width - 32) / 3);
-        addButton("notification_hud_settings", width / 2 - w * 3 / 2 - 4, w,
-                () -> ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this));
-        addButton("save", width / 2 - w / 2, w, () -> {
+        int w = Math.min(100, (width - 32) / 2);
+        addButton("save", width / 2 - w - 2, w, () -> {
             ClientConfig.get().notificationHud().x(x).y(y);
             BaniraConfigs.save(ClientConfig.class);
             onClose();
         });
-        addButton("cancel", width / 2 + w / 2 + 4, w, this::onClose);
+        addButton("cancel", width / 2 + 2, w, this::onClose);
     }
 
     private void addButton(String key, int bx, int w, Runnable action) {

@@ -139,7 +139,8 @@ public @interface ConfigEntry {
     @Target(ElementType.FIELD)
     @interface Gui {
         /**
-         * 工具提示（三种用法互斥，优先级从高到低）：
+         * GUI 优先使用语言资源的 {@code word.<modid>.config.<path>.description}，
+         * 显式指定 translationKey 时使用该键；资源缺失时使用以下注解说明：
          * <ol>
          *   <li>{@code translationKey}：不写 TOML 注释，GUI 用模组翻译键</li>
          *   <li>各 {@code xx_xx} 语言字段：TOML 多行注释（按固定语言顺序输出，字段内换行拆成多行），GUI 由 {@link xin.vanilla.banira.common.util.Translator#pickLocalizedMapValue(String, java.util.Map)} 按当前语言匹配（含族内回退，例如 {@code zh_tw} 可回落到 {@code zh_cn}）</li>

@@ -6,6 +6,8 @@ import net.minecraft.client.Screenshot;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import xin.vanilla.banira.client.gui.NotificationHudPositionScreen;
+import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
@@ -58,6 +60,25 @@ final class NotificationReadSmoke {
                 require(bubble.coalesceCount() == 2, "duplicate overlay did not coalesce");
                 selectedId = manager.getLog().get(0).id();
                 screen = new NotificationLogScreen(null);
+                client.setScreen(screen);
+                ButtonWidget read = (ButtonWidget) screen.getWidget("mark_all_read");
+                ButtonWidget types = (ButtonWidget) screen.getWidget("type_cfg");
+                ButtonWidget position = (ButtonWidget) screen.getWidget("hud_position");
+                require(read.bounds().y() == types.bounds().y() && read.bounds().y() == position.bounds().y(),
+                        "notification toolbar is not on one row");
+                require(read.presetStyle() == ButtonWidget.PresetStyle.CHECK
+                        && types.presetStyle() == ButtonWidget.PresetStyle.SETTINGS
+                        && position.presetStyle() == ButtonWidget.PresetStyle.MOVE, "notification toolbar icons missing");
+                require(position.bounds().y() + position.bounds().height() <= ((Number) field(screen, "listY")).doubleValue(),
+                        "notification toolbar overlaps list");
+                NotificationHudPositionScreen editor = new NotificationHudPositionScreen(screen);
+                client.setScreen(editor);
+                require(editor.getWidget("notification_hud_settings") == null, "HUD settings cycle remains");
+                editor.onClose();
+                require(client.screen == screen, "HUD position editor did not return to history");
+                CodexNavigationScreen hub = new CodexNavigationScreen(null);
+                client.setScreen(hub);
+                require(hub.getWidget("notification_hud_position") == null, "HUD position entry remains in hub");
                 client.setScreen(screen);
                 require(manager.unreadCount() == 2, "opening history implicitly marked a row read");
                 break;

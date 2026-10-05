@@ -344,6 +344,9 @@ public final class BaniraClientEventHub {
                 QuickActionOverlay.get().flushSaveIfNeeded();
             }
             NotificationManager.get().render(nativeGraphics);
+            if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+                xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
+            }
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
             TooltipWidget.flushPopupFrame(nativeGraphics);
         }
@@ -428,6 +431,10 @@ public final class BaniraClientEventHub {
 
     private static void handleMouseClickedPre(@Nonnull BaniraMouseEvent event, Screen screen) {
         InputStateManager.instance().handleMouseClicked(event.mouseX(), event.mouseY(), event.button());
+        if (xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(event.mouseX(), event.mouseY(), event.button())) {
+            event.cancel();
+            return;
+        }
         if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, event.mouseX(), event.mouseY(), event.button())) {
             event.cancel();
             return;

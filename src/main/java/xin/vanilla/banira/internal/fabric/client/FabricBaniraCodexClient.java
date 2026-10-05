@@ -18,9 +18,7 @@ import xin.vanilla.banira.api.client.event.BaniraMouseEvent;
 import xin.vanilla.banira.api.client.event.BaniraScreenOpenEvent;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
-import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.BaniraScheduler;
-import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientGuiService;
 import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
@@ -46,13 +44,6 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(FabricColorThemeReloadListener.INSTANCE);
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.player != null) BaniraClientEventHub.dispatchClientPlayerLoggedIn(client.player);
-        });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            if (client.player != null) {
-                BaniraClientEventHub.dispatchClientPlayerLoggedOut(client.player);
-                AdvancementUtils.clearAdvancementData();
-                PlayerUtils.removeRemoteServerDataStatus(client.player);
-            }
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             BaniraNetworkSmokeClientRunner.tick(client);

@@ -39,6 +39,9 @@ public final class BaniraClientOverlayBridge {
             QuickActionOverlay.get().flushSaveIfNeeded();
         }
         NotificationManager.get().render(stack);
+        if (screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+            xin.vanilla.banira.client.notification.NotificationUnreadHud.render(stack);
+        }
     }
 
     public static void renderHudOverlay(@Nonnull PoseStack stack) {
@@ -53,6 +56,7 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static boolean handleMouseClicked(@Nullable Screen screen, double mouseX, double mouseY, int button) {
+        if (xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(mouseX, mouseY, button)) return true;
         if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, mouseX, mouseY, button)) {
             return true;
         }

@@ -21,11 +21,11 @@ public class NotificationHudStateTest {
     }
 
     @Test
-    public void holdRequiresUnreadAndActiveGame() {
+    public void holdShowsIconEvenWithoutUnreadNotifications() {
         NotificationHudState state = new NotificationHudState();
         state.update(EnumNotificationHudMode.HOLD, true, true);
         assertTrue(state.visible(1));
-        assertFalse(state.visible(0));
+        assertTrue(state.visible(0));
         state.update(EnumNotificationHudMode.HOLD, true, false);
         assertFalse(state.visible(1));
         state.update(EnumNotificationHudMode.HOLD, false, true);
@@ -33,7 +33,7 @@ public class NotificationHudStateTest {
     }
 
     @Test
-    public void toggleOnlyChangesOnFreshPressAndResetsOutsideGame() {
+    public void toggleOnlyChangesOnFreshPress() {
         NotificationHudState state = new NotificationHudState();
         state.update(EnumNotificationHudMode.TOGGLE, true, true);
         assertTrue(state.visible(5));
@@ -44,6 +44,46 @@ public class NotificationHudStateTest {
         assertFalse(state.visible(5));
         state.update(EnumNotificationHudMode.TOGGLE, false, false);
         assertFalse(state.visible(5));
+    }
+
+    @Test
+    public void openingScreenPreservesToggleAndDoesNotTreatHeldKeyAsNewPress() {
+        NotificationHudState state = new NotificationHudState();
+        state.update(EnumNotificationHudMode.TOGGLE, true, true);
+        state.update(EnumNotificationHudMode.TOGGLE, true, false);
+        assertFalse(state.visible(1));
+        state.update(EnumNotificationHudMode.TOGGLE, true, true);
+        assertTrue(state.visible(1));
+        state.update(EnumNotificationHudMode.TOGGLE, false, true);
+        assertTrue(state.visible(0));
+    }
+
+    @Test
+    public void defaultModeIsToggleAndZeroCountHasNoLabel() {
+        assertEquals(EnumNotificationHudMode.TOGGLE,
+                new xin.vanilla.banira.internal.config.ClientConfig.NotificationHudCategory().mode());
+        assertEquals("", NotificationHudState.countLabel(0));
+        assertEquals("", NotificationHudState.countLabel(-1));
+    }
+
+    @Test
+    public void typingInChatDoesNotToggleButHoldModeStillWorks() {
+        NotificationHudState state = new NotificationHudState();
+        state.update(EnumNotificationHudMode.TOGGLE, true, true, false);
+        assertFalse(state.visible(1));
+        state.update(EnumNotificationHudMode.TOGGLE, true, true, true);
+        assertFalse(state.visible(1));
+        state.update(EnumNotificationHudMode.HOLD, true, true, false);
+        assertTrue(state.visible(0));
+    }
+
+    @Test
+    public void leavingWorldResetsVisibleState() {
+        NotificationHudState state = new NotificationHudState();
+        state.update(EnumNotificationHudMode.TOGGLE, true, true);
+        state.reset();
+        state.update(EnumNotificationHudMode.TOGGLE, false, true);
+        assertFalse(state.visible(1));
     }
 
     @Test

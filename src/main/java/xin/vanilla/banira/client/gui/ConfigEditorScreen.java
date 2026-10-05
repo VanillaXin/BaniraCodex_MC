@@ -265,7 +265,7 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private String entryDescription(ConfigEntryDescriptor descriptor) {
-        if (!ConfigEntryTooltipTexts.hasGuiTooltip(descriptor)) {
+        if (!ConfigEntryTooltipTexts.hasGuiTooltip(descriptor, rowFactory.configModId())) {
             return "";
         }
         return ConfigEntryTooltipTexts.guiTooltipComponent(descriptor, rowFactory.configModId())

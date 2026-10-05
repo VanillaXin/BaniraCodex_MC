@@ -46,9 +46,9 @@ final class NotificationRegionSmoke {
         if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
             require(Math.abs(cfg.notificationHud().x() - .25) < .01 && Math.abs(cfg.notificationHud().y() - .25) < .01,
                     "HUD coordinates were not persisted");
-            require(cfg.notificationHud().mode() == EnumNotificationHudMode.HOLD
+            require(cfg.notificationHud().mode() == EnumNotificationHudMode.TOGGLE
                     && cfg.notificationHud().keys().contains("Tab"), "HUD defaults changed across restart");
-            BaniraNetworkSmokeStatus.append("PASS notification-region-restart position=true keys=Tab mode=HOLD");
+            BaniraNetworkSmokeStatus.append("PASS notification-region-restart position=true keys=Tab mode=TOGGLE");
             finished = true;
             return true;
         }
@@ -131,7 +131,7 @@ final class NotificationRegionSmoke {
                 editor.mouseClicked(save.bounds().x() + 5, save.bounds().y() + 5, 0);
                 editor.mouseReleased(save.bounds().x() + 5, save.bounds().y() + 5, 0);
                 require(Math.abs(cfg.notificationHud().x() - .25) < .01, "HUD save failed");
-                cfg.notificationHud().mode(EnumNotificationHudMode.HOLD);
+                cfg.notificationHud().mode(EnumNotificationHudMode.TOGGLE);
                 cfg.notificationRegions().queueLimit(64).visibleLimit(6);
                 cfg.notificationRegions().topLeft().visibleLimit(3);
                 cfg.notificationRegions().bottomRight().visibleLimit(3);

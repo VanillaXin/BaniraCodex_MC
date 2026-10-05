@@ -25,7 +25,8 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static void renderHud(@Nonnull PoseStack stack, float tickDelta) {
-        BaniraClientEventBridge.fireRenderOverlayPost(HudOverlayElement.ALL, stack, tickDelta, false);
+        BaniraClientEventBridge.fireRenderOverlayPost(HudOverlayElement.ALL, stack, tickDelta,
+                BaniraClientRuntime.currentScreen() != null);
     }
 
     public static void resetScreenInteraction() {
@@ -33,7 +34,8 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static boolean allowMouseClick(@Nonnull Screen screen, double mouseX, double mouseY, int button) {
-        return !QuickActionOverlay.get().handleMouseClicked(screen, mouseX, mouseY, button)
+        return !xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(mouseX, mouseY, button)
+                && !QuickActionOverlay.get().handleMouseClicked(screen, mouseX, mouseY, button)
                 && !NotificationManager.get().tryHandleHudClick(mouseX, mouseY, button);
     }
 

@@ -69,6 +69,9 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
          * 重置/恢复（圆形箭头）
          */
         RESET,
+        CHECK,
+        SETTINGS,
+        MOVE,
     }
 
     @FunctionalInterface
@@ -1006,6 +1009,29 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                 break;
             case RESET:
                 drawResetIcon(stack, cx, cy, r, lw, color);
+                break;
+            case CHECK:
+                AbstractGuiUtils.drawLine(stack, cx - r, cy, cx - r * .3f, cy + r * .7f, lw, color);
+                AbstractGuiUtils.drawLine(stack, cx - r * .3f, cy + r * .7f, cx + r, cy - r * .7f, lw, color);
+                break;
+            case SETTINGS:
+                for (int i = -1; i <= 1; i++) {
+                    float sy = cy + i * r * .8f;
+                    float knobX = cx + (i == 0 ? r * .4f : -r * .4f);
+                    AbstractGuiUtils.drawLine(stack, cx - r, sy, cx + r, sy, lw, color);
+                    AbstractGuiUtils.drawLine(stack, knobX, sy - lw, knobX, sy + lw, lw * 2, color);
+                }
+                break;
+            case MOVE:
+                AbstractGuiUtils.drawLine(stack, cx - r, cy, cx + r, cy, lw, color);
+                AbstractGuiUtils.drawLine(stack, cx, cy - r, cx, cy + r, lw, color);
+                float head = r * .45f;
+                for (int sign = -1; sign <= 1; sign += 2) {
+                    AbstractGuiUtils.drawLine(stack, cx + sign * r, cy, cx + sign * (r - head), cy - head, lw, color);
+                    AbstractGuiUtils.drawLine(stack, cx + sign * r, cy, cx + sign * (r - head), cy + head, lw, color);
+                    AbstractGuiUtils.drawLine(stack, cx, cy + sign * r, cx - head, cy + sign * (r - head), lw, color);
+                    AbstractGuiUtils.drawLine(stack, cx, cy + sign * r, cx + head, cy + sign * (r - head), lw, color);
+                }
                 break;
             default:
                 break;

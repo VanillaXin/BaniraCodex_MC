@@ -13,6 +13,9 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "compat.minimap.XaeroInfoDisplaysMixin",
+    "compat.minimap.FtbChunksNotificationMixin",
+    "compat.minimap.JourneyMapInfoSlotsMixin",
     "compat.ftblibrary.SidebarButtonMixin",
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "compat.jei.BookmarkButtonAccessor",

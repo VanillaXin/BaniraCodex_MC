@@ -4,6 +4,9 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.util.ResourceLocation;
+import com.mojang.blaze3d.systems.RenderSystem;
+import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -18,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class NotificationUnreadHud {
+    private static final ResourceLocation ICON = new ResourceLocation("banira_codex", "textures/gui/unread_message.png");
     public static final int WIDTH = 32, HEIGHT = 22;
     private static final NotificationHudState STATE = new NotificationHudState();
     private static List<String> cachedKeys = Collections.emptyList();
@@ -30,6 +34,7 @@ public final class NotificationUnreadHud {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) {
             STATE.reset();
+            NotificationMinimapBridge.reset();
             return;
         }
         ClientConfigView.NotificationHudView cfg = ClientConfig.get().notificationHud();
@@ -64,9 +69,14 @@ public final class NotificationUnreadHud {
                 && STATE.visible(NotificationManager.get().unreadCount());
     }
 
+    public static boolean isVisible() {
+        return canRender(Minecraft.getInstance());
+    }
+
     public static boolean handleClick(double mouseX, double mouseY, int button) {
         Minecraft mc = Minecraft.getInstance();
-        if (button != 0 || !(mc.screen instanceof ChatScreen) || !canRender(mc)) return false;
+        if (button != 0 || !(mc.screen instanceof ChatScreen) || !canRender(mc)
+                || NotificationMinimapBridge.selectedHost() != EnumNotificationHudHost.STANDALONE) return false;
         ClientConfigView.NotificationHudView cfg = ClientConfig.get().notificationHud();
         int x = NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH);
         int y = NotificationHudState.position(cfg.y(), mc.getWindow().getGuiScaledHeight(), HEIGHT);
@@ -93,7 +103,7 @@ public final class NotificationUnreadHud {
     public static void render(MatrixStack stack) {
         Minecraft mc = Minecraft.getInstance();
         int unread = NotificationManager.get().unreadCount();
-        if (!canRender(mc)) return;
+        if (!canRender(mc) || NotificationMinimapBridge.selectedHost() != EnumNotificationHudHost.STANDALONE) return;
         ClientConfigView.NotificationHudView cfg = ClientConfig.get().notificationHud();
         draw(stack, NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH),
                 NotificationHudState.position(cfg.y(), mc.getWindow().getGuiScaledHeight(), HEIGHT), unread,
@@ -106,22 +116,26 @@ public final class NotificationUnreadHud {
     }
 
     private static void drawContents(MatrixStack stack, int x, int y, int unread, BaniraColorConfig theme) {
-        AbstractGuiUtils.drawRoundedRect(stack, x + 1, y + 3, 20, 18, 2, 2, 2, 2,
-                ColorUtils.applyAlphaToArgb(theme.popupBg(), 180));
+        AbstractGuiUtils.drawRoundedRect(stack, x, y + 3, 16, 14, 2, 2, 2, 2,
+                ColorUtils.applyAlphaToArgb(theme.popupBg(), NotificationHudAppearance.BACKGROUND_ALPHA));
         int color = theme.popupItemText();
-        AbstractGuiUtils.drawLine(stack, x + 4, y + 8, x + 18, y + 8, 1, color);
-        AbstractGuiUtils.drawLine(stack, x + 4, y + 8, x + 4, y + 17, 1, color);
-        AbstractGuiUtils.drawLine(stack, x + 18, y + 8, x + 18, y + 17, 1, color);
-        AbstractGuiUtils.drawLine(stack, x + 4, y + 17, x + 18, y + 17, 1, color);
-        AbstractGuiUtils.drawLine(stack, x + 4, y + 8, x + 11, y + 13, 1, color);
-        AbstractGuiUtils.drawLine(stack, x + 11, y + 13, x + 18, y + 8, 1, color);
+        RenderSystem.color4f(((color >> 16) & 255) / 255f, ((color >> 8) & 255) / 255f, (color & 255) / 255f, 1);
+        try {
+            AbstractGuiUtils.blitBlend(stack, ICON, x + 2, y + 4, NotificationHudAppearance.ICON_SIZE,
+                    NotificationHudAppearance.ICON_SIZE, 0, 0, 16, 16, 16, 16);
+        } finally {
+            RenderSystem.color4f(1, 1, 1, 1);
+        }
         if (unread > 0) {
             String label = NotificationHudState.countLabel(unread);
-            int badgeWidth = AbstractGuiUtils.getFont().width(label) + 4;
-            int badgeX = x + WIDTH - badgeWidth;
-            AbstractGuiUtils.drawRoundedRect(stack, badgeX, y, badgeWidth, 11, 2, 2, 2, 2,
-                    theme.popupBg());
-            AbstractGuiUtils.getFont().draw(stack, label, badgeX + 2, y + 1, color);
+            stack.pushPose();
+            try {
+                stack.translate(x + 17, y + 7, 0);
+                stack.scale(NotificationHudAppearance.COUNT_SCALE, NotificationHudAppearance.COUNT_SCALE, 1);
+                AbstractGuiUtils.getFont().draw(stack, label, 0, 0, color);
+            } finally {
+                stack.popPose();
+            }
         }
     }
 }

@@ -96,6 +96,18 @@
       "permissionKey": null,
       "keyChords": false
     },
+    "notificationHud.host": {
+      "type": "ENUM",
+      "default": "AUTO",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": "xin.vanilla.banira.common.enums.EnumNotificationHudHost",
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
     "notificationHud.keys": {
       "type": "STRING_LIST",
       "default": [
@@ -112,7 +124,7 @@
     },
     "notificationHud.mode": {
       "type": "ENUM",
-      "default": "HOLD",
+      "default": "TOGGLE",
       "min": null,
       "max": null,
       "precision": 2,
@@ -552,10 +564,11 @@
     "notificationBurstMaxExtraDelayMs": 20000,
     "notificationBurstStaggerMs": 400,
     "notificationBurstThreshold": 5,
+    "notificationHud.host": "AUTO",
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "HOLD",
+    "notificationHud.mode": "TOGGLE",
     "notificationHud.x": 0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
@@ -601,10 +614,11 @@
     "notificationBurstMaxExtraDelayMs": 20000,
     "notificationBurstStaggerMs": 400,
     "notificationBurstThreshold": 5,
+    "notificationHud.host": "AUTO",
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "HOLD",
+    "notificationHud.mode": "TOGGLE",
     "notificationHud.x": 0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
@@ -650,8 +664,9 @@
     "notificationBurstMaxExtraDelayMs": 7,
     "notificationBurstStaggerMs": 7,
     "notificationBurstThreshold": 7,
+    "notificationHud.host": "STANDALONE",
     "notificationHud.keys": [],
-    "notificationHud.mode": "TOGGLE",
+    "notificationHud.mode": "ALWAYS",
     "notificationHud.x": 0.125,
     "notificationHud.y": 0.125,
     "notificationLogMaxEntries": 7,

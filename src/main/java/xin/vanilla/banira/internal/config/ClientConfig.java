@@ -12,6 +12,7 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 import xin.vanilla.banira.common.enums.EnumGuiNightMode;
 import xin.vanilla.banira.common.enums.EnumNotificationHudMode;
+import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.ArrayList;
@@ -122,6 +123,9 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class NotificationHudCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示位置\n自动跟随可用的小地图信息区\n指定地图未安装或未显示时，使用独立 HUD", en_us = "Display location\nFollow an available minimap information area\nUse the standalone HUD when the selected map is unavailable or hidden")
+        private EnumNotificationHudHost host = EnumNotificationHudHost.AUTO;
+
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式", en_us = "Display mode")
         private EnumNotificationHudMode mode = EnumNotificationHudMode.TOGGLE;
 

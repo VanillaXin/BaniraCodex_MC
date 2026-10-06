@@ -1,4 +1,12 @@
 {
+  "word.banira_codex.notification_unread": "Unread notifications",
+  "word.banira_codex.enum_notification_hud_host_auto": "Follow minimap automatically",
+  "word.banira_codex.enum_notification_hud_host_standalone": "Standalone HUD",
+  "word.banira_codex.enum_notification_hud_host_xaero": "Xaero's Minimap",
+  "word.banira_codex.enum_notification_hud_host_journeymap": "JourneyMap",
+  "word.banira_codex.enum_notification_hud_host_ftb_chunks": "FTB Chunks",
+  "word.banira_codex.enum_notification_hud_host_voxelmap": "VoxelMap",
+  "word.banira_codex.enum_notification_hud_host_map_atlases": "Map Atlases",
   "word.banira_codex.notification_hud_position": "Unread HUD position",
   "word.banira_codex.notification_hud_settings": "Settings",
   "word.banira_codex.notification_hud_drag": "Drag to move",

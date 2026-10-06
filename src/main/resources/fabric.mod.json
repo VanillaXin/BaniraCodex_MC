@@ -23,6 +23,9 @@
     ],
     "modmenu": [
       "xin.vanilla.banira.modmenu.ModMenuIntegration"
+    ],
+    "journeymap": [
+      "xin.vanilla.banira.internal.fabric.compat.minimap.JourneyMapNotificationPlugin"
     ]
   },
   "mixins": [

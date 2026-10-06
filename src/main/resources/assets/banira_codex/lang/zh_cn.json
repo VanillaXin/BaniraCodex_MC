@@ -263,7 +263,6 @@
   "format.banira_codex.quick_action.pos_axis": "%s %.3f · %s",
   "format.banira_codex.quick_action.unhide": "显示 · %s",
   "format.banira_codex.quick_action.unhide_menu_item": "恢复 · %s",
-
   "word.banira_codex.enum_tooltip_texture_mode_auto": "跟随主题设置",
   "word.banira_codex.enum_tooltip_texture_mode_color": "使用纯色背景",
   "word.banira_codex.enum_tooltip_texture_mode_texture": "使用纹理背景",
@@ -391,5 +390,13 @@
   "word.banira_codex.enum_string_input_regex_positive_decimal": "非负小数",
   "word.banira_codex.enum_string_input_regex_positive_decimal_5": "非负小数（最多 5 位）",
   "word.banira_codex.enum_string_input_regex_positive_integer": "非负整数",
-  "word.banira_codex.enum_string_input_regex_word": "单词字符 \\w"
+  "word.banira_codex.enum_string_input_regex_word": "单词字符 \\w",
+  "word.banira_codex.notification_unread": "未读通知",
+  "word.banira_codex.enum_notification_hud_host_auto": "自动跟随小地图",
+  "word.banira_codex.enum_notification_hud_host_standalone": "独立 HUD",
+  "word.banira_codex.enum_notification_hud_host_xaero": "Xaero 小地图",
+  "word.banira_codex.enum_notification_hud_host_journeymap": "JourneyMap",
+  "word.banira_codex.enum_notification_hud_host_ftb_chunks": "FTB Chunks",
+  "word.banira_codex.enum_notification_hud_host_voxelmap": "VoxelMap",
+  "word.banira_codex.enum_notification_hud_host_map_atlases": "Map Atlases"
 }

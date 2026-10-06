@@ -88,6 +88,11 @@ public final class ConfigEditorViewportModel {
         scrollOffset = value;
     }
 
+    public boolean containsListPoint(double mouseX, double mouseY) {
+        return mouseX >= contentLeft && mouseX < contentLeft + contentW
+                && mouseY >= listTop && mouseY < listTop + listAreaHeight;
+    }
+
     /**
      * 鼠标滚轮滚动当前视口。
      */

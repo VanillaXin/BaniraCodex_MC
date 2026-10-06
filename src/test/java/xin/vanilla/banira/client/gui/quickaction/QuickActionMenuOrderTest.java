@@ -7,7 +7,9 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/** 右键菜单自定义顺序必须可持久化，并能容纳后注册的入口。 */
+/**
+ * 右键菜单自定义顺序必须可持久化，并能容纳后注册的入口。
+ */
 public class QuickActionMenuOrderTest {
     @Test
     public void movesRowsAndKeepsNewRegistryEntries() {

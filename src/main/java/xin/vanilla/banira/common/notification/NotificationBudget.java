@@ -7,7 +7,9 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-/** Actual wire JSON budgets, not Java character counts. */
+/**
+ * Actual wire JSON budgets, not Java character counts.
+ */
 public final class NotificationBudget {
     public static final int MAX_COMPONENT_JSON_BYTES = 16384;
     public static final int MAX_TYPE_ID_BYTES = 128;
@@ -57,7 +59,8 @@ public final class NotificationBudget {
         String language = inheritedLanguage == null ? copy.languageCodeOrDefault()
                 : copy.languageCodeOrDefault(inheritedLanguage);
         copy.languageCode(language);
-        for (Component child : copy.getChildren()) detachNativeReferences(Objects.requireNonNull(child, "child"), language);
+        for (Component child : copy.getChildren())
+            detachNativeReferences(Objects.requireNonNull(child, "child"), language);
         for (Component arg : copy.getArgs()) {
             if (arg != null) detachNativeReferences(arg, language);
         }
@@ -69,7 +72,9 @@ public final class NotificationBudget {
         }
     }
 
-    /** Immutable encodings keep preflight and transport on the same snapshot. */
+    /**
+     * Immutable encodings keep preflight and transport on the same snapshot.
+     */
     public static final class Payload {
         private final String componentJson;
         private final String vanillaJson;

@@ -6,23 +6,39 @@ import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.internal.config.*;
-import xin.vanilla.banira.platform.*;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
+import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.config.CommonConfigView;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.NoopConfigService;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 import static org.junit.Assert.*;
 
 public class ConfigViewLifecycleTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void retainedCommonCategoryFollowsFileReloadAndRebinding() throws Exception { verify(false); }
-    @Test public void retainedClientFollowsFileReloadAndRebinding() throws Exception { verify(true); }
+    @Test
+    public void retainedCommonCategoryFollowsFileReloadAndRebinding() throws Exception {
+        verify(false);
+    }
+
+    @Test
+    public void retainedClientFollowsFileReloadAndRebinding() throws Exception {
+        verify(true);
+    }
 
     private void verify(boolean client) throws Exception {
         Path directory = temporary.newFolder().toPath();
@@ -70,18 +86,23 @@ public class ConfigViewLifecycleTest {
 
     @Config(name = "typed-fixture", generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
     public static class TypedFixture {
-        @ConfigEntry.Gui.CollapsibleObject private Group group = new Group();
+        @ConfigEntry.Gui.CollapsibleObject
+        private Group group = new Group();
+
         public static class Group {
             private List<String> rules = Arrays.asList("a,b", "c");
-            @ConfigEntry.BoundedDouble(min = 0, max = 10) private double rate = 0.002;
+            @ConfigEntry.BoundedDouble(min = 0, max = 10)
+            private double rate = 0.002;
             private long count = 9000000000L;
             private Mode mode = Mode.FIRST;
             private String title = "";
         }
     }
-    public enum Mode { FIRST, SECOND }
 
-    @Test public void realBackendPreservesTypedValuesAndListSnapshotsAcrossRestart() throws Exception {
+    public enum Mode {FIRST, SECOND}
+
+    @Test
+    public void realBackendPreservesTypedValuesAndListSnapshotsAcrossRestart() throws Exception {
         Path directory = temporary.newFolder().toPath();
         BaniraPlatforms.install(new TestBaniraPlatform().configDir(directory)
                 .configService(FabricBaniraConfigService.INSTANCE));
@@ -105,8 +126,11 @@ public class ConfigViewLifecycleTest {
         assertEquals(9100000000L, retained.count());
         assertEquals(Mode.SECOND, retained.mode());
         assertEquals(title, retained.title());
-        try { retained.rate(-1); fail("invalid value accepted"); }
-        catch (IllegalArgumentException expected) { }
+        try {
+            retained.rate(-1);
+            fail("invalid value accepted");
+        } catch (IllegalArgumentException expected) {
+        }
         assertEquals(0.125, retained.rate(), 0.0);
     }
 }

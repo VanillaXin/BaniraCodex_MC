@@ -15,11 +15,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-/** 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。 */
+/**
+ * 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。
+ */
 public final class BaniraNetworkSmokeClientRunner {
     private static int ticks;
     private static boolean connected;
@@ -210,7 +212,9 @@ public final class BaniraNetworkSmokeClientRunner {
         client.stop();
     }
 
-    /** Spark 的客户端 API 随版本变动，仅在 dev-only smoke 中通过反射采集并导出报告。 */
+    /**
+     * Spark 的客户端 API 随版本变动，仅在 dev-only smoke 中通过反射采集并导出报告。
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class ReflectiveClientSparkProfile {
         private final Object plugin;
@@ -231,7 +235,8 @@ public final class BaniraNetworkSmokeClientRunner {
         private static ReflectiveClientSparkProfile start(Minecraft client) {
             try {
                 String configured = System.getProperty("banira.networkSmoke.clientSparkReport", "").trim();
-                if (configured.isEmpty()) throw new IllegalStateException("Missing banira.networkSmoke.clientSparkReport");
+                if (configured.isEmpty())
+                    throw new IllegalStateException("Missing banira.networkSmoke.clientSparkReport");
                 Class<?> modType = Class.forName("me.lucko.spark.fabric.FabricSparkMod");
                 Field mod = modType.getDeclaredField("mod");
                 mod.setAccessible(true);
@@ -361,17 +366,17 @@ public final class BaniraNetworkSmokeClientRunner {
         }
 
         private Object exportLegacyProto(ClassLoader loader, Class<?> propsType) throws ReflectiveOperationException {
-                Class<?> platformInfo = Class.forName("me.lucko.spark.common.platform.PlatformInfo", true, loader);
-                Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
-                Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
-                Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
-                Class<?> lookup = Class.forName("me.lucko.spark.common.util.ClassSourceLookup", true, loader);
-                Object commandSender = legacyCommandSender(sender, senderData(loader));
-                Object props = propsType.getConstructor(platformInfo, sender, java.util.Comparator.class, String.class, merge, lookup)
-                        .newInstance(plugin.getClass().getMethod("getPlatformInfo").invoke(plugin), commandSender,
-                                order.getField("BY_TIME").get(null), "Banira client UI smoke", legacyMergeMode(loader),
-                                plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin));
-                return method(sampler.getClass(), "toProto", 1).invoke(sampler, props);
+            Class<?> platformInfo = Class.forName("me.lucko.spark.common.platform.PlatformInfo", true, loader);
+            Class<?> sender = Class.forName("me.lucko.spark.common.command.sender.CommandSender", true, loader);
+            Class<?> order = Class.forName("me.lucko.spark.common.sampler.ThreadNodeOrder", true, loader);
+            Class<?> merge = Class.forName("me.lucko.spark.common.sampler.node.MergeMode", true, loader);
+            Class<?> lookup = Class.forName("me.lucko.spark.common.util.ClassSourceLookup", true, loader);
+            Object commandSender = legacyCommandSender(sender, senderData(loader));
+            Object props = propsType.getConstructor(platformInfo, sender, java.util.Comparator.class, String.class, merge, lookup)
+                    .newInstance(plugin.getClass().getMethod("getPlatformInfo").invoke(plugin), commandSender,
+                            order.getField("BY_TIME").get(null), "Banira client UI smoke", legacyMergeMode(loader),
+                            plugin.getClass().getMethod("createClassSourceLookup").invoke(plugin));
+            return method(sampler.getClass(), "toProto", 1).invoke(sampler, props);
         }
 
         private static Object legacyCommandSender(Class<?> senderType, final Class<?> senderDataType) {

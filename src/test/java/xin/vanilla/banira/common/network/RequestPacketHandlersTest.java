@@ -5,7 +5,8 @@ import xin.vanilla.banira.common.network.packet.RequestToBoth;
 
 import java.util.function.BiConsumer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RequestPacketHandlersTest {
 

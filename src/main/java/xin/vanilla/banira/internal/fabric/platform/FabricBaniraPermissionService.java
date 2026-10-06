@@ -4,7 +4,9 @@ import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.banira.platform.BaniraPermissionService;
 
-/** Fabric 1.16.5 的玩家权限适配。 */
+/**
+ * Fabric 1.16.5 的玩家权限适配。
+ */
 final class FabricBaniraPermissionService implements BaniraPermissionService {
     static final FabricBaniraPermissionService INSTANCE = new FabricBaniraPermissionService();
 

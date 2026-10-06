@@ -44,7 +44,9 @@ public class QuickActionEntry {
     @Nullable
     private Consumer<QuickActionContext> onActivate;
 
-    /** 左键没有独立动作时，打开菜单时跳过的内部菜单项数量。 */
+    /**
+     * 左键没有独立动作时，打开菜单时跳过的内部菜单项数量。
+     */
     @Getter
     @Setter
     private int primaryMenuItemOffset;

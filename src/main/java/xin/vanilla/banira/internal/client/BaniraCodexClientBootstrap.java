@@ -1,20 +1,19 @@
 package xin.vanilla.banira.internal.client;
 
-import xin.vanilla.banira.api.BaniraConfigs;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.NotificationTypeConfigScreen;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionManager;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.config.ClientConfig;

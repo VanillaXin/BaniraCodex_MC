@@ -24,8 +24,8 @@ import xin.vanilla.banira.internal.client.BaniraClientModSetup;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.client.BaniraKeyBindingService;
 import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
-import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 import xin.vanilla.banira.internal.fabric.compat.FabricExternalInventoryCompatibility;
+import xin.vanilla.banira.internal.fabric.network.FabricNetworkChannels;
 
 /**
  * Fabric 客户端入口，将 1.16 回调转换为稳定的 Banira 客户端事件。

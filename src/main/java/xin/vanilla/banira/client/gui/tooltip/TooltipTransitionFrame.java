@@ -1,6 +1,8 @@
 package xin.vanilla.banira.client.gui.tooltip;
 
-/** 一帧需要绘制的 Tooltip 动画结果。 */
+/**
+ * 一帧需要绘制的 Tooltip 动画结果。
+ */
 public final class TooltipTransitionFrame<K> {
     private final TooltipBounds bounds;
     private final K contentKey;

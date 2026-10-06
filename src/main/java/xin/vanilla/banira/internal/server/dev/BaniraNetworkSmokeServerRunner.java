@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.server.dev;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraServer;
 import xin.vanilla.banira.api.event.BaniraEvents;
@@ -10,9 +10,9 @@ import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeProfilePlan;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +20,9 @@ import java.nio.file.Paths;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-/** 真实专服内验证 Banira 事件、配置热重载、玩家数据、文件操作与 Spark 归档。 */
+/**
+ * 真实专服内验证 Banira 事件、配置热重载、玩家数据、文件操作与 Spark 归档。
+ */
 public final class BaniraNetworkSmokeServerRunner {
     private static final int WORKLOAD_OPERATIONS_PER_TICK = 512;
     private static final String[] WORKLOAD_MOD_IDS = {
@@ -52,7 +54,8 @@ public final class BaniraNetworkSmokeServerRunner {
     private static long sustainedStartedAt;
     private static ReflectiveSparkProfile spark;
 
-    private BaniraNetworkSmokeServerRunner() { }
+    private BaniraNetworkSmokeServerRunner() {
+    }
 
     public static void register() {
         if (!BaniraNetworkSmokeStatus.enabled()) return;
@@ -63,14 +66,23 @@ public final class BaniraNetworkSmokeServerRunner {
     private static void onTick(MinecraftServer server) {
         try {
             if (server == null || !server.isRunning()) return;
-            if (failed) { shutdownWhenIdle(server); return; }
+            if (failed) {
+                shutdownWhenIdle(server);
+                return;
+            }
             if (spark != null && spark.writeWhenComplete()) {
                 sparkReportWritten = true;
                 BaniraNetworkSmokeStatus.append("PASS spark-report-written");
             }
-            if (finished) { shutdownWhenIdle(server); return; }
+            if (finished) {
+                shutdownWhenIdle(server);
+                return;
+            }
             if (!xin.vanilla.banira.internal.fabric.config.FabricConfigViewSmoke.step(false)) return;
-            if (!ready) { ready = true; BaniraNetworkSmokeStatus.append("PASS server-ready"); }
+            if (!ready) {
+                ready = true;
+                BaniraNetworkSmokeStatus.append("PASS server-ready");
+            }
             if (server.getPlayerList().getPlayers().isEmpty() || eventTicks < 2) return;
             ServerPlayer player = server.getPlayerList().getPlayers().get(0);
             if ("phase-one".equals(BaniraNetworkSmokeStatus.phase())) firstPhase(server, player);
@@ -131,11 +143,13 @@ public final class BaniraNetworkSmokeServerRunner {
         BaniraNetworkSmokeStatus.append("PASS config-hot-reload");
         BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).putString("network_smoke", "persisted");
         BaniraCodex.playerDataManager.saveToDisk(player.getUUID());
-        if (!"persisted".equals(BaniraCodex.playerDataManager.loadFromDisk(player.getUUID()).getString("network_smoke"))) throw new IllegalStateException("Player data was not written");
+        if (!"persisted".equals(BaniraCodex.playerDataManager.loadFromDisk(player.getUUID()).getString("network_smoke")))
+            throw new IllegalStateException("Player data was not written");
         BaniraNetworkSmokeStatus.append("PASS player-data-file");
         Path file = CustomConfig.getConfigDirectory().resolve("network-smoke.txt");
         Files.write(file, "Banira network smoke".getBytes(StandardCharsets.UTF_8));
-        if (!"Banira network smoke".equals(new String(Files.readAllBytes(file), StandardCharsets.UTF_8))) throw new IllegalStateException("Managed file operation failed");
+        if (!"Banira network smoke".equals(new String(Files.readAllBytes(file), StandardCharsets.UTF_8)))
+            throw new IllegalStateException("Managed file operation failed");
         BaniraNetworkSmokeStatus.append("PASS file-operation");
         if (!sustainedWorkloadStarted) {
             sustainedWorkloadStarted = true;
@@ -225,7 +239,8 @@ public final class BaniraNetworkSmokeServerRunner {
                 || !"persisted".equals(BaniraCodex.playerDataManager.getOrCreate(player.getUUID()).getString("network_smoke"))) {
             throw new IllegalStateException("Final player data cycle did not survive restart");
         }
-        if (CustomConfig.getHelpNumPerPage() != expectedHelp) throw new IllegalStateException("Final config reload did not survive restart");
+        if (CustomConfig.getHelpNumPerPage() != expectedHelp)
+            throw new IllegalStateException("Final config reload did not survive restart");
         sendVanillaNotificationBatch(player);
         BaniraNetworkSmokeStatus.append("PASS persisted-final-cycle cycle=" + expectedCycle + " help=" + expectedHelp);
         BaniraNetworkSmokeStatus.append("PASS persisted-player-data");
@@ -255,11 +270,19 @@ public final class BaniraNetworkSmokeServerRunner {
     }
 
     private static void shutdownWhenIdle(MinecraftServer server) {
-        if (server.getPlayerList().getPlayerCount() > 0) { shutdownTicks = 0; return; }
-        if (++shutdownTicks >= 40) { BaniraNetworkSmokeStatus.append("PASS server-shutdown"); server.halt(false); }
+        if (server.getPlayerList().getPlayerCount() > 0) {
+            shutdownTicks = 0;
+            return;
+        }
+        if (++shutdownTicks >= 40) {
+            BaniraNetworkSmokeStatus.append("PASS server-shutdown");
+            server.halt(false);
+        }
     }
 
-    /** Spark 没有稳定的跨加载器导出 API，烟测仅反射调用其原生 sampler。 */
+    /**
+     * Spark 没有稳定的跨加载器导出 API，烟测仅反射调用其原生 sampler。
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class ReflectiveSparkProfile {
         private final Object plugin;

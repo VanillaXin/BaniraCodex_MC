@@ -4,12 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -25,6 +24,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.BiFunction;
@@ -1326,7 +1326,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         return "";
     }
 
-    /** 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。 */
+    /**
+     * 返回与真实文本等长的掩码，避免渲染和剪贴板泄露密码。
+     */
     private String displayValue(String rawValue) {
         return password ? mask(rawValue.length()) : rawValue;
     }

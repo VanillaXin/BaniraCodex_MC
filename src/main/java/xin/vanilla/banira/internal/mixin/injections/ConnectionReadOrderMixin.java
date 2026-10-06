@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(value = Connection.class, priority = 900)
 public abstract class ConnectionReadOrderMixin {
-    @Shadow private Channel channel;
+    @Shadow
+    private Channel channel;
 
     @Redirect(method = "sendPacket", at = @At(value = "INVOKE",
             target = "Lio/netty/channel/ChannelConfig;setAutoRead(Z)Lio/netty/channel/ChannelConfig;",

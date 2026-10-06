@@ -65,7 +65,7 @@ public final class BaniraHudSyntheticEvents {
     }
 
     private static BaniraHudRenderEvent preEvent(HudOverlayElement element, BaniraDrawContext draw,
-                                                  BaniraHudBounds bounds) {
+                                                 BaniraHudBounds bounds) {
         return new BaniraHudRenderEvent(HudRenderPhase.PRE, element, hudContext(draw), bounds, true);
     }
 

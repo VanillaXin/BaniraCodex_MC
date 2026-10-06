@@ -1,6 +1,8 @@
 package xin.vanilla.banira.client.gui.tooltip;
 
-/** 根据当前动画边界与有效内边距计算 Tooltip 文字内容裁剪区。 */
+/**
+ * 根据当前动画边界与有效内边距计算 Tooltip 文字内容裁剪区。
+ */
 public final class TooltipContentClip {
     private TooltipContentClip() {
     }

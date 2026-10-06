@@ -4,19 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Style;
+import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.component.Notification;
-import xin.vanilla.banira.client.notification.NotificationClientDisplay;
-import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
-import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
-import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
-import xin.vanilla.banira.client.notification.NotificationHistory;
-import xin.vanilla.banira.client.notification.NotificationMuteState;
-import xin.vanilla.banira.client.notification.NotificationRegionLayout;
-import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.client.notification.*;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -29,7 +23,10 @@ import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Accessors(fluent = true)
@@ -376,16 +373,26 @@ public final class NotificationManager {
     private static int[] regionSettings(EnumPosition position) {
         ClientConfigView.NotificationRegionsView cfg = ClientConfig.get().notificationRegions();
         switch (position) {
-            case TOP_LEFT: return new int[]{cfg.topLeft().widthPercent(), cfg.topLeft().heightPercent(), cfg.topLeft().visibleLimit()};
-            case TOP_CENTER: return new int[]{cfg.topCenter().widthPercent(), cfg.topCenter().heightPercent(), cfg.topCenter().visibleLimit()};
-            case TOP_RIGHT: return new int[]{cfg.topRight().widthPercent(), cfg.topRight().heightPercent(), cfg.topRight().visibleLimit()};
-            case LEFT_CENTER: return new int[]{cfg.leftCenter().widthPercent(), cfg.leftCenter().heightPercent(), cfg.leftCenter().visibleLimit()};
-            case RIGHT_CENTER: return new int[]{cfg.rightCenter().widthPercent(), cfg.rightCenter().heightPercent(), cfg.rightCenter().visibleLimit()};
-            case BOTTOM_LEFT: return new int[]{cfg.bottomLeft().widthPercent(), cfg.bottomLeft().heightPercent(), cfg.bottomLeft().visibleLimit()};
-            case BOTTOM_CENTER: return new int[]{cfg.bottomCenter().widthPercent(), cfg.bottomCenter().heightPercent(), cfg.bottomCenter().visibleLimit()};
-            case BOTTOM_RIGHT: return new int[]{cfg.bottomRight().widthPercent(), cfg.bottomRight().heightPercent(), cfg.bottomRight().visibleLimit()};
-            case CENTER: return new int[]{cfg.center().widthPercent(), cfg.center().heightPercent(), cfg.center().visibleLimit()};
-            default: throw new IllegalArgumentException("Unsupported notification position: " + position);
+            case TOP_LEFT:
+                return new int[]{cfg.topLeft().widthPercent(), cfg.topLeft().heightPercent(), cfg.topLeft().visibleLimit()};
+            case TOP_CENTER:
+                return new int[]{cfg.topCenter().widthPercent(), cfg.topCenter().heightPercent(), cfg.topCenter().visibleLimit()};
+            case TOP_RIGHT:
+                return new int[]{cfg.topRight().widthPercent(), cfg.topRight().heightPercent(), cfg.topRight().visibleLimit()};
+            case LEFT_CENTER:
+                return new int[]{cfg.leftCenter().widthPercent(), cfg.leftCenter().heightPercent(), cfg.leftCenter().visibleLimit()};
+            case RIGHT_CENTER:
+                return new int[]{cfg.rightCenter().widthPercent(), cfg.rightCenter().heightPercent(), cfg.rightCenter().visibleLimit()};
+            case BOTTOM_LEFT:
+                return new int[]{cfg.bottomLeft().widthPercent(), cfg.bottomLeft().heightPercent(), cfg.bottomLeft().visibleLimit()};
+            case BOTTOM_CENTER:
+                return new int[]{cfg.bottomCenter().widthPercent(), cfg.bottomCenter().heightPercent(), cfg.bottomCenter().visibleLimit()};
+            case BOTTOM_RIGHT:
+                return new int[]{cfg.bottomRight().widthPercent(), cfg.bottomRight().heightPercent(), cfg.bottomRight().visibleLimit()};
+            case CENTER:
+                return new int[]{cfg.center().widthPercent(), cfg.center().heightPercent(), cfg.center().visibleLimit()};
+            default:
+                throw new IllegalArgumentException("Unsupported notification position: " + position);
         }
     }
 }

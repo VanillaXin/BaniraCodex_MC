@@ -1,15 +1,17 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
-/** Optional map callbacks share the existing HUD visibility state. */
+/**
+ * Optional map callbacks share the existing HUD visibility state.
+ */
 public final class NotificationMinimapBridge {
     private static final NotificationHudHostState HOSTS = new NotificationHudHostState();
 

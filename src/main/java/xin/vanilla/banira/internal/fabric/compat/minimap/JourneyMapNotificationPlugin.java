@@ -6,16 +6,18 @@ import journeymap.api.v2.client.event.InfoSlotDisplayEvent;
 import journeymap.api.v2.common.JourneyMapPlugin;
 import journeymap.api.v2.common.event.ClientEventRegistry;
 import journeymap.api.v2.common.event.MinimapEventRegistry;
+import journeymap.client.ui.UIManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.TranslatableComponent;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.api.client.event.BaniraClientEvents;
-import xin.vanilla.banira.client.notification.NotificationUnreadHud;
-import net.minecraft.client.Minecraft;
-import journeymap.client.ui.UIManager;
 
-/** JourneyMap discovers this class only when its optional client API is installed. */
+/**
+ * JourneyMap discovers this class only when its optional client API is installed.
+ */
 @JourneyMapPlugin(apiVersion = "2.0.0")
 public final class JourneyMapNotificationPlugin implements IClientPlugin {
     private static final String KEY = "word.banira_codex.notification_unread";

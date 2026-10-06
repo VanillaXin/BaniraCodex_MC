@@ -5,9 +5,9 @@ import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.client.event.BaniraMouseEvent;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.NotificationManager;
-import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 /**

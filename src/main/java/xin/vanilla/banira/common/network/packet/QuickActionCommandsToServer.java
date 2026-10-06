@@ -14,7 +14,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 以玩家自身权限在服务端执行快捷入口指令，并在链式模式下使用真实结果判定后续步骤。 */
+/**
+ * 以玩家自身权限在服务端执行快捷入口指令，并在链式模式下使用真实结果判定后续步骤。
+ */
 public final class QuickActionCommandsToServer implements NetworkPacket {
     public static final int MAX_STEPS = 32;
     private final QuickActionExecutionMode mode;

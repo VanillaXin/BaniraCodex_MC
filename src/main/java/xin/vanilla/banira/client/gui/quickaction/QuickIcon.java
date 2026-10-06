@@ -122,7 +122,9 @@ public class QuickIcon {
         return q;
     }
 
-    /** 保留外部文件路径，使资源重载释放动态纹理后能够按需重新注册。 */
+    /**
+     * 保留外部文件路径，使资源重载释放动态纹理后能够按需重新注册。
+     */
     @Nonnull
     public static QuickIcon externalFile(@Nonnull IIdentifier factory, @Nonnull String path) {
         QuickIcon q = new QuickIcon();
@@ -132,7 +134,9 @@ public class QuickIcon {
         return q;
     }
 
-    /** 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。 */
+    /**
+     * 供可选模组兼容层复用其原生图标绘制，不把对应模组类型带入快捷入口模型。
+     */
     @Nonnull
     public static QuickIcon custom(@Nonnull Renderer renderer) {
         QuickIcon q = new QuickIcon();
@@ -225,7 +229,9 @@ public class QuickIcon {
         }
     }
 
-    /** 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。 */
+    /**
+     * 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。
+     */
     private static void prepareDrawState() {
         RenderSystem.enableTexture();
         RenderSystem.enableBlend();

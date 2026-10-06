@@ -12,11 +12,11 @@ import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +30,7 @@ public final class NotificationLogStore {
     private static class WriterHolder {
         private static final NotificationLogWriter WRITER = new NotificationLogWriter(
                 CustomConfig.getConfigDirectory().resolve(LOG_FILE_NAME));
+
         static {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {

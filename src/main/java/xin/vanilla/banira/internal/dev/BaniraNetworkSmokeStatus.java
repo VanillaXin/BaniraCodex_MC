@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-/** 开发期跨进程联机烟测状态文件。 */
+/**
+ * 开发期跨进程联机烟测状态文件。
+ */
 public final class BaniraNetworkSmokeStatus {
     private BaniraNetworkSmokeStatus() {
     }

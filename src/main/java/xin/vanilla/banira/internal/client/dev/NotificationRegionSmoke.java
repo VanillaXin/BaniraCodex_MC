@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.BaniraConfigs;
@@ -16,6 +16,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
+
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,7 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Isolated opt-in smoke for HUD editing and overlay admission; never loaded by normal gameplay. */
+/**
+ * Isolated opt-in smoke for HUD editing and overlay admission; never loaded by normal gameplay.
+ */
 final class NotificationRegionSmoke {
     private static int tick;
     private static boolean finished;
@@ -130,7 +133,8 @@ final class NotificationRegionSmoke {
                 BaniraNetworkSmokeStatus.append("PASS notification-regions queue=8 history=120 visible=2 admission=true no-preemption=true hud-save=true close-shortcuts=true");
                 finished = true;
                 return true;
-            default: break;
+            default:
+                break;
         }
         return false;
     }
@@ -139,14 +143,22 @@ final class NotificationRegionSmoke {
     private static Map<EnumPosition, List<Notification>> overlays() throws Exception {
         return (Map<EnumPosition, List<Notification>>) field("notifications");
     }
+
     @SuppressWarnings("unchecked")
-    private static List<Notification> drawOrder() throws Exception { return new ArrayList<>((List<Notification>) field("frameDrawOrder")); }
+    private static List<Notification> drawOrder() throws Exception {
+        return new ArrayList<>((List<Notification>) field("frameDrawOrder"));
+    }
+
     private static Object field(String name) throws Exception {
         Field field = NotificationManager.class.getDeclaredField(name);
         field.setAccessible(true);
         return field.get(NotificationManager.get());
     }
-    private static void require(boolean ok, String message) { if (!ok) throw new IllegalStateException(message); }
+
+    private static void require(boolean ok, String message) {
+        if (!ok) throw new IllegalStateException(message);
+    }
+
     private static void screenshot(Minecraft mc, String name) throws Exception {
         Path output = Paths.get(System.getProperty("banira.networkSmoke.status")).getParent().resolve(name);
         try (NativeImage image = Screenshot.takeScreenshot(mc.getWindow().getWidth(), mc.getWindow().getHeight(), mc.getMainRenderTarget())) {

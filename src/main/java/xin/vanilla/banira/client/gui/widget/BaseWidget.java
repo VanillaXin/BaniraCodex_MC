@@ -52,7 +52,9 @@ public abstract class BaseWidget implements IWidget {
     @Setter
     protected List<ScreenCoordinate> hoveringCoordinates = new ArrayList<>();
 
-    /** 仅扩展悬浮反馈范围，不参与点击、拖动或滚轮命中。 */
+    /**
+     * 仅扩展悬浮反馈范围，不参与点击、拖动或滚轮命中。
+     */
     @Getter
     @Setter
     protected HoverInsets hoverInsets = HoverInsets.none();

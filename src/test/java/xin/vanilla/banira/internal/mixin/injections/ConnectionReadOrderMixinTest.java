@@ -90,11 +90,13 @@ public class ConnectionReadOrderMixinTest {
     }
 
     private void drainEventLoop() throws Exception {
-        channel.eventLoop().submit(() -> {}).get(5, TimeUnit.SECONDS);
+        channel.eventLoop().submit(() -> {
+        }).get(5, TimeUnit.SECONDS);
     }
 
     private ChannelConfig disableRead() throws Exception {
-        ConnectionReadOrderMixin mixin = new ConnectionReadOrderMixin() {};
+        ConnectionReadOrderMixin mixin = new ConnectionReadOrderMixin() {
+        };
         Field field = ConnectionReadOrderMixin.class.getDeclaredField("channel");
         field.setAccessible(true);
         field.set(mixin, channel);

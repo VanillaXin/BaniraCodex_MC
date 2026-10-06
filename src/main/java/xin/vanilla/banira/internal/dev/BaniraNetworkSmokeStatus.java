@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-/** 开发期跨进程联机烟测状态文件。 */
+/**
+ * 开发期跨进程联机烟测状态文件。
+ */
 public final class BaniraNetworkSmokeStatus {
     private BaniraNetworkSmokeStatus() {
     }
@@ -18,7 +20,10 @@ public final class BaniraNetworkSmokeStatus {
         return !BaniraEnvironment.isProduction() && Boolean.getBoolean("banira.networkSmoke");
     }
 
-    public static boolean notificationsOnly() { return Boolean.getBoolean("banira.networkSmoke.notificationsOnly"); }
+    public static boolean notificationsOnly() {
+        return Boolean.getBoolean("banira.networkSmoke.notificationsOnly");
+    }
+
     public static boolean notificationClientReady() throws IOException {
         String configured = System.getProperty("banira.networkSmoke.clientStatus", "");
         if (configured.isEmpty()) throw new IllegalStateException("Missing client status path");
@@ -26,6 +31,7 @@ public final class BaniraNetworkSmokeStatus {
         return Files.exists(path) && new String(Files.readAllBytes(path), StandardCharsets.UTF_8)
                 .contains("PASS notification-client-ready");
     }
+
     public static String phase() {
         return System.getProperty("banira.networkSmoke.phase", "").trim();
     }

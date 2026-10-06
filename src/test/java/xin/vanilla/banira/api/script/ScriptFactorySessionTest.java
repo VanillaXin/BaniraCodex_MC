@@ -1,14 +1,19 @@
 package xin.vanilla.banira.api.script;
 
 import org.junit.Test;
+
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.Assert.*;
 
 public class ScriptFactorySessionTest {
-    public interface Counter { int next(); }
+    public interface Counter {
+        int next();
+    }
+
     public static final AtomicInteger INITIALIZATIONS = new AtomicInteger();
     public static final AtomicInteger CONSTRUCTIONS = new AtomicInteger();
     public static volatile boolean failRetainedConstructor;
@@ -25,14 +30,15 @@ public class ScriptFactorySessionTest {
     }
 
     private <T> PreparedScripts<T> prepare(ScriptSession<T> session, BlockingQueue<Runnable> owner,
-                                          ScriptSourceGroup... groups) throws Exception {
+                                           ScriptSourceGroup... groups) throws Exception {
         CompletableFuture<PreparedScripts<T>> future = session.prepareGroups(Arrays.asList(groups));
         Runnable callback = owner.poll(10, TimeUnit.SECONDS);
         if (callback != null) callback.run();
         return future.get(10, TimeUnit.SECONDS);
     }
 
-    @Test public void createsIndependentInstancesWithoutInitializingDuringPreparation() throws Exception {
+    @Test
+    public void createsIndependentInstancesWithoutInitializingDuringPreparation() throws Exception {
         INITIALIZATIONS.set(0);
         CONSTRUCTIONS.set(0);
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
@@ -59,7 +65,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void compilesMutuallyReferencingSourcesAndReusesReorderedSnapshot() throws Exception {
+    @Test
+    public void compilesMutuallyReferencingSourcesAndReusesReorderedSnapshot() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         Map<String, String> files = new LinkedHashMap<>();
         files.put("Task.java", "package xin.vanilla.banira.generated; public class Task implements "
@@ -86,7 +93,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void rejectsOtherThreadsAndClosedFactories() throws Exception {
+    @Test
+    public void rejectsOtherThreadsAndClosedFactories() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         ScriptSession<ScriptFactory<Counter>> session = session(owner);
         try {
@@ -95,14 +103,23 @@ public class ScriptFactorySessionTest {
             assertFailure(CompletableFuture.supplyAsync(factory::entryType));
             assertEquals(1, factory.create().next());
             session.close();
-            try { factory.create(); fail("Closed factory accepted"); }
-            catch (IllegalStateException expected) { }
-            try { factory.entryType(); fail("Closed factory type accepted"); }
-            catch (IllegalStateException expected) { }
-        } finally { session.close(); }
+            try {
+                factory.create();
+                fail("Closed factory accepted");
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                factory.entryType();
+                fail("Closed factory type accepted");
+            } catch (IllegalStateException expected) {
+            }
+        } finally {
+            session.close();
+        }
     }
 
-    @Test public void rejectsDuplicateBinaryNamesAndHelperDiagnosticsKeepFileLocation() throws Exception {
+    @Test
+    public void rejectsDuplicateBinaryNamesAndHelperDiagnosticsKeepFileLocation() throws Exception {
         try (ScriptSession<ScriptFactory<Counter>> session = BaniraScripts.openFactorySession("duplicates", Counter.class,
                 "1", ScriptLimits.defaults(), Runnable::run)) {
             Map<String, String> first = new HashMap<>(group("a", "TaskA", "").getSourceFiles());
@@ -124,7 +141,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void enforcesHelperFileCountAndUtf8ByteLimits() throws Exception {
+    @Test
+    public void enforcesHelperFileCountAndUtf8ByteLimits() throws Exception {
         try (ScriptSession<ScriptFactory<Counter>> session = BaniraScripts.openFactorySession("limits", Counter.class, "1",
                 new ScriptLimits(400, 600, 1), Runnable::run)) {
             Map<String, String> files = new HashMap<>(group("a", "Task", "").getSourceFiles());
@@ -138,7 +156,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void closesQueuedPreparationAndRejectsForeignAndStaleCandidates() throws Exception {
+    @Test
+    public void closesQueuedPreparationAndRejectsForeignAndStaleCandidates() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<ScriptFactory<Counter>> session = session(owner);
              ScriptSession<ScriptFactory<Counter>> other = session(owner)) {
@@ -157,13 +176,16 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void constructorFailureIsDeferredAndDiagnosed() throws Exception {
+    @Test
+    public void constructorFailureIsDeferredAndDiagnosed() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<ScriptFactory<Counter>> session = session(owner)) {
             ScriptFactory<Counter> factory = prepare(session, owner, group("broken", "Broken",
                     "public Broken(){ throw new IllegalStateException(\"broken\"); }")).scripts().get("broken");
-            try { factory.create(); fail("Broken constructor accepted"); }
-            catch (ScriptCompilationException expected) {
+            try {
+                factory.create();
+                fail("Broken constructor accepted");
+            } catch (ScriptCompilationException expected) {
                 assertEquals("broken", expected.getDiagnostics().get(0).getScriptId());
                 assertEquals("instantiate", expected.getDiagnostics().get(0).getPhase());
                 assertEquals("Broken.java", expected.getDiagnostics().get(0).getFileName());
@@ -171,7 +193,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void activeFactoryReleasesSourceTextButKeepsHelpersAndConstructorDiagnostics() throws Exception {
+    @Test
+    public void activeFactoryReleasesSourceTextButKeepsHelpersAndConstructorDiagnostics() throws Exception {
         RetainedFactory retained = prepareRetainedFactory();
         try {
             WeakReference<Object> control = new WeakReference<>(new Object());
@@ -189,8 +212,10 @@ public class ScriptFactorySessionTest {
             // The helper has not been loaded before the sources were collected.
             assertEquals(42, factory.create().next());
             failRetainedConstructor = true;
-            try { factory.create(); fail("Broken constructor accepted after source collection"); }
-            catch (ScriptCompilationException expected) {
+            try {
+                factory.create();
+                fail("Broken constructor accepted after source collection");
+            } catch (ScriptCompilationException expected) {
                 ScriptDiagnostic diagnostic = expected.getDiagnostics().get(0);
                 assertEquals("retained", diagnostic.getScriptId());
                 assertEquals("rules/RetainedTask.java", diagnostic.getFileName());
@@ -234,6 +259,7 @@ public class ScriptFactorySessionTest {
         final WeakReference<ScriptSourceGroup> group;
         final WeakReference<String> entry, helper;
         final int originalCharacters;
+
         RetainedFactory(ScriptSession<ScriptFactory<Counter>> session, ScriptSourceGroup group, String entry, String helper) {
             this.session = session;
             this.group = new WeakReference<>(group);
@@ -241,13 +267,15 @@ public class ScriptFactorySessionTest {
             this.helper = new WeakReference<>(helper);
             originalCharacters = entry.length() + helper.length();
         }
+
         int sourceCharacters() {
             String a = entry.get(), b = helper.get();
             return (a == null ? 0 : a.length()) + (b == null ? 0 : b.length());
         }
     }
 
-    @Test public void validatesFactoryEntrypointsWithoutRunningThem() throws Exception {
+    @Test
+    public void validatesFactoryEntrypointsWithoutRunningThem() throws Exception {
         try (ScriptSession<ScriptFactory<Counter>> session = BaniraScripts.openFactorySession("invalid", Counter.class,
                 "1", ScriptLimits.defaults(), Runnable::run)) {
             for (String declaration : Arrays.asList(
@@ -261,7 +289,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void helperSourceCannotEscapeNamespaceOrBatchBudget() throws Exception {
+    @Test
+    public void helperSourceCannotEscapeNamespaceOrBatchBudget() throws Exception {
         try (ScriptSession<ScriptFactory<Counter>> session = BaniraScripts.openFactorySession("limits", Counter.class,
                 "1", new ScriptLimits(400, 600, 3), Runnable::run)) {
             Map<String, String> files = new LinkedHashMap<>(group("a", "Task", "").getSourceFiles());
@@ -277,7 +306,8 @@ public class ScriptFactorySessionTest {
         }
     }
 
-    @Test public void pendingSnapshotAndFailedReloadDoNotReplaceHealthyFactory() throws Exception {
+    @Test
+    public void pendingSnapshotAndFailedReloadDoNotReplaceHealthyFactory() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<ScriptFactory<Counter>> session = session(owner)) {
             ScriptSourceGroup code = group("a", "Task", "");
@@ -297,8 +327,14 @@ public class ScriptFactorySessionTest {
     }
 
     private Throwable assertFailure(CompletableFuture<?> future) throws Exception {
-        try { future.get(10, TimeUnit.SECONDS); fail("Expected failure"); return null; }
-        catch (ExecutionException expected) { return expected.getCause(); }
-        catch (CancellationException expected) { return expected; }
+        try {
+            future.get(10, TimeUnit.SECONDS);
+            fail("Expected failure");
+            return null;
+        } catch (ExecutionException expected) {
+            return expected.getCause();
+        } catch (CancellationException expected) {
+            return expected;
+        }
     }
 }

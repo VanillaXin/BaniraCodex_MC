@@ -190,7 +190,9 @@ public final class QuickActionRegistry {
 
     // region registerInventoryOnly 重载
 
-    /** 注册仅显示为背包界面按钮、不加入默认图标菜单的入口。 */
+    /**
+     * 注册仅显示为背包界面按钮、不加入默认图标菜单的入口。
+     */
     public void registerInventoryOnly(
             @Nonnull String id,
             @Nonnull QuickIcon icon,

@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** Fabric 1.18.2 资源包与模组容器语言资源适配。 */
+/**
+ * Fabric 1.18.2 资源包与模组容器语言资源适配。
+ */
 public final class FabricBaniraResourceService {
     private static final Logger LOGGER = LogManager.getLogger();
 

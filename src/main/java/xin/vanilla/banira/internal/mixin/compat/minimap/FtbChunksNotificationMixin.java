@@ -18,7 +18,8 @@ import java.util.List;
 @Pseudo
 @Mixin(targets = "dev.ftb.mods.ftbchunks.client.FTBChunksClient", remap = false)
 public abstract class FtbChunksNotificationMixin {
-    @Shadow(remap = false) @Final
+    @Shadow(remap = false)
+    @Final
     private static List<Component> MINIMAP_TEXT_LIST;
 
     @Inject(method = "renderHud", require = 0, remap = false,

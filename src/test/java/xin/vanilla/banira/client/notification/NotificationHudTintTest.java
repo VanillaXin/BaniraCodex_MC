@@ -1,9 +1,13 @@
 package xin.vanilla.banira.client.notification;
+
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.*;
+
 import java.io.InputStream;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class NotificationHudTintTest {
     @Test
@@ -18,7 +22,8 @@ public class NotificationHudTintTest {
             if (!method.name.equals("drawContents")) continue;
             boolean edge = false, bound = false, tinted = false;
             for (AbstractInsnNode instruction : method.instructions) {
-                if (instruction instanceof FieldInsnNode && ((FieldInsnNode) instruction).name.equals("ICON_EDGE")) edge = true;
+                if (instruction instanceof FieldInsnNode && ((FieldInsnNode) instruction).name.equals("ICON_EDGE"))
+                    edge = true;
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 if (edge && call.name.equals("setShaderTexture")) bound = true;

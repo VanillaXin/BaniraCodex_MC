@@ -14,7 +14,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/** 点击后直接捕获下一组键盘组合键，不要求玩家输入按键名称。 */
+/**
+ * 点击后直接捕获下一组键盘组合键，不要求玩家输入按键名称。
+ */
 @Accessors(chain = true, fluent = true)
 public class KeyCaptureInputWidget extends InputWidget {
     @Setter

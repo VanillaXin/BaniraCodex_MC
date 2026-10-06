@@ -17,10 +17,10 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.event.*;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -49,7 +49,9 @@ import java.util.function.Predicate;
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
 
-    /** 统一描述界面关闭来源，子类可据此保留自己的未保存检查。 */
+    /**
+     * 统一描述界面关闭来源，子类可据此保留自己的未保存检查。
+     */
     public enum CloseReason {
         ESCAPE,
         INVENTORY_KEY,
@@ -84,7 +86,9 @@ public abstract class BaniraScreen extends Screen {
         return font;
     }
 
-    /** Development-only render scope; leaves cursor, events and deferred flushing to the caller. */
+    /**
+     * Development-only render scope; leaves cursor, events and deferred flushing to the caller.
+     */
     public final void runDevRenderAt(double x, double y, Runnable render) {
         InputStateManager.instance().runDevRenderAt(x, y, render);
     }

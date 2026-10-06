@@ -1,10 +1,6 @@
 package xin.vanilla.banira.client.gui.tooltip;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.*;
 import org.junit.Test;
 import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 
@@ -13,9 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TooltipTextColorResolverTest {
 

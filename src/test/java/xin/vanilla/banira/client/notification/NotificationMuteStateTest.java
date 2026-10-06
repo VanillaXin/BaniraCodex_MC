@@ -1,9 +1,12 @@
 package xin.vanilla.banira.client.notification;
 
 import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class NotificationMuteStateTest {
     @Test

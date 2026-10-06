@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** 可由 Banira 或其他兼容宿主展示的一条外部背包操作。 */
+/**
+ * 可由 Banira 或其他兼容宿主展示的一条外部背包操作。
+ */
 @Getter
 @Accessors(fluent = true)
 public final class ExternalInventoryAction {

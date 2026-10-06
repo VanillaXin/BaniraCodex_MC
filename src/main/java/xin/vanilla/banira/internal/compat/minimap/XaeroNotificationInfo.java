@@ -9,7 +9,9 @@ import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
 import java.util.function.Consumer;
 
-/** Loaded exclusively by Xaero's guarded information-display mixin. */
+/**
+ * Loaded exclusively by Xaero's guarded information-display mixin.
+ */
 public final class XaeroNotificationInfo {
     private static final InfoDisplay<Boolean> DISPLAY = InfoDisplay.Builder.<Boolean>begin()
             .setId("banira_unread")
@@ -21,7 +23,8 @@ public final class XaeroNotificationInfo {
                 if (Boolean.TRUE.equals(display.getState())) {
                     net.minecraft.network.chat.Component text = NotificationMinimapBridge.text(EnumNotificationHudHost.XAERO);
                     if (!text.getString().isEmpty()) {
-                        if (net.minecraft.client.Minecraft.getInstance().font.width(text) <= width) compiler.addLine(text);
+                        if (net.minecraft.client.Minecraft.getInstance().font.width(text) <= width)
+                            compiler.addLine(text);
                         else compiler.addWords(text.getString());
                     }
                 }

@@ -3,7 +3,9 @@ package xin.vanilla.banira.client.notification;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
-/** Client-session overlay mute, unaffected by wall-clock changes. */
+/**
+ * Client-session overlay mute, unaffected by wall-clock changes.
+ */
 public final class NotificationMuteState {
     private final LongSupplier nanoClock;
     private boolean active;

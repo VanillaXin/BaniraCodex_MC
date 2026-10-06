@@ -76,7 +76,9 @@ public final class TooltipTransitionModel<K> {
         return currentFrame(nowNanos);
     }
 
-    /** 离开 Tooltip 区域后向靠近鼠标的竖向边缘收缩。 */
+    /**
+     * 离开 Tooltip 区域后向靠近鼠标的竖向边缘收缩。
+     */
     public TooltipTransitionFrame<K> resolveMissing(double pointerX, double pointerY, long nowNanos) {
         if (!initialized) return null;
         if (missingSince == Long.MIN_VALUE) missingSince = nowNanos;
@@ -116,7 +118,9 @@ public final class TooltipTransitionModel<K> {
         savedState = null;
     }
 
-    /** 保存一次可能被同帧晚提交撤销的空刷新前状态。 */
+    /**
+     * 保存一次可能被同帧晚提交撤销的空刷新前状态。
+     */
     public void saveState() {
         if (savedState == null) {
             savedState = new SavedState<>(startBounds, targetBounds, restingBounds,
@@ -125,7 +129,9 @@ public final class TooltipTransitionModel<K> {
         }
     }
 
-    /** 恢复最近保存的状态；没有保存状态时不做任何处理。 */
+    /**
+     * 恢复最近保存的状态；没有保存状态时不做任何处理。
+     */
     public void restoreSavedState() {
         if (savedState == null) return;
         startBounds = savedState.startBounds;
@@ -141,7 +147,9 @@ public final class TooltipTransitionModel<K> {
         savedState = null;
     }
 
-    /** 下一次常规渲染帧开始后，先前的空刷新不再允许被撤销。 */
+    /**
+     * 下一次常规渲染帧开始后，先前的空刷新不再允许被撤销。
+     */
     public void discardSavedState() {
         savedState = null;
     }

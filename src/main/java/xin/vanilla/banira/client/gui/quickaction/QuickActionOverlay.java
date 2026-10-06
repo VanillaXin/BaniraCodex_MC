@@ -1,8 +1,8 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -10,9 +10,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.world.item.Items;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -28,7 +28,6 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -37,6 +36,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -44,11 +44,7 @@ import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 在玩家背包界面绘制快捷图标组，并处理拖拽、点击与菜单。
@@ -808,7 +804,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, entryTheme, season);
     }
 
-    /** 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。 */
+    /**
+     * 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。
+     */
     private void renderContextTooltip(PoseStack stack, Minecraft mc, int mouseX, int mouseY,
                                       BaniraColorConfig fallbackTheme) {
         if (contextTooltipLine == null || contextTooltipLine.isEmpty()) {
@@ -823,7 +821,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, tooltipTheme, season);
     }
 
-    /** 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。 */
+    /**
+     * 子 Mod 注册的快捷项使用自己的主题偏好，系统菜单继续使用 Banira 当前主题。
+     */
     private BaniraColorConfig contextTheme(BaniraColorConfig fallback) {
         QuickActionEntry entry = contextThemeEntry();
         return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
@@ -960,7 +960,9 @@ public final class QuickActionOverlay {
         return Minecraft.getInstance();
     }
 
-    /** 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。 */
+    /**
+     * 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。
+     */
     public boolean capturesPointer(Screen screen, double mouseX, double mouseY) {
         if (!isSupportedInventoryScreen(screen)) {
             return false;
@@ -1227,7 +1229,9 @@ public final class QuickActionOverlay {
         contextY = my;
     }
 
-    /** 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。 */
+    /**
+     * 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。
+     */
     void openCustomEntryMenu(String entryId, double mouseX, double mouseY, int itemOffset) {
         contextMenuKind = ContextMenuKind.TRAY;
         contextUserEntryIdForHide = null;
@@ -1277,7 +1281,9 @@ public final class QuickActionOverlay {
          */
         @Nullable
         final QuickActionEntry entryForSecondaryMenu;
-        /** 可右键隐藏的菜单行标识；结构行保持为空。 */
+        /**
+         * 可右键隐藏的菜单行标识；结构行保持为空。
+         */
         @Nullable
         final String hiddenMenuKey;
 
@@ -1603,6 +1609,7 @@ public final class QuickActionOverlay {
         ctxRowActionW = 0;
         ctxRowActionH = 0;
     }
+
     private void resetAnchorPreset() {
         final QuickActionLayout DEFAULT = new QuickActionLayout();
         layout.coordinateModeX(DEFAULT.coordinateModeX());

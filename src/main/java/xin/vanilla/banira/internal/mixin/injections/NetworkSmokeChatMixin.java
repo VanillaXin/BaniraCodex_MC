@@ -11,7 +11,9 @@ import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 
 import java.util.UUID;
 
-/** Observes vanilla delivery without replacing Fabric or vanilla chat dispatch. */
+/**
+ * Observes vanilla delivery without replacing Fabric or vanilla chat dispatch.
+ */
 @Mixin(Gui.class)
 public class NetworkSmokeChatMixin {
     @Inject(method = "handleChat", at = @At("RETURN"))

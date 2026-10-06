@@ -9,12 +9,16 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
-import static xin.vanilla.banira.common.config.view.ConfigViewBindingTest.*;
+import static xin.vanilla.banira.common.config.view.ConfigViewBindingTest.RecordingHandle;
+import static xin.vanilla.banira.common.config.view.ConfigViewBindingTest.binding;
 
 public class ConfigViewValuesTest {
     enum Mode {
         FIRST, SECOND;
-        public static Mode parse(Object value) { return "alias".equals(value) ? SECOND : FIRST; }
+
+        public static Mode parse(Object value) {
+            return "alias".equals(value) ? SECOND : FIRST;
+        }
     }
 
     static class Values {

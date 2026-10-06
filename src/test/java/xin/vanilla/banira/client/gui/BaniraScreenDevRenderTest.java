@@ -18,7 +18,8 @@ public class BaniraScreenDevRenderTest {
         BaniraPlatforms.install(new TestBaniraPlatform().development(true));
         screen = new BaniraScreen(new TextComponent("dev render")) {
             @Override
-            protected void onRender(com.mojang.blaze3d.vertex.PoseStack stack, float partialTicks) { }
+            protected void onRender(com.mojang.blaze3d.vertex.PoseStack stack, float partialTicks) {
+            }
         };
     }
 

@@ -205,8 +205,10 @@ final class FabricConfigValueStore implements ConfigValueStore {
             throw new IllegalStateException("Failed to commit config: " + file, e);
         } finally {
             if (staged != null) {
-                try { Files.deleteIfExists(staged); }
-                catch (IOException ignored) { }
+                try {
+                    Files.deleteIfExists(staged);
+                } catch (IOException ignored) {
+                }
             }
         }
     }
@@ -221,7 +223,9 @@ final class FabricConfigValueStore implements ConfigValueStore {
         }
     }
 
-    void reloadFromDisk() { reload(); }
+    void reloadFromDisk() {
+        reload();
+    }
 
     synchronized void reload() {
         byte[] bytes = readBytes();
@@ -387,9 +391,9 @@ final class FabricConfigValueStore implements ConfigValueStore {
         ConfigEntryDescriptor.ConfigValueType type = descriptor.getValueType();
         boolean stringLike = listElement
                 ? type == ConfigEntryDescriptor.ConfigValueType.STRING_LIST
-                    || type == ConfigEntryDescriptor.ConfigValueType.ENUM_LIST
+                || type == ConfigEntryDescriptor.ConfigValueType.ENUM_LIST
                 : type == ConfigEntryDescriptor.ConfigValueType.STRING
-                    || type == ConfigEntryDescriptor.ConfigValueType.ENUM;
+                || type == ConfigEntryDescriptor.ConfigValueType.ENUM;
         String raw = value instanceof Enum<?> ? ((Enum<?>) value).name() : String.valueOf(value);
         return stringLike ? quoteTomlString(raw) : raw;
     }
@@ -399,13 +403,27 @@ final class FabricConfigValueStore implements ConfigValueStore {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
             switch (c) {
-                case '\\': out.append("\\\\"); break;
-                case '"': out.append("\\\""); break;
-                case '\b': out.append("\\b"); break;
-                case '\t': out.append("\\t"); break;
-                case '\n': out.append("\\n"); break;
-                case '\f': out.append("\\f"); break;
-                case '\r': out.append("\\r"); break;
+                case '\\':
+                    out.append("\\\\");
+                    break;
+                case '"':
+                    out.append("\\\"");
+                    break;
+                case '\b':
+                    out.append("\\b");
+                    break;
+                case '\t':
+                    out.append("\\t");
+                    break;
+                case '\n':
+                    out.append("\\n");
+                    break;
+                case '\f':
+                    out.append("\\f");
+                    break;
+                case '\r':
+                    out.append("\\r");
+                    break;
                 default:
                     if (c < 0x20) {
                         out.append(String.format("\\u%04x", (int) c));
@@ -434,13 +452,27 @@ final class FabricConfigValueStore implements ConfigValueStore {
             }
             char escaped = value.charAt(i);
             switch (escaped) {
-                case '\\': out.append('\\'); break;
-                case '"': out.append('"'); break;
-                case 'b': out.append('\b'); break;
-                case 't': out.append('\t'); break;
-                case 'n': out.append('\n'); break;
-                case 'f': out.append('\f'); break;
-                case 'r': out.append('\r'); break;
+                case '\\':
+                    out.append('\\');
+                    break;
+                case '"':
+                    out.append('"');
+                    break;
+                case 'b':
+                    out.append('\b');
+                    break;
+                case 't':
+                    out.append('\t');
+                    break;
+                case 'n':
+                    out.append('\n');
+                    break;
+                case 'f':
+                    out.append('\f');
+                    break;
+                case 'r':
+                    out.append('\r');
+                    break;
                 case 'u':
                     if (i + 4 >= value.length()) {
                         throw new IllegalArgumentException("Invalid TOML unicode escape");

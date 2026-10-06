@@ -5,7 +5,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** Covers the loader-independent optional-integration guard. */
+/**
+ * Covers the loader-independent optional-integration guard.
+ */
 public final class OptionalCompatibilityMixinPluginTest {
     private final OptionalCompatibilityMixinPlugin plugin = new OptionalCompatibilityMixinPlugin();
 

@@ -5,8 +5,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
@@ -52,7 +52,9 @@ import java.util.function.Predicate;
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
 
-    /** 统一描述界面关闭来源，子类可据此保留自己的未保存检查。 */
+    /**
+     * 统一描述界面关闭来源，子类可据此保留自己的未保存检查。
+     */
     public enum CloseReason {
         ESCAPE,
         INVENTORY_KEY,

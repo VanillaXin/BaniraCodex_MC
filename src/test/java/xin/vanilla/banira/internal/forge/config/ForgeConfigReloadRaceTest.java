@@ -23,22 +23,15 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
-/** Upstream failure characterization, not an assertion that production reloads are safe. */
+/**
+ * Upstream failure characterization, not an assertion that production reloads are safe.
+ */
 public class ForgeConfigReloadRaceTest {
     private static final String DOCUMENT = "[base.chunk]\nlimit = 100\ninterval = 10\nretain = 0.25\n"
             + "entityList = [\"minecraft:arrow\", \"tick, clazz -> tick >= 5\"]\n"

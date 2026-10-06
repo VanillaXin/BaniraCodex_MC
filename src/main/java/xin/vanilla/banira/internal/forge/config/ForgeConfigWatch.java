@@ -1,13 +1,7 @@
 package xin.vanilla.banira.internal.forge.config;
 
 import java.io.IOException;
-import java.nio.file.ClosedWatchServiceException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -15,7 +9,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-/** Supplements legacy NightConfig's skipped/coalesced events without replacing its registrations. */
+/**
+ * Supplements legacy NightConfig's skipped/coalesced events without replacing its registrations.
+ */
 public final class ForgeConfigWatch implements AutoCloseable {
     private static final ForgeConfigWatch INSTANCE = new ForgeConfigWatch(
             error -> org.apache.logging.log4j.LogManager.getLogger().warn("Cannot reload externally edited config", error));
@@ -24,10 +20,17 @@ public final class ForgeConfigWatch implements AutoCloseable {
     private final Consumer<RuntimeException> errors;
     private WatchService service;
 
-    ForgeConfigWatch(Consumer<RuntimeException> errors) { this.errors = errors; }
+    ForgeConfigWatch(Consumer<RuntimeException> errors) {
+        this.errors = errors;
+    }
 
-    public static void add(Path path, Runnable callback) throws IOException { INSTANCE.watch(path, callback); }
-    public static void remove(Path path) { INSTANCE.unwatch(path); }
+    public static void add(Path path, Runnable callback) throws IOException {
+        INSTANCE.watch(path, callback);
+    }
+
+    public static void remove(Path path) {
+        INSTANCE.unwatch(path);
+    }
 
     synchronized void watch(Path path, Runnable callback) throws IOException {
         path = path.toAbsolutePath().normalize();
@@ -70,10 +73,15 @@ public final class ForgeConfigWatch implements AutoCloseable {
                         && (extra = active.poll(remaining, TimeUnit.NANOSECONDS)) != null) collect(extra, changed);
                 for (Path path : changed) {
                     Runnable callback;
-                    synchronized (this) { callback = service == active ? callbacks.get(path) : null; }
+                    synchronized (this) {
+                        callback = service == active ? callbacks.get(path) : null;
+                    }
                     if (callback != null && Files.isRegularFile(path)) {
-                        try { callback.run(); }
-                        catch (RuntimeException error) { errors.accept(error); }
+                        try {
+                            callback.run();
+                        } catch (RuntimeException error) {
+                            errors.accept(error);
+                        }
                     }
                 }
             }
@@ -101,8 +109,11 @@ public final class ForgeConfigWatch implements AutoCloseable {
         callbacks.clear();
         directories.clear();
         if (service != null) {
-            try { service.close(); }
-            catch (IOException error) { errors.accept(new IllegalStateException("Cannot close config watcher", error)); }
+            try {
+                service.close();
+            } catch (IOException error) {
+                errors.accept(new IllegalStateException("Cannot close config watcher", error));
+            }
             service = null;
         }
     }

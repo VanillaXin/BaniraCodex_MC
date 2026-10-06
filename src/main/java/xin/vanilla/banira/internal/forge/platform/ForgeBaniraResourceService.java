@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** Forge 1.19.2 资源包与模组文件语言资源适配。 */
+/**
+ * Forge 1.19.2 资源包与模组文件语言资源适配。
+ */
 public final class ForgeBaniraResourceService {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -42,7 +44,9 @@ public final class ForgeBaniraResourceService {
         return result;
     }
 
-    /** 启动早期资源管理器尚未就绪时，直接从 Forge 已登记的模组文件读取语言。 */
+    /**
+     * 启动早期资源管理器尚未就绪时，直接从 Forge 已登记的模组文件读取语言。
+     */
     private static void collectRegisteredModLanguages(String modId, Map<String, JsonObject> result) {
         try {
             IModFileInfo modFile = ModList.get().getModFileById(modId);

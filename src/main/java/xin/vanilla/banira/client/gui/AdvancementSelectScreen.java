@@ -126,7 +126,9 @@ public class AdvancementSelectScreen extends BaniraScreen {
         private Consumer<ResourceLocation> onDataReceived1;
         private Function<ResourceLocation, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
-        /** 多步骤流程可关闭自动返回，由回调决定下一界面。 */
+        /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
         private boolean closeAfterSubmit = true;
         /**
          * 季节主题，null 时从父界面继承

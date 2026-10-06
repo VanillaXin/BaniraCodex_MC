@@ -30,7 +30,7 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
     }
 
     public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
-                                              String protocolVersion, boolean optionalClient) {
+                                             String protocolVersion, boolean optionalClient) {
         Predicate<String> acceptedVersions = optionalClient
                 ? NetworkRegistry.acceptMissingOr(protocolVersion)
                 : protocolVersion::equals;

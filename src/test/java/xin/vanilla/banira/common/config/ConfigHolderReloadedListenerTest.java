@@ -35,12 +35,39 @@ public class ConfigHolderReloadedListenerTest {
 
     private static final class MapStore implements ConfigValueStore {
         private final Map<String, Object> values = new LinkedHashMap<>();
-        @Override public Set<String> paths() { return values.keySet(); }
-        @Override public Object get(String path) { return values.get(path); }
-        @Override public void set(String path, Object value) { values.put(path, value); }
-        @Override public Class<?> valueClass(String path) { return Integer.class; }
-        @Override public Object defaultValue(String path) { return 1; }
-        @Override public boolean validate(String path, Object value) { return true; }
-        @Override public void save() { }
+
+        @Override
+        public Set<String> paths() {
+            return values.keySet();
+        }
+
+        @Override
+        public Object get(String path) {
+            return values.get(path);
+        }
+
+        @Override
+        public void set(String path, Object value) {
+            values.put(path, value);
+        }
+
+        @Override
+        public Class<?> valueClass(String path) {
+            return Integer.class;
+        }
+
+        @Override
+        public Object defaultValue(String path) {
+            return 1;
+        }
+
+        @Override
+        public boolean validate(String path, Object value) {
+            return true;
+        }
+
+        @Override
+        public void save() {
+        }
     }
 }

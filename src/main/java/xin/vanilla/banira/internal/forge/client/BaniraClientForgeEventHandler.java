@@ -1,15 +1,14 @@
 package xin.vanilla.banira.internal.forge.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
@@ -59,7 +58,9 @@ public final class BaniraClientForgeEventHandler {
         }
     }
 
-    /** 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。 */
+    /**
+     * 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onGlobalKeyInput(InputEvent.Key event) {

@@ -1,4 +1,5 @@
 package xin.vanilla.banira.common.network;
+
 import org.junit.Test;
 
 import java.util.List;

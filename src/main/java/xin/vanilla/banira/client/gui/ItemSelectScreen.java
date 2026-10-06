@@ -125,7 +125,9 @@ public class ItemSelectScreen extends BaniraScreen {
         private Consumer<ItemStack> onDataReceived1;
         private Function<ItemStack, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
-        /** 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。 */
+        /**
+         * 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。
+         */
         private boolean closeAfterSubmit = true;
         /**
          * 季节主题，null 时从父界面继承

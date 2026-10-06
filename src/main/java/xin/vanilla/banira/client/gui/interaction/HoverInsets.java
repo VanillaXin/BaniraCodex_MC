@@ -27,7 +27,9 @@ public class HoverInsets {
         return NONE;
     }
 
-    /** 将相邻项目的视觉间距等分，使两侧 hover 边界恰好相接。 */
+    /**
+     * 将相邻项目的视觉间距等分，使两侧 hover 边界恰好相接。
+     */
     public static HoverInsets fromSpacing(double horizontalSpacing, double verticalSpacing) {
         double horizontalHalf = Math.max(0.0D, horizontalSpacing) / 2.0D;
         double verticalHalf = Math.max(0.0D, verticalSpacing) / 2.0D;
@@ -38,9 +40,9 @@ public class HoverInsets {
      * 将单元格内的内容 hover 扩展到单元格间的共享边界，适合物品图标等内缩内容。
      */
     public static HoverInsets partitionCell(double contentX, double contentY,
-                                             double contentWidth, double contentHeight,
-                                             double cellWidth, double cellHeight,
-                                             double horizontalSpacing, double verticalSpacing) {
+                                            double contentWidth, double contentHeight,
+                                            double cellWidth, double cellHeight,
+                                            double horizontalSpacing, double verticalSpacing) {
         double horizontalHalf = Math.max(0.0D, horizontalSpacing) / 2.0D;
         double verticalHalf = Math.max(0.0D, verticalSpacing) / 2.0D;
         return new HoverInsets(

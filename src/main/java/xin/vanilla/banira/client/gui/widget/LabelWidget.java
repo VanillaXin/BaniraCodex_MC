@@ -7,8 +7,8 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -79,7 +79,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     @Setter
     private boolean showFullTextTooltipWhenTruncated = false;
 
-    /** 显式提示优先于因文本截断自动生成的提示。 */
+    /**
+     * 显式提示优先于因文本截断自动生成的提示。
+     */
     @Getter
     @Setter
     @Nullable
@@ -481,7 +483,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return result;
     }
 
-    /** 按换行拆分富文本，同时保留每个字符片段的原版样式。 */
+    /**
+     * 按换行拆分富文本，同时保留每个字符片段的原版样式。
+     */
     static List<net.minecraft.network.chat.Component> splitStyledLines(
             net.minecraft.network.chat.Component source) {
         List<net.minecraft.network.chat.Component> lines = new ArrayList<>();

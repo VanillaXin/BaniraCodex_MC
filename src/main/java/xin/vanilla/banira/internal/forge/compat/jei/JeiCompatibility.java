@@ -2,10 +2,10 @@ package xin.vanilla.banira.internal.forge.compat.jei;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.gui.overlay.bookmarks.BookmarkButton;
+import mezz.jei.core.config.IWorldConfig;
 import mezz.jei.gui.input.InputType;
 import mezz.jei.gui.input.UserInput;
-import mezz.jei.core.config.IWorldConfig;
+import mezz.jei.gui.overlay.bookmarks.BookmarkButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
@@ -21,7 +21,9 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Forge 1.19.2 JEI 书签按钮兼容桥。 */
+/**
+ * Forge 1.19.2 JEI 书签按钮兼容桥。
+ */
 public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =

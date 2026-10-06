@@ -138,12 +138,26 @@ dependencies {
     compileOnly fg.deobf("curse.maven:map-atlases-forge-519759:3508631")
 
     if (project.hasProperty('minimapSmoke')) {
-        runtimeOnly fg.deobf("maven.modrinth:common-network:iZCOIvcn")
-        runtimeOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
-        runtimeOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
-        runtimeOnly fg.deobf("maven.modrinth:journeymap:v7sAIUDv")
-        runtimeOnly fg.deobf("curse.maven:voxelmap-225179:3197677")
-        runtimeOnly fg.deobf("curse.maven:map-atlases-forge-519759:3508631")
+        // Test one map at a time; old VoxelMap shares a network channel with other maps.
+        switch (project.property('minimapSmoke').toString()) {
+            case '':
+            case 'xaero':
+                runtimeOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
+                runtimeOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
+                break
+            case 'journey':
+                runtimeOnly fg.deobf("maven.modrinth:common-network:iZCOIvcn")
+                runtimeOnly fg.deobf("maven.modrinth:journeymap:v7sAIUDv")
+                break
+            case 'voxel':
+                runtimeOnly fg.deobf("curse.maven:voxelmap-225179:3197677")
+                break
+            case 'atlas':
+                runtimeOnly fg.deobf("curse.maven:map-atlases-forge-519759:3508631")
+                break
+            default:
+                throw new GradleException('minimapSmoke: xaero, journey, voxel or atlas')
+        }
     }
 
     compileOnly fg.deobf("curse.maven:kotlin-for-forge-351264:${kotlin_id}")

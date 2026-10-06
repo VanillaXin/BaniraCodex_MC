@@ -100,7 +100,9 @@ public class DropdownSelectWidget extends InputWidget {
     @Setter
     private boolean multiSelect = false;
 
-    /** 默认严格选择；EDITABLE 模式允许提交预设列表之外的单个值。 */
+    /**
+     * 默认严格选择；EDITABLE 模式允许提交预设列表之外的单个值。
+     */
     @Getter
     @Setter
     private DropdownInputMode inputMode = DropdownInputMode.SELECTION_ONLY;

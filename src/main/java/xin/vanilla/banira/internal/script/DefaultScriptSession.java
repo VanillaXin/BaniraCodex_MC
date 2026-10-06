@@ -1,11 +1,15 @@
 package xin.vanilla.banira.internal.script;
 
 import xin.vanilla.banira.api.script.*;
+
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public final class DefaultScriptSession<T> implements ScriptSession<T> {
     private final String ownerId;
@@ -28,7 +32,7 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
     }
 
     public static <C> ScriptSession<ScriptFactory<C>> factories(String ownerId, Class<C> contract,
-            String apiVersion, ScriptLimits limits, Executor ownerExecutor) {
+                                                                String apiVersion, ScriptLimits limits, Executor ownerExecutor) {
         return new DefaultScriptSession<>(ownerId, contract, apiVersion, limits, ownerExecutor, true);
     }
 
@@ -48,7 +52,8 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
         this.ownerExecutor = Objects.requireNonNull(ownerExecutor, "ownerExecutor");
     }
 
-    @Override public CompletableFuture<PreparedScripts<T>> prepare(List<ScriptSource> sources) {
+    @Override
+    public CompletableFuture<PreparedScripts<T>> prepare(List<ScriptSource> sources) {
         try {
             if (sources == null) return prepareGroups(null);
             List<ScriptSourceGroup> groups = new ArrayList<>();
@@ -63,7 +68,8 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
         }
     }
 
-    @Override public CompletableFuture<PreparedScripts<T>> prepareGroups(List<ScriptSourceGroup> sources) {
+    @Override
+    public CompletableFuture<PreparedScripts<T>> prepareGroups(List<ScriptSourceGroup> sources) {
         Request old;
         CompletableFuture<PreparedScripts<T>> result;
         synchronized (this) {
@@ -74,7 +80,9 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
             try {
                 snapshot = validate(sources);
                 hash = fingerprint(snapshot);
-            } catch (RuntimeException error) { invalid = error; }
+            } catch (RuntimeException error) {
+                invalid = error;
+            }
             if (invalid == null && request != null && !request.future.isDone() && hash.equals(request.hash)) {
                 return request.future;
             }
@@ -96,7 +104,8 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
                     Request next = new Request(requestId, hash, snapshot, contract);
                     request = next;
                     // Session lifecycle completes superseded futures outside its monitor.
-                    ScriptCompileQueue.SHARED.submit(this, () -> compile(next), () -> {});
+                    ScriptCompileQueue.SHARED.submit(this, () -> compile(next), () -> {
+                    });
                     result = next.future;
                 }
             } catch (RuntimeException error) {
@@ -126,7 +135,9 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
                 executor = ownerExecutor;
             }
             executor.execute(() -> instantiate(next));
-        } catch (Exception | LinkageError error) { reject(next, error); }
+        } catch (Exception | LinkageError error) {
+            reject(next, error);
+        }
     }
 
     private void instantiate(Request next) {
@@ -151,10 +162,13 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
                 next.release();
             }
             next.future.complete(prepared);
-        } catch (Exception | LinkageError error) { reject(next, error); }
+        } catch (Exception | LinkageError error) {
+            reject(next, error);
+        }
     }
 
-    @Override public synchronized boolean publish(PreparedScripts<T> prepared) {
+    @Override
+    public synchronized boolean publish(PreparedScripts<T> prepared) {
         if (closed || prepared == null || prepared != candidate || candidate.id != requestId) return false;
         active = candidate.scripts;
         activeHash = candidate.hash;
@@ -162,7 +176,10 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
         return true;
     }
 
-    @Override public Map<String, T> active() { return active; }
+    @Override
+    public Map<String, T> active() {
+        return active;
+    }
 
     @SuppressWarnings("unchecked")
     private Map<String, T> materialize(List<ScriptSourceGroup> sources, Map<String, byte[]> bytecodes, Class<?> type) {
@@ -173,7 +190,8 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
         return Collections.unmodifiableMap(values);
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         Request old;
         synchronized (this) {
             if (closed) return;
@@ -198,7 +216,8 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
     }
 
     private void cancel(Request next) {
-        if (next != null) next.future.completeExceptionally(new CancellationException("Script request superseded or closed"));
+        if (next != null)
+            next.future.completeExceptionally(new CancellationException("Script request superseded or closed"));
     }
 
     private void reject(Request next, Throwable error) {
@@ -259,10 +278,15 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
                 hashPart(digest, source.getId());
                 hashPart(digest, source.getEntryClassName());
                 hashPart(digest, Integer.toString(source.getSourceFiles().size()));
-                source.getSourceFiles().forEach((name, code) -> { hashPart(digest, name); hashPart(digest, code); });
+                source.getSourceFiles().forEach((name, code) -> {
+                    hashPart(digest, name);
+                    hashPart(digest, code);
+                });
             }
             return Base64.getEncoder().encodeToString(digest.digest());
-        } catch (NoSuchAlgorithmException error) { throw new IllegalStateException(error); }
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException(error);
+        }
     }
 
     private void hashPart(MessageDigest digest, String value) {
@@ -284,27 +308,47 @@ public final class DefaultScriptSession<T> implements ScriptSession<T> {
         List<ScriptSourceGroup> sources;
         Class<?> type;
         Map<String, byte[]> bytecodes;
+
         Request(long id, String hash, List<ScriptSourceGroup> sources, Class<?> type) {
-            this.id = id; this.hash = hash; this.sources = sources; this.type = type;
+            this.id = id;
+            this.hash = hash;
+            this.sources = sources;
+            this.type = type;
         }
-        void release() { sources = null; type = null; bytecodes = null; }
+
+        void release() {
+            sources = null;
+            type = null;
+            bytecodes = null;
+        }
     }
 
     private static final class Candidate<T> implements PreparedScripts<T> {
         final long id;
         final String hash;
         final Map<String, T> scripts;
-        Candidate(long id, String hash, Map<String, T> scripts) { this.id = id; this.hash = hash; this.scripts = scripts; }
-        @Override public Map<String, T> scripts() { return scripts; }
+
+        Candidate(long id, String hash, Map<String, T> scripts) {
+            this.id = id;
+            this.hash = hash;
+            this.scripts = scripts;
+        }
+
+        @Override
+        public Map<String, T> scripts() {
+            return scripts;
+        }
     }
 
     private static final class FactoryAccess {
         volatile boolean closed;
         private Thread owner;
+
         synchronized void bindOwner() {
             if (owner == null) owner = Thread.currentThread();
             check();
         }
+
         void check() {
             if (closed) throw new IllegalStateException("Script session is closed");
             if (owner != null && owner != Thread.currentThread()) {

@@ -2,11 +2,11 @@ package xin.vanilla.banira.internal.neoforge.platform;
 
 import net.minecraft.SharedConstants;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.common.UsernameCache;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.common.UsernameCache;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
 import xin.vanilla.banira.internal.common.BaniraNotificationServices;
@@ -19,7 +19,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -192,7 +191,9 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
                 : ServerLogoService.INSTANCE;
     }
 
-    /** 客户端实现只在确认运行侧后解析，专用服务器不会链接这些类。 */
+    /**
+     * 客户端实现只在确认运行侧后解析，专用服务器不会链接这些类。
+     */
     private static final class ClientServices {
         private static BaniraInputService input() {
             return xin.vanilla.banira.internal.neoforge.client.NeoForgeKeyBindingService.INSTANCE;

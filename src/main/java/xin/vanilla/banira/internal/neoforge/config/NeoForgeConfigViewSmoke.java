@@ -3,7 +3,10 @@ package xin.vanilla.banira.internal.neoforge.config;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.internal.config.*;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
+import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.internal.config.CommonConfigView;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
@@ -15,7 +18,9 @@ import java.nio.file.Path;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
-/** Dev-only checks through NeoForge file reloads and retained generated views. */
+/**
+ * Dev-only checks through NeoForge file reloads and retained generated views.
+ */
 public final class NeoForgeConfigViewSmoke {
     private static final Gson JSON = new Gson();
     private static IntSupplier read;
@@ -28,7 +33,8 @@ public final class NeoForgeConfigViewSmoke {
     private static Runnable unsubscribe;
     private static final java.util.concurrent.atomic.AtomicInteger reloads = new java.util.concurrent.atomic.AtomicInteger();
 
-    private NeoForgeConfigViewSmoke() { }
+    private NeoForgeConfigViewSmoke() {
+    }
 
     public static boolean step(boolean client) throws Exception {
         if (!BaniraNetworkSmokeStatus.enabled()) throw new IllegalStateException("Smoke disabled");

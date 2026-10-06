@@ -14,6 +14,7 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+
 public final class PNGUtils {
     private PNGUtils() {
     }

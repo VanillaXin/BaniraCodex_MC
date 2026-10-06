@@ -1,9 +1,12 @@
 package xin.vanilla.banira.client.notification;
 
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
+
 import java.util.Arrays;
 
-/** Tracks live information-slot callbacks without retaining map objects. */
+/**
+ * Tracks live information-slot callbacks without retaining map objects.
+ */
 public final class NotificationHudHostState {
     private static final EnumNotificationHudHost[] HOSTS = EnumNotificationHudHost.values();
     private final long[] lastSeen = new long[HOSTS.length];

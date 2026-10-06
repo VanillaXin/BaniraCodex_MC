@@ -1,9 +1,9 @@
 package xin.vanilla.banira.api;
 
-import xin.vanilla.banira.platform.BaniraConfigHandle;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.view.ConfigViewBinding;
 import xin.vanilla.banira.common.config.view.ConfigViewField;
+import xin.vanilla.banira.platform.BaniraConfigHandle;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -8,6 +8,7 @@ import xin.vanilla.banira.internal.neoforge.config.NeoForgeConfigSpecAccess;
 
 @Mixin(value = ModConfigSpec.class, remap = false)
 public interface NeoForgeConfigSpecAccessor extends NeoForgeConfigSpecAccess {
-    @Override @Accessor("loadedConfig")
+    @Override
+    @Accessor("loadedConfig")
     void banira$bindLoadedConfig(IConfigSpec.ILoadedConfig loaded);
 }

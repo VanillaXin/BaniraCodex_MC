@@ -5,58 +5,79 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.banira.common.config.*;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigReadSnapshot;
+import xin.vanilla.banira.common.config.ConfigScope;
+
 import java.lang.management.ManagementFactory;
-import java.util.*;
-import java.util.function.BooleanSupplier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.*;
+import java.util.function.BooleanSupplier;
+
 import static org.junit.Assert.*;
 
 public class NeoForgeConfigValueComparisonTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void preparedMatchFreezesExpectedValuesAndReadsLiveNativeValuesAndFiles() throws Exception {
+    @Test
+    public void preparedMatchFreezesExpectedValuesAndReadsLiveNativeValuesAndFiles() throws Exception {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         ModConfigSpec.ConfigValue<List<? extends String>> rules = builder.defineList("rules", Arrays.asList("first", "second"), v -> v instanceof String);
         ModConfigSpec.EnumValue<Mode> mode = builder.defineEnum("mode", Mode.ALL);
         ModConfigSpec spec = builder.build();
         Map<String, ModConfigSpec.ConfigValue<?>> handles = new LinkedHashMap<>();
-        handles.put("rules", rules); handles.put("mode", mode);
+        handles.put("rules", rules);
+        handles.put("mode", mode);
         NeoForgeConfigValueStore backend = new NeoForgeConfigValueStore(spec, handles);
         ConfigHolder holder = ConfigHolder.create("test", "test-common", ConfigScope.COMMON, backend,
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         backend.setHolder(holder);
         CommentedFileConfig file = backend.wrap(CommentedFileConfig.of(temporary.newFile("prepared.toml")));
         try {
-            file.load(); LoadedConfigFixture.accept(spec, file); holder.acceptInitialExternalLoad();
+            file.load();
+            LoadedConfigFixture.accept(spec, file);
+            holder.acceptInitialExternalLoad();
             List<String> expectedRules = new ArrayList<>(Arrays.asList("first", "second"));
             Map<String, Object> expected = new LinkedHashMap<>();
-            expected.put("rules", expectedRules); expected.put("mode", Mode.ALL);
+            expected.put("rules", expectedRules);
+            expected.put("mode", Mode.ALL);
             BooleanSupplier match = holder.prepareStoredMatch(expected, true);
             BooleanSupplier missing = holder.prepareStoredMatch(Collections.singletonMap("missing", null), false);
-            assertTrue(match.getAsBoolean()); assertFalse(missing.getAsBoolean());
-            expectedRules.clear(); expected.clear();
+            assertTrue(match.getAsBoolean());
+            assertFalse(missing.getAsBoolean());
+            expectedRules.clear();
+            expected.clear();
             assertTrue("Expected values must be frozen at preparation", match.getAsBoolean());
             rules.set(new ArrayList<>(Arrays.asList("first", "second")));
             ((List<String>) rules.get()).set(0, "changed");
             assertFalse("Unsaved in-place native edit must invalidate", match.getAsBoolean());
             rules.set(new ArrayList<>(Arrays.asList("first", "second")));
             assertTrue(match.getAsBoolean());
-            mode.set(Mode.NONE); assertFalse(match.getAsBoolean());
+            mode.set(Mode.NONE);
+            assertFalse(match.getAsBoolean());
             Files.write(file.getNioPath(), "rules = [\"first\", \"second\"]\nmode = \"ALL\"\n".getBytes(StandardCharsets.UTF_8));
-            file.load(); assertTrue(match.getAsBoolean());
-            file.close(); assertFalse("Closed native file must not reuse cached ConfigValues", match.getAsBoolean());
+            file.load();
+            assertTrue(match.getAsBoolean());
+            file.close();
+            assertFalse("Closed native file must not reuse cached ConfigValues", match.getAsBoolean());
             file = backend.wrap(CommentedFileConfig.of(temporary.newFile("replacement.toml")));
-            file.load(); LoadedConfigFixture.accept(spec, file); holder.acceptInitialExternalLoad();
+            file.load();
+            LoadedConfigFixture.accept(spec, file);
+            holder.acceptInitialExternalLoad();
             assertTrue("Prepared match must follow the current file lock", match.getAsBoolean());
-            rules.set(Collections.singletonList("replacement")); assertFalse(match.getAsBoolean());
-        } finally { file.close(); }
+            rules.set(Collections.singletonList("replacement"));
+            assertFalse(match.getAsBoolean());
+        } finally {
+            file.close();
+        }
     }
 
-    private enum Mode { ALL, NONE }
+    private enum Mode {ALL, NONE}
 
-    @Test public void readSnapshotsCaptureNativeValuesAndRejectClosedFiles() throws Exception {
+    @Test
+    public void readSnapshotsCaptureNativeValuesAndRejectClosedFiles() throws Exception {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         ModConfigSpec.ConfigValue<List<? extends String>> rules = builder.defineList("rules", Collections.singletonList("initial"), v -> v instanceof String);
         ModConfigSpec spec = builder.build();
@@ -66,7 +87,10 @@ public class NeoForgeConfigValueComparisonTest {
         backend.setHolder(holder);
         CommentedFileConfig file = backend.wrap(CommentedFileConfig.of(temporary.newFile("read.toml")));
         try {
-            file.load(); LoadedConfigFixture.accept(spec, file); holder.acceptInitialExternalLoad(); file.save();
+            file.load();
+            LoadedConfigFixture.accept(spec, file);
+            holder.acceptInitialExternalLoad();
+            file.save();
             rules.set(new ArrayList<>(Collections.singletonList("unsaved")));
             byte[] before = Files.readAllBytes(file.getNioPath());
             ConfigReadSnapshot read = holder.snapshotForRead(Collections.singleton("rules"));
@@ -83,12 +107,17 @@ public class NeoForgeConfigValueComparisonTest {
             file.close();
             assertThrows(IllegalStateException.class, () -> holder.snapshotForRead(Collections.singleton("rules")));
             file = backend.wrap(CommentedFileConfig.of(temporary.newFile("read-replacement.toml")));
-            file.load(); LoadedConfigFixture.accept(spec, file); holder.acceptInitialExternalLoad();
+            file.load();
+            LoadedConfigFixture.accept(spec, file);
+            holder.acceptInitialExternalLoad();
             assertEquals(Collections.singletonList("initial"), holder.snapshotForRead(Collections.singleton("rules")).getValues().get("rules"));
-        } finally { file.close(); }
+        } finally {
+            file.close();
+        }
     }
 
-    @Test public void comparesLiveStoredValuesWithoutCopyingOrExposingLists() throws Exception {
+    @Test
+    public void comparesLiveStoredValuesWithoutCopyingOrExposingLists() throws Exception {
         List<String> expected = new ArrayList<>();
         for (int i = 0; i < 1024; i++) expected.add("rule:" + i);
         expected = Collections.unmodifiableList(expected);
@@ -100,7 +129,10 @@ public class NeoForgeConfigValueComparisonTest {
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         backend.setHolder(holder);
         try (CommentedFileConfig file = backend.wrap(CommentedFileConfig.of(temporary.newFile("values.toml")))) {
-            file.load(); LoadedConfigFixture.accept(spec, file); holder.acceptInitialExternalLoad(); file.save();
+            file.load();
+            LoadedConfigFixture.accept(spec, file);
+            holder.acceptInitialExternalLoad();
+            file.save();
             assertTrue(holder.matchesStoredValue("rules", expected));
             BooleanSupplier prepared = holder.prepareStoredMatch(Collections.singletonMap("rules", expected), false);
             assertFalse(holder.matchesStoredValue("missing", null));
@@ -116,7 +148,8 @@ public class NeoForgeConfigValueComparisonTest {
             before = allocation.getThreadAllocatedBytes(thread);
             for (int i = 0; i < 1000; i++) assertTrue(prepared.getAsBoolean());
             assertTrue("Prepared comparison allocated per-entry snapshots or iterators", allocation.getThreadAllocatedBytes(thread) - before < 16000);
-            List<String> copy = holder.get("rules"); copy.clear();
+            List<String> copy = holder.get("rules");
+            copy.clear();
             assertTrue(holder.matchesStoredValue("rules", expected));
             holder.set("rules", Arrays.asList("replacement", "second"));
             assertFalse(holder.matchesStoredValue("rules", expected));

@@ -4,7 +4,9 @@ import net.neoforged.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** 仅在对应模组存在时装载具体兼容类，保持全部集成为可选依赖。 */
+/**
+ * 仅在对应模组存在时装载具体兼容类，保持全部集成为可选依赖。
+ */
 public final class NeoForgeExternalInventoryCompatibility {
     private static final Logger LOGGER = LogManager.getLogger();
 

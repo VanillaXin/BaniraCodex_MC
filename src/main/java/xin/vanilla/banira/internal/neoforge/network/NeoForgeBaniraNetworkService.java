@@ -10,7 +10,9 @@ import xin.vanilla.banira.platform.BaniraNetworkService;
 
 import javax.annotation.Nonnull;
 
-/** NeoForge 的公共网络服务实现。 */
+/**
+ * NeoForge 的公共网络服务实现。
+ */
 public final class NeoForgeBaniraNetworkService implements BaniraNetworkService {
     public static final NeoForgeBaniraNetworkService INSTANCE = new NeoForgeBaniraNetworkService();
 
@@ -30,7 +32,10 @@ public final class NeoForgeBaniraNetworkService implements BaniraNetworkService 
         return NeoForgeNetworkHandler.create(channelName, identifier, protocolVersion, optionalClient);
     }
 
-    @Override public void sendToServer(@Nonnull BaniraNetworkPacket packet) { NeoForgeNetworkChannels.sendToServer(packet); }
+    @Override
+    public void sendToServer(@Nonnull BaniraNetworkPacket packet) {
+        NeoForgeNetworkChannels.sendToServer(packet);
+    }
 
     @Override
     public void sendToPlayer(@Nonnull BaniraNetworkPacket packet, @Nonnull Object player) {
@@ -39,7 +44,10 @@ public final class NeoForgeBaniraNetworkService implements BaniraNetworkService 
         }
     }
 
-    @Override public boolean hasDefaultChannel() { return NeoForgeNetworkChannels.hasDefaultChannel(); }
+    @Override
+    public boolean hasDefaultChannel() {
+        return NeoForgeNetworkChannels.hasDefaultChannel();
+    }
 
     @Override
     public boolean hasLocalChannel(@Nonnull String channelId) {

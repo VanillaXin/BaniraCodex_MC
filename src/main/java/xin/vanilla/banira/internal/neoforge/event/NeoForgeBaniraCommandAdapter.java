@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.neoforge.event;
 
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import xin.vanilla.banira.command.BaniraCommand;
 
 /**

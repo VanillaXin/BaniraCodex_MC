@@ -1,4 +1,5 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,10 +13,13 @@ import pepjebs.mapatlases.config.MapAtlasesClientConfig;
 import xin.vanilla.banira.client.notification.NotificationMapLineRenderer;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
+
 @Pseudo
 @Mixin(targets = "pepjebs.mapatlases.client.ui.MapAtlasesHUD", remap = false)
 public abstract class MapAtlasesNotificationMixin {
-    @Shadow(remap = false) private float globalScale;
+    @Shadow(remap = false)
+    private float globalScale;
+
     @Inject(method = "renderText", at = @At("TAIL"), require = 0, remap = false)
     private void banira$appendUnread(GuiGraphics graphics, int x, int y, Anchoring anchor, CallbackInfo ci) {
         int rows = (MapAtlasesClientConfig.drawMinimapCoords.get() ? 1 : 0)
@@ -33,6 +37,8 @@ public abstract class MapAtlasesNotificationMixin {
                     NotificationMinimapBridge.text(EnumNotificationHudHost.MAP_ATLASES),
                     (x + 32) * globalScale, lineY, 64 * globalScale,
                     mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
-        } finally { graphics.pose().popPose(); }
+        } finally {
+            graphics.pose().popPose();
+        }
     }
 }

@@ -17,15 +17,22 @@ public class ConfigViewBindingTest {
 
     static class CounterCategory {
         private int count = 0;
-        CounterCategory() { constructions++; }
+
+        CounterCategory() {
+            constructions++;
+        }
     }
 
     @Config(name = "sample")
-    static class SampleConfig { }
+    static class SampleConfig {
+    }
 
     static class BrokenCategory {
         private int count;
-        BrokenCategory() { throw new IllegalStateException("registry unavailable"); }
+
+        BrokenCategory() {
+            throw new IllegalStateException("registry unavailable");
+        }
     }
 
     @Test
@@ -230,18 +237,52 @@ public class ConfigViewBindingTest {
             return this;
         }
 
-        public String getModId() { return "fixture"; }
-        public String getConfigName() { return "sample"; }
-        public void save() { saves++; }
+        public String getModId() {
+            return "fixture";
+        }
+
+        public String getConfigName() {
+            return "sample";
+        }
+
+        public void save() {
+            saves++;
+        }
+
         @SuppressWarnings("unchecked")
-        public <T> T get(String path) { return (T) values.get(path); }
-        public void set(String path, Object value) { writes++; values.put(path, value); }
-        public Set<String> valuePaths() { return values.keySet(); }
-        public boolean hasValue(String path) { return values.containsKey(path); }
-        public String findValuePath(String key) { throw new AssertionError("No leaf-name resolution"); }
-        public Class<?> valueClass(String path) { return types.get(path); }
-        public Object defaultValue(String path) { return defaults.get(path); }
-        public boolean validate(String path, Object value) { return allowWrites; }
+        public <T> T get(String path) {
+            return (T) values.get(path);
+        }
+
+        public void set(String path, Object value) {
+            writes++;
+            values.put(path, value);
+        }
+
+        public Set<String> valuePaths() {
+            return values.keySet();
+        }
+
+        public boolean hasValue(String path) {
+            return values.containsKey(path);
+        }
+
+        public String findValuePath(String key) {
+            throw new AssertionError("No leaf-name resolution");
+        }
+
+        public Class<?> valueClass(String path) {
+            return types.get(path);
+        }
+
+        public Object defaultValue(String path) {
+            return defaults.get(path);
+        }
+
+        public boolean validate(String path, Object value) {
+            return allowWrites;
+        }
+
         public boolean setIfValid(String path, Object value) {
             throw new AssertionError("Expected explicit validate then set");
         }

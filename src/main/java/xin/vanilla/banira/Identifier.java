@@ -1,7 +1,6 @@
 package xin.vanilla.banira;
 
 import xin.vanilla.banira.api.Banira;
-
 import xin.vanilla.banira.common.util.IIdentifier;
 
 public final class Identifier implements IIdentifier {

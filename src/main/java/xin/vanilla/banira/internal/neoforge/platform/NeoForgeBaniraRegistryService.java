@@ -23,11 +23,13 @@ import java.util.stream.StreamSupport;
 public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
     INSTANCE;
 
-    @Override public @Nullable Object itemKeyObject(@Nullable Object item) {
+    @Override
+    public @Nullable Object itemKeyObject(@Nullable Object item) {
         return item instanceof Item ? BuiltInRegistries.ITEM.getKey((Item) item) : null;
     }
 
-    @Override public @Nullable Object entityTypeKeyObject(@Nullable Object entityType) {
+    @Override
+    public @Nullable Object entityTypeKeyObject(@Nullable Object entityType) {
         return entityType instanceof EntityType ? BuiltInRegistries.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
     }
 

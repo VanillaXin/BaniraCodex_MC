@@ -1,14 +1,12 @@
 package xin.vanilla.banira.internal.neoforge.config;
 
-import xin.vanilla.banira.api.Banira;
-
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.config.ConfigTracker;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
@@ -54,7 +52,9 @@ public final class NeoForgeConfigAdapter {
     private static ModContainer activeContainer;
     private static boolean configListenersRegistered;
 
-    /** 在配置类注册前安装当前模组容器与 MOD 总线。 */
+    /**
+     * 在配置类注册前安装当前模组容器与 MOD 总线。
+     */
     public static synchronized void install(IEventBus eventBus, ModContainer container) {
         modEventBus = Objects.requireNonNull(eventBus, "eventBus");
         activeContainer = Objects.requireNonNull(container, "container");

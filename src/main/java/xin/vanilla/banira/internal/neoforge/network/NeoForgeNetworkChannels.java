@@ -28,7 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-/** NeoForge payload 注册表与发送路由。 */
+/**
+ * NeoForge payload 注册表与发送路由。
+ */
 public final class NeoForgeNetworkChannels {
     private static final Map<String, List<PendingRegistration<?>>> PENDING = new ConcurrentHashMap<>();
     private static final Map<Class<?>, PayloadBinding<?>> BY_PACKET = new ConcurrentHashMap<>();
@@ -39,13 +41,13 @@ public final class NeoForgeNetworkChannels {
     }
 
     static <MSG extends INetworkPacket> void bind(ResourceLocation channel,
-                                                   String protocolVersion,
-                                                   boolean optionalClient,
-                                                   int packetId,
-                                                   Class<MSG> packetClass,
-                                                   BiConsumer<MSG, BaniraPacketBuffer> encoder,
-                                                   Function<BaniraPacketBuffer, MSG> decoder,
-                                                   BiConsumer<MSG, BaniraNetworkContext> handler) {
+                                                  String protocolVersion,
+                                                  boolean optionalClient,
+                                                  int packetId,
+                                                  Class<MSG> packetClass,
+                                                  BiConsumer<MSG, BaniraPacketBuffer> encoder,
+                                                  Function<BaniraPacketBuffer, MSG> decoder,
+                                                  BiConsumer<MSG, BaniraNetworkContext> handler) {
         ResourceLocation payloadId = ResourceLocation.fromNamespaceAndPath(
                 channel.getNamespace(), channel.getPath() + "/" + packetId);
         CustomPacketPayload.Type<NeoForgePayload<MSG>> type = new CustomPacketPayload.Type<>(payloadId);
@@ -143,6 +145,9 @@ public final class NeoForgeNetworkChannels {
     private record NeoForgePayload<MSG extends INetworkPacket>(
             MSG packet,
             CustomPacketPayload.Type<NeoForgePayload<MSG>> payloadType) implements CustomPacketPayload {
-        @Override public Type<? extends CustomPacketPayload> type() { return payloadType; }
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return payloadType;
+        }
     }
 }

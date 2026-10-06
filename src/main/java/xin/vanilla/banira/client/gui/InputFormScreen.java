@@ -948,7 +948,7 @@ public class InputFormScreen extends BaniraScreen {
                 Widget widget = args.getWidgets().get(i);
                 InputField field = inputFields.get(i);
                 validateAndUpdateError(widget, i, inputFieldValueString(field), field.input());
-        }
+            }
             return;
         }
 
@@ -1192,7 +1192,9 @@ public class InputFormScreen extends BaniraScreen {
         }
     }
 
-    /** 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。 */
+    /**
+     * 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。
+     */
     private boolean focusAdjacentInput(int direction) {
         List<InputWidget> candidates = new ArrayList<>();
         List<Integer> fieldIndexes = new ArrayList<>();

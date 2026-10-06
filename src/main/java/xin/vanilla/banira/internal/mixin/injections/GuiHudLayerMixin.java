@@ -10,7 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.internal.neoforge.client.NeoForgeHudOverlayAdapter;
 
-/** NeoForge 1.21.1 不再提供逐 HUD 事件，这里恢复经验条与经验文本的可取消语义。 */
+/**
+ * NeoForge 1.21.1 不再提供逐 HUD 事件，这里恢复经验条与经验文本的可取消语义。
+ */
 @Mixin(Gui.class)
 public abstract class GuiHudLayerMixin {
     @Inject(method = "renderExperienceBar", at = @At("HEAD"), cancellable = true)

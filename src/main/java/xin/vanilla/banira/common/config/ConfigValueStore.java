@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.config;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -15,12 +15,16 @@ public interface ConfigValueStore {
     @Nullable
     Object get(String path);
 
-    /** Compare stored values without exposing them; no display or runtime type conversion. */
+    /**
+     * Compare stored values without exposing them; no display or runtime type conversion.
+     */
     default boolean matchesStoredValue(String path, Object expected) {
         return paths().contains(path) && java.util.Objects.deepEquals(get(path), expected);
     }
 
-    /** Freeze expectations once, but read current values on every call; enum names are opt-in. */
+    /**
+     * Freeze expectations once, but read current values on every call; enum names are opt-in.
+     */
     default BooleanSupplier prepareStoredMatch(Map<String, Object> expected, boolean allowEnumNames) {
         ConfigValueExpectation expectation = new ConfigValueExpectation(expected, allowEnumNames);
         return () -> {
@@ -34,7 +38,9 @@ public interface ConfigValueStore {
 
     void set(String path, Object value);
 
-    /** Apply a validated batch without partial writes; unsupported backends must opt in. */
+    /**
+     * Apply a validated batch without partial writes; unsupported backends must opt in.
+     */
     default void setAll(Map<String, Object> changes) {
         throw new UnsupportedOperationException("Batch config edits are not supported");
     }

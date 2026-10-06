@@ -1,7 +1,6 @@
 package xin.vanilla.banira.internal.neoforge.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -13,13 +12,18 @@ final class LoadedConfigFixture {
             constructor.setAccessible(true);
             bind(spec, (IConfigSpec.ILoadedConfig) constructor.newInstance(config, null, null));
             spec.afterReload();
-        } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError(error);
+        }
     }
 
     static void bind(ModConfigSpec spec, IConfigSpec.ILoadedConfig loaded) {
         try {
             java.lang.reflect.Field field = ModConfigSpec.class.getDeclaredField("loadedConfig");
-            field.setAccessible(true); field.set(spec, loaded);
-        } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+            field.setAccessible(true);
+            field.set(spec, loaded);
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError(error);
+        }
     }
 }

@@ -5,7 +5,9 @@ import xin.vanilla.banira.internal.neoforge.platform.NeoForgeBaniraResourceServi
 
 import java.util.Map;
 
-/** 内部资源访问门面；不同加载器和版本只替换其后方实现。 */
+/**
+ * 内部资源访问门面；不同加载器和版本只替换其后方实现。
+ */
 public final class BaniraResourceAccess {
     private BaniraResourceAccess() {
     }

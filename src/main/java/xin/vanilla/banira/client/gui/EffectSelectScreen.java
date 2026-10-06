@@ -1,16 +1,13 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -18,8 +15,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -37,6 +34,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -130,7 +128,9 @@ public class EffectSelectScreen extends BaniraScreen {
         private Consumer<MobEffectInstance> onDataReceived1;
         private Function<MobEffectInstance, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
-        /** 多步骤流程可关闭自动返回，由回调决定下一界面。 */
+        /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
         private boolean closeAfterSubmit = true;
         @Nullable
         private EnumSeason season;

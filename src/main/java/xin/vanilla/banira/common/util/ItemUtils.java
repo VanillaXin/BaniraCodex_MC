@@ -1,12 +1,9 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.platform.BaniraPlatforms;
-
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
@@ -27,8 +24,8 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nonnull;

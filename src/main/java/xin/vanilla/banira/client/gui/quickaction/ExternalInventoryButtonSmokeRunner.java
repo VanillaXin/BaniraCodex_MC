@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import com.mojang.blaze3d.platform.NativeImage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-/** 仅由显式开发参数启用的外部背包按钮截图烟测。 */
+/**
+ * 仅由显式开发参数启用的外部背包按钮截图烟测。
+ */
 public final class ExternalInventoryButtonSmokeRunner {
     private static final String ENABLED_PROPERTY = "banira.externalButtonsSmoke";
     private static final String REQUESTED_HOST =

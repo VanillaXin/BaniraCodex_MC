@@ -86,11 +86,15 @@ public class QuickActionLayout {
     @Getter
     private final Set<String> hiddenIconIds = new LinkedHashSet<>();
 
-    /** 默认图标菜单中的入口与子项隐藏偏好，与背包图标隐藏分别存储。 */
+    /**
+     * 默认图标菜单中的入口与子项隐藏偏好，与背包图标隐藏分别存储。
+     */
     @Getter
     private final Set<String> hiddenMenuItemIds = new LinkedHashSet<>();
 
-    /** 默认图标右键菜单的稳定顺序，使用菜单行 ID 而不是显示文本。 */
+    /**
+     * 默认图标右键菜单的稳定顺序，使用菜单行 ID 而不是显示文本。
+     */
     @Getter
     private final List<String> menuItemOrder = new ArrayList<>();
 

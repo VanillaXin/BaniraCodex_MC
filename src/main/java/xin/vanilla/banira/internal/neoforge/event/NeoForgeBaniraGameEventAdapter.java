@@ -6,22 +6,21 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerDimensionEvent;
 import xin.vanilla.banira.api.event.BaniraPlayerEvent;
 import xin.vanilla.banira.api.event.BaniraServerEvent;
 import xin.vanilla.banira.api.event.BaniraWorldEvent;
 import xin.vanilla.banira.common.util.BaniraEventBus;
 import xin.vanilla.banira.common.util.BaniraScheduler;
-import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 /**
  * NeoForge 游戏总线适配器，只负责把加载器事件转换成 Banira 的中立回调。

@@ -1,19 +1,17 @@
 package xin.vanilla.banira.internal.client;
 
 import org.junit.Test;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigListSpecHelper;
-import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ConfigValueStore;
+import xin.vanilla.banira.common.config.*;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ConfigSnapshotClientHandlerTest {
 
-    @Test public void serverRuleReferencesDisplayWithoutALocalScriptCatalog() {
+    @Test
+    public void serverRuleReferencesDisplayWithoutALocalScriptCatalog() {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("rules", Collections.emptyList());
         ConfigEntryDescriptor descriptor = ConfigEntryDescriptor.builder().path("rules")

@@ -10,7 +10,9 @@ import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-/** 每个 Banira channel 独立维护协议和 packet id 的 NeoForge 注册器。 */
+/**
+ * 每个 Banira channel 独立维护协议和 packet id 的 NeoForge 注册器。
+ */
 public final class NeoForgeNetworkHandler implements NetworkPacketRegistrar {
     private static final String DEFAULT_PROTOCOL = "1";
 
@@ -29,7 +31,7 @@ public final class NeoForgeNetworkHandler implements NetworkPacketRegistrar {
     }
 
     public static NeoForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
-                                                  String protocolVersion, boolean optionalClient) {
+                                                String protocolVersion, boolean optionalClient) {
         return new NeoForgeNetworkHandler(ResourceLocation.fromNamespaceAndPath(
                 identifier.getNamespace(), channelName), protocolVersion, optionalClient);
     }

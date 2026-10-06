@@ -9,7 +9,9 @@ import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
 import java.util.Objects;
 import java.util.UUID;
 
-/** NeoForge 原生缓冲区到稳定 Banira 缓冲区接口的转换层。 */
+/**
+ * NeoForge 原生缓冲区到稳定 Banira 缓冲区接口的转换层。
+ */
 final class NeoForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
@@ -17,26 +19,105 @@ final class NeoForgePacketBuffer implements BaniraPacketBuffer, NativePacketBuff
         this.delegate = delegate;
     }
 
-    @Override public String readUtf() { return delegate.readUtf(); }
-    @Override public String readUtf(int maxLength) { return delegate.readUtf(maxLength); }
-    @Override public void writeUtf(String value) { delegate.writeUtf(value); }
-    @Override public void writeUtf(String value, int maxLength) { delegate.writeUtf(value, maxLength); }
-    @Override public int readInt() { return delegate.readInt(); }
-    @Override public void writeInt(int value) { delegate.writeInt(value); }
-    @Override public int readVarInt() { return delegate.readVarInt(); }
-    @Override public void writeVarInt(int value) { delegate.writeVarInt(value); }
-    @Override public long readLong() { return delegate.readLong(); }
-    @Override public void writeLong(long value) { delegate.writeLong(value); }
-    @Override public boolean readBoolean() { return delegate.readBoolean(); }
-    @Override public void writeBoolean(boolean value) { delegate.writeBoolean(value); }
-    @Override public byte readByte() { return delegate.readByte(); }
-    @Override public void writeByte(int value) { delegate.writeByte(value); }
-    @Override public double readDouble() { return delegate.readDouble(); }
-    @Override public void writeDouble(double value) { delegate.writeDouble(value); }
-    @Override public UUID readUuid() { return delegate.readUUID(); }
-    @Override public void writeUuid(UUID value) { delegate.writeUUID(Objects.requireNonNull(value, "value")); }
-    @Override public <T extends Enum<T>> T readEnum(Class<T> enumClass) { return delegate.readEnum(enumClass); }
-    @Override public void writeEnum(Enum<?> value) { delegate.writeEnum(Objects.requireNonNull(value, "value")); }
+    @Override
+    public String readUtf() {
+        return delegate.readUtf();
+    }
+
+    @Override
+    public String readUtf(int maxLength) {
+        return delegate.readUtf(maxLength);
+    }
+
+    @Override
+    public void writeUtf(String value) {
+        delegate.writeUtf(value);
+    }
+
+    @Override
+    public void writeUtf(String value, int maxLength) {
+        delegate.writeUtf(value, maxLength);
+    }
+
+    @Override
+    public int readInt() {
+        return delegate.readInt();
+    }
+
+    @Override
+    public void writeInt(int value) {
+        delegate.writeInt(value);
+    }
+
+    @Override
+    public int readVarInt() {
+        return delegate.readVarInt();
+    }
+
+    @Override
+    public void writeVarInt(int value) {
+        delegate.writeVarInt(value);
+    }
+
+    @Override
+    public long readLong() {
+        return delegate.readLong();
+    }
+
+    @Override
+    public void writeLong(long value) {
+        delegate.writeLong(value);
+    }
+
+    @Override
+    public boolean readBoolean() {
+        return delegate.readBoolean();
+    }
+
+    @Override
+    public void writeBoolean(boolean value) {
+        delegate.writeBoolean(value);
+    }
+
+    @Override
+    public byte readByte() {
+        return delegate.readByte();
+    }
+
+    @Override
+    public void writeByte(int value) {
+        delegate.writeByte(value);
+    }
+
+    @Override
+    public double readDouble() {
+        return delegate.readDouble();
+    }
+
+    @Override
+    public void writeDouble(double value) {
+        delegate.writeDouble(value);
+    }
+
+    @Override
+    public UUID readUuid() {
+        return delegate.readUUID();
+    }
+
+    @Override
+    public void writeUuid(UUID value) {
+        delegate.writeUUID(Objects.requireNonNull(value, "value"));
+    }
+
+    @Override
+    public <T extends Enum<T>> T readEnum(Class<T> enumClass) {
+        return delegate.readEnum(enumClass);
+    }
+
+    @Override
+    public void writeEnum(Enum<?> value) {
+        delegate.writeEnum(Objects.requireNonNull(value, "value"));
+    }
 
     @Override
     public BaniraIdentifier readIdentifier() {

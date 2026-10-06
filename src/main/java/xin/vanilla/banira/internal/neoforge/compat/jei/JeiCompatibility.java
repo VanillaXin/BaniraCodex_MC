@@ -23,7 +23,9 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 将 JEI 的书签与查询历史控制器接入统一快捷入口。 */
+/**
+ * 将 JEI 的书签与查询历史控制器接入统一快捷入口。
+ */
 public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =

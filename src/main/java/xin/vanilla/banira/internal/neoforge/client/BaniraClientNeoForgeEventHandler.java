@@ -1,12 +1,11 @@
 package xin.vanilla.banira.internal.neoforge.client;
 
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.*;
-import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.minecraft.client.Minecraft;
+import net.neoforged.neoforge.client.event.*;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
@@ -15,7 +14,6 @@ import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonSmokeRun
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -50,7 +48,9 @@ public final class BaniraClientNeoForgeEventHandler {
         BaniraNetworkSmokeClientRunner.tick(Minecraft.getInstance());
     }
 
-    /** 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。 */
+    /**
+     * 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。
+     */
     @SubscribeEvent
     public static void onGlobalKeyInput(InputEvent.Key event) {
         if (Minecraft.getInstance().screen != null) return;

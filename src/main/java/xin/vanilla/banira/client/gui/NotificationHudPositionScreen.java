@@ -8,11 +8,12 @@ import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.notification.NotificationHudState;
-import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
-import xin.vanilla.banira.internal.client.InputStateManager;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.ClientConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,10 +54,18 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
         controls.add(button);
     }
 
-    private int toolbarY() { return y > .5 ? 10 : height - 30; }
+    private int toolbarY() {
+        return y > .5 ? 10 : height - 30;
+    }
 
-    private int pixelX() { return NotificationHudState.position(x, width, NotificationUnreadHud.WIDTH); }
-    private int pixelY() { return NotificationHudState.position(y, height, NotificationUnreadHud.HEIGHT); }
+    private int pixelX() {
+        return NotificationHudState.position(x, width, NotificationUnreadHud.WIDTH);
+    }
+
+    private int pixelY() {
+        return NotificationHudState.position(y, height, NotificationUnreadHud.HEIGHT);
+    }
+
     private boolean hovered(double mx, double my) {
         return mx >= pixelX() && mx < pixelX() + NotificationUnreadHud.WIDTH
                 && my >= pixelY() && my < pixelY() + NotificationUnreadHud.HEIGHT;
@@ -65,7 +74,9 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && hovered(mx, my)) {
-            dragging = true; grabX = mx - pixelX(); grabY = my - pixelY();
+            dragging = true;
+            grabX = mx - pixelX();
+            grabY = my - pixelY();
             return true;
         }
         return super.mouseClicked(mx, my, button);
@@ -89,7 +100,9 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
     }
 
     @Override
-    public boolean shouldCloseOnEsc() { return x == originalX && y == originalY; }
+    public boolean shouldCloseOnEsc() {
+        return x == originalX && y == originalY;
+    }
 
     @Override
     protected boolean requestClose(CloseReason reason) {

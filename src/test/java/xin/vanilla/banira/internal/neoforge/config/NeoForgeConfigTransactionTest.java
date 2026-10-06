@@ -5,20 +5,27 @@ import com.electronwill.nightconfig.core.io.ConfigWriter;
 import com.electronwill.nightconfig.core.io.WritingException;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.config.*;
+
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.Assert.*;
 
 public class NeoForgeConfigTransactionTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void batchCommitsOnceAndSnapshotIsImmutable() throws Exception {
+    @Test
+    public void batchCommitsOnceAndSnapshotIsImmutable() throws Exception {
         Path path = temporary.newFile("config.toml").toPath();
         byte[] original = "[base]\na = 1\nb = 2\nc = 3\nd = 4\n".getBytes(StandardCharsets.UTF_8);
         Files.write(path, original);
@@ -28,7 +35,8 @@ public class NeoForgeConfigTransactionTest {
             TomlFormat.instance().createWriter().write(candidate, output);
         };
         try (NeoForgeConfigFile file = new NeoForgeConfigFile(CommentedFileConfig.of(path),
-                new ModConfigSpec.Builder().build(), candidate -> {}, writer)) {
+                new ModConfigSpec.Builder().build(), candidate -> {
+        }, writer)) {
             file.load();
             Set<String> paths = new LinkedHashSet<>(Arrays.asList("base.a", "base.b", "base.c", "base.d"));
             ConfigEditSnapshot snapshot = file.snapshotForEdit(paths);
@@ -49,7 +57,8 @@ public class NeoForgeConfigTransactionTest {
         }
     }
 
-    @Test public void diskConflictsInvalidValuesAndWriteFailuresLeaveMemoryUntouched() throws Exception {
+    @Test
+    public void diskConflictsInvalidValuesAndWriteFailuresLeaveMemoryUntouched() throws Exception {
         Path path = temporary.newFile("config.toml").toPath();
         Files.write(path, "a = 1\nb = 2\n".getBytes(StandardCharsets.UTF_8));
         try (Fixture fixture = new Fixture(path)) {
@@ -72,9 +81,12 @@ public class NeoForgeConfigTransactionTest {
             assertEquals(0, notifications.get());
             assertThrows(IllegalStateException.class, () -> fixture.holder.snapshotForEdit(paths));
         }
-        ConfigWriter broken = (candidate, output) -> { throw new WritingException("disk full"); };
+        ConfigWriter broken = (candidate, output) -> {
+            throw new WritingException("disk full");
+        };
         try (NeoForgeConfigFile file = new NeoForgeConfigFile(CommentedFileConfig.of(path),
-                new ModConfigSpec.Builder().build(), candidate -> {}, broken)) {
+                new ModConfigSpec.Builder().build(), candidate -> {
+        }, broken)) {
             file.load();
             ConfigEditSnapshot snapshot = file.snapshotForEdit(Collections.singleton("a"));
             assertThrows(WritingException.class, () -> file.compareAndSetAll(snapshot, Collections.singletonMap("a", 5)));
@@ -83,7 +95,8 @@ public class NeoForgeConfigTransactionTest {
         }
     }
 
-    @Test public void savedListenerRunsAfterFileAndHolderLocksAreReleased() throws Exception {
+    @Test
+    public void savedListenerRunsAfterFileAndHolderLocksAreReleased() throws Exception {
         Path path = temporary.newFile("config.toml").toPath();
         Files.write(path, "a = 1\nb = 2\n".getBytes(StandardCharsets.UTF_8));
         try (Fixture fixture = new Fixture(path)) {
@@ -94,7 +107,9 @@ public class NeoForgeConfigTransactionTest {
                 try {
                     CompletableFuture.runAsync(() -> fixture.holder.snapshotForEdit(fixture.holder.valuePaths()))
                             .get(1, TimeUnit.SECONDS);
-                } catch (Exception error) { errors.add(error); }
+                } catch (Exception error) {
+                    errors.add(error);
+                }
             });
             assertEquals(ConfigCommitResult.APPLIED, fixture.holder.compareAndSetAll(
                     fixture.holder.snapshotForEdit(fixture.holder.valuePaths()),
@@ -106,7 +121,8 @@ public class NeoForgeConfigTransactionTest {
         }
     }
 
-    @Test public void guardsRejectWholeBatchAndCannotReenterWrites() throws Exception {
+    @Test
+    public void guardsRejectWholeBatchAndCannotReenterWrites() throws Exception {
         Path path = temporary.newFile("config.toml").toPath();
         Files.write(path, "a = 1\nb = 2\n".getBytes(StandardCharsets.UTF_8));
         try (Fixture fixture = new Fixture(path)) {
@@ -133,18 +149,23 @@ public class NeoForgeConfigTransactionTest {
         }
     }
 
-    @Test public void conflictDuringStagedWriteReturnsConflictWithoutPublishing() throws Exception {
+    @Test
+    public void conflictDuringStagedWriteReturnsConflictWithoutPublishing() throws Exception {
         Path path = temporary.newFile("config.toml").toPath();
         byte[] original = "a = 1\n".getBytes(StandardCharsets.UTF_8);
         byte[] external = "a = 9\n".getBytes(StandardCharsets.UTF_8);
         Files.write(path, original);
         ConfigWriter intervening = (candidate, output) -> {
             TomlFormat.instance().createWriter().write(candidate, output);
-            try { Files.write(path, external); }
-            catch (java.io.IOException error) { throw new WritingException("test external edit", error); }
+            try {
+                Files.write(path, external);
+            } catch (java.io.IOException error) {
+                throw new WritingException("test external edit", error);
+            }
         };
         try (NeoForgeConfigFile file = new NeoForgeConfigFile(CommentedFileConfig.of(path),
-                new ModConfigSpec.Builder().build(), candidate -> {}, intervening)) {
+                new ModConfigSpec.Builder().build(), candidate -> {
+        }, intervening)) {
             file.load();
             assertEquals(ConfigCommitResult.CONFLICT, file.compareAndSetAll(file.snapshotForEdit(Collections.singleton("a")),
                     Collections.singletonMap("a", 5)));
@@ -153,7 +174,8 @@ public class NeoForgeConfigTransactionTest {
         }
     }
 
-    @Test public void snapshotRejectsOtherFileAndUnselectedPaths() throws Exception {
+    @Test
+    public void snapshotRejectsOtherFileAndUnselectedPaths() throws Exception {
         Path a = temporary.newFile("a.toml").toPath();
         Path b = temporary.newFile("b.toml").toPath();
         byte[] initial = "a = 1\nb = 2\n".getBytes(StandardCharsets.UTF_8);
@@ -175,6 +197,7 @@ public class NeoForgeConfigTransactionTest {
     private static final class Fixture implements AutoCloseable {
         final ConfigHolder holder;
         final CommentedFileConfig file;
+
         Fixture(Path path) {
             ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
             Map<String, ModConfigSpec.ConfigValue<?>> values = new LinkedHashMap<>();
@@ -190,6 +213,10 @@ public class NeoForgeConfigTransactionTest {
             LoadedConfigFixture.accept(spec, file);
             holder.acceptInitialExternalLoad();
         }
-        @Override public void close() { file.close(); }
+
+        @Override
+        public void close() {
+            file.close();
+        }
     }
 }

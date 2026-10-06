@@ -36,12 +36,21 @@ import java.util.function.IntSupplier;
 import static org.junit.Assert.*;
 
 public class ConfigViewLifecycleTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void retainedCommonCategoryFollowsReloadReplacementAndUnload() throws Exception { verify(false); }
-    @Test public void retainedClientRootFollowsReloadReplacementAndUnload() throws Exception { verify(true); }
+    @Test
+    public void retainedCommonCategoryFollowsReloadReplacementAndUnload() throws Exception {
+        verify(false);
+    }
 
-    @Test public void sealedNativeRecordMirrorsAtomicCommitsAndRejectsInvalidReloadBeforeUnload() throws Exception {
+    @Test
+    public void retainedClientRootFollowsReloadReplacementAndUnload() throws Exception {
+        verify(true);
+    }
+
+    @Test
+    public void sealedNativeRecordMirrorsAtomicCommitsAndRejectsInvalidReloadBeforeUnload() throws Exception {
         net.neoforged.fml.loading.FMLPaths.loadAbsolutePaths(temporary.getRoot().toPath());
         try (Fixture fixture = new Fixture(CommonConfig.class, temporary.newFile("native.toml").toPath())) {
             String key = "help.helpInfoNumPerPage";
@@ -71,9 +80,17 @@ public class ConfigViewLifecycleTest {
         String key = client ? "notificationLogMaxEntries" : "help.helpInfoNumPerPage";
         AtomicReference<BaniraConfigHandle> current = new AtomicReference<>();
         BaniraPlatforms.install(new TestBaniraPlatform().configService(new BaniraConfigService() {
-            public <T> void register(Class<T> config, String modId) { throw new UnsupportedOperationException(); }
-            public <T> T view(Class<?> config, Class<T> view) { throw new UnsupportedOperationException(); }
-            public BaniraConfigHandle handle(Class<?> config) { return config == type ? current.get() : null; }
+            public <T> void register(Class<T> config, String modId) {
+                throw new UnsupportedOperationException();
+            }
+
+            public <T> T view(Class<?> config, Class<T> view) {
+                throw new UnsupportedOperationException();
+            }
+
+            public BaniraConfigHandle handle(Class<?> config) {
+                return config == type ? current.get() : null;
+            }
         }));
         try (Fixture first = new Fixture(type, temporary.newFile("first.toml").toPath());
              Fixture second = new Fixture(type, temporary.newFile("second.toml").toPath())) {
@@ -158,12 +175,16 @@ public class ConfigViewLifecycleTest {
                             getClass().getClassLoader(),
                             new Class<?>[]{net.neoforged.neoforgespi.language.IModInfo.class},
                             (proxy, method, args) -> {
-                                if (method.getName().equals("getModId") || method.getName().equals("getNamespace")) return "fixture";
+                                if (method.getName().equals("getModId") || method.getName().equals("getNamespace"))
+                                    return "fixture";
                                 throw new UnsupportedOperationException(method.getName());
                             });
             net.neoforged.bus.api.IEventBus bus = net.neoforged.bus.api.BusBuilder.builder().build();
             net.neoforged.fml.ModContainer container = new net.neoforged.fml.ModContainer(info) {
-                @Override public net.neoforged.bus.api.IEventBus getEventBus() { return bus; }
+                @Override
+                public net.neoforged.bus.api.IEventBus getEventBus() {
+                    return bus;
+                }
             };
             java.lang.reflect.Constructor<net.neoforged.fml.config.ModConfig> constructor =
                     net.neoforged.fml.config.ModConfig.class.getDeclaredConstructor(
@@ -189,6 +210,9 @@ public class ConfigViewLifecycleTest {
             holder.acceptInitialExternalLoad();
         }
 
-        public void close() { file.close(); nativeFile.close(); }
+        public void close() {
+            file.close();
+            nativeFile.close();
+        }
     }
 }

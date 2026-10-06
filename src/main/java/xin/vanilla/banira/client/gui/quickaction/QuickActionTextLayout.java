@@ -2,7 +2,9 @@ package xin.vanilla.banira.client.gui.quickaction;
 
 import java.util.function.ToIntFunction;
 
-/** 为快捷入口列表生成稳定的单行省略文本与完整换行提示。 */
+/**
+ * 为快捷入口列表生成稳定的单行省略文本与完整换行提示。
+ */
 final class QuickActionTextLayout {
     private static final String ELLIPSIS = "...";
 

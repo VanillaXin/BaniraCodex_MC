@@ -128,7 +128,9 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     @Setter
     private double contentHeight = 0;
 
-    /** 绝对屏幕坐标裁剪区，只影响渲染、更新与鼠标分发。 */
+    /**
+     * 绝对屏幕坐标裁剪区，只影响渲染、更新与鼠标分发。
+     */
     @Nullable
     private ScreenCoordinate renderViewport;
 

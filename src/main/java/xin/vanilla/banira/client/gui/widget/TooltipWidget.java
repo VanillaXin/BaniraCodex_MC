@@ -19,12 +19,7 @@ import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.tooltip.TooltipBounds;
-import xin.vanilla.banira.client.gui.tooltip.TooltipContentClip;
-import xin.vanilla.banira.client.gui.tooltip.TooltipPlacement;
-import xin.vanilla.banira.client.gui.tooltip.TooltipRequestCollector;
-import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionFrame;
-import xin.vanilla.banira.client.gui.tooltip.TooltipTransitionModel;
+import xin.vanilla.banira.client.gui.tooltip.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
@@ -221,12 +216,16 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    /** 在屏幕开始绘制时开启本帧 Tooltip 请求收集。 */
+    /**
+     * 在屏幕开始绘制时开启本帧 Tooltip 请求收集。
+     */
     public static void beginPopupFrame(Object screenToken) {
         beginPopupFrame(screenToken, Double.NaN, Double.NaN);
     }
 
-    /** 在屏幕开始绘制时记录当前鼠标位置并开启 Tooltip 请求收集。 */
+    /**
+     * 在屏幕开始绘制时记录当前鼠标位置并开启 Tooltip 请求收集。
+     */
     public static void beginPopupFrame(Object screenToken, double mouseX, double mouseY) {
         POPUP_TRANSITION.discardSavedState();
         beginPopupFrameInternal(screenToken, mouseX, mouseY);
@@ -257,12 +256,16 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         return true;
     }
 
-    /** 点击或切换界面时立即取消悬浮提示连续状态。 */
+    /**
+     * 点击或切换界面时立即取消悬浮提示连续状态。
+     */
     public static void cancelPopupTransition() {
         POPUP_TRANSITION.reset();
     }
 
-    /** 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。 */
+    /**
+     * 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。
+     */
     public static void flushPopupFrame(PoseStack stack) {
         flushPopupFrame(stack, true);
     }
@@ -636,9 +639,9 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
         private PopupRenderData(String contentKey, FontDrawArgs args, BaniraColorConfig theme,
                                 boolean useThemeColor, TextureUtils.NinePatchInfo ninePatchInfo,
-                                 float textureScale, int paddingLeft, int paddingRight,
-                                 int paddingTop, int paddingBottom, int maxWidthForText,
-                                 TooltipBounds bounds, TooltipBounds restingBounds) {
+                                float textureScale, int paddingLeft, int paddingRight,
+                                int paddingTop, int paddingBottom, int maxWidthForText,
+                                TooltipBounds bounds, TooltipBounds restingBounds) {
             this.contentKey = contentKey;
             this.args = args;
             this.theme = theme;

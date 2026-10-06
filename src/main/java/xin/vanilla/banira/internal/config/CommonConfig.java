@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.config;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -21,26 +20,18 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
         generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class CommonConfig implements ConfigData {
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "帮助相关设置", en_us = "Help-related settings")
     private HelpCategory help = new HelpCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "语言相关设置", en_us = "Language settings")
     private LanguageCategory language = new LanguageCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "指令名称设置", en_us = "Command name settings (prefix and subcommands)")
     private CommandCategory command = new CommandCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "权限相关设置", en_us = "Permission settings")
     private PermissionCategory permission = new PermissionCategory();

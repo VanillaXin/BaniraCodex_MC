@@ -271,7 +271,6 @@
   "format.banira_codex.quick_action.pos_axis": "%s %.3f · %s",
   "format.banira_codex.quick_action.unhide": "Show · %s",
   "format.banira_codex.quick_action.unhide_menu_item": "Restore · %s",
-
   "word.banira_codex.enum_tooltip_texture_mode_auto": "Follow theme setting",
   "word.banira_codex.enum_tooltip_texture_mode_color": "Solid color background",
   "word.banira_codex.enum_tooltip_texture_mode_texture": "Textured background",
@@ -399,5 +398,6 @@
   "word.banira_codex.enum_string_input_regex_positive_decimal": "Non-negative decimal",
   "word.banira_codex.enum_string_input_regex_positive_decimal_5": "Non-negative decimal (up to 5 fractional digits)",
   "word.banira_codex.enum_string_input_regex_positive_integer": "Non-negative integer",
-  "word.banira_codex.enum_string_input_regex_word": "Word characters \\w"
+  "word.banira_codex.enum_string_input_regex_word": "Word characters \\w",
+  "word.banira_codex.notification_minimap_label": "Notifications"
 }

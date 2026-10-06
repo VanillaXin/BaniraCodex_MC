@@ -31,7 +31,7 @@ public final class NotificationMinimapBridge {
     public static ITextComponent text(EnumNotificationHudHost host) {
         if (!claim(host)) return StringTextComponent.EMPTY;
         int count = NotificationManager.get().unreadCount();
-        String name = BaniraComponent.get().transClientAuto("notification_log_unread").toString();
+        String name = BaniraComponent.get().transClientAuto("notification_minimap_label").toString();
         return new StringTextComponent(count == 0 ? name : name + " " + NotificationHudState.countLabel(count));
     }
 

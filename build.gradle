@@ -103,6 +103,56 @@ repositories {
     // }
 }
 
+configurations.create('baniraMinimapLibraries') { transitive = false }
+dependencies {
+    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:dB6E0CY9"
+    baniraMinimapLibraries "maven.modrinth:journeymap:HWDC99DO"
+}
+def minimapLibraryDirectory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+minimapLibraryDirectory.mkdirs()
+afterEvaluate {
+    configurations.baniraMinimapLibraries.files.each { artifact ->
+        new java.util.zip.ZipFile(artifact).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (entry.name.startsWith('META-INF/jarjar/') && entry.name.endsWith('.jar')
+                        && (entry.name.contains('xaerolib-') || entry.name.contains('journeymap-api-'))) {
+                    def output = new File(minimapLibraryDirectory, new File(entry.name).name)
+                    zip.getInputStream(entry).withCloseable { stream ->
+                        java.nio.file.Files.copy(stream, output.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                    }
+                }
+            }
+        }
+    }
+}
+repositories { flatDir { dirs minimapLibraryDirectory } }
+dependencies {
+    compileOnly fg.deobf("maven.modrinth:xaeros-minimap:dB6E0CY9")
+    compileOnly fg.deobf("banira.optional:xaerolib-forge-1.20.1:1.7.3")
+    compileOnly fg.deobf("maven.modrinth:journeymap:HWDC99DO")
+    compileOnly fg.deobf("banira.optional:journeymap-api-forge-1.20.1:2.0.0")
+    compileOnly fg.deobf("curse.maven:ftb-chunks-forge-314906:6431735")
+    compileOnly fg.deobf("maven.modrinth:map-atlases-forge:Zcz2vXIl")
+    if (project.hasProperty('minimapSmoke')) {
+        switch (project.property('minimapSmoke').toString()) {
+            case '':
+            case 'xaero':
+                runtimeOnly fg.deobf("maven.modrinth:xaeros-minimap:dB6E0CY9")
+                runtimeOnly fg.deobf("banira.optional:xaerolib-forge-1.20.1:1.7.3")
+                break
+            case 'journey':
+                runtimeOnly fg.deobf("maven.modrinth:journeymap:HWDC99DO")
+                runtimeOnly fg.deobf("maven.modrinth:common-network:TkOARDQh")
+                break
+            case 'atlas':
+                runtimeOnly fg.deobf("maven.modrinth:map-atlases-forge:Zcz2vXIl")
+                runtimeOnly fg.deobf("maven.modrinth:moonlight:W0ZWjZib")
+                break
+            default: throw new GradleException('minimapSmoke: xaero, journey or atlas')
+        }
+    }
+}
+
 dependencies {
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"

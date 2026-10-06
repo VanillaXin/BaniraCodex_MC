@@ -398,5 +398,6 @@
   "word.banira_codex.enum_notification_hud_host_ftb_chunks": "FTB Chunks",
   "word.banira_codex.enum_notification_hud_host_voxelmap": "VoxelMap",
   "word.banira_codex.enum_notification_hud_host_map_atlases": "Map Atlases",
-  "minimap.infoslot.banira_unread": "Unread Notifications"
+  "minimap.infoslot.banira_unread": "Unread Notifications",
+  "word.banira_codex.notification_minimap_label": "Notifications"
 }

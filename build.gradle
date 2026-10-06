@@ -60,6 +60,24 @@ repositories {
 }
 
 dependencies {
+    modCompileOnly "maven.modrinth:xaeros-minimap:FEea9I9Z"
+    modCompileOnly "maven.modrinth:journeymap:3ZtAeGzV"
+    testRuntimeOnly "maven.modrinth:journeymap:3ZtAeGzV"
+    modCompileOnly "maven.modrinth:map-atlases:FbzWPUmP"
+    modCompileOnly "maven.modrinth:voxelmap-updated:ZIM5SbqI"
+    if (project.hasProperty('minimapSmoke')) {
+        switch (project.property('minimapSmoke').toString()) {
+            case '':
+            case 'xaero': modRuntimeOnly "maven.modrinth:xaeros-minimap:FEea9I9Z"; break
+            case 'journey': modRuntimeOnly "maven.modrinth:journeymap:3ZtAeGzV"; break
+            case 'voxel': modRuntimeOnly "maven.modrinth:voxelmap-updated:ZIM5SbqI"; break
+            case 'atlas':
+                modRuntimeOnly "maven.modrinth:map-atlases:FbzWPUmP"
+                modRuntimeOnly "maven.modrinth:cloth-config:ZpV0fKbO"
+                break
+            default: throw new GradleException('minimapSmoke: xaero, journey, voxel or atlas')
+        }
+    }
     modRuntimeOnly "maven.modrinth:sodium-extra:MTxUvPFz"
     modRuntimeOnly "maven.modrinth:spark:XhFbpH8f"
     // To change the versions see the gradle.properties file
@@ -88,6 +106,33 @@ dependencies {
     modRuntimeOnly "curse.maven:sodium-394468:${sodium_id}"
 }
 
+configurations.create('baniraMinimapLibraries') { transitive = false }
+dependencies {
+    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:FEea9I9Z"
+    baniraMinimapLibraries "maven.modrinth:journeymap:3ZtAeGzV"
+}
+def minimapCompilerLibraries = providers.provider {
+    def directory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+    directory.mkdirs()
+    def libraries = []
+    configurations.baniraMinimapLibraries.files.each { artifact ->
+        new java.util.zip.ZipFile(artifact).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if ((entry.name.startsWith('META-INF/jars/xaerolib-')
+                        || entry.name.startsWith('META-INF/jars/journeymap-api-')) && entry.name.endsWith('.jar')) {
+                    def output = new File(directory, new File(entry.name).name)
+                    zip.getInputStream(entry).withCloseable { stream ->
+                        java.nio.file.Files.copy(stream, output.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                    }
+                    libraries.add(output)
+                }
+            }
+        }
+    }
+    return libraries
+}
+dependencies { modCompileOnly files(minimapCompilerLibraries) }
+
 // Loom's development classpath does not expose Fabric mods' nested runtime jars
 // to the loader. Sodium and Sodium Extra need those jars when launched from Gradle.
 def baniraDevRuntimeModsDirectory = {
@@ -113,6 +158,28 @@ def prepareBaniraDevRuntimeLibraries = tasks.register('prepareDevRuntimeLibrarie
 tasks.matching { task -> task.name == 'runClient' }.configureEach {
     dependsOn prepareBaniraDevRuntimeLibraries
 }
+
+if (project.hasProperty('minimapSmoke')) {
+    def minimapLibraryDirectory = file("run/minimap-smoke-libraries/${project.property('minimapSmoke') ?: 'xaero'}")
+    def prepareMinimapLibraries = tasks.register('prepareDevMinimapLibraries', Copy) {
+        group = 'verification'
+        description = 'Prepares nested libraries for the selected development-only minimap.'
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        from({
+            configurations.modRuntimeOnly.files
+                    .findAll { file -> file.name.startsWith('xaero') || file.name.startsWith('journeymap') }
+                    .collect { file -> zipTree(file) }
+        }) {
+            include 'META-INF/jars/*.jar'
+            eachFile { details -> details.path = details.name }
+            includeEmptyDirs = false
+        }
+        into minimapLibraryDirectory
+    }
+    loom.runs.client.property 'fabric.addMods', minimapLibraryDirectory.absolutePath
+    tasks.matching { task -> task.name == 'runClient' }.configureEach { dependsOn prepareMinimapLibraries }
+}
+
 
 tasks.register('verifyDevRuntimeLibraries') {
     group = 'verification'

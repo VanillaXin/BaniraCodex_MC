@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import xin.vanilla.banira.common.enums.EnumNotificationHudMode;
+import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -98,6 +99,9 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class NotificationHudCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示位置\n可使用已安装小地图的信息区，不可用时显示独立图标", en_us = "Display location\nUse an installed minimap's information area; otherwise show the independent icon")
+        private EnumNotificationHudHost host = EnumNotificationHudHost.AUTO;
+
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式", en_us = "Display mode")
         private EnumNotificationHudMode mode = EnumNotificationHudMode.TOGGLE;
 

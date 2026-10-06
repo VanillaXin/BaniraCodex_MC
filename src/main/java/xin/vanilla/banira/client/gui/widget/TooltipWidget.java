@@ -109,6 +109,10 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     @Override
     public void render(MatrixStack stack, float partialTicks) {
         if (!visible) return;
+        // Disabled parents skip updates but still render their passive tooltips.
+        if (screen != null) {
+            updateMouseHover(screen.inputState().mouseX(), screen.inputState().mouseY());
+        }
         if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
             renderChildren(stack, partialTicks);
             return;

@@ -113,7 +113,8 @@ repositories {
 configurations.create('baniraMinimapCompilerLibraries') { transitive = false }
 dependencies { baniraMinimapCompilerLibraries "maven.modrinth:xaeros-minimap:L9dtgutr" }
 def minimapCompilerLibraries = providers.provider {
-    def directory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+    // Generated compile inputs must survive clean.
+    def directory = file(".gradle/banira/minimap-compile-libraries/${loader_type}-${minecraft_version}")
     directory.mkdirs()
     def libraries = []
     configurations.baniraMinimapCompilerLibraries.files.each { artifact ->

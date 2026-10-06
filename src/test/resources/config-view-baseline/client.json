@@ -124,7 +124,7 @@
     },
     "notificationHud.mode": {
       "type": "ENUM",
-      "default": "TOGGLE",
+      "default": "ALWAYS",
       "min": null,
       "max": null,
       "precision": 2,
@@ -136,9 +136,9 @@
     },
     "notificationHud.x": {
       "type": "DOUBLE",
-      "default": 0,
-      "min": 0,
-      "max": 1,
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
       "precision": 3,
       "enum": null,
       "permission": "INHERIT",
@@ -149,8 +149,8 @@
     "notificationHud.y": {
       "type": "DOUBLE",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "precision": 3,
       "enum": null,
       "permission": "INHERIT",
@@ -568,8 +568,8 @@
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "TOGGLE",
-    "notificationHud.x": 0,
+    "notificationHud.mode": "ALWAYS",
+    "notificationHud.x": 0.0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
     "notificationMergeWindowMs": 2500,
@@ -618,8 +618,8 @@
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "TOGGLE",
-    "notificationHud.x": 0,
+    "notificationHud.mode": "ALWAYS",
+    "notificationHud.x": 0.0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
     "notificationMergeWindowMs": 2500,
@@ -666,7 +666,7 @@
     "notificationBurstThreshold": 7,
     "notificationHud.host": "STANDALONE",
     "notificationHud.keys": [],
-    "notificationHud.mode": "ALWAYS",
+    "notificationHud.mode": "OFF",
     "notificationHud.x": 0.125,
     "notificationHud.y": 0.125,
     "notificationLogMaxEntries": 7,

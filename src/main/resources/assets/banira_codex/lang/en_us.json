@@ -399,5 +399,6 @@
   "word.banira_codex.enum_string_input_regex_positive_decimal_5": "Non-negative decimal (up to 5 fractional digits)",
   "word.banira_codex.enum_string_input_regex_positive_integer": "Non-negative integer",
   "word.banira_codex.enum_string_input_regex_word": "Word characters \\w",
-  "word.banira_codex.notification_minimap_label": "Notifications"
+  "format.banira_codex.notification_minimap_unread": "%s unread",
+  "word.banira_codex.notification_minimap_empty": "No unread notifications"
 }

@@ -98,6 +98,9 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class NotificationHudCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示位置\n自动选择可用的小地图信息槽，未安装或隐藏时使用独立图标", en_us = "Display location\nUse an available minimap information slot, or the standalone icon when unavailable")
+        private xin.vanilla.banira.common.enums.EnumNotificationHudHost host = xin.vanilla.banira.common.enums.EnumNotificationHudHost.AUTO;
+
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式", en_us = "Display mode")
         private EnumNotificationHudMode mode = EnumNotificationHudMode.TOGGLE;
 

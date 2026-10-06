@@ -32,7 +32,9 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
     public void initialize(IClientAPI api) {
         ClientEventRegistry.INFO_SLOT_REGISTRY_EVENT.subscribe(getModId(), event ->
                 event.register(getModId(), new TranslationTextComponent(KEY), 100,
-                        () -> NotificationMinimapBridge.text(EnumNotificationHudHost.JOURNEYMAP)));
+                        () -> UIManager.INSTANCE.isMiniMapEnabled()
+                                ? NotificationMinimapBridge.text(EnumNotificationHudHost.JOURNEYMAP)
+                                : net.minecraft.util.text.StringTextComponent.EMPTY));
         MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event -> {
             EnumNotificationHudHost preference = ClientConfig.get().notificationHud().host();
             if (preference == EnumNotificationHudHost.AUTO || preference == EnumNotificationHudHost.JOURNEYMAP) {

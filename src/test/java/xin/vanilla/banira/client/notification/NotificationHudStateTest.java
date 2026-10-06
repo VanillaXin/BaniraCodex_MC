@@ -59,8 +59,8 @@ public class NotificationHudStateTest {
     }
 
     @Test
-    public void defaultModeIsToggleAndZeroCountHasNoLabel() {
-        assertEquals(EnumNotificationHudMode.TOGGLE,
+    public void defaultModeIsAlwaysAndZeroCountHasNoLabel() {
+        assertEquals(EnumNotificationHudMode.ALWAYS,
                 new xin.vanilla.banira.internal.config.ClientConfig.NotificationHudCategory().mode());
         assertEquals("", NotificationHudState.countLabel(0));
         assertEquals("", NotificationHudState.countLabel(-1));

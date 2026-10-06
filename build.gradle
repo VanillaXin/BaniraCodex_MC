@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.15-SNAPSHOT'
+    id 'fabric-loom' version '1.17.21'
     id 'maven-publish'
     id 'com.gradleup.shadow' version '9.2.2'
 }
@@ -130,66 +130,7 @@ def minimapCompilerLibraries = providers.provider {
 }
 dependencies { modCompileOnly files(minimapCompilerLibraries) }
 
-// Loom's development classpath does not expose Fabric mods' nested runtime jars
-// to the loader. Sodium and Sodium Extra need those jars when launched from Gradle.
-def baniraDevRuntimeModsDirectory = {
-    def networkSmoke = (project.findProperty('banira.networkSmoke.child') ?: 'false').toString().toBoolean()
-    file(networkSmoke ? 'run-network-smoke/client/mods' : 'run/mods')
-}
-def prepareBaniraDevRuntimeLibraries = tasks.register('prepareDevRuntimeLibraries', Copy) {
-    group = 'verification'
-    description = 'Extracts nested client runtime libraries required by development-only performance mods.'
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from({
-        (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files)
-                .findAll { file -> file.name.startsWith('sodium') || file.name.startsWith('AANobbMI') }
-                .collect { file -> zipTree(file) }
-    }) {
-        include 'META-INF/jars/*.jar'
-        eachFile { details -> details.path = details.name }
-        includeEmptyDirs = false
-    }
-    into baniraDevRuntimeModsDirectory
-}
-
-tasks.matching { task -> task.name == 'runClient' }.configureEach {
-    dependsOn prepareBaniraDevRuntimeLibraries
-}
-
-if (project.hasProperty('minimapSmoke')) {
-    def minimapLibraryDirectory = file("run/minimap-smoke-libraries/${project.property('minimapSmoke') ?: 'xaero'}")
-    def prepareMinimapLibraries = tasks.register('prepareDevMinimapLibraries', Copy) {
-        group = 'verification'
-        description = 'Prepares nested libraries for the selected development-only minimap.'
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        from({
-            configurations.modRuntimeOnly.files
-                    .findAll { file -> file.name.startsWith('xaero') || file.name.startsWith('journeymap') }
-                    .collect { file -> zipTree(file) }
-        }) {
-            include 'META-INF/jars/*.jar'
-            eachFile { details -> details.path = details.name }
-            includeEmptyDirs = false
-        }
-        into minimapLibraryDirectory
-    }
-    loom.runs.client.property 'fabric.addMods', minimapLibraryDirectory.absolutePath
-    tasks.matching { task -> task.name == 'runClient' }.configureEach { dependsOn prepareMinimapLibraries }
-}
-
-tasks.register('verifyDevRuntimeLibraries') {
-    group = 'verification'
-    description = 'Verifies nested Sodium runtime libraries are available to the Fabric development client.'
-    dependsOn prepareBaniraDevRuntimeLibraries
-    doLast {
-        def names = baniraDevRuntimeModsDirectory().listFiles()?.collect { it.name } ?: []
-        ['CaffeineConfig-'].each { prefix ->
-            if (!names.any { name -> name.startsWith(prefix) }) {
-                throw new GradleException("Missing development runtime library with prefix '${prefix}'")
-            }
-        }
-    }
-}
+apply from: 'gradle/fabric-dev-runtime.gradle'
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.
 def baniraDevFpsDefaultSettingsKey = 'extraSettings'

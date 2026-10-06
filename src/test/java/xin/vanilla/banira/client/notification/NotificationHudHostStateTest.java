@@ -46,10 +46,10 @@ public class NotificationHudHostStateTest {
     }
 
     @Test
-    public void compactAppearanceHasSmallIconTextAndQuarterOpacity() {
+    public void compactAppearanceKeepsSizeAndHasNoBackground() {
         assertEquals(12, NotificationHudAppearance.ICON_SIZE);
         assertEquals(.75f, NotificationHudAppearance.COUNT_SCALE, .001f);
-        assertEquals(64, NotificationHudAppearance.BACKGROUND_ALPHA);
+        assertEquals(0, NotificationHudAppearance.BACKGROUND_ALPHA);
     }
 
     @Test

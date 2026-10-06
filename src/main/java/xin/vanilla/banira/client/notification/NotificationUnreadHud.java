@@ -22,6 +22,7 @@ import java.util.List;
 
 public final class NotificationUnreadHud {
     private static final ResourceLocation ICON = new ResourceLocation("banira_codex", "textures/gui/unread_message.png");
+    private static final ResourceLocation ICON_EDGE = new ResourceLocation("banira_codex", "textures/gui/unread_message_edge.png");
     public static final int WIDTH = 32, HEIGHT = 22;
     private static final NotificationHudState STATE = new NotificationHudState();
     private static List<String> cachedKeys = Collections.emptyList();
@@ -116,13 +117,15 @@ public final class NotificationUnreadHud {
     }
 
     private static void drawContents(MatrixStack stack, int x, int y, int unread, BaniraColorConfig theme) {
-        AbstractGuiUtils.drawRoundedRect(stack, x, y + 3, 16, 14, 2, 2, 2, 2,
-                ColorUtils.applyAlphaToArgb(theme.popupBg(), NotificationHudAppearance.BACKGROUND_ALPHA));
         int color = theme.popupItemText();
-        RenderSystem.color4f(((color >> 16) & 255) / 255f, ((color >> 8) & 255) / 255f, (color & 255) / 255f, 1);
+        RenderSystem.color4f(1, 1, 1, 1);
+        AbstractGuiUtils.blitBlend(stack, ICON, x + 2, y + 4, NotificationHudAppearance.ICON_SIZE,
+                NotificationHudAppearance.ICON_SIZE, 0, 0, 12, 12, 12, 12);
+        int edgeColor = ColorUtils.ensureReadableTextArgb(color, 0xFFF9F4E5);
+        RenderSystem.color4f(((edgeColor >> 16) & 255) / 255f, ((edgeColor >> 8) & 255) / 255f, (edgeColor & 255) / 255f, 1);
         try {
-            AbstractGuiUtils.blitBlend(stack, ICON, x + 2, y + 4, NotificationHudAppearance.ICON_SIZE,
-                    NotificationHudAppearance.ICON_SIZE, 0, 0, 16, 16, 16, 16);
+            AbstractGuiUtils.blitBlend(stack, ICON_EDGE, x + 2, y + 4, NotificationHudAppearance.ICON_SIZE,
+                    NotificationHudAppearance.ICON_SIZE, 0, 0, 12, 12, 12, 12);
         } finally {
             RenderSystem.color4f(1, 1, 1, 1);
         }

@@ -70,6 +70,57 @@ repositories {
     // }
 }
 
+configurations.create('baniraMinimapLibraries') { transitive = false }
+dependencies {
+    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:irjR7dHk"
+    baniraMinimapLibraries "maven.modrinth:journeymap:CtFE7hwT"
+}
+def minimapCompilerLibraries = providers.provider {
+    def directory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+    directory.mkdirs()
+    def libraries = []
+    configurations.baniraMinimapLibraries.files.each { artifact ->
+        new java.util.zip.ZipFile(artifact).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (entry.name.startsWith('META-INF/jarjar/') && entry.name.endsWith('.jar')
+                        && (entry.name.contains('xaerolib-') || entry.name.contains('journeymap-api-'))) {
+                    def output = new File(directory, new File(entry.name).name)
+                    zip.getInputStream(entry).withCloseable { stream ->
+                        java.nio.file.Files.copy(stream, output.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                    }
+                    libraries.add(output)
+                }
+            }
+        }
+    }
+    return libraries
+}
+dependencies {
+    compileOnly files(minimapCompilerLibraries)
+    compileOnly "maven.modrinth:xaeros-minimap:irjR7dHk"
+    compileOnly "maven.modrinth:journeymap:CtFE7hwT"
+    compileOnly "curse.maven:ftb-chunks-forge-314906:7608681"
+    compileOnly "maven.modrinth:map-atlases-forge:ecuMnNO4"
+    if (project.hasProperty('minimapSmoke')) {
+        switch (project.property('minimapSmoke').toString()) {
+            case '':
+            case 'xaero':
+                localRuntime "maven.modrinth:xaeros-minimap:irjR7dHk"
+                localRuntime files(minimapCompilerLibraries)
+                break
+            case 'journey':
+                localRuntime "maven.modrinth:journeymap:CtFE7hwT"
+                localRuntime "maven.modrinth:common-network:pR7AeZk3"
+                break
+            case 'atlas':
+                localRuntime "maven.modrinth:map-atlases-forge:ecuMnNO4"
+                localRuntime "maven.modrinth:moonlight:YfHkk7hg"
+                break
+            default: throw new GradleException('minimapSmoke: xaero, journey or atlas')
+        }
+    }
+}
+
 dependencies {
     runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     implementation "net.neoforged:neoforge:${neo_version}"

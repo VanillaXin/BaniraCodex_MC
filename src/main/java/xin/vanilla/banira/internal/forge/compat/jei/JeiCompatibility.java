@@ -2,12 +2,12 @@ package xin.vanilla.banira.internal.forge.compat.jei;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
-import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
-import mezz.jei.gui.input.InputType;
-import mezz.jei.gui.input.UserInput;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
+import mezz.jei.gui.input.InputType;
+import mezz.jei.gui.input.UserInput;
+import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
+import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -23,7 +23,9 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 将 JEI 的书签与查询历史控制器接入统一快捷入口。 */
+/**
+ * 将 JEI 的书签与查询历史控制器接入统一快捷入口。
+ */
 public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =

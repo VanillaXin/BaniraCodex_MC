@@ -1,14 +1,13 @@
 package xin.vanilla.banira.internal.forge.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.event.*;
@@ -18,7 +17,6 @@ import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonSmokeRun
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.internal.client.BaniraClientOverlayBridge;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -55,7 +53,9 @@ public final class BaniraClientForgeEventHandler {
         }
     }
 
-    /** 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。 */
+    /**
+     * 没有打开界面时，按键仍需进入 Banira 的快捷入口分发链。
+     */
     @SubscribeEvent
     public static void onGlobalKeyInput(InputEvent.Key event) {
         if (Minecraft.getInstance().screen != null) return;

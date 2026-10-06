@@ -2,33 +2,22 @@ package xin.vanilla.banira.internal.forge.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.electronwill.nightconfig.core.io.ParsingException;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
+import com.electronwill.nightconfig.core.io.ParsingException;
 import com.electronwill.nightconfig.core.io.WritingException;
 import com.electronwill.nightconfig.toml.TomlFormat;
+import net.minecraftforge.common.ForgeConfigSpec;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigScope;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.ArrayList;
-import net.minecraftforge.common.ForgeConfigSpec;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigScope;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -37,7 +26,8 @@ public class ForgeConfigFileTest {
             + "items = [\"minecraft:arrow\", \"tick, clazz -> tick >= 5\"]\n"
             + "[other]\nenabled = false\n";
 
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void bulkUpdatePublishesValuesAndCommentsTogetherWithoutLeakingItsView() throws Exception {
@@ -57,7 +47,10 @@ public class ForgeConfigFileTest {
             view.<List<String>>get("base.chunk.items").clear();
             assertEquals(8, ((Number) config.get("base.chunk.limit")).intValue());
             assertComplete(config);
-            Integer result = config.bulkUpdate(candidate -> { candidate.set("base.chunk.limit", 9); return 42; });
+            Integer result = config.bulkUpdate(candidate -> {
+                candidate.set("base.chunk.limit", 9);
+                return 42;
+            });
             assertEquals(Integer.valueOf(42), result);
             assertTrue(read(path).contains("limit = 9"));
         }
@@ -86,8 +79,11 @@ public class ForgeConfigFileTest {
             String external = DOCUMENT.replace("limit = 100", "limit = 321");
             assertThrows(WritingException.class, () -> config.bulkCommentedUpdate(candidate -> {
                 candidate.set("base.chunk.limit", 8);
-                try { write(path, external); }
-                catch (Exception exception) { throw new IllegalStateException(exception); }
+                try {
+                    write(path, external);
+                } catch (Exception exception) {
+                    throw new IllegalStateException(exception);
+                }
                 return 1;
             }));
             assertEquals(external, read(path));
@@ -102,7 +98,9 @@ public class ForgeConfigFileTest {
             config.load();
             com.electronwill.nightconfig.core.UnmodifiableCommentedConfig snapshot =
                     config.bulkCommentedRead(candidate -> candidate);
-            config.bulkRead(candidate -> { return candidate.<List<String>>get("base.chunk.items"); }).clear();
+            config.bulkRead(candidate -> {
+                return candidate.<List<String>>get("base.chunk.items");
+            }).clear();
             config.set("base.chunk.limit", 8);
             assertEquals(100, ((Number) snapshot.get("base.chunk.limit")).intValue());
             assertComplete(config);
@@ -189,7 +187,8 @@ public class ForgeConfigFileTest {
         };
         ExecutorService worker = Executors.newSingleThreadExecutor();
         try (ForgeConfigFile config = new ForgeConfigFile(CommentedFileConfig.of(path),
-                new net.minecraftforge.common.ForgeConfigSpec.Builder().build(), candidate -> { }, writer)) {
+                new net.minecraftforge.common.ForgeConfigSpec.Builder().build(), candidate -> {
+        }, writer)) {
             config.load();
             Future<?> change = worker.submit(() -> config.set("base.chunk.limit", 8));
             try {
@@ -220,10 +219,10 @@ public class ForgeConfigFileTest {
         Path path = file();
         try (ForgeConfigFile config = new ForgeConfigFile(CommentedFileConfig.of(path),
                 new net.minecraftforge.common.ForgeConfigSpec.Builder().build(), candidate -> {
-                    if (((Number) candidate.get("base.chunk.limit")).intValue() < 0) {
-                        throw new ParsingException("Invalid limit");
-                    }
-                })) {
+            if (((Number) candidate.get("base.chunk.limit")).intValue() < 0) {
+                throw new ParsingException("Invalid limit");
+            }
+        })) {
             config.load();
             assertThrows(ParsingException.class, () -> config.set("base.chunk.limit", -1));
             assertEquals(DOCUMENT, read(path));
@@ -536,7 +535,8 @@ public class ForgeConfigFileTest {
 
     private CommentedFileConfig open(Path path) {
         return new ForgeConfigFile(CommentedFileConfig.builder(path).sync().autosave().build(),
-                new net.minecraftforge.common.ForgeConfigSpec.Builder().build(), candidate -> { });
+                new net.minecraftforge.common.ForgeConfigSpec.Builder().build(), candidate -> {
+        });
     }
 
     private Path file() throws Exception {

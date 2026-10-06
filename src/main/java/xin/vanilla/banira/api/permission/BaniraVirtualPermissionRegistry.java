@@ -1,15 +1,7 @@
 package xin.vanilla.banira.api.permission;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 汇总各模组声明的虚拟权限，供命令建议与完整键校验使用。

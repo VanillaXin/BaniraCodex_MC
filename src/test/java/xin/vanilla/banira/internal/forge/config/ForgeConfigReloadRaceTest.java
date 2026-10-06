@@ -18,13 +18,16 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/** Upstream failure characterization, not an assertion that managed reloads are safe. */
+/**
+ * Upstream failure characterization, not an assertion that managed reloads are safe.
+ */
 public class ForgeConfigReloadRaceTest {
     private static final String DOCUMENT = "[base.chunk]\nlimit = 100\ninterval = 10\nretain = 0.25\n"
             + "entityList = [\"minecraft:arrow\", \"tick, clazz -> tick >= 5\"]\n"
             + "[vault]\nenabled = false\n[unrelated]\ntext = \"keep, this\"\n";
 
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void sequentialReloadAndWritePreserveOtherCategoriesAndCommaValues() throws Exception {

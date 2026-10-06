@@ -29,7 +29,7 @@ public final class ForgeNetworkHandler implements NetworkPacketRegistrar {
     }
 
     public static ForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
-                                              String protocolVersion, boolean optionalClient) {
+                                             String protocolVersion, boolean optionalClient) {
         int networkVersion = networkVersion(protocolVersion);
         ChannelBuilder builder = ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath(
                 identifier.getNamespace(), channelName)).networkProtocolVersion(networkVersion);

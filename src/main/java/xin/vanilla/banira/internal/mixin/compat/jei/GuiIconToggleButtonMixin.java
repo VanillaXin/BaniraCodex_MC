@@ -12,11 +12,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 
-/** 只屏蔽已接入 Banira 的 JEI 控制器，不影响其他图标按钮。 */
+/**
+ * 只屏蔽已接入 Banira 的 JEI 控制器，不影响其他图标按钮。
+ */
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.elements.IconButton", remap = false)
 public abstract class GuiIconToggleButtonMixin {
-    @Shadow @Final private IIconButtonController controller;
+    @Shadow
+    @Final
+    private IIconButtonController controller;
 
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true, require = 0)
     private void banira$draw(GuiGraphics graphics, int mouseX, int mouseY,

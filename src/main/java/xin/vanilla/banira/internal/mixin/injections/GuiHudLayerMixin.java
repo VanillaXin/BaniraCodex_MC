@@ -7,11 +7,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import xin.vanilla.banira.internal.client.dev.DevFpsOverlay;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
+import xin.vanilla.banira.internal.client.dev.DevFpsOverlay;
 import xin.vanilla.banira.internal.forge.client.ForgeHudOverlayAdapter;
 
-/** Forge 1.21.1 不再提供逐 HUD 事件，这里仅恢复经验条与经验文本的可取消语义。 */
+/**
+ * Forge 1.21.1 不再提供逐 HUD 事件，这里仅恢复经验条与经验文本的可取消语义。
+ */
 @Mixin(Gui.class)
 public abstract class GuiHudLayerMixin {
 
@@ -19,6 +21,7 @@ public abstract class GuiHudLayerMixin {
     private void banira$renderDevFpsOverlay(GuiGraphics graphics, DeltaTracker deltaTracker, CallbackInfo callback) {
         DevFpsOverlay.render(graphics);
     }
+
     @Inject(method = "renderExperienceBar", at = @At("HEAD"), cancellable = true)
     private void banira$experienceBarPre(GuiGraphics graphics, int left, CallbackInfo callback) {
         if (ForgeHudOverlayAdapter.dispatchPre(HudOverlayElement.EXPERIENCE_BAR, graphics)) {

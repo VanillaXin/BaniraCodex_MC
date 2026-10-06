@@ -12,9 +12,9 @@ import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
+import xin.vanilla.banira.internal.config.CustomConfig;
 
 import java.io.Serializable;
 import java.util.ArrayList;

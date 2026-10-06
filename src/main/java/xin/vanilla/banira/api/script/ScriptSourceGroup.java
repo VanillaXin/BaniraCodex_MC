@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-/** One entrypoint and its mutually dependent source files, compiled together. */
+/**
+ * One entrypoint and its mutually dependent source files, compiled together.
+ */
 public final class ScriptSourceGroup {
     private final String id;
     private final String entryClassName;
@@ -20,7 +22,15 @@ public final class ScriptSourceGroup {
         this.sourceFiles = Collections.unmodifiableMap(snapshot);
     }
 
-    public String getId() { return id; }
-    public String getEntryClassName() { return entryClassName; }
-    public Map<String, String> getSourceFiles() { return sourceFiles; }
+    public String getId() {
+        return id;
+    }
+
+    public String getEntryClassName() {
+        return entryClassName;
+    }
+
+    public Map<String, String> getSourceFiles() {
+        return sourceFiles;
+    }
 }

@@ -10,22 +10,24 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
+import xin.vanilla.banira.internal.config.CommonConfig;
 import xin.vanilla.banira.internal.config.CommonConfigView;
 import xin.vanilla.banira.internal.dev.BaniraNetworkSmokeStatus;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Dev-only checks through the actual Forge watcher, spec, holder and restart lifecycle. */
+/**
+ * Dev-only checks through the actual Forge watcher, spec, holder and restart lifecycle.
+ */
 public final class ForgeConfigSmoke {
     private static final Gson JSON = new Gson();
     private static Object retainedRoot;
@@ -46,7 +48,8 @@ public final class ForgeConfigSmoke {
         public int value = 1;
     }
 
-    private ForgeConfigSmoke() { }
+    private ForgeConfigSmoke() {
+    }
 
     public static void register(IEventBus bus) {
         if (!BaniraNetworkSmokeStatus.enabled() || BaniraNetworkSmokeStatus.notificationsOnly()) return;
@@ -64,7 +67,8 @@ public final class ForgeConfigSmoke {
     }
 
     static void released(ForgeConfigFile file) {
-        if (!BaniraNetworkSmokeStatus.enabled() || !file.getNioPath().getFileName().toString().equals("banira_codex-smoke-server.toml")) return;
+        if (!BaniraNetworkSmokeStatus.enabled() || !file.getNioPath().getFileName().toString().equals("banira_codex-smoke-server.toml"))
+            return;
         try {
             file.load();
             throw new IllegalStateException("Released server file is still open");
@@ -94,7 +98,8 @@ public final class ForgeConfigSmoke {
         String key = client ? "notificationLogMaxEntries" : "help.helpInfoNumPerPage";
         ModConfig mod = CONFIGS.get(name);
         if (mod == null) throw new IllegalStateException("Missing Forge config " + name);
-        if (!(mod.getConfigData() instanceof ForgeConfigFile)) throw new IllegalStateException("Transactional config handler not active");
+        if (!(mod.getConfigData() instanceof ForgeConfigFile))
+            throw new IllegalStateException("Transactional config handler not active");
         ForgeConfigFile file = (ForgeConfigFile) mod.getConfigData();
         if (!mod.getSpec().isCorrect(file)) throw new IllegalStateException("Config spec bridge not active");
         ConfigHolder holder = ForgeConfigAdapter.getHolder(client ? ClientConfig.class : CommonConfig.class);
@@ -115,8 +120,10 @@ public final class ForgeConfigSmoke {
         Path checkpoint = file.getNioPath().resolveSibling(name + ".smoke-expected");
         if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
             CommentedConfig expected = new TomlParser().parse(new String(Files.readAllBytes(checkpoint), StandardCharsets.UTF_8));
-            if (!expected.valueMap().equals(snapshot(file).valueMap())) throw new IllegalStateException("Complete config snapshot changed after restart");
-            if (retainedRead.getAsInt() != ((Number) expected.get(key)).intValue()) throw new IllegalStateException("Generated config view changed after restart");
+            if (!expected.valueMap().equals(snapshot(file).valueMap()))
+                throw new IllegalStateException("Complete config snapshot changed after restart");
+            if (retainedRead.getAsInt() != ((Number) expected.get(key)).intValue())
+                throw new IllegalStateException("Generated config view changed after restart");
             verifyReads(holder);
             BaniraNetworkSmokeStatus.append("PASS generated-config-view-restart file=" + name);
             BaniraNetworkSmokeStatus.append("PASS forge-config-restart file=" + name);
@@ -134,7 +141,8 @@ public final class ForgeConfigSmoke {
         }
         if (stage == 1) {
             if (((Number) holder.get(key)).intValue() != 30 + cycles || RELOADS.get() <= cycles) return false;
-            if (retainedRead.getAsInt() != 30 + cycles) throw new IllegalStateException("Retained generated view missed external reload");
+            if (retainedRead.getAsInt() != 30 + cycles)
+                throw new IllegalStateException("Retained generated view missed external reload");
             verifyReads(holder);
             if (!Arrays.asList("minecraft:arrow", "tick, clazz -> tick >= 5").equals(file.get("smokeUnknown.items"))) {
                 throw new IllegalStateException("Unknown category or comma expression was lost");
@@ -151,11 +159,18 @@ public final class ForgeConfigSmoke {
         if (stage == 2) {
             if (++invalidTicks < 30) return false;
             int before = ((Number) holder.get(key)).intValue();
-            try { file.load(); throw new IllegalStateException("Invalid config was accepted"); }
-            catch (ParsingException expected) { }
-            try { holder.save(); throw new IllegalStateException("Invalid external file was overwritten"); }
-            catch (ParsingException expected) { }
-            if (before != ((Number) holder.get(key)).intValue()) throw new IllegalStateException("Invalid load changed cached value");
+            try {
+                file.load();
+                throw new IllegalStateException("Invalid config was accepted");
+            } catch (ParsingException expected) {
+            }
+            try {
+                holder.save();
+                throw new IllegalStateException("Invalid external file was overwritten");
+            } catch (ParsingException expected) {
+            }
+            if (before != ((Number) holder.get(key)).intValue())
+                throw new IllegalStateException("Invalid load changed cached value");
             if (!"broken = [\n".equals(new String(Files.readAllBytes(file.getNioPath()), StandardCharsets.UTF_8))) {
                 throw new IllegalStateException("Invalid file was replaced");
             }
@@ -165,7 +180,8 @@ public final class ForgeConfigSmoke {
         file.load();
         retainedWrite.accept(61);
         holder.save();
-        if (retainedRead.getAsInt() != 61 || ((Number) holder.get(key)).intValue() != 61) throw new IllegalStateException("Generated view write missed current holder");
+        if (retainedRead.getAsInt() != 61 || ((Number) holder.get(key)).intValue() != 61)
+            throw new IllegalStateException("Generated view write missed current holder");
         verifyReads(holder);
         Files.write(checkpoint, TomlFormat.instance().createWriter().writeToString(snapshot(file)).getBytes(StandardCharsets.UTF_8));
         unsubscribe.run();
@@ -186,7 +202,8 @@ public final class ForgeConfigSmoke {
 
     private static void verifyReads(ConfigHolder holder) throws Exception {
         int count = verifyReads(holder, retainedRoot, "");
-        if (count != holder.valuePaths().size()) throw new IllegalStateException("Generated field coverage mismatch: " + count);
+        if (count != holder.valuePaths().size())
+            throw new IllegalStateException("Generated field coverage mismatch: " + count);
     }
 
     private static int verifyReads(ConfigHolder holder, Object view, String prefix) throws Exception {

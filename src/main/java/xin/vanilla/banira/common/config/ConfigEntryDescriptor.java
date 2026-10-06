@@ -79,7 +79,9 @@ public class ConfigEntryDescriptor {
      */
     private final Class<? extends Enum<?>> enumClass;
 
-    /** 字符串列表是否应使用按键捕获编辑器。 */
+    /**
+     * 字符串列表是否应使用按键捕获编辑器。
+     */
     @Builder.Default
     @Getter
     private final boolean keyChords = false;

@@ -22,7 +22,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。 */
+/**
+ * 自动加入独立专服，并在第一阶段采集真实 Banira 界面的客户端 Spark 报告。
+ */
 public final class BaniraNetworkSmokeClientRunner {
     private static int ticks;
     private static boolean notificationReady;
@@ -226,7 +228,9 @@ public final class BaniraNetworkSmokeClientRunner {
         client.stop();
     }
 
-    /** Forge 1.16 的 Spark 已注册客户端插件，不重新实例化插件，仅启动独立采样器。 */
+    /**
+     * Forge 1.16 的 Spark 已注册客户端插件，不重新实例化插件，仅启动独立采样器。
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class ReflectiveClientSparkProfile {
         private final Object sampler;
@@ -382,7 +386,8 @@ public final class BaniraNetworkSmokeClientRunner {
                 if ("getUniqueId".equals(name)) return null;
                 if ("hasPermission".equals(name)) return true;
                 if ("sendMessage".equals(name)) return null;
-                if ("toData".equals(name)) return data.getConstructor(String.class, UUID.class).newInstance("Banira client UI smoke", null);
+                if ("toData".equals(name))
+                    return data.getConstructor(String.class, UUID.class).newInstance("Banira client UI smoke", null);
                 if ("toString".equals(name)) return "Banira client UI smoke";
                 if ("hashCode".equals(name)) return System.identityHashCode(proxy);
                 if ("equals".equals(name)) return proxy == args[0];
@@ -395,14 +400,16 @@ public final class BaniraNetworkSmokeClientRunner {
             listeners.setAccessible(true);
             Object values = listeners.get(MinecraftForge.EVENT_BUS);
             for (Object candidate : ((Map<?, ?>) values).keySet()) {
-                if (candidate != null && candidate.getClass().getName().equals("me.lucko.spark.forge.plugin.ForgeClientSparkPlugin")) return candidate;
+                if (candidate != null && candidate.getClass().getName().equals("me.lucko.spark.forge.plugin.ForgeClientSparkPlugin"))
+                    return candidate;
             }
             throw new IllegalStateException("Spark client plugin was not registered");
         }
 
         private static Class<?> base(Object plugin) {
             Class<?> type = plugin.getClass();
-            while (type != null && !type.getName().equals("me.lucko.spark.forge.plugin.ForgeSparkPlugin")) type = type.getSuperclass();
+            while (type != null && !type.getName().equals("me.lucko.spark.forge.plugin.ForgeSparkPlugin"))
+                type = type.getSuperclass();
             if (type == null) throw new IllegalStateException("Spark base plugin was not found");
             return type;
         }

@@ -12,7 +12,9 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-/** 在开发目录与真实 JAR 中统一枚举语言文件。 */
+/**
+ * 在开发目录与真实 JAR 中统一枚举语言文件。
+ */
 final class ClasspathLanguageDiscovery {
     private ClasspathLanguageDiscovery() {
     }

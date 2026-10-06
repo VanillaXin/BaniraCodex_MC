@@ -3,7 +3,6 @@ package xin.vanilla.banira.common.util;
 import org.junit.Test;
 
 import java.io.OutputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;

@@ -1,13 +1,15 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Items;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Items;
 import org.junit.Test;
 import xin.vanilla.banira.internal.forge.platform.ForgeBaniraRegistryService;
-import xin.vanilla.banira.platform.*;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.BaniraRegistryService;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -15,22 +17,27 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 public class RegistryKeyReuseTest {
-    @org.junit.BeforeClass public static void initializeStandaloneLoader() throws Exception {
+    @org.junit.BeforeClass
+    public static void initializeStandaloneLoader() throws Exception {
         net.minecraftforge.fml.loading.LoadingModList list = net.minecraftforge.fml.loading.LoadingModList.of(
                 Collections.emptyList(), Collections.emptyList(), null);
         list.setBrokenFiles(Collections.emptyList());
         java.lang.reflect.Field loading = net.minecraftforge.fml.loading.FMLLoader.class.getDeclaredField("loadingModList");
-        loading.setAccessible(true); loading.set(null, list);
+        loading.setAccessible(true);
+        loading.set(null, list);
         net.minecraftforge.fml.ModList mods = net.minecraftforge.fml.ModList.of(Collections.emptyList(), Collections.emptyList());
         java.lang.reflect.Method loaded = net.minecraftforge.fml.ModList.class.getDeclaredMethod("setLoadedMods", java.util.List.class);
-        loaded.setAccessible(true); loaded.invoke(mods, Collections.emptyList());
+        loaded.setAccessible(true);
+        loaded.invoke(mods, Collections.emptyList());
         java.lang.reflect.Field layers = net.minecraftforge.fml.loading.FMLLoader.class.getDeclaredField("moduleLayerManager");
         layers.setAccessible(true);
         layers.set(null, java.lang.reflect.Proxy.newProxyInstance(RegistryKeyReuseTest.class.getClassLoader(),
                 new Class<?>[]{cpw.mods.modlauncher.api.IModuleLayerManager.class},
                 (proxy, method, args) -> java.util.Optional.of(ModuleLayer.boot())));
     }
-    @Test public void nativeRegistryKeysAreReusedWithoutStringRoundTrips() {
+
+    @Test
+    public void nativeRegistryKeysAreReusedWithoutStringRoundTrips() {
         net.minecraft.SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         BaniraPlatforms.install(new TestBaniraPlatform().registryService(ForgeBaniraRegistryService.INSTANCE));
@@ -39,10 +46,13 @@ public class RegistryKeyReuseTest {
             assertSame(BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.PIG), EntityUtils.getEntityRegistry(EntityType.PIG));
             assertEquals("minecraft:apple", ItemUtils.getItemRegistryString(Items.APPLE));
             assertEquals("minecraft:pig", EntityUtils.getEntityRegistryString(EntityType.PIG));
-        } finally { BaniraPlatforms.install(new TestBaniraPlatform()); }
+        } finally {
+            BaniraPlatforms.install(new TestBaniraPlatform());
+        }
     }
 
-    @Test public void stringOnlyServicesStillNormalizeIdsAndHandleInvalidOrMissingKeys() {
+    @Test
+    public void stringOnlyServicesStillNormalizeIdsAndHandleInvalidOrMissingKeys() {
         net.minecraft.SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         String[] id = {"apple"};
@@ -57,26 +67,76 @@ public class RegistryKeyReuseTest {
             id[0] = null;
             assertNull(ItemUtils.getItemRegistry(Items.APPLE));
             assertNull(EntityUtils.getEntityRegistry(EntityType.PIG));
-        } finally { BaniraPlatforms.install(new TestBaniraPlatform()); }
+        } finally {
+            BaniraPlatforms.install(new TestBaniraPlatform());
+        }
     }
 
     private static final class StringRegistryService implements BaniraRegistryService {
         private final String[] id;
-        StringRegistryService(String[] id) { this.id = id; }
-        public String itemKey(Object item) { return id[0]; }
-        public String entityTypeKey(Object entityType) { return id[0]; }
-        public String blockKey(Object block) { return null; }
-        public Object block(String id) { return null; }
-        public Collection<?> blocks() { return Collections.emptyList(); }
-        public Object item(String id) { return null; }
-        public Collection<?> items() { return Collections.emptyList(); }
-        public Collection<String> itemTagIds(Object item) { return Collections.emptyList(); }
-        public Object entityType(String id) { return null; }
-        public Collection<?> entityTypes() { return Collections.emptyList(); }
-        public String effectKey(Object effect) { return null; }
-        public Object effect(String id) { return null; }
-        public Collection<?> effects() { return Collections.emptyList(); }
-        public Object biome(String id) { return null; }
-        public Collection<String> biomeIds() { return Collections.emptyList(); }
+
+        StringRegistryService(String[] id) {
+            this.id = id;
+        }
+
+        public String itemKey(Object item) {
+            return id[0];
+        }
+
+        public String entityTypeKey(Object entityType) {
+            return id[0];
+        }
+
+        public String blockKey(Object block) {
+            return null;
+        }
+
+        public Object block(String id) {
+            return null;
+        }
+
+        public Collection<?> blocks() {
+            return Collections.emptyList();
+        }
+
+        public Object item(String id) {
+            return null;
+        }
+
+        public Collection<?> items() {
+            return Collections.emptyList();
+        }
+
+        public Collection<String> itemTagIds(Object item) {
+            return Collections.emptyList();
+        }
+
+        public Object entityType(String id) {
+            return null;
+        }
+
+        public Collection<?> entityTypes() {
+            return Collections.emptyList();
+        }
+
+        public String effectKey(Object effect) {
+            return null;
+        }
+
+        public Object effect(String id) {
+            return null;
+        }
+
+        public Collection<?> effects() {
+            return Collections.emptyList();
+        }
+
+        public Object biome(String id) {
+            return null;
+        }
+
+        public Collection<String> biomeIds() {
+            return Collections.emptyList();
+        }
     }
 }

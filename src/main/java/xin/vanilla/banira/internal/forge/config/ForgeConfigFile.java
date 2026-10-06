@@ -2,8 +2,8 @@ package xin.vanilla.banira.internal.forge.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
 import com.electronwill.nightconfig.core.io.ParsingException;
@@ -13,8 +13,8 @@ import com.electronwill.nightconfig.core.utils.CommentedConfigWrapper;
 import com.electronwill.nightconfig.toml.TomlFormat;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraftforge.common.ForgeConfigSpec;
-import xin.vanilla.banira.common.config.ConfigEditSnapshot;
 import xin.vanilla.banira.common.config.ConfigCommitResult;
+import xin.vanilla.banira.common.config.ConfigEditSnapshot;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,16 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
-/** Keeps Forge's file lifecycle while isolating parsing and synchronous disk commits. */
+/**
+ * Keeps Forge's file lifecycle while isolating parsing and synchronous disk commits.
+ */
 public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfig>
         implements CommentedFileConfig, com.electronwill.nightconfig.core.concurrent.ConcurrentCommentedConfig {
     private final CommentedFileConfig bootstrap;
@@ -59,9 +55,17 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
         return !closed && !Arrays.equals(acceptedBytes, readBytes());
     }
 
-    synchronized long externalRevision() { return externalRevision; }
-    synchronized boolean hasLoaded() { return acceptedBytes != null; }
-    synchronized boolean isOpen() { return !closed; }
+    synchronized long externalRevision() {
+        return externalRevision;
+    }
+
+    synchronized boolean hasLoaded() {
+        return acceptedBytes != null;
+    }
+
+    synchronized boolean isOpen() {
+        return !closed;
+    }
 
     public void saveOnUnload() {
         try {
@@ -124,7 +128,8 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
     private CommentedConfig candidateForEdit() {
         requireLoaded();
         byte[] disk = readBytes();
-        if (!Arrays.equals(disk, acceptedBytes)) throw new WritingException("External config change must be reloaded before editing: " + getNioPath());
+        if (!Arrays.equals(disk, acceptedBytes))
+            throw new WritingException("External config change must be reloaded before editing: " + getNioPath());
         return copy(config);
     }
 
@@ -226,7 +231,9 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
     }
 
     private static final class EditConflict extends WritingException {
-        EditConflict(String message) { super(message); }
+        EditConflict(String message) {
+            super(message);
+        }
     }
 
     @Override
@@ -329,18 +336,56 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
         return (T) copyValue(config.getRaw(path));
     }
 
-    @Override public synchronized boolean contains(List<String> path) { return config.contains(path); }
-    @Override public synchronized boolean isNull(List<String> path) { return config.isNull(path); }
-    @Override public synchronized int size() { return config.size(); }
-    @Override public synchronized boolean isEmpty() { return config.isEmpty(); }
-    @Override public synchronized String getComment(List<String> path) { return config.getComment(path); }
-    @Override public synchronized boolean containsComment(List<String> path) { return config.containsComment(path); }
-    @Override public synchronized Map<String, Object> valueMap() { return copy(config).valueMap(); }
-    @Override public synchronized Map<String, String> commentMap() { return new LinkedHashMap<>(config.commentMap()); }
-    @Override public synchronized Set<? extends CommentedConfig.Entry> entrySet() { return copy(config).entrySet(); }
-    @Override public com.electronwill.nightconfig.core.concurrent.ConcurrentCommentedConfig createSubConfig() {
+    @Override
+    public synchronized boolean contains(List<String> path) {
+        return config.contains(path);
+    }
+
+    @Override
+    public synchronized boolean isNull(List<String> path) {
+        return config.isNull(path);
+    }
+
+    @Override
+    public synchronized int size() {
+        return config.size();
+    }
+
+    @Override
+    public synchronized boolean isEmpty() {
+        return config.isEmpty();
+    }
+
+    @Override
+    public synchronized String getComment(List<String> path) {
+        return config.getComment(path);
+    }
+
+    @Override
+    public synchronized boolean containsComment(List<String> path) {
+        return config.containsComment(path);
+    }
+
+    @Override
+    public synchronized Map<String, Object> valueMap() {
+        return copy(config).valueMap();
+    }
+
+    @Override
+    public synchronized Map<String, String> commentMap() {
+        return new LinkedHashMap<>(config.commentMap());
+    }
+
+    @Override
+    public synchronized Set<? extends CommentedConfig.Entry> entrySet() {
+        return copy(config).entrySet();
+    }
+
+    @Override
+    public com.electronwill.nightconfig.core.concurrent.ConcurrentCommentedConfig createSubConfig() {
         return new com.electronwill.nightconfig.core.concurrent.SynchronizedConfig(TomlFormat.instance(), LinkedHashMap::new);
     }
+
     @Override
     public synchronized <R> R bulkCommentedRead(java.util.function.Function<? super UnmodifiableCommentedConfig, R> action) {
         requireLoaded();
@@ -364,16 +409,35 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
 
     @Override
     public void bulkCommentedUpdate(java.util.function.Consumer<? super CommentedConfig> action) {
-        bulkCommentedUpdate(candidate -> { action.accept(candidate); return null; });
+        bulkCommentedUpdate(candidate -> {
+            action.accept(candidate);
+            return null;
+        });
     }
 
     @Override
     public void bulkUpdate(java.util.function.Consumer<? super Config> action) {
-        bulkCommentedUpdate(candidate -> { action.accept(candidate); return null; });
+        bulkCommentedUpdate(candidate -> {
+            action.accept(candidate);
+            return null;
+        });
     }
-    @Override public File getFile() { return bootstrap.getFile(); }
-    @Override public Path getNioPath() { return bootstrap.getNioPath(); }
-    @Override public synchronized void close() { closed = true; bootstrap.close(); }
+
+    @Override
+    public File getFile() {
+        return bootstrap.getFile();
+    }
+
+    @Override
+    public Path getNioPath() {
+        return bootstrap.getNioPath();
+    }
+
+    @Override
+    public synchronized void close() {
+        closed = true;
+        bootstrap.close();
+    }
 
     static CommentedConfig copy(UnmodifiableConfig source) {
         CommentedConfig result = TomlFormat.instance().createConfig(LinkedHashMap::new);

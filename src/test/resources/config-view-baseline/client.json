@@ -124,7 +124,7 @@
     },
     "notificationHud.mode": {
       "type": "ENUM",
-      "default": "TOGGLE",
+      "default": "ALWAYS",
       "min": null,
       "max": null,
       "precision": 2,
@@ -568,7 +568,7 @@
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "TOGGLE",
+    "notificationHud.mode": "ALWAYS",
     "notificationHud.x": 0.0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
@@ -618,7 +618,7 @@
     "notificationHud.keys": [
       "Tab"
     ],
-    "notificationHud.mode": "TOGGLE",
+    "notificationHud.mode": "ALWAYS",
     "notificationHud.x": 0.0,
     "notificationHud.y": 0.5,
     "notificationLogMaxEntries": 500,
@@ -666,7 +666,7 @@
     "notificationBurstThreshold": 7,
     "notificationHud.host": "STANDALONE",
     "notificationHud.keys": [],
-    "notificationHud.mode": "ALWAYS",
+    "notificationHud.mode": "OFF",
     "notificationHud.x": 0.125,
     "notificationHud.y": 0.125,
     "notificationLogMaxEntries": 7,

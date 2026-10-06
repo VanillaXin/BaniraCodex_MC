@@ -9,12 +9,14 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
 import xin.vanilla.banira.client.gui.widget.InputWidget;
+import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
@@ -153,6 +155,12 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     private void updateWidgetPositions() {
         viewport.applyContentBounds(contentRootPanel);
+    }
+
+    @Override
+    protected boolean shouldWidgetReceiveClick(IWidget widget, MouseEvent event) {
+        return (widget != contentRootPanel || viewport.containsListPoint(event.mouseX(), event.mouseY()))
+                && super.shouldWidgetReceiveClick(widget, event);
     }
 
     /**

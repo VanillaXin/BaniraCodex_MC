@@ -1,10 +1,8 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.network.chat.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
@@ -238,7 +236,9 @@ public final class ColorUtils {
         return result;
     }
 
-    /** 对纹理文字区域的多个代表背景色应用同一套富文本和旧格式码规则。 */
+    /**
+     * 对纹理文字区域的多个代表背景色应用同一套富文本和旧格式码规则。
+     */
     public static net.minecraft.network.chat.Component readableVanillaComponentCopy(
             net.minecraft.network.chat.Component component, int[] backgroundArgb) {
         if (component == null) {

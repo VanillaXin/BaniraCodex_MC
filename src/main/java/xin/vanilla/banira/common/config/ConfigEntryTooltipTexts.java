@@ -3,10 +3,10 @@ package xin.vanilla.banira.common.config;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
+import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.util.ITranslator;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.common.util.ITranslator;
-import xin.vanilla.banira.common.enums.EnumI18nType;
 
 import java.util.List;
 import java.util.Map;

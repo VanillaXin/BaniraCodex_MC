@@ -3,11 +3,7 @@ package xin.vanilla.banira.internal.fabric.config;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.banira.common.config.ConfigData;
-import xin.vanilla.banira.common.config.ConfigCategoryTitleSpec;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigScope;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -20,11 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class FabricConfigAdapterTest {
     @Rule

@@ -3,9 +3,11 @@ package xin.vanilla.banira.client.notification;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.*;
+
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
+
 import static org.junit.Assert.*;
 
 public class LegacyJourneyMapIntegrationTest {
@@ -21,7 +23,8 @@ public class LegacyJourneyMapIntegrationTest {
                 if (instruction.getOpcode() == org.objectweb.asm.Opcodes.LCONST_1) clock.add(1L);
                 if (instruction instanceof LdcInsnNode && ((LdcInsnNode) instruction).cst instanceof Long)
                     clock.add((Long) ((LdcInsnNode) instruction).cst);
-                if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("create")) break;
+                if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("create"))
+                    break;
             }
         }
         assertEquals(2, clock.size());
@@ -30,6 +33,7 @@ public class LegacyJourneyMapIntegrationTest {
                         "banira_codex", "test", clock.get(0), clock.get(1), () -> "Unread 23");
         assertEquals("Unread 23", slot.getLabelText(123456L));
     }
+
     private ClassNode read(String path) throws Exception {
         try (InputStream input = getClass().getResourceAsStream(path)) {
             assertNotNull(path, input);

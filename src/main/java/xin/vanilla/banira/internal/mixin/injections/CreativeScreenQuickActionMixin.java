@@ -10,13 +10,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 
-/** 防止创造模式选项卡穿透 Banira 快捷入口响应悬浮与点击。 */
+/**
+ * 防止创造模式选项卡穿透 Banira 快捷入口响应悬浮与点击。
+ */
 @Mixin(CreativeModeInventoryScreen.class)
 public abstract class CreativeScreenQuickActionMixin {
     @Inject(method = "checkTabHovering", at = @At("HEAD"), cancellable = true)
     private void banira$suppressCoveredTabTooltip(PoseStack stack, CreativeModeTab group,
-                                                   int mouseX, int mouseY,
-                                                   CallbackInfoReturnable<Boolean> callback) {
+                                                  int mouseX, int mouseY,
+                                                  CallbackInfoReturnable<Boolean> callback) {
         if (banira$captures(mouseX, mouseY)) {
             callback.setReturnValue(false);
         }

@@ -79,7 +79,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     @Setter
     private boolean showFullTextTooltipWhenTruncated = false;
 
-    /** 显式提示优先于因文本截断自动生成的提示。 */
+    /**
+     * 显式提示优先于因文本截断自动生成的提示。
+     */
     @Getter
     @Setter
     @Nullable
@@ -481,7 +483,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return result;
     }
 
-    /** 按换行拆分富文本，同时保留每个字符片段的原版样式。 */
+    /**
+     * 按换行拆分富文本，同时保留每个字符片段的原版样式。
+     */
     static List<net.minecraft.network.chat.Component> splitStyledLines(
             net.minecraft.network.chat.Component source) {
         List<net.minecraft.network.chat.Component> lines = new ArrayList<>();

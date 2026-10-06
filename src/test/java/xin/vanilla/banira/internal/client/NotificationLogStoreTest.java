@@ -15,7 +15,8 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class NotificationLogStoreTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void legacyHistoryLoadsAsRead() throws Exception {

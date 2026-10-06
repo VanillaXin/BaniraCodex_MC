@@ -1,6 +1,8 @@
 package xin.vanilla.banira.internal.dev;
 
-/** Shared pacing rules for the bounded server and client smoke workloads. */
+/**
+ * Shared pacing rules for the bounded server and client smoke workloads.
+ */
 public final class BaniraNetworkSmokeProfilePlan {
     public static final int MINIMUM_CYCLES = 20;
     public static final int CYCLE_INTERVAL_TICKS = 10;

@@ -14,7 +14,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** 负责把快捷入口领域对象转换为可校验的 Banira 表单。 */
+/**
+ * 负责把快捷入口领域对象转换为可校验的 Banira 表单。
+ */
 final class CustomQuickActionEditor {
     private CustomQuickActionEditor() {
     }
@@ -166,13 +168,13 @@ final class CustomQuickActionEditor {
     }
 
     private static InputFormScreen.Widget text(String name, String key, String value,
-                                                boolean allowEmpty, String regex) {
+                                               boolean allowEmpty, String regex) {
         return new InputFormScreen.Widget().name(name).title(t(key)).defaultValue(value)
                 .allowEmpty(allowEmpty).regex(regex);
     }
 
     private static InputFormScreen.Widget dropdown(String name, String key, String value,
-                                                    List<DropdownOption> options) {
+                                                   List<DropdownOption> options) {
         return new InputFormScreen.Widget().name(name).title(t(key))
                 .type(InputFormScreen.WidgetType.DROPDOWN)
                 .dropdownOptionEntries(options)

@@ -8,7 +8,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.internal.client.dev.BaniraNetworkSmokeClientRunner;
 
-/** Observes system chat after native dispatch without replacing Fabric or vanilla handling. */
+/**
+ * Observes system chat after native dispatch without replacing Fabric or vanilla handling.
+ */
 @Mixin(ClientPacketListener.class)
 public class NetworkSmokeChatMixin {
     @Inject(method = "handleSystemChat", at = @At("RETURN"))

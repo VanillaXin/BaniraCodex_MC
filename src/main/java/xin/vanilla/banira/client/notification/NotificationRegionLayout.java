@@ -1,22 +1,31 @@
 package xin.vanilla.banira.client.notification;
 
 import xin.vanilla.banira.common.enums.EnumPosition;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Predicate;
 
-/** Per-frame placement of notification rectangles, independent of rendering and timing. */
+/**
+ * Per-frame placement of notification rectangles, independent of rendering and timing.
+ */
 public final class NotificationRegionLayout {
     public static final class Rect {
         public final int x, y, width, height;
+
         public Rect(int x, int y, int width, int height) {
-            this.x = x; this.y = y; this.width = width; this.height = height;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
         }
+
         public boolean overlaps(Rect other) {
             return x < other.x + other.width && x + width > other.x
                     && y < other.y + other.height && y + height > other.y;
         }
+
         public boolean contains(double px, double py) {
             return px >= x && py >= y && px < x + width && py < y + height;
         }
@@ -28,7 +37,9 @@ public final class NotificationRegionLayout {
     private final EnumMap<EnumPosition, Integer> counts = new EnumMap<>(EnumPosition.class);
     private final EnumMap<EnumPosition, Integer> usedHeight = new EnumMap<>(EnumPosition.class);
 
-    public NotificationRegionLayout(int maximum) { this.maximum = Math.max(0, maximum); }
+    public NotificationRegionLayout(int maximum) {
+        this.maximum = Math.max(0, maximum);
+    }
 
     public static <T> List<T> admissionOrder(List<T> entries, Predicate<T> active) {
         List<T> result = new ArrayList<>(entries.size());
@@ -53,16 +64,24 @@ public final class NotificationRegionLayout {
 
     private static int horizontal(EnumPosition pos, int x, int areaWidth, int width) {
         switch (pos) {
-            case TOP_LEFT: case LEFT_CENTER: case BOTTOM_LEFT: return x;
-            case TOP_RIGHT: case RIGHT_CENTER: case BOTTOM_RIGHT: return x + areaWidth - width;
-            default: return x + (areaWidth - width) / 2;
+            case TOP_LEFT:
+            case LEFT_CENTER:
+            case BOTTOM_LEFT:
+                return x;
+            case TOP_RIGHT:
+            case RIGHT_CENTER:
+            case BOTTOM_RIGHT:
+                return x + areaWidth - width;
+            default:
+                return x + (areaWidth - width) / 2;
         }
     }
 
     public Rect place(EnumPosition position, Rect area, int width, int height, int gap, int limit) {
         int count = counts.getOrDefault(position, 0);
         int used = usedHeight.getOrDefault(position, 0);
-        if (placed.size() >= maximum || count >= limit || width > area.width || height > area.height - used) return null;
+        if (placed.size() >= maximum || count >= limit || width > area.width || height > area.height - used)
+            return null;
         Rect rect = new Rect(horizontal(position, area.x, area.width, width),
                 position.isBottom() ? area.y + area.height - used - height : area.y + used, width, height);
         for (Rect previous : placed) if (rect.overlaps(previous)) return null;

@@ -20,6 +20,7 @@ import journeymap.client.ui.UIManager;
 public final class JourneyMapNotificationPlugin implements IClientPlugin {
     private static final String KEY = "word.banira_codex.notification_unread";
     private boolean previousVisible;
+    private boolean previousAllowed;
     private EnumNotificationHudHost previousPreference;
     private EnumNotificationHudHost previousOwner;
 
@@ -33,6 +34,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
         ClientEventRegistry.INFO_SLOT_REGISTRY_EVENT.subscribe(getModId(), event ->
                 event.register(getModId(), Component.translatable(KEY), 100,
                         () -> UIManager.INSTANCE.isMiniMapEnabled()
+                                && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled()
                                 ? NotificationMinimapBridge.text(EnumNotificationHudHost.JOURNEYMAP)
                                 : Component.empty()));
         MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event -> {
@@ -50,10 +52,14 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
             return;
         }
         boolean visible = NotificationUnreadHud.isVisible();
+        boolean allowed = UIManager.INSTANCE.isMiniMapEnabled()
+                && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled();
         EnumNotificationHudHost preference = ClientConfig.get().notificationHud().host();
         EnumNotificationHudHost owner = NotificationMinimapBridge.selectedHost();
-        if (visible == previousVisible && preference == previousPreference && owner == previousOwner) return;
+        if (visible == previousVisible && allowed == previousAllowed
+                && preference == previousPreference && owner == previousOwner) return;
         previousVisible = visible;
+        previousAllowed = allowed;
         previousPreference = preference;
         previousOwner = owner;
         // JourneyMap removes empty slots from its layout until the next layout rebuild.

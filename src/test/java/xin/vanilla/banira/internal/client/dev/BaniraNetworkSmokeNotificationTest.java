@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client.dev;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import org.junit.After;
 import org.junit.Before;
@@ -22,7 +22,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BaniraNetworkSmokeNotificationTest {
     private String previousEnabled;

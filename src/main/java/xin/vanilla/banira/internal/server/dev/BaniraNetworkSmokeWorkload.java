@@ -1,6 +1,8 @@
 package xin.vanilla.banira.internal.server.dev;
 
-/** Controls the bounded sustained segment of the dev-only server smoke. */
+/**
+ * Controls the bounded sustained segment of the dev-only server smoke.
+ */
 final class BaniraNetworkSmokeWorkload {
     static final int DURATION_TICKS = 320;
 

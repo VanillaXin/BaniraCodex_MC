@@ -17,7 +17,8 @@ public class BaniraScreenDevRenderTest {
         BaniraPlatforms.install(new TestBaniraPlatform().development(true));
         screen = new BaniraScreen(net.minecraft.network.chat.Component.literal("dev render")) {
             @Override
-            protected void onRender(net.minecraft.client.gui.GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) { }
+            protected void onRender(net.minecraft.client.gui.GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+            }
         };
     }
 

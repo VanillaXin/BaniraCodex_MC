@@ -9,7 +9,6 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;

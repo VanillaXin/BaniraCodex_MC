@@ -13,7 +13,9 @@ import java.util.function.Consumer;
  */
 public class QuickActionContextMenuItem {
 
-    /** 注册方提供的稳定标识；留空时由所属入口按原始索引生成兼容标识。 */
+    /**
+     * 注册方提供的稳定标识；留空时由所属入口按原始索引生成兼容标识。
+     */
     @Getter
     @Accessors(fluent = true)
     @Nonnull

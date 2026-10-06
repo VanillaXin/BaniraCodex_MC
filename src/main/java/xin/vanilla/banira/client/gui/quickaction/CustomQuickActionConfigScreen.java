@@ -1,10 +1,9 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.quickaction.CustomQuickActionDefinition;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -22,7 +21,9 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 玩家自定义快捷入口的列表与持久化入口。 */
+/**
+ * 玩家自定义快捷入口的列表与持久化入口。
+ */
 public final class CustomQuickActionConfigScreen extends BaniraScreen {
     private static final int MARGIN = 18;
     private static final int PAD = 10;

@@ -1,8 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
@@ -16,8 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -33,6 +30,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -130,7 +128,9 @@ public class ItemSelectScreen extends BaniraScreen {
         private Consumer<ItemStack> onDataReceived1;
         private Function<ItemStack, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
-        /** 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。 */
+        /**
+         * 提交成功后是否自动返回父界面，多步表单可交由回调接管导航。
+         */
         private boolean closeAfterSubmit = true;
         /**
          * 季节主题，null 时从父界面继承

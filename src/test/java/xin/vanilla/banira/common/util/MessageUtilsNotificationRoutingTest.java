@@ -3,22 +3,21 @@ package xin.vanilla.banira.common.util;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.PacketSendListener;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.PacketSendListener;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -168,8 +167,9 @@ public class MessageUtilsNotificationRoutingTest {
             } else {
                 assertEquals(3, sink.nativePackets.size());
                 assertTrue(sink.customPackets.isEmpty());
-                for (int i = 0; i < 3; i++) assertEquals("prefix:" + entries.get(i).text(),
-                        sink.nativePackets.get(i).content().getString());
+                for (int i = 0; i < 3; i++)
+                    assertEquals("prefix:" + entries.get(i).text(),
+                            sink.nativePackets.get(i).content().getString());
             }
         }
     }
@@ -239,7 +239,8 @@ public class MessageUtilsNotificationRoutingTest {
         assertEquals(2, sink.nativePackets.size());
         assertFalse(sink.nativePackets.get(0).overlay());
         assertTrue(sink.nativePackets.get(1).overlay());
-        for (ClientboundSystemChatPacket packet : sink.nativePackets) assertEquals(source.text(), packet.content().getString());
+        for (ClientboundSystemChatPacket packet : sink.nativePackets)
+            assertEquals(source.text(), packet.content().getString());
     }
 
     private void selectRoute(int route) {

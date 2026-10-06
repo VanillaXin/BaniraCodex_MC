@@ -8,7 +8,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibility;
 
-/** 把 Banira 动态 FTB 按钮的点击转回其原始快捷操作。 */
+/**
+ * 把 Banira 动态 FTB 按钮的点击转回其原始快捷操作。
+ */
 @Pseudo
 @Mixin(targets = "dev.ftb.mods.ftblibrary.sidebar.RegisteredSidebarButton", remap = false)
 public abstract class SidebarButtonMixin {

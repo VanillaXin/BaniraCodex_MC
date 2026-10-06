@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.notification;
 
 import net.minecraft.core.RegistryAccess;
-import xin.vanilla.banira.common.data.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** Whole-entry notification pages, preflighted before any transport submission. */
+/**
+ * Whole-entry notification pages, preflighted before any transport submission.
+ */
 public final class NotificationBatch {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -19,12 +21,12 @@ public final class NotificationBatch {
     }
 
     public static List<NotificationBudget.Payload> prepare(Component prefix, List<Component> entries,
-                                                            Component separator, String language) {
+                                                           Component separator, String language) {
         return prepare(prefix, entries, separator, language, RegistryAccess.EMPTY);
     }
 
     public static List<NotificationBudget.Payload> prepare(Component prefix, List<Component> entries,
-                                                            Component separator, String language, RegistryAccess registries) {
+                                                           Component separator, String language, RegistryAccess registries) {
         Objects.requireNonNull(prefix, "prefix");
         Objects.requireNonNull(entries, "entries");
         Objects.requireNonNull(separator, "separator");

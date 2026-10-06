@@ -11,24 +11,19 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.gui.event.CharInputEvent;
-import xin.vanilla.banira.client.gui.event.KeyClickTracker;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
-import xin.vanilla.banira.client.gui.event.MouseClickTracker;
-import xin.vanilla.banira.client.gui.event.PressGestureState;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.api.client.input.BaniraInputState;
-import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -57,7 +52,9 @@ import java.util.function.Predicate;
 @Accessors(chain = true, fluent = true)
 public abstract class BaniraScreen extends Screen {
 
-    /** 统一描述界面关闭来源，子类可据此保留自己的未保存检查。 */
+    /**
+     * 统一描述界面关闭来源，子类可据此保留自己的未保存检查。
+     */
     public enum CloseReason {
         ESCAPE,
         INVENTORY_KEY,
@@ -90,7 +87,9 @@ public abstract class BaniraScreen extends Screen {
         return font;
     }
 
-    /** Development-only render scope; leaves cursor, events and deferred flushing to the caller. */
+    /**
+     * Development-only render scope; leaves cursor, events and deferred flushing to the caller.
+     */
     public final void runDevRenderAt(double x, double y, Runnable render) {
         InputStateManager.instance().runDevRenderAt(x, y, render);
     }
@@ -216,7 +215,9 @@ public abstract class BaniraScreen extends Screen {
      */
     private final List<Consumer<GuiGraphics>> deferredTooltipRenders = new ArrayList<>();
 
-    /** 根控件变化时才重建渲染快照，避免每帧复制列表。 */
+    /**
+     * 根控件变化时才重建渲染快照，避免每帧复制列表。
+     */
     private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
     private boolean renderWidgetSnapshotDirty = true;
     private boolean renderingWidgets;
@@ -415,7 +416,9 @@ public abstract class BaniraScreen extends Screen {
     protected void onMouseReleased(MouseReleasedHandleArgs eventArgs) {
     }
 
-    /** 将当前输入状态转换成 GLFW modifier 位。 */
+    /**
+     * 将当前输入状态转换成 GLFW modifier 位。
+     */
     protected int currentKeyboardModifiers() {
         int modifiers = 0;
         if (inputState.isShiftPressing()) modifiers |= GLFWKey.GLFW_MOD_SHIFT;

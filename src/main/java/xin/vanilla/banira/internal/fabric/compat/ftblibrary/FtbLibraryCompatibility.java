@@ -1,13 +1,8 @@
 package xin.vanilla.banira.internal.fabric.compat.ftblibrary;
 
-import dev.ftb.mods.ftblibrary.icon.Icon;
-import dev.ftb.mods.ftblibrary.sidebar.GridLocation;
-import dev.ftb.mods.ftblibrary.sidebar.RegisteredSidebarButton;
-import dev.ftb.mods.ftblibrary.sidebar.SidebarButtonData;
-import dev.ftb.mods.ftblibrary.sidebar.SidebarButtonManager;
-import dev.ftb.mods.ftblibrary.sidebar.SidebarGuiButton;
-import dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton;
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.ftb.mods.ftblibrary.icon.Icon;
+import dev.ftb.mods.ftblibrary.sidebar.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,24 +13,16 @@ import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryActionProvider;
-import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
-import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
-import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+import xin.vanilla.banira.client.gui.quickaction.*;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
-/** Fabric 1.21.1 FTB Library 侧边栏与 Banira 快捷入口之间的双向桥。 */
+/**
+ * Fabric 1.21.1 FTB Library 侧边栏与 Banira 快捷入口之间的双向桥。
+ */
 public final class FtbLibraryCompatibility implements ExternalInventoryButtonManager.FtbHostBridge {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String BUTTON_PATH_PREFIX = "external_inventory_buttons/";
@@ -96,7 +83,9 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
                 ExternalInventoryButtonManager.FTB_SOURCE_ID);
     }
 
-    /** 清除 FTB 留给侧边按钮的区域，使其他覆盖层重新使用完整高度。 */
+    /**
+     * 清除 FTB 留给侧边按钮的区域，使其他覆盖层重新使用完整高度。
+     */
     public static void clearReservedArea() {
         SidebarGroupGuiButton.lastDrawnArea = new Rect2i(0, 0, 0, 0);
     }

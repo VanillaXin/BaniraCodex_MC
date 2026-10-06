@@ -1,11 +1,17 @@
 package xin.vanilla.banira.client.notification;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.util.ClientThemeManager;
-/** Renders inside native maps that expose geometry without an information-slot API. */
+
+/**
+ * Renders inside native maps that expose geometry without an information-slot API.
+ */
 public final class NotificationMapLineRenderer {
-    private NotificationMapLineRenderer() {}
+    private NotificationMapLineRenderer() {
+    }
+
     public static void drawCentered(GuiGraphics graphics, Component text, float centerX, float y, float width,
                                     int screenWidth, int screenHeight) {
         if (text.getString().isEmpty()) return;
@@ -19,6 +25,8 @@ public final class NotificationMapLineRenderer {
             graphics.pose().translate(left, drawY, 0);
             graphics.pose().scale(scale, scale, 1);
             graphics.drawString(mc.font, text, 0, 0, ClientThemeManager.getEffectiveTheme().popupItemText(), false);
-        } finally { graphics.pose().popPose(); }
+        } finally {
+            graphics.pose().popPose();
+        }
     }
 }

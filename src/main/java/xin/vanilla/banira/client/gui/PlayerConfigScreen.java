@@ -12,25 +12,14 @@ import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
-import xin.vanilla.banira.client.gui.widget.BaseWidget;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
-import xin.vanilla.banira.client.gui.widget.ITextWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
-import xin.vanilla.banira.client.gui.widget.InputWidget;
-import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
-import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 子模组玩家配置页的公共外壳，统一搜索、树结构、滚动与底部操作区。
@@ -164,7 +153,7 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     }
 
     protected final CollapsiblePanelWidget addPlayerSection(CollapsiblePanelWidget parent, String id,
-                                                             Component title, @Nullable Component description) {
+                                                            Component title, @Nullable Component description) {
         CollapsiblePanelWidget section = parent.createChildPanel();
         section.id(id);
         section.text(Text.from(title));

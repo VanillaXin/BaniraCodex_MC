@@ -9,16 +9,12 @@ import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** 协调第三方背包按钮的原始、Banira 与 FTB Library 三种展示宿主。 */
+/**
+ * 协调第三方背包按钮的原始、Banira 与 FTB Library 三种展示宿主。
+ */
 public final class ExternalInventoryButtonManager {
     public static final String FTB_SOURCE_ID = "ftb_library";
     private static final String ADOPTED_PREFIX = "banira_codex:external/";
@@ -55,7 +51,9 @@ public final class ExternalInventoryButtonManager {
         refreshConfigured(Minecraft.getInstance().screen);
     }
 
-    /** 加载器可在 Minecraft.screen 赋值前传入即将打开的真实界面。 */
+    /**
+     * 加载器可在 Minecraft.screen 赋值前传入即将打开的真实界面。
+     */
     public void refreshForScreen(@Nullable Screen screen) {
         refreshConfigured(screen);
     }
@@ -199,7 +197,9 @@ public final class ExternalInventoryButtonManager {
         return value.trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
     }
 
-    /** Forge FTB 兼容层实现的宿主桥；默认实现使 FTB 保持完全可选。 */
+    /**
+     * Forge FTB 兼容层实现的宿主桥；默认实现使 FTB 保持完全可选。
+     */
     public interface FtbHostBridge {
         FtbHostBridge NONE = new FtbHostBridge() {
             @Override

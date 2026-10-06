@@ -5,7 +5,9 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 
-/** 决定已适配的第三方背包按钮由哪个界面统一展示。 */
+/**
+ * 决定已适配的第三方背包按钮由哪个界面统一展示。
+ */
 @Getter
 public enum EnumExternalInventoryButtonHost implements IEnumDescribable {
     BANIRA("由 Banira 统一显示", "Show in Banira"),

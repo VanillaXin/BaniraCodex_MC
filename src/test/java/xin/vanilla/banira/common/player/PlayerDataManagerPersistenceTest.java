@@ -12,9 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PlayerDataManagerPersistenceTest {
     @Rule

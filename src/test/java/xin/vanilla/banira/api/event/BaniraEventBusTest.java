@@ -6,12 +6,7 @@ import xin.vanilla.banira.common.util.BaniraEventBus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.Function;
@@ -62,7 +57,8 @@ public class BaniraEventBusTest {
                     start.countDown();
                     for (Future<?> future : futures) future.get(15, TimeUnit.SECONDS);
                     channel.dispatch.run();
-                    for (int i = 0; i < delivered.length(); i++) assertEquals(channel.name + " callback " + i, 1, delivered.get(i));
+                    for (int i = 0; i < delivered.length(); i++)
+                        assertEquals(channel.name + " callback " + i, 1, delivered.get(i));
                 } finally {
                     start.countDown();
                     for (Future<?> future : futures) {
@@ -104,7 +100,9 @@ public class BaniraEventBusTest {
     @Test
     public void failureDoesNotSkipLaterCallbacksAndUnregisterRemainsEffective() {
         AtomicInteger calls = new AtomicInteger();
-        BaniraEventRegistration failing = BaniraEventBus.Save.onChunkSave(() -> { throw new IllegalStateException("expected test failure"); });
+        BaniraEventRegistration failing = BaniraEventBus.Save.onChunkSave(() -> {
+            throw new IllegalStateException("expected test failure");
+        });
         BaniraEventRegistration succeeding = BaniraEventBus.Save.onChunkSave(calls::incrementAndGet);
         try {
             BaniraEventBus.dispatchChunkSave();
@@ -122,6 +120,7 @@ public class BaniraEventBusTest {
         final String name;
         final Function<Runnable, BaniraEventRegistration> register;
         final Runnable dispatch;
+
         Channel(String name, Function<Runnable, BaniraEventRegistration> register, Runnable dispatch) {
             this.name = name;
             this.register = register;

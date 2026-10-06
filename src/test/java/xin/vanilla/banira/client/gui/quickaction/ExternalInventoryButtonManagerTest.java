@@ -8,10 +8,7 @@ import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ExternalInventoryButtonManagerTest {
     private static final String PROVIDER_ID = "test_provider";
@@ -72,6 +69,7 @@ public class ExternalInventoryButtonManagerTest {
                 ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
         assertEquals(1, host.clearCount);
     }
+
     private static ExternalInventoryActionProvider provider(
             AtomicReference<java.util.List<ExternalInventoryAction>> actions
     ) {
@@ -92,7 +90,8 @@ public class ExternalInventoryButtonManagerTest {
 
     private static ExternalInventoryAction action() {
         return new ExternalInventoryAction(ACTION_ID,
-                BaniraComponent.get().literal("Test action"), QuickIcon.none(), context -> { });
+                BaniraComponent.get().literal("Test action"), QuickIcon.none(), context -> {
+        });
     }
 
     private static final class RecordingHost implements ExternalInventoryButtonManager.FtbHostBridge {

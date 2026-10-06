@@ -8,16 +8,14 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
-/** 验证配置值补全不会触发泛型重载导致的运行时类型转换。 */
+/**
+ * 验证配置值补全不会触发泛型重载导致的运行时类型转换。
+ */
 public class CommandUtilsConfigSuggestionTest {
     @Test
     public void numericValueSuggestionUsesObjectStringConversion() {

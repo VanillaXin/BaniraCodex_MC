@@ -16,13 +16,20 @@ import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 @Pseudo
 @Mixin(targets = "com.mamiyaotaru.voxelmap.Map", remap = false)
 public abstract class VoxelMapNotificationMixin {
-    @Shadow(remap = false) private int mapX;
-    @Shadow(remap = false) private int mapY;
-    @Shadow(remap = false) private int scHeight;
-    @Shadow(remap = false) private int scWidth;
-    @Shadow(remap = false) private boolean fullscreenMap;
-    @Shadow(remap = false) private MapSettingsManager options;
-    @Shadow(remap = false) private String error;
+    @Shadow(remap = false)
+    private int mapX;
+    @Shadow(remap = false)
+    private int mapY;
+    @Shadow(remap = false)
+    private int scHeight;
+    @Shadow(remap = false)
+    private int scWidth;
+    @Shadow(remap = false)
+    private boolean fullscreenMap;
+    @Shadow(remap = false)
+    private MapSettingsManager options;
+    @Shadow(remap = false)
+    private String error;
 
     @Inject(method = "drawMinimap", require = 0, remap = false,
             at = @At(value = "INVOKE", target = "Lcom/mamiyaotaru/voxelmap/Map;drawDirections(Lcom/mojang/blaze3d/matrix/MatrixStack;II)V", shift = At.Shift.AFTER, remap = false))

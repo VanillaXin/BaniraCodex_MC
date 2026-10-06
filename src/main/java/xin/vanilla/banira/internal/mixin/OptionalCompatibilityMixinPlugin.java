@@ -1,13 +1,13 @@
 package xin.vanilla.banira.internal.mixin;
 
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.net.URL;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Set;
 

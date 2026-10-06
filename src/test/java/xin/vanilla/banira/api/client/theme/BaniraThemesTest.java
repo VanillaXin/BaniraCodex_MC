@@ -6,9 +6,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BaniraThemesTest {
     private static final String MOD_ID = "theme_test";

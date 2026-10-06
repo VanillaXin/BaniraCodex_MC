@@ -1,16 +1,16 @@
 package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.util.ResourceLocation;
-import com.mojang.blaze3d.systems.RenderSystem;
-import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
-import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.util.*;
+import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.client.BaniraClientInputService;
 import xin.vanilla.banira.internal.config.ClientConfig;

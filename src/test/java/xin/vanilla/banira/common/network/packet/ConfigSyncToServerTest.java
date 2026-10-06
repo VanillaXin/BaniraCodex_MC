@@ -1,11 +1,7 @@
 package xin.vanilla.banira.common.network.packet;
 
 import org.junit.Test;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigListSpecHelper;
-import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ConfigValueStore;
+import xin.vanilla.banira.common.config.*;
 
 import java.util.*;
 
@@ -169,7 +165,10 @@ public class ConfigSyncToServerTest {
             values.put(path, value);
         }
 
-        @Override public void setAll(Map<String, Object> changes) { values.putAll(changes); }
+        @Override
+        public void setAll(Map<String, Object> changes) {
+            values.putAll(changes);
+        }
 
         @Override
         public Class<?> valueClass(String path) {

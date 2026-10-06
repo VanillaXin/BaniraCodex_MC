@@ -8,7 +8,9 @@ import java.util.Scanner;
 
 import static org.junit.Assert.assertTrue;
 
-/** Ensures optional integration mixins are never loaded without a guard. */
+/**
+ * Ensures optional integration mixins are never loaded without a guard.
+ */
 public final class OptionalCompatibilityMixinConfigTest {
     @Test
     public void guardsOptionalIntegrationMixins() throws IOException {

@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.util;
 
-import org.junit.After;
-import org.junit.Test;
 import net.minecraft.entity.player.ChatVisibility;
 import net.minecraft.util.HandSide;
+import org.junit.After;
+import org.junit.Test;
 
 import java.util.UUID;
 

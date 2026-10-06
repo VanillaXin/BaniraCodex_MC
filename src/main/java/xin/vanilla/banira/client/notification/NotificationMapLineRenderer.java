@@ -5,7 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 
-/** Legacy maps expose a text region rather than a registration API. */
+/**
+ * Legacy maps expose a text region rather than a registration API.
+ */
 public final class NotificationMapLineRenderer {
     private NotificationMapLineRenderer() {
     }

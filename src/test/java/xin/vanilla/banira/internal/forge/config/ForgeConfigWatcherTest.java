@@ -16,7 +16,8 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class ForgeConfigWatcherTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void managedWatcherDoesNotInvalidateTheCacheAgainOutsideTheFileMonitor() throws Exception {
@@ -25,7 +26,8 @@ public class ForgeConfigWatcherTest {
         ForgeConfigSpec spec = builder.build();
         Path path = temporary.newFile("managed.toml").toPath();
         Files.write(path, "value = 1\n".getBytes(StandardCharsets.UTF_8));
-        try (ForgeConfigFile file = new ForgeConfigFile(CommentedFileConfig.of(path), spec, candidate -> { })) {
+        try (ForgeConfigFile file = new ForgeConfigFile(CommentedFileConfig.of(path), spec, candidate -> {
+        })) {
             file.load();
             spec.setConfig(file);
             assertEquals(Integer.valueOf(1), value.get());
@@ -67,7 +69,8 @@ public class ForgeConfigWatcherTest {
         assertEquals(Integer.valueOf(1), value.get());
         Path path = temporary.newFile("foreign.toml").toPath();
         try (ForgeConfigFile file = new ForgeConfigFile(CommentedFileConfig.of(path),
-                new ForgeConfigSpec.Builder().build(), candidate -> { })) {
+                new ForgeConfigSpec.Builder().build(), candidate -> {
+        })) {
             reload(file, spec);
             assertNull(cached(value));
         }
@@ -80,7 +83,8 @@ public class ForgeConfigWatcherTest {
     }
 
     private static void reload(CommentedFileConfig file, ForgeConfigSpec spec) throws Exception {
-        ForgeConfigWatcherMixin watcher = new ForgeConfigWatcherMixin() { };
+        ForgeConfigWatcherMixin watcher = new ForgeConfigWatcherMixin() {
+        };
         Field field = ForgeConfigWatcherMixin.class.getDeclaredField("commentedFileConfig");
         field.setAccessible(true);
         field.set(watcher, file);

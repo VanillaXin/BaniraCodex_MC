@@ -9,13 +9,7 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.view.ConfigViewBinding;
 import xin.vanilla.banira.common.config.view.ConfigViewField;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 

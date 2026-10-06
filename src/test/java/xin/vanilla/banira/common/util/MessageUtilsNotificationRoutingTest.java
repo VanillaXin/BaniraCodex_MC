@@ -11,7 +11,6 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.util.text.ChatType;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.event.HoverEvent;
 import org.junit.After;
@@ -132,8 +131,9 @@ public class MessageUtilsNotificationRoutingTest {
             } else {
                 assertEquals(3, sink.nativePackets.size());
                 assertTrue(sink.customPackets.isEmpty());
-                for (int i = 0; i < 3; i++) assertEquals("prefix:" + entries.get(i).text(),
-                        sink.nativePackets.get(i).getMessage().getString());
+                for (int i = 0; i < 3; i++)
+                    assertEquals("prefix:" + entries.get(i).text(),
+                            sink.nativePackets.get(i).getMessage().getString());
             }
         }
     }

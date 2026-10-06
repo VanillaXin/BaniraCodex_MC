@@ -9,12 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-/** 验证通知等浅色浮层上的文字始终保有足够对比度。 */
+/**
+ * 验证通知等浅色浮层上的文字始终保有足够对比度。
+ */
 public class ColorUtilsContrastTest {
     private static final String LEGACY_CODES = "0123456789abcdef";
     private static final int[] LEGACY_COLORS = {

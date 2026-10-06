@@ -33,22 +33,38 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ConfigViewLifecycleTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void retainedCommonCategoryFollowsReloadReplacementAndUnload() throws Exception { verify(false); }
-    @Test public void retainedClientRootFollowsReloadReplacementAndUnload() throws Exception { verify(true); }
+    @Test
+    public void retainedCommonCategoryFollowsReloadReplacementAndUnload() throws Exception {
+        verify(false);
+    }
+
+    @Test
+    public void retainedClientRootFollowsReloadReplacementAndUnload() throws Exception {
+        verify(true);
+    }
 
     private void verify(boolean client) throws Exception {
         Class<?> type = client ? ClientConfig.class : CommonConfig.class;
         String key = client ? "notificationLogMaxEntries" : "help.helpInfoNumPerPage";
         AtomicReference<BaniraConfigHandle> current = new AtomicReference<>();
         BaniraPlatforms.install(new TestBaniraPlatform().configService(new BaniraConfigService() {
-            public <T> void register(Class<T> config, String modId) { throw new UnsupportedOperationException(); }
-            public <T> T view(Class<?> config, Class<T> view) { throw new UnsupportedOperationException(); }
-            public BaniraConfigHandle handle(Class<?> config) { return config == type ? current.get() : null; }
+            public <T> void register(Class<T> config, String modId) {
+                throw new UnsupportedOperationException();
+            }
+
+            public <T> T view(Class<?> config, Class<T> view) {
+                throw new UnsupportedOperationException();
+            }
+
+            public BaniraConfigHandle handle(Class<?> config) {
+                return config == type ? current.get() : null;
+            }
         }));
         try (Fixture first = new Fixture(type, temporary.newFile("first.toml").toPath());
              Fixture second = new Fixture(type, temporary.newFile("second.toml").toPath())) {
@@ -123,6 +139,8 @@ public class ConfigViewLifecycleTest {
             holder.acceptInitialExternalLoad();
         }
 
-        public void close() { file.close(); }
+        public void close() {
+            file.close();
+        }
     }
 }

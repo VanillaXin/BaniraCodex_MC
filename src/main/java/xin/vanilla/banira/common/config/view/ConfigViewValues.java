@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 final class ConfigViewValues {
-    private ConfigViewValues() { }
+    private ConfigViewValues() {
+    }
 
     static Class<?> box(Class<?> type) {
         if (type == int.class) return Integer.class;

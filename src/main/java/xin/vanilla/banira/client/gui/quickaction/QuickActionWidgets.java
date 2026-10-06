@@ -8,7 +8,9 @@ import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 
 import java.util.function.Consumer;
 
-/** 集中创建快捷入口编辑器中需要保持一致的紧凑控件。 */
+/**
+ * 集中创建快捷入口编辑器中需要保持一致的紧凑控件。
+ */
 final class QuickActionWidgets {
     private QuickActionWidgets() {
     }

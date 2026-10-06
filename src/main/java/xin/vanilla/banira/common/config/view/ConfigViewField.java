@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-/** Immutable metadata shared by a generated root and its category views. */
+/**
+ * Immutable metadata shared by a generated root and its category views.
+ */
 public final class ConfigViewField<T> {
     final String path;
     final Field declaration;
@@ -66,7 +68,7 @@ public final class ConfigViewField<T> {
     }
 
     public static <T> ConfigViewField<T> scalar(String path, Class<?> owner, String fieldName,
-                                               Class<T> valueType, Function<Object, T> parser) {
+                                                Class<T> valueType, Function<Object, T> parser) {
         return new ConfigViewField<>(path, owner, fieldName, valueType, null, parser);
     }
 

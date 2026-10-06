@@ -2,7 +2,9 @@ package xin.vanilla.banira.client.gui.tooltip;
 
 import java.util.Objects;
 
-/** Tooltip 在 GUI 坐标系中的浮点边界。 */
+/**
+ * Tooltip 在 GUI 坐标系中的浮点边界。
+ */
 public final class TooltipBounds {
     private final double x;
     private final double y;
@@ -34,7 +36,9 @@ public final class TooltipBounds {
         return new TooltipBounds(x + width / 2.0D, y + height / 2.0D, 0.0D, 0.0D);
     }
 
-    /** 保持完整宽度，并向最接近鼠标的水平边缘收缩。 */
+    /**
+     * 保持完整宽度，并向最接近鼠标的水平边缘收缩。
+     */
     public TooltipBounds collapseToVerticalEdge(double pointerY) {
         if (Double.isNaN(pointerY)) {
             return collapseToCenter();

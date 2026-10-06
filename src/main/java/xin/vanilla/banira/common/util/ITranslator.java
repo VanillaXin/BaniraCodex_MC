@@ -7,9 +7,6 @@ import xin.vanilla.banira.common.enums.EnumI18nType;
 import java.util.Collections;
 import java.util.List;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * 语言助手接口。
  * <p>

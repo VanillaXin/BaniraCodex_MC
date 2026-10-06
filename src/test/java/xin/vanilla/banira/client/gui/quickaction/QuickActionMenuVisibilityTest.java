@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;

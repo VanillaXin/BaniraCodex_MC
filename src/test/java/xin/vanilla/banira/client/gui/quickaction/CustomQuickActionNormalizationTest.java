@@ -23,8 +23,8 @@ public class CustomQuickActionNormalizationTest {
                 .setContextMenuItems(Arrays.asList(null,
                         new CustomQuickActionMenuItem().setLabel(" Menu ")
                                 .setExecutionMode(null).setSteps(Arrays.asList(
-                                new CustomQuickActionStep().setType(QuickActionStepType.COMMAND)
-                                        .setValue(" /spawn ")))));
+                                        new CustomQuickActionStep().setType(QuickActionStepType.COMMAND)
+                                                .setValue(" /spawn ")))));
 
         CustomQuickActionDefinition normalized = CustomQuickActionManager.normalize(source);
 

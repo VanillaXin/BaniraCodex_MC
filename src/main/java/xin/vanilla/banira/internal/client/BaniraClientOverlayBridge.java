@@ -50,7 +50,9 @@ public final class BaniraClientOverlayBridge {
         xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }
 
-    /** Fabric HUD 回调保留统一签名，具体事件分发由加载器入口完成。 */
+    /**
+     * Fabric HUD 回调保留统一签名，具体事件分发由加载器入口完成。
+     */
     public static void renderHud(@Nonnull GuiGraphics graphics, float partialTick) {
         boolean screenOpen = BaniraClientRuntime.currentScreen() != null;
         if (!screenOpen) renderHudOverlay(graphics);
@@ -65,7 +67,8 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static boolean handleMouseClicked(@Nullable Screen screen, double mouseX, double mouseY, int button) {
-        if (xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(mouseX, mouseY, button)) return true;
+        if (xin.vanilla.banira.client.notification.NotificationUnreadHud.handleClick(mouseX, mouseY, button))
+            return true;
         if (screen != null && QuickActionOverlay.get().handleMouseClicked(screen, mouseX, mouseY, button)) {
             return true;
         }

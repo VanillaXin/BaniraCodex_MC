@@ -29,16 +29,23 @@ public class ConfigEditorTextCapacityTest {
         highlight.setInt(input, initial.length());
         return input;
     }
-    private static String text(int size) { char[] chars = new char[size]; Arrays.fill(chars, 'x'); return new String(chars); }
 
-    @Test public void editingLongConfigurationDoesNotTruncateExistingContent() throws Exception {
+    private static String text(int size) {
+        char[] chars = new char[size];
+        Arrays.fill(chars, 'x');
+        return new String(chars);
+    }
+
+    @Test
+    public void editingLongConfigurationDoesNotTruncateExistingContent() throws Exception {
         String original = text(6000);
         InputWidget input = input(original);
         input.insertText("!");
         assertEquals(original + "!", input.value());
     }
 
-    @Test public void configurationTextRemainsBoundedAt8192Characters() throws Exception {
+    @Test
+    public void configurationTextRemainsBoundedAt8192Characters() throws Exception {
         InputWidget input = input(text(8191));
         input.insertText("ab");
         assertEquals(text(8191) + "a", input.value());

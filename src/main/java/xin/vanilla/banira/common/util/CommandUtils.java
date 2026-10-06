@@ -27,8 +27,8 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.enums.EnumMCColor;
-import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
+import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;

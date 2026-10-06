@@ -1,9 +1,9 @@
 package xin.vanilla.banira.common.config;
 
 import org.junit.Test;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigTooltipGuiKind;
 import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigTooltipGuiKind;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 

@@ -3,30 +3,28 @@ package xin.vanilla.banira.client.gui.quickaction;
 import com.google.gson.reflect.TypeToken;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.quickaction.*;
-import xin.vanilla.banira.client.util.TextureUtils;
-import xin.vanilla.banira.internal.client.GLFWKeyUtils;
-import xin.vanilla.banira.internal.client.InputStateManager;
-import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.internal.client.GLFWKeyUtils;
+import xin.vanilla.banira.internal.client.InputStateManager;
+import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
@@ -38,13 +36,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
-/** 加载、注册并执行玩家自定义快捷入口。 */
+/**
+ * 加载、注册并执行玩家自定义快捷入口。
+ */
 public final class CustomQuickActionManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final CustomQuickActionManager INSTANCE = new CustomQuickActionManager();
     private static final String FILE_NAME = "quick_actions.json";
     private static final String ENTRY_PREFIX = Banira.MOD_ID + ":custom/";
-    private static final Type DEFINITION_LIST = new TypeToken<List<CustomQuickActionDefinition>>() { }.getType();
+    private static final Type DEFINITION_LIST = new TypeToken<List<CustomQuickActionDefinition>>() {
+    }.getType();
 
     private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
     private final Set<String> registeredIds = new HashSet<>();
@@ -63,7 +64,9 @@ public final class CustomQuickActionManager {
         return Collections.unmodifiableList(new ArrayList<>(definitions));
     }
 
-    /** Fabric 在无界面状态下通过客户端 tick 检测组合键的按下沿。 */
+    /**
+     * Fabric 在无界面状态下通过客户端 tick 检测组合键的按下沿。
+     */
     public synchronized void tickKeyBindings() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen != null) {

@@ -56,7 +56,9 @@ public abstract class BaseWidget implements IWidget {
     @Setter
     protected List<ScreenCoordinate> hoveringCoordinates = new ArrayList<>();
 
-    /** 仅扩展悬浮反馈范围，不参与点击、拖动或滚轮命中。 */
+    /**
+     * 仅扩展悬浮反馈范围，不参与点击、拖动或滚轮命中。
+     */
     @Getter
     @Setter
     protected HoverInsets hoverInsets = HoverInsets.none();
@@ -228,7 +230,9 @@ public abstract class BaseWidget implements IWidget {
         boolean dispatch(IWidget child);
     }
 
-    /** 从顶层到下层分发事件，并返回第一个消费事件的子控件。 */
+    /**
+     * 从顶层到下层分发事件，并返回第一个消费事件的子控件。
+     */
     @Nullable
     protected IWidget findHandlingChild(ChildEventDispatcher dispatcher) {
         for (int i = children.size() - 1; i >= 0; i--) {

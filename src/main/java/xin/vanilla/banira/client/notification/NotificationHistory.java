@@ -7,7 +7,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/** Owns read state independently of overlay visibility and duplicate coalescing. */
+/**
+ * Owns read state independently of overlay visibility and duplicate coalescing.
+ */
 public final class NotificationHistory {
     private final List<NotificationLogEntry> entries = new ArrayList<>();
     private int unreadCount;

@@ -17,9 +17,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-/** Captures actual scanner and access behavior before replacing the handwritten views. */
+/**
+ * Captures actual scanner and access behavior before replacing the handwritten views.
+ */
 final class ConfigBaselineFixture implements ConfigValueStore {
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     final Map<String, Object> values = new TreeMap<>();
@@ -116,13 +119,20 @@ final class ConfigBaselineFixture implements ConfigValueStore {
     private List<?> sampleList(String path) {
         ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
         switch (descriptor.getValueType()) {
-            case STRING_LIST: return new ArrayList<>(Arrays.asList("tick, clazz -> tick >= 5", "minecraft:arrow"));
-            case INTEGER_LIST: return new ArrayList<>(Collections.singletonList(7));
-            case LONG_LIST: return new ArrayList<>(Collections.singletonList(7L));
-            case DOUBLE_LIST: return new ArrayList<>(Collections.singletonList(0.125D));
-            case BOOLEAN_LIST: return new ArrayList<>(Collections.singletonList(true));
-            case ENUM_LIST: return new ArrayList<>(Collections.singletonList(descriptor.getEnumClass().getEnumConstants()[0]));
-            default: throw new AssertionError(path);
+            case STRING_LIST:
+                return new ArrayList<>(Arrays.asList("tick, clazz -> tick >= 5", "minecraft:arrow"));
+            case INTEGER_LIST:
+                return new ArrayList<>(Collections.singletonList(7));
+            case LONG_LIST:
+                return new ArrayList<>(Collections.singletonList(7L));
+            case DOUBLE_LIST:
+                return new ArrayList<>(Collections.singletonList(0.125D));
+            case BOOLEAN_LIST:
+                return new ArrayList<>(Collections.singletonList(true));
+            case ENUM_LIST:
+                return new ArrayList<>(Collections.singletonList(descriptor.getEnumClass().getEnumConstants()[0]));
+            default:
+                throw new AssertionError(path);
         }
     }
 
@@ -143,21 +153,42 @@ final class ConfigBaselineFixture implements ConfigValueStore {
         return value instanceof List ? new ArrayList<>((List<?>) value) : value;
     }
 
-    @Override public Set<String> paths() { return values.keySet(); }
-    @Override public Object get(String path) { return values.get(path); }
-    @Override public void set(String path, Object value) {
+    @Override
+    public Set<String> paths() {
+        return values.keySet();
+    }
+
+    @Override
+    public Object get(String path) {
+        return values.get(path);
+    }
+
+    @Override
+    public void set(String path, Object value) {
         if (!values.containsKey(path)) throw new AssertionError("Unknown write: " + path);
         values.put(path, copy(value));
         written.add(path);
     }
-    @Override public Class<?> valueClass(String path) {
+
+    @Override
+    public Class<?> valueClass(String path) {
         Object value = defaults.get(path);
         if (value instanceof Enum) return ((Enum<?>) value).getDeclaringClass();
         return value instanceof List ? List.class : value.getClass();
     }
-    @Override public Object defaultValue(String path) { return copy(defaults.get(path)); }
-    @Override public boolean validate(String path, Object value) {
+
+    @Override
+    public Object defaultValue(String path) {
+        return copy(defaults.get(path));
+    }
+
+    @Override
+    public boolean validate(String path, Object value) {
         return validationStore.validate(path, value);
     }
-    @Override public void save() { saves++; }
+
+    @Override
+    public void save() {
+        saves++;
+    }
 }

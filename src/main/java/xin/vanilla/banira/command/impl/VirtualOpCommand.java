@@ -73,13 +73,13 @@ public final class VirtualOpCommand {
             Set<String> permissions = VirtualPermissionManager.getRawVirtualPermission(target);
             String permissionsStr = VirtualPermissionManager.buildRawPermissionsString(permissions);
             MessageUtils.sendNotification(target, BaniraComponent.get().trans(EnumI18nType.FORMAT,
-                    "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
+                            "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
                     NotificationTypeKeys.COMMAND_FEEDBACK);
             if (source.getEntity() != null && source.getEntity() instanceof ServerPlayer) {
                 ServerPlayer player = source.getPlayerOrException();
                 if (!target.getStringUUID().equalsIgnoreCase(player.getStringUUID())) {
                     MessageUtils.sendNotification(player, BaniraComponent.get().trans(EnumI18nType.FORMAT,
-                            "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
+                                    "player_virtual_op", target.getDisplayName().getString(), permissionsStr),
                             NotificationTypeKeys.COMMAND_FEEDBACK);
                 }
             } else {

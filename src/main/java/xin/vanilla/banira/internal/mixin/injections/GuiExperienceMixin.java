@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -38,7 +38,9 @@ public abstract class GuiExperienceMixin {
         }
     }
 
-    /** 只改变本次渲染读取值，避免把 HUD 兼容逻辑写回玩家状态。 */
+    /**
+     * 只改变本次渲染读取值，避免把 HUD 兼容逻辑写回玩家状态。
+     */
     @ModifyExpressionValue(
             method = "renderExperienceBar",
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;experienceLevel:I"),

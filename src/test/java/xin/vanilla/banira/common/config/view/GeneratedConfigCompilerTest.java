@@ -15,7 +15,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class GeneratedConfigCompilerTest {
     @Config(name = "compiler", generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
@@ -32,14 +33,21 @@ public class GeneratedConfigCompilerTest {
     }
 
     @Mixin(value = ConfigHolder.class, remap = false)
-    public abstract static class CompilerMixin { }
+    public abstract static class CompilerMixin {
+    }
 
     @Test
     public void generatedViewsCompileWithLombokAndMixinAndUseRealBinding() {
         AtomicReference<BaniraConfigHandle> current = new AtomicReference<>();
         BaniraPlatforms.install(new TestBaniraPlatform().configService(new BaniraConfigService() {
-            public <T> void register(Class<T> type, String modId) { throw new UnsupportedOperationException(); }
-            public <T> T view(Class<?> type, Class<T> view) { throw new UnsupportedOperationException(); }
+            public <T> void register(Class<T> type, String modId) {
+                throw new UnsupportedOperationException();
+            }
+
+            public <T> T view(Class<?> type, Class<T> view) {
+                throw new UnsupportedOperationException();
+            }
+
             public BaniraConfigHandle handle(Class<?> type) {
                 assertEquals(CompilerConfig.class, type);
                 return current.get();
@@ -53,7 +61,7 @@ public class GeneratedConfigCompilerTest {
         assertEquals(3, new CompilerConfig().getGroup().getCount());
 
         ConfigViewBindingTest.RecordingHandle handle = ConfigViewBindingTest.counter("group.count", 8)
-                .add("group.rules", List.class, Arrays.asList("x,y"), Arrays.asList("a,b","c"));
+                .add("group.rules", List.class, Arrays.asList("x,y"), Arrays.asList("a,b", "c"));
         current.set(handle);
         assertEquals(8, group.count());
         assertSame(group, group.count(9));

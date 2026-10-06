@@ -12,7 +12,8 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class GeneratedConfigSchemaTest {
     @Test
@@ -31,9 +32,17 @@ public class GeneratedConfigSchemaTest {
 
     static void bind(Class<?> configClass, ConfigHolder holder) {
         BaniraPlatforms.install(new TestBaniraPlatform().configService(new BaniraConfigService() {
-            public <T> void register(Class<T> type, String modId) { throw new UnsupportedOperationException(); }
-            public <T> T view(Class<?> type, Class<T> view) { throw new UnsupportedOperationException(); }
-            public BaniraConfigHandle handle(Class<?> type) { return type == configClass ? holder : null; }
+            public <T> void register(Class<T> type, String modId) {
+                throw new UnsupportedOperationException();
+            }
+
+            public <T> T view(Class<?> type, Class<T> view) {
+                throw new UnsupportedOperationException();
+            }
+
+            public BaniraConfigHandle handle(Class<?> type) {
+                return type == configClass ? holder : null;
+            }
         }));
     }
 

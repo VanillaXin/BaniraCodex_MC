@@ -24,7 +24,9 @@ final class QuickActionMenuEditSession {
         return layout.moveMenuItem(targetKey, direction);
     }
 
-    /** @return 切换后的隐藏状态 */
+    /**
+     * @return 切换后的隐藏状态
+     */
     boolean toggleVisibility(QuickActionLayout layout) {
         if (layout.hiddenMenuItemIds().remove(targetKey)) {
             return false;

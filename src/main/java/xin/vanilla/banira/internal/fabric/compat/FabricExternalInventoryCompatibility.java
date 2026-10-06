@@ -5,7 +5,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 
-/** 仅在对应模组存在时装载 Fabric 兼容类，保持全部集成为可选依赖。 */
+/**
+ * 仅在对应模组存在时装载 Fabric 兼容类，保持全部集成为可选依赖。
+ */
 public final class FabricExternalInventoryCompatibility {
     private static final Logger LOGGER = LogManager.getLogger();
 

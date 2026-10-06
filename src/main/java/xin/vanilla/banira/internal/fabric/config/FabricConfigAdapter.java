@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.fabric.config;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.lang.reflect.Field;

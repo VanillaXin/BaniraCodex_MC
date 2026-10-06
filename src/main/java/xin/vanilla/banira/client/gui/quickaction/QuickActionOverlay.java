@@ -16,7 +16,6 @@ import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -42,11 +41,7 @@ import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -836,7 +831,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, entryTheme, season);
     }
 
-    /** 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。 */
+    /**
+     * 使用当前菜单项所属模组的主题绘制被截断文本的完整内容。
+     */
     private void renderContextTooltip(PoseStack stack, Minecraft mc, int mouseX, int mouseY,
                                       BaniraColorConfig fallbackTheme) {
         if (contextTooltipLine == null || contextTooltipLine.isEmpty()) {
@@ -851,7 +848,9 @@ public final class QuickActionOverlay {
         TooltipWidget.drawPopupMessage(stack, args, tooltipTheme, season);
     }
 
-    /** 子 Mod 注册的快捷项使用自己的主题偏好。 */
+    /**
+     * 子 Mod 注册的快捷项使用自己的主题偏好。
+     */
     private BaniraColorConfig contextTheme(BaniraColorConfig fallback) {
         QuickActionEntry entry = contextThemeEntry();
         return entry != null ? BaniraColorConfig.forSeason(entrySeason(entry)) : fallback;
@@ -990,7 +989,9 @@ public final class QuickActionOverlay {
         return Minecraft.getInstance();
     }
 
-    /** 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。 */
+    /**
+     * 判断当前位置是否应由 Banira 优先处理悬浮与鼠标输入。
+     */
     public boolean capturesPointer(Screen screen, double mouseX, double mouseY) {
         if (!isSupportedInventoryScreen(screen)) {
             return false;
@@ -1256,7 +1257,9 @@ public final class QuickActionOverlay {
         invalidateContextMenuCache();
     }
 
-    /** 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。 */
+    /**
+     * 仅有自定义子项时，左键直接打开子菜单，不混入隐藏与编辑操作。
+     */
     void openCustomEntryMenu(String entryId, double mouseX, double mouseY, int itemOffset) {
         contextMenuKind = ContextMenuKind.TRAY;
         contextUserEntryIdForHide = null;
@@ -1307,7 +1310,9 @@ public final class QuickActionOverlay {
          */
         @Nullable
         final QuickActionEntry entryForSecondaryMenu;
-        /** 可右键隐藏的菜单行标识；结构行保持为空。 */
+        /**
+         * 可右键隐藏的菜单行标识；结构行保持为空。
+         */
         @Nullable
         final String hiddenMenuKey;
 
@@ -1781,40 +1786,40 @@ public final class QuickActionOverlay {
         Font font = mc.font;
         AbstractGuiUtils.pushScissor(x + 1, innerTop, Math.max(1, ctxInnerW - 1), Math.max(1, ctxInnerH));
         try {
-        for (int i = 0; i < rows.size(); i++) {
-            int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
-            int rh = MENU_ROW_H;
-            if (ry + rh < innerTop || ry > innerBottom) {
-                continue;
+            for (int i = 0; i < rows.size(); i++) {
+                int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
+                int rh = MENU_ROW_H;
+                if (ry + rh < innerTop || ry > innerBottom) {
+                    continue;
+                }
+                boolean hi = mouseX >= x && mouseX < x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP : 0)
+                        && mouseY >= ry && mouseY < ry + rh && mouseY >= innerTop && mouseY < innerBottom;
+                if (hi) {
+                    int rowTop = Math.max(ry, innerTop);
+                    int rowBot = Math.min(ry + rh, innerBottom);
+                    int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
+                    AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
+                            (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                }
+                CtxRow row = rows.get(i);
+                String full = row.text;
+                String shown = ellipsizeMiddle(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
+                if (row.menuIcon != null) {
+                    int iconX = x + MENU_TEXT_PAD_X;
+                    int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
+                    row.menuIcon.renderForMenu(graphics, mc, iconX, iconY, MENU_ICON_SIZE);
+                }
+                float textX = row.menuIcon != null
+                        ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
+                        : x + MENU_TEXT_PAD_X;
+                float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
+                graphics.drawString(font, shown, (int) textX, (int) textY, textColor, false);
+                if (hi && !shown.equals(full)) {
+                    contextTooltipLine = full;
+                    contextTooltipTheme = theme;
+                    contextTooltipSeason = contextThemeSeason();
+                }
             }
-            boolean hi = mouseX >= x && mouseX < x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP : 0)
-                    && mouseY >= ry && mouseY < ry + rh && mouseY >= innerTop && mouseY < innerBottom;
-            if (hi) {
-                int rowTop = Math.max(ry, innerTop);
-                int rowBot = Math.min(ry + rh, innerBottom);
-                int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
-                AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
-                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
-            }
-            CtxRow row = rows.get(i);
-            String full = row.text;
-            String shown = ellipsizeMiddle(font, full, contextMenuRowTextMaxWidth(ctxInnerW, row));
-            if (row.menuIcon != null) {
-                int iconX = x + MENU_TEXT_PAD_X;
-                int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                row.menuIcon.renderForMenu(graphics, mc, iconX, iconY, MENU_ICON_SIZE);
-            }
-            float textX = row.menuIcon != null
-                    ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
-                    : x + MENU_TEXT_PAD_X;
-            float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
-            graphics.drawString(font, shown, (int) textX, (int) textY, textColor, false);
-            if (hi && !shown.equals(full)) {
-                contextTooltipLine = full;
-                contextTooltipTheme = theme;
-                contextTooltipSeason = contextThemeSeason();
-            }
-        }
         } finally {
             AbstractGuiUtils.popScissor();
         }

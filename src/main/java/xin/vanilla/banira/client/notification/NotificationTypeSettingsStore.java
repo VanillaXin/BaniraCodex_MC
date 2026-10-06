@@ -7,10 +7,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
-import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -233,7 +233,9 @@ public final class NotificationTypeSettingsStore {
          * 收到网络通知时的客户端展示方式
          */
         private EnumNotificationTypeDisplayMode displayMode = EnumNotificationTypeDisplayMode.OVERLAY;
-        /** 玩家是否在通知类型管理界面明确保存过该展示方式。 */
+        /**
+         * 玩家是否在通知类型管理界面明确保存过该展示方式。
+         */
         private boolean displayModeCustomized;
     }
 }

@@ -16,22 +16,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
-import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
 public final class TextureUtils {
     private TextureUtils() {
     }
@@ -230,7 +227,9 @@ public final class TextureUtils {
          */
         public final int textColor;
 
-        /** 文字内容区中覆盖主要面积的背景代表色。 */
+        /**
+         * 文字内容区中覆盖主要面积的背景代表色。
+         */
         public final int[] textBackgroundColors;
 
         public NinePatchInfo(int texWidth, int texHeight,

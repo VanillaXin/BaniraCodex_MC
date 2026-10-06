@@ -11,7 +11,9 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/** Locks optional inventory integrations out of the production dependency graph. */
+/**
+ * Locks optional inventory integrations out of the production dependency graph.
+ */
 public final class OptionalIntegrationDependencyContractTest {
     private static final List<String> OPTIONAL_ARTIFACTS = Arrays.asList(
             "curse.maven:jei-238222",

@@ -1,5 +1,7 @@
 package xin.vanilla.banira.api.script;
+
 import lombok.Getter;
+
 @Getter
 public final class ScriptDiagnostic {
     private final String scriptId;
@@ -8,6 +10,7 @@ public final class ScriptDiagnostic {
     private final int column;
     private final String phase;
     private final String message;
+
     public ScriptDiagnostic(String scriptId, String fileName, int line, int column, String phase, String message) {
         this.scriptId = scriptId;
         this.fileName = fileName;

@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
 
-/** Frozen stored values shared by native and generic prepared comparisons. */
+/**
+ * Frozen stored values shared by native and generic prepared comparisons.
+ */
 public final class ConfigValueExpectation {
     private final String[] paths;
     private final Object[] values;
@@ -18,8 +20,13 @@ public final class ConfigValueExpectation {
         this.allowEnumNames = allowEnumNames;
     }
 
-    public int size() { return paths.length; }
-    public String path(int index) { return paths[index]; }
+    public int size() {
+        return paths.length;
+    }
+
+    public String path(int index) {
+        return paths[index];
+    }
 
     public boolean matches(int index, Object current) {
         Object expected = values[index];

@@ -9,7 +9,9 @@ import java.security.MessageDigest;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** 在游戏线程定期检查 Banira 自管配置，避免后台线程直接修改运行时状态。 */
+/**
+ * 在游戏线程定期检查 Banira 自管配置，避免后台线程直接修改运行时状态。
+ */
 public final class ManagedConfigFiles {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final long POLL_INTERVAL_NANOS = 500_000_000L;
@@ -26,7 +28,9 @@ public final class ManagedConfigFiles {
                 key, scope, reload, current == null ? fingerprint(key) : current.fingerprint));
     }
 
-    /** 自身写盘后更新基线，防止把保存动作误判为外部修改。 */
+    /**
+     * 自身写盘后更新基线，防止把保存动作误判为外部修改。
+     */
     public static void markWritten(Path path) {
         Entry entry = ENTRIES.get(normalize(path));
         if (entry != null) {

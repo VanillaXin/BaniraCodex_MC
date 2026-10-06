@@ -1,19 +1,17 @@
 package xin.vanilla.banira.internal.forge.client;
 
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
-import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
+import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;

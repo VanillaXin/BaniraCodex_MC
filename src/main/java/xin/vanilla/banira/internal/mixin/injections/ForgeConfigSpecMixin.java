@@ -6,14 +6,15 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.forge.config.ForgeConfigAdapter;
 import xin.vanilla.banira.internal.forge.config.ForgeConfigFile;
 
 @Mixin(value = ForgeConfigSpec.class, remap = false)
 public abstract class ForgeConfigSpecMixin {
-    @Shadow private com.electronwill.nightconfig.core.Config childConfig;
+    @Shadow
+    private com.electronwill.nightconfig.core.Config childConfig;
 
     @Inject(method = "setConfig", at = @At("HEAD"))
     private void banira$releaseReplacedFile(CommentedConfig next, CallbackInfo ci) {

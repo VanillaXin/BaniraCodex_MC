@@ -5,7 +5,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-/** Defaults are lazy and local to one unbound lifecycle, never a global mutable bean. */
+/**
+ * Defaults are lazy and local to one unbound lifecycle, never a global mutable bean.
+ */
 final class ConfigViewDefaults {
     private final Map<Class<?>, Object> owners = new IdentityHashMap<>();
 

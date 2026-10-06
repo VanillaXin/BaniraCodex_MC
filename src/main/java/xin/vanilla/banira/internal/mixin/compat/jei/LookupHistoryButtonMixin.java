@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 
-/** 捕获 JEI 查询历史按钮，并在被接管时屏蔽原生点击。 */
+/**
+ * 捕获 JEI 查询历史按钮，并在被接管时屏蔽原生点击。
+ */
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButton", remap = false)
 public abstract class LookupHistoryButtonMixin {

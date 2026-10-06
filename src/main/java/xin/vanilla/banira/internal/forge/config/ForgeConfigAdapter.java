@@ -1,16 +1,13 @@
 package xin.vanilla.banira.internal.forge.config;
 
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.api.BaniraConfigs;
-
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
@@ -125,8 +122,11 @@ public final class ForgeConfigAdapter {
             gate.close();
             ForgeConfigWatch.remove(path);
             if (registered) {
-                try { watcher.removeWatch(path); }
-                catch (RuntimeException cleanup) { error.addSuppressed(cleanup); }
+                try {
+                    watcher.removeWatch(path);
+                } catch (RuntimeException cleanup) {
+                    error.addSuppressed(cleanup);
+                }
             }
             throw error;
         }
@@ -155,7 +155,7 @@ public final class ForgeConfigAdapter {
     }
 
     public static void releaseReplacedFile(ForgeConfigSpec spec, com.electronwill.nightconfig.core.Config previous,
-                                          com.electronwill.nightconfig.core.CommentedConfig next) {
+                                           com.electronwill.nightconfig.core.CommentedConfig next) {
         if (previous == next || !(previous instanceof ForgeConfigFile file) || !file.belongsTo(spec)) return;
         for (Map.Entry<ModConfig, ForgeConfigValueStore> entry : BACKEND_BY_CONFIG.entrySet()) {
             ModConfig owner = entry.getKey();

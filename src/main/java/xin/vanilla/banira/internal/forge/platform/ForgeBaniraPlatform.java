@@ -174,7 +174,9 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
                 : ServerLogoService.INSTANCE;
     }
 
-    /** 客户端实现只在确认运行侧后解析，专用服务器不会链接这些类。 */
+    /**
+     * 客户端实现只在确认运行侧后解析，专用服务器不会链接这些类。
+     */
     private static final class ClientServices {
         private static BaniraInputService input() {
             return xin.vanilla.banira.internal.forge.client.ForgeKeyBindingService.INSTANCE;

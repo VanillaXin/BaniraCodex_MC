@@ -5,10 +5,7 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.BaniraServerService;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BaniraServerTest {
     @Test

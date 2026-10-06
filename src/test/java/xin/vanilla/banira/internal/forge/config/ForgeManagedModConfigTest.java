@@ -17,7 +17,8 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class ForgeManagedModConfigTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void unloadKeepsTheFileWritableForTheEventAndFinalSave() throws Exception {
@@ -27,7 +28,8 @@ public class ForgeManagedModConfigTest {
         ForgeManagedModConfig mod = newModConfig(spec);
         Path path = temporary.newFile(mod.getFileName()).toPath();
         Files.writeString(path, "value = 1\n", StandardCharsets.UTF_8);
-        try (ForgeConfigFile file = new ForgeConfigFile(CommentedFileConfig.of(path), spec, candidate -> { })) {
+        try (ForgeConfigFile file = new ForgeConfigFile(CommentedFileConfig.of(path), spec, candidate -> {
+        })) {
             file.load();
             java.lang.reflect.Method setData = ModConfig.class.getDeclaredMethod("setConfigData", com.electronwill.nightconfig.core.CommentedConfig.class);
             setData.setAccessible(true);
@@ -66,7 +68,8 @@ public class ForgeManagedModConfigTest {
                 java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
                 ForgeConfigReloadGate gate = new ForgeConfigReloadGate(() -> true, calls::incrementAndGet);
                 gates.put(mod, gate);
-                com.electronwill.nightconfig.core.file.FileWatcher.defaultInstance().addWatch(path, () -> { });
+                com.electronwill.nightconfig.core.file.FileWatcher.defaultInstance().addWatch(path, () -> {
+                });
                 ForgeConfigAdapter.releaseReplacedFile(spec, old, next);
                 gate.run();
                 assertEquals("The new reader must keep receiving events", 1, calls.get());
@@ -111,15 +114,23 @@ public class ForgeManagedModConfigTest {
         IModInfo info = (IModInfo) java.lang.reflect.Proxy.newProxyInstance(IModInfo.class.getClassLoader(),
                 new Class<?>[]{IModInfo.class}, (proxy, method, args) -> {
                     if (method.getName().equals("getModId") || method.getName().equals("getNamespace")) return id;
-                    if (method.getName().equals("getVersion")) return new org.apache.maven.artifact.versioning.DefaultArtifactVersion("1");
+                    if (method.getName().equals("getVersion"))
+                        return new org.apache.maven.artifact.versioning.DefaultArtifactVersion("1");
                     if (method.getName().equals("getConfig")) return java.lang.reflect.Proxy.newProxyInstance(
                             IModInfo.class.getClassLoader(), new Class<?>[]{net.minecraftforge.forgespi.language.IConfigurable.class},
                             (nested, accessor, keys) -> java.util.Optional.empty());
                     return null;
                 });
         ModContainer container = new ModContainer(info) {
-            @Override public boolean matches(Object mod) { return mod == this; }
-            @Override public Object getMod() { return this; }
+            @Override
+            public boolean matches(Object mod) {
+                return mod == this;
+            }
+
+            @Override
+            public Object getMod() {
+                return this;
+            }
         };
         return new ForgeManagedModConfig(ModConfig.Type.SERVER, spec, container, id + ".toml");
     }

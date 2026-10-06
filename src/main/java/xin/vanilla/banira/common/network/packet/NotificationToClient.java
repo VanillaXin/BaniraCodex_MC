@@ -10,9 +10,9 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.NetworkPacket;
+import xin.vanilla.banira.common.notification.NotificationBudget;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
-import xin.vanilla.banira.common.notification.NotificationBudget;
 
 @Getter
 @Accessors(fluent = true)

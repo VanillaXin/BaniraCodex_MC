@@ -35,7 +35,9 @@ public class MouseDragEvent {
         return of(mouseX, mouseY, button, dragX, dragY).withDragMetadata(drag);
     }
 
-    /** 写入与公共鼠标事件一致的拖拽语义。 */
+    /**
+     * 写入与公共鼠标事件一致的拖拽语义。
+     */
     public MouseDragEvent withDragMetadata(BaniraDragTracker.Result drag) {
         if (drag == null) {
             return this;

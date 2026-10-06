@@ -6,13 +6,17 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
 public class ConfigEditorStateTest {
 
-    @Test public void remoteSnapshotStaysInEditorAcrossRebuildAndCannotBeSavedLocally() {
+    @Test
+    public void remoteSnapshotStaysInEditorAcrossRebuildAndCannotBeSavedLocally() {
         ConfigHolder holder = holder();
         ConfigEditorState state = new ConfigEditorState(holder);
         TestWidget widget = new TestWidget("a");
@@ -37,7 +41,8 @@ public class ConfigEditorStateTest {
         try {
             state.applyModifiedToHolder();
             org.junit.Assert.fail("Remote editor must never save into local configuration");
-        } catch (IllegalStateException expected) { }
+        } catch (IllegalStateException expected) {
+        }
         assertEquals("a", holder.get("first"));
         ConfigEditorState reopened = new ConfigEditorState(holder);
         TestWidget local = new TestWidget(holder.get("first"));
@@ -150,7 +155,10 @@ public class ConfigEditorStateTest {
             values.put(path, value);
         }
 
-        @Override public void setAll(Map<String, Object> changes) { values.putAll(changes); }
+        @Override
+        public void setAll(Map<String, Object> changes) {
+            values.putAll(changes);
+        }
 
         @Override
         public Class<?> valueClass(String path) {

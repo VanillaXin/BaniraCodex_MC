@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.client.dev;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.Screenshot;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -22,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** Opt-in client-only check of the real popup renderer at deterministic animation times. */
+/**
+ * Opt-in client-only check of the real popup renderer at deterministic animation times.
+ */
 final class TooltipTransitionSmoke extends Screen {
     private static TooltipTransitionSmoke screen;
     private int stage;

@@ -15,6 +15,9 @@
   "icon": "logo.png",
   "environment": "*",
   "entrypoints": {
+    "journeymap": [
+      "xin.vanilla.banira.internal.fabric.compat.minimap.JourneyMapNotificationPlugin"
+    ],
     "client": [
       "xin.vanilla.banira.internal.fabric.client.FabricBaniraCodexClient"
     ],

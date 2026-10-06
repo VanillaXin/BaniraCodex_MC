@@ -103,7 +103,42 @@ repositories {
     // }
 }
 
+configurations.create('baniraMinimapLibraries') { transitive = false }
+dependencies { baniraMinimapLibraries "maven.modrinth:xaeros-minimap:PnU8xBsV" }
+def minimapLibraryDirectory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+minimapLibraryDirectory.mkdirs()
+afterEvaluate {
+    configurations.baniraMinimapLibraries.files.each { artifact ->
+        new java.util.zip.ZipFile(artifact).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (entry.name.startsWith('META-INF/jarjar/xaerolib-') && entry.name.endsWith('.jar')) {
+                    def output = new File(minimapLibraryDirectory, new File(entry.name).name)
+                    zip.getInputStream(entry).withCloseable { stream ->
+                        java.nio.file.Files.copy(stream, output.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                    }
+                }
+            }
+        }
+    }
+}
+repositories { flatDir { dirs minimapLibraryDirectory } }
+
 dependencies {
+    compileOnly fg.deobf("maven.modrinth:xaeros-minimap:PnU8xBsV")
+    compileOnly fg.deobf("banira.optional:xaerolib-forge-1.19.2:1.7.3")
+    compileOnly fg.deobf("maven.modrinth:journeymap:aSblGSXj")
+    testImplementation fg.deobf("maven.modrinth:journeymap:aSblGSXj")
+    if (project.hasProperty('minimapSmoke')) {
+        switch (project.property('minimapSmoke').toString()) {
+            case '':
+            case 'xaero':
+                runtimeOnly fg.deobf("maven.modrinth:xaeros-minimap:PnU8xBsV")
+                runtimeOnly fg.deobf("banira.optional:xaerolib-forge-1.19.2:1.7.3")
+                break
+            case 'journey': runtimeOnly fg.deobf("maven.modrinth:journeymap:aSblGSXj"); break
+            default: throw new GradleException('minimapSmoke: xaero or journey')
+        }
+    }
     runtimeOnly fg.deobf("maven.modrinth:spark:1dlOe6ez")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 

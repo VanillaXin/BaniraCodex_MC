@@ -105,9 +105,10 @@ repositories {
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
 dependencies { baniraMinimapLibraries "maven.modrinth:xaeros-minimap:PnU8xBsV" }
-def minimapLibraryDirectory = layout.buildDirectory.dir('minimap-compile-libraries').get().asFile
+// Generated compile inputs must survive clean.
+def minimapLibraryDirectory = file(".gradle/banira/minimap-compile-libraries/${loader_type}-${minecraft_version}")
 minimapLibraryDirectory.mkdirs()
-afterEvaluate {
+def prepareMinimapCompileLibraries = {
     configurations.baniraMinimapLibraries.files.each { artifact ->
         new java.util.zip.ZipFile(artifact).withCloseable { zip ->
             zip.entries().each { entry ->
@@ -119,6 +120,12 @@ afterEvaluate {
                 }
             }
         }
+    }
+}
+// Prepare before Forge's first dependency lookup, after deobf coordinates are registered.
+configurations.configureEach { configuration ->
+    if (configuration.name == '__obfuscated') {
+        configuration.incoming.beforeResolve { prepareMinimapCompileLibraries() }
     }
 }
 repositories { flatDir { dirs minimapLibraryDirectory } }

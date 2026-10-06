@@ -1,16 +1,14 @@
 package xin.vanilla.banira.client.gui.tooltip;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.*;
 import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.Optional;
 
-/** 在最终绘制前统一解析 Tooltip 的默认色、中性色替换和背景对比度。 */
+/**
+ * 在最终绘制前统一解析 Tooltip 的默认色、中性色替换和背景对比度。
+ */
 public final class TooltipTextColorResolver {
     private TooltipTextColorResolver() {
     }

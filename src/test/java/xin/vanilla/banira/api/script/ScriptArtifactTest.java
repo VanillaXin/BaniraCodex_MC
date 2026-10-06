@@ -1,18 +1,26 @@
 package xin.vanilla.banira.api.script;
 
-import org.junit.Test;
 import org.junit.Assume;
-import java.io.*;
-import java.net.*;
+import org.junit.Test;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.IntPredicate;
-import java.util.zip.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 import static org.junit.Assert.*;
 
-/** Runs the shipped compiler without Minecraft or the development dependency classpath. */
+/**
+ * Runs the shipped compiler without Minecraft or the development dependency classpath.
+ */
 public class ScriptArtifactTest {
-    @Test public void shippedJarCompilesAloneAndBesideAnOlderCompiler() throws Exception {
+    @Test
+    public void shippedJarCompilesAloneAndBesideAnOlderCompiler() throws Exception {
         String artifact = System.getProperty("banira.scriptArtifact");
         Assume.assumeNotNull(artifact);
         File jar = new File(artifact);
@@ -71,7 +79,9 @@ public class ScriptArtifactTest {
                 Class factory = loader.loadClass("xin.vanilla.banira.internal.shaded.commons.compiler.ICompilerFactory");
                 Object provider = ServiceLoader.load(factory, loader).iterator().next();
                 assertTrue(provider.getClass().getName().startsWith("xin.vanilla.banira.internal.shaded."));
-            } finally { ((AutoCloseable) session).close(); }
+            } finally {
+                ((AutoCloseable) session).close();
+            }
             Class<?> groupType = loader.loadClass("xin.vanilla.banira.api.script.ScriptSourceGroup");
             Class<?> factoryType = loader.loadClass("xin.vanilla.banira.api.script.ScriptFactory");
             BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
@@ -98,7 +108,9 @@ public class ScriptArtifactTest {
                 assertNotSame(first, second);
                 assertTrue(first.test(5));
                 assertFalse(second.test(4));
-            } finally { ((AutoCloseable) factorySession).close(); }
+            } finally {
+                ((AutoCloseable) factorySession).close();
+            }
         }
     }
 }

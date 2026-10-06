@@ -9,7 +9,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 
-/** 只屏蔽被接管的 BookmarkButton，不影响 JEI 其他图标按钮。 */
+/**
+ * 只屏蔽被接管的 BookmarkButton，不影响 JEI 其他图标按钮。
+ */
 @Pseudo
 @Mixin(targets = "mezz.jei.common.gui.elements.GuiIconToggleButton", remap = false)
 public abstract class GuiIconToggleButtonMixin {

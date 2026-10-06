@@ -1,6 +1,8 @@
 package xin.vanilla.banira.client.gui.tooltip;
 
-/** 计算水平居中于鼠标、优先显示在鼠标上方的 Tooltip 位置。 */
+/**
+ * 计算水平居中于鼠标、优先显示在鼠标上方的 Tooltip 位置。
+ */
 public final class TooltipPlacement {
 
     private static final double ABOVE_GAP = 5.0D;
@@ -31,7 +33,9 @@ public final class TooltipPlacement {
         return new TooltipBounds(x, clamp(y, marginTop, maxY), width, height);
     }
 
-    /** 计算与完整气泡位于鼠标同侧的一字气泡锚点。 */
+    /**
+     * 计算与完整气泡位于鼠标同侧的一字气泡锚点。
+     */
     public static TooltipBounds anchor(TooltipBounds target, double pointerX, double pointerY,
                                        double width, double height,
                                        double screenWidth, double screenHeight,

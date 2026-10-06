@@ -3,19 +3,16 @@ package xin.vanilla.banira.internal.config;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import xin.vanilla.banira.common.enums.EnumNotificationHudMode;
-import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.common.enums.EnumGuiNightMode;
-import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
-import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.enums.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 客户端专用配置（Forge CLIENT）
@@ -26,23 +23,23 @@ import xin.vanilla.banira.common.enums.EnumSeason;
         generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class ClientConfig implements ConfigData {
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "GUI 主题样式：AUTO 与界面「自动」一致时按日历季节；\n可固定为春夏秋冬之一以覆盖日历",
-            en_us = "GUI theme style: with screen season on Auto, uses calendar season unless you pick a fixed season here.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "GUI主题样式：\nAUTO与界面「自动」一致时按日历季节；\n可固定为春夏秋冬之一以覆盖日历",
+            en_us = "GUI Theme Style:\nWhen set to AUTO, matching the \"Auto\" option in the interface, the theme follows the calendar season.\nYou can also lock it to Spring, Summer, Autumn, or Winter to override the calendar.")
     @ConfigEntry.Access(enumParser = "valueOfDefault")
     private EnumSeason guiThemeStyle = EnumSeason.AUTO;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "GUI 夜间配色：关闭则始终用日间主题；总是夜晚；\n指定时间段按本机时钟；自动则在游戏内按世界昼夜，\n主菜单等无世界时用本机 6:00–18:00 为日间",
-            en_us = "GUI night palette: Off (day only); Always night; Scheduled uses local clock; Auto uses world day/night in-game, else local 6:00–18:00 as day.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "GUI夜间配色：\n关闭则始终使用日间主题；\n指定时间段则按本机时钟切换；\n自动则在游戏内按世界昼夜切换",
+            en_us = "GUI Night Color Scheme:\nWhen disabled, the daytime theme is always used.\nWhen a time range is specified, the theme switches based on the local system clock.\nWhen set to Auto, the theme switches according to the in-game world's day-night cycle.")
     @ConfigEntry.Access(enumParser = "valueOfDefault")
     private EnumGuiNightMode guiNightMode = EnumGuiNightMode.OFF;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式「指定时间段」开始时刻（从 0 点算起的分钟数，0–1439）\n与结束时刻共同定义夜间区间\n可跨午夜（例如 1320–360 表示 22:00–次日 6:00）",
-            en_us = "Scheduled night mode: start minute of day (0–1439). Together with end minute defines the night window; may wrap midnight (e.g. 1320–360 = 22:00–06:00).")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式开始时刻（从0点算起的分钟数，0~1439）\n与结束时刻共同定义夜间区间\n可跨午夜（如 1320~360 表示 22:00~次日6:00）",
+            en_us = "Night mode start time (minutes since midnight, 0–1439).\nTogether with the end time, defines the night-time range.\nThe range may cross midnight (e.g. 1320–360 represents 22:00–06:00 the next day).")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 1439)
     private int guiNightModeStartMinute = 22 * 60;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式「指定时间段」结束时刻（从 0 点算起的分钟数，0–1439）",
-            en_us = "Scheduled night mode: end minute of day (0–1439).")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "夜间模式结束时刻（从0点算起的分钟数，0~1439）",
+            en_us = "Night mode end time (minutes since midnight, 0–1439).")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 1439)
     private int guiNightModeEndMinute = 6 * 60;
 
@@ -52,39 +49,39 @@ public class ClientConfig implements ConfigData {
     private int notificationLogMaxEntries = 500;
 
     @ConfigEntry.Gui.CollapsibleObject
-    @ConfigEntry.Gui.Tooltip(zh_cn = "未读通知 HUD", en_us = "Unread notification HUD")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "未读通知HUD", en_us = "Unread notification HUD")
     private NotificationHudCategory notificationHud = new NotificationHudCategory();
 
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "通知显示区域", en_us = "Notification regions")
     private NotificationRegionsCategory notificationRegions = new NotificationRegionsCategory();
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：相同类型且内容一致时，\n在此时间窗（毫秒）内到达的重复项合并为一条并显示次数\n0 关闭合并",
-            en_us = "HUD notifications: duplicate same type + content within this window (ms) merge into one with a count; 0 disables.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "出现相同类型且内容一致的通知时，\n在此时间窗（毫秒）内到达的重复项合并为一条并显示次数\n0则关闭合并",
+            en_us = "When notifications of the same type and identical content occur,\nduplicates received within this time window (in milliseconds) are merged into a single notification with a count displayed.\nSet to 0 to disable merging.")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 60000)
     private int notificationMergeWindowMs = 2500;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：屏幕上未结束的通知达到此数量后，\n新通知按条递增延后显示（毫秒间隔见下一项）；至少为 1",
-            en_us = "HUD notifications: when this many are still active, newer ones are staggered (see next option). Minimum 1.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "屏幕上未结束的通知达到此数量后，\n新通知按条递增延后显示（毫秒间隔见下一项）",
+            en_us = "When the number of active notifications on screen reaches this limit,\nnew notifications are shown with an increasing per-notification delay\n(the delay interval in milliseconds is configured in the next option).")
     @ConfigEntry.BoundedDiscrete(min = 1, max = 50)
     private int notificationBurstThreshold = 5;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：超过阈值后，\n每条多出的通知在「上一条」基础上再延后显示\n0 关闭延后",
-            en_us = "HUD notifications: extra delay per notification beyond the burst threshold; 0 disables staggering.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "超过阈值后，\n每条多出的通知在「上一条」基础上再延后显示\n0则关闭延后",
+            en_us = "After the threshold is exceeded,\neach additional notification is displayed later than the previous one by this amount.\nSet to 0 to disable the delay.")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 10000)
     private int notificationBurstStaggerMs = 400;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "浮层通知：单条通知因突发队列产生的最大额外延后（毫秒），避免过久不显示；\n0 表示不限制",
-            en_us = "HUD notifications: cap on extra delay from burst queue; 0 means no cap.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "单条通知因突发队列产生的最大额外延后（毫秒），避免过久不显示；\n0则不限制",
+            en_us = "Maximum extra delay (in milliseconds) for a single notification caused by a burst queue,\npreventing it from being held back for too long.\nSet to 0 for no limit.")
     @ConfigEntry.BoundedDiscrete(min = 0, max = 120000)
     private int notificationBurstMaxExtraDelayMs = 20000;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "在 Banira GUI 中使用本 Mod 绘制的自定义鼠标指针；\n关闭则使用系统默认光标",
-            en_us = "Use this mod's drawn cursor in Banira GUIs; when off, the system default cursor is shown.")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "在香草志GUI中使用模组自绘的鼠标指针",
+            en_us = "Use the mod's custom-drawn mouse cursor in the Banira GUI.")
     private boolean useCustomCursor = true;
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "控制已适配模组的背包界面按钮由谁统一显示\n选择 FTB Library 但未安装时自动改由 Banira 显示",
-            en_us = "Choose who displays supported third-party inventory buttons\nFalls back to Banira when FTB Library is selected but unavailable")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "控制已适配模组的背包界面按钮显示模式",
+            en_us = "Controls the display mode of buttons added to supported mod inventory screens.")
     private EnumExternalInventoryButtonHost externalInventoryButtonHost =
             EnumExternalInventoryButtonHost.BANIRA;
 
@@ -99,14 +96,14 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class NotificationHudCategory {
-        @ConfigEntry.Gui.Tooltip(zh_cn = "显示位置\n可使用已安装小地图的信息区，不可用时显示独立图标", en_us = "Display location\nUse an installed minimap's information area; otherwise show the independent icon")
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示位置\n自动跟随可用的小地图信息区\n指定地图未安装或未显示时，使用独立HUD", en_us = "Display location\nFollow an available minimap information area\nUse the standalone HUD when the selected map is unavailable or hidden")
         private EnumNotificationHudHost host = EnumNotificationHudHost.AUTO;
 
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式", en_us = "Display mode")
         private EnumNotificationHudMode mode = EnumNotificationHudMode.ALWAYS;
 
         @ConfigEntry.Gui.KeyChords
-        @ConfigEntry.Gui.Tooltip(zh_cn = "显示按键\n点击录入组合键，不拦截原版按键行为", en_us = "Display shortcuts\nCapture a key combination; vanilla key actions remain available")
+        @ConfigEntry.Gui.Tooltip(zh_cn = "显示按键\n点击录入组合键", en_us = "Display shortcuts\nCapture a key combination; vanilla key actions remain available")
         private List<String> keys = new ArrayList<>(Arrays.asList("Tab"));
 
         @ConfigEntry.BoundedDouble(min = 0, max = 1, decimalPlaces = 3)

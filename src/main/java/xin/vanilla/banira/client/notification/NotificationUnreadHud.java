@@ -1,29 +1,26 @@
 package xin.vanilla.banira.client.notification;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.components.EditBox;
-import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.ClientThemeManager;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.NotificationLogScreen;
+import xin.vanilla.banira.client.util.*;
+import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
+import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
-import xin.vanilla.banira.common.util.ColorUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import net.minecraft.resources.ResourceLocation;
-import com.mojang.blaze3d.systems.RenderSystem;
-import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
 public final class NotificationUnreadHud {
     private static final ResourceLocation ICON = new ResourceLocation("banira_codex", "textures/gui/unread_message.png");

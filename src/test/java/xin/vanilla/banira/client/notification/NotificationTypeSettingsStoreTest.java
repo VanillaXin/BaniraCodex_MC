@@ -3,11 +3,11 @@ package xin.vanilla.banira.client.notification;
 import org.junit.Test;
 import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-/** 验证通知类型配置草稿不会直接修改存储对象。 */
+/**
+ * 验证通知类型配置草稿不会直接修改存储对象。
+ */
 public class NotificationTypeSettingsStoreTest {
     @Test
     public void copyOfCreatesIndependentSettings() {

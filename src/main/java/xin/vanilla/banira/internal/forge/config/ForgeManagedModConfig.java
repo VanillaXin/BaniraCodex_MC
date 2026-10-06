@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 
-/** Uses Forge's public file handler boundary, including when FML is outside the transforming loader. */
+/**
+ * Uses Forge's public file handler boundary, including when FML is outside the transforming loader.
+ */
 final class ForgeManagedModConfig extends ModConfig {
     private final ConfigFileTypeHandler handler;
 
@@ -56,7 +58,8 @@ final class ForgeManagedModConfig extends ModConfig {
 
             @Override
             public void unload(Path basePath, ModConfig config) {
-                if (config.getConfigData() instanceof ForgeConfigFile file) ForgeConfigAdapter.releaseFile(config, file);
+                if (config.getConfigData() instanceof ForgeConfigFile file)
+                    ForgeConfigAdapter.releaseFile(config, file);
             }
         };
     }
@@ -82,7 +85,9 @@ final class ForgeManagedModConfig extends ModConfig {
     }
 
     @Override
-    public ConfigFileTypeHandler getHandler() { return handler; }
+    public ConfigFileTypeHandler getHandler() {
+        return handler;
+    }
 
     @Override
     public void acceptSyncedConfig(byte[] bytes) {

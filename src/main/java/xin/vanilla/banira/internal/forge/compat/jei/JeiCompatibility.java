@@ -21,7 +21,9 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Forge 1.16.5 JEI 书签按钮兼容桥。 */
+/**
+ * Forge 1.16.5 JEI 书签按钮兼容桥。
+ */
 public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =

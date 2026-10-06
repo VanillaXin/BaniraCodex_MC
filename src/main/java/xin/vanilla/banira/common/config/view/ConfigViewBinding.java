@@ -3,14 +3,12 @@ package xin.vanilla.banira.common.config.view;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.platform.BaniraConfigHandle;
 
-import java.util.IdentityHashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
-/** Resolves a live handle per operation while retained category objects remain reusable. */
+/**
+ * Resolves a live handle per operation while retained category objects remain reusable.
+ */
 public final class ConfigViewBinding {
     private final Class<?> configClass;
     private final Supplier<? extends BaniraConfigHandle> handles;

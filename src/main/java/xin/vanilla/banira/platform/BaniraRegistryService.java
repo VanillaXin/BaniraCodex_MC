@@ -22,9 +22,13 @@ public interface BaniraRegistryService {
     @Nullable
     String itemKey(@Nullable Object item);
 
-    /** Native identifier when available, otherwise the existing string key. */
+    /**
+     * Native identifier when available, otherwise the existing string key.
+     */
     @Nullable
-    default Object itemKeyObject(@Nullable Object item) { return itemKey(item); }
+    default Object itemKeyObject(@Nullable Object item) {
+        return itemKey(item);
+    }
 
     @Nullable
     Object item(@Nullable String id);
@@ -38,9 +42,13 @@ public interface BaniraRegistryService {
     @Nullable
     String entityTypeKey(@Nullable Object entityType);
 
-    /** Native identifier when available, otherwise the existing string key. */
+    /**
+     * Native identifier when available, otherwise the existing string key.
+     */
     @Nullable
-    default Object entityTypeKeyObject(@Nullable Object entityType) { return entityTypeKey(entityType); }
+    default Object entityTypeKeyObject(@Nullable Object entityType) {
+        return entityTypeKey(entityType);
+    }
 
     @Nullable
     Object entityType(@Nullable String id);

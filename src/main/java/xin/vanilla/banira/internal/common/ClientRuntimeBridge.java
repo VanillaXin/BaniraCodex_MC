@@ -97,27 +97,50 @@ public final class ClientRuntimeBridge {
     @Nullable
     private static Method cachedMethod(String methodName) {
         switch (methodName) {
-            case "localPlayer": return localPlayerMethod;
-            case "player": return playerMethod;
-            case "levelPlayer": return levelPlayerMethod;
-            case "onlinePlayerName": return onlinePlayerNameMethod;
-            case "onlinePlayerSkin": return onlinePlayerSkinMethod;
-            case "resourceManager": return resourceManagerMethod;
-            case "selectedLanguageCode": return selectedLanguageCodeMethod;
-            default: return null;
+            case "localPlayer":
+                return localPlayerMethod;
+            case "player":
+                return playerMethod;
+            case "levelPlayer":
+                return levelPlayerMethod;
+            case "onlinePlayerName":
+                return onlinePlayerNameMethod;
+            case "onlinePlayerSkin":
+                return onlinePlayerSkinMethod;
+            case "resourceManager":
+                return resourceManagerMethod;
+            case "selectedLanguageCode":
+                return selectedLanguageCodeMethod;
+            default:
+                return null;
         }
     }
 
     private static void cacheMethod(String methodName, Method method) {
         switch (methodName) {
-            case "localPlayer": localPlayerMethod = method; break;
-            case "player": playerMethod = method; break;
-            case "levelPlayer": levelPlayerMethod = method; break;
-            case "onlinePlayerName": onlinePlayerNameMethod = method; break;
-            case "onlinePlayerSkin": onlinePlayerSkinMethod = method; break;
-            case "resourceManager": resourceManagerMethod = method; break;
-            case "selectedLanguageCode": selectedLanguageCodeMethod = method; break;
-            default: break;
+            case "localPlayer":
+                localPlayerMethod = method;
+                break;
+            case "player":
+                playerMethod = method;
+                break;
+            case "levelPlayer":
+                levelPlayerMethod = method;
+                break;
+            case "onlinePlayerName":
+                onlinePlayerNameMethod = method;
+                break;
+            case "onlinePlayerSkin":
+                onlinePlayerSkinMethod = method;
+                break;
+            case "resourceManager":
+                resourceManagerMethod = method;
+                break;
+            case "selectedLanguageCode":
+                selectedLanguageCodeMethod = method;
+                break;
+            default:
+                break;
         }
     }
 }

@@ -6,7 +6,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.BaniraLang;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -20,7 +19,6 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
@@ -1191,7 +1189,9 @@ public class InputFormScreen extends BaniraScreen {
         }
     }
 
-    /** 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。 */
+    /**
+     * 表单使用稳定的字段顺序切换焦点，并把目标输入框滚入可视区域。
+     */
     private boolean focusAdjacentInput(int direction) {
         List<InputWidget> candidates = new ArrayList<>();
         List<Integer> fieldIndexes = new ArrayList<>();

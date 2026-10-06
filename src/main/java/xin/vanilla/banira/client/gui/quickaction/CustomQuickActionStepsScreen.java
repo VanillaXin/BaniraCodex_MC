@@ -2,22 +2,16 @@ package xin.vanilla.banira.client.gui.quickaction;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.Registry;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.quickaction.CustomQuickActionDefinition;
-import xin.vanilla.banira.api.quickaction.CustomQuickActionMenuItem;
-import xin.vanilla.banira.api.quickaction.CustomQuickActionStep;
-import xin.vanilla.banira.api.quickaction.QuickActionExecutionMode;
-import xin.vanilla.banira.api.quickaction.QuickActionIconType;
-import xin.vanilla.banira.api.quickaction.QuickActionStepCondition;
-import xin.vanilla.banira.api.quickaction.QuickActionStepType;
+import xin.vanilla.banira.api.quickaction.*;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -27,19 +21,16 @@ import xin.vanilla.banira.client.gui.EffectSelectScreen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
-import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
-import xin.vanilla.banira.client.gui.widget.DropdownOption;
-import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
-import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.util.ColorUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/** 编辑主入口或右键菜单项的动作步骤。 */
+/**
+ * 编辑主入口或右键菜单项的动作步骤。
+ */
 final class CustomQuickActionStepsScreen extends BaniraScreen {
     private static final int MARGIN = 16;
     private static final int PAD = 8;
@@ -277,12 +268,14 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         }
     }
 
-    /** 先在当前页面选择图标来源，再进入对应选择器。 */
+    /**
+     * 先在当前页面选择图标来源，再进入对应选择器。
+     */
     private void selectIcon() {
         popupOption.clear();
         for (QuickActionIconType type : QuickActionIconType.values()) {
             popupOption.addOptionWithId(type.name(), CustomQuickActionEditor.t(
-                    "custom_quick_action_icon_" + type.name().toLowerCase()), null,
+                            "custom_quick_action_icon_" + type.name().toLowerCase()), null,
                     event -> openIconPicker(type));
         }
         popupOption.showAt(inputState.mouseX(), inputState.mouseY(), "quick_action_icon_type");

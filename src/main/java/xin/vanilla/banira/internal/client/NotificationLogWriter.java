@@ -11,7 +11,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/** Coalesces pending snapshots; all writes and exit flushing share one IO lock. */
+/**
+ * Coalesces pending snapshots; all writes and exit flushing share one IO lock.
+ */
 final class NotificationLogWriter implements AutoCloseable {
     private final Path path;
     private final Object ioLock = new Object();
@@ -35,7 +37,9 @@ final class NotificationLogWriter implements AutoCloseable {
         if (!scheduled) {
             scheduled = true;
             executor.schedule(() -> {
-                synchronized (this) { scheduled = false; }
+                synchronized (this) {
+                    scheduled = false;
+                }
                 try {
                     flush();
                 } catch (IOException error) {
@@ -66,7 +70,9 @@ final class NotificationLogWriter implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        synchronized (this) { closed = true; }
+        synchronized (this) {
+            closed = true;
+        }
         executor.shutdown();
         flush();
     }

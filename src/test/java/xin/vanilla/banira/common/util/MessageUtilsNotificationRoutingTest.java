@@ -5,19 +5,19 @@ import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.network.protocol.game.ClientboundChatPacket;
 import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundChatPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -161,8 +161,9 @@ public class MessageUtilsNotificationRoutingTest {
             } else {
                 assertEquals(3, sink.nativePackets.size());
                 assertTrue(sink.customPackets.isEmpty());
-                for (int i = 0; i < 3; i++) assertEquals("prefix:" + entries.get(i).text(),
-                        sink.nativePackets.get(i).getMessage().getString());
+                for (int i = 0; i < 3; i++)
+                    assertEquals("prefix:" + entries.get(i).text(),
+                            sink.nativePackets.get(i).getMessage().getString());
             }
         }
     }
@@ -232,7 +233,8 @@ public class MessageUtilsNotificationRoutingTest {
         assertEquals(2, sink.nativePackets.size());
         assertEquals(ChatType.SYSTEM, sink.nativePackets.get(0).getType());
         assertEquals(ChatType.GAME_INFO, sink.nativePackets.get(1).getType());
-        for (ClientboundChatPacket packet : sink.nativePackets) assertEquals(source.text(), packet.getMessage().getString());
+        for (ClientboundChatPacket packet : sink.nativePackets)
+            assertEquals(source.text(), packet.getMessage().getString());
     }
 
     private void selectRoute(int route) {

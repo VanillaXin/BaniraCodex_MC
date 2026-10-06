@@ -1,7 +1,5 @@
 package xin.vanilla.banira.common.util;
 
-import xin.vanilla.banira.platform.BaniraPlatforms;
-
 import com.mojang.brigadier.StringReader;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;

@@ -2,18 +2,27 @@ package xin.vanilla.banira.api.script;
 
 import org.junit.Test;
 
-import java.util.*;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.net.URL;
-import java.net.URLClassLoader;
 
 import static org.junit.Assert.*;
 
 public class ScriptSessionTest {
-    public interface Rule { boolean test(int value); }
-    public interface Cost { double calculate(double distance); }
+    public interface Rule {
+        boolean test(int value);
+    }
+
+    public interface Cost {
+        double calculate(double distance);
+    }
+
     public static final AtomicInteger CONSTRUCTIONS = new AtomicInteger();
 
     private ScriptSession<Rule> session(Executor owner) {
@@ -30,14 +39,19 @@ public class ScriptSessionTest {
         return session.prepare(Collections.singletonList(source)).get(10, TimeUnit.SECONDS);
     }
 
-    @Test public void compilesBooleanAndNumericContractsWithoutPublishingAutomatically() throws Exception {
+    @Test
+    public void compilesBooleanAndNumericContractsWithoutPublishingAutomatically() throws Exception {
         try (ScriptSession<Rule> rules = session(Runnable::run)) {
             PreparedScripts<Rule> candidate = prepare(rules, source("A", "return value >= 5;"));
             assertTrue(rules.active().isEmpty());
             assertTrue(rules.publish(candidate));
             assertTrue(rules.active().get("A").test(5));
             assertFalse(rules.active().get("A").test(4));
-            try { rules.active().clear(); fail("Mutable active map"); } catch (UnsupportedOperationException expected) { }
+            try {
+                rules.active().clear();
+                fail("Mutable active map");
+            } catch (UnsupportedOperationException expected) {
+            }
         }
         try (ScriptSession<Cost> costs = BaniraScripts.open("cost", Cost.class, "1", ScriptLimits.defaults(), Runnable::run)) {
             ScriptSource source = new ScriptSource("cost", "xin.vanilla.banira.generated.Cost", "cost.java",
@@ -48,12 +62,15 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void reportsSourceLocationAndKeepsActiveOnCompileError() throws Exception {
+    @Test
+    public void reportsSourceLocationAndKeepsActiveOnCompileError() throws Exception {
         try (ScriptSession<Rule> session = session(Runnable::run)) {
             assertTrue(session.publish(prepare(session, source("A", "return true;"))));
             Rule old = session.active().get("A");
-            try { prepare(session, source("A", "return \"05\" == 5;")); fail("Illegal comparison compiled"); }
-            catch (ExecutionException expected) {
+            try {
+                prepare(session, source("A", "return \"05\" == 5;"));
+                fail("Illegal comparison compiled");
+            } catch (ExecutionException expected) {
                 ScriptCompilationException error = (ScriptCompilationException) expected.getCause();
                 ScriptDiagnostic diagnostic = error.getDiagnostics().get(0);
                 assertEquals("A", diagnostic.getScriptId());
@@ -66,7 +83,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void sameSnapshotReusesInstancesButSessionsNeverShareThem() throws Exception {
+    @Test
+    public void sameSnapshotReusesInstancesButSessionsNeverShareThem() throws Exception {
         try (ScriptSession<Rule> first = session(Runnable::run); ScriptSession<Rule> second = session(Runnable::run)) {
             ScriptSource source = source("A", "return value / 2 == 2;");
             first.publish(prepare(first, source));
@@ -79,7 +97,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void rejectsStaleAndForeignCandidatesAndClosesActive() throws Exception {
+    @Test
+    public void rejectsStaleAndForeignCandidatesAndClosesActive() throws Exception {
         try (ScriptSession<Rule> session = session(Runnable::run); ScriptSession<Rule> other = session(Runnable::run)) {
             PreparedScripts<Rule> first = prepare(session, source("A", "return true;"));
             PreparedScripts<Rule> second = prepare(session, source("A", "return false;"));
@@ -93,7 +112,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void ownerThreadConstructsAndInputListIsSnapshotted() throws Exception {
+    @Test
+    public void ownerThreadConstructsAndInputListIsSnapshotted() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<Rule> session = session(owner::add)) {
             CONSTRUCTIONS.set(0);
@@ -114,7 +134,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void closeDiscardsQueuedConstructionAndCompletesFuture() throws Exception {
+    @Test
+    public void closeDiscardsQueuedConstructionAndCompletesFuture() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         ScriptSession<Rule> session = session(owner::add);
         CompletableFuture<PreparedScripts<Rule>> result = session.prepare(Collections.singletonList(source("A", "return true;")));
@@ -126,7 +147,8 @@ public class ScriptSessionTest {
         assertTrue(session.active().isEmpty());
     }
 
-    @Test public void newerRequestInvalidatesAlreadyQueuedOwnerCallback() throws Exception {
+    @Test
+    public void newerRequestInvalidatesAlreadyQueuedOwnerCallback() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<Rule> session = session(owner::add)) {
             CompletableFuture<PreparedScripts<Rule>> first = session.prepare(Collections.singletonList(source("A", "return true;")));
@@ -143,7 +165,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void rejectsLimitsDuplicatesAndInvalidEntrypoints() throws Exception {
+    @Test
+    public void rejectsLimitsDuplicatesAndInvalidEntrypoints() throws Exception {
         try (ScriptSession<Rule> session = BaniraScripts.open("test", Rule.class, "1",
                 new ScriptLimits(400, 600, 2), Runnable::run)) {
             ScriptSource valid = source("A", "return true;");
@@ -159,7 +182,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void reportsWrongContractAndConstructorFailure() throws Exception {
+    @Test
+    public void reportsWrongContractAndConstructorFailure() throws Exception {
         try (ScriptSession<Rule> session = session(Runnable::run)) {
             for (String code : Arrays.asList(
                     "package xin.vanilla.banira.generated; public class Wrong {}",
@@ -176,21 +200,28 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void rejectedOwnerExecutorCompletesFuture() throws Exception {
-        try (ScriptSession<Rule> session = session(task -> { throw new RejectedExecutionException("stopped"); })) {
+    @Test
+    public void rejectedOwnerExecutorCompletesFuture() throws Exception {
+        try (ScriptSession<Rule> session = session(task -> {
+            throw new RejectedExecutionException("stopped");
+        })) {
             assertFailure(session.prepare(Collections.singletonList(source("A", "return true;"))));
         }
     }
 
-    @Test public void supersededFutureCallbacksRunOutsideSessionLock() throws Exception {
+    @Test
+    public void supersededFutureCallbacksRunOutsideSessionLock() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<Rule> session = session(owner::add)) {
             CompletableFuture<PreparedScripts<Rule>> first = session.prepare(Collections.singletonList(source("A", "return true;")));
             assertNotNull(owner.poll(10, TimeUnit.SECONDS));
             AtomicReference<Exception> blocked = new AtomicReference<>();
             first.whenComplete((value, error) -> {
-                try { CompletableFuture.runAsync(session::close).get(1, TimeUnit.SECONDS); }
-                catch (Exception failure) { blocked.set(failure); }
+                try {
+                    CompletableFuture.runAsync(session::close).get(1, TimeUnit.SECONDS);
+                } catch (Exception failure) {
+                    blocked.set(failure);
+                }
             });
             session.prepare(Collections.singletonList(source("B", "return false;")));
             assertNull("Future callback was invoked with session lock held", blocked.get());
@@ -198,7 +229,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void identicalPendingSnapshotKeepsItsQueuedConstructor() throws Exception {
+    @Test
+    public void identicalPendingSnapshotKeepsItsQueuedConstructor() throws Exception {
         BlockingQueue<Runnable> owner = new LinkedBlockingQueue<>();
         try (ScriptSession<Rule> session = session(owner::add)) {
             ScriptSource source = source("A", "return true;");
@@ -213,7 +245,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void sameNamedContractsFromDifferentLoadersStayIsolated() throws Exception {
         URL location = ScriptContractFixture.class.getProtectionDomain().getCodeSource().getLocation();
         try (URLClassLoader firstLoader = new URLClassLoader(new URL[]{location}, null);
@@ -239,7 +272,8 @@ public class ScriptSessionTest {
         }
     }
 
-    @Test public void defaultLimitsAndUtf8SizeAreEnforced() throws Exception {
+    @Test
+    public void defaultLimitsAndUtf8SizeAreEnforced() throws Exception {
         ScriptLimits limits = ScriptLimits.defaults();
         assertEquals(256 * 1024, limits.getSourceBytes());
         assertEquals(8 * 1024 * 1024, limits.getBatchBytes());
@@ -254,9 +288,17 @@ public class ScriptSessionTest {
         }
     }
 
-    private static String repeat(char c, int count) { char[] chars = new char[count]; Arrays.fill(chars, c); return new String(chars); }
+    private static String repeat(char c, int count) {
+        char[] chars = new char[count];
+        Arrays.fill(chars, c);
+        return new String(chars);
+    }
+
     private static void assertFailure(CompletableFuture<?> future) throws Exception {
-        try { future.get(10, TimeUnit.SECONDS); fail("Expected failure"); }
-        catch (ExecutionException | CancellationException expected) { }
+        try {
+            future.get(10, TimeUnit.SECONDS);
+            fail("Expected failure");
+        } catch (ExecutionException | CancellationException expected) {
+        }
     }
 }

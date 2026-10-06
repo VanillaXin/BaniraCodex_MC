@@ -18,7 +18,8 @@ public final class NotificationHudState {
             previousDown = false;
         }
         previousMode = mode;
-        if (active && acceptInput && down && !previousDown && mode == EnumNotificationHudMode.TOGGLE) toggled = !toggled;
+        if (active && acceptInput && down && !previousDown && mode == EnumNotificationHudMode.TOGGLE)
+            toggled = !toggled;
         shown = active && (mode == EnumNotificationHudMode.ALWAYS
                 || mode == EnumNotificationHudMode.HOLD && down
                 || mode == EnumNotificationHudMode.TOGGLE && toggled);

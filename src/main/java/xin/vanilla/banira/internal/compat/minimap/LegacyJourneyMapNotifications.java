@@ -3,15 +3,18 @@ package xin.vanilla.banira.internal.compat.minimap;
 import journeymap.client.ui.UIManager;
 import journeymap.client.ui.minimap.MiniMap;
 import journeymap.client.ui.theme.ThemeLabelSource;
+import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.internal.config.ClientConfig;
-import net.minecraft.client.Minecraft;
+
 import java.util.Arrays;
 
-/** Loaded only by JourneyMap's guarded, client-side layout mixin. */
+/**
+ * Loaded only by JourneyMap's guarded, client-side layout mixin.
+ */
 public final class LegacyJourneyMapNotifications {
     private static final ThemeLabelSource.InfoSlot SLOT = ThemeLabelSource.create(
             "banira_codex", "banira_unread", 0, 1, () -> canUseMap()

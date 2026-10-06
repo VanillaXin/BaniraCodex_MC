@@ -18,7 +18,8 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class ForgeWatcherCacheTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void watcherReloadInvalidatesCachesOnlyWhileHoldingTheFileMonitor() throws Exception {
@@ -60,7 +61,8 @@ public class ForgeWatcherCacheTest {
             ForgeConfigReloadGate registered = gates.get(mod);
             assertNotNull(registered);
             // Drive the registered gate directly so OS event timing cannot decide this regression.
-            watcher.addWatch(path, () -> { });
+            watcher.addWatch(path, () -> {
+            });
             ForgeConfigWatch.remove(path);
             Files.writeString(path, "value = 2\n", StandardCharsets.UTF_8);
             assertFalse(Thread.holdsLock(file));
@@ -96,15 +98,23 @@ public class ForgeWatcherCacheTest {
         IModInfo info = (IModInfo) java.lang.reflect.Proxy.newProxyInstance(IModInfo.class.getClassLoader(),
                 new Class<?>[]{IModInfo.class}, (proxy, method, args) -> {
                     if (method.getName().equals("getModId") || method.getName().equals("getNamespace")) return id;
-                    if (method.getName().equals("getVersion")) return new org.apache.maven.artifact.versioning.DefaultArtifactVersion("1");
+                    if (method.getName().equals("getVersion"))
+                        return new org.apache.maven.artifact.versioning.DefaultArtifactVersion("1");
                     if (method.getName().equals("getConfig")) return java.lang.reflect.Proxy.newProxyInstance(
                             IModInfo.class.getClassLoader(), new Class<?>[]{net.minecraftforge.forgespi.language.IConfigurable.class},
                             (nested, accessor, keys) -> java.util.Optional.empty());
                     return null;
                 });
         ModContainer container = new ModContainer(info) {
-            @Override public boolean matches(Object mod) { return mod == this; }
-            @Override public Object getMod() { return this; }
+            @Override
+            public boolean matches(Object mod) {
+                return mod == this;
+            }
+
+            @Override
+            public Object getMod() {
+                return this;
+            }
         };
         return new ForgeManagedModConfig(ModConfig.Type.SERVER, spec, container, id + ".toml");
     }

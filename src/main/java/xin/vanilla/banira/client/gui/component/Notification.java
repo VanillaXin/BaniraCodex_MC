@@ -309,12 +309,15 @@ public class Notification extends NotificationData {
     }
 
     public void renderInRegion(PoseStack stack,
-            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
-            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
+                               xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
+                               xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
         if (finished || nowMs < scheduledTime()) return;
         if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
         double progress = calculateProgress(nowMs);
-        if (progress < 0) { finished = true; return; }
+        if (progress < 0) {
+            finished = true;
+            return;
+        }
         renderClip = region;
         ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
         applyAnimationEffect(coordinate, progress);

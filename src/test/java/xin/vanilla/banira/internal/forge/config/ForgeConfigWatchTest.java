@@ -12,10 +12,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ForgeConfigWatchTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
     public void coalescedWritesAndAtomicReplacementReachRegisteredFile() throws Exception {
@@ -26,8 +28,11 @@ public class ForgeConfigWatchTest {
         try (ForgeConfigWatch watch = new ForgeConfigWatch(failure::set)) {
             watch.watch(target, () -> {
                 try {
-                    if (expected.get().equals(new String(Files.readAllBytes(target), StandardCharsets.UTF_8))) received.get().countDown();
-                } catch (Exception error) { failure.set(error); }
+                    if (expected.get().equals(new String(Files.readAllBytes(target), StandardCharsets.UTF_8)))
+                        received.get().countDown();
+                } catch (Exception error) {
+                    failure.set(error);
+                }
             });
             for (int n = 0; n <= 20; n++) Files.write(target, ("value = " + n).getBytes(StandardCharsets.UTF_8));
             assertTrue(received.get().await(5, TimeUnit.SECONDS));

@@ -6,7 +6,9 @@ import lombok.experimental.Accessors;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 可持久化的玩家自定义快捷入口定义。 */
+/**
+ * 可持久化的玩家自定义快捷入口定义。
+ */
 @Data
 @Accessors(chain = true)
 public class CustomQuickActionDefinition {

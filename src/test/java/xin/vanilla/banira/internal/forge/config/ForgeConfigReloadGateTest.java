@@ -2,11 +2,7 @@ package xin.vanilla.banira.internal.forge.config;
 
 import org.junit.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,7 +52,10 @@ public class ForgeConfigReloadGateTest {
             Future<?> running = workers.submit(gate);
             await(entered);
             CountDownLatch closing = new CountDownLatch(1);
-            Future<?> closed = workers.submit(() -> { closing.countDown(); gate.close(); });
+            Future<?> closed = workers.submit(() -> {
+                closing.countDown();
+                gate.close();
+            });
             await(closing);
             assertFalse(closed.isDone());
             release.countDown();
@@ -72,8 +71,9 @@ public class ForgeConfigReloadGateTest {
     }
 
     private static void await(CountDownLatch latch) {
-        try { assertTrue(latch.await(5, TimeUnit.SECONDS)); }
-        catch (InterruptedException interrupted) {
+        try {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new AssertionError(interrupted);
         }

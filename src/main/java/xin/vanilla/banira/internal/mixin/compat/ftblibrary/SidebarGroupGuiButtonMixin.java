@@ -8,7 +8,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.internal.forge.compat.ftblibrary.FtbLibraryCompatibility;
 
-/** 在 Banira 接管模式下关闭 FTB 原侧边栏的绘制与点击。 */
+/**
+ * 在 Banira 接管模式下关闭 FTB 原侧边栏的绘制与点击。
+ */
 @Pseudo
 @Mixin(targets = "dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton", remap = false)
 public abstract class SidebarGroupGuiButtonMixin {

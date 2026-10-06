@@ -125,7 +125,9 @@ public class EffectSelectScreen extends BaniraScreen {
         private Consumer<MobEffectInstance> onDataReceived1;
         private Function<MobEffectInstance, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
-        /** 多步骤流程可关闭自动返回，由回调决定下一界面。 */
+        /**
+         * 多步骤流程可关闭自动返回，由回调决定下一界面。
+         */
         private boolean closeAfterSubmit = true;
         @Nullable
         private EnumSeason season;

@@ -34,6 +34,7 @@ public class VirtualOpCommandContractTest {
                         "CHILD:REWARD.ADD.ITEM,other:reward.add.coin").orElse(null));
         assertFalse(VirtualOpCommand.resolvePermissionKeys("child:missing").isPresent());
     }
+
     private static BaniraVirtualPermission permission(String modId, String id, int sort) {
         return new BaniraVirtualPermission() {
             @Override

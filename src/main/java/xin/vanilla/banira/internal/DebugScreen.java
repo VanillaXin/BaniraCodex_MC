@@ -1,7 +1,5 @@
 package xin.vanilla.banira.internal;
 
-import xin.vanilla.banira.api.BaniraConfigs;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -13,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -65,7 +64,9 @@ public class DebugScreen extends BaniraScreen {
         super(BaniraComponent.get().empty().toVanilla());
     }
 
-    /** Exercises the same visible widget tree with bounded state changes for the dev-only smoke. */
+    /**
+     * Exercises the same visible widget tree with bounded state changes for the dev-only smoke.
+     */
     public void runNetworkSmokeCycle(int cycle) {
         EnumSeason[] seasons = EnumSeason.values();
         season(seasons[cycle % seasons.length]);

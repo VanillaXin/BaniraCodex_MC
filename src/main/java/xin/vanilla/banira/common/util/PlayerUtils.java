@@ -15,8 +15,8 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
-import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
+import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 import xin.vanilla.banira.internal.mixin.accessors.ServerPlayerAccessor;
 
 import javax.annotation.Nonnull;

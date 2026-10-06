@@ -11,6 +11,11 @@
     "injections.ConnectionReadOrderMixin"
   ],
   "client": [
+    "compat.minimap.XaeroInfoDisplaysMixin",
+    "compat.minimap.FtbChunksNotificationMixin",
+    "compat.minimap.JourneyMapInfoSlotsMixin",
+    "compat.minimap.VoxelMapNotificationMixin",
+    "compat.minimap.MapAtlasesNotificationMixin",
     "compat.ftblibrary.SidebarButtonMixin",
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "injections.CreativeScreenQuickActionMixin",

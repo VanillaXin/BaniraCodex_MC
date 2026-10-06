@@ -152,7 +152,7 @@ public final class JeiCompatibility {
             List<ExternalInventoryAction> actions = new ArrayList<>();
             actions.add(new ExternalInventoryAction(
                     "bookmarks",
-                    BaniraComponent.get().literal(I18n.get("jei.tooltip.bookmarks")),
+                    BaniraComponent.get().literal(I18n.get("word.banira_codex.jei_bookmarks")),
                     QuickIcon.custom((stack, minecraft, x, y, size) ->
                             drawBookmarkIcon(stack, x, y, size)),
                     context -> activateBookmark()));

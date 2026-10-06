@@ -1,4 +1,5 @@
 {
+  "word.banira_codex.jei_bookmarks": "JEI书签",
   "word.banira_codex.enum_notification_hud_host_auto": "自动跟随小地图",
   "word.banira_codex.enum_notification_hud_host_standalone": "独立 HUD",
   "word.banira_codex.enum_notification_hud_host_xaero": "Xaero 小地图",
@@ -7,7 +8,8 @@
   "word.banira_codex.enum_notification_hud_host_voxelmap": "VoxelMap",
   "word.banira_codex.enum_notification_hud_host_map_atlases": "Map Atlases",
   "minimap.infoslot.banira_unread": "未读通知",
-  "word.banira_codex.notification_minimap_label": "通知",
+  "format.banira_codex.notification_minimap_unread": "%s条未读通知",
+  "word.banira_codex.notification_minimap_empty": "暂无未读通知",
   "word.banira_codex.notification_hud_position": "未读通知位置",
   "word.banira_codex.notification_hud_settings": "设置",
   "word.banira_codex.notification_hud_drag": "拖动调整位置",

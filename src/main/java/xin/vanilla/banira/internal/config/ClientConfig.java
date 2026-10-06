@@ -102,7 +102,7 @@ public class ClientConfig implements ConfigData {
         private xin.vanilla.banira.common.enums.EnumNotificationHudHost host = xin.vanilla.banira.common.enums.EnumNotificationHudHost.AUTO;
 
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示模式", en_us = "Display mode")
-        private EnumNotificationHudMode mode = EnumNotificationHudMode.TOGGLE;
+        private EnumNotificationHudMode mode = EnumNotificationHudMode.ALWAYS;
 
         @ConfigEntry.Gui.KeyChords
         @ConfigEntry.Gui.Tooltip(zh_cn = "显示按键\n点击录入组合键，不拦截原版按键行为", en_us = "Display shortcuts\nCapture a key combination; vanilla key actions remain available")

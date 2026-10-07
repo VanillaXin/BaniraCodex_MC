@@ -172,9 +172,14 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     protected final void addPlayerRow(CollapsiblePanelWidget parent, BaseWidget row, double height,
                                       @Nullable ITextWidget label, @Nullable TooltipWidget tooltip,
                                       Component title, @Nullable Component description, String... aliases) {
-        if (tooltip != null) {
-            tooltip.hoverInsets(HoverInsets.fromSpacing(0, ROW_GAP));
+        if (tooltip == null) {
+            BaseWidget target = label instanceof BaseWidget ? (BaseWidget) label : row;
+            tooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, target.width(), target.height()));
+            target.addChild(tooltip);
         }
+        tooltip.text(playerTooltipText(title, description));
+        tooltip.popupAtScreenCoords(true);
+        tooltip.hoverInsets(HoverInsets.fromSpacing(0, ROW_GAP));
         parent.addChildAuto(row, height);
         entries.add(new SearchEntry(row, parent == rootPanel ? null : parent, label, tooltip,
                 title, description, aliases));
@@ -219,8 +224,8 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
                 entry.label.text(ConfigSearchText.highlight(entry.title.toString(), query,
                         getEffectiveTheme().textPrimary(), getEffectiveTheme().searchMatchText()));
             }
-            if (entry.tooltip != null && entry.description != null) {
-                entry.tooltip.text(ConfigSearchText.highlight(entry.description.toString(), query,
+            if (entry.tooltip != null) {
+                entry.tooltip.text(ConfigSearchText.highlight(playerTooltipText(entry.title, entry.description), query,
                         getEffectiveTheme().textPrimary(), getEffectiveTheme().searchMatchText()));
             }
         }
@@ -319,6 +324,23 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
             rootPanel.bounds(new ScreenCoordinate(contentLeft, listTop - (int) scrollOffset,
                     contentWidth, contentHeight));
         }
+    }
+
+    private static String playerTooltipText(Component title, @Nullable Component description) {
+        String heading = title.toString();
+        String details = description == null ? "" : description.toString();
+        return details.isEmpty() || details.equals(heading) ? heading : heading + "\n" + details;
+    }
+
+    @Override
+    public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
+        for (IWidget current = widget; current != null; current = current.parent()) {
+            if (current == rootPanel) {
+                return mouseX >= contentLeft && mouseX < contentLeft + contentWidth
+                        && mouseY >= listTop && mouseY < listTop + listAreaHeight;
+            }
+        }
+        return super.shouldWidgetReceiveTooltip(widget, mouseX, mouseY);
     }
 
     @Override

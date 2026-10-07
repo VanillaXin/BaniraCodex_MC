@@ -164,6 +164,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
         double mx = screen.inputState().mouseX();
         double my = screen.inputState().mouseY();
+        if (!screen.shouldWidgetReceiveTooltip(this, mx, my)) {
+            return;
+        }
         if (!isMouseInside(mx, my)) {
             return;
         }

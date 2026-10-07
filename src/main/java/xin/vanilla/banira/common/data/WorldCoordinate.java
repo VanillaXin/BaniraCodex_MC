@@ -91,15 +91,15 @@ public class WorldCoordinate implements Serializable, Cloneable {
     // region Getters
 
     public int xInt() {
-        return (int) x;
+        return (int) Math.floor(x);
     }
 
     public int yInt() {
-        return (int) y;
+        return (int) Math.floor(y);
     }
 
     public int zInt() {
-        return (int) z;
+        return (int) Math.floor(z);
     }
 
     public int chunkX() {
@@ -203,9 +203,9 @@ public class WorldCoordinate implements Serializable, Cloneable {
      * @param range 范围
      */
     public boolean equalsInRange(WorldCoordinate coordinate, int range) {
-        return Math.abs((int) coordinate.x - (int) x) <= range
-                && Math.abs((int) coordinate.y - (int) y) <= range
-                && Math.abs((int) coordinate.z - (int) z) <= range
+        return Math.abs((long) coordinate.xInt() - xInt()) <= range
+                && Math.abs((long) coordinate.yInt() - yInt()) <= range
+                && Math.abs((long) coordinate.zInt() - zInt()) <= range
                 && coordinate.dimension.equals(dimension);
     }
 

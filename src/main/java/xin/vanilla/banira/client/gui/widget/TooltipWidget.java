@@ -116,7 +116,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
             renderChildren(stack, partialTicks);
             return;
         }
-        if (mouseInside) {
+        if (mouseInside && screen.shouldWidgetReceiveTooltip(this,
+                screen.inputState().mouseX(), screen.inputState().mouseY())) {
             int mouseX = (int) screen.inputState().mouseX();
             int mouseY = (int) screen.inputState().mouseY();
             if (popupAtScreenCoords) {

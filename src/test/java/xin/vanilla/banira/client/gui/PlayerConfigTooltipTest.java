@@ -7,6 +7,7 @@ import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.platform.BaniraPlatforms;
@@ -47,6 +48,19 @@ public class PlayerConfigTooltipTest {
         TooltipWidget tooltip = screen.explicit;
         assertEquals("Complete title\nAdditional details", tooltip.text().content());
         assertNull("An explicit tooltip must not be duplicated", childTooltip(label));
+    }
+
+    @Test
+    public void scrolledPanelCannotStealSearchOrFooterClicksButVisibleRowsCan() {
+        for (int i = 0; i < 12; i++) screen.row("Explanation " + i, null, false);
+        assertTrue("The scrolled panel geometrically covers the search", screen.panel.isMouseInside(25, 25));
+        assertFalse(screen.shouldWidgetReceiveClick(screen.panel, MouseEvent.of(25, 25, 0)));
+        assertFalse(screen.shouldWidgetReceiveClick(screen.panel, MouseEvent.of(25, 150, 0)));
+        assertTrue(screen.shouldWidgetReceiveClick(screen.panel, MouseEvent.of(25, 45, 0)));
+        assertFalse(screen.shouldWidgetReceiveClick(screen.panel, MouseEvent.of(180, 50, 0)));
+        assertFalse(screen.shouldWidgetReceiveClick(screen.panel, MouseEvent.of(25, 140, 0)));
+        assertTrue("Search and popup widgets keep their own input route",
+                screen.shouldWidgetReceiveClick(new LabelWidget(screen), MouseEvent.of(25, 25, 0)));
     }
 
     @Test

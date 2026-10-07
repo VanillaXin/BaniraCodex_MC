@@ -8,6 +8,7 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
@@ -332,12 +333,22 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
         return details.isEmpty() || details.equals(heading) ? heading : heading + "\n" + details;
     }
 
+    private boolean containsListPoint(double mouseX, double mouseY) {
+        return mouseX >= contentLeft && mouseX < contentLeft + contentWidth
+                && mouseY >= listTop && mouseY < listTop + listAreaHeight;
+    }
+
+    @Override
+    protected boolean shouldWidgetReceiveClick(IWidget widget, MouseEvent event) {
+        return (widget != rootPanel || containsListPoint(event.mouseX(), event.mouseY()))
+                && super.shouldWidgetReceiveClick(widget, event);
+    }
+
     @Override
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         for (IWidget current = widget; current != null; current = current.parent()) {
             if (current == rootPanel) {
-                return mouseX >= contentLeft && mouseX < contentLeft + contentWidth
-                        && mouseY >= listTop && mouseY < listTop + listAreaHeight;
+                return containsListPoint(mouseX, mouseY);
             }
         }
         return super.shouldWidgetReceiveTooltip(widget, mouseX, mouseY);

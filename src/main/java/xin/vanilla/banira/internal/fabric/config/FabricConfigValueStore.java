@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 
@@ -193,8 +192,7 @@ final class FabricConfigValueStore implements ConfigValueStore {
             staged = Files.createTempFile(file.getParent(), ".banira-config-", ".tmp");
             byte[] written = renderToml(candidate).getBytes(StandardCharsets.UTF_8);
             Files.write(staged, written);
-            if (!Arrays.equals(expectedBytes, readBytes())) return false;
-            Files.move(staged, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            if (!xin.vanilla.banira.internal.config.ConfigFileCommit.replaceIfUnchanged(staged, file, expectedBytes)) return false;
             staged = null;
             values.clear();
             values.putAll(candidate);

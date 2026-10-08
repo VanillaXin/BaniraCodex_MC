@@ -47,8 +47,8 @@ import java.util.function.Predicate;
  */
 public final class ForgeConfigAdapter {
 
-    private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
-    private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = new IdentityHashMap<>();
+    private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = Collections.synchronizedMap(new IdentityHashMap<>());
     private static final Map<ModConfig, ForgeConfigBackend> BACKEND_BY_CONFIG = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Map<ModConfig, ForgeConfigReloadGate> RELOAD_GATES = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Set<IEventBus> CONFIG_EVENT_BUSES =
@@ -89,8 +89,10 @@ public final class ForgeConfigAdapter {
         backend.setModConfig(modConfig);
         BACKEND_BY_CONFIG.put(modConfig, backend);
 
-        HOLDER_MAP.put(configClass, holder);
-        HOLDER_BY_CONFIG.put(modConfig, holder);
+        synchronized (HOLDER_MAP) {
+            HOLDER_BY_CONFIG.put(modConfig, holder);
+            HOLDER_MAP.put(configClass, holder);
+        }
         registerConfigEventListeners();
         ConfigRegistry.registerHolder(holder);
     }

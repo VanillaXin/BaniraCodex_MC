@@ -12,20 +12,20 @@ public final class ConfigRegistry {
     private ConfigRegistry() {
     }
 
-    public static void registerHolder(ConfigHolder holder) {
+    public static synchronized void registerHolder(ConfigHolder holder) {
         HOLDERS.put(holder.getConfigName(), holder);
     }
 
-    public static ConfigHolder get(String configKey) {
+    public static synchronized ConfigHolder get(String configKey) {
         return HOLDERS.get(configKey);
     }
 
-    public static ConfigHolder get(String configName, ConfigScope scope) {
+    public static synchronized ConfigHolder get(String configName, ConfigScope scope) {
         String key = configName + "-" + scope.extension();
         return HOLDERS.get(key);
     }
 
-    public static Map<String, ConfigHolder> getAll() {
+    public static synchronized Map<String, ConfigHolder> getAll() {
         return new LinkedHashMap<>(HOLDERS);
     }
 }

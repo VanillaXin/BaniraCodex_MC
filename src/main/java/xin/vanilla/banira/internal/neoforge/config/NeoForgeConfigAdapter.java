@@ -45,9 +45,9 @@ import java.util.function.Predicate;
  */
 public final class NeoForgeConfigAdapter {
 
-    private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = new LinkedHashMap<>();
-    private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = new IdentityHashMap<>();
-    private static final Map<ModConfig, NeoForgeConfigValueStore> STORE_BY_CONFIG = new IdentityHashMap<>();
+    private static final Map<Class<?>, ConfigHolder> HOLDER_MAP = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<ModConfig, ConfigHolder> HOLDER_BY_CONFIG = Collections.synchronizedMap(new IdentityHashMap<>());
+    private static final Map<ModConfig, NeoForgeConfigValueStore> STORE_BY_CONFIG = Collections.synchronizedMap(new IdentityHashMap<>());
     private static IEventBus modEventBus;
     private static ModContainer activeContainer;
     private static boolean configListenersRegistered;
@@ -99,9 +99,11 @@ public final class NeoForgeConfigAdapter {
                 toForgeType(configScope), new NeoForgeManagedConfigSpec(spec, valueStore), container, fileName);
         valueStore.bindModConfig(modConfig);
 
-        HOLDER_MAP.put(configClass, holder);
-        HOLDER_BY_CONFIG.put(modConfig, holder);
-        STORE_BY_CONFIG.put(modConfig, valueStore);
+        synchronized (HOLDER_MAP) {
+            STORE_BY_CONFIG.put(modConfig, valueStore);
+            HOLDER_BY_CONFIG.put(modConfig, holder);
+            HOLDER_MAP.put(configClass, holder);
+        }
         ConfigRegistry.registerHolder(holder);
     }
 

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -139,10 +138,9 @@ public final class ForgeConfigFile extends CommentedConfigWrapper<CommentedConfi
             temporary = Files.createTempFile(getNioPath().toAbsolutePath().getParent(), ".banira-config-", ".tmp");
             writer.write(candidate, temporary, WritingMode.REPLACE, StandardCharsets.UTF_8);
             byte[] written = Files.readAllBytes(temporary);
-            if (!Arrays.equals(expectedBytes, readBytes())) {
+            if (!xin.vanilla.banira.internal.config.ConfigFileCommit.replaceIfUnchanged(temporary, getNioPath(), expectedBytes)) {
                 throw new EditConflict("Config changed during save; keeping external file: " + getNioPath());
             }
-            Files.move(temporary, getNioPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             temporary = null;
             publish(candidate, written);
         } catch (IOException exception) {

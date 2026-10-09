@@ -29,11 +29,15 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraRegistryService registry = new ForgeBaniraRegistryService();
     private final BaniraNotificationService notification = BaniraNotificationServices.INSTANCE;
     private final BaniraLogoService logo = createLogoService();
+    private final BaniraCostService costs = new ForgeBaniraCostService();
 
     @Override
     public String loaderType() {
         return "forge";
     }
+
+    @Override
+    public BaniraCostService costService() { return costs; }
 
     @Override
     public String minecraftVersion() {

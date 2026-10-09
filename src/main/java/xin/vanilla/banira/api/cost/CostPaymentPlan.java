@@ -8,14 +8,28 @@ public final class CostPaymentPlan {
     private final List<ResourceSnapshot> snapshots;
     private final CostFailure failure;
     private final boolean committed;
+    private final CostFailure recoveryFailure;
+    private final boolean confirmedSnapshots;
 
     private CostPaymentPlan(int units, List<ResourceCost> requirements, List<ResourceSnapshot> snapshots,
                             CostFailure failure, boolean committed) {
+        this(units, requirements, snapshots, failure, committed, CostFailure.NONE);
+    }
+
+    private CostPaymentPlan(int units, List<ResourceCost> requirements, List<ResourceSnapshot> snapshots,
+                            CostFailure failure, boolean committed, CostFailure recoveryFailure) {
+        this(units, requirements, snapshots, failure, committed, recoveryFailure, false);
+    }
+
+    private CostPaymentPlan(int units, List<ResourceCost> requirements, List<ResourceSnapshot> snapshots,
+                            CostFailure failure, boolean committed, CostFailure recoveryFailure, boolean confirmedSnapshots) {
         this.units = units;
         this.requirements = immutable(requirements);
         this.snapshots = immutable(snapshots);
         this.failure = failure;
         this.committed = committed;
+        this.recoveryFailure = recoveryFailure;
+        this.confirmedSnapshots = confirmedSnapshots;
     }
 
     private static <T> List<T> immutable(List<T> values) {
@@ -40,6 +54,23 @@ public final class CostPaymentPlan {
     public CostFailure failure() { return failure; }
     public boolean isSuccess() { return !failure.isFailure(); }
     public boolean isCommitted() { return committed; }
+    public CostFailure recoveryFailure() { return recoveryFailure; }
+    public boolean hasConfirmedSnapshots() { return confirmedSnapshots; }
+
+    public CostPaymentPlan withSnapshots(List<ResourceSnapshot> actual) {
+        if (!isSuccess() || actual.size() != snapshots.size()) throw new IllegalArgumentException("Receipt shape changed");
+        for (int i = 0; i < actual.size(); i++) {
+            ResourceSnapshot before = snapshots.get(i), after = Objects.requireNonNull(actual.get(i), "snapshot");
+            if (!before.resourceId().equals(after.resourceId()) || !before.before().equals(after.before())
+                    || before.reversible() != after.reversible()) throw new IllegalArgumentException("Receipt identity changed");
+        }
+        return new CostPaymentPlan(units, requirements, actual, failure, committed, recoveryFailure, committed);
+    }
+
+    public CostPaymentPlan uncertainReceipt() {
+        if (!committed) throw new IllegalStateException("Payment is not committed");
+        return new CostPaymentPlan(units, requirements, snapshots, failure, true, CostFailure.UNCERTAIN, false);
+    }
     public CostPaymentPlan paid() {
         if (!isSuccess() || committed) throw new IllegalStateException("Payment is not pending");
         return new CostPaymentPlan(units, requirements, snapshots, failure, true);

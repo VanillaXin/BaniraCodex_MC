@@ -9,6 +9,7 @@ public final class CostPaymentService<C> {
     public interface PaymentAccess<C> {
         CostFailure validate(C context);
         CostFailure pay(C context, CostPaymentPlan plan);
+        default java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(C context, CostPaymentPlan plan) { return plan.snapshots(); }
         default void afterPayment(C context, CostPaymentPlan plan) { }
     }
 
@@ -32,10 +33,12 @@ public final class CostPaymentService<C> {
         CostFailure initial = operation.begin(identity.apply(context));
         if (initial.isFailure()) return CostPaymentPlan.failed(initial);
         CostPaymentPlan result;
+        CostPaymentPlan prepared = null;
         try {
             result = plan(context);
             if (result.isSuccess()) {
                 if (result.isCommitted()) throw new IllegalStateException("Planner returned a paid plan");
+                prepared = result;
                 CostFailure failure = Objects.requireNonNull(access.validate(context), "validity");
                 if (!failure.isFailure()) failure = operation.checkIdentity(identity.apply(context));
                 if (!failure.isFailure()) failure = Objects.requireNonNull(access.pay(context, result), "payment failure");
@@ -47,6 +50,11 @@ public final class CostPaymentService<C> {
         }
         operation.finish(result);
         if (result.isCommitted()) {
+            try { result = result.withSnapshots(access.receipt(context, prepared)); }
+            catch (RuntimeException error) {
+                result = result.uncertainReceipt();
+                LOGGER.error("Cost payment receipt unavailable for operation " + operation.identity().operationId(), error);
+            }
             try { access.afterPayment(context, result); }
             catch (RuntimeException error) {
                 LOGGER.error("Cost payment follow-up failed for operation " + operation.identity().operationId(), error);

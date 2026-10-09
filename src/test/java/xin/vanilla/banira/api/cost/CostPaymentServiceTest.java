@@ -195,6 +195,59 @@ public class CostPaymentServiceTest {
     }
 
     @Test
+    public void paidReceiptCapturesActualStateBeforeFollowup() {
+        Fixture f = new Fixture();
+        CostPaymentPlan original = CostPaymentPlan.ready(1, Collections.emptyList(), Collections.singletonList(
+                new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "forecast", true)));
+        CostOperation operation = CostOperation.create(f.identity());
+        f.receipt = plan -> {
+            assertEquals(CostOperation.State.PAID, operation.state());
+            return Collections.singletonList(new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "actual", true));
+        };
+        f.onPay = () -> { };
+        CostPaymentService<Fixture> service = new CostPaymentService<>(context -> original, Fixture::identity, new CostPaymentService.PaymentAccess<Fixture>() {
+            public CostFailure validate(Fixture context) { return CostFailure.NONE; }
+            public CostFailure pay(Fixture context, CostPaymentPlan plan) { f.debits++; return CostFailure.NONE; }
+            public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) { return f.receipt.apply(plan); }
+            public void afterPayment(Fixture context, CostPaymentPlan plan) { assertEquals("actual", plan.snapshots().get(0).after()); }
+        });
+        CostPaymentPlan result = service.commit(operation, f);
+        assertTrue(result.isCommitted());
+        assertEquals("actual", result.snapshots().get(0).after());
+        assertEquals(CostFailure.NONE, result.recoveryFailure());
+        assertEquals(1, f.debits);
+    }
+
+    @Test
+    public void receiptFailureCannotReopenPaidOperation() {
+        Fixture f = new Fixture();
+        CostOperation operation = CostOperation.create(f.identity());
+        f.receipt = plan -> {
+            assertEquals(CostOperation.State.PAID, operation.state());
+            throw new IllegalStateException("Receipt unavailable");
+        };
+        CostPaymentPlan result = f.service.commit(operation, f);
+        assertTrue(result.isCommitted());
+        assertEquals(CostFailure.UNCERTAIN, result.recoveryFailure());
+        assertEquals(CostOperation.State.PAID, operation.state());
+        assertEquals(CostFailure.INVALID_OPERATION, f.service.commit(operation, f).failure());
+        assertEquals(1, f.debits);
+    }
+
+    @Test
+    public void receiptCannotChangeResourceIdentityOrBeforeSnapshot() {
+        CostPaymentPlan plan = CostPaymentPlan.ready(1, Collections.emptyList(), Collections.singletonList(
+                new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "forecast", true)));
+        for (CostPaymentPlan.ResourceSnapshot snapshot : new CostPaymentPlan.ResourceSnapshot[]{
+                new CostPaymentPlan.ResourceSnapshot("test:other", "before", "actual", true),
+                new CostPaymentPlan.ResourceSnapshot("test:resource", "foreign", "actual", true),
+                new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "actual", false)}) {
+            try { plan.withSnapshots(Collections.singletonList(snapshot)); fail("Receipt changed identity"); }
+            catch (IllegalArgumentException expected) { }
+        }
+    }
+
+    @Test
     public void planPayloadIsImmutableAndFailedPlanCannotBecomePaid() {
         ResourceCost cost = new ResourceCost("banira:xp_point", 5, "");
         java.util.List<ResourceCost> costs = new java.util.ArrayList<>();
@@ -215,6 +268,7 @@ public class CostPaymentServiceTest {
         CostFailure validity = CostFailure.NONE;
         CostFailure paymentFailure = CostFailure.NONE;
         Runnable onPlan, onPay, followup;
+        java.util.function.Function<CostPaymentPlan, java.util.List<CostPaymentPlan.ResourceSnapshot>> receipt = CostPaymentPlan::snapshots;
         final CostPaymentService<Fixture> service = new CostPaymentService<>(f -> {
             f.plans++;
             if (f.onPlan != null) f.onPlan.run();
@@ -236,5 +290,6 @@ public class CostPaymentServiceTest {
             followups++;
             if (followup != null) followup.run();
         }
+        public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) { return receipt.apply(plan); }
     }
 }

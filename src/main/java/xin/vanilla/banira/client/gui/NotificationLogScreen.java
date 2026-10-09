@@ -17,7 +17,9 @@ import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.notification.NotificationDetailViewport;
 import xin.vanilla.banira.client.gui.widget.*;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
@@ -90,6 +92,9 @@ public class NotificationLogScreen extends BaniraScreen {
     private double detailContentLeft;
     private double detailContentTop;
     private int detailContentMaxLineW;
+    private final NotificationDetailViewport detailViewport = new NotificationDetailViewport();
+    private ScrollbarWidget detailScrollbar;
+    private long detailEntryId = Long.MIN_VALUE;
 
     /**
      * 详情区元数据格：截断时悬停展示全文
@@ -234,6 +239,10 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     private void selectEntry(int index) {
+        if (selectedIndex != index) {
+            detailViewport.reset();
+            detailContentLines = Collections.emptyList();
+        }
         selectedIndex = index;
         NotificationManager.get().markRead(filteredEntries.get(index).id());
         refreshHistory();
@@ -308,6 +317,13 @@ public class NotificationLogScreen extends BaniraScreen {
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         scrollbarWidget.onValueChanged(v -> scrollValue = v);
         addWidget(scrollbarWidget);
+
+        detailScrollbar = new ScrollbarWidget(this);
+        detailScrollbar.id("detail-scroll");
+        detailScrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1);
+        detailScrollbar.onValueChanged(detailViewport::scrollTo);
+        detailScrollbar.visible(false);
+        addWidget(detailScrollbar);
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");
@@ -497,7 +513,18 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     private void renderDetailPane(MatrixStack stack, BaniraColorConfig theme) {
+        AbstractGuiUtils.pushScissor(rightX + 16, rightY + 16,
+                Math.max(0, rightW - 32), Math.max(0, rightH - 32));
+        try {
+            renderDetailContents(stack, theme);
+        } finally {
+            AbstractGuiUtils.popScissor();
+        }
+    }
+
+    private void renderDetailContents(MatrixStack stack, BaniraColorConfig theme) {
         detailContentLines = Collections.emptyList();
+        if (detailScrollbar != null) detailScrollbar.visible(false);
 
         int pad = 16;
         int x = rightX + pad;
@@ -505,6 +532,8 @@ public class NotificationLogScreen extends BaniraScreen {
         int w = rightW - pad * 2;
 
         if (selectedIndex < 0 || selectedIndex >= filteredEntries.size()) {
+            detailViewport.layout(x, y, 0, 0, font.lineHeight, 0);
+            detailEntryId = Long.MIN_VALUE;
             metaHoverRegions.clear();
             FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_select_hint")
                             .stack(stack).font(font))
@@ -515,6 +544,10 @@ public class NotificationLogScreen extends BaniraScreen {
         }
 
         NotificationLogEntry entry = filteredEntries.get(selectedIndex);
+        if (detailEntryId != entry.id()) {
+            detailViewport.reset();
+            detailEntryId = entry.id();
+        }
         String timeStr = DateUtils.toDateTimeString(new Date(entry.timestamp())) + "  "
                 + BaniraComponent.get().transClientAuto(entry.read() ? "notification_log_read" : "notification_log_unread").toString();
 
@@ -534,15 +567,28 @@ public class NotificationLogScreen extends BaniraScreen {
         ITextComponent contentVanilla = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
-            detailContentLines = font.split(contentVanilla, w);
+            int textWidth = Math.max(1, w - SCROLL_GAP - SCROLL_W);
+            int contentHeight = Math.max(0, rightY + rightH - pad - curY);
+            detailContentLines = font.split(contentVanilla, textWidth);
             detailContentLeft = x;
             detailContentTop = curY;
-            detailContentMaxLineW = w;
-            float lineY = curY;
+            detailContentMaxLineW = textWidth;
+            detailViewport.layout(x, curY, textWidth, contentHeight, font.lineHeight, detailContentLines.size());
+            if (detailScrollbar != null) {
+                detailScrollbar.bounds(new ScreenCoordinate(x + textWidth + SCROLL_GAP, curY,
+                        SCROLL_W, contentHeight));
+                detailScrollbar.maxValue(detailViewport.maxScrollRows()).visibleSize(detailViewport.visibleRows())
+                        .visible(contentHeight > 0 && detailViewport.maxScrollRows() > 0);
+                detailScrollbar.setValue(detailViewport.scrollRows());
+            }
             int textColor = theme.textPrimary();
-            for (IReorderingProcessor line : detailContentLines) {
-                font.draw(stack, line, x, lineY, textColor);
-                lineY += font.lineHeight;
+            AbstractGuiUtils.pushScissor(x, curY, textWidth, contentHeight);
+            try {
+                for (int line = detailViewport.firstLine(); line < detailViewport.lastLineExclusive(); line++) {
+                    font.draw(stack, detailContentLines.get(line), x, detailViewport.lineY(line), textColor);
+                }
+            } finally {
+                AbstractGuiUtils.popScissor();
             }
             if (!isAnyDropdownSelectOpen()) {
                 Style hoverSt = styleAtDetailContentPoint(inputState.mouseX(), inputState.mouseY());
@@ -584,6 +630,8 @@ public class NotificationLogScreen extends BaniraScreen {
     private void maybeRenderMetaHoverTooltip(BaniraColorConfig theme) {
         double mx = inputState.mouseX();
         double my = inputState.mouseY();
+        if (mx < rightX + 16 || mx >= rightX + rightW - 16
+                || my < rightY + 16 || my >= rightY + rightH - 16) return;
         for (MetaHoverRegion r : metaHoverRegions) {
             if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
                 deferThemedTooltipWidget(theme, (int) mx, (int) my, Text.literal(r.fullText));
@@ -664,19 +712,8 @@ public class NotificationLogScreen extends BaniraScreen {
         if (detailContentLines.isEmpty()) {
             return null;
         }
-        if (guiMouseX < detailContentLeft || guiMouseY < detailContentTop) {
-            return null;
-        }
-        if (guiMouseX >= detailContentLeft + detailContentMaxLineW) {
-            return null;
-        }
-        int lineCount = detailContentLines.size();
-        double blockH = lineCount * font.lineHeight;
-        if (guiMouseY >= detailContentTop + blockH) {
-            return null;
-        }
-        int lineIndex = (int) ((guiMouseY - detailContentTop) / font.lineHeight);
-        if (lineIndex < 0 || lineIndex >= lineCount) {
+        int lineIndex = detailViewport.visibleLineAt(guiMouseX, guiMouseY);
+        if (lineIndex < 0 || lineIndex >= detailContentLines.size()) {
             return null;
         }
         IReorderingProcessor proc = detailContentLines.get(lineIndex);
@@ -687,6 +724,15 @@ public class NotificationLogScreen extends BaniraScreen {
     private boolean tryHandleDetailContentClick(double mouseX, double mouseY) {
         Style st = styleAtDetailContentPoint(mouseX, mouseY);
         return st != null && NotificationStyleInteractionHelper.tryClickStyle(Minecraft.getInstance(), st);
+    }
+
+    @Override
+    protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
+        if (eventArgs.consumed() || isAnyDropdownSelectOpen() || detailContentLines.isEmpty()
+                || !detailViewport.contains(eventArgs.mouseX(), eventArgs.mouseY())) return;
+        detailViewport.scrollBy(-eventArgs.delta());
+        if (detailScrollbar != null) detailScrollbar.setValue(detailViewport.scrollRows());
+        eventArgs.consumed(true);
     }
 
     @Override

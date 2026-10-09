@@ -313,6 +313,7 @@ public class NotificationLogScreen extends BaniraScreen {
         scrollbarWidget.maxValue(Math.max(0, filteredEntries.size() - visibleRows));
         scrollbarWidget.visibleSize(visibleRows);
         scrollbarWidget.scrollStep(1.0);
+        scrollbarWidget.scrollOnFocus(false);
         scrollbarWidget.value(scrollValue);
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         scrollbarWidget.onValueChanged(v -> scrollValue = v);
@@ -320,7 +321,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
         detailScrollbar = new ScrollbarWidget(this);
         detailScrollbar.id("detail-scroll");
-        detailScrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1);
+        detailScrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1).scrollOnFocus(false);
         detailScrollbar.onValueChanged(detailViewport::scrollTo);
         detailScrollbar.visible(false);
         addWidget(detailScrollbar);

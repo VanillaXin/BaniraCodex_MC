@@ -53,6 +53,10 @@ public class ScrollbarWidget extends BaseWidget {
 
     @Getter
     @Setter
+    private boolean scrollOnFocus = true;
+
+    @Getter
+    @Setter
     private int bgColor = BaniraColorConfig.forSeason(EnumSeason.AUTO).scrollbarBg();
 
     @Getter
@@ -285,7 +289,7 @@ public class ScrollbarWidget extends BaseWidget {
             }
         }
 
-        if (!inScrollArea && !focused) {
+        if (!inScrollArea && !(scrollOnFocus && focused)) {
             return false;
         }
 

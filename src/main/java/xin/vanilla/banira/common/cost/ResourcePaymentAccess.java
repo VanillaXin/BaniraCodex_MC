@@ -120,7 +120,7 @@ public final class ResourcePaymentAccess implements CostAccess {
                 if (!failure.isFailure()) failure = Objects.requireNonNull(resource.debit(snapshot.before(), snapshot.after()), "debit failure");
                 if (failure.isFailure()) {
                     boolean unchanged = snapshot.before().equals(resource.snapshot());
-                    CostFailure rollback = rollback(paid);
+                    CostFailure rollback = rollback(paid, true);
                     return !unchanged || rollback.isFailure() ? CostFailure.UNCERTAIN : failure;
                 }
                 try {
@@ -131,14 +131,14 @@ public final class ResourcePaymentAccess implements CostAccess {
                         attempt.receiptFailure = unknownReceipt;
                         return CostFailure.NONE;
                     }
-                    rollback(paid);
+                    rollback(paid, true);
                     return CostFailure.UNCERTAIN;
                 }
             }
             attempt.receipt = CostPaymentPlan.ready(plan.units(), plan.requirements(), paid).paid().withSnapshots(paid);
             return CostFailure.NONE;
         } catch (RuntimeException unknown) {
-            rollback(paid);
+            rollback(paid, true);
             return CostFailure.UNCERTAIN;
         }
     }
@@ -148,6 +148,13 @@ public final class ResourcePaymentAccess implements CostAccess {
         Attempt attempt = attempts.get(plan);
         if (attempt != null && attempt.receiptFailure != null) throw new IllegalStateException("Paid receipt unavailable", attempt.receiptFailure);
         if (attempt == null || attempt.receipt == null) throw new IllegalStateException("Payment receipt unavailable");
+        if (!attempt.finalized) {
+            List<ResourceSnapshot> actual = new ArrayList<>();
+            for (ResourceSnapshot snapshot : attempt.receipt.snapshots()) actual.add(new ResourceSnapshot(snapshot.resourceId(),
+                    snapshot.before(), resources.get(snapshot.resourceId()).snapshot(), snapshot.reversible()));
+            attempt.receipt = attempt.receipt.withSnapshots(actual);
+            attempt.finalized = true;
+        }
         return attempt.receipt;
     }
 
@@ -156,18 +163,22 @@ public final class ResourcePaymentAccess implements CostAccess {
         Objects.requireNonNull(plan, "plan");
         if (plan.recoveryFailure().isFailure() || eligible().isFailure()) return CostFailure.UNCERTAIN;
         if (!plan.isSuccess() || !plan.isCommitted() || !plan.hasConfirmedSnapshots()) return CostFailure.INVALID_OPERATION;
-        return rollback(plan.snapshots());
+        return rollback(plan.snapshots(), false);
     }
 
-    private CostFailure rollback(List<ResourceSnapshot> paid) {
+    private CostFailure rollback(List<ResourceSnapshot> paid, boolean reservationFailure) {
         CostFailure result = CostFailure.NONE;
         for (int i = paid.size() - 1; i >= 0; i--) {
             if (eligible().isFailure()) return CostFailure.UNCERTAIN;
             ResourceSnapshot snapshot = paid.get(i);
             CostResourceAccess resource = resources.get(snapshot.resourceId());
             try {
-                if (resource == null || !snapshot.reversible() || !resource.reversible()
-                        || !snapshot.after().equals(resource.snapshot())) { result = CostFailure.UNCERTAIN; continue; }
+                if (resource == null || !snapshot.reversible() || !resource.reversible()) { result = CostFailure.UNCERTAIN; continue; }
+                if (!snapshot.after().equals(resource.snapshot())) {
+                    if (!reservationFailure || resource.compensateReservation(snapshot.before(), snapshot.after()).isFailure())
+                        result = CostFailure.UNCERTAIN;
+                    continue;
+                }
                 if (resource.restore(snapshot.before(), snapshot.after()).isFailure()
                         || !snapshot.before().equals(resource.snapshot())) result = CostFailure.UNCERTAIN;
             } catch (RuntimeException unknown) { result = CostFailure.UNCERTAIN; }
@@ -191,5 +202,6 @@ public final class ResourcePaymentAccess implements CostAccess {
         boolean started;
         CostPaymentPlan receipt;
         RuntimeException receiptFailure;
+        boolean finalized;
     }
 }

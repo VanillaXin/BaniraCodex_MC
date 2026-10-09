@@ -7,5 +7,6 @@ public interface CostResourceAccess {
     CostFailure debit(String before, String after);
     CostFailure restore(String before, String after);
     boolean reversible();
+    default CostFailure compensateReservation(String before, String after) { return CostFailure.UNCERTAIN; }
     default void afterPayment() { }
 }

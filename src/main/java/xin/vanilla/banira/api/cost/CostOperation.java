@@ -32,7 +32,8 @@ public final class CostOperation {
         requireOwner();
         Objects.requireNonNull(current, "current");
         CostFailure failure = CostFailure.NONE;
-        if (identity.generation() != current.generation()) failure = CostFailure.CONFIGURATION_UNAVAILABLE;
+        if (identity.generation() != current.generation()
+                || !identity.configurationSignature().equals(current.configurationSignature())) failure = CostFailure.CONFIGURATION_UNAVAILABLE;
         else if (identity.operationId() != current.operationId() || !identity.domain().equals(current.domain())
                 || !identity.payer().equals(current.payer()) || !identity.businessSignature().equals(current.businessSignature()))
             failure = CostFailure.INVALID_OPERATION;

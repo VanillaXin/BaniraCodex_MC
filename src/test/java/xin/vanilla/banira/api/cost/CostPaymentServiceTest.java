@@ -248,6 +248,16 @@ public class CostPaymentServiceTest {
     }
 
     @Test
+    public void changedConfigurationContentsFailEvenWithoutARevisionBump() {
+        Fixture f = new Fixture();
+        CostOperation operation = CostOperation.create(f.identity());
+        f.configuration = "replacement";
+        assertEquals(CostFailure.CONFIGURATION_UNAVAILABLE, f.service.commit(operation, f).failure());
+        assertEquals(CostOperation.State.FAILED, operation.state());
+        assertEquals(0, f.debits);
+    }
+
+    @Test
     public void planPayloadIsImmutableAndFailedPlanCannotBecomePaid() {
         ResourceCost cost = new ResourceCost("banira:xp_point", 5, "");
         java.util.List<ResourceCost> costs = new java.util.ArrayList<>();
@@ -264,6 +274,7 @@ public class CostPaymentServiceTest {
         UUID payer = new UUID(0, 1);
         long id = 1, generation = 1;
         String domain = "test:payment", signature = "target";
+        String configuration = "rules";
         int balance = 10, plans, debits, followups;
         CostFailure validity = CostFailure.NONE;
         CostFailure paymentFailure = CostFailure.NONE;
@@ -277,7 +288,7 @@ public class CostPaymentServiceTest {
                     : CostPaymentPlan.failed(CostFailure.INSUFFICIENT_RESOURCE);
         }, Fixture::identity, this);
 
-        CostIdentity identity() { return new CostIdentity(domain, payer, id, generation, signature); }
+        CostIdentity identity() { return new CostIdentity(domain, payer, id, generation, signature, configuration); }
         public CostFailure validate(Fixture context) { return validity; }
         public CostFailure pay(Fixture context, CostPaymentPlan plan) {
             debits++;

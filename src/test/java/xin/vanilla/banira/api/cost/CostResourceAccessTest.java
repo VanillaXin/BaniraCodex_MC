@@ -201,6 +201,46 @@ public class CostResourceAccessTest {
     }
 
     @Test
+    public void reservationCompensationPreservesAwardsOnFailedPaymentOnly() {
+        Resource first = new Resource(), second = new Resource();
+        first.reservationRefund = true;
+        second.failure = CostFailure.PAYMENT_FAILED;
+        second.onDebit = () -> first.balance++;
+        CostAccess access = access().withResource("test:first", first).withResource("test:second", second);
+        CostPaymentPlan plan = access.preview(CostRequirement.all(Arrays.asList(leaf("test:first", 2), leaf("test:second", 3))), 1);
+        assertEquals(CostFailure.PAYMENT_FAILED, access.debit(plan));
+        assertEquals(11, first.balance);
+        assertEquals(1, first.compensations);
+        assertEquals(0, first.restores);
+    }
+
+    @Test
+    public void reservationCompensationDoesNotAuthorizeLaterRestoration() {
+        Resource resource = new Resource();
+        resource.reservationRefund = true;
+        CostAccess access = access().withResource("test:card", resource);
+        CostPaymentPlan plan = access.preview(leaf("test:card", 2), 1);
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        CostPaymentPlan receipt = access.receipt(plan);
+        resource.balance++;
+        assertEquals(CostFailure.UNCERTAIN, access.restore(receipt));
+        assertEquals(9, resource.balance);
+        assertEquals(0, resource.compensations);
+    }
+
+    @Test
+    public void receiptCapturesFinalStateAfterFollowingProviderCallbacks() {
+        Resource first = new Resource(), second = new Resource();
+        second.onDebit = () -> first.balance++;
+        CostAccess access = access().withResource("test:first", first).withResource("test:second", second);
+        CostPaymentPlan plan = access.preview(CostRequirement.all(Arrays.asList(leaf("test:first", 2), leaf("test:second", 3))), 1);
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        CostPaymentPlan receipt = access.receipt(plan);
+        assertEquals(9, Resource.amount(receipt.snapshots().get(0).after()));
+        assertEquals(7, Resource.amount(receipt.snapshots().get(1).after()));
+    }
+
+    @Test
     public void manuallyCreatedPlanCannotAuthorizeDebit() {
         Resource resource = new Resource();
         CostAccess access = access().withResource("test:card", resource);
@@ -221,6 +261,8 @@ public class CostResourceAccessTest {
         int balance = 10, debits, restores;
         boolean reversible = true;
         boolean throwPaidSnapshot;
+        boolean reservationRefund;
+        int compensations;
         CostFailure failure = CostFailure.NONE;
         Runnable onDebit;
         Runnable onRestore;
@@ -246,6 +288,12 @@ public class CostResourceAccessTest {
             return CostFailure.NONE;
         }
         public boolean reversible() { return reversible; }
+        public CostFailure compensateReservation(String before, String after) {
+            if (!reservationRefund) return CostFailure.UNCERTAIN;
+            compensations++;
+            balance += amount(before) - amount(after);
+            return CostFailure.NONE;
+        }
         private static int amount(String json) { return new JsonParser().parse(json).getAsJsonObject().get("balance").getAsInt(); }
         private static String json(int balance) {
             JsonObject json = new JsonObject();

@@ -41,33 +41,22 @@ public final class ResourcePaymentAccess implements CostAccess {
         CostFailure eligible = eligible();
         if (eligible.isFailure()) return CostPaymentPlan.failed(eligible);
         try {
-            List<ResourceCost> leaves = new ArrayList<>();
-            if (!flatten(requirement, leaves, 1)) return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
-            if (leaves.stream().anyMatch(c -> c.resourceId().equals("banira:xp_point"))
-                    && leaves.stream().anyMatch(c -> c.resourceId().equals("banira:xp_level")))
-                return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
-            leaves.sort(Comparator.comparingInt(c -> c.resourceId().equals("banira:item")
-                    && c.matchMode() == ResourceCost.MatchMode.ID ? 1 : 0));
-            List<ResourceCost> scaled = new ArrayList<>();
-            Map<String, ResourceSnapshot> snapshots = new LinkedHashMap<>();
-            for (ResourceCost leaf : leaves) {
-                ResourceCost cost = new ResourceCost(leaf.resourceId(), Math.multiplyExact(leaf.amount(), units),
-                        leaf.specification(), leaf.matchMode());
+            List<List<ResourceCost>> paths = CostRequirementPlanner.paths(requirement);
+            List<List<ResourceCost>> prepared = new ArrayList<>();
+            for (List<ResourceCost> path : paths) prepared.add(CostRequirementPlanner.aggregate(path, units));
+            for (List<ResourceCost> path : prepared) for (ResourceCost cost : path) {
                 CostResourceAccess resource = resources.get(cost.resourceId());
                 if (resource == null) return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
-                if (cost.amount() == 0) continue;
-                ResourceSnapshot previous = snapshots.get(cost.resourceId());
-                String working = previous == null ? Objects.requireNonNull(resource.snapshot(), "snapshot") : previous.after();
-                CostFailure failure = Objects.requireNonNull(resource.check(cost, 1, working), "check failure");
+                CostFailure failure = Objects.requireNonNull(resource.validate(cost), "resource validation");
                 if (failure.isFailure()) return CostPaymentPlan.failed(failure);
-                String after = Objects.requireNonNull(resource.after(cost, 1, working), "planned after");
-                snapshots.put(cost.resourceId(), new ResourceSnapshot(cost.resourceId(),
-                        previous == null ? working : previous.before(), after, resource.reversible()));
-                scaled.add(cost);
             }
-            CostPaymentPlan plan = CostPaymentPlan.ready(units, scaled, new ArrayList<>(snapshots.values()));
-            attempts.put(plan, new Attempt());
-            return plan;
+            CostPaymentPlan unavailable = CostPaymentPlan.failed(CostFailure.INSUFFICIENT_RESOURCE);
+            for (List<ResourceCost> leaves : prepared) {
+                CostPaymentPlan plan = previewPath(leaves, units);
+                if (plan.isSuccess() || !plan.failure().equals(CostFailure.INSUFFICIENT_RESOURCE)) return plan;
+                unavailable = plan;
+            }
+            return unavailable;
         } catch (ArithmeticException overflow) {
             return CostPaymentPlan.failed(CostFailure.AMOUNT_OVERFLOW);
         } catch (IllegalArgumentException invalid) {
@@ -75,16 +64,25 @@ public final class ResourcePaymentAccess implements CostAccess {
         }
     }
 
-    private boolean flatten(CostRequirement node, List<ResourceCost> leaves, int depth) {
-        if (depth > 16) return false;
-        switch (node.kind()) {
-            case FREE: return true;
-            case LEAF: leaves.add(node.resource()); return leaves.size() <= 32;
-            case ALL:
-                for (CostRequirement child : node.children()) if (!flatten(child, leaves, depth + 1)) return false;
-                return true;
-            default: return false;
+    private CostPaymentPlan previewPath(List<ResourceCost> leaves, int units) {
+        List<ResourceCost> scaled = new ArrayList<>();
+        Map<String, ResourceSnapshot> snapshots = new LinkedHashMap<>();
+        for (ResourceCost cost : leaves) {
+            CostResourceAccess resource = resources.get(cost.resourceId());
+            if (resource == null) return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
+            if (cost.amount() == 0) continue;
+            ResourceSnapshot previous = snapshots.get(cost.resourceId());
+            String working = previous == null ? Objects.requireNonNull(resource.snapshot(), "snapshot") : previous.after();
+            CostFailure failure = Objects.requireNonNull(resource.check(cost, 1, working), "check failure");
+            if (failure.isFailure()) return CostPaymentPlan.failed(failure);
+            String after = Objects.requireNonNull(resource.after(cost, 1, working), "planned after");
+            snapshots.put(cost.resourceId(), new ResourceSnapshot(cost.resourceId(),
+                    previous == null ? working : previous.before(), after, resource.reversible()));
+            scaled.add(cost);
         }
+        CostPaymentPlan plan = CostPaymentPlan.ready(units, scaled, new ArrayList<>(snapshots.values()));
+        attempts.put(plan, new Attempt());
+        return plan;
     }
 
     @Override public CostFailure recheck(CostPaymentPlan plan) {
@@ -135,7 +133,12 @@ public final class ResourcePaymentAccess implements CostAccess {
                     return CostFailure.UNCERTAIN;
                 }
             }
-            attempt.receipt = CostPaymentPlan.ready(plan.units(), plan.requirements(), paid).paid().withSnapshots(paid);
+            try {
+                List<ResourceSnapshot> actual = new ArrayList<>();
+                for (ResourceSnapshot snapshot : paid) actual.add(new ResourceSnapshot(snapshot.resourceId(), snapshot.before(),
+                        resources.get(snapshot.resourceId()).snapshot(), snapshot.reversible()));
+                attempt.receipt = CostPaymentPlan.ready(plan.units(), plan.requirements(), actual).paid().withSnapshots(actual);
+            } catch (RuntimeException unknownReceipt) { attempt.receiptFailure = unknownReceipt; }
             return CostFailure.NONE;
         } catch (RuntimeException unknown) {
             rollback(paid, true);
@@ -148,13 +151,6 @@ public final class ResourcePaymentAccess implements CostAccess {
         Attempt attempt = attempts.get(plan);
         if (attempt != null && attempt.receiptFailure != null) throw new IllegalStateException("Paid receipt unavailable", attempt.receiptFailure);
         if (attempt == null || attempt.receipt == null) throw new IllegalStateException("Payment receipt unavailable");
-        if (!attempt.finalized) {
-            List<ResourceSnapshot> actual = new ArrayList<>();
-            for (ResourceSnapshot snapshot : attempt.receipt.snapshots()) actual.add(new ResourceSnapshot(snapshot.resourceId(),
-                    snapshot.before(), resources.get(snapshot.resourceId()).snapshot(), snapshot.reversible()));
-            attempt.receipt = attempt.receipt.withSnapshots(actual);
-            attempt.finalized = true;
-        }
         return attempt.receipt;
     }
 
@@ -202,6 +198,5 @@ public final class ResourcePaymentAccess implements CostAccess {
         boolean started;
         CostPaymentPlan receipt;
         RuntimeException receiptFailure;
-        boolean finalized;
     }
 }

@@ -30,6 +30,7 @@ public final class ForgeCostResources {
         Map<String, CostResourceAccess> resources = new LinkedHashMap<>();
         for (String id : new String[]{"banira:item", "banira:xp_point", "banira:xp_level", "banira:health", "banira:hunger"})
             resources.put(id, new Resource(player, payer, scope, id));
+        resources.put("banira:score", new ForgeScoreCostResource(player));
         return new ResourcePaymentAccess(resources, () -> payer.equals(player.getUUID()) && available.test(player)
                 ? CostFailure.NONE : CostFailure.ACTOR_UNAVAILABLE);
     }
@@ -98,6 +99,14 @@ public final class ForgeCostResources {
                 return enough ? CostFailure.NONE : CostFailure.INSUFFICIENT_RESOURCE;
             } catch (ArithmeticException overflow) { return CostFailure.AMOUNT_OVERFLOW; }
             catch (IllegalArgumentException | IllegalStateException invalid) { return CostFailure.INVALID_PAYMENT; }
+        }
+
+        @Override public CostFailure validate(ResourceCost cost) {
+            if (!id.equals(cost.resourceId())) return CostFailure.INVALID_PAYMENT;
+            if (!id.equals("banira:item")) return CostFailure.NONE;
+            ItemStack required = item(cost.specification());
+            return required == null || cost.matchMode() == ResourceCost.MatchMode.ID && required.hasTag()
+                    ? CostFailure.INVALID_PAYMENT : CostFailure.NONE;
         }
 
         @Override public String after(ResourceCost cost, int units, String before) {

@@ -2,6 +2,7 @@ package xin.vanilla.banira.api.cost;
 
 public interface CostResourceAccess {
     String snapshot();
+    default CostFailure validate(ResourceCost cost) { return CostFailure.NONE; }
     CostFailure check(ResourceCost cost, int units, String before);
     String after(ResourceCost cost, int units, String before);
     CostFailure debit(String before, String after);

@@ -241,6 +241,19 @@ public class CostResourceAccessTest {
     }
 
     @Test
+    public void receiptIsFrozenBeforeReturningFromSuccessfulDebit() {
+        Resource resource=new Resource();
+        CostAccess access=access().withResource("test:card",resource);
+        CostPaymentPlan plan=access.preview(leaf("test:card",2),1);
+        assertEquals(CostFailure.NONE,access.debit(plan));
+        resource.balance++;
+        CostPaymentPlan receipt=access.receipt(plan);
+        assertEquals(8,Resource.amount(receipt.snapshots().get(0).after()));
+        assertEquals(CostFailure.UNCERTAIN,access.restore(receipt));
+        assertEquals(9,resource.balance);
+    }
+
+    @Test
     public void manuallyCreatedPlanCannotAuthorizeDebit() {
         Resource resource = new Resource();
         CostAccess access = access().withResource("test:card", resource);

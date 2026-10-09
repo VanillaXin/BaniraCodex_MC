@@ -13,12 +13,12 @@ import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.EffectDurationModel;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 
@@ -178,7 +178,7 @@ public class EffectIconWidget extends BaseWidget {
     private static String buildTooltipString(MobEffectInstance effectInstance) {
         String displayName = EffectUtils.getEffectDisplayName(effectInstance);
         String duration = effectInstance.getDuration() > 0
-                ? DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1)
+                ? BaniraComponent.get().transClientAuto("effect_duration_ticks_seconds", effectInstance.getDuration(), EffectDurationModel.nominalSeconds(effectInstance.getDuration())).toString()
                 : "";
         String amplifier = effectInstance.getAmplifier() >= 0
                 ? NumberUtils.intToRoman(effectInstance.getAmplifier() + 1)
@@ -245,12 +245,20 @@ public class EffectIconWidget extends BaseWidget {
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                Component durationString = BaniraComponent.get().literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                Component durationString = BaniraComponent.get().literal(EffectDurationModel.ticksText(effectInstance.getDuration()));
                 int durationWidth = font.width(durationString.toString());
-                float fontX = x + width - (float) durationWidth / 2 - 2;
-                float fontY = y + (float) height / 2 + 1;
+                float scale = EffectDurationModel.scaleToFit(durationWidth, width);
+                float fontX = x + (width - durationWidth * scale) / 2;
+                float fontY = y + height - font.lineHeight * scale;
                 int argb = 0xFFFFFFFF;
-                font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), fontX, fontY, argb);
+                stack.pushPose();
+                try {
+                    stack.translate(fontX, fontY, 0);
+                    stack.scale(scale, scale, 1);
+                    font.draw(stack, durationString.color(Color.argb(argb)).toVanilla(), 0, 0, argb);
+                } finally {
+                    stack.popPose();
+                }
             }
         }
     }

@@ -83,7 +83,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
         clientReceiverRegistered = true;
         ClientPlayNetworking.registerGlobalReceiver(channel, (client, listener, buffer, responseSender) ->
-                receive(buffer, FabricNetworkContext.client()));
+                receive(buffer, FabricNetworkContext.client(listener.getConnection())));
     }
 
     private void registerServerReceiver() {
@@ -92,7 +92,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
         serverReceiverRegistered = true;
         ServerPlayNetworking.registerGlobalReceiver(channel, (server, player, handler, buffer, responseSender) ->
-                receive(buffer, FabricNetworkContext.server(server, player)));
+                receive(buffer, FabricNetworkContext.server(server, player, handler.getConnection())));
     }
 
     private void receive(FriendlyByteBuf buffer, BaniraNetworkContext context) {

@@ -29,6 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Fabric 1.16.5 的 platform 实现。
  */
 public final class FabricBaniraPlatform implements BaniraPlatform {
+    private final BaniraCostService costs = new FabricBaniraCostService();
+
+    @Nonnull
+    @Override
+    public BaniraCostService costService() { return costs; }
     private final Map<String, Class<?>> mainClassesByModId = new ConcurrentHashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new ConcurrentHashMap<>();
     private final BaniraPathService path = new FabricBaniraPathService(this::configDir);

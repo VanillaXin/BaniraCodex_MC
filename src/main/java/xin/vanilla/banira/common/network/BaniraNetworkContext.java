@@ -6,6 +6,9 @@ import javax.annotation.Nullable;
  * Banira 网络包处理上下文；不同加载器只需要适配这些最小语义。
  */
 public interface BaniraNetworkContext {
+    /** Opaque transport identity, or null when unavailable. */
+    @Nullable
+    default Object connectionKey() { return null; }
     /**
      * 将处理逻辑切回 MC 主线程执行。
      */

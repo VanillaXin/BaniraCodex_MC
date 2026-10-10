@@ -50,6 +50,7 @@ public final class BaniraClientEventHub {
     private static final List<Consumer<BaniraChatEvent>> clientChatCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraScreenEvent>> clientGuiScreenCallbacks = new ArrayList<>();
     private static final List<Consumer<BaniraClientSetupEvent>> modClientSetupCallbacks = new ArrayList<>();
+    private static BaniraClientSetupEvent modClientSetupEvent;
 
     private static final BaniraMouseClickTracker mouseClickTracker = new BaniraMouseClickTracker();
     private static final BaniraDragTracker dragTracker = new BaniraDragTracker();
@@ -72,7 +73,15 @@ public final class BaniraClientEventHub {
     }
 
     public static void dispatchModClientSetup(@Nonnull BaniraClientSetupEvent event) {
-        fire(modClientSetupCallbacks, event, "mod client setup");
+        java.util.Objects.requireNonNull(event, "event");
+        List<Consumer<BaniraClientSetupEvent>> callbacks;
+        synchronized (modClientSetupCallbacks) {
+            if (modClientSetupEvent != null) return;
+            modClientSetupEvent = event;
+            callbacks = new ArrayList<>(modClientSetupCallbacks);
+            modClientSetupCallbacks.clear();
+        }
+        fire(callbacks, event, "mod client setup");
     }
 
     public static void dispatchClientPlayerLoggedIn(net.minecraft.world.entity.player.Player player) {
@@ -285,7 +294,16 @@ public final class BaniraClientEventHub {
         }
 
         public static void onClientSetup(@Nonnull Consumer<BaniraClientSetupEvent> callback) {
-            modClientSetupCallbacks.add(callback);
+            java.util.Objects.requireNonNull(callback, "callback");
+            BaniraClientSetupEvent event;
+            synchronized (modClientSetupCallbacks) {
+                event = modClientSetupEvent;
+                if (event == null) {
+                    modClientSetupCallbacks.add(callback);
+                    return;
+                }
+            }
+            fire(java.util.Collections.singletonList(callback), event, "mod client setup");
         }
     }
 

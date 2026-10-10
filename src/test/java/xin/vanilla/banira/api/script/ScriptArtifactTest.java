@@ -58,6 +58,16 @@ public class ScriptArtifactTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void exercise(URL[] files) throws Exception {
         try (URLClassLoader loader = new URLClassLoader(files, null)) {
+            Class<?> costs = loader.loadClass("xin.vanilla.banira.api.BaniraCosts");
+            Object requirement = costs.getMethod("parse", String.class).invoke(null,
+                    "item(\"minecraft:diamond\",2) && (xpPoints(3)||score(\"token\",1))");
+            assertEquals("ALL", requirement.getClass().getMethod("kind").invoke(requirement).toString());
+            try {
+                costs.getMethod("parse", String.class).invoke(null, "System.exit(0)");
+                fail("Executable cost expression accepted");
+            } catch (java.lang.reflect.InvocationTargetException invalid) {
+                assertTrue(invalid.getCause() instanceof IllegalArgumentException);
+            }
             Class<?> api = loader.loadClass("xin.vanilla.banira.api.script.BaniraScripts");
             Class<?> limits = loader.loadClass("xin.vanilla.banira.api.script.ScriptLimits");
             Class<?> source = loader.loadClass("xin.vanilla.banira.api.script.ScriptSource");

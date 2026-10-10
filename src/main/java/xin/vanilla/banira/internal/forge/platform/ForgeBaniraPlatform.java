@@ -29,6 +29,11 @@ import java.util.function.Supplier;
 public final class ForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraInputService input = createInputService();
     private final BaniraLogoService logo = createLogoService();
+    private final BaniraCostService costs = new ForgeBaniraCostService();
+
+    @Nonnull
+    @Override
+    public BaniraCostService costService() { return costs; }
 
     @Nonnull
     @Override

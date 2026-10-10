@@ -16,6 +16,9 @@ public final class ForgeNetworkContext implements BaniraNetworkContext {
     }
 
     @Override
+    public Object connectionKey() { return context.getConnection(); }
+
+    @Override
     public void enqueueWork(Runnable work) {
         context.enqueueWork(work);
     }

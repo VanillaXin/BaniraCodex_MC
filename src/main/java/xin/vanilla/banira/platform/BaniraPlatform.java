@@ -96,4 +96,7 @@ public interface BaniraPlatform {
     @Nonnull
     BaniraLogoService logoService();
 
+    @Nonnull
+    default BaniraCostService costService() { return UnavailableCostService.INSTANCE; }
+
 }

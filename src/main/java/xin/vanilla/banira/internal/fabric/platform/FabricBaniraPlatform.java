@@ -36,6 +36,7 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     private static final List<String> CLIENT_ENTRYPOINT_KEYS = List.of("main", "client");
     private static final List<String> SERVER_ENTRYPOINT_KEYS = List.of("main", "server");
 
+    private final FabricBaniraCostService costs = new FabricBaniraCostService();
     private final Map<String, Class<?>> mainClassesByModId = new ConcurrentHashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new ConcurrentHashMap<>();
 
@@ -161,6 +162,12 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
     @Override
     public BaniraNetworkService networkService() {
         return FabricBaniraNetworkService.INSTANCE;
+    }
+
+    @Nonnull
+    @Override
+    public BaniraCostService costService() {
+        return costs;
     }
 
     @Nonnull

@@ -37,6 +37,7 @@ public final class BaniraClientEvents {
     private static final List<Consumer<BaniraChatEvent>> CHAT = new CopyOnWriteArrayList<>();
     private static final List<Consumer<BaniraScreenEvent>> GUI_SCREEN = new CopyOnWriteArrayList<>();
     private static final List<Consumer<BaniraClientSetupEvent>> CLIENT_SETUP = new CopyOnWriteArrayList<>();
+    private static BaniraClientSetupEvent clientSetupEvent;
 
     private static final BaniraMouseClickTracker MOUSE_CLICK_TRACKER = new BaniraMouseClickTracker();
     private static final BaniraDragTracker DRAG_TRACKER = new BaniraDragTracker();
@@ -52,7 +53,15 @@ public final class BaniraClientEvents {
     }
 
     public static void dispatchModClientSetup(@Nonnull BaniraClientSetupEvent event) {
-        fire(CLIENT_SETUP, event, "mod client setup");
+        java.util.Objects.requireNonNull(event, "event");
+        List<Consumer<BaniraClientSetupEvent>> callbacks;
+        synchronized (CLIENT_SETUP) {
+            if (clientSetupEvent != null) return;
+            clientSetupEvent = event;
+            callbacks = new java.util.ArrayList<>(CLIENT_SETUP);
+            CLIENT_SETUP.clear();
+        }
+        fire(callbacks, event, "mod client setup");
     }
 
     public static void dispatchClientPlayerLoggedIn(@Nonnull BaniraClientPlayerEvent event) {
@@ -228,7 +237,16 @@ public final class BaniraClientEvents {
         }
 
         public static void onClientSetup(@Nonnull Consumer<BaniraClientSetupEvent> callback) {
-            CLIENT_SETUP.add(callback);
+            java.util.Objects.requireNonNull(callback, "callback");
+            BaniraClientSetupEvent event;
+            synchronized (CLIENT_SETUP) {
+                event = clientSetupEvent;
+                if (event == null) {
+                    CLIENT_SETUP.add(callback);
+                    return;
+                }
+            }
+            fire(java.util.Collections.singletonList(callback), event, "mod client setup");
         }
     }
 

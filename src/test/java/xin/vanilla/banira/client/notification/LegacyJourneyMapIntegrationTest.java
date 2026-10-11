@@ -58,7 +58,7 @@ public class LegacyJourneyMapIntegrationTest {
         }
         assertTrue(calls.contains("journeymap/client/ui/UIManager.isMiniMapEnabled"));
         assertTrue(calls.contains("journeymap/client/ui/minimap/MiniMap.uiState"));
-        assertTrue(calls.contains("xin/vanilla/banira/client/notification/NotificationUnreadHud.isVisible"));
+        assertTrue(calls.contains("xin/vanilla/banira/client/notification/NotificationUnreadHud.isMinimapVisible"));
     }
 
     @Test

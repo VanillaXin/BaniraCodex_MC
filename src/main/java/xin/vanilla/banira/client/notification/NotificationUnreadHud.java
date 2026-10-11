@@ -67,9 +67,19 @@ public final class NotificationUnreadHud {
     }
 
     private static boolean canRender(Minecraft mc) {
-        return mc.level != null && mc.player != null && (mc.screen == null || mc.screen instanceof ChatScreen)
-                && !mc.options.hideGui && BaniraClientRuntime.isWindowActive()
-                && STATE.visible(NotificationManager.get().unreadCount());
+        return canRender(mc, false);
+    }
+
+    private static boolean canRender(Minecraft mc, boolean minimap) {
+        return mc.level != null && mc.player != null
+                && NotificationHudState.allowsScreen(minimap, mc.screen != null, mc.screen instanceof ChatScreen)
+                && (minimap || !mc.options.hideGui && BaniraClientRuntime.isWindowActive())
+                && (minimap ? STATE.visibleOnMinimap(NotificationManager.get().unreadCount())
+                : STATE.visible(NotificationManager.get().unreadCount()));
+    }
+
+    public static boolean isMinimapVisible() {
+        return canRender(Minecraft.getInstance(), true);
     }
 
     public static boolean isVisible() {

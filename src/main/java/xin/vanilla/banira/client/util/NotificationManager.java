@@ -56,7 +56,7 @@ public final class NotificationManager {
         long logId = nextLogId.incrementAndGet();
         notification.logEntryId(logId);
         appendLog(notification, fromNetwork);
-        if (!isTypeHidden(notification.notificationType())) {
+        if (!isTypeHidden(notification.notificationType()) && !muteState.muted(notification.notificationType())) {
             if (NotificationClientDisplay.deliverVanillaIfConfigured(notification.component(), notification.notificationType())) {
                 // 已由原版聊天/操作栏展示，不加入浮层
             } else if (!muteState.muted()) {
@@ -204,6 +204,29 @@ public final class NotificationManager {
         return true;
     }
 
+    public boolean overlaysMuted(String typeId) {
+        return muteState.muted(typeId) || muteState.muted();
+    }
+
+    public int nextMuteMinutes(String typeId) {
+        return muteState.nextMinutes(typeId);
+    }
+
+    public int muteType(String typeId) {
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        int minutes = muteState.mute(type);
+        long now = System.currentTimeMillis();
+        for (List<Notification> group : notifications.values()) {
+            for (Notification notification : group) {
+                if (type.equals(NotificationTypeKeys.normalizeOrDefault(notification.notificationType())))
+                    notification.dismissAnimated(now);
+            }
+        }
+        frameDrawOrder.removeIf(n -> type.equals(NotificationTypeKeys.normalizeOrDefault(n.notificationType())));
+        frameHoverStyle = null;
+        return minutes;
+    }
+
     public boolean overlaysMuted() {
         return muteState.muted();
     }
@@ -292,7 +315,7 @@ public final class NotificationManager {
 
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished()) {
+            if (n.finished() || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(mx, my)) {
@@ -300,7 +323,7 @@ public final class NotificationManager {
             }
             if (n.isCloseHit(mx, my)) {
                 NotificationStyleInteractionHelper.renderTextTooltip(stack, (int) mx, (int) my,
-                        BaniraComponent.get().transClientAuto("notification_mute_five_minutes"),
+                        BaniraComponent.get().transClientAuto("notification_mute_type_minutes", nextMuteMinutes(n.notificationType())),
                         n.notificationTheme());
                 break;
             }
@@ -330,14 +353,14 @@ public final class NotificationManager {
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished() || n.scheduledTime() > currentTime) {
+            if (n.finished() || n.scheduledTime() > currentTime || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(guiMouseX, guiMouseY)) {
                 continue;
             }
             if (n.isCloseHit(guiMouseX, guiMouseY)) {
-                muteForFiveMinutes();
+                muteType(n.notificationType());
                 return true;
             }
             Style st = n.styleAtTextPoint(guiMouseX, guiMouseY);

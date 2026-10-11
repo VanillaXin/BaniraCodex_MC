@@ -23,7 +23,7 @@ public final class NotificationMinimapBridge {
     }
 
     public static boolean claim(EnumNotificationHudHost host) {
-        if (!NotificationUnreadHud.isVisible() || Minecraft.getInstance().screen instanceof ChatScreen) return false;
+        if (!NotificationUnreadHud.isMinimapVisible()) return false;
         long now = now();
         HOSTS.seen(host, now);
         return HOSTS.select(ClientConfig.get().notificationHud().host(), now) == host;

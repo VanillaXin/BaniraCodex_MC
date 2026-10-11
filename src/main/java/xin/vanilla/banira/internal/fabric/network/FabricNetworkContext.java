@@ -14,20 +14,25 @@ public final class FabricNetworkContext implements BaniraNetworkContext {
     private final MinecraftServer server;
     private final ServerPlayer sender;
     private final boolean clientSide;
+    private final Object connectionKey;
 
-    private FabricNetworkContext(MinecraftServer server, ServerPlayer sender, boolean clientSide) {
+    private FabricNetworkContext(MinecraftServer server, ServerPlayer sender, boolean clientSide, Object connectionKey) {
         this.server = server;
         this.sender = sender;
         this.clientSide = clientSide;
+        this.connectionKey = connectionKey;
     }
 
-    public static FabricNetworkContext client() {
-        return new FabricNetworkContext(null, null, true);
+    public static FabricNetworkContext client(Object connectionKey) {
+        return new FabricNetworkContext(null, null, true, connectionKey);
     }
 
-    public static FabricNetworkContext server(MinecraftServer server, ServerPlayer sender) {
-        return new FabricNetworkContext(server, sender, false);
+    public static FabricNetworkContext server(MinecraftServer server, ServerPlayer sender, Object connectionKey) {
+        return new FabricNetworkContext(server, sender, false, connectionKey);
     }
+
+    @Override
+    public Object connectionKey() { return connectionKey; }
 
     @Override
     public void enqueueWork(Runnable work) {

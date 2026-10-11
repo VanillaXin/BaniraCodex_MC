@@ -22,21 +22,7 @@ public class JourneyMapPermissionTest {
     @Test
     public void supplierChecksNativePermissionBeforeClaimingHud() throws Exception {
         ClassNode node = read();
-        boolean guarded = false;
-        for (MethodNode m : node.methods) {
-            boolean permission = false;
-            for (AbstractInsnNode i : m.instructions)
-                if (i instanceof MethodInsnNode) {
-                    MethodInsnNode call = (MethodInsnNode) i;
-                    if (call.owner.equals("journeymap/client/InternalStateHandler") && call.name.equals("isMinimapEnabled"))
-                        permission = true;
-                    if (call.owner.endsWith("/NotificationMinimapBridge") && call.name.equals("text")) {
-                        assertTrue("Disabled native minimap must not claim HUD", permission);
-                        guarded = true;
-                    }
-                }
-        }
-        assertTrue(guarded);
+        JourneyMapGuardAssertions.assertNativeGuard(node, "journeymap/client/InternalStateHandler", "isMinimapEnabled");
     }
 
     @Test

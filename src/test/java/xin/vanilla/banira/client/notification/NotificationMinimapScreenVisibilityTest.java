@@ -70,8 +70,9 @@ public class NotificationMinimapScreenVisibilityTest {
     }
 
     @Test
-    public void journeyLayoutUsesMapVisibility() throws Exception {
-        assertTrue(calls("internal/forge/compat/minimap/JourneyMapNotificationPlugin", "refreshLayout", "isMinimapVisible"));
+    public void journeyLayoutUsesIndependentRowsWhileNotificationKeepsItsVisibility() throws Exception {
+        assertTrue(calls("internal/forge/compat/minimap/JourneyMapNotificationPlugin", "refreshLayout", "requestedIds"));
+        assertTrue(calls("client/notification/NotificationMinimapBridge", "notificationText", "isMinimapVisible"));
     }
 
     private boolean mapVisible(NotificationHudState state) throws Exception {

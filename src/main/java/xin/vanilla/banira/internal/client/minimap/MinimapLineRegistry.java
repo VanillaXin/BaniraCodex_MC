@@ -71,6 +71,26 @@ public final class MinimapLineRegistry {
         if (isMap(host)) lastSeen.put(host, nowNanos);
     }
 
+    public synchronized EnumNotificationHudHost selectedHost(EnumNotificationHudHost preference, long nowNanos) {
+        return select(preference, lastSeen, nowNanos);
+    }
+
+    public List<ResourceLocation> requestedIds(EnumNotificationHudHost host) {
+        if (!isMap(host)) return Collections.emptyList();
+        List<ResourceLocation> result = new ArrayList<>();
+        for (MinimapLine line : registrations()) {
+            try {
+                EnumNotificationHudHost preference = line.host();
+                if (preference != EnumNotificationHudHost.AUTO && preference != host) continue;
+                ITextComponent text = line.text();
+                if (text != null && !text.getString().isEmpty()) result.add(line.id());
+            } catch (RuntimeException | LinkageError exception) {
+                logFailure(line.id(), exception);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
     public List<MinimapLineSnapshot> snapshot(EnumNotificationHudHost host, long nowNanos) {
         List<MinimapLine> registered;
         Map<EnumNotificationHudHost, Long> hosts;

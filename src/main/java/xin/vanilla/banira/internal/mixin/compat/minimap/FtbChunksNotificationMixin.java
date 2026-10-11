@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
+import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 
 import java.util.List;
 
@@ -26,7 +27,8 @@ public abstract class FtbChunksNotificationMixin {
             slice = @Slice(from = @At(value = "FIELD", target = "Ldev/ftb/mods/ftbchunks/client/FTBChunksClient;MINIMAP_TEXT_LIST:Ljava/util/List;", ordinal = 0)),
             at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0))
     private void banira$appendUnread(MatrixStack stack, float partialTicks, CallbackInfo ci) {
-        ITextComponent text = NotificationMinimapBridge.text(EnumNotificationHudHost.FTB_CHUNKS);
-        if (!text.getString().isEmpty()) MINIMAP_TEXT_LIST.add(text);
+        for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
+            MINIMAP_TEXT_LIST.add(row.text());
+        }
     }
 }

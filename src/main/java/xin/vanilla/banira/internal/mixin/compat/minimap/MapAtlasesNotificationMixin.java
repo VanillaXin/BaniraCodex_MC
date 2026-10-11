@@ -23,7 +23,7 @@ public abstract class MapAtlasesNotificationMixin {
         Minecraft mc = Minecraft.getInstance();
         int size = Config.FORCE_MINIMAP_SCALING.get();
         int top = mc.player.getActiveEffects().isEmpty() ? 0 : 26;
-        NotificationMapLineRenderer.drawCentered(stack, NotificationMinimapBridge.text(EnumNotificationHudHost.MAP_ATLASES),
-                mc.getWindow().getGuiScaledWidth() - size / 2f, top + size + 2, size);
+        NotificationMapLineRenderer.drawLines(stack, NotificationMinimapBridge.rows(EnumNotificationHudHost.MAP_ATLASES),
+                mc.getWindow().getGuiScaledWidth() - size / 2f, top + size + 2, size, false);
     }
 }

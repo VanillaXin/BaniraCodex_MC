@@ -41,6 +41,10 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
         if (mixin.endsWith("XaeroInfoDisplaysMixin")) {
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
         }
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin")) {
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
+        }
         if (mixin.endsWith("FtbChunksNotificationMixin")) {
             return field(target, "MINIMAP_TEXT_LIST", "Ljava/util/List;")
                     && method(target, "renderHud", "(" + stack + "F)V");

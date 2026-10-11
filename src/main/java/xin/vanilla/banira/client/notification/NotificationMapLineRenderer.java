@@ -3,13 +3,66 @@ package xin.vanilla.banira.client.notification;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.IReorderingProcessor;
 import xin.vanilla.banira.client.util.ClientThemeManager;
+import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
+import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Legacy maps expose a text region rather than a registration API.
  */
 public final class NotificationMapLineRenderer {
     private NotificationMapLineRenderer() {
+    }
+
+    public static float drawLines(MatrixStack stack, List<MinimapLineSnapshot> rows,
+                                  float centerX, float y, float width, boolean above) {
+        Minecraft mc = Minecraft.getInstance();
+        return drawLines(stack, rows, centerX, y, width, .75f, above,
+                mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+    }
+
+    public static float drawLines(MatrixStack stack, List<MinimapLineSnapshot> rows,
+                                  float centerX, float y, float width, float scale, boolean above,
+                                  int screenWidth, int screenHeight) {
+        if (rows.isEmpty() || !Float.isFinite(width) || width <= 0 || !Float.isFinite(scale) || scale <= 0
+                || screenWidth <= 0 || screenHeight <= 0) return 0;
+        Minecraft mc = Minecraft.getInstance();
+        width = Math.min(width, screenWidth);
+        List<List<IReorderingProcessor>> wrapped = new ArrayList<>();
+        float total = 0;
+        for (MinimapLineSnapshot row : rows) {
+            List<IReorderingProcessor> lines = mc.font.split(row.text(), Math.max(1, (int) (width / scale)));
+            wrapped.add(lines);
+            total += lines.size() * mc.font.lineHeight;
+        }
+        float gaps = Math.max(0, rows.size() - 1) * 2f;
+        if (gaps >= screenHeight || total <= 0) return 0;
+        scale = Math.min(scale, (screenHeight - gaps) / total);
+        float[] heights = new float[rows.size()];
+        for (int i = 0; i < rows.size(); i++) heights[i] = wrapped.get(i).size() * mc.font.lineHeight * scale;
+        float[] positions = MinimapLineLayout.positions(y, heights, screenHeight, above);
+        int color = ClientThemeManager.getEffectiveTheme().popupItemText();
+        for (int i = 0; i < rows.size(); i++) {
+            float drawY = positions[i];
+            for (IReorderingProcessor line : wrapped.get(i)) {
+                float lineWidth = mc.font.width(line) * scale;
+                float left = Math.max(0, Math.min(centerX - lineWidth / 2, screenWidth - lineWidth));
+                stack.pushPose();
+                try {
+                    stack.translate(left, drawY, 0);
+                    stack.scale(scale, scale, 1);
+                    mc.font.draw(stack, line, 0, 0, color);
+                } finally {
+                    stack.popPose();
+                }
+                drawY += mc.font.lineHeight * scale;
+            }
+        }
+        return total * scale + gaps;
     }
 
     public static void drawCentered(MatrixStack stack, ITextComponent text, float centerX, float y, float width) {

@@ -184,6 +184,20 @@ public class MinimapLineRegistryTest {
     }
 
     @Test
+    public void requestedIdsDetectVisibilityWithoutClaimingHiddenMap() throws Exception {
+        Object registry = registry();
+        AtomicReference<String> text = new AtomicReference<>("00:10");
+        call(registry, "register", line("bad", 0, XAERO, () -> { throw new IllegalStateException("fixture"); }));
+        call(registry, "register", line("a", 1, XAERO, () -> new StringTextComponent(text.get())));
+        call(registry, "register", line("elsewhere", 2, EnumNotificationHudHost.JOURNEYMAP,
+                () -> new StringTextComponent("elsewhere")));
+        assertEquals(Arrays.asList(new ResourceLocation("fixture", "a")), call(registry, "requestedIds", XAERO));
+        assertTrue(snapshot(registry, XAERO, 0L).isEmpty());
+        text.set("");
+        assertEquals(new ArrayList<>(), call(registry, "requestedIds", XAERO));
+    }
+
+    @Test
     public void snapshotFreezesMutableTextAndReturnsDefensiveCopies() throws Exception {
         Object registry = registry();
         StringTextComponent mutable = new StringTextComponent("first");

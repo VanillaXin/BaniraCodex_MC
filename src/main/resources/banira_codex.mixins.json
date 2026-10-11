@@ -20,6 +20,7 @@
   ],
   "client": [
     "compat.minimap.XaeroInfoDisplaysMixin",
+    "compat.minimap.XaeroInfoDisplayManagerMixin",
     "compat.minimap.FtbChunksNotificationMixin",
     "compat.minimap.VoxelMapNotificationMixin",
     "compat.minimap.MapAtlasesNotificationMixin",

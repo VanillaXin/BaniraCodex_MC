@@ -53,7 +53,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
             previousPreference = previousOwner = null;
             return;
         }
-        boolean visible = NotificationUnreadHud.isVisible();
+        boolean visible = NotificationUnreadHud.isMinimapVisible();
         boolean allowed = UIManager.INSTANCE.isMiniMapEnabled()
                 && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled();
         EnumNotificationHudHost preference = ClientConfig.get().notificationHud().host();

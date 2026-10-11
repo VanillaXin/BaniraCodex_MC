@@ -32,7 +32,7 @@ public final class LegacyJourneyMapNotifications {
     }
 
     private static boolean canUseMap() {
-        return NotificationUnreadHud.isVisible() && UIManager.INSTANCE.isMiniMapEnabled()
+        return NotificationUnreadHud.isMinimapVisible() && UIManager.INSTANCE.isMiniMapEnabled()
                 && MiniMap.uiState().active;
     }
 
@@ -52,7 +52,7 @@ public final class LegacyJourneyMapNotifications {
             previousActive = false;
             return;
         }
-        boolean visible = NotificationUnreadHud.isVisible();
+        boolean visible = NotificationUnreadHud.isMinimapVisible();
         boolean active = UIManager.INSTANCE.isMiniMapEnabled() && MiniMap.uiState().active;
         EnumNotificationHudHost preference = ClientConfig.get().notificationHud().host();
         EnumNotificationHudHost owner = NotificationMinimapBridge.selectedHost();

@@ -4,7 +4,6 @@
   "key.banira_codex.notification_log": "Open Notification Log",
   "minimap.infoslot.banira_unread": "Unread Notifications",
   "sidebar_button.banira_codex.external_inventory_button": "Quick action",
-
   "format.banira_codex.advancement_display_mode_all": "List Mode\nAll Advancements (%s)",
   "format.banira_codex.advancement_display_mode_icon": "List Mode\nWith Icons (%s)",
   "format.banira_codex.command_detail_help": "Usage: /%1$s %2$s [page|subcommand]",
@@ -42,6 +41,7 @@
   "format.banira_codex.language_not_exist": "Language '%s' does not exist.",
   "format.banira_codex.mod_status": "%s's enable status is set to: %s.",
   "format.banira_codex.notification_minimap_unread": "%s unread",
+  "format.banira_codex.notification_mute_type_minutes": "Mute this notification type for %s minutes",
   "format.banira_codex.notify_help": "Welcome to %s! Use the command '%s' to view the help message.",
   "format.banira_codex.player_default_language": "The default language of the player is set to %s.",
   "format.banira_codex.player_virtual_op": "Virtual permission list of player '%s':\n%s",
@@ -60,7 +60,6 @@
   "format.banira_codex.set_duration": "Set Duration\nCurrent %s ticks",
   "format.banira_codex.set_quantity": "Set Quantity\nCurrent %s",
   "format.banira_codex.unknown_virtual_permission": "Unknown virtual permission: %s",
-
   "word.banira_codex.add": "Add",
   "word.banira_codex.advancement_select_advancement": "Click to edit advancement",
   "word.banira_codex.banira_codex": "Banira Codex",

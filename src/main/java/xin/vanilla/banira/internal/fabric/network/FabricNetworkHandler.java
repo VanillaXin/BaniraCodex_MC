@@ -100,7 +100,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
         clientReceiverRegistered = true;
         ClientPlayNetworking.registerGlobalReceiver(payloadType, (payload, context) ->
-                receive(payload.copyBuffer(), FabricNetworkContext.client()));
+                receive(payload.copyBuffer(), FabricNetworkContext.client(context.responseSender())));
     }
 
     private void registerServerReceiver() {
@@ -109,7 +109,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
         serverReceiverRegistered = true;
         ServerPlayNetworking.registerGlobalReceiver(payloadType, (payload, context) ->
-                receive(payload.copyBuffer(), FabricNetworkContext.server(context.server(), context.player())));
+                receive(payload.copyBuffer(), FabricNetworkContext.server(context.server(), context.player(), context.player().connection)));
     }
 
     private synchronized void registerPayloadType() {

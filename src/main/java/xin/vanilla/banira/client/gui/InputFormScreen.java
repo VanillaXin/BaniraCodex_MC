@@ -28,6 +28,7 @@ import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -122,6 +123,7 @@ public class InputFormScreen extends BaniraScreen {
         private DropdownInputMode dropdownInputMode = DropdownInputMode.SELECTION_ONLY;
         private Function<Results, String> validator = s -> "";
         private Consumer<Inputs> changed;
+        private BiFunction<Screen, Consumer<String>, Screen> picker;
 
         public Widget title(Text title) {
             this.title = title;
@@ -218,6 +220,7 @@ public class InputFormScreen extends BaniraScreen {
         NUMERIC,
         FILE,
         COLOR,
+        PICKER,
         DROPDOWN,
     }
 
@@ -432,6 +435,9 @@ public class InputFormScreen extends BaniraScreen {
                 throw new RuntimeException("Widgets list cannot be empty");
             }
             for (Widget w : this.getWidgets()) {
+                if (w.type() == WidgetType.PICKER && w.picker() == null) {
+                    throw new IllegalArgumentException("PICKER widget requires a callback");
+                }
                 if (w.type() == WidgetType.DROPDOWN
                         && (w.dropdownOptions() == null || w.dropdownOptions().isEmpty())
                         && (w.dropdownOptionEntries() == null || w.dropdownOptionEntries().isEmpty())
@@ -685,7 +691,8 @@ public class InputFormScreen extends BaniraScreen {
 
                 inputField.slider(slider);
                 addWidget(slider);
-            } else if (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR) {
+            } else if (widget.type() == WidgetType.FILE || widget.type() == WidgetType.COLOR
+                    || widget.type() == WidgetType.PICKER) {
                 int pickerInputW = inputW - PICKER_BTN_W - PICKER_BTN_GAP;
                 InputWidget pickerInput = new InputWidget(this);
                 pickerInput.id("input_" + i);
@@ -694,7 +701,8 @@ public class InputFormScreen extends BaniraScreen {
                 pickerInput.maxLength(widget.maxLength());
                 Text pickerHint = widget.type() == WidgetType.FILE
                         ? Text.transAuto(Banira.MOD_ID, "enter_file_path")
-                        : Text.transAuto(Banira.MOD_ID, "enter_color_hex");
+                        : widget.type() == WidgetType.COLOR
+                        ? Text.transAuto(Banira.MOD_ID, "enter_color_hex") : widget.hint();
                 pickerInput.text(pickerHint);
                 pickerInput.enabled(!widget.disabled());
                 pickerInput.editable(true);
@@ -714,6 +722,7 @@ public class InputFormScreen extends BaniraScreen {
                 pickerBtn.id("btn_" + i);
                 pickerBtn.bounds(new ScreenCoordinate(contentLeft + pickerInputW + PICKER_BTN_GAP, inputY, PICKER_BTN_W, INPUT_H));
                 pickerBtn.text(Text.literal("..."));
+                pickerBtn.enabled(!widget.disabled());
                 pickerBtn.onClick(b -> {
                     if (widget.type() == WidgetType.FILE) {
                         String[] exts = new String[0];
@@ -736,6 +745,9 @@ public class InputFormScreen extends BaniraScreen {
                                 pickerInput.value(color);
                             }
                         });
+                    } else {
+                        Minecraft.getInstance().setScreen(Objects.requireNonNull(
+                                widget.picker().apply(this, pickerInput::value)));
                     }
                 });
 
@@ -1095,6 +1107,21 @@ public class InputFormScreen extends BaniraScreen {
         }
 
         super.renderButtons(graphics, partialTicks);
+
+        for (int i = 0; i < inputFields.size(); i++) {
+            InputField field = inputFields.get(i);
+            Widget widget = args.getWidgets().get(i);
+            if (widget.type() == WidgetType.PICKER && widget.tooltip() != null
+                    && field.button() != null && field.button().visible()
+                    && field.button().isMouseInside(inputState.mouseX(), inputState.mouseY())
+                    && (!scrollMode || inputState.mouseY() >= listTop
+                    && inputState.mouseY() < listTop + listAreaHeight)) {
+                addDeferredTooltipRender(s -> TooltipWidget.drawPopupMessage(s.pose(),
+                        FontDrawArgs.ofPopo(widget.tooltip().clone().stack(s.pose()))
+                                .x(inputState.mouseX()).y(inputState.mouseY()),
+                        getEffectiveTheme(), season()));
+            }
+        }
 
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);

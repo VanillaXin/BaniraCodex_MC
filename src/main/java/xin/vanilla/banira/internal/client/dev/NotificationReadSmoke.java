@@ -45,7 +45,7 @@ final class NotificationReadSmoke {
             long read = saved.stream().filter(e -> TYPE.equals(e.notificationType()) && e.read()).count();
             long unread = saved.stream().filter(e -> TYPE.equals(e.notificationType()) && !e.read()).count();
             require(read == 4 && unread == 1, "read states did not survive restart: " + read + "/" + unread);
-            require(!manager.overlaysMuted(), "mute persisted into new client session");
+            require(!manager.overlaysMuted(TYPE), "mute persisted into new client session");
             manager.muteForFiveMinutes();
             // The existing remote vanilla batch must still arrive while overlay mute is active.
             BaniraNetworkSmokeStatus.append("PASS notification-read-restart read=4 unread=1 vanilla-muted=true");
@@ -98,7 +98,7 @@ final class NotificationReadSmoke {
                 require(selectedId == selectedEntry().id(), "resizing history changed the selected detail");
                 require(manager.tryHandleHudClick(bubble.closeBtnLeft() + 2, bubble.closeBtnTop() + 2, 0),
                         "close control was not clickable");
-                require(manager.overlaysMuted(), "close control did not enable mute");
+                require(manager.overlaysMuted(TYPE), "close control did not enable mute");
                 Notification muted = add("Received during mute", false);
                 require(manager.unreadCount() == 3, "muted notification was not recorded as unread");
                 Map<?, ?> overlays = (Map<?, ?>) field(manager, "notifications");

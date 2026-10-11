@@ -4,7 +4,6 @@
   "key.banira_codex.notification_log": "打开通知日志",
   "minimap.infoslot.banira_unread": "未读通知",
   "sidebar_button.banira_codex.external_inventory_button": "快捷入口",
-
   "format.banira_codex.advancement_display_mode_all": "列出模式\n所有进度 (%s)",
   "format.banira_codex.advancement_display_mode_icon": "列出模式\n有图标的 (%s)",
   "format.banira_codex.command_detail_help": "用法：/%1$s %2$s [页码|子指令]",
@@ -42,6 +41,7 @@
   "format.banira_codex.language_not_exist": "语言『%s』不存在",
   "format.banira_codex.mod_status": "%s的启用状态被设置为：%s",
   "format.banira_codex.notification_minimap_unread": "%s条未读通知",
+  "format.banira_codex.notification_mute_type_minutes": "屏蔽此类型通知 %s 分钟",
   "format.banira_codex.notify_help": "欢迎使用%s，使用指令『%s』以获取帮助信息！",
   "format.banira_codex.player_default_language": "玩家默认语言被设置为：%s",
   "format.banira_codex.player_virtual_op": "玩家『%s』的虚拟权限列表：\n%s",
@@ -60,7 +60,6 @@
   "format.banira_codex.set_duration": "设置持续时间\n当前 %s 刻",
   "format.banira_codex.set_quantity": "设置数量\n当前 %s",
   "format.banira_codex.unknown_virtual_permission": "未知的虚拟权限：%s",
-
   "word.banira_codex.add": "添加",
   "word.banira_codex.advancement_select_advancement": "点击设置进度",
   "word.banira_codex.banira_codex": "香草志",

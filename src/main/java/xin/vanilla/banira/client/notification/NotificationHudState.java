@@ -6,6 +6,7 @@ public final class NotificationHudState {
     private boolean previousDown;
     private boolean toggled;
     private boolean shown;
+    private boolean minimapShown;
     private EnumNotificationHudMode previousMode;
 
     public void update(EnumNotificationHudMode mode, boolean down, boolean active) {
@@ -20,19 +21,28 @@ public final class NotificationHudState {
         previousMode = mode;
         if (active && acceptInput && down && !previousDown && mode == EnumNotificationHudMode.TOGGLE)
             toggled = !toggled;
-        shown = active && (mode == EnumNotificationHudMode.ALWAYS
+        minimapShown = mode == EnumNotificationHudMode.ALWAYS
                 || mode == EnumNotificationHudMode.HOLD && down
-                || mode == EnumNotificationHudMode.TOGGLE && toggled);
+                || mode == EnumNotificationHudMode.TOGGLE && toggled;
+        shown = active && minimapShown;
         previousDown = down;
     }
 
     public void reset() {
-        toggled = shown = previousDown = false;
+        toggled = shown = minimapShown = previousDown = false;
         previousMode = null;
     }
 
     public boolean visible(int unread) {
         return shown;
+    }
+
+    public boolean visibleOnMinimap(int unread) {
+        return minimapShown;
+    }
+
+    public static boolean allowsScreen(boolean minimap, boolean screenOpen, boolean chatScreen) {
+        return minimap || !screenOpen || chatScreen;
     }
 
     public static String countLabel(int unread) {

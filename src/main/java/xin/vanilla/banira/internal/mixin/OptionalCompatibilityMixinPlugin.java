@@ -36,11 +36,19 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
     private static boolean matchesMinimap(String mixin, ClassNode target) {
         if (mixin.endsWith("XaeroInfoDisplaysMixin"))
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
         String graphics = "Lnet/minecraft/client/gui/GuiGraphics;";
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "setupComponents", "()V") && method(target, "renderHud", "(" + graphics + "F)V");
         if (mixin.endsWith("MapAtlasesNotificationMixin"))
             return field(target, "globalScale", "F") && method(target, "render", "(" + graphics + "FII)V");
+        if (mixin.endsWith("JourneyMapTextBoundsMixin"))
+            return method(target, "drawBatchLabel", "(" + graphics
+                    + "Lnet/minecraft/network/chat/Component;Ljourneymap/client/render/draw/DrawStep$Pass;"
+                    + "Lnet/minecraft/client/renderer/MultiBufferSource;DDLjourneymap/client/render/draw/DrawUtil$HAlign;"
+                    + "Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
         return false;
     }
 

@@ -15,7 +15,9 @@
   ],
   "client": [
     "compat.minimap.XaeroInfoDisplaysMixin",
+    "compat.minimap.XaeroInfoDisplayManagerMixin",
     "compat.minimap.FtbChunksNotificationMixin",
+    "compat.minimap.JourneyMapTextBoundsMixin",
     "compat.minimap.MapAtlasesNotificationMixin",
     "compat.ftblibrary.SidebarButtonMixin",
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",

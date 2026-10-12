@@ -24,19 +24,65 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
                 && !mixinClassName.contains(".compat.minimap.")) return true;
         URL target = FabricMixinConfigPlugin.class.getClassLoader().getResource(targetClassName.replace('.', '/') + ".class");
         if (target == null) return false;
-        if (!mixinClassName.contains(".compat.minimap.")) {
+        if (mixinClassName.contains(".compat.jei.") && !FabricLoader.getInstance().isModLoaded("jei")) return false;
+        if (!mixinClassName.contains(".compat.minimap.") && !mixinClassName.contains(".compat.jei.")) {
             if (mixinClassName.contains(".compat.ftblibrary."))
                 return FabricLoader.getInstance().isModLoaded("ftblibrary");
-            if (mixinClassName.contains(".compat.jei.")) return FabricLoader.getInstance().isModLoaded("jei");
             return true;
         }
         try (InputStream input = target.openStream()) {
             ClassNode node = new ClassNode();
             new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
-            return matchesMinimap(mixinClassName, node);
+            return mixinClassName.contains(".compat.jei.") ? matchesJei(mixinClassName, node)
+                    && matchesJeiBundle(jeiTarget("mezz.jei.gui.overlay.bookmarks.BookmarkButtonController"),
+                        jeiTarget("mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController"),
+                        jeiTarget("mezz.jei.gui.elements.IconButton"))
+                    : matchesMinimap(mixinClassName, node);
         } catch (IOException | RuntimeException exception) {
             return false;
         }
+    }
+
+    private static ClassNode jeiTarget(String name) throws IOException {
+        URL target = FabricMixinConfigPlugin.class.getClassLoader().getResource(name.replace('.', '/') + ".class");
+        if (target == null) return null;
+        try (InputStream input = target.openStream()) {
+            ClassNode node = new ClassNode();
+            new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
+            return node;
+        }
+    }
+
+    private static boolean matchesJeiBundle(ClassNode bookmark, ClassNode history, ClassNode icon) {
+        return bookmark != null && history != null && icon != null
+                && matchesJei("BookmarkButtonMixin", bookmark)
+                && matchesJei("LookupHistoryButtonMixin", history)
+                && matchesJei("GuiIconToggleButtonMixin", icon);
+    }
+
+    private static boolean matchesJei(String mixin, ClassNode target) {
+        String drawable = "Lmezz/jei/api/gui/drawable/IDrawable;";
+        String config = "Lmezz/jei/common/config/IClientConfig;";
+        String toggles = "Lmezz/jei/common/config/IClientToggleState;";
+        String input = "Lmezz/jei/api/gui/inputs/IJeiUserInput;";
+        if (mixin.endsWith("LookupHistoryButtonMixin"))
+            return field(target, "offIcon", drawable) && field(target, "onIcon", drawable)
+                    && field(target, "clientConfig", config) && method(target, "<init>", "(" + config + ")V")
+                    && method(target, "onPress", "(" + input + ")Z");
+        if (mixin.endsWith("BookmarkButtonMixin"))
+            return field(target, "offIcon", drawable) && field(target, "onIcon", drawable)
+                    && field(target, "toggleState", toggles)
+                    && method(target, "<init>", "(Lmezz/jei/gui/overlay/bookmarks/BookmarkOverlay;Lmezz/jei/gui/bookmarks/BookmarkList;"
+                        + toggles + "Lmezz/jei/common/input/IInternalKeyMappings;)V")
+                    && method(target, "onPress", "(" + input + ")Z");
+        if (mixin.endsWith("GuiIconToggleButtonMixin")) {
+            if (!field(target, "controller", "Lmezz/jei/api/gui/buttons/IIconButtonController;")) return false;
+            String graphics = descriptor("net.minecraft.class_332");
+            return method(target, "draw", "(" + graphics + "IIF)V")
+                    && method(target, "drawTooltips", "(" + graphics + "II)V")
+                    && method(target, "isMouseOver", "(DD)Z");
+        }
+        return false;
     }
 
     private static boolean matchesMinimap(String mixin, ClassNode target) {

@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
-import mezz.jei.gui.input.InputType;
-import mezz.jei.gui.input.UserInput;
+import mezz.jei.api.gui.inputs.IJeiUserInput;
+import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
 import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
 import net.minecraft.client.Minecraft;
@@ -30,6 +30,7 @@ public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =
             ThreadLocal.withInitial(() -> false);
+    private static volatile boolean registered;
     private static volatile BookmarkButtonController bookmarkController;
     private static volatile IDrawable bookmarkOffIcon;
     private static volatile IDrawable bookmarkOnIcon;
@@ -43,8 +44,11 @@ public final class JeiCompatibility {
     }
 
     public static void init() {
-        if (!ModList.get().isLoaded("jei")) return;
+        if (registered || !ModList.get().isLoaded("jei")) return;
+        if (!JeiRuntimeAccess.supportsConfig(IClientConfig.class)
+                || !JeiRuntimeAccess.supportsInput(JeiCompatibility.class.getClassLoader())) return;
         ExternalInventoryButtonManager.get().registerProvider(new BookmarkProvider());
+        registered = true;
     }
 
     public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
@@ -54,6 +58,7 @@ public final class JeiCompatibility {
         bookmarkOffIcon = offIcon;
         bookmarkOnIcon = onIcon;
         bookmarkToggleState = toggleState;
+        if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
     }
 
     public static void captureLookupHistory(Object value, IDrawable offIcon,
@@ -63,22 +68,19 @@ public final class JeiCompatibility {
         lookupHistoryOffIcon = offIcon;
         lookupHistoryOnIcon = onIcon;
         lookupHistoryConfig = clientConfig;
+        if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
     }
 
     public static boolean isManagedBookmark(Object value) {
-        return value == bookmarkController || value != null
-                && "mezz.jei.gui.overlay.bookmarks.BookmarkButtonController".equals(
-                value.getClass().getName());
+        return value != null && value == bookmarkController;
     }
 
     public static boolean isManagedLookupHistory(Object value) {
-        return value == lookupHistoryController || value != null
-                && "mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController".equals(
-                value.getClass().getName());
+        return value != null && value == lookupHistoryController;
     }
 
     public static boolean shouldSuppress(Object value) {
-        return (isManagedBookmark(value) || isManagedLookupHistory(value))
+        return registered && (isManagedBookmark(value) || isManagedLookupHistory(value))
                 && ExternalInventoryButtonManager.get().suppressesNativeButtons(SOURCE_ID);
     }
 
@@ -90,16 +92,16 @@ public final class JeiCompatibility {
         BookmarkButtonController controller = bookmarkController;
         Screen screen = Minecraft.getInstance().screen;
         if (controller == null || screen == null) return;
-        forwardClick(() -> controller.onPress(
-                UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE)));
+        Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
+        if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
     }
 
     private static void activateLookupHistory() {
         LookupHistoryButtonController controller = lookupHistoryController;
         Screen screen = Minecraft.getInstance().screen;
         if (controller == null || screen == null) return;
-        forwardClick(() -> controller.onPress(
-                UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE)));
+        Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
+        if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
     }
 
     private static void forwardClick(Runnable action) {
@@ -120,7 +122,7 @@ public final class JeiCompatibility {
 
     private static void drawLookupHistoryIcon(PoseStack stack, int x, int y, int size) {
         IClientConfig config = lookupHistoryConfig;
-        IDrawable icon = config != null && config.isLookupHistoryEnabled()
+        IDrawable icon = JeiRuntimeAccess.lookupHistoryEnabled(config)
                 ? lookupHistoryOnIcon : lookupHistoryOffIcon;
         drawNativeIcon(stack, x, y, size, icon);
     }
@@ -152,13 +154,13 @@ public final class JeiCompatibility {
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
             List<ExternalInventoryAction> actions = new ArrayList<>();
-            actions.add(new ExternalInventoryAction(
+            if (bookmarkController != null) actions.add(new ExternalInventoryAction(
                     "bookmarks",
                     BaniraComponent.get().literal(I18n.get("word.banira_codex.jei_bookmarks")),
                     QuickIcon.custom((stack, minecraft, x, y, size) ->
                             drawBookmarkIcon(stack, x, y, size)),
                     context -> activateBookmark()));
-            actions.add(new ExternalInventoryAction(
+            if (lookupHistoryController != null) actions.add(new ExternalInventoryAction(
                     "lookup_history",
                     BaniraComponent.get().literal(I18n.get(
                             "word.banira_codex.jei_lookup_history")),

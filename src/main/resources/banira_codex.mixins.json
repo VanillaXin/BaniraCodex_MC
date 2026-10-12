@@ -19,6 +19,7 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "compat.minimap.JourneyMapTextBoundsMixin",
     "compat.minimap.XaeroInfoDisplaysMixin",
     "compat.minimap.XaeroInfoDisplayManagerMixin",
     "compat.minimap.FtbChunksNotificationMixin",

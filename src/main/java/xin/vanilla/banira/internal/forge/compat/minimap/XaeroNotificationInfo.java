@@ -11,6 +11,7 @@ import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
+import xin.vanilla.banira.internal.client.minimap.MinimapTextLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,8 +48,10 @@ public final class XaeroNotificationInfo {
                     for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.XAERO)) {
                         if (!row.id().equals(line.id())) continue;
                         net.minecraft.util.text.ITextComponent text = row.text();
-                        if (Minecraft.getInstance().font.width(text) <= width) compiler.addLine(text);
-                        else compiler.addWords(text.getString());
+                        for (net.minecraft.util.text.ITextComponent part : MinimapTextLayout.wrap(text,
+                                Minecraft.getInstance().font.getSplitter(), width)) {
+                            compiler.addLine(part);
+                        }
                         break;
                     }
                 }).build();

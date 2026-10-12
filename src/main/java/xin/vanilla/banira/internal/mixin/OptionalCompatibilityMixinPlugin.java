@@ -45,6 +45,9 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
             return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
                     && method(target, "applyLocalConfig", "()V");
         }
+        if (mixin.endsWith("JourneyMapTextBoundsMixin")) {
+            return method(target, "drawBatchLabel", "(Ljourneymap/client/render/backend/RenderContext;Ljava/lang/String;Ljourneymap/client/render/draw/DrawStep$Pass;DDLjourneymap/client/render/draw/DrawUtil$HAlign;Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
+        }
         if (mixin.endsWith("FtbChunksNotificationMixin")) {
             return field(target, "MINIMAP_TEXT_LIST", "Ljava/util/List;")
                     && method(target, "renderHud", "(" + stack + "F)V");

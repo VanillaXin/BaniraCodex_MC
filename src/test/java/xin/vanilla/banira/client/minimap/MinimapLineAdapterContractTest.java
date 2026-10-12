@@ -45,8 +45,34 @@ public class MinimapLineAdapterContractTest {
     }
 
     @Test
+    public void xaeroWrapsUnspacedTextAtNativeGlyphBoundaries() throws Exception {
+        assertTrue(calls(node("xin/vanilla/banira/internal/forge/compat/minimap/XaeroNotificationInfo"),
+                "xin/vanilla/banira/internal/client/minimap/MinimapTextLayout", "wrap"));
+    }
+
+    @Test
     public void journeySupplierConsumesIndependentInformationRows() throws Exception {
         assertSharedRows("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin");
+    }
+
+    @Test
+    public void journeyBoundsMixinIsPresentAndDescriptorGuarded() throws Exception {
+        String name = "xin/vanilla/banira/internal/mixin/compat/minimap/JourneyMapTextBoundsMixin";
+        node(name);
+        ClassNode target = new ClassNode();
+        String descriptor = "(Ljourneymap/client/render/backend/RenderContext;Ljava/lang/String;Ljourneymap/client/render/draw/DrawStep$Pass;DDLjourneymap/client/render/draw/DrawUtil$HAlign;Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V";
+        target.methods.add(new MethodNode(0, "drawBatchLabel", descriptor, null, null));
+        Method match = OptionalCompatibilityMixinPlugin.class.getDeclaredMethod("matchesMinimap", String.class, ClassNode.class);
+        match.setAccessible(true);
+        assertEquals(true, match.invoke(null, name.replace('/', '.'), target));
+        target.methods.clear();
+        assertEquals(false, match.invoke(null, name.replace('/', '.'), target));
+    }
+
+    @Test
+    public void journeyBatchLabelsHaveTheSameWidthConstraint() throws Exception {
+        assertTrue(node("xin/vanilla/banira/internal/mixin/compat/minimap/JourneyMapTextBoundsMixin")
+                .methods.stream().anyMatch(method -> method.name.equals("banira$boundInformationBatch")));
     }
 
     @Test

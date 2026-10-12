@@ -36,6 +36,11 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
     private static boolean matchesMinimap(String mixin, ClassNode target) {
         if (mixin.endsWith("XaeroInfoDisplaysMixin"))
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
+        if (mixin.endsWith("JourneyMapTextBoundsMixin"))
+            return method(target, "drawBatchLabel", "(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/network/chat/Component;Lnet/minecraft/client/renderer/MultiBufferSource;DDLjourneymap/client/render/draw/DrawUtil$HAlign;Ljourneymap/client/render/draw/DrawUtil$VAlign;Ljava/lang/Integer;FIFDZD)V");
         String stack = "Lcom/mojang/blaze3d/vertex/PoseStack;";
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return field(target, "MINIMAP_TEXT_LIST", "Ljava/util/List;")

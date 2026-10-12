@@ -17,7 +17,7 @@ public class LegacyJourneyMapIntegrationTest {
         ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
         java.util.List<Long> clock = new java.util.ArrayList<>();
         for (MethodNode method : node.methods) {
-            if (!method.name.equals("<clinit>")) continue;
+            if (!method.name.equals("slot")) continue;
             for (AbstractInsnNode instruction : method.instructions) {
                 if (instruction.getOpcode() == org.objectweb.asm.Opcodes.LCONST_0) clock.add(0L);
                 if (instruction.getOpcode() == org.objectweb.asm.Opcodes.LCONST_1) clock.add(1L);
@@ -44,7 +44,7 @@ public class LegacyJourneyMapIntegrationTest {
     }
 
     @Test
-    public void visibilityGuardUsesNativeMapStateAndHudVisibility() throws Exception {
+    public void visibilityGuardUsesNativeMapStateIndependentlyOfNotificationVisibility() throws Exception {
         ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
         Set<String> calls = new HashSet<>();
         for (MethodNode method : node.methods) {
@@ -58,7 +58,39 @@ public class LegacyJourneyMapIntegrationTest {
         }
         assertTrue(calls.contains("journeymap/client/ui/UIManager.isMiniMapEnabled"));
         assertTrue(calls.contains("journeymap/client/ui/minimap/MiniMap.uiState"));
-        assertTrue(calls.contains("xin/vanilla/banira/client/notification/NotificationUnreadHud.isMinimapVisible"));
+        assertFalse(calls.contains("xin/vanilla/banira/client/notification/NotificationUnreadHud.isMinimapVisible"));
+    }
+
+    @Test
+    public void slotAppendDoesNotDereferencePartiallyInitializedNativeManager() throws Exception {
+        ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
+        boolean guarded = false;
+        for (MethodNode method : node.methods) {
+            if (!method.name.equals("canUseMap")) continue;
+            for (AbstractInsnNode instruction : method.instructions) {
+                if (!(instruction instanceof FieldInsnNode)) continue;
+                FieldInsnNode field = (FieldInsnNode) instruction;
+                if (!field.owner.equals("journeymap/client/ui/UIManager") || !field.name.equals("INSTANCE")) continue;
+                AbstractInsnNode next = instruction.getNext();
+                while (next != null && next.getOpcode() < 0) next = next.getNext();
+                guarded |= next != null && (next.getOpcode() == org.objectweb.asm.Opcodes.IFNULL
+                        || next.getOpcode() == org.objectweb.asm.Opcodes.IFNONNULL);
+            }
+        }
+        assertTrue("Native manager is not yet assigned during its initial DisplayVars constructor", guarded);
+    }
+
+    @Test
+    public void nativeScreenPolicyPreventsHiddenSlotSuppliersClaimingTheHost() throws Exception {
+        ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
+        boolean guarded = false;
+        for (MethodNode method : node.methods) if (method.name.equals("canUseMap"))
+            for (AbstractInsnNode instruction : method.instructions) if (instruction instanceof MethodInsnNode) {
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                guarded |= call.owner.equals("xin/vanilla/banira/internal/client/minimap/MinimapLineLayout")
+                        && call.name.equals("allowsLegacyJourneyScreen");
+            }
+        assertTrue("Slot reads must follow native JourneyMap5 rendering visibility", guarded);
     }
 
     @Test

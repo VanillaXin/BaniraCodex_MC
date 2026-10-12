@@ -50,7 +50,7 @@ public class NotificationMinimapTextTest {
         }
         boolean count = false, empty = false;
         for (MethodNode m : node.methods)
-            if (m.name.equals("text")) for (AbstractInsnNode i : m.instructions)
+            if (m.name.equals("text") || m.name.equals("notificationText")) for (AbstractInsnNode i : m.instructions)
                 if (i instanceof LdcInsnNode) {
                     count |= "notification_minimap_unread".equals(((LdcInsnNode) i).cst);
                     empty |= "notification_minimap_empty".equals(((LdcInsnNode) i).cst);

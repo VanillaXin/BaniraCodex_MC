@@ -133,6 +133,8 @@ dependencies {
 
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
     compileOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
+    testRuntimeOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
+    testRuntimeOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
     compileOnly fg.deobf("maven.modrinth:journeymap:v7sAIUDv")
     compileOnly fg.deobf("curse.maven:voxelmap-225179:3197677")
     compileOnly fg.deobf("curse.maven:map-atlases-forge-519759:3508631")

@@ -14,6 +14,8 @@ import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
@@ -21,6 +23,7 @@ import java.util.function.Consumer;
 /** Loaded only by guarded Xaero mixins. */
 public final class XaeroNotificationInfo {
     private static final Set<InfoDisplayManager> MANAGERS = Collections.newSetFromMap(new WeakHashMap<>());
+    private static final Map<ResourceLocation, InfoDisplay<Boolean>> DISPLAYS = new HashMap<>();
     private static boolean listening;
 
     private XaeroNotificationInfo() {
@@ -30,8 +33,10 @@ public final class XaeroNotificationInfo {
         return id.toString().equals("banira_codex:unread") ? "banira_unread" : "banira_line_" + id;
     }
 
-    private static InfoDisplay<Boolean> display(MinimapLine line) {
-        return InfoDisplay.Builder.<Boolean>begin()
+    private static synchronized InfoDisplay<Boolean> display(MinimapLine line) {
+        InfoDisplay<Boolean> existing = DISPLAYS.get(line.id());
+        if (existing != null) return existing;
+        InfoDisplay<Boolean> result = InfoDisplay.Builder.<Boolean>begin()
                 .setId(nativeId(line.id()))
                 .setName(line.displayName())
                 .setDefaultState(true)
@@ -47,6 +52,8 @@ public final class XaeroNotificationInfo {
                         break;
                     }
                 }).build();
+        DISPLAYS.put(line.id(), result);
+        return result;
     }
 
     public static void append(Consumer<Object> destination) {

@@ -131,6 +131,9 @@ configurations.configureEach { configuration ->
 repositories { flatDir { dirs minimapLibraryDirectory } }
 
 dependencies {
+    compileOnly fg.deobf("curse.maven:ftb-chunks-forge-314906:5710631")
+    testRuntimeOnly fg.deobf("maven.modrinth:xaeros-minimap:PnU8xBsV")
+    testRuntimeOnly fg.deobf("banira.optional:xaerolib-forge-1.19.2:1.7.3")
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:PnU8xBsV")
     compileOnly fg.deobf("banira.optional:xaerolib-forge-1.19.2:1.7.3")
     compileOnly fg.deobf("maven.modrinth:journeymap:aSblGSXj")

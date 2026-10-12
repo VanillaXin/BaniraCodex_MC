@@ -18,7 +18,7 @@ public class FtbMinimapContractTest {
         }
         for (FieldNode field : node.fields)
             assertNotEquals("Removed native field must not be shadowed", "MINIMAP_TEXT_LIST", field.name);
-        boolean builds = false, reads = false, appends = false;
+        boolean builds = false, reads = false, appends = false, wraps = false;
         for (MethodNode method : node.methods) {
             if (method.visibleAnnotations != null) for (AnnotationNode annotation : method.visibleAnnotations) {
                 if (!annotation.desc.endsWith("/Inject;")) continue;
@@ -30,9 +30,11 @@ public class FtbMinimapContractTest {
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 reads |= call.name.equals("getReturnValue");
-                appends |= call.owner.equals("java/util/List") && call.name.equals("add");
+                appends |= call.owner.equals("java/util/List") && call.name.equals("addAll");
+                wraps |= call.owner.equals("xin/vanilla/banira/internal/client/minimap/MinimapTextLayout")
+                        && call.name.equals("wrap");
             }
         }
-        assertTrue(builds && reads && appends);
+        assertTrue(builds && reads && appends && wraps);
     }
 }

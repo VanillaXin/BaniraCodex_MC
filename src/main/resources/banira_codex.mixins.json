@@ -18,7 +18,9 @@
     "compat.jei.LookupHistoryButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.GuiHudLayerMixin",
-    "injections.MinecraftClientMixin"
+    "injections.MinecraftClientMixin",
+    "compat.minimap.JourneyMapTextBoundsMixin",
+    "compat.minimap.XaeroInfoDisplayManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

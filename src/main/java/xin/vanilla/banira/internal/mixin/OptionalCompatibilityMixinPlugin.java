@@ -80,7 +80,13 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
     private static boolean matchesMinimap(String mixin, ClassNode target) {
         if (mixin.endsWith("XaeroInfoDisplaysMixin"))
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
         String graphics = "Lnet/minecraft/client/gui/GuiGraphics;";
+        if (mixin.endsWith("JourneyMapTextBoundsMixin"))
+            return matchesJourneyBounds(target, graphics, "Lnet/minecraft/network/chat/Component;",
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;");
         String delta = "Lnet/minecraft/client/DeltaTracker;";
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "setupComponents", "()V") && method(target, "renderHud", "(" + graphics + delta + ")V");
@@ -88,6 +94,13 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
             return field(target, "globalScale", "F") && method(target, "render", "(" + graphics + delta + ")V")
                     && method(target, "renderText", "(" + graphics + "IILpepjebs/mapatlases/client/Anchoring;)V");
         return false;
+    }
+
+    private static boolean matchesJourneyBounds(ClassNode target, String graphics, String component, String buffers) {
+        return method(target, "drawBatchLabel", "(" + graphics + component
+                + "Ljourneymap/client/render/draw/DrawStep$Pass;" + buffers
+                + "DDLjourneymap/client/render/draw/DrawUtil$HAlign;"
+                + "Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
     }
 
     private static boolean method(ClassNode target, String name, String descriptor) {

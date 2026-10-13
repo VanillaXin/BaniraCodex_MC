@@ -33,9 +33,9 @@ public abstract class MapAtlasesNotificationMixin {
         try {
             graphics.pose().scale(1 / globalScale, 1 / globalScale, 1);
             Minecraft mc = Minecraft.getInstance();
-            NotificationMapLineRenderer.drawCentered(graphics,
-                    NotificationMinimapBridge.text(EnumNotificationHudHost.MAP_ATLASES),
-                    (x + 32) * globalScale, lineY, 64 * globalScale,
+            NotificationMapLineRenderer.drawRowsCentered(graphics,
+                    NotificationMinimapBridge.rows(EnumNotificationHudHost.MAP_ATLASES),
+                    (x + 32) * globalScale, lineY, 64 * globalScale, .75f, !anchor.isUp,
                     mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         } finally {
             graphics.pose().popPose();

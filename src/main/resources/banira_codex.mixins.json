@@ -11,6 +11,8 @@
   ],
   "client": [
     "compat.minimap.XaeroInfoDisplaysMixin",
+    "compat.minimap.XaeroInfoDisplayManagerMixin",
+    "compat.minimap.JourneyMapTextBoundsMixin",
     "compat.jei.BookmarkButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.jei.LookupHistoryButtonMixin",

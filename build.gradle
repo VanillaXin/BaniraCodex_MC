@@ -145,6 +145,8 @@ def minimapCompilerLibraries = providers.provider {
 dependencies {
     // Forge1.21.1 and these libraries already use Mojang names.
     compileOnly files(minimapCompilerLibraries)
+    testRuntimeOnly files(minimapCompilerLibraries)
+    testRuntimeOnly "maven.modrinth:xaeros-minimap:T0KItvO6"
     compileOnly "maven.modrinth:xaeros-minimap:T0KItvO6"
     compileOnly "maven.modrinth:journeymap:1y04dWbe"
     if (project.hasProperty('minimapSmoke')) {

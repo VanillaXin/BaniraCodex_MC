@@ -269,3 +269,9 @@ apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/embedded-compiler.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+dependencies {
+    testRuntimeOnly files(providers.provider {
+        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('journeymap') }
+    })
+}

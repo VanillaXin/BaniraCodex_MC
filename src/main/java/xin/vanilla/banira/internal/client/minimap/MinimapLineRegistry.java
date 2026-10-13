@@ -75,6 +75,15 @@ public final class MinimapLineRegistry {
         return select(preference, lastSeen, nowNanos);
     }
 
+    public EnumNotificationHudHost hostPreference(MinimapLine line) {
+        try {
+            return line.host();
+        } catch (RuntimeException | LinkageError exception) {
+            logFailure(line.id(), exception);
+            return null;
+        }
+    }
+
     public List<ResourceLocation> requestedIds(EnumNotificationHudHost host) {
         if (!isMap(host)) return Collections.emptyList();
         List<ResourceLocation> result = new ArrayList<>();

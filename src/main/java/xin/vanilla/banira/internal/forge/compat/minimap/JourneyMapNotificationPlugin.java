@@ -49,14 +49,19 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
             for (MinimapLine line : NotificationMinimapBridge.registrations()) register(line);
         });
         MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> register(line)));
-        MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event -> {
-            for (MinimapLine line : NotificationMinimapBridge.registrations()) {
-                EnumNotificationHudHost preference = line.host();
-                if (preference == EnumNotificationHudHost.AUTO || preference == EnumNotificationHudHost.JOURNEYMAP)
-                    event.addLast(key(line), InfoSlotDisplayEvent.Position.Bottom);
-            }
-        });
+        MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event ->
+                appendDisplaySlots(NotificationMinimapBridge.registrations(),
+                        key -> event.addLast(key, InfoSlotDisplayEvent.Position.Bottom)));
         BaniraClientEvents.Client.onClientTick(event -> refreshLayout());
+    }
+
+    private static void appendDisplaySlots(java.util.List<MinimapLine> lines,
+                                           java.util.function.Consumer<String> append) {
+        for (MinimapLine line : lines) {
+            EnumNotificationHudHost preference = MinimapLineRegistry.shared().hostPreference(line);
+            if (preference == EnumNotificationHudHost.AUTO || preference == EnumNotificationHudHost.JOURNEYMAP)
+                append.accept(key(line));
+        }
     }
 
     private void register(MinimapLine line) {

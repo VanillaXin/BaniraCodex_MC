@@ -30,7 +30,7 @@ public class JourneyMapPermissionTest {
                     MethodInsnNode call = (MethodInsnNode) i;
                     if (call.owner.equals("journeymap/client/InternalStateHandler") && call.name.equals("isMinimapEnabled"))
                         permission = true;
-                    if (call.owner.endsWith("/NotificationMinimapBridge") && call.name.equals("text")) {
+                    if (call.owner.endsWith("/NotificationMinimapBridge") && call.name.equals("rows")) {
                         assertTrue("Disabled native minimap must not claim HUD", permission);
                         guarded = true;
                     }

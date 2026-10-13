@@ -33,7 +33,7 @@ public abstract class VoxelMapNotificationMixin {
         if (options.hide || fullscreenMap) return;
         int y = mapY > scHeight - 88 ? mapY - 45 - (options.coords ? 5 : 0)
                 : mapY + 36 + (options.coords ? 10 : 0) + (error.isEmpty() ? 0 : 5);
-        NotificationMapLineRenderer.drawCentered(graphics, NotificationMinimapBridge.text(EnumNotificationHudHost.VOXELMAP),
-                mapX, y, 72, scWidth, scHeight);
+        NotificationMapLineRenderer.drawRowsCentered(graphics, NotificationMinimapBridge.rows(EnumNotificationHudHost.VOXELMAP),
+                mapX, y, 72, .75f, mapY > scHeight - 88, scWidth, scHeight);
     }
 }

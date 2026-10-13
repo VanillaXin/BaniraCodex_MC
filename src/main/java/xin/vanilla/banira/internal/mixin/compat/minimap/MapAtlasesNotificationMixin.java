@@ -34,9 +34,9 @@ public abstract class MapAtlasesNotificationMixin {
                 + (MapAtlasesClientConfig.drawMinimapBiome.get() ? 1 : 0);
         float textScale = MapAtlasesClientConfig.minimapCoordsAndBiomeScale.get().floatValue();
         float lineY = anchor.isUp ? (y + 64) * globalScale + 2 + rows * 10 * textScale
-                : y * globalScale - Math.max(20, rows * 10) * textScale - 2 - 10 * textScale;
-        NotificationMapLineRenderer.drawCentered(graphics,
-                NotificationMinimapBridge.text(EnumNotificationHudHost.MAP_ATLASES),
-                (x + 32) * globalScale, lineY, 64 * globalScale, width, height);
+                : y * globalScale - Math.max(20, rows * 10) * textScale - 2;
+        NotificationMapLineRenderer.drawRowsCentered(graphics,
+                NotificationMinimapBridge.rows(EnumNotificationHudHost.MAP_ATLASES),
+                (x + 32) * globalScale, lineY, 64 * globalScale, .75f, !anchor.isUp, width, height);
     }
 }

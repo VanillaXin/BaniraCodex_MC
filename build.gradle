@@ -72,7 +72,7 @@ dependencies {
             case 'voxel': modRuntimeOnly "maven.modrinth:voxelmap-updated:uDfYW2uw"; break
             case 'atlas':
                 modRuntimeOnly "maven.modrinth:map-atlases:vVuqrskW"
-                modRuntimeOnly "maven.modrinth:moonlight:MYI9bLZf"
+                modRuntimeOnly "maven.modrinth:moonlight:hT7PdWNH"
                 modRuntimeOnly "maven.modrinth:cardinal-components-api:Ielhod3p"
                 break
             default: throw new GradleException('minimapSmoke: xaero, journey, voxel or atlas')
@@ -137,7 +137,12 @@ def minimapCompilerLibraries = providers.provider {
     }
     return libraries
 }
-dependencies { modCompileOnly files(minimapCompilerLibraries) }
+dependencies {
+    modCompileOnly files(minimapCompilerLibraries)
+    testRuntimeOnly files(providers.provider {
+        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('xaero') }
+    })
+}
 
 apply from: 'gradle/fabric-dev-runtime.gradle'
 

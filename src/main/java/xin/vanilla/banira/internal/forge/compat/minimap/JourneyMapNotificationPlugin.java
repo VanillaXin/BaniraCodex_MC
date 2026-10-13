@@ -25,6 +25,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
     private InfoSlotRegistryEvent registry;
     private final java.util.Set<net.minecraft.resources.ResourceLocation> registered = new java.util.HashSet<>();
     private boolean previousAllowed;
+    private EnumNotificationHudHost previousAutomaticOwner;
     private long previousRevision = -1;
     private java.util.List<net.minecraft.resources.ResourceLocation> previousRequested = java.util.Collections.emptyList();
 
@@ -48,14 +49,19 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
             for (MinimapLine line : NotificationMinimapBridge.registrations()) register(line);
         });
         MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> register(line)));
-        MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event -> {
-            for (MinimapLine line : NotificationMinimapBridge.registrations()) {
-                EnumNotificationHudHost preference = line.host();
-                if (preference == EnumNotificationHudHost.AUTO || preference == EnumNotificationHudHost.JOURNEYMAP)
-                    event.addLast(key(line), InfoSlotDisplayEvent.Position.Bottom);
-            }
-        });
+        MinimapEventRegistry.INFO_SLOT_DISPLAY_EVENT.subscribe(getModId(), event ->
+                appendDisplaySlots(NotificationMinimapBridge.registrations(),
+                        key -> event.addLast(key, InfoSlotDisplayEvent.Position.Bottom)));
         BaniraClientEvents.Client.onClientTick(event -> refreshLayout());
+    }
+
+    private static void appendDisplaySlots(java.util.List<MinimapLine> lines,
+                                           java.util.function.Consumer<String> append) {
+        for (MinimapLine line : lines) {
+            EnumNotificationHudHost preference = MinimapLineRegistry.shared().hostPreference(line);
+            if (preference == EnumNotificationHudHost.AUTO || preference == EnumNotificationHudHost.JOURNEYMAP)
+                append.accept(key(line));
+        }
     }
 
     private void register(MinimapLine line) {
@@ -76,6 +82,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
     private void refreshLayout() {
         if (Minecraft.getInstance().level == null) {
             previousRevision = -1;
+            previousAutomaticOwner = null;
             previousRequested = java.util.Collections.emptyList();
             return;
         }
@@ -85,9 +92,13 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
                 Minecraft.getInstance().screen instanceof ChatScreen);
         java.util.List<net.minecraft.resources.ResourceLocation> requested =
                 MinimapLineRegistry.shared().requestedIds(EnumNotificationHudHost.JOURNEYMAP);
+        EnumNotificationHudHost automaticOwner = MinimapLineRegistry.shared()
+                .selectedHost(EnumNotificationHudHost.AUTO, System.nanoTime());
         long revision = MinimapLineRegistry.shared().layoutRevision();
-        if (allowed == previousAllowed && revision == previousRevision && requested.equals(previousRequested)) return;
+        if (allowed == previousAllowed && automaticOwner == previousAutomaticOwner
+                && revision == previousRevision && requested.equals(previousRequested)) return;
         previousAllowed = allowed;
+        previousAutomaticOwner = automaticOwner;
         previousRevision = revision;
         previousRequested = requested;
         // Empty native slots need a layout rebuild when their content becomes available.

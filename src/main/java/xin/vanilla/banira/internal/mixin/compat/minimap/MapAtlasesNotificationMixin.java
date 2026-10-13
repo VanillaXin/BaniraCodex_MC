@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import pepjebs.mapatlases.MapAtlasesMod;
-import pepjebs.mapatlases.client.ui.MapAtlasesHUD;
+import net.minecraft.client.Minecraft;
+import xin.vanilla.banira.client.notification.NotificationMapLineRenderer;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
@@ -22,14 +23,15 @@ public abstract class MapAtlasesNotificationMixin {
                                      int size, double bufferSize, int mapSize, float mapScale, String anchor,
                                      int x, int y, MultiBufferSource.BufferSource buffers, float textScale,
                                      int heightOffset, int widthOffset) {
-        String text = NotificationMinimapBridge.text(EnumNotificationHudHost.MAP_ATLASES).getString();
-        if (text.isEmpty()) return;
         boolean coords = MapAtlasesMod.CONFIG.drawMinimapCoords;
         boolean biome = MapAtlasesMod.CONFIG.drawMinimapBiome;
         int offset = anchor.contains("Lower")
                 ? (coords || biome ? heightOffset - (coords ? (int) (12 * textScale) : 0) - (int) (12 * textScale)
                 : -(int) (12 * textScale))
                 : heightOffset + (biome ? (int) (12 * textScale) : 0);
-        MapAtlasesHUD.drawScaledText(stack, x, y, text, textScale, widthOffset, offset);
+        Minecraft mc = Minecraft.getInstance();
+        NotificationMapLineRenderer.drawLines(stack, NotificationMinimapBridge.rows(EnumNotificationHudHost.MAP_ATLASES),
+                x + widthOffset / 2f, y + offset, size, textScale, anchor.contains("Lower"),
+                mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 }

@@ -71,7 +71,9 @@ public class NotificationMinimapScreenVisibilityTest {
 
     @Test
     public void journeyLayoutUsesMapVisibility() throws Exception {
-        assertTrue(calls("internal/compat/minimap/LegacyJourneyMapNotifications", "refreshLayout", "isMinimapVisible"));
+        assertFalse(calls("internal/compat/minimap/LegacyJourneyMapNotifications", "refreshLayout", "isMinimapVisible"));
+        assertTrue(calls("internal/compat/minimap/LegacyJourneyMapNotifications", "refreshLayout", "requestedIds"));
+        assertTrue(calls("internal/compat/minimap/LegacyJourneyMapNotifications", "refreshLayout", "layoutRevision"));
     }
 
     private boolean mapVisible(NotificationHudState state) throws Exception {

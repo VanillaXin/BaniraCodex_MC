@@ -38,7 +38,14 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
     private static boolean matchesMinimap(String mixin, ClassNode target) {
         if (mixin.endsWith("XaeroInfoDisplaysMixin"))
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
         String stack = descriptor("net.minecraft.class_4587");
+        if (mixin.endsWith("JourneyMapTextBoundsMixin"))
+            return method(target, "drawBatchLabel", "(" + stack + descriptor("net.minecraft.class_2561")
+                    + descriptor("net.minecraft.class_4597") + "DDLjourneymap/client/render/draw/DrawUtil$HAlign;"
+                    + "Ljourneymap/client/render/draw/DrawUtil$VAlign;Ljava/lang/Integer;FIFDZD)V");
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "buildMinimapTextData", "(" + descriptor("net.minecraft.class_310")
                     + "DDDLdev/ftb/mods/ftbchunks/client/map/MapDimension;)Ljava/util/List;")

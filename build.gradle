@@ -33,6 +33,7 @@ loom {
 }
 
 repositories {
+    maven { url = 'https://maven.ftb.dev/releases'; content { includeGroup 'dev.ftb.mods' } }
     maven {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
@@ -60,6 +61,7 @@ repositories {
 }
 
 dependencies {
+    modCompileOnly("dev.ftb.mods:ftb-chunks-fabric:1902.4.8-build.495") { transitive = false }
     modCompileOnly "maven.modrinth:xaeros-minimap:FEea9I9Z"
     modCompileOnly "maven.modrinth:journeymap:3ZtAeGzV"
     testRuntimeOnly "maven.modrinth:journeymap:3ZtAeGzV"
@@ -132,7 +134,12 @@ def minimapCompilerLibraries = providers.provider {
     }
     return libraries
 }
-dependencies { modCompileOnly files(minimapCompilerLibraries) }
+dependencies {
+    modCompileOnly files(minimapCompilerLibraries)
+    testRuntimeOnly files(providers.provider {
+        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('xaero') }
+    })
+}
 
 apply from: 'gradle/fabric-dev-runtime.gradle'
 

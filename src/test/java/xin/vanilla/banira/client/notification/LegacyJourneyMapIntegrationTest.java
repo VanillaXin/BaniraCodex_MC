@@ -17,7 +17,7 @@ public class LegacyJourneyMapIntegrationTest {
         ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
         java.util.List<Long> clock = new java.util.ArrayList<>();
         for (MethodNode method : node.methods) {
-            if (!method.name.equals("<clinit>")) continue;
+            if (!method.name.equals("slot")) continue;
             for (AbstractInsnNode instruction : method.instructions) {
                 if (instruction.getOpcode() == org.objectweb.asm.Opcodes.LCONST_0) clock.add(0L);
                 if (instruction.getOpcode() == org.objectweb.asm.Opcodes.LCONST_1) clock.add(1L);
@@ -44,7 +44,7 @@ public class LegacyJourneyMapIntegrationTest {
     }
 
     @Test
-    public void visibilityGuardUsesNativeMapStateAndHudVisibility() throws Exception {
+    public void visibilityGuardUsesNativeMapStateAndScreenPolicy() throws Exception {
         ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
         Set<String> calls = new HashSet<>();
         for (MethodNode method : node.methods) {
@@ -58,7 +58,7 @@ public class LegacyJourneyMapIntegrationTest {
         }
         assertTrue(calls.contains("journeymap/client/ui/UIManager.isMiniMapEnabled"));
         assertTrue(calls.contains("journeymap/client/ui/minimap/MiniMap.uiState"));
-        assertTrue(calls.contains("xin/vanilla/banira/client/notification/NotificationUnreadHud.isMinimapVisible"));
+        assertTrue(calls.contains("xin/vanilla/banira/internal/client/minimap/MinimapLineLayout.allowsLegacyJourneyScreen"));
     }
 
     @Test

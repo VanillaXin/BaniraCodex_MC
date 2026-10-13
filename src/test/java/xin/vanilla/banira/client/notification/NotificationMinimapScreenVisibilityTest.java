@@ -71,7 +71,8 @@ public class NotificationMinimapScreenVisibilityTest {
 
     @Test
     public void journeyLayoutUsesMapVisibility() throws Exception {
-        assertTrue(calls("internal/fabric/compat/minimap/JourneyMapNotificationPlugin", "refreshLayout", "isMinimapVisible"));
+        assertFalse(calls("internal/fabric/compat/minimap/JourneyMapNotificationPlugin", "refreshLayout", "isMinimapVisible"));
+        assertTrue(calls("internal/fabric/compat/minimap/JourneyMapNotificationPlugin", "refreshLayout", "requestedIds"));
     }
 
     private boolean mapVisible(NotificationHudState state) throws Exception {

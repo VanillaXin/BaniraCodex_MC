@@ -88,7 +88,13 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
     private static boolean matchesMinimap(String mixin, ClassNode target) {
         if (mixin.endsWith("XaeroInfoDisplaysMixin"))
             return method(target, "forEach", "(Ljava/util/function/Consumer;)V");
+        if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
+            return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
+                    && method(target, "applyLocalConfig", "()V");
         String graphics = descriptor("net.minecraft.class_332");
+        if (mixin.endsWith("JourneyMapTextBoundsMixin"))
+            return matchesJourneyBounds(target, graphics, descriptor("net.minecraft.class_2561"),
+                    descriptor("net.minecraft.class_4597"));
         String delta = descriptor("net.minecraft.class_9779");
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "setupComponents", "()V") && method(target, "renderHud", "(" + graphics + delta + ")V");
@@ -102,6 +108,13 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
                     && method(target, "drawMinimap", "(" + graphics + ")V")
                     && method(target, "drawDirections", "(" + graphics + "II)V");
         return false;
+    }
+
+    private static boolean matchesJourneyBounds(ClassNode target, String graphics, String component, String buffers) {
+        return method(target, "drawBatchLabel", "(" + graphics + component
+                + "Ljourneymap/client/render/draw/DrawStep$Pass;" + buffers
+                + "DDLjourneymap/client/render/draw/DrawUtil$HAlign;"
+                + "Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
     }
 
     private static String descriptor(String intermediary) {

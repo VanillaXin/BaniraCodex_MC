@@ -22,7 +22,9 @@
     "injections.CreativeScreenQuickActionMixin",
     "injections.GuiExperienceMixin",
     "injections.MinecraftClientMixin",
-    "injections.NetworkSmokeChatMixin"
+    "injections.NetworkSmokeChatMixin",
+    "compat.minimap.XaeroInfoDisplayManagerMixin",
+    "compat.minimap.JourneyMapTextBoundsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

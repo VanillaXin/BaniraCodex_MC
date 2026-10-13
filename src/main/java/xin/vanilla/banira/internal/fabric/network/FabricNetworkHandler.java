@@ -100,7 +100,18 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
         clientReceiverRegistered = true;
         ClientPlayNetworking.registerGlobalReceiver(payloadType, (payload, context) ->
-                receive(payload.copyBuffer(), FabricNetworkContext.client(context.responseSender())));
+                receive(payload.copyBuffer(), FabricNetworkContext.client(clientConnectionKey(context))));
+    }
+
+    private static Object clientConnectionKey(ClientPlayNetworking.Context context) {
+        net.minecraft.client.Minecraft client = context.client();
+        if (client.getConnection() == null) return null;
+        return matchClientConnection(context.responseSender(), ClientPlayNetworking.getSender(),
+                client.getConnection().getConnection());
+    }
+
+    private static Object matchClientConnection(Object receivedSender, Object activeSender, Object transport) {
+        return receivedSender != null && receivedSender == activeSender ? transport : null;
     }
 
     private void registerServerReceiver() {

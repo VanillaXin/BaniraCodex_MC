@@ -138,7 +138,12 @@ def minimapCompilerLibraries = providers.provider {
     }
     return libraries
 }
-dependencies { modCompileOnly files(minimapCompilerLibraries) }
+dependencies {
+    modCompileOnly files(minimapCompilerLibraries)
+    testRuntimeOnly files(providers.provider {
+        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('xaero') }
+    })
+}
 
 apply from: 'gradle/fabric-dev-runtime.gradle'
 

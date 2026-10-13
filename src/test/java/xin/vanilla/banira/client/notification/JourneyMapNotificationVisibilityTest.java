@@ -31,7 +31,7 @@ public class JourneyMapNotificationVisibilityTest {
                     MethodInsnNode call = (MethodInsnNode) instruction;
                     if (call.owner.equals("journeymap/client/ui/UIManager")
                             && call.name.equals("isMiniMapEnabled")) checked = true;
-                    if (call.owner.endsWith("/NotificationMinimapBridge") && call.name.equals("text"))
+                    if (call.owner.endsWith("/NotificationMinimapBridge") && call.name.equals("rows"))
                         guarded |= checked && branched;
                 }
                 if (checked && instruction.getOpcode() == Opcodes.IFEQ) branched = true;

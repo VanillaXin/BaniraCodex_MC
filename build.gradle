@@ -140,7 +140,7 @@ def minimapCompilerLibraries = providers.provider {
 dependencies {
     modCompileOnly files(minimapCompilerLibraries)
     testRuntimeOnly files(providers.provider {
-        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('xaero') }
+        sourceSets.main.compileClasspath.files.findAll { (it.name.toLowerCase().contains('xaero') || it.name.toLowerCase().contains('journeymap')) }
     })
 }
 

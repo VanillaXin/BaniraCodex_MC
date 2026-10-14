@@ -626,22 +626,25 @@ public class EffectSelectScreen extends BaniraScreen {
                     });
             Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
         } else if (operationCode == ButtonType.DURATION.code()) {
+            final int currentTicks = this.currentEffect.getDuration();
             InputFormScreen.Args inputArgs = new InputFormScreen.Args()
                     .setParentScreen(this)
                     .addWidget(new InputFormScreen.Widget()
                             .title(Text.transAuto(Banira.MOD_ID, "enter_effect_duration"))
-                            .regex("\\d{0,4}")
-                            .defaultValue(String.valueOf(this.currentEffect.getDuration()))
+                            .maxLength(EffectDurationModel.inputDigits(currentTicks))
+                            .regex("[0-9]{0," + EffectDurationModel.inputDigits(currentTicks) + "}")
+                            .defaultValue(String.valueOf(currentTicks))
                             .validator((input) -> {
-                                int duration = NumberUtils.toInt(input.value());
-                                if (duration <= 0 || duration > 60 * 60 * 24 * 30) {
+                                try {
+                                    EffectDurationModel.parseTicks(input.value(), currentTicks);
+                                } catch (IllegalArgumentException invalid) {
                                     return BaniraComponent.get().transClientAuto("enter_effect_duration_error", input.value()).toString();
                                 }
                                 return null;
                             })
                     )
                     .setCallback(input -> {
-                        int duration = NumberUtils.toInt(input.firstValue());
+                        int duration = EffectDurationModel.parseTicks(input.firstValue(), currentTicks);
                         this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
                         markEffectButtonsDirty();
                     });

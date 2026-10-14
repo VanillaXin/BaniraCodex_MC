@@ -54,6 +54,10 @@ configurations {
 
 repositories {
     maven {
+        url = "https://maven.ftb.dev/releases"
+        content { includeGroup "dev.ftb.mods" }
+    }
+    maven {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
         content { includeGroup "maven.modrinth" }
@@ -98,9 +102,13 @@ def minimapCompilerLibraries = providers.provider {
 }
 dependencies {
     compileOnly files(minimapCompilerLibraries)
+    testRuntimeOnly files(providers.provider {
+        sourceSets.main.compileClasspath.files.findAll { (it.name.toLowerCase().contains('xaero') || it.name.toLowerCase().contains('journeymap')) }
+    })
     compileOnly "maven.modrinth:xaeros-minimap:irjR7dHk"
     compileOnly "maven.modrinth:journeymap:CtFE7hwT"
     compileOnly "curse.maven:ftb-chunks-forge-314906:7608681"
+    compileOnly("dev.ftb.mods:ftb-library-neoforge:2101.1.31") { transitive = false }
     compileOnly "maven.modrinth:map-atlases-forge:ecuMnNO4"
     if (project.hasProperty('minimapSmoke')) {
         switch (project.property('minimapSmoke').toString()) {

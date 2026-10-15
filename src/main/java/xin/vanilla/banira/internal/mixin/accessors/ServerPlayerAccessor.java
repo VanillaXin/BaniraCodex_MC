@@ -7,10 +7,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ServerPlayer.class)
 public interface ServerPlayerAccessor {
-    @Accessor(value = "language")
+    @Accessor(value = "language", remap = false)
     String banira$language();
 
-    @Accessor(value = "language")
+    @Accessor(value = "language", remap = false)
     void banira$language(String language);
 
     @Accessor("chatVisibility")

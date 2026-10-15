@@ -1,7 +1,11 @@
 package xin.vanilla.banira.internal.mixin;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -23,14 +27,34 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                 && !mixinClassName.contains(".compat.minimap.")) return true;
         URL target = OptionalCompatibilityMixinPlugin.class.getClassLoader().getResource(targetClassName.replace('.', '/') + ".class");
         if (target == null) return false;
-        if (!mixinClassName.contains(".compat.minimap.")) return true;
+        boolean vanillaPacks = mixinClassName.endsWith(".compat.jei.VanillaClientRecipeLoaderMixin");
+        if (!mixinClassName.contains(".compat.minimap.") && !vanillaPacks) return true;
         try (InputStream input = target.openStream()) {
             ClassNode node = new ClassNode();
             new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
-            return matchesMinimap(mixinClassName, node);
+            return vanillaPacks ? matchesJeiVanillaPacks(node) : matchesMinimap(mixinClassName, node);
         } catch (IOException | RuntimeException exception) {
             return false;
         }
+    }
+
+    private static boolean matchesJeiVanillaPacks(ClassNode target) {
+        for (MethodNode method : target.methods) {
+            if (!method.name.equals("openVanillaServerDataPack")
+                    || !method.desc.equals("()Lnet/minecraft/server/packs/PackResources;")
+                    || (method.access & Opcodes.ACC_STATIC) == 0) continue;
+            int calls = 0;
+            for (AbstractInsnNode instruction : method.instructions) {
+                if (!(instruction instanceof MethodInsnNode)) continue;
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (call.getOpcode() == Opcodes.INVOKEVIRTUAL
+                        && call.owner.equals("net/minecraft/server/packs/repository/ServerPacksSource")
+                        && (call.name.equals("loadPacks") || call.name.equals("m_7686_"))
+                        && call.desc.equals("(Ljava/util/function/Consumer;Lnet/minecraft/server/packs/repository/Pack$PackConstructor;)V")) calls++;
+            }
+            return calls == 1;
+        }
+        return false;
     }
 
     private static boolean matchesMinimap(String mixin, ClassNode target) {

@@ -23,6 +23,7 @@
     "compat.jei.BookmarkButtonAccessor",
     "compat.jei.BookmarkButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
+    "compat.jei.VanillaClientRecipeLoaderMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.MinecraftClientMixin"
   ],

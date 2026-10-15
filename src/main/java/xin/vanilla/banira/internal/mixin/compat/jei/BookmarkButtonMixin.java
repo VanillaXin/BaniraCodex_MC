@@ -1,14 +1,10 @@
 package xin.vanilla.banira.internal.mixin.compat.jei;
 
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.common.input.IInternalKeyMappings;
-import mezz.jei.core.config.IWorldConfig;
-import mezz.jei.gui.bookmarks.BookmarkList;
-import mezz.jei.gui.input.UserInput;
-import mezz.jei.gui.overlay.bookmarks.BookmarkOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -22,14 +18,14 @@ import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 public abstract class BookmarkButtonMixin {
     @Inject(method = "<init>", at = @At("RETURN"), require = 0)
     private void banira$capture(IDrawable offIcon, IDrawable onIcon,
-                                BookmarkOverlay overlay, BookmarkList bookmarks,
-                                IWorldConfig worldConfig, IInternalKeyMappings keyBindings,
+                                @Coerce Object overlay, @Coerce Object bookmarks,
+                                @Coerce Object worldConfig, @Coerce Object keyBindings,
                                 CallbackInfo callback) {
-        JeiCompatibility.capture(this, offIcon, onIcon, worldConfig);
+        JeiCompatibility.capture(this, offIcon, onIcon);
     }
 
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true, require = 0)
-    private void banira$blockNativeClick(UserInput input,
+    private void banira$blockNativeClick(@Coerce Object input,
                                          CallbackInfoReturnable<Boolean> callback) {
         if (JeiCompatibility.shouldBlockNativeClick(this)) callback.setReturnValue(false);
     }

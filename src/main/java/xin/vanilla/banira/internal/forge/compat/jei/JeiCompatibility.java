@@ -2,14 +2,12 @@ package xin.vanilla.banira.internal.forge.compat.jei;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.core.config.IWorldConfig;
-import mezz.jei.gui.input.InputType;
-import mezz.jei.gui.input.UserInput;
-import mezz.jei.gui.overlay.bookmarks.BookmarkButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.fml.ModList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryActionProvider;
@@ -26,12 +24,13 @@ import java.util.List;
  */
 public final class JeiCompatibility {
     public static final String SOURCE_ID = "jei";
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final ThreadLocal<Boolean> FORWARDING_CLICK =
             ThreadLocal.withInitial(() -> false);
-    private static volatile BookmarkButton bookmarkButton;
+    private static volatile Object bookmarkButton;
     private static volatile IDrawable bookmarkOffIcon;
     private static volatile IDrawable bookmarkOnIcon;
-    private static volatile IWorldConfig bookmarkWorldConfig;
+    private static volatile Runnable bookmarkClick;
 
     private JeiCompatibility() {
     }
@@ -41,19 +40,21 @@ public final class JeiCompatibility {
         ExternalInventoryButtonManager.get().registerProvider(new BookmarkProvider());
     }
 
-    public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
-                               IWorldConfig worldConfig) {
-        if (!(value instanceof BookmarkButton)) return;
-        bookmarkButton = (BookmarkButton) value;
+    public static void capture(Object value, IDrawable offIcon, IDrawable onIcon) {
+        bookmarkButton = null;
+        try {
+            bookmarkClick = JeiBookmarkClick.bind(value);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            LOGGER.warn("Unsupported JEI bookmark input contract; retaining native button", exception);
+            return;
+        }
         bookmarkOffIcon = offIcon;
         bookmarkOnIcon = onIcon;
-        bookmarkWorldConfig = worldConfig;
+        bookmarkButton = value;
     }
 
     public static boolean isManagedBookmark(Object value) {
-        return value == bookmarkButton || value != null
-                && "mezz.jei.gui.overlay.bookmarks.BookmarkButton".equals(
-                value.getClass().getName());
+        return value != null && value == bookmarkButton;
     }
 
     public static boolean shouldSuppress(Object value) {
@@ -66,21 +67,20 @@ public final class JeiCompatibility {
     }
 
     private static void activate() {
-        BookmarkButton button = bookmarkButton;
+        Runnable click = bookmarkClick;
         Screen screen = Minecraft.getInstance().screen;
-        if (button == null || screen == null) return;
+        if (bookmarkButton == null || click == null || screen == null) return;
         FORWARDING_CLICK.set(true);
         try {
-            ((BookmarkButtonAccessor) (Object) button).banira$invokeMouseClicked(
-                    UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE));
+            click.run();
         } finally {
             FORWARDING_CLICK.remove();
         }
     }
 
     private static void drawBookmarkIcon(PoseStack stack, int x, int y, int size) {
-        IWorldConfig worldConfig = bookmarkWorldConfig;
-        IDrawable icon = worldConfig != null && worldConfig.isBookmarkOverlayEnabled()
+        Object button = bookmarkButton;
+        IDrawable icon = button != null && ((BookmarkButtonAccessor) button).banira$isIconToggledOn()
                 ? bookmarkOnIcon : bookmarkOffIcon;
         if (icon == null || size <= 0) return;
 
@@ -107,6 +107,7 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (bookmarkButton == null) return Collections.emptyList();
             return Collections.singletonList(new ExternalInventoryAction(
                     "bookmarks",
                     BaniraComponent.get().literal(I18n.get("jei.tooltip.bookmarks")),

@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.mixin.compat.jei;
 
-import mezz.jei.gui.input.UserInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -11,6 +10,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.overlay.bookmarks.BookmarkButton", remap = false)
 public interface BookmarkButtonAccessor {
-    @Invoker("onMouseClicked")
-    boolean banira$invokeMouseClicked(UserInput input);
+    @Invoker("isIconToggledOn")
+    boolean banira$isIconToggledOn();
 }

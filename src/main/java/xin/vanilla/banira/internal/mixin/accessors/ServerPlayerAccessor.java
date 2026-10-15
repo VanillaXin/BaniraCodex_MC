@@ -4,11 +4,11 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(value = ServerPlayerEntity.class, remap = false)
+@Mixin(ServerPlayerEntity.class)
 public interface ServerPlayerAccessor {
-    @Accessor(value = "language")
+    @Accessor(value = "language", remap = false)
     String banira$language();
 
-    @Accessor(value = "language")
+    @Accessor(value = "language", remap = false)
     void banira$language(String language);
 }

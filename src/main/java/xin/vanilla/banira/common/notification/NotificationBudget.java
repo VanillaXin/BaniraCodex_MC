@@ -37,6 +37,10 @@ public final class NotificationBudget {
     public static Payload prepare(Component component, String language) {
         Component copy = Objects.requireNonNull(component, "component").clone().languageCodeIfEmpty(language);
         detachNativeReferences(copy, language);
+        return encodePrepared(copy, language);
+    }
+
+    static Payload encodePrepared(Component copy, String language) {
         String componentJson = componentJson(copy);
         String vanillaJson = net.minecraft.network.chat.Component.Serializer.toJson(copy.toChat(language));
         // Measure the conservative common budget again after native translation/formatting.

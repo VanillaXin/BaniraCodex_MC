@@ -4,6 +4,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
+import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 
 /**
  * 仅在对应模组存在时装载 Fabric 兼容类，保持全部集成为可选依赖。
@@ -25,6 +26,11 @@ public final class FabricExternalInventoryCompatibility {
 
     private static void initialize(FabricLoader loader, String modId, String className) {
         if (!loader.isModLoaded(modId)) return;
+        if (modId.equals("ftblibrary") && !FtbLibraryContract.matches()) {
+            LOGGER.error("FTB Library compatibility disabled; native controls remain active: {}",
+                    FtbLibraryContract.mismatch());
+            return;
+        }
         try {
             Class.forName(className, true, FabricExternalInventoryCompatibility.class.getClassLoader())
                     .getMethod("init").invoke(null);

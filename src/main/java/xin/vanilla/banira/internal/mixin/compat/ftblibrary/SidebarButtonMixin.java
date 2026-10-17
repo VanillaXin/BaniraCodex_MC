@@ -14,13 +14,13 @@ import xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibil
 @Pseudo
 @Mixin(targets = "dev.ftb.mods.ftblibrary.sidebar.SidebarButton", remap = false)
 public abstract class SidebarButtonMixin {
-    @Inject(method = "getLangKey", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
+    @Inject(method = "getLangKey()Ljava/lang/String;", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private void banira$getLangKey(CallbackInfoReturnable<String> callback) {
         String key = FtbLibraryCompatibility.hostedButtonTranslationKey(this);
         if (key != null) callback.setReturnValue(key);
     }
 
-    @Inject(method = "onClicked", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
+    @Inject(method = "onClicked(Z)V", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private void banira$onClicked(boolean shiftDown, CallbackInfo callback) {
         if (FtbLibraryCompatibility.activateHostedButton(this, shiftDown)) callback.cancel();
     }

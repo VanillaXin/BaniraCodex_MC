@@ -28,6 +28,7 @@ public final class ExternalInventoryButtonManager {
     private volatile FtbHostBridge ftbHostBridge = FtbHostBridge.NONE;
     private volatile EnumExternalInventoryButtonHost effectiveHost =
             EnumExternalInventoryButtonHost.BANIRA;
+    private volatile Set<String> adoptedSources = Collections.emptySet();
     private boolean refreshing;
 
     public static ExternalInventoryButtonManager get() {
@@ -74,6 +75,8 @@ public final class ExternalInventoryButtonManager {
         refreshing = true;
         try {
             EnumExternalInventoryButtonHost previous = effectiveHost;
+            effectiveHost = EnumExternalInventoryButtonHost.ORIGINAL;
+            adoptedSources = Collections.emptySet();
             EnumExternalInventoryButtonHost resolved = ExternalInventoryButtonPolicy.resolve(
                     configuredHost, ftbHostBridge.available());
             clearAdoptedEntries();
@@ -82,14 +85,26 @@ public final class ExternalInventoryButtonManager {
                 ftbHostBridge.clear();
             }
 
+            Set<String> sources = new LinkedHashSet<>();
             if (resolved == EnumExternalInventoryButtonHost.BANIRA) {
-                registerInBanira(collectProviderActions(screen, null));
+                registerInBanira(collectProviderActions(screen, null, sources));
             } else if (resolved == EnumExternalInventoryButtonHost.FTB_LIBRARY) {
-                List<ExternalInventoryAction> actions = collectProviderActions(screen, FTB_SOURCE_ID);
+                List<ExternalInventoryAction> actions = collectProviderActions(screen, FTB_SOURCE_ID, sources);
                 actions.addAll(snapshotBaniraActions());
                 ftbHostBridge.replace(screen, actions);
             }
+            adoptedSources = Collections.unmodifiableSet(new LinkedHashSet<>(sources));
             effectiveHost = resolved;
+            QuickActionOverlay.get().onRegistryChanged();
+        } catch (RuntimeException | LinkageError exception) {
+            effectiveHost = EnumExternalInventoryButtonHost.ORIGINAL;
+            clearAdoptedEntries();
+            try {
+                ftbHostBridge.clear();
+            } catch (RuntimeException | LinkageError cleanup) {
+                exception.addSuppressed(cleanup);
+            }
+            LOGGER.error("External inventory takeover failed; native controls remain active", exception);
             QuickActionOverlay.get().onRegistryChanged();
         } finally {
             refreshing = false;
@@ -101,6 +116,7 @@ public final class ExternalInventoryButtonManager {
     }
 
     public boolean suppressesNativeButtons(String sourceId) {
+        if (!adoptedSources.contains(normalizeId(sourceId))) return false;
         if (effectiveHost == EnumExternalInventoryButtonHost.BANIRA) return true;
         return effectiveHost == EnumExternalInventoryButtonHost.FTB_LIBRARY
                 && !FTB_SOURCE_ID.equals(normalizeId(sourceId));
@@ -139,6 +155,7 @@ public final class ExternalInventoryButtonManager {
     }
 
     synchronized void clearAdoptedEntries() {
+        adoptedSources = Collections.emptySet();
         QuickActionRegistry registry = QuickActionRegistry.get();
         for (String id : adoptedEntryIds) registry.unregister(id);
         adoptedEntryIds.clear();
@@ -156,7 +173,7 @@ public final class ExternalInventoryButtonManager {
     }
 
     private List<ExternalInventoryAction> collectProviderActions(
-            @Nullable Screen screen, @Nullable String excludedSourceId
+            @Nullable Screen screen, @Nullable String excludedSourceId, Set<String> sources
     ) {
         Map<String, ExternalInventoryAction> unique = new LinkedHashMap<>();
         for (ExternalInventoryActionProvider provider : providers) {
@@ -165,12 +182,15 @@ public final class ExternalInventoryButtonManager {
             try {
                 List<ExternalInventoryAction> actions = provider.actions(screen);
                 if (actions == null) continue;
+                Map<String, ExternalInventoryAction> sourceActions = new LinkedHashMap<>();
                 for (ExternalInventoryAction action : actions) {
                     if (action == null || normalizeId(action.id()).isEmpty()) continue;
                     ExternalInventoryAction sourced = action.withSourceId(sourceId);
-                    unique.put(registryId(sourceId, sourced.id()), sourced);
+                    sourceActions.put(registryId(sourceId, sourced.id()), sourced);
                 }
-            } catch (Throwable throwable) {
+                unique.putAll(sourceActions);
+                if (!sourceActions.isEmpty()) sources.add(sourceId);
+            } catch (RuntimeException | LinkageError throwable) {
                 LOGGER.warn("Failed to collect external inventory buttons from {}", sourceId, throwable);
             }
         }

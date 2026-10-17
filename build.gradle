@@ -164,7 +164,16 @@ dependencies {
     }
 }
 
+configurations {
+    auiContract {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
+    compileOnly('maven.modrinth:UfPdUeGy:QimFJQz4') { transitive = false }
+    auiContract 'maven.modrinth:UfPdUeGy:QimFJQz4'
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
@@ -190,6 +199,12 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
     compileOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
     runtimeOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
+}
+
+tasks.withType(Test).configureEach {
+    doFirst {
+        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
+    }
 }
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.

@@ -14,7 +14,8 @@ import xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompati
 @Pseudo
 @Mixin(targets = "org.anti_ad.mc.ipnext.gui.inject.base.SortButtonWidget", remap = false)
 public abstract class IpnButtonMixin {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "render(Lorg/anti_ad/mc/common/gui/NativeContext;IIF)V",
+            at = @At("HEAD"), cancellable = true, require = 0)
     private void banira$render(NativeContext context, int mouseX, int mouseY,
                                float partialTicks, CallbackInfo callback) {
         if (InventoryProfilesNextCompatibility.shouldSuppressProfileButton(this)) callback.cancel();

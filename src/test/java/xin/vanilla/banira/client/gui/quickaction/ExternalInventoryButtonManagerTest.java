@@ -5,8 +5,12 @@ import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.enums.EnumExternalInventoryButtonHost;
 
+import java.util.AbstractList;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
@@ -70,6 +74,124 @@ public class ExternalInventoryButtonManagerTest {
         assertEquals(1, host.clearCount);
     }
 
+    @Test
+    public void failedFtbCollectionKeepsNativeButtonsAndOtherProviders() {
+        manager.registerProvider(provider(ExternalInventoryButtonManager.FTB_SOURCE_ID, () -> {
+            throw new IllegalStateException("FTB contract unavailable");
+        }));
+        manager.registerProvider(provider(new AtomicReference<>(Collections.singletonList(action()))));
+
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
+
+        assertNotNull(QuickActionRegistry.get().getEntry(
+                ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
+        assertTrue(manager.suppressesNativeButtons(PROVIDER_ID));
+        assertFalse("A failed FTB provider must retain its native controls",
+                manager.suppressesNativeButtons(ExternalInventoryButtonManager.FTB_SOURCE_ID));
+    }
+
+    @Test
+    public void partiallyCollectedFtbActionsAreNotPublishedOrSuppressed() {
+        manager.registerProvider(provider(ExternalInventoryButtonManager.FTB_SOURCE_ID,
+                () -> new AbstractList<ExternalInventoryAction>() {
+                    @Override
+                    public ExternalInventoryAction get(int index) {
+                        if (index == 0) return action();
+                        throw new IllegalStateException("FTB action iteration failed");
+                    }
+
+                    @Override
+                    public int size() {
+                        return 2;
+                    }
+                }));
+        manager.registerProvider(provider(new AtomicReference<>(Collections.singletonList(action()))));
+
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
+
+        assertNotNull(QuickActionRegistry.get().getEntry(
+                ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
+        assertNull("A source must finish collection before publishing any of its actions",
+                QuickActionRegistry.get().getEntry(ExternalInventoryButtonManager.registryId(
+                        ExternalInventoryButtonManager.FTB_SOURCE_ID, ACTION_ID)));
+        assertFalse(manager.suppressesNativeButtons(ExternalInventoryButtonManager.FTB_SOURCE_ID));
+    }
+
+    @Test
+    public void ftbCollectionFailureRevokesEarlierTakeover() {
+        AtomicBoolean failing = new AtomicBoolean();
+        manager.registerProvider(provider(ExternalInventoryButtonManager.FTB_SOURCE_ID, () -> {
+            if (failing.get()) throw new IllegalStateException("FTB contract lost");
+            return Collections.singletonList(action());
+        }));
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
+        String adoptedId = ExternalInventoryButtonManager.registryId(
+                ExternalInventoryButtonManager.FTB_SOURCE_ID, ACTION_ID);
+        assertNotNull(QuickActionRegistry.get().getEntry(adoptedId));
+        assertTrue(manager.suppressesNativeButtons(ExternalInventoryButtonManager.FTB_SOURCE_ID));
+
+        failing.set(true);
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
+
+        assertNull(QuickActionRegistry.get().getEntry(adoptedId));
+        assertFalse("Previous success must not authorize suppression after collection fails",
+                manager.suppressesNativeButtons(ExternalInventoryButtonManager.FTB_SOURCE_ID));
+    }
+
+    @Test
+    public void failedIpnCollectionKeepsNativeButtonsUnderFtbHost() {
+        String ipnSource = "inventory_profiles_next";
+        RecordingHost host = new RecordingHost();
+        manager.setFtbHostBridge(host);
+        manager.registerProvider(provider(ipnSource, () -> {
+            throw new IllegalStateException("IPN contract unavailable");
+        }));
+        manager.registerProvider(provider(new AtomicReference<>(Collections.singletonList(action()))));
+
+        manager.refresh(EnumExternalInventoryButtonHost.FTB_LIBRARY, null);
+
+        assertEquals(EnumExternalInventoryButtonHost.FTB_LIBRARY, manager.effectiveHost());
+        assertTrue(host.lastActions.stream().anyMatch(value -> PROVIDER_ID.equals(value.sourceId())));
+        assertFalse(host.lastActions.stream().anyMatch(value -> ipnSource.equals(value.sourceId())));
+        assertTrue(manager.suppressesNativeButtons(PROVIDER_ID));
+        assertFalse("FTB hosting must not hide IPN controls when no IPN actions were collected",
+                manager.suppressesNativeButtons(ipnSource));
+    }
+
+    @Test
+    public void failedHostPublicationRestoresNativeControlsAndClearsPartialHostState() {
+        RecordingHost host = new RecordingHost();
+        host.failReplacement = true;
+        manager.setFtbHostBridge(host);
+        manager.registerProvider(provider(new AtomicReference<>(Collections.singletonList(action()))));
+
+        manager.refresh(EnumExternalInventoryButtonHost.FTB_LIBRARY, null);
+
+        assertEquals(EnumExternalInventoryButtonHost.ORIGINAL, manager.effectiveHost());
+        assertFalse(manager.suppressesNativeButtons(PROVIDER_ID));
+        assertFalse(manager.suppressesBaniraOverlay());
+        assertTrue(host.lastActions.isEmpty());
+        assertEquals(1, host.clearCount);
+        assertNull(QuickActionRegistry.get().getEntry(
+                ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
+    }
+
+    private static ExternalInventoryActionProvider provider(
+            String sourceId, Supplier<List<ExternalInventoryAction>> actions
+    ) {
+        return new ExternalInventoryActionProvider() {
+            @Override
+            public String sourceId() {
+                return sourceId;
+            }
+
+            @Override
+            public List<ExternalInventoryAction> actions(net.minecraft.client.gui.screen.Screen screen) {
+                return actions.get();
+            }
+        };
+    }
+
     private static ExternalInventoryActionProvider provider(
             AtomicReference<java.util.List<ExternalInventoryAction>> actions
     ) {
@@ -97,6 +219,7 @@ public class ExternalInventoryButtonManagerTest {
     private static final class RecordingHost implements ExternalInventoryButtonManager.FtbHostBridge {
         private java.util.List<ExternalInventoryAction> lastActions = Collections.emptyList();
         private int clearCount;
+        private boolean failReplacement;
 
         @Override
         public boolean available() {
@@ -107,6 +230,7 @@ public class ExternalInventoryButtonManagerTest {
         public void replace(net.minecraft.client.gui.screen.Screen screen,
                             java.util.List<ExternalInventoryAction> actions) {
             lastActions = actions;
+            if (failReplacement) throw new IllegalStateException("FTB host publication failed");
         }
 
         @Override

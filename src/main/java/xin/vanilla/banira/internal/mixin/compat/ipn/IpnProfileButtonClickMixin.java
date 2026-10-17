@@ -13,7 +13,7 @@ import xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompati
 @Pseudo
 @Mixin(targets = "org.anti_ad.mc.ipnext.gui.inject.base.ProfileButtonWidget", remap = false)
 public abstract class IpnProfileButtonClickMixin {
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "mouseClicked(III)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void banira$mouseClicked(int mouseX, int mouseY, int button,
                                      CallbackInfoReturnable<Boolean> callback) {
         if (InventoryProfilesNextCompatibility.shouldSuppressProfileButton(this)) {

@@ -3,6 +3,8 @@ package xin.vanilla.banira.internal.forge.compat;
 import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.internal.compat.FtbLibraryContract;
+import xin.vanilla.banira.internal.compat.IpnInventoryContract;
 
 /**
  * 仅在对应模组存在时装载具体兼容类，保持全部集成为可选依赖。
@@ -28,6 +30,16 @@ public final class ForgeExternalInventoryCompatibility {
 
     private static void initialize(ModList mods, String modId, String className) {
         if (!mods.isLoaded(modId)) return;
+        if (modId.equals("ftblibrary") && !FtbLibraryContract.matches()) {
+            LOGGER.error("FTB Library compatibility disabled; native controls remain active: {}",
+                    FtbLibraryContract.mismatch());
+            return;
+        }
+        if (modId.equals("inventoryprofilesnext") && !IpnInventoryContract.matches()) {
+            LOGGER.error("IPN compatibility disabled; native controls remain active: {}",
+                    IpnInventoryContract.mismatch());
+            return;
+        }
         try {
             Class.forName(className, true, ForgeExternalInventoryCompatibility.class.getClassLoader())
                     .getMethod("init").invoke(null);

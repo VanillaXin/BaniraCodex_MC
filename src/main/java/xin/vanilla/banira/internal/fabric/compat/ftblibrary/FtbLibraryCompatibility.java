@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.quickaction.*;
+import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -28,28 +29,55 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
     private static final String BUTTON_PATH_PREFIX = "external_inventory_buttons/";
     private static final FtbLibraryCompatibility INSTANCE = new FtbLibraryCompatibility();
     private static final Map<ResourceLocation, ExternalInventoryAction> HOSTED_ACTIONS = new LinkedHashMap<>();
+    private static final Map<ResourceLocation, RegisteredSidebarButton> HOSTED_BUTTONS = new LinkedHashMap<>();
+    private static final List<SidebarGuiButton> HOSTED_GUI_BUTTONS = new ArrayList<>();
     private static Field buttonsField;
+    private static volatile boolean ready;
 
     private FtbLibraryCompatibility() {
     }
 
     public static void init() {
         if (!FabricLoader.getInstance().isModLoaded("ftblibrary")) return;
-        ExternalInventoryButtonManager manager = ExternalInventoryButtonManager.get();
-        manager.registerProvider(new FtbButtonProvider());
-        manager.setFtbHostBridge(INSTANCE);
+        if (ready) return;
+        try {
+            if (!FtbLibraryContract.matches()) throw new IllegalStateException(FtbLibraryContract.mismatch());
+            ClassLoader loader = FtbLibraryCompatibility.class.getClassLoader();
+            Class.forName("dev.ftb.mods.ftblibrary.sidebar.RegisteredSidebarButton", false, loader);
+            Class.forName("dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton", false, loader);
+            if (!FtbLibraryContract.hooksApplied()) {
+                throw new IllegalStateException("FTB sidebar render/click hooks were not fully applied");
+            }
+            buttonsField = FtbLibraryContract.bindButtons(SidebarButtonManager.class);
+            Objects.requireNonNull(buttonMap(), "FTB sidebar storage");
+            Objects.requireNonNull(SidebarButtonManager.INSTANCE.getButtonList(), "FTB sidebar GUI storage");
+            ready = true;
+            ExternalInventoryButtonManager manager = ExternalInventoryButtonManager.get();
+            manager.setFtbHostBridge(INSTANCE);
+            manager.registerProvider(new FtbButtonProvider());
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            ready = false;
+            buttonsField = null;
+            LOGGER.error("FTB Library compatibility disabled; native controls remain active", exception);
+        }
     }
 
     @Override
     public boolean available() {
-        return FabricLoader.getInstance().isModLoaded("ftblibrary");
+        return ready;
     }
 
     @Override
     public synchronized void replace(@Nullable Screen screen, List<ExternalInventoryAction> actions) {
-        clear();
-        if (actions == null || actions.isEmpty()) return;
+        if (!ready) throw new IllegalStateException("FTB sidebar bridge is not ready");
+        if (actions == null || actions.isEmpty()) {
+            clear();
+            return;
+        }
 
+        Map<ResourceLocation, ExternalInventoryAction> stagedActions = new LinkedHashMap<>();
+        Map<ResourceLocation, RegisteredSidebarButton> stagedButtons = new LinkedHashMap<>();
+        List<SidebarGuiButton> stagedGui = new ArrayList<>();
         int order = 0;
         for (ExternalInventoryAction action : actions) {
             if (action == null || action.onActivate() == null && action.contextMenuItems().isEmpty()) continue;
@@ -61,25 +89,55 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
                     false, Optional.empty(), 300 + order);
             RegisteredSidebarButton button = new RegisteredSidebarButton(id, data);
             button.setTooltipOverride(() -> Collections.singletonList(action.label().toVanilla()));
-            register(button, new SidebarGuiButton(new GridLocation(order++, 0), true, button));
-            HOSTED_ACTIONS.put(id, action);
+            if (stagedButtons.put(id, button) != null) {
+                throw new IllegalStateException("Duplicate hosted FTB button " + id);
+            }
+            stagedGui.add(new SidebarGuiButton(new GridLocation(order++, 0), true, button));
+            stagedActions.put(id, action);
+        }
+        try {
+            Map<ResourceLocation, RegisteredSidebarButton> nativeButtons = buttonMap();
+            for (ResourceLocation id : stagedButtons.keySet()) {
+                if (nativeButtons.containsKey(id) && nativeButtons.get(id) != HOSTED_BUTTONS.get(id)) {
+                    throw new IllegalStateException("Native FTB button already owns " + id);
+                }
+            }
+            clear();
+            // Track rollback identities before mutating either native collection.
+            HOSTED_BUTTONS.putAll(stagedButtons);
+            HOSTED_GUI_BUTTONS.addAll(stagedGui);
+            nativeButtons.putAll(stagedButtons);
+            SidebarButtonManager.INSTANCE.getButtonList().addAll(stagedGui);
+            HOSTED_ACTIONS.putAll(stagedActions);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            try {
+                clear();
+            } catch (RuntimeException | LinkageError cleanup) {
+                exception.addSuppressed(cleanup);
+            }
+            throw new IllegalStateException("Cannot publish the complete FTB sidebar action set", exception);
         }
     }
 
     @Override
     public synchronized void clear() {
-        SidebarButtonManager.INSTANCE.getButtonList().removeIf(button ->
-                HOSTED_ACTIONS.containsKey(button.getSidebarButton().getId()));
-        try {
-            buttonMap().keySet().removeAll(HOSTED_ACTIONS.keySet());
-        } catch (ReflectiveOperationException exception) {
-            LOGGER.warn("Unable to remove Banira quick actions from FTB Library", exception);
-        }
         HOSTED_ACTIONS.clear();
+        if (HOSTED_BUTTONS.isEmpty() && HOSTED_GUI_BUTTONS.isEmpty()) return;
+        try {
+            Map<ResourceLocation, RegisteredSidebarButton> nativeButtons = buttonMap();
+            SidebarButtonManager.INSTANCE.getButtonList().removeAll(HOSTED_GUI_BUTTONS);
+            for (Map.Entry<ResourceLocation, RegisteredSidebarButton> entry : HOSTED_BUTTONS.entrySet()) {
+                if (nativeButtons.get(entry.getKey()) == entry.getValue()) nativeButtons.remove(entry.getKey());
+            }
+            HOSTED_BUTTONS.clear();
+            HOSTED_GUI_BUTTONS.clear();
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Cannot remove hosted FTB sidebar actions", exception);
+        }
     }
 
     public static boolean shouldSuppressNativeGroup() {
-        return ExternalInventoryButtonManager.get().suppressesNativeButtons(
+        return ready && ExternalInventoryButtonManager.get().suppressesNativeButtons(
                 ExternalInventoryButtonManager.FTB_SOURCE_ID);
     }
 
@@ -91,7 +149,7 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
     }
 
     public static boolean activateHostedButton(Object value, boolean shiftDown) {
-        if (!(value instanceof RegisteredSidebarButton)) return false;
+        if (!ready || !(value instanceof RegisteredSidebarButton)) return false;
         ExternalInventoryAction action = HOSTED_ACTIONS.get(((RegisteredSidebarButton) value).getId());
         if (action == null) return false;
 
@@ -111,26 +169,14 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
 
     @Nullable
     public static String hostedButtonTranslationKey(Object value) {
-        if (!(value instanceof RegisteredSidebarButton)) return null;
+        if (!ready || !(value instanceof RegisteredSidebarButton)) return null;
         return HOSTED_ACTIONS.containsKey(((RegisteredSidebarButton) value).getId())
                 ? "sidebar_button.banira_codex.external_inventory_button" : null;
     }
 
-    private static void register(RegisteredSidebarButton button, SidebarGuiButton guiButton) {
-        try {
-            buttonMap().put(button.getId(), button);
-            SidebarButtonManager.INSTANCE.getButtonList().add(guiButton);
-        } catch (ReflectiveOperationException exception) {
-            LOGGER.warn("Unable to expose a Banira quick action through FTB Library", exception);
-        }
-    }
-
     @SuppressWarnings("unchecked")
     private static Map<ResourceLocation, RegisteredSidebarButton> buttonMap() throws ReflectiveOperationException {
-        if (buttonsField == null) {
-            buttonsField = SidebarButtonManager.class.getDeclaredField("buttons");
-            buttonsField.setAccessible(true);
-        }
+        if (buttonsField == null) throw new IllegalStateException("FTB sidebar storage binding is unavailable");
         return (Map<ResourceLocation, RegisteredSidebarButton>) buttonsField.get(SidebarButtonManager.INSTANCE);
     }
 
@@ -146,6 +192,7 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (!ready) throw new IllegalStateException("FTB sidebar bridge is not ready");
             List<ExternalInventoryAction> actions = new ArrayList<>();
             for (RegisteredSidebarButton button : SidebarButtonManager.INSTANCE.getButtons()) {
                 if (HOSTED_ACTIONS.containsKey(button.getId()) || !button.canSee()) continue;

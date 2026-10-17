@@ -1,21 +1,13 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
-import com.sighs.apricityui.init.Element;
-import com.sighs.apricityui.event.Event;
-import com.sighs.apricityui.layout.Position;
 import com.sighs.apricityui.screen.ApricityScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
-import xin.vanilla.banira.api.client.ui.UiValue;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.function.Consumer;
+import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
 
 public final class AuiPageHost extends ApricityScreen {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -25,8 +17,13 @@ public final class AuiPageHost extends ApricityScreen {
 
     private AuiPageHost(UiPageSpec page, DocumentView view, UiSessionHost sessions) {
         super(page.template());
-        this.view = view;
-        this.sessions = sessions;
+        this.view = view; this.sessions = sessions;
+        view.failureHandler(failure -> {
+            if (failed) return;
+            failed = true;
+            LOGGER.warn("AUI input binding failed; returning to native interface", failure);
+            sessions.fallback();
+        });
         setPauseGame(false);
         setShowDefaultBackground(false);
     }
@@ -37,25 +34,25 @@ public final class AuiPageHost extends ApricityScreen {
         return view;
     }
 
-    @Override
-    protected void init() {
+    @Override protected void init() {
+        if (view.closed()) { sessions.resumeScreen(this); return; }
         super.init();
         if (getLinkedDocument() == null) throw new IllegalStateException("AUI document was not created");
         view.attach(getLinkedDocument());
     }
 
-    @Override
-    public void resize(Minecraft minecraft, int width, int height) { sessions.resize(); }
+    @Override public void resize(Minecraft minecraft, int width, int height) { sessions.resize(); }
+    @Override public void onClose() { if (!view.dismissOverlay()) view.requestClose(); }
+    @Override public void removed() { sessions.suspendScreen(view); super.removed(); }
 
-    @Override
-    public void onClose() { view.requestClose(); }
-
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (failed) return;
+    @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (failed || view.closed()) return;
         try {
             if (!view.currentDocument()) { sessions.reload(); return; }
+            view.access.prepare();
             super.render(graphics, mouseX, mouseY, partialTick);
+            view.afterLayout();
+            view.access.render(graphics);
         } catch (RuntimeException | LinkageError failure) {
             failed = true;
             LOGGER.warn("AUI renderer failed; returning to native interface", failure);
@@ -63,68 +60,23 @@ public final class AuiPageHost extends ApricityScreen {
         }
     }
 
-    private static final class DocumentView extends NativeUiView {
-        private final Map<String, Element> elements = new LinkedHashMap<>();
+    private static final class DocumentView extends UiDomView {
         private Document document;
-        private long documentGeneration;
+        private long generation;
+        private AuiDocumentAccess access;
 
-        DocumentView() { super(null); }
-
+        DocumentView() { super(null, null); }
         void attach(Document document) {
             this.document = document;
-            documentGeneration = document.getRefreshGeneration();
+            generation = document.getRefreshGeneration();
             resources.own(() -> { if (!document.isDisposed()) document.remove(); });
-            for (String id : texts.keySet()) changed(id);
-            for (String id : values.keySet()) changed(id);
-            for (String id : enabled.keySet()) changed(id);
-            for (String id : actionIds()) {
-                Element element = element(id);
-                if (element == null) continue;
-                Consumer<Event> listener = event -> { if (currentDocument()) activate(id); };
-                element.addEventListener("click", listener);
-                resources.own(() -> element.removeEventListener("click", listener, false));
-            }
+            access = new AuiDocumentAccess(document, screen());
+            resources.own(access);
+            super.attach(access);
         }
-
         boolean currentDocument() {
-            return document != null && !document.isDisposed()
-                    && document.getRefreshGeneration() == documentGeneration;
+            return document != null && !document.isDisposed() && document.getRefreshGeneration() == generation;
         }
-
-        private Element element(String id) {
-            if (document == null) return null;
-            if (!elements.containsKey(id)) elements.put(id, document.getElementById(id));
-            return elements.get(id);
-        }
-
-        @Override
-        protected void changed(String id) {
-            Element element = element(id);
-            if (element == null) return;
-            if (texts.containsKey(id)) element.setInnerText(texts.get(id).toVanilla().getString());
-            if (enabled.containsKey(id)) {
-                if (enabled.get(id)) element.removeAttribute("disabled");
-                else element.setAttribute("disabled", "");
-            }
-            UiValue value = values.get(id);
-            if (value != null && value.kind() == UiValue.Kind.TEXT) element.setValue(value.asText());
-            if (value != null && value.kind() == UiValue.Kind.DECIMAL) element.setValue(value.asDecimal().toPlainString());
-        }
-
-        @Override
-        public ScreenCoordinate bounds(String id) {
-            Element element = element(id);
-            if (element == null) return super.bounds(id);
-            Element.DOMRect rect = element.getBoundingClientRect();
-            Position start = document.documentToGuiPosition(new Position(rect.x, rect.y));
-            Position end = document.documentToGuiPosition(new Position(rect.right, rect.bottom));
-            return new ScreenCoordinate(start.x, start.y, end.x - start.x, end.y - start.y);
-        }
-
-        @Override
-        public void close() {
-            try { super.close(); }
-            finally { elements.clear(); document = null; }
-        }
+        @Override public void close() { try { super.close(); } finally { document = null; access = null; } }
     }
 }

@@ -1,0 +1,434 @@
+package xin.vanilla.banira.internal.client.ui;
+
+import xin.vanilla.banira.api.client.ui.UiControlSpec;
+import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+
+import java.util.*;
+import java.util.function.Consumer;
+
+public class UiDomView extends NativeUiView {
+    private UiDomAccess dom;
+    private final UiDomView root;
+    private final UiDomAccess.Node scope;
+    private String prefix;
+    private final Map<String, UiDomAccess.Node> nodes = new LinkedHashMap<>();
+    private final List<UiDomAccess.Node> ownedNodes = new ArrayList<>();
+    private final Set<String> listeners = new HashSet<>();
+    private final Map<String, VirtualRows> lists = new LinkedHashMap<>();
+    private final Map<String, UiKeyCapture> keys = new HashMap<>();
+    private Consumer<Throwable> onFailure = failure -> { throw new IllegalStateException("UI binding failed", failure); };
+    private UiSelectPopup popup;
+    private AutoCloseable color;
+    private boolean coloring;
+    private long colorToken;
+    private boolean failed;
+    private UiDomAccess.Node scrollContent;
+    private boolean layoutRestored;
+
+    public UiDomView(Object screen, UiDomAccess dom) {
+        super(screen);
+        root = this; scope = null; prefix = "";
+        if (dom != null) attach(dom);
+    }
+
+    private UiDomView(UiDomView parent, UiDomAccess.Node scope, String prefix) {
+        super(parent.screen());
+        root = parent.root; dom = parent.dom; this.scope = scope; this.prefix = prefix;
+        restoreState(parent.state());
+        gate(parent::live);
+    }
+
+    public void failureHandler(Consumer<Throwable> handler) { root.onFailure = Objects.requireNonNull(handler, "handler"); }
+
+    protected final void attach(UiDomAccess access) {
+        if (dom != null) throw new IllegalStateException("Document already attached");
+        dom = Objects.requireNonNull(access, "access");
+        scrollContent = dom.find("content");
+        if (scope == null && scrollContent != null) resources.own(scrollContent.on("scroll", event -> {
+            if (live() && !modal() && lists.isEmpty()) state().scrollOffset(scrollContent.scrollTop());
+        }));
+        if (theme != null) changed("theme");
+        for (String id : controls.keySet()) changed(id);
+        for (String id : texts.keySet()) changed(id);
+        for (String id : values.keySet()) changed(id);
+        for (String id : drafts.keySet()) changed(id);
+        for (String id : enabled.keySet()) changed(id);
+        for (String id : rowProviders.keySet()) changed(id);
+        for (String id : actionIds()) subscribed(id);
+    }
+
+    @Override protected boolean live() { return super.live() && !root.failed && (dom == null || dom.current()); }
+
+    private UiDomAccess.Node make(String tag, UiDomAccess.Node parent, String css) {
+        UiDomAccess.Node node = dom.create(tag);
+        if (css != null) node.attribute("class", css);
+        parent.append(node);
+        ownedNodes.add(node);
+        return node;
+    }
+
+    private UiDomAccess.Node node(String id) {
+        if (nodes.containsKey(id)) return nodes.get(id);
+        UiDomAccess.Node node;
+        if (scope == null) node = dom.find(id);
+        else if (id.equals("input") || id.equals("pick")) {
+            UiDomAccess.Node editor = nodes.get("editor");
+            if (editor == null) { editor = make("div", scope, "editor"); nodes.put("editor", editor); }
+            node = make(id.equals("input") ? "input" : "button", editor, id.equals("input") ? "input" : "tool");
+        } else node = make("div", scope, id.equals("label") ? "label" : "paragraph");
+        if (node != null) nodes.put(id, node);
+        return node;
+    }
+
+    @Override protected void changed(String id) {
+        if (dom == null || !live()) return;
+        if (id.equals("theme")) {
+            if (theme != null) {
+                dom.theme(theme);
+                dom.overlayRoot().attribute("style", UiColorBridge.tokens(theme));
+            }
+            return;
+        }
+        if (rowProviders.containsKey(id)) {
+            VirtualRows old = lists.remove(id);
+            if (old != null) old.close();
+            UiDomAccess.Node container = node(id);
+            if (container != null) lists.put(id, new VirtualRows(id, container));
+            return;
+        }
+        if (scope != null && (id.equals("hint") || id.equals("tooltip") || id.equals("validation"))) {
+            if (id.equals("hint")) node("input").attribute("placeholder", texts.get(id).toVanilla().getString());
+            else if (id.equals("validation")) {
+                String message = texts.get(id).toVanilla().getString();
+                if (message.isEmpty()) node("input").removeAttribute("aria-invalid");
+                else node("input").attribute("aria-invalid", "true");
+                node("input").tooltip(message);
+            }
+            else node("label").tooltip(texts.get(id).toVanilla().getString());
+            return;
+        }
+        UiDomAccess.Node node = node(id);
+        if (node == null) return;
+        UiControlSpec control = controls.get(id);
+        if (control != null) configure(id, node, control);
+        if (texts.containsKey(id)) {
+            String text = texts.get(id).toVanilla().getString();
+            node.text(text);
+            node.component(texts.get(id));
+            if (id.equals("label")) node.tooltip(text);
+        }
+        if (enabled.containsKey(id)) {
+            if (enabled.get(id)) node.removeAttribute("disabled");
+            else {
+                node.attribute("disabled", "");
+                UiKeyCapture capture = keys.get(id);
+                if (capture != null) capture.clear();
+                if (controls.containsKey(id)) dismissOverlay();
+            }
+            if (scope != null && nodes.containsKey("pick")) {
+                if (enabled.get(id)) nodes.get("pick").removeAttribute("disabled");
+                else nodes.get("pick").attribute("disabled", "");
+            }
+        }
+        UiValue value = values.get(id);
+        if (value != null) {
+            switch (value.kind()) {
+                case BOOLEAN: node.attribute("type", "checkbox"); node.checked(value.asBoolean()); break;
+                case DECIMAL: node.value(value.asDecimal().toPlainString()); break;
+                case KEY_CHORDS: node.value(String.join("+", value.asKeyChords())); break;
+                case STRING_LIST: node.value(selectionLabel(control, value.asStrings())); break;
+                default: node.value(control != null && control.kind() == UiControlSpec.Kind.SELECT
+                        ? selectionLabel(control, Collections.singletonList(value.asText())) : value.asText());
+            }
+        }
+        if (drafts.containsKey(id)) node.value(drafts.get(id));
+        bindInput(id, node);
+        restoreSelection(id, node);
+    }
+
+    private String selectionLabel(UiControlSpec control, List<String> selected) {
+        List<String> labels = new ArrayList<>();
+        for (String value : selected) {
+            String label = value;
+            if (control != null) for (DropdownOption option : control.options()) {
+                if (option.value().equals(value)) { label = option.displayLabel(); break; }
+            }
+            labels.add(label);
+        }
+        return String.join(", ", labels);
+    }
+
+    private void configure(String id, UiDomAccess.Node node, UiControlSpec control) {
+        node.attribute("type", control.kind() == UiControlSpec.Kind.PASSWORD ? "password" : "text");
+        node.attribute("maxlength", Integer.toString(control.maxLength()));
+        if (control.kind() == UiControlSpec.Kind.KEY_CHORD || control.kind() == UiControlSpec.Kind.SELECT) {
+            if (control.kind() == UiControlSpec.Kind.KEY_CHORD || control.inputMode() == DropdownInputMode.SELECTION_ONLY
+                    || control.multiple()) node.attribute("readonly", "");
+            else node.removeAttribute("readonly");
+        } else node.removeAttribute("readonly");
+        if (scope != null && (control.kind() == UiControlSpec.Kind.FILE || control.kind() == UiControlSpec.Kind.COLOR
+                || control.kind() == UiControlSpec.Kind.PICKER || control.kind() == UiControlSpec.Kind.SELECT)) {
+            UiDomAccess.Node pick = node("pick");
+            pick.removeAttribute("style");
+            pick.text(control.kind() == UiControlSpec.Kind.SELECT ? "v" : "...");
+            pick.tooltip(texts.containsKey("label") ? texts.get("label").toVanilla().getString() : "");
+            listen("pick:control", pick, "click", event -> {
+                if (!enabled.getOrDefault(id, true)) return;
+                event.consume();
+                if (control.kind() == UiControlSpec.Kind.SELECT) openSelection(id, node, control);
+                else if (control.kind() == UiControlSpec.Kind.COLOR) {
+                    openColor(id, node);
+                } else activate("pick");
+            });
+        }
+    }
+
+    private void reuse(String nextPrefix) {
+        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
+        super.close();
+        resources = new UiOwnedResources();
+        listeners.clear(); keys.clear(); prefix = nextPrefix;
+        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) {
+            UiDomAccess.Node node = entry.getValue();
+            node.blur();
+            node.tooltip("");
+            node.removeAttribute("disabled"); node.removeAttribute("aria-invalid"); node.removeAttribute("placeholder");
+            node.removeAttribute("readonly"); node.removeAttribute("type"); node.removeAttribute("maxlength");
+            if (entry.getKey().equals("pick")) node.attribute("style", "display:none");
+            else if (entry.getKey().equals("input")) node.value("");
+            else if (!entry.getKey().equals("editor")) node.text("");
+        }
+    }
+
+    public void afterLayout() {
+        if (!live() || dom == null || scope != null) return;
+        for (VirtualRows list : lists.values()) list.afterLayout();
+        if (!layoutRestored && lists.isEmpty() && scrollContent != null && scrollContent.clientHeight() > 0) {
+            layoutRestored = true;
+            scrollContent.scrollTop(state().scrollOffset());
+        }
+    }
+
+    private void bindInput(String id, UiDomAccess.Node node) {
+        UiControlSpec control = controls.get(id);
+        UiValue typed = values.get(id);
+        if (control == null && typed == null) return;
+        listen(id + ":input", node, "input", event -> {
+            if (!enabled.getOrDefault(id, true)) return;
+            UiValue current = values.get(id);
+            if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
+                if (!control.multiple() && control.inputMode() == DropdownInputMode.EDITABLE) input(id, UiValue.text(node.value()));
+            } else if (control != null && control.kind() != UiControlSpec.Kind.KEY_CHORD) inputDraft(id, node.value());
+            else if (current != null && current.kind() == UiValue.Kind.BOOLEAN) input(id, UiValue.bool(node.checked()));
+            else if (current != null && current.kind() == UiValue.Kind.TEXT) input(id, UiValue.text(node.value()));
+            captureSelection(id, node);
+        });
+        for (String event : Arrays.asList("select", "keyup", "mouseup", "focus")) {
+            listen(id + ":" + event, node, event, ignored -> captureSelection(id, node));
+        }
+        if (control != null && control.kind() == UiControlSpec.Kind.KEY_CHORD) {
+            UiKeyCapture capture = keys.computeIfAbsent(id, ignored -> new UiKeyCapture());
+            listen(id + ":keydown", node, "keydown", event -> {
+                if (!enabled.getOrDefault(id, true)) return;
+                event.consume();
+                List<String> completed = capture.press(event.keyCode());
+                if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
+            });
+            listen(id + ":keyrelease", node, "keyup", event -> {
+                if (!enabled.getOrDefault(id, true)) return;
+                event.consume();
+                List<String> completed = capture.release(event.keyCode());
+                if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
+            });
+            listen(id + ":blur", node, "blur", event -> capture.clear());
+        } else if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
+            listen(id + ":open-selection", node, "click", event -> {
+                event.consume();
+                if (enabled.getOrDefault(id, true)) openSelection(id, node, control);
+            });
+        }
+    }
+
+    private void openColor(String id, UiDomAccess.Node node) {
+        dismissOverlay();
+        root.coloring = true;
+        long token = ++root.colorToken;
+        AutoCloseable opened = dom.color(node, node.value(), result -> {
+            if (!live() || !root.coloring || token != root.colorToken) return;
+            root.coloring = false;
+            root.color = null;
+            try { if (result != null) { inputDraft(id, result); node.value(result); } }
+            catch (RuntimeException | LinkageError failure) { fail(failure); }
+        });
+        if (root.coloring) root.color = opened;
+        else release(opened);
+    }
+
+    private static void release(AutoCloseable resource) {
+        try { if (resource != null) resource.close(); }
+        catch (Exception failure) { throw new IllegalStateException(failure); }
+    }
+
+    private boolean modal() { return root.popup != null || root.coloring; }
+
+    private void openSelection(String id, UiDomAccess.Node anchor, UiControlSpec control) {
+        dismissOverlay();
+        root.popup = new UiSelectPopup(dom, anchor, control, values.get(id), value -> {
+            if (live()) { input(id, value); changed(id); }
+        }, root::live, () -> root.popup = null, this::fail);
+    }
+
+    private void fail(Throwable failure) {
+        if (root.failed) return;
+        root.failed = true;
+        try { dismissOverlay(); }
+        catch (RuntimeException | LinkageError cleanup) { failure.addSuppressed(cleanup); }
+        root.onFailure.accept(failure);
+    }
+
+    public boolean dismissOverlay() {
+        boolean existed = modal();
+        root.coloring = false; root.colorToken++;
+        AutoCloseable previousColor = root.color; root.color = null;
+        release(previousColor);
+        if (root.popup == null) return existed;
+        UiSelectPopup previous = root.popup;
+        root.popup = null;
+        previous.close();
+        return true;
+    }
+
+    @Override protected void subscribed(String id) {
+        if (dom == null || !live() || !actionIds().contains(id) || (id.equals("pick") && scope != null)) return;
+        UiDomAccess.Node node = node(id);
+        if (node != null) listen(id + ":action", node, "click", event -> {
+            event.consume();
+            if (!modal()) activate(id);
+        });
+    }
+
+    private void listen(String key, UiDomAccess.Node node, String event, Consumer<UiDomAccess.Event> action) {
+        if (!listeners.add(key)) return;
+        resources.own(node.on(event, input -> {
+            if (!live()) return;
+            if (modal()) { input.consume(); return; }
+            try { action.accept(input); }
+            catch (RuntimeException | LinkageError failure) { fail(failure); }
+        }));
+    }
+
+    private void captureSelection(String id, UiDomAccess.Node node) {
+        if (node.focused()) state().selection(prefix + id, node.selectionStart(), node.selectionEnd());
+    }
+
+    private void restoreSelection(String id, UiDomAccess.Node node) {
+        if (state().focusedField().equals(prefix + id)) {
+            int start = state().selectionStart(), end = state().selectionEnd();
+            node.focus();
+            node.selection(start, end);
+            state().selection(prefix + id, start, end);
+        }
+    }
+
+    @Override public ScreenCoordinate bounds(String id) {
+        UiDomAccess.Node node = dom == null ? null : node(id);
+        return node == null ? super.bounds(id) : node.bounds();
+    }
+
+    @Override public void close() {
+        if (scrollContent != null && lists.isEmpty() && layoutRestored) state().scrollOffset(scrollContent.scrollTop());
+        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
+        if (root == this) dismissOverlay();
+        try { for (VirtualRows list : lists.values()) list.close(); }
+        finally {
+            try { super.close(); }
+            finally { for (UiDomAccess.Node node : ownedNodes) node.remove(); ownedNodes.clear(); nodes.clear(); lists.clear(); }
+        }
+    }
+
+    private final class VirtualRows implements AutoCloseable {
+        final String id;
+        final UiDomAccess.Node container, scroller, top, bottom;
+        final List<UiDomView> rows = new ArrayList<>();
+        final UiRowWindow window;
+        final AutoCloseable scrolling;
+        int first = -1;
+        boolean updating;
+        boolean restored;
+        final double initialPosition;
+
+        VirtualRows(String id, UiDomAccess.Node container) {
+            this.id = id; this.container = container;
+            UiDomAccess.Node content = dom.find("content");
+            scroller = content != null ? content : container;
+            window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
+            initialPosition = state().rowPosition();
+            top = dom.create("div"); bottom = dom.create("div");
+            container.append(top);
+            scrolling = scroller.on("scroll", event -> {
+                if (!live() || modal()) return;
+                try { restored = true; update(); }
+                catch (RuntimeException | LinkageError failure) { fail(failure); }
+            });
+            update();
+        }
+
+        void afterLayout() {
+            if (restored || scroller.clientHeight() <= 0) return;
+            restored = true;
+            scroller.scrollTop(initialPosition * 48);
+            update(true);
+        }
+
+        void update() { update(false); }
+        void update(boolean force) {
+            if (updating) return;
+            updating = true;
+            try {
+                int next = Math.max(0, Math.min((int) (scroller.scrollTop() / 48), Math.max(0, window.total() - 1)));
+                if (restored) {
+                    state().scrollOffset(scroller.scrollTop());
+                    state().rowPosition(scroller.scrollTop() / 48);
+                }
+                if (next == first && !force) return;
+                first = next; window.moveTo(first);
+                top.attribute("style", "height:" + (first * 48L) + "px;flex-shrink:0");
+                int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / 48) + 2));
+                while (rows.size() > count) {
+                    UiDomView row = rows.remove(rows.size() - 1);
+                    row.close(); row.scope.remove();
+                }
+                for (int index = 0; index < count; index++) {
+                    UiDomView row;
+                    if (index < rows.size()) {
+                        row = rows.get(index);
+                        row.reuse(window.key(index) + "/");
+                    } else {
+                        UiDomAccess.Node element = dom.create("div");
+                        element.attribute("class", "row");
+                        element.attribute("style", "height:48px;flex-shrink:0");
+                        container.append(element);
+                        row = new UiDomView(UiDomView.this, element, window.key(index) + "/");
+                        rows.add(row);
+                    }
+                    window.bind(index, row);
+                }
+                bottom.attribute("style", "height:" + Math.max(0L, (window.total() - first - count) * 48L) + "px;flex-shrink:0");
+                container.append(bottom);
+                if (count > 0 && restored) state().scrollAnchor(window.key(0));
+            } finally { updating = false; }
+        }
+
+        @Override public void close() {
+            try { scrolling.close(); }
+            catch (Exception failure) { throw new IllegalStateException(failure); }
+            finally {
+                for (UiDomView row : rows) { row.close(); row.scope.remove(); }
+                rows.clear(); top.remove(); bottom.remove();
+            }
+        }
+    }
+}

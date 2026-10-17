@@ -331,6 +331,18 @@ public class SliderWidget extends BaseWidget {
         return inlineInputWidget;
     }
 
+    public String editingText() {
+        return inlineInputWidget != null && inlineInputWidget.visible() ? inlineInputWidget.value() : valueString();
+    }
+
+    public void editingText(String text) {
+        inlineInputMode = InlineInputMode.SLIDER_WITH_INPUT;
+        ensureInlineInput();
+        syncingInlineInput = true;
+        try { inlineInputWidget.value(text); inlineInputWidget.visible(true); }
+        finally { syncingInlineInput = false; }
+    }
+
     @Override
     public void render(GuiGraphics graphics, float partialTicks) {
         PoseStack stack = graphics.pose();

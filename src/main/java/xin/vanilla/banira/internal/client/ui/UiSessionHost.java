@@ -22,7 +22,10 @@ public final class UiSessionHost {
     private final Predicate<Object> screenValidator;
     private final Map<String, UiHudSpec> huds = new LinkedHashMap<>();
     private final Map<Object, Entry> parents = new java.util.IdentityHashMap<>();
+    private final Map<Object, Entry> suspended = new java.util.IdentityHashMap<>();
     private Entry active;
+    private Entry returning;
+    private Object returningScreen;
     private UiDetachReason pending;
     private long generation;
     private long backendRevision;
@@ -37,14 +40,22 @@ public final class UiSessionHost {
     }
 
     public boolean open(UiPageSpec page, Object previousScreen) {
+        return open(page, previousScreen, new UiViewState());
+    }
+
+    public boolean open(UiPageSpec page, Object previousScreen, UiViewState initialState) {
         if (active != null && active.page == page) return true;
-        Entry entry = new Entry(Objects.requireNonNull(page, "page"), previousScreen);
+        returning = null;
+        returningScreen = null;
+        Entry entry = new Entry(Objects.requireNonNull(page, "page"), previousScreen, Objects.requireNonNull(initialState, "initialState"));
         NativeUiView view = createView(entry);
         if (view == null) return false;
         if (active != null) {
             if (active.view != null && active.view.screen() == previousScreen) parents.put(previousScreen, active);
             detach(UiDetachReason.SWITCH);
         }
+        Entry suspendedParent = suspended.remove(previousScreen);
+        if (suspendedParent != null) parents.put(previousScreen, suspendedParent);
         active = entry;
         pending = null;
         return present(entry, view);
@@ -67,6 +78,7 @@ public final class UiSessionHost {
         }
         entry.aui = false;
         if (entry.nativeScreen == null) entry.nativeScreen = entry.page.nativeFactory().create(entry.previous);
+        if (entry.nativeScreen instanceof UiNativePage) ((UiNativePage) entry.nativeScreen).prepareUiState(entry.state);
         return screenValidator.test(entry.nativeScreen) ? new NativeUiView(entry.nativeScreen) : null;
     }
 
@@ -77,6 +89,7 @@ public final class UiSessionHost {
         view.gate(() -> active == entry && generation == token);
         view.onClose(() -> close(UiCloseReason.USER_CLOSE));
         try {
+            view.theme(entry.page.theme());
             entry.page.session().bind(view);
             presenter.accept(view.screen());
             if (entry.aui) backend.attach(entry.page.id());
@@ -108,9 +121,48 @@ public final class UiSessionHost {
         if (active != null) { backend.isolate(active.page.id()); pending = UiDetachReason.FALLBACK; }
     }
 
+    public void suspendScreen(NativeUiView view) {
+        if (active == null || active.view != view) return;
+        Entry entry = active;
+        suspended.put(view.screen(), entry);
+        try { detach(UiDetachReason.RELOAD); }
+        finally { active = null; pending = null; }
+    }
+
+    public void resumeScreen(Object screen) {
+        if (active == null) { returning = suspended.get(screen); returningScreen = screen; }
+    }
+
+    public boolean ownsScreen(Object screen) {
+        return active != null && active.view != null && active.view.screen() == screen;
+    }
+
+    public void screenRemoved(Object screen) {
+        if (ownsScreen(screen)) suspendScreen(active.view);
+    }
+
+    public void observeScreen(Object screen) {
+        if (returning != null && returningScreen != screen) { returning = null; returningScreen = null; }
+        if (active != null && !ownsScreen(screen)) suspendScreen(active.view);
+        if (active == null && suspended.containsKey(screen)) resumeScreen(screen);
+    }
+
     public void tick() {
         backend.tick();
+        if (active == null && returning != null) {
+            Entry entry = returning;
+            returning = null;
+            returningScreen = null;
+            suspended.values().removeIf(candidate -> candidate == entry);
+            NativeUiView restored = createView(entry);
+            if (restored != null) {
+                active = entry;
+                present(entry, restored);
+            }
+        }
         if (active == null) { pending = null; backendRevision = backend.revision(); return; }
+        active.page.session().tick();
+        if (active == null) return;
         if (pending == null && backendRevision != backend.revision()) {
             pending = active.aui != backend.wantsAui(active.page.id()) ? UiDetachReason.SWITCH : UiDetachReason.RELOAD;
         }
@@ -129,6 +181,7 @@ public final class UiSessionHost {
         if (entry == null || entry.view == null) return;
         ++generation;
         NativeUiView view = entry.view;
+        if (!entry.aui && view.screen() instanceof UiNativePage) ((UiNativePage) view.screen()).captureUiState(entry.state);
         entry.view = null;
         backend.detach(entry.page.id());
         try { entry.page.session().detach(reason); }
@@ -159,7 +212,18 @@ public final class UiSessionHost {
         }
     }
 
-    public void disconnect() { close(UiCloseReason.DISCONNECT); }
+    public void disconnect() {
+        java.util.Set<Entry> remaining = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        remaining.addAll(suspended.values());
+        remaining.addAll(parents.values());
+        if (active != null) remaining.remove(active);
+        parents.clear();
+        suspended.clear();
+        returning = null;
+        returningScreen = null;
+        try { close(UiCloseReason.DISCONNECT); }
+        finally { for (Entry entry : remaining) entry.page.session().close(UiCloseReason.DISCONNECT); }
+    }
     public UiPageSpec page() { return active == null ? null : active.page; }
     public Object previousScreen() { return active == null ? null : active.previous; }
     public NativeUiView view() { return active == null ? null : active.view; }
@@ -171,10 +235,10 @@ public final class UiSessionHost {
     private static final class Entry {
         final UiPageSpec page;
         final Object previous;
-        final UiViewState state = new UiViewState();
+        final UiViewState state;
         Object nativeScreen;
         NativeUiView view;
         boolean aui;
-        Entry(UiPageSpec page, Object previous) { this.page = page; this.previous = previous; }
+        Entry(UiPageSpec page, Object previous, UiViewState state) { this.page = page; this.previous = previous; this.state = state; }
     }
 }

@@ -52,6 +52,26 @@ public final class AuiCapabilityContract {
                 }
                 if (!found) return new Result(false, "Missing contract " + member.key());
             }
+            for (String[] field : new String[][]{
+                    {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
+                    {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
+                    {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"}}) {
+                String name = ROOT + field[0];
+                ClassNode owner = classes.get(name);
+                if (owner == null) {
+                    try (InputStream input = loader.getResourceAsStream(name + ".class")) {
+                        if (input == null) return new Result(false, "Missing " + name);
+                        owner = new ClassNode();
+                        new ClassReader(input).accept(owner, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
+                    }
+                    if (!name.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0 || owner.version > Opcodes.V17)
+                        return new Result(false, "Incompatible class " + name);
+                    classes.put(name, owner);
+                }
+                boolean found = owner.fields.stream().anyMatch(value -> value.name.equals(field[1]) && value.desc.equals(field[2])
+                        && (value.access & Opcodes.ACC_PUBLIC) != 0 && (value.access & Opcodes.ACC_STATIC) == 0);
+                if (!found) return new Result(false, "Missing field " + name + "#" + field[1]);
+            }
             return new Result(true, "");
         } catch (IOException | RuntimeException | LinkageError failure) {
             return new Result(false, failure.getClass().getSimpleName() + ": " + failure.getMessage());
@@ -77,6 +97,11 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "isDisposed", "()Z");
         add(result, "init/Document", "getElementById", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "createElement", "(Ljava/lang/String;)" + ELEMENT);
+        add(result, "init/Document", "getElementsByTagName", "(Ljava/lang/String;)Ljava/util/List;");
+        add(result, "init/Document", "getDocumentElement", "()" + ELEMENT);
+        add(result, "init/Document", "getFocusedElement", "()" + ELEMENT);
+        add(result, "init/Document", "guiToDocumentPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
+        add(result, "init/Node", "getChildNodes", "()Ljava/util/List;");
         add(result, "init/Document", "getViewportVersion", "()J");
         add(result, "init/Document", "documentToGuiPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Element", "setInnerText", "(Ljava/lang/String;)V");
@@ -84,6 +109,14 @@ public final class AuiCapabilityContract {
         add(result, "init/Element", "removeAttribute", "(Ljava/lang/String;)V");
         add(result, "init/Element", "setValue", "(Ljava/lang/String;)V");
         add(result, "init/Element", "getValue", "()Ljava/lang/String;");
+        add(result, "init/Element", "hasAttribute", "(Ljava/lang/String;)Z");
+        add(result, "init/Element", "isChecked", "()Z");
+        add(result, "init/Element", "setChecked", "(Z)V");
+        add(result, "init/Element", "focus", "()V");
+        add(result, "init/Element", "blur", "()V");
+        add(result, "init/Element", "getScrollTop", "()D");
+        add(result, "init/Element", "setScrollTop", "(D)V");
+        add(result, "init/Element", "getClientHeight", "()D");
         add(result, "init/Element", "appendChild", "(" + ELEMENT + ")" + ELEMENT);
         add(result, "init/Element", "remove", "()V");
         add(result, "init/Element", "getBoundingClientRect", "()L" + ROOT + "init/Element$DOMRect;");
@@ -93,6 +126,17 @@ public final class AuiCapabilityContract {
         add(result, "event/Event", "stopPropagation", "()V");
         add(result, "element/Input", "<init>", "(" + DOCUMENT + ")V");
         add(result, "element/Input", "getValue", "()Ljava/lang/String;");
+        add(result, "element/AbstractText", "getCursor", "()I");
+        add(result, "element/AbstractText", "getSelectionStart", "()I");
+        add(result, "element/AbstractText", "getSelectionEnd", "()I");
+        add(result, "element/AbstractText", "setSelectionRange", "(II)V");
+        result.add(new Member(ROOT + "ui/ColorPicker", "pickIn", "(" + DOCUMENT + ELEMENT + "Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;", true));
+        result.add(new Member(ROOT + "ui/ColorPicker", "closeActive", "()V", true));
+        result.add(new Member(ROOT + "ui/ColorPicker", "isOpen", "()Z", true));
+        result.add(new Member(ROOT + "ui/Tooltip", "bind", "(" + ELEMENT + "Ljava/lang/String;)L" + ROOT + "ui/Tooltip$Binding;", true));
+        result.add(new Member(ROOT + "ui/Tooltip", "hide", "(" + DOCUMENT + ")V", true));
+        add(result, "ui/Tooltip$Binding", "close", "()V");
+        result.add(new Member(ROOT + "parser/Color", "parse", "(Ljava/lang/String;)I", true));
         add(result, "element/MinecraftElement", "requestRepaint", "()V");
         add(result, "element/Item", "<init>", "(" + DOCUMENT + ")V");
         add(result, "element/Slot", "<init>", "(" + DOCUMENT + ")V");

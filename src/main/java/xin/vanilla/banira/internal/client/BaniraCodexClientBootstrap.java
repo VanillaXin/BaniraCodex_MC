@@ -101,6 +101,7 @@ public final class BaniraCodexClientBootstrap {
             boolean connected = BaniraClientRuntime.hasConnection();
             if (hadConnection && !connected) UI_SESSIONS.disconnect();
             hadConnection = connected;
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();
         });
         BaniraClientEventHub.Client.onTextureReload(event -> { AUI.reload(); UI_SESSIONS.reload(); });

@@ -110,6 +110,43 @@ public class AuiCapabilityContractTest {
         return new URLClassLoader(new URL[]{new java.io.File(path).toURI().toURL()}, null);
     }
 
+    @Test public void changedPublicCoordinateFieldFallsBack() throws Exception {
+        try (URLClassLoader jar = official()) {
+            assertFalse(compatible(new ClassLoader(null) {
+                @Override public InputStream getResourceAsStream(String name) {
+                    InputStream stream = jar.getResourceAsStream(name);
+                    if (!name.equals("com/sighs/apricityui/init/Element$DOMRect.class")) return stream;
+                    try (InputStream input = stream) {
+                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                        node.fields.stream().filter(field -> field.name.equals("x")).forEach(field -> field.desc = "F");
+                        ClassWriter writer = new ClassWriter(0); node.accept(writer);
+                        return new ByteArrayInputStream(writer.toByteArray());
+                    } catch (Exception failure) { throw new AssertionError(failure); }
+                }
+            }));
+        }
+    }
+
+    @Test public void everyDocumentAdapterMethodIsGuarded() throws Exception {
+        java.util.Set<String> guarded = new java.util.HashSet<>();
+        for (AuiCapabilityContract.Member member : AuiCapabilityContract.requiredMembers()) guarded.add(member.key());
+        for (String name : new String[]{"AuiDocumentAccess", "AuiDocumentAccess$AuiNode", "AuiDocumentAccess$AuiNode$1"}) {
+            try (InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/" + name + ".class")) {
+                assertNotNull(input);
+                ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                for (org.objectweb.asm.tree.MethodNode method : node.methods) {
+                    for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions) {
+                        if (!(instruction instanceof org.objectweb.asm.tree.MethodInsnNode)) continue;
+                        org.objectweb.asm.tree.MethodInsnNode call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                        if (call.owner.startsWith("com/sighs/apricityui/"))
+                            assertTrue("Unguarded AUI call " + call.owner + "#" + call.name + call.desc,
+                                    guarded.contains(call.owner + "#" + call.name + call.desc));
+                    }
+                }
+            }
+        }
+    }
+
     private ClassLoader resourcesOnly(URLClassLoader jar, boolean remove) {
         return new ClassLoader(null) {
             @Override

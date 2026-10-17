@@ -1,6 +1,9 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import xin.vanilla.banira.client.data.BaniraColorConfig;
+
 import xin.vanilla.banira.api.client.ui.UiRowProvider;
+import xin.vanilla.banira.api.client.ui.UiControlSpec;
 import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -17,18 +20,24 @@ import java.util.function.Consumer;
 public class NativeUiView implements UiView, AutoCloseable {
     protected final Map<String, Component> texts = new LinkedHashMap<>();
     protected final Map<String, UiValue> values = new LinkedHashMap<>();
+    protected final Map<String, UiControlSpec> controls = new LinkedHashMap<>();
+    protected final Map<String, String> drafts = new LinkedHashMap<>();
     protected final Map<String, Boolean> enabled = new LinkedHashMap<>();
     protected final Map<String, UiRowProvider> rowProviders = new LinkedHashMap<>();
-    protected final UiOwnedResources resources = new UiOwnedResources();
+    protected final Map<String, Integer> rowLimits = new LinkedHashMap<>();
+    protected UiOwnedResources resources = new UiOwnedResources();
     private final Map<String, List<Runnable>> actions = new LinkedHashMap<>();
     private final Map<String, List<Consumer<UiValue>>> changes = new LinkedHashMap<>();
+    private final Map<String, List<Consumer<String>>> draftChanges = new LinkedHashMap<>();
     private Object screen;
     private UiViewState state = new UiViewState();
     private BooleanSupplier current = () -> true;
     private Runnable closeAction = () -> { };
+    protected BaniraColorConfig theme;
 
     public NativeUiView(Object screen) { this.screen = screen; }
     public Object screen() { return screen; }
+    public boolean closed() { return resources.closed(); }
     protected void screen(Object screen) { this.screen = screen; }
     public UiViewState state() { return state; }
     void restoreState(UiViewState state) { this.state = Objects.requireNonNull(state, "state"); }
@@ -37,27 +46,100 @@ public class NativeUiView implements UiView, AutoCloseable {
     public void requestClose() { if (live()) closeAction.run(); }
     protected boolean live() { return !resources.closed() && current.getAsBoolean(); }
 
+    @Override public void theme(BaniraColorConfig theme) {
+        if (!live()) return;
+        this.theme = theme;
+        changed("theme");
+    }
+
     @Override
-    public void text(String id, Component text) { texts.put(id, Objects.requireNonNull(text, "text")); changed(id); }
+    public void text(String id, Component text) {
+        if (!live()) return;
+        texts.put(id, Objects.requireNonNull(text, "text"));
+        changed(id);
+    }
     @Override
-    public void value(String id, UiValue value) { values.put(id, Objects.requireNonNull(value, "value")); changed(id); }
+    public void value(String id, UiValue value) {
+        if (!live()) return;
+        requireValue(id, value);
+        values.put(id, Objects.requireNonNull(value, "value"));
+        changed(id);
+    }
     @Override
-    public void enabled(String id, boolean value) { enabled.put(id, value); changed(id); }
+    public void enabled(String id, boolean value) {
+        if (!live()) return;
+        enabled.put(id, value);
+        changed(id);
+    }
+
+    @Override
+    public void control(String id, UiControlSpec control) {
+        if (!live()) return;
+        controls.put(id, Objects.requireNonNull(control, "control"));
+        changed(id);
+    }
+
+    @Override
+    public void draft(String id, String draft) {
+        if (!live()) return;
+        requireDraftControl(id);
+        drafts.put(id, Objects.requireNonNull(draft, "draft"));
+        changed(id);
+    }
+
+    private void requireDraftControl(String id) {
+        UiControlSpec control = controls.get(id);
+        if (control == null || control.kind() == UiControlSpec.Kind.SELECT
+                || control.kind() == UiControlSpec.Kind.KEY_CHORD) {
+            throw new IllegalArgumentException("Control does not accept raw text drafts");
+        }
+    }
 
     @Override
     public AutoCloseable onAction(String id, Runnable action) {
+        requireOpen();
         Objects.requireNonNull(action, "action");
         List<Runnable> listeners = actions.computeIfAbsent(id, key -> new ArrayList<>());
         listeners.add(action);
-        return resources.own(() -> listeners.remove(action));
+        AutoCloseable owned = resources.own(() -> listeners.remove(action));
+        subscribed(id);
+        return owned;
     }
 
     @Override
     public AutoCloseable onValue(String id, Consumer<UiValue> action) {
+        requireOpen();
         Objects.requireNonNull(action, "action");
         List<Consumer<UiValue>> listeners = changes.computeIfAbsent(id, key -> new ArrayList<>());
         listeners.add(action);
-        return resources.own(() -> listeners.remove(action));
+        AutoCloseable owned = resources.own(() -> listeners.remove(action));
+        subscribed(id);
+        return owned;
+    }
+
+    @Override
+    public AutoCloseable onDraft(String id, Consumer<String> action) {
+        requireOpen();
+        requireDraftControl(id);
+        Objects.requireNonNull(action, "action");
+        List<Consumer<String>> listeners = draftChanges.computeIfAbsent(id, key -> new ArrayList<>());
+        listeners.add(action);
+        AutoCloseable owned = resources.own(() -> listeners.remove(action));
+        subscribed(id);
+        return owned;
+    }
+
+    private void requireOpen() {
+        if (resources.closed()) throw new IllegalStateException("UI resources already closed");
+    }
+
+    public void inputDraft(String id, String draft) {
+        if (!live() || !enabled.getOrDefault(id, true)) return;
+        requireDraftControl(id);
+        drafts.put(id, Objects.requireNonNull(draft, "draft"));
+        for (Consumer<String> listener : new ArrayList<>(draftChanges.getOrDefault(id, java.util.Collections.emptyList()))) {
+            if (live()) listener.accept(draft);
+        }
     }
 
     public void activate(String id) {
@@ -69,6 +151,7 @@ public class NativeUiView implements UiView, AutoCloseable {
 
     public void input(String id, UiValue value) {
         if (!live() || !enabled.getOrDefault(id, true)) return;
+        requireValue(id, value);
         UiValue previous = values.get(id);
         if (previous != null && previous.kind() != value.kind()) throw new IllegalArgumentException("UI value type changed");
         values.put(id, value);
@@ -77,24 +160,45 @@ public class NativeUiView implements UiView, AutoCloseable {
         }
     }
 
+    private void requireValue(String id, UiValue value) {
+        Objects.requireNonNull(value, "value");
+        UiControlSpec control = controls.get(id);
+        if (control == null) return;
+        UiValue.Kind expected;
+        switch (control.kind()) {
+            case DECIMAL: expected = UiValue.Kind.DECIMAL; break;
+            case KEY_CHORD: expected = UiValue.Kind.KEY_CHORDS; break;
+            case SELECT: expected = control.multiple() ? UiValue.Kind.STRING_LIST : UiValue.Kind.TEXT; break;
+            default: expected = UiValue.Kind.TEXT;
+        }
+        if (value.kind() != expected) throw new IllegalArgumentException("UI control value type mismatch");
+    }
+
     @Override
     public void rows(String id, UiRowProvider rows, int maxRealizedRows) {
+        if (!live()) return;
         if (maxRealizedRows < 1 || maxRealizedRows > 120) throw new IllegalArgumentException("UI row realization limit");
         rowProviders.put(id, Objects.requireNonNull(rows, "rows"));
+        rowLimits.put(id, maxRealizedRows);
         changed(id);
     }
 
     @Override
     public ScreenCoordinate bounds(String id) { return new ScreenCoordinate(0, 0, 0, 0); }
     protected void changed(String id) { }
+    protected void subscribed(String id) { }
     protected java.util.Set<String> actionIds() { return new java.util.LinkedHashSet<>(actions.keySet()); }
     public int subscriptionCount() {
-        return actions.values().stream().mapToInt(List::size).sum() + changes.values().stream().mapToInt(List::size).sum();
+        return actions.values().stream().mapToInt(List::size).sum() + changes.values().stream().mapToInt(List::size).sum()
+                + draftChanges.values().stream().mapToInt(List::size).sum();
     }
 
     @Override
     public void close() {
         try { resources.close(); }
-        finally { actions.clear(); changes.clear(); texts.clear(); values.clear(); enabled.clear(); rowProviders.clear(); }
+        finally {
+            actions.clear(); changes.clear(); draftChanges.clear(); texts.clear(); values.clear();
+            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear();
+        }
     }
 }

@@ -1,5 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.page.DialogUiSession;
+
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -22,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * 通用确认界面，用明确的确认与取消按钮承接破坏性操作。
  */
-public final class ConfirmDialogScreen extends BaniraScreen {
+public final class ConfirmDialogScreen extends BaniraScreen implements UiNativePage {
 
     private static final int CARD_PADDING = 12;
     private static final int CARD_RADIUS = 6;
@@ -34,13 +40,23 @@ public final class ConfirmDialogScreen extends BaniraScreen {
     private static final int BUTTON_GAP = 8;
 
     private final Args args;
-    private boolean resolved;
+    private final DialogUiSession uiSession;
+    private UiPageSpec uiPage;
 
     public ConfirmDialogScreen(@Nonnull Args args) {
         super(args.title() != null ? args.title() : BaniraComponent.get().literal("Confirm"));
         this.args = args;
+        this.uiSession = new DialogUiSession(args);
         previousScreen(args.parentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
+    }
+
+    public DialogUiSession uiSession() { return uiSession; }
+    @Override public String uiSurfaceId() { return "banira_codex:confirm"; }
+    @Override public UiPageSpec uiPage() {
+        if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
+                "banira_codex/ui/confirm.html", uiSession, previous -> this, this::getEffectiveTheme);
+        return uiPage;
     }
 
     /**
@@ -130,29 +146,30 @@ public final class ConfirmDialogScreen extends BaniraScreen {
     }
 
     private void confirm() {
-        if (resolved) {
+        if (uiSession.resolved()) {
             return;
         }
-        resolved = true;
-        if (args.onConfirm() != null) {
-            args.onConfirm().run();
-        }
-        returnToParent();
+        uiSession.confirm();
+        returnToParent(UiCloseReason.SUBMIT);
     }
 
     private void cancel() {
-        if (resolved) {
+        if (uiSession.resolved()) {
             return;
         }
-        resolved = true;
-        if (args.onCancel() != null) {
-            args.onCancel().run();
-        }
-        returnToParent();
+        uiSession.cancel();
+        returnToParent(UiCloseReason.CANCEL);
     }
 
-    private void returnToParent() {
+    private void returnToParent(UiCloseReason reason) {
+        if (CommonUiPages.close(this, reason)) return;
+        uiSession.close(reason);
         Minecraft.getInstance().setScreen(args.parentScreen());
+    }
+
+    @Override public void removed() {
+        CommonUiPages.removed(this);
+        super.removed();
     }
 
     @Override

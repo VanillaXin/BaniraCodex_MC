@@ -14,7 +14,9 @@ import xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibil
 @Pseudo
 @Mixin(targets = "dev.ftb.mods.ftblibrary.sidebar.SidebarGroupGuiButton", remap = false)
 public abstract class SidebarGroupGuiButtonMixin {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = {"render(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V",
+            "method_25394(Lnet/minecraft/class_4587;IIF)V"}, at = @At("HEAD"), cancellable = true,
+            require = 0, remap = false)
     private void banira$render(PoseStack stack, int mouseX, int mouseY,
                                float partialTicks, CallbackInfo callback) {
         FtbLibraryCompatibility.updateGroupWidgetVisibility(this);
@@ -24,7 +26,8 @@ public abstract class SidebarGroupGuiButtonMixin {
         }
     }
 
-    @Inject(method = "onPress", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = {"onPress()V", "method_25306()V"}, at = @At("HEAD"), cancellable = true,
+            require = 0, remap = false)
     private void banira$onPress(CallbackInfo callback) {
         if (FtbLibraryCompatibility.shouldSuppressNativeGroup()) callback.cancel();
     }

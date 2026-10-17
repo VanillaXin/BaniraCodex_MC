@@ -14,6 +14,7 @@ public final class UiBackendController {
     private final Set<String> owned = new HashSet<>();
     private final Set<String> isolated = new HashSet<>();
     private boolean requested;
+    private long revision;
     private Boolean available;
     private volatile Boolean pending;
     private volatile boolean reloadPending;
@@ -76,8 +77,11 @@ public final class UiBackendController {
     }
 
     public void reload() {
+        ++revision;
         available = null;
         owned.clear();
         isolated.clear();
     }
+
+    public long revision() { return revision; }
 }

@@ -172,7 +172,7 @@ configurations {
 }
 
 dependencies {
-    compileOnly('maven.modrinth:UfPdUeGy:QimFJQz4') { transitive = false }
+    compileOnly(fg.deobf('maven.modrinth:UfPdUeGy:QimFJQz4')) { transitive = false }
     auiContract 'maven.modrinth:UfPdUeGy:QimFJQz4'
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"

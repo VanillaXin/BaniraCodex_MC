@@ -74,12 +74,14 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "setManuallyRendered", "(Z)V");
         add(result, "init/Document", "setReloadPersistent", "(Z)V");
         add(result, "init/Document", "getRefreshGeneration", "()J");
+        add(result, "init/Document", "isDisposed", "()Z");
         add(result, "init/Document", "getElementById", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "createElement", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "getViewportVersion", "()J");
         add(result, "init/Document", "documentToGuiPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Element", "setInnerText", "(Ljava/lang/String;)V");
         add(result, "init/Element", "setAttribute", "(Ljava/lang/String;Ljava/lang/String;)V");
+        add(result, "init/Element", "removeAttribute", "(Ljava/lang/String;)V");
         add(result, "init/Element", "setValue", "(Ljava/lang/String;)V");
         add(result, "init/Element", "getValue", "()Ljava/lang/String;");
         add(result, "init/Element", "appendChild", "(" + ELEMENT + ")" + ELEMENT);

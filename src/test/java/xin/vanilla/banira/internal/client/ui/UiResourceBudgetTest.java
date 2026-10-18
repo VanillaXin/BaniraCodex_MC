@@ -32,7 +32,8 @@ public class UiResourceBudgetTest {
     public void sharedResourcesStayLocalSmallAndScriptFree() throws Exception {
         int total = 0;
         for (String name : new String[]{"shared.css", "ui/form.html", "ui/confirm.html", "ui/text.html",
-                "ui/config.html", "ui/navigation.html", "ui/player-config.html", "ui/quick-actions.html", "ui/quick-steps.html"}) {
+                "ui/config.html", "ui/navigation.html", "ui/player-config.html", "ui/quick-actions.html", "ui/quick-steps.html",
+                "ui/notification-log.html", "ui/notification-types.html", "ui/hud-position.html"}) {
             try (InputStream stream = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/" + name)) {
                 assertNotNull("Missing shared UI resource: " + name, stream);
                 byte[] bytes = stream.readAllBytes();

@@ -6,6 +6,7 @@ import xin.vanilla.banira.api.client.ui.UiRowProvider;
 import xin.vanilla.banira.api.client.ui.UiControlSpec;
 import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.api.client.ui.UiView;
+import xin.vanilla.banira.api.client.ui.UiPointer;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.common.data.Component;
 
@@ -14,6 +15,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Collections;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -31,6 +35,8 @@ public class NativeUiView implements UiView, AutoCloseable {
     private final Map<String, List<Runnable>> longActions = new LinkedHashMap<>();
     private final Map<String, List<Consumer<UiValue>>> changes = new LinkedHashMap<>();
     private final Map<String, List<Consumer<String>>> draftChanges = new LinkedHashMap<>();
+    private final Map<String, List<Consumer<UiPointer>>> pointers = new LinkedHashMap<>();
+    protected double hudX, hudY;
     private Object screen;
     private UiViewState state = new UiViewState();
     private BooleanSupplier current = () -> true;
@@ -171,6 +177,24 @@ public class NativeUiView implements UiView, AutoCloseable {
         }
     }
 
+    @Override public void hudPosition(double x, double y) {
+        if (!live() || !Double.isFinite(x) || !Double.isFinite(y)) return;
+        hudX = Math.max(0, Math.min(1, x)); hudY = Math.max(0, Math.min(1, y)); changed("preview");
+    }
+    @Override public AutoCloseable onPointer(String id, Consumer<UiPointer> action) {
+        requireOpen();
+        List<Consumer<UiPointer>> listeners = pointers.computeIfAbsent(id, key -> new ArrayList<>());
+        listeners.add(Objects.requireNonNull(action));
+        AutoCloseable owned = resources.own(() -> listeners.remove(action));
+        subscribed(id); return owned;
+    }
+    public void pointer(String id, UiPointer event) {
+        if (!live() || !event.finite() || !enabled.getOrDefault(id, true)) return;
+        for (Consumer<UiPointer> listener : new ArrayList<>(pointers.getOrDefault(id, Collections.emptyList())))
+            if (live()) listener.accept(event);
+    }
+    protected Set<String> pointerIds() { return new LinkedHashSet<>(pointers.keySet()); }
+
     public void activate(String id) {
         if (!live() || !enabled.getOrDefault(id, true)) return;
         for (Runnable action : new ArrayList<>(actions.getOrDefault(id, java.util.Collections.emptyList()))) {
@@ -219,14 +243,15 @@ public class NativeUiView implements UiView, AutoCloseable {
     protected java.util.Set<String> actionIds() { return new java.util.LinkedHashSet<>(actions.keySet()); }
     public int subscriptionCount() {
         return actions.values().stream().mapToInt(List::size).sum() + changes.values().stream().mapToInt(List::size).sum()
-                + draftChanges.values().stream().mapToInt(List::size).sum() + longActions.values().stream().mapToInt(List::size).sum();
+                + draftChanges.values().stream().mapToInt(List::size).sum() + longActions.values().stream().mapToInt(List::size).sum()
+                + pointers.values().stream().mapToInt(List::size).sum();
     }
 
     @Override
     public void close() {
         try { resources.close(); }
         finally {
-            actions.clear(); longActions.clear(); changes.clear(); draftChanges.clear(); texts.clear(); tooltips.clear(); values.clear();
+            actions.clear(); longActions.clear(); changes.clear(); draftChanges.clear(); pointers.clear(); texts.clear(); tooltips.clear(); values.clear();
             controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear();
         }
     }

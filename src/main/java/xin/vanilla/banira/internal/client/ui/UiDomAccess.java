@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 public interface UiDomAccess {
     default void theme(BaniraColorConfig theme) { }
+    default void hudPosition(double x, double y) { }
     Node find(String id);
     Node create(String tag);
     Node overlayRoot();
@@ -19,6 +20,8 @@ public interface UiDomAccess {
     interface Event {
         int keyCode();
         default int button() { return -1; }
+        default double x() { return Double.NaN; }
+        default double y() { return Double.NaN; }
         void consume();
     }
 

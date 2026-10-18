@@ -10,6 +10,9 @@ public final class UiViewState {
     private int selectionEnd;
     private double scrollOffset;
     private double rowPosition;
+    private double detailScroll;
+    public double detailScroll() { return detailScroll; }
+    public void detailScroll(double value) { detailScroll = Double.isFinite(value) ? Math.max(0, value) : 0; }
     public String scrollAnchor() { return scrollAnchor; }
     public void scrollAnchor(String id) { scrollAnchor = Objects.requireNonNull(id, "id"); }
     public String focusedField() { return focusedField; }

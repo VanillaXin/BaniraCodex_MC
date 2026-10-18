@@ -29,6 +29,17 @@ public final class AuiGameElements {
             return true;
         }
         public int height() { return lines.size() * Minecraft.getInstance().font.lineHeight; }
+        public net.minecraft.network.chat.Style styleAt(ScreenCoordinate bounds, ScreenCoordinate clip, double x, double y) {
+            int index = lineAt(bounds, clip, x, y, Minecraft.getInstance().font.lineHeight, lines.size());
+            return index < 0 ? null : Minecraft.getInstance().font.getSplitter().componentStyleAtWidth(lines.get(index), (int) (x - bounds.x()));
+        }
+    }
+
+    public static int lineAt(ScreenCoordinate bounds, ScreenCoordinate clip, double x, double y, int lineHeight, int lines) {
+        if (!Double.isFinite(x) || !Double.isFinite(y) || lineHeight <= 0 || x < bounds.x() || x >= bounds.x() + bounds.width()
+                || x < clip.x() || x >= clip.x() + clip.width() || y < clip.y() || y >= clip.y() + clip.height()) return -1;
+        int index = (int) Math.floor((y - bounds.y()) / lineHeight);
+        return index >= 0 && index < lines ? index : -1;
     }
 
     public static void renderText(GuiGraphics graphics, TextLayout layout, ScreenCoordinate bounds, ScreenCoordinate clip) {

@@ -18,6 +18,8 @@ public interface UiView {
     AutoCloseable onLongAction(String id, Runnable action);
     AutoCloseable onValue(String id, Consumer<UiValue> action);
     AutoCloseable onDraft(String id, Consumer<String> action);
+    AutoCloseable onPointer(String id, Consumer<UiPointer> action);
+    void hudPosition(double x, double y);
     void rows(String id, UiRowProvider rows, int maxRealizedRows);
     ScreenCoordinate bounds(String id);
     void requestClose();

@@ -16,6 +16,10 @@ import xin.vanilla.banira.internal.client.ui.UiColorBridge;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.client.notification.NotificationHudState;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
+import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
+import xin.vanilla.banira.internal.client.InputStateManager;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +35,9 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final AuiNode body;
     private final Element content;
     private int background = 0xfff4f5f7;
+    private BaniraColorConfig theme;
+    private boolean preview;
+    private double hudX, hudY;
     private int popupLayers;
     private boolean closed;
     private int count;
@@ -60,10 +67,15 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     @Override public Node find(String id) {
         AuiNode node = wrap(document.getElementById(id));
-        if (node != null && (id.equals("text") || id.equals("message"))) node.richSlot = true;
+        if (node != null && (id.equals("text") || id.equals("message"))) {
+            node.richSlot = true;
+            Element detail = document.getElementById("detail");
+            node.clip = wrap(detail == null ? content : detail);
+        }
         return node;
     }
-    @Override public void theme(BaniraColorConfig theme) { background = theme.bgSurface(); }
+    @Override public void theme(BaniraColorConfig theme) { this.theme = theme; background = theme.bgSurface(); }
+    @Override public void hudPosition(double x, double y) { preview = true; hudX = x; hudY = y; }
     @Override public Node create(String tag) {
         if (!Arrays.asList("div", "button", "input", "span").contains(tag)) throw new IllegalArgumentException("Unsupported UI element");
         if (count >= 1700) throw new IllegalStateException("UI document node budget");
@@ -88,8 +100,18 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     public void render(GuiGraphics graphics) {
         if (!current() || ColorPicker.isOpen()) return;
+        if (preview && popupLayers == 0 && theme != null) {
+            Minecraft mc = Minecraft.getInstance();
+            NotificationUnreadHud.draw(graphics, NotificationHudState.position(hudX, mc.getWindow().getGuiScaledWidth(), NotificationUnreadHud.WIDTH),
+                    NotificationHudState.position(hudY, mc.getWindow().getGuiScaledHeight(), NotificationUnreadHud.HEIGHT), 100, theme);
+        }
         if (popupLayers == 0) for (AuiNode node : richTexts) {
-            AuiGameElements.renderText(graphics, node.rich, node.bounds(), contentBounds());
+            ScreenCoordinate bounds = node.bounds(), clip = node.clip == null ? contentBounds() : node.clip.bounds();
+            AuiGameElements.renderText(graphics, node.rich, bounds, clip);
+            xin.vanilla.banira.common.data.KeyValue<Integer, Integer> mouse = InputStateManager.getGuiCursorPos();
+            NotificationStyleInteractionHelper.renderHoverTooltip(graphics, mouse.key(), mouse.val(),
+                    Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight(),
+                    node.rich.styleAt(bounds, clip, mouse.key(), mouse.val()));
         }
         for (AuiNode node : icons) {
             if (popupLayers > 0 && !node.inPopup) continue;
@@ -101,6 +123,20 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     public void prepare() {
         if (!current()) return;
+        if (preview) {
+            AuiNode node = wrap(document.getElementById("preview"));
+            if (node != null) {
+                Minecraft mc = Minecraft.getInstance();
+                int x = NotificationHudState.position(hudX, mc.getWindow().getGuiScaledWidth(), NotificationUnreadHud.WIDTH);
+                int y = NotificationHudState.position(hudY, mc.getWindow().getGuiScaledHeight(), NotificationUnreadHud.HEIGHT);
+                Position start = document.guiToDocumentPosition(new Position(x, y));
+                Position end = document.guiToDocumentPosition(new Position(x + NotificationUnreadHud.WIDTH, y + NotificationUnreadHud.HEIGHT));
+                node.attribute("style", "position:fixed;background:transparent;border:0;padding:0;left:" + start.x + "px;top:" + start.y
+                        + "px;width:" + (end.x - start.x) + "px;height:" + (end.y - start.y) + "px");
+                AuiNode toolbar = wrap(document.getElementById("toolbar"));
+                if (toolbar != null) toolbar.attribute("style", hudY > .5 ? "top:10px;bottom:auto" : "top:auto;bottom:10px");
+            }
+        }
         for (AuiNode node : richTexts) {
             ScreenCoordinate bounds = node.bounds();
             if (!node.rich.prepare((int) bounds.width())) continue;
@@ -113,7 +149,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     @Override public void close() {
         if (closed) return;
         closed = true;
-        for (AuiNode node : new ArrayList<>(nodes.values())) node.disposeTooltip();
+        for (AuiNode node : new ArrayList<>(nodes.values())) { node.disposeTooltip(); node.disposeRichClick(); }
         Tooltip.hide(document);
         icons.clear(); richTexts.clear(); nodes.clear();
     }
@@ -126,6 +162,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         String tooltipText = "";
         DropdownOption icon;
         AuiGameElements.TextLayout rich;
+        AutoCloseable richClick;
         boolean created, removed, clips, richSlot, popupLayer, inPopup;
 
         AuiNode(Element element) { this.element = element; clips = element == content; }
@@ -135,6 +172,11 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             rich = new AuiGameElements.TextLayout(ColorUtils.readableVanillaComponentCopy(component.toVanilla(), background));
             richTexts.add(this);
             attribute("style", "color:transparent");
+            if (richClick == null) richClick = on("click", event -> {
+                if (popupLayers > 0 || ColorPicker.isOpen() || event.button() != 0) return;
+                net.minecraft.network.chat.Style style = rich.styleAt(bounds(), clip == null ? contentBounds() : clip.bounds(), event.x(), event.y());
+                if (NotificationStyleInteractionHelper.tryClickStyle(Minecraft.getInstance(), style)) event.consume();
+            });
         }
         @Override public String value() { return element.getValue(); }
         @Override public void value(String value) { if (!Objects.equals(element.getValue(), value)) element.setValue(value); }
@@ -159,7 +201,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
         @Override public void remove() {
             if (removed) return;
-            removed = true; disposeTooltip(); icons.remove(this); richTexts.remove(this);
+            removed = true; disposeTooltip(); disposeRichClick(); icons.remove(this); richTexts.remove(this);
             if (popupLayer) { popupLayers--; popupLayer = false; }
             element.remove(); nodes.remove(element);
             if (created) { count--; created = false; }
@@ -192,6 +234,12 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             if (!text.isEmpty() && !attributes.containsKey("disabled")) tooltip = Tooltip.bind(element, text);
         }
         void disposeTooltip() { if (tooltip != null) { tooltip.close(); tooltip = null; } }
+        void disposeRichClick() {
+            if (richClick == null) return;
+            try { richClick.close(); }
+            catch (Exception failure) { throw new IllegalStateException("Cannot release text listener", failure); }
+            finally { richClick = null; }
+        }
         @Override public void icon(DropdownOption option) {
             icon = option;
             if (option == null || !option.hasIcon()) { icons.remove(this); return; }
@@ -209,6 +257,8 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                     @Override public int keyCode() { return event instanceof KeyEvent ? ((KeyEvent) event).keyCode : -1; }
                     @Override public int button() { return event instanceof com.sighs.apricityui.event.MouseEvent
                             ? ((com.sighs.apricityui.event.MouseEvent) event).button : -1; }
+                    @Override public double x() { return InputStateManager.getGuiCursorPos().key(); }
+                    @Override public double y() { return InputStateManager.getGuiCursorPos().val(); }
                     @Override public void consume() { event.preventDefault(); event.stopPropagation(); }
                 });
             };

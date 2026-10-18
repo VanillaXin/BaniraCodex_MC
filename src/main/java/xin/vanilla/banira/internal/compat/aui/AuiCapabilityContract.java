@@ -128,6 +128,7 @@ public final class AuiCapabilityContract {
         add(result, "init/Element", "setScrollTop", "(D)V");
         add(result, "init/Element", "getClientHeight", "()D");
         add(result, "init/Element", "appendChild", "(" + ELEMENT + ")" + ELEMENT);
+        result.add(new Member(ROOT + "init/Element", "init", "(" + ELEMENT + ")" + ELEMENT, true));
         add(result, "init/Element", "remove", "()V");
         add(result, "init/Element", "getBoundingClientRect", "()L" + ROOT + "init/Element$DOMRect;");
         add(result, "init/Element", "addEventListener", "(Ljava/lang/String;Ljava/util/function/Consumer;)V");

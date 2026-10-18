@@ -345,6 +345,11 @@
           "access": 1
         },
         {
+          "name": "init",
+          "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/init/Element;",
+          "access": 9
+        },
+        {
           "name": "appendChild",
           "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/init/Element;",
           "access": 1

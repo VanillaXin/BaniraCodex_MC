@@ -131,6 +131,22 @@ public class UiDomControlsTest {
         assertEquals(1, drafts.size());
     }
 
+    @Test public void navigationRowsHaveContentAfterDeferredDocumentAttachment() throws Exception {
+        Dom dom = new Dom();
+        UiDomView view = new UiDomView(new Object(), null);
+        var session = new xin.vanilla.banira.internal.client.ui.page.NavigationUiSession(
+                xin.vanilla.banira.BaniraComponent.get().literal("Navigation"), List.of(
+                new xin.vanilla.banira.internal.client.ui.page.NavigationUiSession.Action("first",
+                        xin.vanilla.banira.BaniraComponent.get().literal("First"), () -> { }, null),
+                new xin.vanilla.banira.internal.client.ui.page.NavigationUiSession.Action("second",
+                        xin.vanilla.banira.BaniraComponent.get().literal("Second"), () -> { }, null)));
+        session.bind(view);
+        view.attach((UiDomAccess) dom.access);
+        view.afterLayout();
+        assertEquals(2, dom.created.stream().filter(node -> node.tag.equals("button") && !node.text.isEmpty()).count());
+        view.close();
+    }
+
     @Test public void longListHasBoundedNodesAndScrollPreservesFullData() throws Exception {
         Dom dom = new Dom();
         NativeUiView view = dom.view();

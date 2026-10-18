@@ -91,7 +91,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         if (!Arrays.asList("div", "button", "input", "span", "texture").contains(tag)) throw new IllegalArgumentException("Unsupported UI element");
         if (count >= 1700) throw new IllegalStateException("UI document node budget");
         count++;
-        Element element = tag.equals("texture") ? new com.sighs.apricityui.element.Texture(document) : document.createElement(tag);
+        Element element = tag.equals("texture") ? new com.sighs.apricityui.element.Texture(document) : Element.init(document.createElement(tag));
         AuiNode node = wrap(element); node.created = true; return node;
     }
     @Override public Node overlayRoot() { return body; }

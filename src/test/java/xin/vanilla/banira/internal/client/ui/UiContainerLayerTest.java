@@ -127,16 +127,30 @@ public class UiContainerLayerTest {
         assertEquals(1, view.closes);
     }
 
-    @Test public void containerBackgroundIsBelowNativeLabelsAndSlotItems() throws Exception {
+    @Test public void containerBackgroundUsesTheNativeSafeFlatLayer() throws Exception {
         org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
         try (var input = getClass().getClassLoader().getResourceAsStream("xin/vanilla/banira/internal/client/ui/AuiContainerDocument.class")) {
             assertNotNull(input); new org.objectweb.asm.ClassReader(input).accept(node, 0);
         }
-        boolean below = false;
+        boolean negative = false;
+        int flushes = 0;
         for (var method : node.methods) if (method.name.equals("render")) for (var instruction : method.instructions) {
-            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && Double.valueOf(-10).equals(constant.cst)) below = true;
+            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && Double.valueOf(-10).equals(constant.cst)) negative = true;
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.name.equals("flush")) flushes++;
         }
-        assertTrue("The manual document must render below native labels and items", below);
+        assertFalse("A negative document layer can be occluded by the screen dim background", negative);
+        assertEquals("Native and AUI batches must be ordered around container painting", 2, flushes);
+        assertEquals(100, net.minecraft.client.gui.screens.inventory.AbstractContainerScreen.SLOT_ITEM_BLIT_OFFSET);
+        try (var jar = new java.util.jar.JarFile(System.getProperty("banira.aui.contractJar"));
+             var stream = jar.getInputStream(jar.getJarEntry("com/sighs/apricityui/render/Base.class"))) {
+            org.objectweb.asm.tree.ClassNode engine = new org.objectweb.asm.tree.ClassNode();
+            new org.objectweb.asm.ClassReader(stream).accept(engine, 0);
+            var method = engine.methods.stream().filter(m -> m.name.equals("resolveFlatDocumentBaseZ")).findFirst().orElseThrow();
+            var last = method.instructions.getLast();
+            while (last.getOpcode() < 0) last = last.getPrevious();
+            assertEquals(org.objectweb.asm.Opcodes.FRETURN, last.getOpcode());
+            assertEquals(org.objectweb.asm.Opcodes.FCONST_1, last.getPrevious().getOpcode());
+        }
     }
 
     @Test public void explicitFallbackAndCleanupFailureCannotKeepOwnership() {

@@ -87,12 +87,11 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
                         || !near(actual.width(), expected.width()) || !near(actual.height(), expected.height()))
                     throw new IllegalStateException("Container layout differs from native slot geometry");
             }
-            graphics.pose().pushPose();
+            graphics.flush();
             try {
-                graphics.pose().translate(0, 0, -10.0D);
-                try { Base.drawOverlayDocument(graphics.pose(), document); }
-                catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
-            } finally { graphics.pose().popPose(); }
+                Base.drawOverlayDocument(graphics.pose(), document);
+                graphics.flush();
+            } catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
         }
     }
     private static boolean near(double actual, double expected) { return Double.isFinite(actual) && Math.abs(actual - expected) <= 0.51; }

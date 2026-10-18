@@ -490,6 +490,7 @@ public class UiDomView extends NativeUiView {
         int first = -1;
         boolean updating;
         boolean restored;
+        boolean focusViewportRestored;
         final double initialPosition;
 
         VirtualRows(String id, UiDomAccess.Node container) {
@@ -509,10 +510,32 @@ public class UiDomView extends NativeUiView {
         }
 
         void afterLayout() {
-            if (restored || scroller.clientHeight() <= 0) return;
-            restored = true;
-            scroller.scrollTop(initialPosition * 48);
-            update(true);
+            if (scroller.clientHeight() <= 0) return;
+            if (!restored) {
+                restored = true;
+                scroller.scrollTop(initialPosition * 48);
+                update(true);
+                return;
+            }
+            if (focusViewportRestored) return;
+            for (UiDomView row : rows) for (Map.Entry<String, UiDomAccess.Node> control : row.nodes.entrySet()) {
+                UiDomAccess.Node node = control.getValue();
+                if (!state().focusedField().equals(row.prefix + control.getKey()) || !node.focused()) continue;
+                ScreenCoordinate bounds = node.bounds(), viewport = scroller.bounds();
+                if (!(bounds.height() > 0 && bounds.width() > 0 && viewport.height() > 0)) return;
+                double delta = bounds.y() < viewport.y() || bounds.height() > viewport.height()
+                        ? bounds.y() - viewport.y()
+                        : Math.max(0, bounds.y() + bounds.height() - viewport.y() - viewport.height());
+                if (!Double.isFinite(delta)) return;
+                focusViewportRestored = true;
+                if (delta != 0) {
+                    scroller.scrollTop(Math.max(0, scroller.scrollTop() + delta));
+                    state().scrollOffset(scroller.scrollTop()); state().rowPosition(scroller.scrollTop() / 48);
+                    update();
+                }
+                return;
+            }
+            focusViewportRestored = true;
         }
 
         void update() { update(false); }

@@ -61,6 +61,7 @@ public class UiDomControlsTest {
             int writes, start, end;
             boolean removed, focused;
             double scroll, height = 100;
+            ScreenCoordinate rectangle = new ScreenCoordinate(10, 40, 200, 100);
 
             @SuppressWarnings("unchecked") Node(String tag) {
                 this.tag = tag;
@@ -78,7 +79,7 @@ public class UiDomControlsTest {
                         case "removeAttribute": attributes.remove(args[0]); writes++; return null;
                         case "append": children.remove(args[0]); children.add(args[0]); return null;
                         case "remove": removed = true; return null;
-                        case "bounds": return new ScreenCoordinate(10, 40, 200, 100);
+                        case "bounds": return rectangle;
                         case "scrollTop": if (args == null || args.length == 0) return scroll; scroll = height == 0 ? 0 : (double) args[0]; return null;
                         case "clientHeight": return height;
                         case "focused": return focused;
@@ -257,6 +258,29 @@ public class UiDomControlsTest {
         input.key("keydown", 75); input.key("keyup", 75);
         assertEquals(1, changes.size());
         assertEquals(List.of("K"), changes.get(0).asKeyChords());
+        view.close();
+    }
+
+    @Test public void restoredFocusedRowIsFullyVisibleWithoutFightingLaterManualScroll() throws Exception {
+        Dom dom = new Dom(); UiDomView view = (UiDomView) dom.view();
+        UiViewState state = new UiViewState(); state.selection("retained/input", 1, 2); view.restoreState(state);
+        dom.ids.get("content").rectangle = new ScreenCoordinate(0, 0, 200, 100);
+        view.rows("fields", new UiRowProvider() {
+            public int size() { return 1; }
+            public String key(int index) { return "retained"; }
+            public void bind(UiView row, int index) {
+                row.control("input", new UiControlSpec(UiControlSpec.Kind.TEXT, 64, "", false));
+                row.draft("input", "draft");
+            }
+        }, 120);
+        Dom.Node input = dom.created.stream().filter(node -> node.tag.equals("input")).findFirst().orElseThrow();
+        input.rectangle = new ScreenCoordinate(2, 90, 150, 22);
+        for (int frame = 0; frame < 3; frame++) view.afterLayout();
+        assertTrue(input.focused); assertEquals(12, dom.ids.get("content").scroll, 0);
+        assertEquals(12, state.scrollOffset(), 0); assertEquals(.25, state.rowPosition(), 0);
+        assertEquals("draft", input.value); assertEquals(1, input.start); assertEquals(2, input.end);
+        dom.ids.get("content").scroll = 50; dom.ids.get("content").emit("scroll"); view.afterLayout();
+        assertEquals("The restored focus must not override later user scrolling", 50, dom.ids.get("content").scroll, 0);
         view.close();
     }
 

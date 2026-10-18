@@ -7,6 +7,7 @@ public final class BaniraUi {
         void open(UiPageSpec page, Object previousScreen);
         boolean usesAui(String surfaceId);
         AutoCloseable registerHud(UiHudSpec hud);
+        default UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) { return null; }
     }
     private static volatile Driver driver;
 
@@ -31,5 +32,10 @@ public final class BaniraUi {
         Driver current = driver;
         if (current == null) throw new IllegalStateException("Client UI is not initialized");
         return current.registerHud(Objects.requireNonNull(hud, "hud"));
+    }
+
+    public static UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {
+        Driver installed = driver;
+        return installed == null ? null : installed.container(Objects.requireNonNull(page), Objects.requireNonNull(current));
     }
 }

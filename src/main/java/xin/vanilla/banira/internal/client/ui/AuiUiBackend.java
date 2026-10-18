@@ -13,6 +13,7 @@ public final class AuiUiBackend {
     private final Supplier<UiSessionHost> host;
     private Method factory;
     private Method hudFactory;
+    private Method containerFactory;
     private AuiApiBindings bindings;
 
     public AuiUiBackend(Supplier<UiSessionHost> host) { this.host = Objects.requireNonNull(host, "host"); }
@@ -53,5 +54,22 @@ public final class AuiUiBackend {
         } catch (ReflectiveOperationException failure) { throw new IllegalStateException("AUI HUD factory unavailable", failure); }
     }
 
-    public void reload() { factory = null; hudFactory = null; bindings = null; }
+    public NativeUiView createContainer(UiPageSpec page) {
+        try {
+            if (containerFactory == null) {
+                ClassLoader loader = getClass().getClassLoader();
+                bindings = AuiApiBindings.bind(loader, AuiCapabilityContract.inspect(loader));
+                containerFactory = Class.forName("xin.vanilla.banira.internal.client.ui.AuiContainerDocument", false, loader)
+                        .getMethod("create", UiPageSpec.class);
+            }
+            return (NativeUiView) containerFactory.invoke(null, page);
+        } catch (InvocationTargetException failure) {
+            Throwable cause = failure.getCause();
+            if (cause instanceof Error) throw (Error) cause;
+            if (cause instanceof RuntimeException) throw (RuntimeException) cause;
+            throw new IllegalStateException("AUI container factory failed", cause);
+        } catch (ReflectiveOperationException failure) { throw new IllegalStateException("AUI container factory unavailable", failure); }
+    }
+
+    public void reload() { factory = null; hudFactory = null; containerFactory = null; bindings = null; }
 }

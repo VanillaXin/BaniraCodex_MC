@@ -79,6 +79,10 @@ public final class BaniraCodexClientBootstrap {
             @Override public void open(UiPageSpec page, Object previousScreen) { UI_SESSIONS.open(page, previousScreen); }
             @Override public boolean usesAui(String surfaceId) { return UI_BACKEND.usesAui(surfaceId); }
             @Override public AutoCloseable registerHud(UiHudSpec hud) { return UI_SESSIONS.registerHud(hud); }
+            @Override public xin.vanilla.banira.api.client.ui.UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {
+                return xin.vanilla.banira.internal.client.ui.UiContainerLayerHost.create(UI_BACKEND, page, current,
+                        () -> AUI.createContainer(page));
+            }
         });
         BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
             LogoModifier.register(Banira.MOD_ID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");

@@ -64,3 +64,18 @@ button:disabled, input:disabled, select:disabled { color: var(--disabled-text, #
 .hud-position { padding: 0; }
 .hud-position .footer { position: fixed; left: 10px; right: 10px; align-items: center; }
 .hud-position .title { flex: 1; min-width: 0; }
+.selector-page .row { position: relative; }
+.selector-page .header { display: flex; align-items: center; gap: 4px; }
+.selector-page .header .title { flex: 1; min-width: 0; }
+.selector-page .header button { flex-shrink: 0; }
+.selector-page .row > button { padding-left: 30px; }
+.selector-page .row > .paragraph { white-space: nowrap; overflow: hidden; }
+.selector-selection { display: flex; align-items: center; gap: 6px; flex-shrink: 0; min-width: 0; height: 24px; }
+.selector-selection #selection { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; }
+.selector-tools { flex-wrap: wrap; }
+.selector-tools .primary { margin-left: auto; }
+.debug-content { display: flex; flex-direction: column; gap: 8px; }
+.debug-settings, .debug-actions { display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
+.debug-settings label { display: flex; align-items: center; gap: 4px; }
+.debug-settings input { min-width: 60px; max-width: 160px; }
+.debug-diagnostic { height: 120px; min-height: 120px; flex-shrink: 0; overflow: hidden; background: var(--surface, #edf4f0); border: 1px solid var(--border, #c6cbd1); }

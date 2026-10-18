@@ -27,12 +27,14 @@ public class NativeUiView implements UiView, AutoCloseable {
     protected final Map<String, UiValue> values = new LinkedHashMap<>();
     protected final Map<String, UiControlSpec> controls = new LinkedHashMap<>();
     protected final Map<String, String> drafts = new LinkedHashMap<>();
+    protected final Map<String, xin.vanilla.banira.api.client.ui.UiGameElement> gameElements = new LinkedHashMap<>();
     protected final Map<String, Boolean> enabled = new LinkedHashMap<>();
     protected final Map<String, UiRowProvider> rowProviders = new LinkedHashMap<>();
     protected final Map<String, Integer> rowLimits = new LinkedHashMap<>();
     protected UiOwnedResources resources = new UiOwnedResources();
     private final Map<String, List<Runnable>> actions = new LinkedHashMap<>();
     private final Map<String, List<Runnable>> longActions = new LinkedHashMap<>();
+    private final Map<String, Long> longDurations = new LinkedHashMap<>();
     private final Map<String, List<Consumer<UiValue>>> changes = new LinkedHashMap<>();
     private final Map<String, List<Consumer<String>>> draftChanges = new LinkedHashMap<>();
     private final Map<String, List<Consumer<UiPointer>>> pointers = new LinkedHashMap<>();
@@ -132,6 +134,12 @@ public class NativeUiView implements UiView, AutoCloseable {
         return owned;
     }
 
+    @Override public AutoCloseable onLongAction(String id, long durationMs, Runnable action) {
+        if (durationMs < 1 || durationMs > 60000) throw new IllegalArgumentException("Invalid long action duration");
+        longDurations.put(id, durationMs); return onLongAction(id, action);
+    }
+    protected long longActionDuration(String id) { return longDurations.getOrDefault(id, 2000L); }
+
     public void activateLong(String id) {
         if (!live() || !enabled.getOrDefault(id, true)) return;
         for (Runnable action : new ArrayList<>(longActions.getOrDefault(id, java.util.Collections.emptyList()))) {
@@ -177,6 +185,10 @@ public class NativeUiView implements UiView, AutoCloseable {
         }
     }
 
+    @Override public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element) {
+        if (!live()) return;
+        gameElements.put(id, Objects.requireNonNull(element)); changed(id);
+    }
     @Override public void hudPosition(double x, double y) {
         if (!live() || !Double.isFinite(x) || !Double.isFinite(y)) return;
         hudX = Math.max(0, Math.min(1, x)); hudY = Math.max(0, Math.min(1, y)); changed("preview");
@@ -251,8 +263,8 @@ public class NativeUiView implements UiView, AutoCloseable {
     public void close() {
         try { resources.close(); }
         finally {
-            actions.clear(); longActions.clear(); changes.clear(); draftChanges.clear(); pointers.clear(); texts.clear(); tooltips.clear(); values.clear();
-            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear();
+            actions.clear(); longActions.clear(); longDurations.clear(); changes.clear(); draftChanges.clear(); pointers.clear(); texts.clear(); tooltips.clear(); values.clear();
+            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear(); gameElements.clear();
         }
     }
 }

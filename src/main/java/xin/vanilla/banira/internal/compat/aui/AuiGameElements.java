@@ -17,6 +17,25 @@ import java.util.List;
 public final class AuiGameElements {
     private AuiGameElements() { }
 
+    public static void renderElement(GuiGraphics graphics, xin.vanilla.banira.api.client.ui.UiGameElement element,
+                                     ScreenCoordinate bounds, ScreenCoordinate clip, xin.vanilla.banira.client.data.BaniraColorConfig theme) {
+        if (element == null || bounds.width() <= 0 || bounds.height() <= 0 || bounds.x() >= clip.x() + clip.width()
+                || bounds.y() >= clip.y() + clip.height() || bounds.x() + bounds.width() <= clip.x() || bounds.y() + bounds.height() <= clip.y()) return;
+        graphics.enableScissor((int) Math.max(bounds.x(), clip.x()), (int) Math.max(bounds.y(), clip.y()),
+                (int) Math.ceil(Math.min(bounds.x() + bounds.width(), clip.x() + clip.width())), (int) Math.ceil(Math.min(bounds.y() + bounds.height(), clip.y() + clip.height())));
+        try {
+            switch (element.kind()) {
+                case OPTION: renderOption(graphics, element.option(), bounds, null); break;
+                case EFFECT:
+                    int size = Math.min(20, Math.min(bounds.widthInt(), bounds.heightInt()));
+                    renderEffect(graphics, element.effect(), new ScreenCoordinate(bounds.x(), bounds.y(), size, size)); break;
+                case DIAGNOSTIC: xin.vanilla.banira.internal.client.ui.page.DebugUiSession.drawDiagnostics(graphics, bounds, element, theme); break;
+                case PRESET: xin.vanilla.banira.client.gui.widget.ButtonWidget.drawPresetIcon(graphics.pose(), element.preset(), bounds.xInt() + 4, bounds.yInt() + 4,
+                        Math.max(0, bounds.widthInt() - 8), Math.max(0, bounds.heightInt() - 8), theme == null ? 0xff24272c : theme.textPrimary(), 1); break;
+            }
+        } finally { graphics.disableScissor(); }
+    }
+
     public static final class TextLayout {
         private final Component text;
         private List<FormattedCharSequence> lines = Collections.emptyList();

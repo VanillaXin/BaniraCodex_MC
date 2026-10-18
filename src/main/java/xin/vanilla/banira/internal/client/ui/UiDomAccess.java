@@ -48,6 +48,7 @@ public interface UiDomAccess {
         void selection(int start, int end);
         void tooltip(String text);
         void icon(DropdownOption option);
+        default void gameElement(xin.vanilla.banira.api.client.ui.UiGameElement element) { }
         AutoCloseable on(String event, Consumer<Event> action);
     }
 }

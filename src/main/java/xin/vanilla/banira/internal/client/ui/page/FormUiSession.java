@@ -158,6 +158,8 @@ public final class FormUiSession implements UiPageSession {
         finally { submitting = false; }
     }
 
+    public boolean finished() { return closed || submitted; }
+
     public boolean canSubmit() {
         InputFormScreen.Results result = results();
         errors.clear();

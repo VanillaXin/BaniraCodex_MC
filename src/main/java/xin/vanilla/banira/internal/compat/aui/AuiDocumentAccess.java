@@ -32,6 +32,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final Map<Element, AuiNode> nodes = new IdentityHashMap<>();
     private final Set<AuiNode> icons = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<AuiNode> richTexts = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<AuiNode> gameElements = Collections.newSetFromMap(new IdentityHashMap<>());
     private final AuiNode body;
     private final Element content;
     private int background = 0xfff4f5f7;
@@ -117,6 +118,9 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             if (popupLayers > 0 && !node.inPopup) continue;
             AuiGameElements.renderOption(graphics, node.icon, node.bounds(), node.clip == null ? null : node.clip.bounds());
         }
+        if (popupLayers == 0) for (AuiNode node : gameElements) {
+            AuiGameElements.renderElement(graphics, node.gameElement, node.bounds(), node.clip == null ? contentBounds() : node.clip.bounds(), theme);
+        }
     }
 
     private ScreenCoordinate contentBounds() { return content == null ? body.bounds() : wrap(content).bounds(); }
@@ -151,7 +155,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         closed = true;
         for (AuiNode node : new ArrayList<>(nodes.values())) { node.disposeTooltip(); node.disposeRichClick(); }
         Tooltip.hide(document);
-        icons.clear(); richTexts.clear(); nodes.clear();
+        icons.clear(); richTexts.clear(); gameElements.clear(); nodes.clear();
     }
 
     private final class AuiNode implements Node {
@@ -161,6 +165,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         Tooltip.Binding tooltip;
         String tooltipText = "";
         DropdownOption icon;
+        xin.vanilla.banira.api.client.ui.UiGameElement gameElement;
         AuiGameElements.TextLayout rich;
         AutoCloseable richClick;
         boolean created, removed, clips, richSlot, popupLayer, inPopup;
@@ -201,7 +206,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
         @Override public void remove() {
             if (removed) return;
-            removed = true; disposeTooltip(); disposeRichClick(); icons.remove(this); richTexts.remove(this);
+            removed = true; disposeTooltip(); disposeRichClick(); icons.remove(this); richTexts.remove(this); gameElements.remove(this);
             if (popupLayer) { popupLayers--; popupLayer = false; }
             element.remove(); nodes.remove(element);
             if (created) { count--; created = false; }
@@ -249,6 +254,14 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             clip = ancestor;
             inPopup = ancestor != null && ancestor != wrap(content);
             attribute("style", "height:22px;flex-shrink:0;padding-left:22px");
+        }
+        @Override public void gameElement(xin.vanilla.banira.api.client.ui.UiGameElement value) {
+            if (value == null) { gameElement = null; gameElements.remove(this); return; }
+            gameElement = value; gameElements.add(this);
+            AuiNode ancestor = parent;
+            while (ancestor != null && !ancestor.clips) ancestor = ancestor.parent;
+            clip = ancestor != null ? ancestor : value.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC ? wrap(content) : body;
+            if (value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC) attribute("style", "width:24px;height:20px;flex-shrink:0");
         }
         @Override public AutoCloseable on(String name, Consumer<Event> action) {
             Consumer<com.sighs.apricityui.event.Event> listener = event -> {

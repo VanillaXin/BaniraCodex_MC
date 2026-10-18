@@ -67,11 +67,18 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     private ScrollbarWidget scrollbarWidget;
 
     public InputFormScreen(Args args) {
-        super(resolveScreenTitle(args));
-        Objects.requireNonNull(args);
-        args.validate();
-        this.args = args;
-        this.uiSession = new FormUiSession(args);
+        this(new FormUiSession(Objects.requireNonNull(args)), false);
+    }
+
+    public InputFormScreen(FormUiSession session) {
+        this(session, true);
+    }
+
+    private InputFormScreen(FormUiSession session, boolean restoreDraft) {
+        super(resolveScreenTitle(Objects.requireNonNull(session).args()));
+        this.args = session.args();
+        this.uiSession = session;
+        this.restoreUiDraft = restoreDraft;
         this.previousScreen(args.getParentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.getParentScreen(), null, null);
     }

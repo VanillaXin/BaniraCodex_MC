@@ -57,6 +57,7 @@ public class UiDomControlsTest {
             final List<Object> children = new ArrayList<>();
             String text = "", value = "", tooltip = "";
             xin.vanilla.banira.common.data.Component component;
+            UiGameElement gameElement;
             int writes, start, end;
             boolean removed, focused;
             double scroll, height = 100;
@@ -70,6 +71,7 @@ public class UiDomControlsTest {
                         case "equals": return self == args[0];
                         case "text": if (args == null || args.length == 0) return text; text = (String) args[0]; writes++; return null;
                         case "component": component = (xin.vanilla.banira.common.data.Component) args[0]; return null;
+                        case "gameElement": gameElement = (UiGameElement) args[0]; return null;
                         case "tooltip": if (failingTooltips) throw new IllegalStateException("Tooltip adapter failure"); tooltip = (String) args[0]; return null;
                         case "value": if (args == null || args.length == 0) return value; value = (String) args[0]; writes++; return null;
                         case "attribute": attributes.put((String) args[0], (String) args[1]); writes++; return null;
@@ -100,6 +102,7 @@ public class UiDomControlsTest {
             void emit(String event, int button) {
                 Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType},
                         (p, m, a) -> m.getReturnType() == int.class ? (m.getName().equals("button") ? button : 0)
+                                : m.getReturnType() == double.class ? (m.getName().equals("x") ? 20.0 : 50.0)
                                 : m.getReturnType() == boolean.class ? false : null);
                 for (Consumer<Object> listener : new ArrayList<>(events.getOrDefault(event, Collections.emptyList()))) listener.accept(input);
             }

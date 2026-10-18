@@ -16,10 +16,12 @@ public interface UiView {
     void enabled(String id, boolean enabled);
     AutoCloseable onAction(String id, Runnable action);
     AutoCloseable onLongAction(String id, Runnable action);
+    default AutoCloseable onLongAction(String id, long durationMs, Runnable action) { return onLongAction(id, action); }
     AutoCloseable onValue(String id, Consumer<UiValue> action);
     AutoCloseable onDraft(String id, Consumer<String> action);
     AutoCloseable onPointer(String id, Consumer<UiPointer> action);
     void hudPosition(double x, double y);
+    default void gameElement(String id, UiGameElement element) { }
     void rows(String id, UiRowProvider rows, int maxRealizedRows);
     ScreenCoordinate bounds(String id);
     void requestClose();

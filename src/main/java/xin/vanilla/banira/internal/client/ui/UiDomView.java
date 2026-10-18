@@ -78,6 +78,7 @@ public class UiDomView extends NativeUiView {
         for (String id : values.keySet()) changed(id);
         for (String id : drafts.keySet()) changed(id);
         for (String id : enabled.keySet()) changed(id);
+        for (String id : gameElements.keySet()) changed(id);
         for (String id : rowProviders.keySet()) changed(id);
         for (String id : actionIds()) subscribed(id);
         for (String id : longActionIds()) subscribed(id);
@@ -145,6 +146,10 @@ public class UiDomView extends NativeUiView {
         }
         UiDomAccess.Node node = node(id);
         if (node == null) return;
+        if (gameElements.containsKey(id)) {
+            node.gameElement(gameElements.get(id));
+            if (scope != null && id.equals("icon")) node.attribute("style", "position:absolute;left:0;top:0;width:24px;height:20px");
+        }
         UiControlSpec control = controls.get(id);
         if (control != null) configure(id, node, control);
         if (texts.containsKey(id)) {
@@ -234,6 +239,7 @@ public class UiDomView extends NativeUiView {
             UiDomAccess.Node node = entry.getValue();
             node.blur();
             node.tooltip("");
+            node.gameElement(null);
             node.removeAttribute("disabled"); node.removeAttribute("aria-invalid"); node.removeAttribute("placeholder");
             node.removeAttribute("readonly"); node.removeAttribute("type"); node.removeAttribute("maxlength");
             node.attribute("style", "display:none");
@@ -350,7 +356,10 @@ public class UiDomView extends NativeUiView {
             UiDomAccess.Node target = node(id);
             if (target != null) {
                 listen(id + ":down", target, "mousedown", event -> {
-                    if (event.button() == 0) { event.consume(); pointer(id, new UiPointer(UiPointer.Kind.DOWN, event.x(), event.y(), 0)); }
+                    if (event.button() == 0 || event.button() == 1) {
+                        if (event.button() == 0) event.consume();
+                        pointer(id, new UiPointer(UiPointer.Kind.DOWN, event.x(), event.y(), event.button()));
+                    }
                 });
                 listen(id + ":move", dom.overlayRoot(), "mousemove", event -> pointer(id, new UiPointer(UiPointer.Kind.MOVE, event.x(), event.y(), event.button())));
                 listen(id + ":up", dom.overlayRoot(), "mouseup", event -> pointer(id, new UiPointer(UiPointer.Kind.UP, event.x(), event.y(), event.button())));
@@ -379,7 +388,7 @@ public class UiDomView extends NativeUiView {
         if (!live() || modal()) { for (BaniraPressGestureState press : presses.values()) press.release(); }
         for (Map.Entry<String, BaniraPressGestureState> entry : new ArrayList<>(presses.entrySet())) {
             if (!enabled.getOrDefault(entry.getKey(), true)) entry.getValue().release();
-            if (entry.getValue().ready(2000)) {
+            if (entry.getValue().ready(longActionDuration(entry.getKey()))) {
                 entry.getValue().fire(); suppressClicks.add(entry.getKey()); activateLong(entry.getKey());
             }
         }

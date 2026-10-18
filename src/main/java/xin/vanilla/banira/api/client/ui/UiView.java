@@ -7,6 +7,8 @@ import xin.vanilla.banira.common.data.Component;
 import java.util.function.Consumer;
 
 public interface UiView {
+    default boolean nativeView() { return false; }
+    default UiPageState state() { return null; }
     void theme(BaniraColorConfig theme);
     void text(String id, Component text);
     void tooltip(String id, Component text);
@@ -21,6 +23,7 @@ public interface UiView {
     AutoCloseable onDraft(String id, Consumer<String> action);
     AutoCloseable onPointer(String id, Consumer<UiPointer> action);
     void hudPosition(double x, double y);
+    /** A null element clears the previously retained drawing. */
     default void gameElement(String id, UiGameElement element) { }
     default void hudFrame(UiHudFrame frame) { throw new UnsupportedOperationException("HUD frames unavailable"); }
     void rows(String id, UiRowProvider rows, int maxRealizedRows);

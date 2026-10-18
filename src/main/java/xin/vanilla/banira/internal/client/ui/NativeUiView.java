@@ -47,6 +47,7 @@ public class NativeUiView implements UiView, AutoCloseable {
 
     public NativeUiView(Object screen) { this.screen = screen; }
     public Object screen() { return screen; }
+    @Override public boolean nativeView() { return screen instanceof xin.vanilla.banira.client.gui.BaniraScreen; }
     public boolean closed() { return resources.closed(); }
     protected void screen(Object screen) { this.screen = screen; }
     public UiViewState state() { return state; }
@@ -187,7 +188,7 @@ public class NativeUiView implements UiView, AutoCloseable {
 
     @Override public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element) {
         if (!live()) return;
-        gameElements.put(id, Objects.requireNonNull(element)); changed(id);
+        gameElements.put(id, element); changed(id);
     }
     @Override public void hudPosition(double x, double y) {
         if (!live() || !Double.isFinite(x) || !Double.isFinite(y)) return;

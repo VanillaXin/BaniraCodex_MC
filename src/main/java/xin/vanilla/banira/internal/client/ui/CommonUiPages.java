@@ -13,15 +13,15 @@ public final class CommonUiPages {
         UiSessionHost sessions = BaniraCodexClientBootstrap.uiSessions();
         sessions.observeScreen(current);
         if (sessions.isReturning(current)) return;
-        if (!(current instanceof UiNativePage) || sessions.ownsScreen(current)) return;
-        UiNativePage nativePage = (UiNativePage) current;
+        if (!(current instanceof xin.vanilla.banira.api.client.ui.UiPageSource) || sessions.ownsScreen(current)) return;
+        xin.vanilla.banira.api.client.ui.UiPageSource nativePage = (xin.vanilla.banira.api.client.ui.UiPageSource) current;
         if (!BaniraCodexClientBootstrap.uiBackend().wantsAui(nativePage.uiSurfaceId())) return;
         UiPageSpec page = nativePage.uiPage();
         if (page != null) {
             Object previous = current instanceof xin.vanilla.banira.client.gui.BaniraScreen
                     ? ((xin.vanilla.banira.client.gui.BaniraScreen) current).previousScreen() : null;
             UiViewState state = new UiViewState();
-            nativePage.captureUiState(state);
+            nativePage.capturePageState(state);
             sessions.open(page, previous, state);
         }
     }

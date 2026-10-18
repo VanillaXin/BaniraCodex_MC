@@ -25,6 +25,8 @@ public final class AuiGameElements {
                 (int) Math.ceil(Math.min(bounds.x() + bounds.width(), clip.x() + clip.width())), (int) Math.ceil(Math.min(bounds.y() + bounds.height(), clip.y() + clip.height())));
         try {
             switch (element.kind()) {
+                case SPRITE: ImageWidget.blitBlend(graphics.pose(), element.option().texture()[0],
+                        bounds.xInt(), bounds.yInt(), bounds.widthInt(), bounds.heightInt()); break;
                 case OPTION: renderOption(graphics, element.option(), bounds, null); break;
                 case EFFECT:
                     int size = Math.min(20, Math.min(bounds.widthInt(), bounds.heightInt()));

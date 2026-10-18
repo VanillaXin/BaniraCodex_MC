@@ -45,6 +45,22 @@ public final class AuiPageHost extends ApricityScreen {
     @Override public void onClose() { if (!view.dismissOverlay()) view.requestClose(); }
     @Override public void removed() { sessions.suspendScreen(view); super.removed(); }
 
+    @Override public boolean keyPressed(int key, int scan, int modifiers) {
+        return sessionKey(key, scan, modifiers, true) || super.keyPressed(key, scan, modifiers);
+    }
+    @Override public boolean keyReleased(int key, int scan, int modifiers) {
+        return sessionKey(key, scan, modifiers, false) || super.keyReleased(key, scan, modifiers);
+    }
+    private boolean sessionKey(int key, int scan, int modifiers, boolean pressed) {
+        if (failed || view.closed() || !sessions.ownsScreen(this) || sessions.page() == null) return false;
+        try { return sessions.page().session().key(key, scan, modifiers, pressed); }
+        catch (RuntimeException | LinkageError failure) {
+            failed = true;
+            LOGGER.warn("AUI key binding failed; returning to native interface", failure);
+            sessions.fallback(); return true;
+        }
+    }
+
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (failed || view.closed()) return;
         try {

@@ -277,7 +277,9 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             AuiNode ancestor = parent;
             while (ancestor != null && !ancestor.clips) ancestor = ancestor.parent;
             clip = ancestor != null ? ancestor : value.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC ? wrap(content) : body;
-            if (value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC) attribute("style", "width:24px;height:20px;flex-shrink:0");
+            if (value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC
+                    && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE)
+                attribute("style", "width:24px;height:20px;flex-shrink:0");
         }
         @Override public AutoCloseable on(String name, Consumer<Event> action) {
             Consumer<com.sighs.apricityui.event.Event> listener = event -> {

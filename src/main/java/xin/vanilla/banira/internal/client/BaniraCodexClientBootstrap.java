@@ -76,6 +76,10 @@ public final class BaniraCodexClientBootstrap {
         xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.POINTER,
                 () -> net.minecraft.client.Minecraft.getInstance().screen instanceof xin.vanilla.banira.client.gui.BaniraScreen && ClientConfig.get().useCustomCursor());
         BaniraUi.install(new BaniraUi.Driver() {
+            @Override public void screenRemoved(Object screen) { xin.vanilla.banira.internal.client.ui.CommonUiPages.removed(screen); }
+            @Override public boolean closePage(Object screen, xin.vanilla.banira.api.client.ui.UiCloseReason reason) {
+                return xin.vanilla.banira.internal.client.ui.CommonUiPages.close(screen, reason);
+            }
             @Override public void open(UiPageSpec page, Object previousScreen) { UI_SESSIONS.open(page, previousScreen); }
             @Override public boolean usesAui(String surfaceId) { return UI_BACKEND.usesAui(surfaceId); }
             @Override public AutoCloseable registerHud(UiHudSpec hud) { return UI_SESSIONS.registerHud(hud); }

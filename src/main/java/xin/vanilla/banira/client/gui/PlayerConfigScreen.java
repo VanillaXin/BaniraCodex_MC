@@ -19,7 +19,9 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.ui.page.PlayerConfigUiSession;
 
 import javax.annotation.Nullable;
@@ -64,7 +66,17 @@ public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativ
     private int contentWidth;
     private int listTop;
     private int listAreaHeight;
-    private UiViewState uiState;
+    private UiPageState uiState;
+
+    protected final String playerSearchQuery() { return searchText; }
+    protected final void playerSearchQuery(String value) { searchText = Objects.requireNonNull(value); }
+    protected final void capturePlayerPageState(UiPageState state) {
+        if (state != null) {
+            state.rowPosition(scrollOffset / (ROW_HEIGHT + ROW_GAP));
+            if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        }
+    }
+    protected final void preparePlayerPageState(UiPageState state) { uiState = state; }
 
     @Nullable protected PlayerConfigUiSession playerUiSession() { return null; }
     @Override public PlayerConfigUiSession uiSession() { return playerUiSession(); }
@@ -76,13 +88,10 @@ public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativ
     @Override public void captureUiState(UiViewState state) {
         PlayerConfigUiSession session = playerUiSession();
         if (session != null) session.query(searchText);
-        if (state != null) {
-            state.rowPosition(scrollOffset / (ROW_HEIGHT + ROW_GAP));
-            if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
-        }
+        capturePlayerPageState(state);
     }
     @Override public void prepareUiState(UiViewState state) {
-        uiState = state;
+        preparePlayerPageState(state);
         PlayerConfigUiSession session = playerUiSession();
         if (session != null) searchText = session.query();
     }

@@ -7,7 +7,7 @@ import xin.vanilla.banira.common.util.EffectUtils;
 import java.util.Objects;
 
 public final class UiGameElement {
-    public enum Kind { OPTION, EFFECT, DIAGNOSTIC, PRESET }
+    public enum Kind { OPTION, EFFECT, DIAGNOSTIC, PRESET, SPRITE }
     private final Kind kind;
     private final DropdownOption option;
     private final MobEffectInstance effect;
@@ -19,6 +19,9 @@ public final class UiGameElement {
         this.kind = kind; this.option = option; this.effect = effect; this.text = text; this.fontSize = fontSize; this.wrap = wrap; this.season = season; this.pressed = pressed;
     }
     public static UiGameElement option(DropdownOption option) { return new UiGameElement(Kind.OPTION, Objects.requireNonNull(option), null, "", 9, false, EnumSeason.AUTO, -1); }
+    public static UiGameElement sprite(xin.vanilla.banira.client.data.Texture texture) {
+        return new UiGameElement(Kind.SPRITE, new DropdownOption("", Objects.requireNonNull(texture), null), null, "", 9, false, EnumSeason.AUTO, -1);
+    }
     public static UiGameElement effect(MobEffectInstance effect) { return new UiGameElement(Kind.EFFECT, null, EffectUtils.copyEffectInstance(Objects.requireNonNull(effect)), "", 9, false, EnumSeason.AUTO, -1); }
     public static UiGameElement preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle style) { return new UiGameElement(Kind.PRESET, new DropdownOption(Objects.requireNonNull(style).name()), null, "", 9, false, EnumSeason.AUTO, -1); }
     public xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle preset() { return xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.valueOf(option.value()); }

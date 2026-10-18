@@ -9,10 +9,22 @@ public final class BaniraUi {
         AutoCloseable registerHud(UiHudSpec hud);
         default UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) { return null; }
         default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) { return false; }
+        default void screenRemoved(Object screen) { }
+        default boolean closePage(Object screen, UiCloseReason reason) { return false; }
     }
     private static volatile Driver driver;
 
     private BaniraUi() { }
+
+    public static void screenRemoved(Object screen) {
+        Driver current = driver;
+        if (current != null) current.screenRemoved(screen);
+    }
+
+    public static boolean closePage(Object screen, UiCloseReason reason) {
+        Driver current = driver;
+        return current != null && current.closePage(screen, Objects.requireNonNull(reason));
+    }
 
     public static void install(Driver clientDriver) {
         driver = Objects.requireNonNull(clientDriver, "clientDriver");

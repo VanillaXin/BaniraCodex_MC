@@ -78,7 +78,8 @@ public final class UiSessionHost {
         }
         entry.aui = false;
         if (entry.nativeScreen == null) entry.nativeScreen = entry.page.nativeFactory().create(entry.previous);
-        if (entry.nativeScreen instanceof UiNativePage) ((UiNativePage) entry.nativeScreen).prepareUiState(entry.state);
+        if (entry.nativeScreen instanceof xin.vanilla.banira.api.client.ui.UiPageSource)
+            ((xin.vanilla.banira.api.client.ui.UiPageSource) entry.nativeScreen).preparePageState(entry.state);
         return screenValidator.test(entry.nativeScreen) ? new NativeUiView(entry.nativeScreen) : null;
     }
 
@@ -145,8 +146,8 @@ public final class UiSessionHost {
         if (returning != null && returningScreen != screen) { returning = null; returningScreen = null; }
         if (active != null && !ownsScreen(screen)) suspendScreen(active.view);
         if (active == null && suspended.containsKey(screen)) resumeScreen(screen);
-        else if (active == null && screen instanceof UiNativePage) {
-            xin.vanilla.banira.api.client.ui.UiPageSession session = ((UiNativePage) screen).uiSession();
+        else if (active == null && screen instanceof xin.vanilla.banira.api.client.ui.UiPageSource) {
+            xin.vanilla.banira.api.client.ui.UiPageSession session = ((xin.vanilla.banira.api.client.ui.UiPageSource) screen).pageSession();
             if (session != null) for (Entry entry : suspended.values()) if (entry.page.session() == session) {
                 returning = entry; returningScreen = screen; break;
             }
@@ -156,8 +157,8 @@ public final class UiSessionHost {
     public boolean isReturning(Object screen) { return returning != null && returningScreen == screen; }
 
     private Object retainedParent(Object screen) {
-        if (!(screen instanceof UiNativePage)) return screen;
-        xin.vanilla.banira.api.client.ui.UiPageSession session = ((UiNativePage) screen).uiSession();
+        if (!(screen instanceof xin.vanilla.banira.api.client.ui.UiPageSource)) return screen;
+        xin.vanilla.banira.api.client.ui.UiPageSession session = ((xin.vanilla.banira.api.client.ui.UiPageSource) screen).pageSession();
         if (session == null) return screen;
         if (active != null && active.view != null && active.page.session() == session) return active.view.screen();
         for (Map.Entry<Object, Entry> entry : suspended.entrySet()) if (entry.getValue().page.session() == session) return entry.getKey();
@@ -199,7 +200,8 @@ public final class UiSessionHost {
         if (entry == null || entry.view == null) return;
         ++generation;
         NativeUiView view = entry.view;
-        if (!entry.aui && view.screen() instanceof UiNativePage) ((UiNativePage) view.screen()).captureUiState(entry.state);
+        if (!entry.aui && view.screen() instanceof xin.vanilla.banira.api.client.ui.UiPageSource)
+            ((xin.vanilla.banira.api.client.ui.UiPageSource) view.screen()).capturePageState(entry.state);
         entry.view = null;
         backend.detach(entry.page.id());
         try { entry.page.session().detach(reason); }

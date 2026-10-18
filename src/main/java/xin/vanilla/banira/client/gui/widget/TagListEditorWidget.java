@@ -237,8 +237,10 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         ConfigListDraft draft = new ConfigListDraft();
         draft.expanded = expanded; draft.adding = addingMode; draft.scroll = listScrollOffset;
         draft.editingIndex = editingIndex;
-        if (editWidget instanceof InputWidget) draft.editText = ((InputWidget) editWidget).value();
-        if (addInputWidget instanceof InputWidget) draft.addText = ((InputWidget) addInputWidget).value();
+        if (editWidget instanceof InputWidget) draft.editText = editWidget instanceof KeyCaptureInputWidget
+                ? ((KeyCaptureInputWidget) editWidget).retainedValue() : ((InputWidget) editWidget).value();
+        if (addInputWidget instanceof InputWidget) draft.addText = addInputWidget instanceof KeyCaptureInputWidget
+                ? ((KeyCaptureInputWidget) addInputWidget).retainedValue() : ((InputWidget) addInputWidget).value();
         if (addInputWidget instanceof DropdownSelectWidget) draft.selected.addAll(((DropdownSelectWidget) addInputWidget).getSelectedValues());
         draft.raw = invalidRawDraft;
         if (undoMode) draft.undo = ConfigListSpecHelper.encodeNetworkList(lastClearedItems);

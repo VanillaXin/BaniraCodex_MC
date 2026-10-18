@@ -99,6 +99,14 @@ public class UiDomControlsTest {
             void emit(String event) {
                 emit(event, 0);
             }
+            void key(String event, int code) {
+                Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType}, (p, m, a) -> {
+                    if (m.getReturnType() == int.class) return m.getName().equals("keyCode") ? code : -1;
+                    if (m.getReturnType() == double.class) return 0d;
+                    return null;
+                });
+                for (Consumer<Object> listener : new ArrayList<>(events.getOrDefault(event, Collections.emptyList()))) listener.accept(input);
+            }
             void emit(String event, int button) {
                 Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType},
                         (p, m, a) -> m.getReturnType() == int.class ? (m.getName().equals("button") ? button : 0)
@@ -202,6 +210,54 @@ public class UiDomControlsTest {
         dom.ids.get("content").emit("scroll");
         assertTrue(bound.contains(4800));
         assertTrue(dom.created.stream().filter(node -> !node.removed).count() < 2000);
+    }
+
+    @Test public void keyCapturePreviewsWithoutPublishingAndEscapeRestoresPreviousChord() throws Exception {
+        Dom dom = new Dom(); NativeUiView view = dom.view();
+        view.control("text", new UiControlSpec(UiControlSpec.Kind.KEY_CHORD, 64, "", false));
+        view.value("text", UiValue.keyChords(List.of("Tab")));
+        List<UiValue> changes = new ArrayList<>(); view.onValue("text", changes::add);
+        Dom.Node input = dom.ids.get("text"); input.focused = true;
+        UiKeyCapture reference = new UiKeyCapture(); reference.press(341);
+        input.key("keydown", 341);
+        assertEquals(reference.preview(), input.value);
+        assertTrue(changes.isEmpty());
+        input.key("keydown", 256);
+        assertEquals("Tab", input.value);
+        assertFalse(input.focused);
+        assertTrue(changes.isEmpty());
+        input.key("keyup", 341);
+        assertTrue(changes.isEmpty()); view.close();
+    }
+
+    @Test public void keyCaptureBlurRestoresPreviewAndCompletionPublishesOnce() throws Exception {
+        Dom dom = new Dom(); NativeUiView view = dom.view();
+        view.control("text", new UiControlSpec(UiControlSpec.Kind.KEY_CHORD, 64, "", false));
+        view.value("text", UiValue.keyChords(List.of("Tab")));
+        List<UiValue> changes = new ArrayList<>(); view.onValue("text", changes::add);
+        Dom.Node input = dom.ids.get("text"); input.focused = true;
+        input.key("keydown", 341); input.emit("blur");
+        assertEquals("Tab", input.value); assertTrue(changes.isEmpty());
+        input.key("keydown", 341); input.key("keydown", 75);
+        input.key("keyup", 75); assertTrue(changes.isEmpty());
+        input.key("keyup", 341); input.key("keyup", 341);
+        assertEquals(1, changes.size());
+        assertEquals(String.join("+", changes.get(0).asKeyChords()), input.value);
+        view.close();
+    }
+
+    @Test public void releasingOnlyModifiersDoesNotLatchThemIntoTheNextShortcut() throws Exception {
+        Dom dom = new Dom(); NativeUiView view = dom.view();
+        view.control("text", new UiControlSpec(UiControlSpec.Kind.KEY_CHORD, 64, "", false));
+        view.value("text", UiValue.keyChords(List.of("Tab")));
+        List<UiValue> changes = new ArrayList<>(); view.onValue("text", changes::add);
+        Dom.Node input = dom.ids.get("text"); input.focused = true;
+        input.key("keydown", 341); input.key("keyup", 341);
+        assertEquals("Tab", input.value); assertTrue(changes.isEmpty());
+        input.key("keydown", 75); input.key("keyup", 75);
+        assertEquals(1, changes.size());
+        assertEquals(List.of("K"), changes.get(0).asKeyChords());
+        view.close();
     }
 
     @Test public void invisibleDocumentDoesNotReceiveDomMutations() throws Exception {

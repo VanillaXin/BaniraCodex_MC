@@ -24,7 +24,8 @@ public final class UiKeyCapture {
     public List<String> release(int key) {
         if (!captured.contains(key)) return null;
         pressed.remove(key);
-        if (!pressed.isEmpty() || captured.stream().allMatch(UiKeyCapture::modifier)) return null;
+        if (!pressed.isEmpty()) return null;
+        if (captured.stream().allMatch(UiKeyCapture::modifier)) { clear(); return null; }
         List<String> result = GLFWKeyUtils.getKeyDisplayNames(true, captured.stream().mapToInt(Integer::intValue).toArray());
         clear();
         return result;

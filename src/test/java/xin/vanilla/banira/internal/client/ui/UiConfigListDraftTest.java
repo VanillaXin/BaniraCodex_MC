@@ -145,6 +145,20 @@ public class UiConfigListDraftTest {
         assertEquals("9007199254740993", format.invoke(widget, 9007199254740993L));
     }
 
+    @Test public void nativeKeyPreviewCannotLeakIntoRetainedListDraft() throws Exception {
+        TagListEditorWidget tags = new TagListEditorWidget(screen).itemType(TagListEditorWidget.ItemType.KEY_CHORD);
+        tags.items(new ArrayList<>(List.of("Tab")));
+        InputWidget input = tags.focusInput(0); assertTrue(input instanceof KeyCaptureInputWidget);
+        screen.requestFocus(input);
+        var press = KeyCaptureInputWidget.class.getDeclaredMethod("onKeyPress", int.class, int.class, int.class);
+        press.setAccessible(true); press.invoke(input, 341, 0, 2);
+        var draft = xin.vanilla.banira.internal.client.ConfigListDraft.decode(tags.captureDraft());
+        assertEquals("Tab", draft.editText);
+        press.invoke(input, 256, 0, 0);
+        assertEquals("Tab", input.value());
+        assertEquals(List.of("Tab"), tags.items());
+    }
+
     @Test public void booleanAddSelectionSurvivesBothBackends() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
         f.field("flags", ConfigEntryDescriptor.ConfigValueType.BOOLEAN_LIST, Collections.singletonList(false)); f.open();

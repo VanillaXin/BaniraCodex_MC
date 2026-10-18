@@ -20,6 +20,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     @Nullable
     private Consumer<String> onCaptured;
     private final UiKeyCapture pending = new UiKeyCapture();
+    private String retained = "";
+    private boolean previewing;
 
     public KeyCaptureInputWidget(BaniraScreen screen) {
         super(screen);
@@ -37,6 +39,8 @@ public class KeyCaptureInputWidget extends InputWidget {
             screen.unfocusWidget(this);
             return true;
         }
+        if (!previewing) retained = value();
+        previewing = true;
         List<String> completed = pending.press(keyCode);
         if (completed != null) capture(String.join("+", completed));
         else value(pending.preview());
@@ -50,6 +54,7 @@ public class KeyCaptureInputWidget extends InputWidget {
         }
         List<String> completed = pending.release(keyCode);
         if (completed != null) capture(String.join("+", completed));
+        else if (pending.preview().isEmpty()) cancelPreview();
         return true;
     }
 
@@ -59,6 +64,7 @@ public class KeyCaptureInputWidget extends InputWidget {
     }
 
     private void capture(String shortcut) {
+        retained = shortcut; previewing = false;
         value(shortcut);
         if (onCaptured != null) {
             onCaptured.accept(shortcut);
@@ -67,12 +73,19 @@ public class KeyCaptureInputWidget extends InputWidget {
     }
 
     @Override public void focused(boolean focused) {
-        if (!focused) pending.clear();
+        if (!focused) cancelPreview();
         super.focused(focused);
     }
 
     @Override public void enabled(boolean enabled) {
-        if (!enabled) pending.clear();
+        if (!enabled) cancelPreview();
         super.enabled(enabled);
+    }
+
+    public String retainedValue() { return previewing ? retained : value(); }
+
+    private void cancelPreview() {
+        pending.clear();
+        if (previewing) { previewing = false; value(retained); }
     }
 }

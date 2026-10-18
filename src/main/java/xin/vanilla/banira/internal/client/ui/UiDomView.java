@@ -317,22 +317,32 @@ public class UiDomView extends NativeUiView {
             listen(id + ":keydown", node, "keydown", event -> {
                 if (!enabled.getOrDefault(id, true)) return;
                 event.consume();
+                if (event.keyCode() == xin.vanilla.banira.client.data.GLFWKey.GLFW_KEY_ESCAPE) {
+                    capture.clear(); restoreKeyValue(id, node); node.blur(); return;
+                }
                 List<String> completed = capture.press(event.keyCode());
                 if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
+                else node.value(capture.preview());
             });
             listen(id + ":keyrelease", node, "keyup", event -> {
                 if (!enabled.getOrDefault(id, true)) return;
                 event.consume();
                 List<String> completed = capture.release(event.keyCode());
                 if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
+                else if (capture.preview().isEmpty()) restoreKeyValue(id, node);
             });
-            listen(id + ":blur", node, "blur", event -> capture.clear());
+            listen(id + ":blur", node, "blur", event -> { capture.clear(); restoreKeyValue(id, node); });
         } else if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
             listen(id + ":open-selection", node, "click", event -> {
                 event.consume();
                 if (enabled.getOrDefault(id, true)) openSelection(id, node, control);
             });
         }
+    }
+
+    private void restoreKeyValue(String id, UiDomAccess.Node node) {
+        UiValue value = values.get(id);
+        node.value(value == null ? "" : String.join("+", value.asKeyChords()));
     }
 
     private void openColor(String id, UiDomAccess.Node node) {

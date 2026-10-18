@@ -122,9 +122,11 @@ public final class NotificationUnreadHud {
         int unread = NotificationManager.get().unreadCount();
         if (!canRender(mc) || NotificationMinimapBridge.selectedHost() != EnumNotificationHudHost.STANDALONE) return;
         ClientConfigView.NotificationHudView cfg = ClientConfig.get().notificationHud();
-        draw(graphics, NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH),
-                NotificationHudState.position(cfg.y(), mc.getWindow().getGuiScaledHeight(), HEIGHT), unread,
-                ClientThemeManager.getEffectiveTheme());
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
+        frame.unread(NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH),
+                NotificationHudState.position(cfg.y(), mc.getWindow().getGuiScaledHeight(), HEIGHT), unread, ClientThemeManager.getEffectiveTheme());
+        if (!xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.UNREAD, graphics, frame)) frame.renderNative(graphics);
     }
 
     public static void draw(GuiGraphics graphics, int x, int y, int unread, BaniraColorConfig theme) {

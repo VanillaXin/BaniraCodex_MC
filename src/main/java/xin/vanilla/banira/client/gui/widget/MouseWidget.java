@@ -112,12 +112,12 @@ public class MouseWidget extends BaseWidget {
         if (!visible) return;
         int mouseX = (int) screen.inputState().mouseX();
         int mouseY = (int) screen.inputState().mouseY();
-        drawCursor(stack, mouseX, mouseY);
+        draw(graphics, mouseX, mouseY);
     }
 
     private static final float BRIGHTNESS_THRESHOLD = 0.5f;
 
-    private void drawCursor(PoseStack stack, int mouseX, int mouseY) {
+    private xin.vanilla.banira.internal.client.ui.HudDrawList pointerFrame(int mouseX, int mouseY) {
         if (this.drawCount % 10 == 0) {
             float bgBrightness = ColorUtils.getBrightnessFromArgb(screen.getEffectiveTheme().bgSurface());
             boolean useDark = bgBrightness < BRIGHTNESS_THRESHOLD;
@@ -136,40 +136,41 @@ public class MouseWidget extends BaseWidget {
         if (Math.abs(this.scroll) < 0.5f) this.scroll = 0;
         int scrollOffset = (int) this.scroll;
 
-        AbstractGuiUtils.renderByDepth(stack, renderDepth(), (s) -> {
-            drawPointerShape(s, mouseX, mouseY + scrollOffset, color1, color2, color3);
-            // 滚轮指示线：滚动时在指针旁显示短线
-            if (scrollOffset != 0) {
-                int scrollLineAlpha = (int) (0x90 * Math.min(1, Math.abs(this.scroll) / 4));
-                int scrollLineColor = (scrollLineAlpha << 24) | (curColorMain & 0xFFFFFF);
-                int y1 = mouseY;
-                int y2 = mouseY + scrollOffset;
-                if (y1 > y2) {
-                    int t = y1;
-                    y1 = y2;
-                    y2 = t;
-                }
-                AbstractGuiUtils.fill(s, mouseX + 6, y1, 1, y2 + 1 - y1, scrollLineColor);
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
+        frame.depth(renderDepth().depth());
+        drawPointerShape(frame, mouseX, mouseY + scrollOffset, color1, color2, color3);
+        // 滚轮指示线：滚动时在指针旁显示短线
+        if (scrollOffset != 0) {
+            int scrollLineAlpha = (int) (0x90 * Math.min(1, Math.abs(this.scroll) / 4));
+            int scrollLineColor = (scrollLineAlpha << 24) | (curColorMain & 0xFFFFFF);
+            int y1 = mouseY;
+            int y2 = mouseY + scrollOffset;
+            if (y1 > y2) {
+                int t = y1;
+                y1 = y2;
+                y2 = t;
             }
-        });
+            frame.box(mouseX + 6, y1, 1, y2 + 1 - y1, scrollLineColor, 0, 0);
+        }
+        return frame;
     }
 
     /**
      * 绘制指针形状
      */
-    private void drawPointerShape(PoseStack stack, int x, int y, int colorLeft, int colorRight, int colorCenter) {
+    private void drawPointerShape(xin.vanilla.banira.internal.client.ui.HudDrawList frame, int x, int y, int colorLeft, int colorRight, int colorCenter) {
         // 中心/中键
-        AbstractGuiUtils.drawPixel(stack, x, y, colorCenter);
+        frame.box(x, y, 1, 1, colorCenter, 0, 0);
         // 左键区域
-        AbstractGuiUtils.fill(stack, x - 4, y + 2, 3, 1, colorLeft);
-        AbstractGuiUtils.fill(stack, x - 2, y + 2, 1, 3, colorLeft);
-        AbstractGuiUtils.fill(stack, x - 4, y - 2, 3, 1, colorLeft);
-        AbstractGuiUtils.fill(stack, x - 2, y - 4, 1, 3, colorLeft);
+        frame.box(x - 4, y + 2, 3, 1, colorLeft, 0, 0);
+        frame.box(x - 2, y + 2, 1, 3, colorLeft, 0, 0);
+        frame.box(x - 4, y - 2, 3, 1, colorLeft, 0, 0);
+        frame.box(x - 2, y - 4, 1, 3, colorLeft, 0, 0);
         // 右键区域
-        AbstractGuiUtils.fill(stack, x + 2, y + 2, 3, 1, colorRight);
-        AbstractGuiUtils.fill(stack, x + 2, y + 2, 1, 3, colorRight);
-        AbstractGuiUtils.fill(stack, x + 2, y - 2, 3, 1, colorRight);
-        AbstractGuiUtils.fill(stack, x + 2, y - 4, 1, 3, colorRight);
+        frame.box(x + 2, y + 2, 3, 1, colorRight, 0, 0);
+        frame.box(x + 2, y + 2, 1, 3, colorRight, 0, 0);
+        frame.box(x + 2, y - 2, 3, 1, colorRight, 0, 0);
+        frame.box(x + 2, y - 4, 1, 3, colorRight, 0, 0);
     }
 
     @Override
@@ -239,6 +240,15 @@ public class MouseWidget extends BaseWidget {
      */
     public void draw(PoseStack stack, int mouseX, int mouseY) {
         if (!visible) return;
-        drawCursor(stack, mouseX, mouseY);
+        Minecraft mc = Minecraft.getInstance();
+        GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
+        graphics.pose().last().pose().set(stack.last().pose());
+        pointerFrame(mouseX, mouseY).renderNative(graphics);
+    }
+    public void draw(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!visible) return;
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = pointerFrame(mouseX, mouseY);
+        if (!xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.POINTER, graphics, frame)) frame.renderNative(graphics);
     }
 }

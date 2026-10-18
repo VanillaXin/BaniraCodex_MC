@@ -21,10 +21,8 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
@@ -111,6 +109,7 @@ public final class QuickActionOverlay {
 
     private boolean layoutLoaded;
 
+    private xin.vanilla.banira.internal.client.ui.HudDrawList hudFrame;
     private int lastScreenW;
     private int lastScreenH;
 
@@ -462,10 +461,10 @@ public final class QuickActionOverlay {
 
     private void drawSlotBorder(PoseStack stack, int gx, int gy, int cell, int argbBorder) {
         int t = 1;
-        AbstractGuiUtils.fill(stack, gx, gy, cell, t, argbBorder);
-        AbstractGuiUtils.fill(stack, gx, gy + cell - t, cell, t, argbBorder);
-        AbstractGuiUtils.fill(stack, gx, gy, t, cell, argbBorder);
-        AbstractGuiUtils.fill(stack, gx + cell - t, gy, t, cell, argbBorder);
+        hudFrame.box( gx, gy, cell, t, argbBorder, 0, 0);
+        hudFrame.box( gx, gy + cell - t, cell, t, argbBorder, 0, 0);
+        hudFrame.box( gx, gy, t, cell, argbBorder, 0, 0);
+        hudFrame.box( gx + cell - t, gy, t, cell, argbBorder, 0, 0);
     }
 
     /**
@@ -479,10 +478,10 @@ public final class QuickActionOverlay {
         int x1 = gx + cell - inset;
         int y1 = gy + cell - inset;
         int thick = 1;
-        AbstractGuiUtils.fill(stack, x0, y0, x1 - x0, thick, c);
-        AbstractGuiUtils.fill(stack, x0, y1 - thick, x1 - x0, thick, c);
-        AbstractGuiUtils.fill(stack, x0, y0, thick, y1 - y0, c);
-        AbstractGuiUtils.fill(stack, x1 - thick, y0, thick, y1 - y0, c);
+        hudFrame.box( x0, y0, x1 - x0, thick, c, 0, 0);
+        hudFrame.box( x0, y1 - thick, x1 - x0, thick, c, 0, 0);
+        hudFrame.box( x0, y0, thick, y1 - y0, c, 0, 0);
+        hudFrame.box( x1 - thick, y0, thick, y1 - y0, c, 0, 0);
     }
 
     private void slotToCr(int slot, int cols, int[] out) {
@@ -678,6 +677,7 @@ public final class QuickActionOverlay {
             closeUi();
             return;
         }
+        hudFrame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
         ensureLoaded();
         QuickActionRegistry.get().validateMenuAnchor();
         pollDragCancel();
@@ -753,7 +753,7 @@ public final class QuickActionOverlay {
             int ix = xy[0] + iconOff;
             int iy = xy[1] + iconOff;
             if (s == 0) {
-                systemIcon().render(graphics, mc, ix, iy, iconSize);
+                hudFrame.icon(systemIcon(), ix, iy, iconSize, false);
             } else {
                 boolean skipIcon = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot;
                 if (!skipIcon) {
@@ -765,7 +765,7 @@ public final class QuickActionOverlay {
                         drawEntry = reg.getEntry(id);
                     }
                     if (drawEntry != null && drawEntry.display().showsInventoryIcon()) {
-                        drawEntry.quickIcon().render(graphics, mc, ix, iy, iconSize);
+                        hudFrame.icon(drawEntry.quickIcon(), ix, iy, iconSize, false);
                     }
                 }
             }
@@ -773,7 +773,7 @@ public final class QuickActionOverlay {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
             } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
                 int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
-                AbstractGuiUtils.fill(stack, xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi);
+                hudFrame.box( xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi, 0, 0);
             }
         }
 
@@ -786,17 +786,28 @@ public final class QuickActionOverlay {
                 int gy = mouseY - cell / 2;
                 prepareQuickActionSlotDrawState();
                 drawSlotBorder(stack, gx, gy, cell, borderRgb);
-                dragged.quickIcon().render(graphics, mc, gx + iconOff, gy + iconOff, iconSize);
+                hudFrame.icon(dragged.quickIcon(), gx + iconOff, gy + iconOff, iconSize, false);
             }
         }
 
         stack.pushPose();
         stack.translate(0, 0, CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
 
+        hudFrame.depth(EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
         if (contextOpen) {
             renderContextMenu(graphics, stack, screen, mc, mouseX, mouseY, contextTheme(theme));
             renderContextRowActionMenu(graphics, stack, mc, mouseX, mouseY, contextRowActionTheme(theme));
         }
+
+        stack.popPose();
+        stack.popPose();
+        if (!xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS, graphics, hudFrame)) hudFrame.renderNative(graphics);
+
+        stack.pushPose();
+        stack.translate(0, 0, EnumRenderDepth.OVERLAY.depth());
+        stack.pushPose();
+        stack.translate(0, 0, CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
 
         renderContextTooltip(stack, mc, mouseX, mouseY, theme);
 
@@ -1759,12 +1770,8 @@ public final class QuickActionOverlay {
         int h = ctxLayoutH;
         int bg = theme.bgSurface() | 0xFF000000;
         int borderArgb = theme.border() | 0xFF000000;
-        ShapeDrawArgs menuFill = ShapeDrawArgs.rect(stack, x, y, w, h, bg);
-        menuFill.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
-        BaseShapeWidget.drawShape(menuFill);
-        ShapeDrawArgs menuOutline = ShapeDrawArgs.rect(stack, x, y, w, h, borderArgb);
-        menuOutline.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(CONTEXT_MENU_BORDER_THICKNESS);
-        BaseShapeWidget.drawShape(menuOutline);
+        hudFrame.box(x, y, w, h, bg, CONTEXT_MENU_CORNER_RADIUS, 0);
+        hudFrame.box(x, y, w, h, borderArgb, CONTEXT_MENU_CORNER_RADIUS, CONTEXT_MENU_BORDER_THICKNESS);
         // 圆角菜单绘制后需保证混合与 GUI 着色器可用（见 AbstractGuiUtils#restoreGuiRenderState）
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -1775,16 +1782,16 @@ public final class QuickActionOverlay {
 
         if (ctxNeedsScrollbar) {
             int sbX = ctxScrollbarLeft;
-            AbstractGuiUtils.fill(stack, sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000);
+            hudFrame.box( sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000, 0, 0);
             int contentH = rows.size() * MENU_ROW_H;
             int thumbH = Math.max(10, ctxInnerH * ctxInnerH / Math.max(1, contentH));
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
             int accent = theme.accentHover() | 0xFF000000;
-            AbstractGuiUtils.fill(stack, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent);
+            hudFrame.box( sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent, 0, 0);
         }
 
         Font font = mc.font;
-        AbstractGuiUtils.pushScissor(x + 1, innerTop, Math.max(1, ctxInnerW - 1), Math.max(1, ctxInnerH));
+        hudFrame.clip(x + 1, innerTop, Math.max(1, ctxInnerW - 1), Math.max(1, ctxInnerH));
         try {
             for (int i = 0; i < rows.size(); i++) {
                 int ry = innerTop + i * MENU_ROW_H - contextScrollPx;
@@ -1798,8 +1805,8 @@ public final class QuickActionOverlay {
                     int rowTop = Math.max(ry, innerTop);
                     int rowBot = Math.min(ry + rh, innerBottom);
                     int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
-                    AbstractGuiUtils.fill(stack, x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
-                            (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                    hudFrame.box( x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
+                            (theme.accentHover() & 0xFFFFFF) | 0x66000000, 0, 0);
                 }
                 CtxRow row = rows.get(i);
                 String full = row.text;
@@ -1807,13 +1814,13 @@ public final class QuickActionOverlay {
                 if (row.menuIcon != null) {
                     int iconX = x + MENU_TEXT_PAD_X;
                     int iconY = ry + (MENU_ROW_H - MENU_ICON_SIZE) / 2;
-                    row.menuIcon.renderForMenu(graphics, mc, iconX, iconY, MENU_ICON_SIZE);
+                    hudFrame.icon(row.menuIcon, iconX, iconY, MENU_ICON_SIZE, true);
                 }
                 float textX = row.menuIcon != null
                         ? x + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
                         : x + MENU_TEXT_PAD_X;
                 float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
-                graphics.drawString(font, shown, textX, textY, textColor, false);
+                hudFrame.text(shown, textX, textY, textColor);
                 if (hi && !shown.equals(full)) {
                     contextTooltipLine = full;
                     contextTooltipTheme = theme;
@@ -1821,7 +1828,7 @@ public final class QuickActionOverlay {
                 }
             }
         } finally {
-            AbstractGuiUtils.popScissor();
+            hudFrame.unclip();
         }
 
         AbstractGuiUtils.restoreGuiRenderState();
@@ -1838,16 +1845,8 @@ public final class QuickActionOverlay {
 
         int bg = theme.bgSurface() | 0xFF000000;
         int border = theme.border() | 0xFF000000;
-        ShapeDrawArgs fill = ShapeDrawArgs.rect(stack, ctxRowActionX, ctxRowActionY,
-                ctxRowActionW, ctxRowActionH, bg);
-        fill.rect().radius(CONTEXT_MENU_CORNER_RADIUS).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
-        BaseShapeWidget.drawShape(fill);
-        ShapeDrawArgs outline = ShapeDrawArgs.rect(stack, ctxRowActionX, ctxRowActionY,
-                ctxRowActionW, ctxRowActionH, border);
-        outline.rect().radius(CONTEXT_MENU_CORNER_RADIUS)
-                .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE)
-                .border(CONTEXT_MENU_BORDER_THICKNESS);
-        BaseShapeWidget.drawShape(outline);
+        hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, bg, CONTEXT_MENU_CORNER_RADIUS, 0);
+        hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, border, CONTEXT_MENU_CORNER_RADIUS, CONTEXT_MENU_BORDER_THICKNESS);
         AbstractGuiUtils.restoreGuiRenderState();
 
         Font font = mc.font;
@@ -1858,23 +1857,21 @@ public final class QuickActionOverlay {
             boolean hovered = mouseX >= ctxRowActionX + 1 && mouseX < ctxRowActionX + ctxRowActionW - 1
                     && mouseY >= rowY && mouseY < rowY + MENU_ROW_H;
             if (hovered) {
-                AbstractGuiUtils.fill(stack, ctxRowActionX + 2, rowY,
+                hudFrame.box( ctxRowActionX + 2, rowY,
                         Math.max(1, ctxRowActionW - 4), MENU_ROW_H,
-                        (theme.accentHover() & 0xFFFFFF) | 0x66000000);
+                        (theme.accentHover() & 0xFFFFFF) | 0x66000000, 0, 0);
             }
             String shown = ellipsizeMiddle(font, row.text,
                     contextMenuRowTextMaxWidth(ctxRowActionW - 2, row));
             if (row.menuIcon != null) {
-                row.menuIcon.renderForMenu(graphics, mc,
-                        ctxRowActionX + MENU_TEXT_PAD_X,
-                        rowY + (MENU_ROW_H - MENU_ICON_SIZE) / 2,
-                        MENU_ICON_SIZE);
+                hudFrame.icon(row.menuIcon, ctxRowActionX + MENU_TEXT_PAD_X,
+                        rowY + (MENU_ROW_H - MENU_ICON_SIZE) / 2, MENU_ICON_SIZE, true);
             }
             int textX = row.menuIcon != null
                     ? ctxRowActionX + MENU_TEXT_PAD_X + MENU_ICON_SIZE + MENU_ICON_GAP
                     : ctxRowActionX + MENU_TEXT_PAD_X;
             int textY = rowY + (MENU_ROW_H - font.lineHeight) / 2;
-            graphics.drawString(font, shown, textX, textY, textColor, false);
+            hudFrame.text(shown, textX, textY, textColor);
             if (hovered && !shown.equals(row.text)) {
                 contextTooltipLine = row.text;
                 contextTooltipTheme = theme;

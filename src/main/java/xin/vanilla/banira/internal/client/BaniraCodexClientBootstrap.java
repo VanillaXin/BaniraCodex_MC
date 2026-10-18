@@ -41,6 +41,7 @@ public final class BaniraCodexClientBootstrap {
     private static final UiSessionHost UI_SESSIONS = new UiSessionHost(UI_BACKEND, AUI::create,
             BaniraClientRuntime::presentUiScreen, BaniraClientRuntime::isScreen);
     private static boolean hadConnection;
+    private static final xin.vanilla.banira.internal.client.ui.AuiHudHost UI_HUDS = new xin.vanilla.banira.internal.client.ui.AuiHudHost(UI_BACKEND, AUI::createHud);
 
     public static UiSessionHost uiSessions() { return UI_SESSIONS; }
 
@@ -62,6 +63,18 @@ public final class BaniraCodexClientBootstrap {
     }
 
     public static void init() {
+        UI_SESSIONS.hudHost(UI_HUDS);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.install(UI_HUDS);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS,
+                () -> BaniraClientRuntime.hasConnection());
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.UNREAD,
+                () -> xin.vanilla.banira.client.notification.NotificationUnreadHud.isVisible()
+                        && xin.vanilla.banira.client.notification.NotificationMinimapBridge.selectedHost()
+                        == xin.vanilla.banira.common.enums.EnumNotificationHudHost.STANDALONE);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS,
+                () -> xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay.isSupportedInventoryScreen(net.minecraft.client.Minecraft.getInstance().screen));
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.POINTER,
+                () -> net.minecraft.client.Minecraft.getInstance().screen instanceof xin.vanilla.banira.client.gui.BaniraScreen && ClientConfig.get().useCustomCursor());
         BaniraUi.install(new BaniraUi.Driver() {
             @Override public void open(UiPageSpec page, Object previousScreen) { UI_SESSIONS.open(page, previousScreen); }
             @Override public boolean usesAui(String surfaceId) { return UI_BACKEND.usesAui(surfaceId); }
@@ -103,6 +116,7 @@ public final class BaniraCodexClientBootstrap {
             hadConnection = connected;
             xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();
+            UI_HUDS.tick(connected);
         });
         BaniraClientEventHub.Client.onTextureReload(event -> { AUI.reload(); UI_SESSIONS.reload(); });
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);

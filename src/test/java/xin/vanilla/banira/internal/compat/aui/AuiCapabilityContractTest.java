@@ -145,6 +145,15 @@ public class AuiCapabilityContractTest {
                 }
             }
         }
+        try (InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/client/ui/AuiHudDocument.class")) {
+            assertNotNull(input);
+            ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+            for (var method : node.methods) for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                if (call.owner.startsWith("com/sighs/apricityui/")) assertTrue("Unguarded HUD call " + call.owner + "#" + call.name + call.desc,
+                        guarded.contains(call.owner + "#" + call.name + call.desc));
+            }
+        }
     }
 
     @Test public void changedMouseButtonFieldFallsBackBeforeInputBinding() throws Exception {

@@ -96,6 +96,7 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "setReloadPersistent", "(Z)V");
         add(result, "init/Document", "getRefreshGeneration", "()J");
         add(result, "init/Document", "isDisposed", "()Z");
+        add(result, "init/Document", "applyViewport", "(Z)V");
         add(result, "init/Document", "getElementById", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "createElement", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "getElementsByTagName", "(Ljava/lang/String;)Ljava/util/List;");

@@ -7,7 +7,6 @@ import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -20,7 +19,7 @@ public final class UiSessionHost {
     private final BiFunction<UiPageSpec, Object, NativeUiView> auiFactory;
     private final Consumer<Object> presenter;
     private final Predicate<Object> screenValidator;
-    private final Map<String, UiHudSpec> huds = new LinkedHashMap<>();
+    private AuiHudHost huds;
     private final Map<Object, Entry> parents = new java.util.IdentityHashMap<>();
     private final Map<Object, Entry> suspended = new java.util.IdentityHashMap<>();
     private Entry active;
@@ -249,9 +248,11 @@ public final class UiSessionHost {
     public Object previousScreen() { return active == null ? null : active.previous; }
     public NativeUiView view() { return active == null ? null : active.view; }
     public AutoCloseable registerHud(UiHudSpec hud) {
-        huds.put(hud.id(), hud);
-        return () -> huds.remove(hud.id(), hud);
+        if (huds == null) throw new IllegalStateException("HUD host unavailable");
+        return huds.register(hud);
     }
+
+    public void hudHost(AuiHudHost host) { this.huds = Objects.requireNonNull(host, "host"); }
 
     private static final class Entry {
         final UiPageSpec page;

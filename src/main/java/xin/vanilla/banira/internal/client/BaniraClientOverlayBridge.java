@@ -34,6 +34,7 @@ public final class BaniraClientOverlayBridge {
 
     public static void renderScreenOverlay(@Nonnull GuiGraphics graphics, @Nonnull Screen screen,
                                            double mouseX, double mouseY, float partialTick) {
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(graphics);
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().render(graphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
             QuickActionOverlay.get().flushSaveIfNeeded();
@@ -45,6 +46,7 @@ public final class BaniraClientOverlayBridge {
     }
 
     public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(graphics);
         NotificationManager.get().render(graphics);
         xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }

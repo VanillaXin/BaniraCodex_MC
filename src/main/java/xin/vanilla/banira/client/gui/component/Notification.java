@@ -313,30 +313,50 @@ public class Notification extends NotificationData {
         if (animationState.started() && calculateProgress(nowMs) < 0) finished = true;
     }
 
+    public boolean acceptsInput(long nowMs) {
+        return !finished && animationState.acceptsInput(nowMs);
+    }
+
     public void renderInRegion(PoseStack stack,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
-        if (finished || nowMs < scheduledTime()) return;
+        ScreenCoordinate coordinate = prepareInRegion(target, region, nowMs, Minecraft.getInstance().font.lineHeight);
+        if (coordinate == null) return;
+        AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
+        try { doRender(stack, coordinate); }
+        finally { AbstractGuiUtils.popScissor(); }
+    }
+
+    public ScreenCoordinate prepareInRegion(xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
+                                           xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region,
+                                           long nowMs, int lineHeight) {
+        if (finished || nowMs < scheduledTime()) return null;
         if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
         double progress = calculateProgress(nowMs);
         if (progress < 0) {
             finished = true;
-            return;
+            return null;
         }
         renderClip = region;
         ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
         applyAnimationEffect(coordinate, progress);
         applyMergeAnimation(nowMs);
         handlePositionTransition(coordinate, nowMs);
-        AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
-        try {
-            doRender(stack, coordinate);
-        } finally {
-            AbstractGuiUtils.popScissor();
-        }
+        updateHitBounds(coordinate, lineHeight);
         lastY = coordinate.y();
         lastIndex = index;
         lastRenderTime = nowMs;
+        return coordinate;
+    }
+
+    private void updateHitBounds(ScreenCoordinate coordinate, int lineHeight) {
+        hitX = coordinate.x(); hitY = coordinate.y(); hitW = cachedWidth; hitH = cachedHeight;
+        closeBtnLeft = hitX + hitW - padding() - CLOSE_BTN;
+        closeBtnTop = hitY + padding() + Math.max(0, (hitH - 2 * padding() - CLOSE_BTN) * .5);
+        closeBtnSize = CLOSE_BTN;
+        bodyLeft = hitX + padding(); bodyTop = hitY + padding();
+        bodyW = hitW - 2 * padding() - CLOSE_GAP - CLOSE_BTN; bodyH = hitH - 2 * padding();
+        bodyTextTop = bodyTop + Math.max(0, (bodyH - richDrawLines.size() * lineHeight) * .5);
     }
 
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
@@ -547,6 +567,10 @@ public class Notification extends NotificationData {
     }
 
     private void doRender(PoseStack stack, ScreenCoordinate coordinate) {
+        paintPrepared(stack, coordinate, true);
+    }
+
+    public void paintPrepared(PoseStack stack, ScreenCoordinate coordinate, boolean nativeShell) {
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
@@ -568,6 +592,7 @@ public class Notification extends NotificationData {
                         ? ColorUtils.applyAlphaToArgb(this.richDefaultTextArgb, drawAlpha)
                         : this.richDefaultTextArgb;
 
+                if (nativeShell) {
                 ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
                 rect.rect().radius(this.radius());
                 BaseShapeWidget.drawShape(rect);
@@ -575,6 +600,7 @@ public class Notification extends NotificationData {
                 ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
                 rectBorder.rect().radius(this.radius()).border(this.borderSize());
                 BaseShapeWidget.drawShape(rectBorder);
+                }
 
                 Font font = Minecraft.getInstance().font;
                 float pad = (float) this.padding();

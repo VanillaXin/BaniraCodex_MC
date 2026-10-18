@@ -1,5 +1,7 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import java.util.ArrayList;
+
 import org.junit.After;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
@@ -214,6 +216,35 @@ public class ExternalInventoryButtonManagerTest {
         return new ExternalInventoryAction(ACTION_ID,
                 BaniraComponent.get().literal("Test action"), QuickIcon.none(), context -> {
         });
+    }
+
+    @Test public void auiSwitchAndFtbTakeoverKeepOriginalRegistrationAuthority() throws Exception {
+        var backend = new xin.vanilla.banira.internal.client.ui.UiBackendController(() -> true, () -> true);
+        var views = new ArrayList<xin.vanilla.banira.internal.client.ui.NativeUiView>();
+        var hud = new xin.vanilla.banira.internal.client.ui.AuiHudHost(backend, spec -> {
+            var view = new xin.vanilla.banira.internal.client.ui.NativeUiView(null); views.add(view); return view;
+        });
+        var lease = hud.register(new xin.vanilla.banira.api.client.ui.UiHudSpec("test:quick", "banira_codex/hud/overlay.html",
+                new xin.vanilla.banira.api.client.ui.UiHudBinding() {
+                    public boolean visible() { return !manager.suppressesBaniraOverlay(); }
+                    public void bind(xin.vanilla.banira.api.client.ui.UiView view) { }
+                    public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) { }
+                }));
+        RecordingHost ftb = new RecordingHost(); manager.setFtbHostBridge(ftb);
+        manager.registerProvider(provider(new AtomicReference<>(Collections.singletonList(action()))));
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null); hud.tick(true);
+        assertTrue(hud.render("test:quick", view -> {})); assertTrue(manager.suppressesNativeButtons(PROVIDER_ID));
+        backend.requestSwitch(false); backend.tick(); hud.tick(true);
+        assertFalse(hud.render("test:quick", view -> fail())); assertTrue(views.get(0).closed());
+        assertTrue("Backend switch must not unregister adopted buttons", manager.suppressesNativeButtons(PROVIDER_ID));
+        assertNotNull(QuickActionRegistry.get().getEntry(ExternalInventoryButtonManager.registryId(PROVIDER_ID, ACTION_ID)));
+        backend.requestSwitch(true); backend.tick(); hud.tick(true); assertTrue(hud.render("test:quick", view -> {}));
+        manager.refresh(EnumExternalInventoryButtonHost.FTB_LIBRARY, null); hud.tick(true);
+        assertFalse(hud.render("test:quick", view -> fail())); assertTrue(views.get(1).closed()); assertFalse(ftb.lastActions.isEmpty());
+        manager.refresh(EnumExternalInventoryButtonHost.ORIGINAL, null); hud.tick(true);
+        assertTrue(hud.render("test:quick", view -> {})); assertFalse(manager.suppressesNativeButtons(PROVIDER_ID));
+        assertTrue(ftb.lastActions.isEmpty()); lease.close(); assertTrue(views.get(2).closed());
+        assertEquals(EnumExternalInventoryButtonHost.ORIGINAL, manager.effectiveHost());
     }
 
     private static final class RecordingHost implements ExternalInventoryButtonManager.FtbHostBridge {

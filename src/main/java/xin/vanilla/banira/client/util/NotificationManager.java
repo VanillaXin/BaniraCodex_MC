@@ -296,6 +296,7 @@ public final class NotificationManager {
         List<Notification> pending = new ArrayList<>();
         for (List<Notification> group : notifications.values()) pending.addAll(group);
         EnumMap<EnumPosition, Integer> indices = new EnumMap<>(EnumPosition.class);
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
         for (Notification n : NotificationRegionLayout.admissionOrder(pending, item -> item.lastRenderTime() > 0)) {
             if (n.finished() || n.scheduledTime() > currentTime) continue;
             EnumPosition pos = n.position();
@@ -309,14 +310,20 @@ public final class NotificationManager {
             int index = indices.getOrDefault(pos, 0);
             indices.put(pos, index + 1);
             frameDrawOrder.add(n);
-            n.index(index).renderInRegion(stack, target, region, currentTime);
+            ScreenCoordinate at = n.index(index).prepareInRegion(target, region, currentTime, mc.font.lineHeight);
+            if (at == null) continue;
+            frame.clip(region.x, region.y, region.width, region.height);
+            frame.notification(n, at);
             layout.follow(pos, region, new NotificationRegionLayout.Rect((int) Math.floor(n.hitX()), (int) Math.floor(n.hitY()),
                     (int) Math.ceil(n.hitW()), (int) Math.ceil(n.hitH())), (int) Math.max(0, n.margin()));
         }
 
+        if (!frame.parts().isEmpty() && !xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS, graphics, frame)) frame.renderNative(graphics);
+
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished() || muteState.muted(n.notificationType())) {
+            if (!n.acceptsInput(currentTime) || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(mx, my)) {
@@ -361,7 +368,7 @@ public final class NotificationManager {
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished() || n.scheduledTime() > currentTime || muteState.muted(n.notificationType())) {
+            if (!n.acceptsInput(currentTime) || n.scheduledTime() > currentTime || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(guiMouseX, guiMouseY)) {

@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 
 public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final Document document;
-    private final Object screen;
+    private final java.util.function.BooleanSupplier owner;
     private final long generation;
     private final Map<Element, AuiNode> nodes = new IdentityHashMap<>();
     private final Set<AuiNode> icons = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -44,7 +44,11 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private int count;
 
     public AuiDocumentAccess(Document document, Object screen) {
-        this.document = document; this.screen = screen;
+        this(document, () -> Minecraft.getInstance().screen == screen);
+    }
+
+    public AuiDocumentAccess(Document document, java.util.function.BooleanSupplier owner) {
+        this.document = document; this.owner = Objects.requireNonNull(owner, "owner");
         generation = document.getRefreshGeneration();
         content = document.getElementById("content");
         List<Element> bodies = document.getElementsByTagName("body");
@@ -61,6 +65,12 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             if (total > 2000) throw new IllegalStateException("UI document node budget");
         }
         return total;
+    }
+
+    public ScreenCoordinate guiBounds(ScreenCoordinate bounds) {
+        Position start = document.guiToDocumentPosition(new Position(bounds.x(), bounds.y()));
+        Position end = document.guiToDocumentPosition(new Position(bounds.x() + bounds.width(), bounds.y() + bounds.height()));
+        return new ScreenCoordinate(start.x, start.y, end.x - start.x, end.y - start.y);
     }
 
     private void checkBudget() { if (count > 2000) throw new IllegalStateException("UI document node budget"); }
@@ -86,7 +96,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     @Override public Node overlayRoot() { return body; }
     @Override public boolean current() {
         return !closed && !document.isDisposed() && document.getRefreshGeneration() == generation
-                && Minecraft.getInstance().screen == screen;
+                && owner.getAsBoolean();
     }
     @Override public AutoCloseable color(Node anchor, String initial, Consumer<String> result) {
         Tooltip.hide(document);

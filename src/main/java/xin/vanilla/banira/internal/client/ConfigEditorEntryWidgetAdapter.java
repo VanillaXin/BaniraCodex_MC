@@ -21,6 +21,8 @@ public final class ConfigEditorEntryWidgetAdapter implements ConfigEditorEntryWi
     private final Supplier<Object> getter;
     private final Consumer<Object> setter;
     private final Supplier<Boolean> isValidSupplier;
+    private Supplier<String> draftGetter;
+    private Consumer<String> draftSetter;
 
     public ConfigEditorEntryWidgetAdapter(BaseWidget rowWidget, Supplier<Object> getter, Consumer<Object> setter) {
         this(rowWidget, getter, setter, null);
@@ -55,6 +57,15 @@ public final class ConfigEditorEntryWidgetAdapter implements ConfigEditorEntryWi
     public void setValue(Object value) {
         setter.accept(value);
     }
+
+    public ConfigEditorEntryWidgetAdapter drafts(Supplier<String> getter, Consumer<String> setter) {
+        draftGetter = getter;
+        draftSetter = setter;
+        return this;
+    }
+
+    @Override public String getDraft() { return draftGetter != null ? draftGetter.get() : null; }
+    @Override public void setDraft(String draft) { if (draftSetter != null) draftSetter.accept(draft); }
 
     private static LabelWidget findLabel(BaseWidget rowWidget) {
         for (IWidget child : rowWidget.children()) {

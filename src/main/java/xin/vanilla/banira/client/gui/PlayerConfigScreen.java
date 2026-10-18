@@ -18,6 +18,9 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.page.PlayerConfigUiSession;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -25,7 +28,7 @@ import java.util.*;
 /**
  * 子模组玩家配置页的公共外壳，统一搜索、树结构、滚动与底部操作区。
  */
-public abstract class PlayerConfigScreen extends BaniraScreen {
+public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativePage {
     protected static final int ROW_HEIGHT = 20;
     protected static final int ROW_GAP = 2;
 
@@ -61,6 +64,29 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
     private int contentWidth;
     private int listTop;
     private int listAreaHeight;
+    private UiViewState uiState;
+
+    @Nullable protected PlayerConfigUiSession playerUiSession() { return null; }
+    @Override public PlayerConfigUiSession uiSession() { return playerUiSession(); }
+    @Override public String uiSurfaceId() { return modId + ":player-config"; }
+    @Override public UiPageSpec uiPage() {
+        PlayerConfigUiSession session = playerUiSession();
+        return session == null ? null : session.spec(this, uiSurfaceId());
+    }
+    @Override public void captureUiState(UiViewState state) {
+        PlayerConfigUiSession session = playerUiSession();
+        if (session != null) session.query(searchText);
+        if (state != null) {
+            state.rowPosition(scrollOffset / (ROW_HEIGHT + ROW_GAP));
+            if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        }
+    }
+    @Override public void prepareUiState(UiViewState state) {
+        uiState = state;
+        PlayerConfigUiSession session = playerUiSession();
+        if (session != null) searchText = session.query();
+    }
+    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
 
     protected PlayerConfigScreen(String modId, Component title, @Nullable Screen parentScreen,
                                  @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
@@ -137,6 +163,14 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
         updateLayout();
         updateWidgetPositions();
         applySearchFilter(searchText);
+        if (uiState != null) {
+            scrollOffset = uiState.rowPosition() * (ROW_HEIGHT + ROW_GAP);
+            scrollbar.value(scrollOffset);
+            updateWidgetPositions();
+            if (uiState.focusedField().equals("search")) {
+                requestFocus(searchInput); searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            }
+        }
     }
 
     /**
@@ -414,6 +448,9 @@ public abstract class PlayerConfigScreen extends BaniraScreen {
 
     @Override
     public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        PlayerConfigUiSession session = playerUiSession();
+        if (session != null) session.close(UiCloseReason.CANCEL);
         if (parentScreen != null) Minecraft.getInstance().setScreen(parentScreen);
         else super.onClose();
     }

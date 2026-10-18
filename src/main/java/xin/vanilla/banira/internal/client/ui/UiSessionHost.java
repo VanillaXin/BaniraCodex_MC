@@ -47,6 +47,7 @@ public final class UiSessionHost {
         if (active != null && active.page == page) return true;
         returning = null;
         returningScreen = null;
+        previousScreen = retainedParent(previousScreen);
         Entry entry = new Entry(Objects.requireNonNull(page, "page"), previousScreen, Objects.requireNonNull(initialState, "initialState"));
         NativeUiView view = createView(entry);
         if (view == null) return false;
@@ -145,6 +146,24 @@ public final class UiSessionHost {
         if (returning != null && returningScreen != screen) { returning = null; returningScreen = null; }
         if (active != null && !ownsScreen(screen)) suspendScreen(active.view);
         if (active == null && suspended.containsKey(screen)) resumeScreen(screen);
+        else if (active == null && screen instanceof UiNativePage) {
+            xin.vanilla.banira.api.client.ui.UiPageSession session = ((UiNativePage) screen).uiSession();
+            if (session != null) for (Entry entry : suspended.values()) if (entry.page.session() == session) {
+                returning = entry; returningScreen = screen; break;
+            }
+        }
+    }
+
+    public boolean isReturning(Object screen) { return returning != null && returningScreen == screen; }
+
+    private Object retainedParent(Object screen) {
+        if (!(screen instanceof UiNativePage)) return screen;
+        xin.vanilla.banira.api.client.ui.UiPageSession session = ((UiNativePage) screen).uiSession();
+        if (session == null) return screen;
+        if (active != null && active.view != null && active.page.session() == session) return active.view.screen();
+        for (Map.Entry<Object, Entry> entry : suspended.entrySet()) if (entry.getValue().page.session() == session) return entry.getKey();
+        for (Map.Entry<Object, Entry> entry : parents.entrySet()) if (entry.getValue().page.session() == session) return entry.getKey();
+        return screen;
     }
 
     public void tick() {
@@ -191,6 +210,8 @@ public final class UiSessionHost {
     public void close(UiCloseReason reason) {
         Entry entry = active;
         if (entry == null) return;
+        if (reason != UiCloseReason.DISCONNECT && entry.page.session() instanceof UiCloseGuard
+                && !((UiCloseGuard) entry.page.session()).canClose(reason)) return;
         try { detach(reason == UiCloseReason.DISCONNECT ? UiDetachReason.DISCONNECT : UiDetachReason.SWITCH); }
         finally {
             active = null;

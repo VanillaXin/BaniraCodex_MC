@@ -145,7 +145,13 @@ public final class ConfigEditorRowFactory {
         };
         addResetButton(row, desc, w, rowH, setter);
         addTooltip(row, desc, 0, 0, w, rowH);
-        return new ConfigEditorEntryWidgetAdapter(row, () -> convertSliderValue(desc, slider.value()), setter, () -> true);
+        return new ConfigEditorEntryWidgetAdapter(row,
+                () -> xin.vanilla.banira.common.network.packet.ConfigSyncToServer.decodeNetworkValue(holder, desc.getPath(), slider.editingText()),
+                setter, () -> {
+                    Object value = xin.vanilla.banira.common.network.packet.ConfigSyncToServer.decodeNetworkValue(holder, desc.getPath(), slider.editingText());
+                    return value instanceof Number && (!(value instanceof Double) || Double.isFinite((Double) value))
+                            && holder.validate(desc.getPath(), value);
+                }).drafts(slider::editingText, slider::editingText);
     }
 
     private ConfigEditorEntryWidget createEnumRow(ConfigEntryDescriptor desc, double w, int rowH) {
@@ -216,7 +222,6 @@ public final class ConfigEditorRowFactory {
             }
             contentHeightChanged.run();
         });
-        tagList.onListChanged(v -> editorState.markModified(desc.getPath(), ConfigListSpecHelper.listFromGuiItems(v, desc)));
 
         int tagRowH = (int) tagList.effectiveHeight();
         row.addChild(label);
@@ -228,8 +233,18 @@ public final class ConfigEditorRowFactory {
         };
         addResetButton(row, desc, w, tagRowH, setter);
         addTooltip(row, desc, 0, 0, w, rowH);
-        return new ConfigEditorEntryWidgetAdapter(row,
-                () -> ConfigListSpecHelper.listFromGuiItems(new ArrayList<>(tagList.items()), desc), setter);
+        java.util.function.Supplier<Object> getter = () -> {
+            try { return ConfigListSpecHelper.parseNetworkList(ConfigListSpecHelper.encodeNetworkList(tagList.items()), desc); }
+            catch (IllegalArgumentException invalid) { return new ArrayList<>(tagList.items()); }
+        };
+        tagList.onListChanged(v -> editorState.markModified(desc.getPath(), getter.get()));
+        return new ConfigEditorEntryWidgetAdapter(row, getter, setter,
+                () -> {
+                    if (!tagList.draftCommitted()) return false;
+                    try { return holder.validate(desc.getPath(), ConfigListSpecHelper.parseNetworkList(ConfigListSpecHelper.encodeNetworkList(tagList.items()), desc)); }
+                    catch (IllegalArgumentException invalid) { return false; }
+                })
+                .drafts(tagList::captureDraft, tagList::restoreDraft);
     }
 
     private ConfigEditorEntryRowWidget createRow(double w, int rowH) {
@@ -258,9 +273,8 @@ public final class ConfigEditorRowFactory {
         btn.onClick(b -> {
             Object def = desc.getDefaultValue();
             if (def != null) {
-                holder.set(desc.getPath(), def);
-                editorState.markModified(desc.getPath(), def);
                 setValue.accept(def);
+                editorState.markModified(desc.getPath(), def);
             }
         });
         TooltipWidget resetTip = new TooltipWidget(screen, new ScreenCoordinate(resetBtnX(rowW), btnY, RESET_BTN_SIZE, RESET_BTN_SIZE));

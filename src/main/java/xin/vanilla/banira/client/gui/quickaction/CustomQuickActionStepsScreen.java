@@ -3,6 +3,7 @@ package xin.vanilla.banira.client.gui.quickaction;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
@@ -24,6 +25,10 @@ import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
+import xin.vanilla.banira.internal.client.ui.page.QuickActionEditUiSession;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +37,7 @@ import java.util.List;
 /**
  * 编辑主入口或右键菜单项的动作步骤。
  */
-final class CustomQuickActionStepsScreen extends BaniraScreen {
+final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativePage {
     private static final int MARGIN = 16;
     private static final int PAD = 8;
     private static final int TOP_H = 22;
@@ -61,6 +66,48 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
     private int listW;
     private int visibleRows;
     private int scrollIndex;
+    private QuickActionEditUiSession uiSession;
+
+    private NavigationUiSession.Action action(String id, String label, Runnable callback) {
+        return new NavigationUiSession.Action(id, BaniraComponent.get().transClientAuto(label), callback, null);
+    }
+    @Override public String uiSurfaceId() { return "banira_codex:quick-steps"; }
+    @Override public QuickActionEditUiSession uiSession() {
+        if (uiSession == null) {
+            List<NavigationUiSession.Action> tools = new ArrayList<>();
+            tools.add(action("details", isMenuItem() ? "custom_quick_action_menu_details" : "custom_quick_action_edit_details", this::openDefinitionEditor));
+            tools.add(action("add_command", "custom_quick_action_add_command", () -> addStep(QuickActionStepType.COMMAND)));
+            tools.add(action("add_screen", "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
+            if (!isMenuItem()) tools.add(action("add_menu", "custom_quick_action_add_menu", this::addMenuItem));
+            tools.add(action("save", "save", this::save));
+            tools.add(action("cancel", "cancel", this::onClose));
+            uiSession = new QuickActionEditUiSession(BaniraComponent.get().transClientAuto(isMenuItem() ? "custom_quick_action_menu_step_title" : "custom_quick_action_step_title"), () -> {
+                List<NavigationUiSession.Action> rows = new ArrayList<>();
+                for (int index = 0; index < rowCount(); index++) {
+                    int selected = index;
+                    rows.add(new NavigationUiSession.Action((index < currentSteps().size() ? "step:" : "menu:") + index,
+                            BaniraComponent.get().literal(rowText(index)), () -> editRow(selected), () -> deleteRow(selected)));
+                }
+                return rows;
+            }, tools);
+            if (!isMenuItem()) {
+                List<DropdownOption> icons = new ArrayList<>();
+                for (QuickActionIconType type : QuickActionIconType.values()) icons.add(new DropdownOption(type.name(),
+                        CustomQuickActionEditor.t("custom_quick_action_icon_" + type.name().toLowerCase(java.util.Locale.ROOT)).content()));
+                uiSession.icons(icons, () -> definition.getIconType().name(), value -> openIconPicker(QuickActionIconType.valueOf(value)));
+            }
+        }
+        return uiSession;
+    }
+    @Override public UiPageSpec uiPage() { return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-steps.html"); }
+    @Override public void captureUiState(UiViewState state) { if (state != null) state.rowPosition(scrollIndex); }
+    @Override public void prepareUiState(UiViewState state) { scrollIndex = (int) state.rowPosition(); }
+    @Override public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        if (uiSession != null) uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
+    }
+    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
 
     CustomQuickActionStepsScreen(CustomQuickActionConfigScreen parent,
                                  CustomQuickActionDefinition definition, int originalIndex) {
@@ -108,6 +155,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         int bottomRows = isMenuItem() ? 1 : 2;
         int listH = panelH - PAD * 3 - TOP_H - (BOTTOM_H * bottomRows + (bottomRows - 1) * 5);
         visibleRows = Math.max(1, listH / (ROW_H + ROW_GAP));
+        scrollIndex = Math.max(0, Math.min(scrollIndex, Math.max(0, rowCount() - visibleRows)));
 
         int topButtonW = (listW - 6) / 3;
         addWidget(button("details", listX, panelY + PAD, topButtonW, TOP_H,
@@ -156,7 +204,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         scrollbar.id("scroll");
         scrollbar.orientation(EnumOrientation.VERTICAL).minValue(0)
                 .maxValue(Math.max(0, rowCount() - visibleRows)).visibleSize(visibleRows)
-                .scrollStep(1).onValueChanged(value -> {
+                .scrollStep(1).value(scrollIndex).onValueChanged(value -> {
                     scrollIndex = (int) Math.round(value);
                     updateRows();
                 });
@@ -240,7 +288,6 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
         } else {
             definition.getContextMenuItems().add(value);
         }
-        Minecraft.getInstance().setScreen(this);
     }
 
     private void save() {
@@ -250,6 +297,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
                 return;
             }
             sequenceParent.replaceMenuItem(menuItemIndex, CustomQuickActionEditor.copy(menuItem));
+            finish(sequenceParent);
             return;
         }
         if (definition.getId().trim().isEmpty() || definition.getLabel().trim().isEmpty()) {
@@ -257,16 +305,16 @@ final class CustomQuickActionStepsScreen extends BaniraScreen {
             return;
         }
         rootParent.saveDefinition(originalIndex, definition);
+        finish(rootParent);
+    }
+
+    private void finish(Screen parent) {
+        if (!CommonUiPages.close(this, UiCloseReason.SUBMIT)) Minecraft.getInstance().setScreen(parent);
     }
 
     private void reopen() {
-        if (isMenuItem()) {
-            Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(
-                    sequenceParent, menuItem, menuItemIndex));
-        } else {
-            Minecraft.getInstance().setScreen(new CustomQuickActionStepsScreen(
-                    rootParent, definition, originalIndex));
-        }
+        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId())) uiSession.refresh();
+        else Minecraft.getInstance().setScreen(this);
     }
 
     /**

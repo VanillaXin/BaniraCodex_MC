@@ -147,6 +147,23 @@ public class AuiCapabilityContractTest {
         }
     }
 
+    @Test public void changedMouseButtonFieldFallsBackBeforeInputBinding() throws Exception {
+        try (URLClassLoader jar = official()) {
+            assertFalse(compatible(new ClassLoader(null) {
+                @Override public InputStream getResourceAsStream(String name) {
+                    InputStream stream = jar.getResourceAsStream(name);
+                    if (!name.equals("com/sighs/apricityui/event/MouseEvent.class")) return stream;
+                    try (InputStream input = stream) {
+                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                        node.fields.removeIf(field -> field.name.equals("button"));
+                        ClassWriter writer = new ClassWriter(0); node.accept(writer);
+                        return new ByteArrayInputStream(writer.toByteArray());
+                    } catch (Exception failure) { throw new AssertionError(failure); }
+                }
+            }));
+        }
+    }
+
     private ClassLoader resourcesOnly(URLClassLoader jar, boolean remove) {
         return new ClassLoader(null) {
             @Override

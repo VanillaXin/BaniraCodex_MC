@@ -12,6 +12,7 @@ public final class CommonUiPages {
         Object current = BaniraClientRuntime.currentScreen();
         UiSessionHost sessions = BaniraCodexClientBootstrap.uiSessions();
         sessions.observeScreen(current);
+        if (sessions.isReturning(current)) return;
         if (!(current instanceof UiNativePage) || sessions.ownsScreen(current)) return;
         UiNativePage nativePage = (UiNativePage) current;
         if (!BaniraCodexClientBootstrap.uiBackend().wantsAui(nativePage.uiSurfaceId())) return;

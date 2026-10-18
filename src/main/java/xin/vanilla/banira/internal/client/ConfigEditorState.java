@@ -15,6 +15,9 @@ public final class ConfigEditorState {
     private final Map<String, ConfigEditorEntryWidget> entryWidgets = new LinkedHashMap<>();
     private final Set<String> syncTouchedPaths = new LinkedHashSet<>();
     private final Map<String, Object> baselineValues = new LinkedHashMap<>();
+    private final Map<String, String> baselineDrafts = new LinkedHashMap<>();
+    private final Map<String, Object> retainedValues = new LinkedHashMap<>();
+    private final Map<String, String> retainedDrafts = new LinkedHashMap<>();
     private Map<String, Object> remoteValues;
 
     public ConfigEditorState(ConfigHolder holder) {
@@ -22,9 +25,12 @@ public final class ConfigEditorState {
     }
 
     public void clearEntries() {
+        entryWidgets.forEach((path, widget) -> {
+            retainedValues.put(path, snapshot(widget.getValue()));
+            if (widget.getDraft() != null) retainedDrafts.put(path, widget.getDraft());
+            else retainedDrafts.remove(path);
+        });
         entryWidgets.clear();
-        baselineValues.clear();
-        syncTouchedPaths.clear();
     }
 
     public void clearPendingChanges() {
@@ -34,17 +40,22 @@ public final class ConfigEditorState {
 
     public void registerEntry(String path, ConfigEditorEntryWidget widget) {
         if (path != null && widget != null) {
-            if (remoteValues != null && remoteValues.containsKey(path)) {
+            if (retainedValues.containsKey(path)) {
+                widget.setValue(snapshot(retainedValues.get(path)));
+            } else if (remoteValues != null && remoteValues.containsKey(path)) {
                 widget.setValue(snapshot(remoteValues.get(path)));
             }
             entryWidgets.put(path, widget);
-            baselineValues.put(path, snapshot(widget.getValue()));
+            baselineValues.putIfAbsent(path, snapshot(widget.getValue()));
+            if (!baselineDrafts.containsKey(path)) baselineDrafts.put(path, widget.getDraft());
+            if (retainedDrafts.containsKey(path)) widget.setDraft(retainedDrafts.get(path));
         }
     }
 
     public void markModified(String path, Object value) {
         if (path != null) {
-            if (Objects.deepEquals(baselineValues.get(path), value)) {
+            ConfigEditorEntryWidget widget = entryWidgets.get(path);
+            if ((widget == null || widget.isValid()) && Objects.deepEquals(baselineValues.get(path), value)) {
                 modifiedValues.remove(path);
                 syncTouchedPaths.remove(path);
             } else {
@@ -75,6 +86,7 @@ public final class ConfigEditorState {
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
             Object value = entry.getValue().getValue();
             if (!entry.getValue().isValid()) {
+                if (!Objects.equals(entry.getValue().getDraft(), baselineDrafts.get(entry.getKey()))) paths.add(entry.getKey());
                 continue;
             }
             if (value != null && !Objects.deepEquals(value, baselineValues.get(entry.getKey()))) {
@@ -88,8 +100,11 @@ public final class ConfigEditorState {
 
     public void markClean() {
         clearPendingChanges();
+        retainedValues.clear();
+        retainedDrafts.clear();
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
             baselineValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
+            baselineDrafts.put(entry.getKey(), entry.getValue().getDraft());
             if (remoteValues != null) remoteValues.put(entry.getKey(), snapshot(entry.getValue().getValue()));
         }
     }
@@ -105,12 +120,18 @@ public final class ConfigEditorState {
 
     public void acceptRemoteSnapshot(String configName, Map<String, Object> values) {
         if (!holder.getConfigName().equals(configName)) return;
+        Set<String> dirty = dirtyPaths();
         remoteValues = new LinkedHashMap<>();
         values.forEach((path, value) -> remoteValues.put(path, snapshot(value)));
         entryWidgets.forEach((path, widget) -> {
-            if (remoteValues.containsKey(path)) widget.setValue(snapshot(remoteValues.get(path)));
+            if (remoteValues.containsKey(path)) {
+                if (!dirty.contains(path)) widget.setValue(snapshot(remoteValues.get(path)));
+                baselineValues.put(path, snapshot(remoteValues.get(path)));
+                if (!dirty.contains(path)) baselineDrafts.put(path, widget.getDraft());
+            }
         });
-        markClean();
+        retainedValues.clear();
+        collectModifiedFromWidgets();
     }
 
     public boolean hasInvalidEntryWidgets() {
@@ -119,13 +140,13 @@ public final class ConfigEditorState {
 
     public Map<String, Object> collectTouchedPathsForSync() {
         Map<String, Object> map = new LinkedHashMap<>();
-        for (String path : syncTouchedPaths) {
+        for (String path : dirtyPaths()) {
             ConfigEditorEntryWidget w = entryWidgets.get(path);
             if (w == null || !w.isValid()) {
                 continue;
             }
             Object v = w.getValue();
-            if (v != null) {
+            if (v != null && !Objects.deepEquals(v, baselineValues.get(path))) {
                 map.put(path, v);
             }
         }
@@ -159,6 +180,7 @@ public final class ConfigEditorState {
         if (isRemoteSnapshot() || !holder.getConfigName().equals(configName)) {
             return;
         }
+        Set<String> dirty = dirtyPaths();
         for (Map.Entry<String, ConfigEditorEntryWidget> e : entryWidgets.entrySet()) {
             Object v = holder.get(e.getKey());
             if (v == null) {
@@ -168,10 +190,22 @@ public final class ConfigEditorState {
                 }
             }
             if (v != null) {
-                e.getValue().setValue(v);
+                if (!dirty.contains(e.getKey())) e.getValue().setValue(snapshot(v));
+                baselineValues.put(e.getKey(), snapshot(v));
+                if (!dirty.contains(e.getKey())) baselineDrafts.put(e.getKey(), e.getValue().getDraft());
             }
         }
-        markClean();
+        retainedValues.clear();
+        collectModifiedFromWidgets();
+    }
+
+    private Set<String> dirtyPaths() {
+        Set<String> paths = new LinkedHashSet<>(syncTouchedPaths);
+        entryWidgets.forEach((path, widget) -> {
+            if (!Objects.deepEquals(widget.getValue(), baselineValues.get(path))) paths.add(path);
+            if (!widget.isValid() && !Objects.equals(widget.getDraft(), baselineDrafts.get(path))) paths.add(path);
+        });
+        return paths;
     }
 
     private static Object snapshot(Object value) {

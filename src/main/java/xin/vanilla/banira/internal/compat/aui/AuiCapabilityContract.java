@@ -55,7 +55,8 @@ public final class AuiCapabilityContract {
             for (String[] field : new String[][]{
                     {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
                     {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
-                    {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"}}) {
+                    {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
+                    {"event/MouseEvent", "button", "I"}}) {
                 String name = ROOT + field[0];
                 ClassNode owner = classes.get(name);
                 if (owner == null) {

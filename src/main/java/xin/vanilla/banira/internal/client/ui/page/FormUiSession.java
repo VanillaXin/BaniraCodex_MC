@@ -28,6 +28,7 @@ import java.util.Objects;
 public final class FormUiSession implements UiPageSession {
     private final InputFormScreen.Args args;
     private final List<String> drafts = new ArrayList<>();
+    private final List<Integer> visibleIndices = new ArrayList<>();
     private final Map<Integer, List<String>> selections = new LinkedHashMap<>();
     private UiView view;
     private String error = "";
@@ -48,6 +49,7 @@ public final class FormUiSession implements UiPageSession {
         for (int index = 0; index < args.getWidgets().size(); index++) {
             InputFormScreen.Widget widget = args.getWidgets().get(index);
             drafts.add(Objects.requireNonNull(widget.defaultValue(), "defaultValue"));
+            visibleIndices.add(index);
             if (widget.type() == InputFormScreen.WidgetType.DROPDOWN && widget.dropdownMultiSelect()) {
                 List<String> defaults = widget.dropdownDefaultValues();
                 selections.put(index, new ArrayList<>(defaults != null ? defaults : widget.defaultValue().isBlank()
@@ -57,6 +59,14 @@ public final class FormUiSession implements UiPageSession {
     }
 
     public InputFormScreen.Args args() { return args; }
+
+    public void filter(java.util.function.Predicate<InputFormScreen.Widget> predicate) {
+        visibleIndices.clear();
+        for (int index = 0; index < args.getWidgets().size(); index++) if (predicate.test(args.getWidgets().get(index))) visibleIndices.add(index);
+        for (UiOwnedResources owned : rowBindings.values()) owned.close();
+        rowBindings.clear(); boundIndices.clear();
+        if (view != null) bindRows(view);
+    }
     public String error() { return error; }
     public Map<Integer, String> errors() { return java.util.Collections.unmodifiableMap(errors); }
     public long version() { return version; }
@@ -243,11 +253,13 @@ public final class FormUiSession implements UiPageSession {
     }
 
     private void bindRows(UiView view) {
+        List<Integer> indices = new ArrayList<>(visibleIndices);
         view.rows("fields", new UiRowProvider() {
-            @Override public int size() { return args.getWidgets().size(); }
-            @Override public String key(int index) { return "field:" + index; }
-            @Override public void bind(UiView row, int index) {
+            @Override public int size() { return indices.size(); }
+            @Override public String key(int index) { return "field:" + indices.get(index); }
+            @Override public void bind(UiView row, int position) {
                 if (FormUiSession.this.view != view) return;
+                int index = indices.get(position);
                 UiOwnedResources old = rowBindings.remove(row);
                 if (old != null) old.close();
                 if (rowBindings.size() >= 120) {

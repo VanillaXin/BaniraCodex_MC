@@ -13,6 +13,11 @@ import javax.annotation.Nullable;
  */
 public final class BaniraClientScreenService {
     public static void applyRemoteConfigSnapshot(String configName, java.util.Map<String, Object> snapshot) {
+        xin.vanilla.banira.api.client.ui.UiPageSpec page = BaniraCodexClientBootstrap.uiSessions().page();
+        if (page != null && page.session() instanceof xin.vanilla.banira.internal.client.ui.page.ConfigUiSession) {
+            ((xin.vanilla.banira.internal.client.ui.page.ConfigUiSession) page.session()).acceptRemoteSnapshot(configName, snapshot);
+            return;
+        }
         Screen open = Minecraft.getInstance().screen;
         if (open instanceof ConfigEditorScreen) {
             ((ConfigEditorScreen) open).applyRemoteSnapshot(configName, snapshot);
@@ -27,7 +32,12 @@ public final class BaniraClientScreenService {
      */
     public static void openConfigEditor(ConfigHolder holder, @Nullable Screen parent) {
         if (holder != null && BaniraPlatforms.isInstalled() && BaniraPlatforms.get().isClient()) {
-            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, new ConfigEditorScreen.Args().parentScreen(parent)));
+            ConfigEditorScreen.Args args = new ConfigEditorScreen.Args().parentScreen(parent);
+            xin.vanilla.banira.internal.client.ui.page.ConfigUiSession session =
+                    new xin.vanilla.banira.internal.client.ui.page.ConfigUiSession(holder, args);
+            if (BaniraCodexClientBootstrap.uiBackend().wantsAui("banira_codex:config")
+                    && BaniraCodexClientBootstrap.uiSessions().open(session.spec(), parent)) return;
+            Minecraft.getInstance().setScreen(new ConfigEditorScreen(holder, args, session));
         }
     }
 
@@ -35,6 +45,11 @@ public final class BaniraClientScreenService {
      * Refreshes the active config editor if it is editing the received config snapshot.
      */
     public static void refreshOpenConfigEditor(String configName) {
+        xin.vanilla.banira.api.client.ui.UiPageSpec page = BaniraCodexClientBootstrap.uiSessions().page();
+        if (page != null && page.session() instanceof xin.vanilla.banira.internal.client.ui.page.ConfigUiSession) {
+            ((xin.vanilla.banira.internal.client.ui.page.ConfigUiSession) page.session()).refresh(configName);
+            return;
+        }
         Screen open = Minecraft.getInstance().screen;
         if (open instanceof ConfigEditorScreen) {
             ((ConfigEditorScreen) open).refreshUIFromHolderAfterRemoteFetch(configName);

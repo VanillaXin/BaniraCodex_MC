@@ -15,8 +15,18 @@ public final class UiOwnedResources implements AutoCloseable {
             catch (Exception failure) { throw new IllegalStateException(failure); }
             throw new IllegalStateException("UI resources already closed");
         }
-        resources.push(resource);
-        return resource;
+        AutoCloseable lease = new AutoCloseable() {
+            private AutoCloseable current = resource;
+            @Override public void close() throws Exception {
+                AutoCloseable closing = current;
+                if (closing == null) return;
+                current = null;
+                resources.remove(this);
+                closing.close();
+            }
+        };
+        resources.push(lease);
+        return lease;
     }
 
     public boolean closed() { return closed; }

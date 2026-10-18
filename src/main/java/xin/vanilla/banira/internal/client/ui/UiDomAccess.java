@@ -18,6 +18,7 @@ public interface UiDomAccess {
 
     interface Event {
         int keyCode();
+        default int button() { return -1; }
         void consume();
     }
 

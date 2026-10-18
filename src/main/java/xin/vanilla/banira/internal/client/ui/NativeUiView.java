@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 
 public class NativeUiView implements UiView, AutoCloseable {
     protected final Map<String, Component> texts = new LinkedHashMap<>();
+    protected final Map<String, Component> tooltips = new LinkedHashMap<>();
     protected final Map<String, UiValue> values = new LinkedHashMap<>();
     protected final Map<String, UiControlSpec> controls = new LinkedHashMap<>();
     protected final Map<String, String> drafts = new LinkedHashMap<>();
@@ -27,6 +28,7 @@ public class NativeUiView implements UiView, AutoCloseable {
     protected final Map<String, Integer> rowLimits = new LinkedHashMap<>();
     protected UiOwnedResources resources = new UiOwnedResources();
     private final Map<String, List<Runnable>> actions = new LinkedHashMap<>();
+    private final Map<String, List<Runnable>> longActions = new LinkedHashMap<>();
     private final Map<String, List<Consumer<UiValue>>> changes = new LinkedHashMap<>();
     private final Map<String, List<Consumer<String>>> draftChanges = new LinkedHashMap<>();
     private Object screen;
@@ -58,6 +60,13 @@ public class NativeUiView implements UiView, AutoCloseable {
         texts.put(id, Objects.requireNonNull(text, "text"));
         changed(id);
     }
+    @Override
+    public void tooltip(String id, Component text) {
+        if (!live()) return;
+        tooltips.put(id, Objects.requireNonNull(text, "text"));
+        changed(id);
+    }
+
     @Override
     public void value(String id, UiValue value) {
         if (!live()) return;
@@ -105,6 +114,26 @@ public class NativeUiView implements UiView, AutoCloseable {
         subscribed(id);
         return owned;
     }
+
+    @Override
+    public AutoCloseable onLongAction(String id, Runnable action) {
+        requireOpen();
+        Objects.requireNonNull(action, "action");
+        List<Runnable> listeners = longActions.computeIfAbsent(id, key -> new ArrayList<>());
+        listeners.add(action);
+        AutoCloseable owned = resources.own(() -> listeners.remove(action));
+        subscribed(id);
+        return owned;
+    }
+
+    public void activateLong(String id) {
+        if (!live() || !enabled.getOrDefault(id, true)) return;
+        for (Runnable action : new ArrayList<>(longActions.getOrDefault(id, java.util.Collections.emptyList()))) {
+            if (live()) action.run();
+        }
+    }
+
+    protected java.util.Set<String> longActionIds() { return new java.util.LinkedHashSet<>(longActions.keySet()); }
 
     @Override
     public AutoCloseable onValue(String id, Consumer<UiValue> action) {
@@ -190,14 +219,14 @@ public class NativeUiView implements UiView, AutoCloseable {
     protected java.util.Set<String> actionIds() { return new java.util.LinkedHashSet<>(actions.keySet()); }
     public int subscriptionCount() {
         return actions.values().stream().mapToInt(List::size).sum() + changes.values().stream().mapToInt(List::size).sum()
-                + draftChanges.values().stream().mapToInt(List::size).sum();
+                + draftChanges.values().stream().mapToInt(List::size).sum() + longActions.values().stream().mapToInt(List::size).sum();
     }
 
     @Override
     public void close() {
         try { resources.close(); }
         finally {
-            actions.clear(); changes.clear(); draftChanges.clear(); texts.clear(); values.clear();
+            actions.clear(); longActions.clear(); changes.clear(); draftChanges.clear(); texts.clear(); tooltips.clear(); values.clear();
             controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear();
         }
     }

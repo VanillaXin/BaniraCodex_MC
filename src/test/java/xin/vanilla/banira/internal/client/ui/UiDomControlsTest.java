@@ -20,7 +20,7 @@ public class UiDomControlsTest {
         xin.vanilla.banira.platform.BaniraPlatforms.install(new xin.vanilla.banira.platform.TestBaniraPlatform());
     }
 
-    private static final class Dom {
+    static final class Dom {
         final Map<String, Node> ids = new LinkedHashMap<>();
         final List<Node> created = new ArrayList<>();
         boolean current = true;
@@ -55,7 +55,7 @@ public class UiDomControlsTest {
             final Map<String, String> attributes = new HashMap<>();
             final Map<String, List<Consumer<Object>>> events = new HashMap<>();
             final List<Object> children = new ArrayList<>();
-            String text = "", value = "";
+            String text = "", value = "", tooltip = "";
             xin.vanilla.banira.common.data.Component component;
             int writes, start, end;
             boolean removed, focused;
@@ -70,7 +70,7 @@ public class UiDomControlsTest {
                         case "equals": return self == args[0];
                         case "text": if (args == null || args.length == 0) return text; text = (String) args[0]; writes++; return null;
                         case "component": component = (xin.vanilla.banira.common.data.Component) args[0]; return null;
-                        case "tooltip": if (failingTooltips) throw new IllegalStateException("Tooltip adapter failure"); return null;
+                        case "tooltip": if (failingTooltips) throw new IllegalStateException("Tooltip adapter failure"); tooltip = (String) args[0]; return null;
                         case "value": if (args == null || args.length == 0) return value; value = (String) args[0]; writes++; return null;
                         case "attribute": attributes.put((String) args[0], (String) args[1]); writes++; return null;
                         case "removeAttribute": attributes.remove(args[0]); writes++; return null;
@@ -95,8 +95,12 @@ public class UiDomControlsTest {
             }
 
             void emit(String event) {
+                emit(event, 0);
+            }
+            void emit(String event, int button) {
                 Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType},
-                        (p, m, a) -> m.getReturnType() == int.class ? 0 : m.getReturnType() == boolean.class ? false : null);
+                        (p, m, a) -> m.getReturnType() == int.class ? (m.getName().equals("button") ? button : 0)
+                                : m.getReturnType() == boolean.class ? false : null);
                 for (Consumer<Object> listener : new ArrayList<>(events.getOrDefault(event, Collections.emptyList()))) listener.accept(input);
             }
         }

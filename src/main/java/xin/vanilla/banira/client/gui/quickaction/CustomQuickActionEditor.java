@@ -23,6 +23,11 @@ final class CustomQuickActionEditor {
 
     static void openDefinition(Screen parent, CustomQuickActionDefinition source,
                                Consumer<CustomQuickActionDefinition> accepted) {
+        Minecraft.getInstance().setScreen(new InputFormScreen(definitionArgs(parent, source, accepted)));
+    }
+
+    static InputFormScreen.Args definitionArgs(Screen parent, CustomQuickActionDefinition source,
+                                               Consumer<CustomQuickActionDefinition> accepted) {
         CustomQuickActionDefinition draft = copy(source);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
@@ -52,14 +57,19 @@ final class CustomQuickActionEditor {
                     accepted.accept(draft);
                     result.runningResult("");
                 });
-        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+        return args;
     }
 
     static void openStep(Screen parent, CustomQuickActionStep source, QuickActionExecutionMode mode,
                          Consumer<CustomQuickActionStep> accepted) {
+        Minecraft.getInstance().setScreen(new InputFormScreen(stepArgs(parent, source, mode, accepted, CustomQuickActionManager.get().screenIds())));
+    }
+
+    static InputFormScreen.Args stepArgs(Screen parent, CustomQuickActionStep source, QuickActionExecutionMode mode,
+                                        Consumer<CustomQuickActionStep> accepted, java.util.Collection<String> screenIds) {
         CustomQuickActionStep draft = copy(source);
         List<DropdownOption> targets = new ArrayList<>();
-        for (String id : CustomQuickActionManager.get().screenIds()) targets.add(new DropdownOption(id));
+        for (String id : screenIds) targets.add(new DropdownOption(id));
         if (targets.isEmpty()) targets.add(new DropdownOption(""));
 
         InputFormScreen.Widget value = new InputFormScreen.Widget().name("value")
@@ -90,11 +100,16 @@ final class CustomQuickActionEditor {
                     accepted.accept(draft);
                     result.runningResult("");
                 });
-        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+        return args;
     }
 
     static void openMenuItem(Screen parent, CustomQuickActionMenuItem source,
                              Consumer<CustomQuickActionMenuItem> accepted) {
+        Minecraft.getInstance().setScreen(new InputFormScreen(menuItemArgs(parent, source, accepted)));
+    }
+
+    static InputFormScreen.Args menuItemArgs(Screen parent, CustomQuickActionMenuItem source,
+                                            Consumer<CustomQuickActionMenuItem> accepted) {
         CustomQuickActionMenuItem draft = copy(source);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
@@ -112,7 +127,7 @@ final class CustomQuickActionEditor {
                     accepted.accept(draft);
                     result.runningResult("");
                 });
-        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+        return args;
     }
 
     static CustomQuickActionDefinition copy(CustomQuickActionDefinition source) {

@@ -13,6 +13,11 @@ public interface ConfigEditorEntryWidget {
     void setValue(Object value);
 
     @Nullable
+    default String getDraft() { return null; }
+
+    default void setDraft(String draft) { }
+
+    @Nullable
     default TooltipWidget tooltipWidget() {
         return null;
     }

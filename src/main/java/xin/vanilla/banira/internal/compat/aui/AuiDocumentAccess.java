@@ -207,6 +207,8 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                 if (!current()) return;
                 action.accept(new Event() {
                     @Override public int keyCode() { return event instanceof KeyEvent ? ((KeyEvent) event).keyCode : -1; }
+                    @Override public int button() { return event instanceof com.sighs.apricityui.event.MouseEvent
+                            ? ((com.sighs.apricityui.event.MouseEvent) event).button : -1; }
                     @Override public void consume() { event.preventDefault(); event.stopPropagation(); }
                 });
             };

@@ -18,13 +18,17 @@ import xin.vanilla.banira.internal.DebugScreen;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
+import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
 /**
  * 香草志功能导航
  */
-public class CodexNavigationScreen extends BaniraScreen {
+public class CodexNavigationScreen extends BaniraScreen implements UiNativePage {
 
     private static final int CARD_MARGIN = 16;
     private static final int BTN_H = 22;
@@ -34,6 +38,32 @@ public class CodexNavigationScreen extends BaniraScreen {
     private static final float CLOSE_BTN_PAD = 6f;
 
     private final Args args;
+    private NavigationUiSession uiSession;
+
+    public NavigationUiSession uiSession() {
+        if (uiSession == null) {
+            uiSession = new NavigationUiSession(BaniraComponent.get().transClientAuto("codex_navigation_title"), Arrays.asList(
+                    action("codex_navigation_notification_log", () -> Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)))),
+                    action("codex_navigation_client_config", () -> ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this)),
+                    action("codex_navigation_common_config", () -> ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this)),
+                    action("custom_player_config_title", () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this)))),
+                    action("custom_quick_action_title", () -> BaniraClientRuntime.setScreen(new CustomQuickActionConfigScreen(this)))));
+            uiSession.longClose(() -> Minecraft.getInstance().setScreen(new DebugScreen().previousScreen(this)));
+        }
+        return uiSession;
+    }
+
+    private NavigationUiSession.Action action(String id, Runnable action) {
+        return new NavigationUiSession.Action(id, BaniraComponent.get().transClientAuto(id), action, null);
+    }
+    @Override public String uiSurfaceId() { return "banira_codex:navigation"; }
+    @Override public UiPageSpec uiPage() { return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/navigation.html"); }
+    @Override public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.USER_CLOSE)) return;
+        if (uiSession != null) uiSession.close(UiCloseReason.USER_CLOSE);
+        super.onClose();
+    }
+    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
 
     public CodexNavigationScreen(@Nullable Args args) {
         super(BaniraComponent.get().transClientAuto("codex_navigation_title").toVanilla());
@@ -62,24 +92,10 @@ public class CodexNavigationScreen extends BaniraScreen {
         int contentH = 5 * BTN_H + 4 * gap;
         int y = CARD_MARGIN + Math.max(0, (innerH - contentH) / 2);
 
-        addNavButton(cx, y, btnW, "codex_navigation_notification_log",
-                () -> Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this))));
-        y += BTN_H + gap;
-
-        addNavButton(cx, y, btnW, "codex_navigation_client_config",
-                () -> ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this));
-        y += BTN_H + gap;
-
-        addNavButton(cx, y, btnW, "codex_navigation_common_config",
-                () -> ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this));
-        y += BTN_H + gap;
-
-        addNavButton(cx, y, btnW, "custom_player_config_title",
-                () -> BaniraClientRuntime.setScreen(new CustomPlayerConfigEditScreen(new CustomPlayerConfigEditScreen.Args().parentScreen(this))));
-        y += BTN_H + gap;
-
-        addNavButton(cx, y, btnW, "custom_quick_action_title",
-                () -> BaniraClientRuntime.setScreen(new CustomQuickActionConfigScreen(this)));
+        for (NavigationUiSession.Action action : uiSession().actions()) {
+            addNavButton(cx, y, btnW, action.id(), action::open);
+            y += BTN_H + gap;
+        }
 
         ButtonWidget closeBtn = new ButtonWidget(this);
         closeBtn.id("close");

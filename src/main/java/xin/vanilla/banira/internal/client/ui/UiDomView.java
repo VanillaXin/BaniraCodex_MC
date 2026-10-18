@@ -8,6 +8,8 @@ import xin.vanilla.banira.client.gui.widget.DropdownOption;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
 
 public class UiDomView extends NativeUiView {
     private UiDomAccess dom;
@@ -27,9 +29,18 @@ public class UiDomView extends NativeUiView {
     private boolean failed;
     private UiDomAccess.Node scrollContent;
     private boolean layoutRestored;
+    private final LongSupplier clock;
+    private final Map<String, BaniraPressGestureState> presses = new LinkedHashMap<>();
+    private final Set<String> suppressClicks = new HashSet<>();
+    private final Set<UiDomView> pressedViews = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public UiDomView(Object screen, UiDomAccess dom) {
+        this(screen, dom, System::currentTimeMillis);
+    }
+
+    public UiDomView(Object screen, UiDomAccess dom, LongSupplier clock) {
         super(screen);
+        this.clock = Objects.requireNonNull(clock, "clock");
         root = this; scope = null; prefix = "";
         if (dom != null) attach(dom);
     }
@@ -37,6 +48,7 @@ public class UiDomView extends NativeUiView {
     private UiDomView(UiDomView parent, UiDomAccess.Node scope, String prefix) {
         super(parent.screen());
         root = parent.root; dom = parent.dom; this.scope = scope; this.prefix = prefix;
+        clock = parent.clock;
         restoreState(parent.state());
         gate(parent::live);
     }
@@ -53,11 +65,13 @@ public class UiDomView extends NativeUiView {
         if (theme != null) changed("theme");
         for (String id : controls.keySet()) changed(id);
         for (String id : texts.keySet()) changed(id);
+        for (String id : tooltips.keySet()) changed(id);
         for (String id : values.keySet()) changed(id);
         for (String id : drafts.keySet()) changed(id);
         for (String id : enabled.keySet()) changed(id);
         for (String id : rowProviders.keySet()) changed(id);
         for (String id : actionIds()) subscribed(id);
+        for (String id : longActionIds()) subscribed(id);
     }
 
     @Override protected boolean live() { return super.live() && !root.failed && (dom == null || dom.current()); }
@@ -71,14 +85,22 @@ public class UiDomView extends NativeUiView {
     }
 
     private UiDomAccess.Node node(String id) {
-        if (nodes.containsKey(id)) return nodes.get(id);
+        if (nodes.containsKey(id)) {
+            UiDomAccess.Node existing = nodes.get(id);
+            existing.removeAttribute("style");
+            if ((id.equals("input") || id.equals("pick") || id.equals("reset") || id.equals("delete") || id.equals("apply")) && nodes.containsKey("editor")) {
+                nodes.get("editor").removeAttribute("style");
+            }
+            return existing;
+        }
         UiDomAccess.Node node;
         if (scope == null) node = dom.find(id);
-        else if (id.equals("input") || id.equals("pick")) {
+        else if (id.equals("input") || id.equals("pick") || id.equals("reset") || id.equals("delete") || id.equals("apply")) {
             UiDomAccess.Node editor = nodes.get("editor");
             if (editor == null) { editor = make("div", scope, "editor"); nodes.put("editor", editor); }
+            else editor.removeAttribute("style");
             node = make(id.equals("input") ? "input" : "button", editor, id.equals("input") ? "input" : "tool");
-        } else node = make("div", scope, id.equals("label") ? "label" : "paragraph");
+        } else node = make(id.equals("open") ? "button" : "div", scope, id.equals("label") ? "label" : "paragraph");
         if (node != null) nodes.put(id, node);
         return node;
     }
@@ -120,10 +142,14 @@ public class UiDomView extends NativeUiView {
             node.component(texts.get(id));
             if (id.equals("label")) node.tooltip(text);
         }
+        if (tooltips.containsKey(id)) node.tooltip(tooltips.get(id).toVanilla().getString());
         if (enabled.containsKey(id)) {
             if (enabled.get(id)) node.removeAttribute("disabled");
             else {
                 node.attribute("disabled", "");
+                BaniraPressGestureState press = presses.get(id);
+                if (press != null) press.release();
+                suppressClicks.remove(id);
                 UiKeyCapture capture = keys.get(id);
                 if (capture != null) capture.clear();
                 if (controls.containsKey(id)) dismissOverlay();
@@ -190,6 +216,7 @@ public class UiDomView extends NativeUiView {
         for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
         super.close();
         resources = new UiOwnedResources();
+        presses.clear(); suppressClicks.clear(); root.pressedViews.remove(this);
         listeners.clear(); keys.clear(); prefix = nextPrefix;
         for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) {
             UiDomAccess.Node node = entry.getValue();
@@ -197,14 +224,16 @@ public class UiDomView extends NativeUiView {
             node.tooltip("");
             node.removeAttribute("disabled"); node.removeAttribute("aria-invalid"); node.removeAttribute("placeholder");
             node.removeAttribute("readonly"); node.removeAttribute("type"); node.removeAttribute("maxlength");
-            if (entry.getKey().equals("pick")) node.attribute("style", "display:none");
-            else if (entry.getKey().equals("input")) node.value("");
+            node.attribute("style", "display:none");
+            if (entry.getKey().equals("input")) node.value("");
             else if (!entry.getKey().equals("editor")) node.text("");
         }
     }
 
     public void afterLayout() {
         if (!live() || dom == null || scope != null) return;
+        for (UiDomView pressed : new ArrayList<>(pressedViews)) pressed.updatePresses();
+        if (!live()) return;
         for (VirtualRows list : lists.values()) list.afterLayout();
         if (!layoutRestored && lists.isEmpty() && scrollContent != null && scrollContent.clientHeight() > 0) {
             layoutRestored = true;
@@ -302,12 +331,33 @@ public class UiDomView extends NativeUiView {
     }
 
     @Override protected void subscribed(String id) {
-        if (dom == null || !live() || !actionIds().contains(id) || (id.equals("pick") && scope != null)) return;
+        if (dom == null || !live() || (!actionIds().contains(id) && !longActionIds().contains(id)) || (id.equals("pick") && scope != null)) return;
         UiDomAccess.Node node = node(id);
         if (node != null) listen(id + ":action", node, "click", event -> {
             event.consume();
-            if (!modal()) activate(id);
+            if (!suppressClicks.remove(id) && !modal()) activate(id);
         });
+        if (node != null && longActionIds().contains(id)) {
+            BaniraPressGestureState press = presses.computeIfAbsent(id, ignored -> new BaniraPressGestureState(clock));
+            listen(id + ":press", node, "mousedown", event -> {
+                if (event.button() == 0 && enabled.getOrDefault(id, true)) {
+                    suppressClicks.remove(id); press.press(0); root.pressedViews.add(this);
+                }
+            });
+            listen(id + ":release", node, "mouseup", event -> { if (event.button() == 0) press.release(); });
+            listen(id + ":leave", node, "mouseleave", event -> { press.release(); suppressClicks.remove(id); });
+        }
+    }
+
+    private void updatePresses() {
+        if (!live() || modal()) { for (BaniraPressGestureState press : presses.values()) press.release(); }
+        for (Map.Entry<String, BaniraPressGestureState> entry : new ArrayList<>(presses.entrySet())) {
+            if (!enabled.getOrDefault(entry.getKey(), true)) entry.getValue().release();
+            if (entry.getValue().ready(2000)) {
+                entry.getValue().fire(); suppressClicks.add(entry.getKey()); activateLong(entry.getKey());
+            }
+        }
+        if (presses.values().stream().noneMatch(press -> press.pressing(0))) root.pressedViews.remove(this);
     }
 
     private void listen(String key, UiDomAccess.Node node, String event, Consumer<UiDomAccess.Event> action) {
@@ -339,6 +389,8 @@ public class UiDomView extends NativeUiView {
     }
 
     @Override public void close() {
+        for (BaniraPressGestureState press : presses.values()) press.release();
+        presses.clear(); suppressClicks.clear(); root.pressedViews.remove(this);
         if (scrollContent != null && lists.isEmpty() && layoutRestored) state().scrollOffset(scrollContent.scrollTop());
         for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
         if (root == this) dismissOverlay();

@@ -22,6 +22,7 @@ public interface UiView {
     AutoCloseable onPointer(String id, Consumer<UiPointer> action);
     void hudPosition(double x, double y);
     default void gameElement(String id, UiGameElement element) { }
+    default void hudFrame(UiHudFrame frame) { throw new UnsupportedOperationException("HUD frames unavailable"); }
     void rows(String id, UiRowProvider rows, int maxRealizedRows);
     ScreenCoordinate bounds(String id);
     void requestClose();

@@ -131,6 +131,7 @@ public final class AuiCapabilityContract {
         add(result, "event/Event", "preventDefault", "()V");
         add(result, "event/Event", "stopPropagation", "()V");
         add(result, "element/Input", "<init>", "(" + DOCUMENT + ")V");
+        add(result, "element/Texture", "<init>", "(" + DOCUMENT + ")V");
         add(result, "element/Input", "getValue", "()Ljava/lang/String;");
         add(result, "element/AbstractText", "getCursor", "()I");
         add(result, "element/AbstractText", "getSelectionStart", "()I");

@@ -8,6 +8,7 @@ public final class BaniraUi {
         boolean usesAui(String surfaceId);
         AutoCloseable registerHud(UiHudSpec hud);
         default UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) { return null; }
+        default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) { return false; }
     }
     private static volatile Driver driver;
 
@@ -37,5 +38,10 @@ public final class BaniraUi {
     public static UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {
         Driver installed = driver;
         return installed == null ? null : installed.container(Objects.requireNonNull(page), Objects.requireNonNull(current));
+    }
+
+    public static boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+        Driver installed = driver;
+        return installed != null && installed.renderHud(Objects.requireNonNull(id), Objects.requireNonNull(graphics));
     }
 }

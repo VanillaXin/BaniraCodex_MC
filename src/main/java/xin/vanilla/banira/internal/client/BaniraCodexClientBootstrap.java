@@ -79,6 +79,9 @@ public final class BaniraCodexClientBootstrap {
             @Override public void open(UiPageSpec page, Object previousScreen) { UI_SESSIONS.open(page, previousScreen); }
             @Override public boolean usesAui(String surfaceId) { return UI_BACKEND.usesAui(surfaceId); }
             @Override public AutoCloseable registerHud(UiHudSpec hud) { return UI_SESSIONS.registerHud(hud); }
+            @Override public boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+                return UI_HUDS.renderManual(id, graphics);
+            }
             @Override public xin.vanilla.banira.api.client.ui.UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {
                 return xin.vanilla.banira.internal.client.ui.UiContainerLayerHost.create(UI_BACKEND, page, current,
                         () -> AUI.createContainer(page));

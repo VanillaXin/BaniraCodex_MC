@@ -88,10 +88,11 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     @Override public void theme(BaniraColorConfig theme) { this.theme = theme; background = theme.bgSurface(); }
     @Override public void hudPosition(double x, double y) { preview = true; hudX = x; hudY = y; }
     @Override public Node create(String tag) {
-        if (!Arrays.asList("div", "button", "input", "span").contains(tag)) throw new IllegalArgumentException("Unsupported UI element");
+        if (!Arrays.asList("div", "button", "input", "span", "texture").contains(tag)) throw new IllegalArgumentException("Unsupported UI element");
         if (count >= 1700) throw new IllegalStateException("UI document node budget");
         count++;
-        AuiNode node = wrap(document.createElement(tag)); node.created = true; return node;
+        Element element = tag.equals("texture") ? new com.sighs.apricityui.element.Texture(document) : document.createElement(tag);
+        AuiNode node = wrap(element); node.created = true; return node;
     }
     @Override public Node overlayRoot() { return body; }
     @Override public boolean current() {
@@ -198,6 +199,11 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         @Override public boolean checked() { return element.isChecked(); }
         @Override public void checked(boolean checked) { if (element.isChecked() != checked) element.setChecked(checked); }
         @Override public void attribute(String name, String value) {
+            if (name.equals("src") && element instanceof com.sighs.apricityui.element.Texture) {
+                if (net.minecraft.resources.ResourceLocation.tryParse(value) == null) throw new IllegalArgumentException("HUD texture identity");
+                if (!Objects.equals(attributes.put(name, value), value)) element.setAttribute(name, value);
+                return;
+            }
             if (!Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder", "aria-invalid").contains(name)) {
                 throw new IllegalArgumentException("Unsupported UI attribute");
             }

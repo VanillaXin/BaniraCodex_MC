@@ -6,12 +6,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
 
-public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Renderer, MinimapUiRows.Renderer {
+public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Renderer, MinimapUiRows.Renderer, AuiHudHost.ManualRenderer {
     private final Document document;
     private final AuiDocumentAccess access;
     private final HudDomPresentation presentation;
     private final long generation;
     private final MinimapDomPresentation mapRows;
+    private final ProgressDomPresentation progress;
+    private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
     private AuiHudDocument(UiHudSpec spec) {
         super(null, null);
         document = Document.create(spec.template());
@@ -28,10 +30,34 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             resources.own(presentation);
             mapRows = MinimapUiRows.ID.equals(spec.id()) ? new MinimapDomPresentation(access) : null;
             if (mapRows != null) resources.own(mapRows);
+            progress = spec.manual() ? new ProgressDomPresentation(access, access::guiBounds) : null;
+            if (progress != null) resources.own(progress);
             attach(access);
         } catch (RuntimeException | LinkageError failure) { close(); throw failure; }
     }
     public static NativeUiView create(UiHudSpec spec) { return new AuiHudDocument(spec); }
+    @Override public void hudFrame(xin.vanilla.banira.api.client.ui.UiHudFrame frame) {
+        if (!live() || progress == null) throw new IllegalStateException("Manual HUD frame unavailable");
+        progressFrame = java.util.Objects.requireNonNull(frame);
+    }
+
+    @Override public void renderHud(GuiGraphics graphics) {
+        if (progress == null || progressFrame == null || !live() || document.isDisposed() || generation != document.getRefreshGeneration())
+            throw new IllegalStateException("Manual HUD document expired");
+        document.applyViewport(false);
+        boolean painted = false;
+        try (Document.ContextScope ignored = Document.withContext(document)) {
+            progress.update(progressFrame);
+            document.commitPendingStyleRecalcForRender(); document.commitRenderState();
+            graphics.flush();
+            painted = true;
+            try { Base.drawOverlayDocument(graphics.pose(), document); }
+            finally { graphics.flush(); }
+        } catch (RuntimeException | LinkageError failure) {
+            if (painted) throw new AuiHudHost.PaintedFailure(failure);
+            throw failure;
+        }
+    }
     @Override public void render(GuiGraphics graphics, HudDrawList frame) {
         if (!live() || document.isDisposed() || generation != document.getRefreshGeneration()) throw new IllegalStateException("HUD document expired");
         document.applyViewport(false);

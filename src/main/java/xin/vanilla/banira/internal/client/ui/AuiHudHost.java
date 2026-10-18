@@ -87,7 +87,21 @@ public final class AuiHudHost {
     }
 
     public void renderOthers(Set<String> excluded, Consumer<NativeUiView> draw) {
-        for (String id : new ArrayList<>(entries.keySet())) if (!excluded.contains(id)) render(id, draw);
+        for (String id : new ArrayList<>(entries.keySet())) {
+            Entry entry = entries.get(id);
+            if (entry != null && !entry.spec.manual() && !excluded.contains(id)) render(id, draw);
+        }
+    }
+
+    public interface ManualRenderer { void renderHud(net.minecraft.client.gui.GuiGraphics graphics); }
+
+    public boolean renderManual(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+        Entry entry = entries.get(id);
+        if (entry == null || !entry.spec.manual()) return false;
+        return render(id, view -> {
+            if (!(view instanceof ManualRenderer)) throw new IllegalStateException("Manual HUD renderer unavailable");
+            ((ManualRenderer) view).renderHud(graphics);
+        });
     }
 
     private void detach(Entry entry, UiDetachReason reason) {

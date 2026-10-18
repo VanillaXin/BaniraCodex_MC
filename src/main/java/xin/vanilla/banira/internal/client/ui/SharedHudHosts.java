@@ -12,7 +12,7 @@ public final class SharedHudHosts {
     private static AuiHudHost host;
     private SharedHudHosts() { }
     public interface Renderer { void render(GuiGraphics graphics, HudDrawList frame); }
-    public static void install(AuiHudHost next) { host = next; }
+    public static void install(AuiHudHost next) { host = next; MinimapUiRows.install(next); }
     public static void register(String id, BooleanSupplier visible) {
         host.register(new UiHudSpec(id, "banira_codex/hud/overlay.html", new UiHudBinding() {
             public boolean visible() { return visible.getAsBoolean(); }
@@ -28,7 +28,7 @@ public final class SharedHudHosts {
     }
 
     public static void renderOthers(GuiGraphics graphics) {
-        if (host != null) host.renderOthers(java.util.Set.of(NOTIFICATIONS, UNREAD, QUICK_ACTIONS, POINTER), view -> {
+        if (host != null) host.renderOthers(java.util.Set.of(NOTIFICATIONS, UNREAD, QUICK_ACTIONS, POINTER, MinimapUiRows.ID), view -> {
             if (!(view instanceof Renderer)) throw new IllegalStateException("HUD renderer unavailable");
             ((Renderer) view).render(graphics, new HudDrawList());
         });

@@ -73,7 +73,8 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
                     Minecraft.getInstance().screen instanceof ChatScreen))
                 return Component.empty();
             for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.JOURNEYMAP))
-                if (row.id().equals(line.id())) return row.text();
+                if (row.id().equals(line.id())) return xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(
+                        EnumNotificationHudHost.JOURNEYMAP, line.id(), row.text());
             return Component.empty();
         });
         previousRevision = -1;

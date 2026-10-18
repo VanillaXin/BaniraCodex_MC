@@ -97,6 +97,10 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "getRefreshGeneration", "()J");
         add(result, "init/Document", "isDisposed", "()Z");
         add(result, "init/Document", "applyViewport", "(Z)V");
+        result.add(new Member(ROOT + "init/Document", "withContext", "(" + DOCUMENT + ")L" + ROOT + "init/Document$ContextScope;", true));
+        add(result, "init/Document$ContextScope", "close", "()V");
+        add(result, "init/Document", "commitPendingStyleRecalcForRender", "()Z");
+        add(result, "init/Document", "commitRenderState", "()V");
         add(result, "init/Document", "getElementById", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "createElement", "(Ljava/lang/String;)" + ELEMENT);
         add(result, "init/Document", "getElementsByTagName", "(Ljava/lang/String;)Ljava/util/List;");

@@ -106,9 +106,14 @@ repositories {
 }
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
+configurations.create('minimapContract') { transitive = false }
 dependencies {
     baniraMinimapLibraries "maven.modrinth:xaeros-minimap:dB6E0CY9"
     baniraMinimapLibraries "maven.modrinth:journeymap:HWDC99DO"
+    minimapContract "maven.modrinth:xaeros-minimap:dB6E0CY9"
+    minimapContract "maven.modrinth:journeymap:HWDC99DO"
+    minimapContract "curse.maven:ftb-chunks-forge-314906:6431735"
+    minimapContract "maven.modrinth:map-atlases-forge:Zcz2vXIl"
 }
 // Generated compile inputs must survive clean.
 def minimapLibraryDirectory = file(".gradle/banira/minimap-compile-libraries/${loader_type}-${minecraft_version}")
@@ -204,6 +209,7 @@ dependencies {
 tasks.withType(Test).configureEach {
     doFirst {
         systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
+        systemProperty 'banira.minimap.contractJars', configurations.minimapContract.files.collect { it.absolutePath }.join(File.pathSeparator)
     }
 }
 

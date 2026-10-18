@@ -78,6 +78,13 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
 
     @Override
     public void render(MinimapContext context, GuiGraphics graphics, Font font) {
-        for (int i = 0; i < text.size(); i++) drawCenteredText(font, graphics, text.get(i), i * (font.lineHeight + 2));
+        for (int i = 0; i < text.size(); i++) {
+            Component part = xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(EnumNotificationHudHost.FTB_CHUNKS,
+                    xin.vanilla.banira.internal.client.ui.MinimapUiRows.partId(line.id(), i), text.get(i));
+            int width = font.width(part);
+            if (!xin.vanilla.banira.internal.client.ui.MinimapUiRows.draw(graphics, part,
+                    new xin.vanilla.banira.client.data.ScreenCoordinate(-width / 2, i * (font.lineHeight + 2), width, font.lineHeight), -1, true))
+                drawCenteredText(font, graphics, part, i * (font.lineHeight + 2));
+        }
     }
 }

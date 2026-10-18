@@ -42,6 +42,11 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
             return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
                     && method(target, "applyLocalConfig", "()V");
         String graphics = "Lnet/minecraft/client/gui/GuiGraphics;";
+        if (mixin.endsWith("XaeroInformationRenderMixin"))
+            return method(target, "render", "(" + graphics + "Lxaero/hud/minimap/module/MinimapSession;"
+                    + "Lxaero/hud/minimap/Minimap;IILnet/minecraft/core/BlockPos;IIFLnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V")
+                    && calls(target, "xaero/common/misc/Misc", "drawNormalText",
+                    "(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/network/chat/Component;FFIZLnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V");
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "setupComponents", "()V") && method(target, "renderHud", "(" + graphics + "F)V");
         if (mixin.endsWith("MapAtlasesNotificationMixin"))
@@ -52,6 +57,16 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                     + "Lnet/minecraft/client/renderer/MultiBufferSource;DDLjourneymap/client/render/draw/DrawUtil$HAlign;"
                     + "Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
         return false;
+    }
+
+    private static boolean calls(ClassNode target, String owner, String name, String descriptor) {
+        int count = 0;
+        for (var method : target.methods) for (var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                if (call.owner.equals(owner) && call.name.equals(name) && call.desc.equals(descriptor)) count++;
+            }
+        return count == 1;
     }
 
     private static boolean method(ClassNode target, String name, String descriptor) {

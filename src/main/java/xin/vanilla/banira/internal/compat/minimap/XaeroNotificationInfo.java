@@ -48,9 +48,11 @@ public final class XaeroNotificationInfo {
                     for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.XAERO)) {
                         if (!row.id().equals(line.id())) continue;
                         net.minecraft.network.chat.Component text = row.text();
+                        int index = 0;
                         for (net.minecraft.network.chat.Component part : MinimapTextLayout.wrap(text,
                                 Minecraft.getInstance().font.getSplitter(), width)) {
-                            compiler.addLine(part);
+                            compiler.addLine(xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(EnumNotificationHudHost.XAERO,
+                                    xin.vanilla.banira.internal.client.ui.MinimapUiRows.partId(line.id(), index++), part));
                         }
                         break;
                     }

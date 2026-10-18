@@ -3,7 +3,6 @@ package xin.vanilla.banira.client.notification;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
@@ -32,10 +31,11 @@ public final class NotificationMapLineRenderer {
                 || screenWidth <= 0 || screenHeight <= 0) return 0;
         Minecraft mc = Minecraft.getInstance();
         width = Math.min(width, screenWidth);
-        List<List<FormattedCharSequence>> wrapped = new ArrayList<>();
+        List<List<Component>> wrapped = new ArrayList<>();
         float total = 0;
         for (MinimapLineSnapshot row : rows) {
-            List<FormattedCharSequence> lines = mc.font.split(row.text(), Math.max(1, (int) (width / scale)));
+            List<Component> lines = xin.vanilla.banira.internal.client.minimap.MinimapTextLayout.wrap(
+                    row.text(), mc.font.getSplitter(), Math.max(1, (int) (width / scale)));
             wrapped.add(lines);
             total += lines.size() * mc.font.lineHeight;
         }
@@ -48,14 +48,20 @@ public final class NotificationMapLineRenderer {
         int color = ClientThemeManager.getEffectiveTheme().popupItemText();
         for (int i = 0; i < rows.size(); i++) {
             float drawY = positions[i];
-            for (FormattedCharSequence line : wrapped.get(i)) {
+            int index = 0;
+            for (Component raw : wrapped.get(i)) {
+                Component line = xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(
+                        xin.vanilla.banira.common.enums.EnumNotificationHudHost.MAP_ATLASES,
+                        xin.vanilla.banira.internal.client.ui.MinimapUiRows.partId(rows.get(i).id(), index++), raw);
                 float lineWidth = mc.font.width(line) * scale;
                 float left = Math.max(0, Math.min(centerX - lineWidth / 2, screenWidth - lineWidth));
                 graphics.pose().pushPose();
                 try {
                     graphics.pose().translate(left, drawY, 0);
                     graphics.pose().scale(scale, scale, 1);
-                    graphics.drawString(mc.font, line, 0, 0, color, false);
+                    if (!xin.vanilla.banira.internal.client.ui.MinimapUiRows.draw(graphics, line,
+                            new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, mc.font.width(line), mc.font.lineHeight), color, false))
+                        graphics.drawString(mc.font, line, 0, 0, color, false);
                 } finally {
                     graphics.pose().popPose();
                 }

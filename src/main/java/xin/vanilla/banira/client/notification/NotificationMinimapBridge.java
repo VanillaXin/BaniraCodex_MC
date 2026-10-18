@@ -51,6 +51,7 @@ public final class NotificationMinimapBridge {
 
     public static void reset() {
         MinimapLineRegistry.shared().resetHosts();
+        xin.vanilla.banira.internal.client.ui.MinimapUiRows.reset();
     }
 
     public static List<MinimapLine> registrations() {

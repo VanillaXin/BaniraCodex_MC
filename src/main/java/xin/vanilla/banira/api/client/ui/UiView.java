@@ -25,6 +25,10 @@ public interface UiView {
     void hudPosition(double x, double y);
     /** A null element clears the previously retained drawing. */
     default void gameElement(String id, UiGameElement element) { }
+    /** Positions a retained game element relative to its template parent; zero size hides it. */
+    default void gameElement(String id, UiGameElement element, ScreenCoordinate area) {
+        throw new UnsupportedOperationException("Game element placement unavailable");
+    }
     default void hudFrame(UiHudFrame frame) { throw new UnsupportedOperationException("HUD frames unavailable"); }
     void rows(String id, UiRowProvider rows, int maxRealizedRows);
     ScreenCoordinate bounds(String id);

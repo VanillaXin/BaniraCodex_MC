@@ -149,6 +149,10 @@ public class UiDomView extends NativeUiView {
         if (gameElements.containsKey(id)) {
             node.gameElement(gameElements.get(id));
             if (scope != null && id.equals("icon")) node.attribute("style", "position:absolute;left:0;top:0;width:24px;height:20px");
+            ScreenCoordinate area = gameAreas.get(id);
+            if (area != null) node.attribute("style", "position:absolute;left:" + area.x() + "px;top:" + area.y()
+                    + "px;width:" + area.width() + "px;height:" + area.height() + "px;display:"
+                    + (area.width() == 0 || area.height() == 0 ? "none" : "block"));
         }
         UiControlSpec control = controls.get(id);
         if (control != null) configure(id, node, control);

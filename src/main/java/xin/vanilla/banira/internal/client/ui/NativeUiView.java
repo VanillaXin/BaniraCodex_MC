@@ -28,6 +28,7 @@ public class NativeUiView implements UiView, AutoCloseable {
     protected final Map<String, UiControlSpec> controls = new LinkedHashMap<>();
     protected final Map<String, String> drafts = new LinkedHashMap<>();
     protected final Map<String, xin.vanilla.banira.api.client.ui.UiGameElement> gameElements = new LinkedHashMap<>();
+    protected final Map<String, ScreenCoordinate> gameAreas = new LinkedHashMap<>();
     protected final Map<String, Boolean> enabled = new LinkedHashMap<>();
     protected final Map<String, UiRowProvider> rowProviders = new LinkedHashMap<>();
     protected final Map<String, Integer> rowLimits = new LinkedHashMap<>();
@@ -190,6 +191,15 @@ public class NativeUiView implements UiView, AutoCloseable {
         if (!live()) return;
         gameElements.put(id, element); changed(id);
     }
+    @Override public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element, ScreenCoordinate area) {
+        if (!live()) return;
+        Objects.requireNonNull(area, "area");
+        if (!Double.isFinite(area.x()) || !Double.isFinite(area.y()) || !Double.isFinite(area.width())
+                || !Double.isFinite(area.height()) || area.width() < 0 || area.height() < 0)
+            throw new IllegalArgumentException("Invalid game element bounds");
+        gameAreas.put(id, new ScreenCoordinate(area.x(), area.y(), area.width(), area.height()));
+        gameElements.put(id, element); changed(id);
+    }
     @Override public void hudPosition(double x, double y) {
         if (!live() || !Double.isFinite(x) || !Double.isFinite(y)) return;
         hudX = Math.max(0, Math.min(1, x)); hudY = Math.max(0, Math.min(1, y)); changed("preview");
@@ -265,7 +275,7 @@ public class NativeUiView implements UiView, AutoCloseable {
         try { resources.close(); }
         finally {
             actions.clear(); longActions.clear(); longDurations.clear(); changes.clear(); draftChanges.clear(); pointers.clear(); texts.clear(); tooltips.clear(); values.clear();
-            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear(); gameElements.clear();
+            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear(); gameElements.clear(); gameAreas.clear();
         }
     }
 }

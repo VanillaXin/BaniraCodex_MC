@@ -12,6 +12,27 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiPressActionsTest {
+    @Test public void primaryCommandsIgnoreSecondaryClicksButRetainKeyboardActivation() throws Exception {
+        var dom = new UiDomControlsTest.Dom(); var view = dom.view();
+        AtomicInteger count = new AtomicInteger(); view.onAction("submit", count::incrementAndGet);
+        dom.ids.get("submit").emit("click", 1);
+        assertEquals("A secondary click must not send a primary business command", 0, count.get());
+        dom.ids.get("submit").emit("click", 0); dom.ids.get("submit").emit("click", -1);
+        assertEquals(2, count.get()); view.close();
+    }
+    @Test public void dateRowCommandWithoutInputIsARealSingleActionButton() throws Exception {
+        var dom = new UiDomControlsTest.Dom(); var view = dom.view(); AtomicInteger count = new AtomicInteger();
+        view.rows("fields", new UiRowProvider() {
+            public int size() { return 1; }
+            public String key(int index) { return "birthday:0"; }
+            public void bind(UiView row, int index) {
+                row.text("apply", xin.vanilla.banira.BaniraComponent.get().literal("10/9"));
+                row.onAction("apply", count::incrementAndGet);
+            }
+        }, 120);
+        var button = dom.created.stream().filter(node -> node.tag.equals("button") && node.text.equals("10/9")).findFirst().orElseThrow();
+        button.emit("click", 0); assertEquals(1, count.get()); view.close();
+    }
     @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
 
     private UiDomView view(UiDomControlsTest.Dom dom, AtomicLong clock) throws Exception {

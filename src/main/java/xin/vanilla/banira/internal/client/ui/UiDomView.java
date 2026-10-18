@@ -369,6 +369,7 @@ public class UiDomView extends NativeUiView {
         if (dom == null || !live() || (!actionIds().contains(id) && !longActionIds().contains(id)) || (id.equals("pick") && scope != null)) return;
         UiDomAccess.Node node = node(id);
         if (node != null) listen(id + ":action", node, "click", event -> {
+            if (event.button() != 0 && event.button() != -1) return;
             event.consume();
             if (!suppressClicks.remove(id) && !modal()) activate(id);
         });

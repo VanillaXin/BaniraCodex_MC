@@ -109,6 +109,16 @@ public class AuiCapabilityContractTest {
         assertNotNull("Pinned official AUI binary must be provided", path);
         return new URLClassLoader(new URL[]{new java.io.File(path).toURI().toURL()}, null);
     }
+    @Test public void compileOnlyMarkerRejectsEvenAnOtherwiseOfficialContract() throws Exception {
+        try (URLClassLoader jar = official()) {
+            assertFalse(compatible(new ClassLoader(null) {
+                @Override public InputStream getResourceAsStream(String name) {
+                    return name.equals("META-INF/banira-aui-compile-api.properties")
+                            ? new ByteArrayInputStream("compileOnly=true".getBytes(java.nio.charset.StandardCharsets.UTF_8)) : jar.getResourceAsStream(name);
+                }
+            }));
+        }
+    }
 
     @Test public void changedPublicCoordinateFieldFallsBack() throws Exception {
         try (URLClassLoader jar = official()) {
@@ -152,6 +162,27 @@ public class AuiCapabilityContractTest {
                 var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
                 if (call.owner.startsWith("com/sighs/apricityui/")) assertTrue("Unguarded HUD call " + call.owner + "#" + call.name + call.desc,
                         guarded.contains(call.owner + "#" + call.name + call.desc));
+            }
+        }
+    }
+
+    @Test public void allProductAuiCallsAreGuarded() throws Exception {
+        var guarded = new java.util.HashSet<String>();
+        for (var member : AuiCapabilityContract.requiredMembers()) guarded.add(member.key());
+        var root = java.nio.file.Path.of("build/classes/java/main/xin/vanilla/banira/internal");
+        try (var paths = java.nio.file.Files.walk(root)) {
+            var classes = paths.filter(path -> path.getFileName().toString().startsWith("Aui") && path.toString().endsWith(".class")).toList();
+            assertTrue(classes.size() > 4);
+            for (var path : classes) {
+                ClassNode node = new ClassNode(); new ClassReader(java.nio.file.Files.readAllBytes(path)).accept(node, 0);
+                for (var method : node.methods) for (var instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.owner.startsWith("com/sighs/apricityui/")
+                            && !(call.getOpcode() == org.objectweb.asm.Opcodes.INVOKESPECIAL
+                            && call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")
+                            && java.util.Set.of("init()V", "removed()V", "keyPressed(III)Z", "keyReleased(III)Z",
+                                    "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V").contains(call.name + call.desc)))
+                        assertTrue("Unguarded " + path + ": " + call.owner + "#" + call.name + call.desc,
+                                guarded.contains(call.owner + "#" + call.name + call.desc));
             }
         }
     }

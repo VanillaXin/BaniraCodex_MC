@@ -19,6 +19,7 @@ plugins {
 def javaVer = 17
 
 apply from: 'gradle/aui-validation-output.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'
 
 apply plugin: 'org.spongepowered.mixin'
 
@@ -177,7 +178,6 @@ configurations {
 }
 
 dependencies {
-    compileOnly(fg.deobf('maven.modrinth:UfPdUeGy:QimFJQz4')) { transitive = false }
     auiContract 'maven.modrinth:UfPdUeGy:QimFJQz4'
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
@@ -205,6 +205,8 @@ dependencies {
     compileOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
     runtimeOnly fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
 }
+
+apply from: 'gradle/aui-compile-api.gradle'
 
 tasks.withType(Test).configureEach {
     doFirst {

@@ -1,0 +1,612 @@
+{
+  "schema": 1,
+  "sourceSha256": "B4281C962F7A93B485D5F55F779A23B12C591AC6505A571C9578CC9F0C1372C2",
+  "classes": {
+    "com/sighs/apricityui/element/AbstractText": {
+      "super": "com/sighs/apricityui/init/Element",
+      "access": 1057,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "getCursor",
+          "desc": "()I",
+          "access": 1
+        },
+        {
+          "name": "getSelectionStart",
+          "desc": "()I",
+          "access": 1
+        },
+        {
+          "name": "getSelectionEnd",
+          "desc": "()I",
+          "access": 1
+        },
+        {
+          "name": "setSelectionRange",
+          "desc": "(II)V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/Input": {
+      "super": "com/sighs/apricityui/element/AbstractText",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)V",
+          "access": 1
+        },
+        {
+          "name": "getValue",
+          "desc": "()Ljava/lang/String;",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/Item": {
+      "super": "com/sighs/apricityui/element/MinecraftElement",
+      "access": 33,
+      "interfaces": [
+        "com/sighs/apricityui/render/BodyRenderNodeProvider"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/MinecraftElement": {
+      "super": "com/sighs/apricityui/init/Element",
+      "access": 1057,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "requestRepaint",
+          "desc": "()V",
+          "access": 17
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/RichText": {
+      "super": "com/sighs/apricityui/init/Element",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Lcom/sighs/apricityui/init/Document;Ljava/lang/String;)V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/Slot": {
+      "super": "com/sighs/apricityui/element/MinecraftElement",
+      "access": 33,
+      "interfaces": [
+        "com/sighs/apricityui/render/BodyRenderNodeProvider",
+        "com/sighs/apricityui/render/ForegroundRenderNodeProvider"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)V",
+          "access": 1
+        },
+        {
+          "name": "clearMenuSlotBinding",
+          "desc": "()V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/element/Texture": {
+      "super": "com/sighs/apricityui/init/Element",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/event/Event": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [
+        "java/lang/Cloneable"
+      ],
+      "methods": [
+        {
+          "name": "stopPropagation",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "preventDefault",
+          "desc": "()V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/event/KeyEvent": {
+      "super": "com/sighs/apricityui/event/Event",
+      "access": 33,
+      "interfaces": [],
+      "methods": [],
+      "fields": [
+        {
+          "name": "keyCode",
+          "desc": "I",
+          "access": 17
+        }
+      ]
+    },
+    "com/sighs/apricityui/event/MouseEvent": {
+      "super": "com/sighs/apricityui/event/Event",
+      "access": 33,
+      "interfaces": [
+        "java/lang/Cloneable"
+      ],
+      "methods": [],
+      "fields": [
+        {
+          "name": "button",
+          "desc": "I",
+          "access": 1
+        }
+      ]
+    },
+    "com/sighs/apricityui/init/Document": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "interceptsMouseEvents",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
+          "name": "guiToDocumentPosition",
+          "desc": "(Lcom/sighs/apricityui/layout/Position;)Lcom/sighs/apricityui/layout/Position;",
+          "access": 1
+        },
+        {
+          "name": "documentToGuiPosition",
+          "desc": "(Lcom/sighs/apricityui/layout/Position;)Lcom/sighs/apricityui/layout/Position;",
+          "access": 1
+        },
+        {
+          "name": "setManuallyRendered",
+          "desc": "(Z)V",
+          "access": 1
+        },
+        {
+          "name": "getViewportVersion",
+          "desc": "()J",
+          "access": 1
+        },
+        {
+          "name": "applyViewport",
+          "desc": "(Z)V",
+          "access": 1
+        },
+        {
+          "name": "refresh",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "commitPendingStyleRecalcForRender",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
+          "name": "commitRenderState",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "setReloadPersistent",
+          "desc": "(Z)V",
+          "access": 1
+        },
+        {
+          "name": "getRefreshGeneration",
+          "desc": "()J",
+          "access": 1
+        },
+        {
+          "name": "isDisposed",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
+          "name": "createElement",
+          "desc": "(Ljava/lang/String;)Lcom/sighs/apricityui/init/Element;",
+          "access": 1
+        },
+        {
+          "name": "getElementById",
+          "desc": "(Ljava/lang/String;)Lcom/sighs/apricityui/init/Element;",
+          "access": 1
+        },
+        {
+          "name": "getDocumentElement",
+          "desc": "()Lcom/sighs/apricityui/init/Element;",
+          "access": 1
+        },
+        {
+          "name": "getElementsByTagName",
+          "desc": "(Ljava/lang/String;)Ljava/util/List;",
+          "access": 1
+        },
+        {
+          "name": "create",
+          "desc": "(Ljava/lang/String;)Lcom/sighs/apricityui/init/Document;",
+          "access": 9
+        },
+        {
+          "name": "withContext",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)Lcom/sighs/apricityui/init/Document$ContextScope;",
+          "access": 9
+        },
+        {
+          "name": "remove",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "getFocusedElement",
+          "desc": "()Lcom/sighs/apricityui/init/Element;",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/init/Document$ContextScope": {
+      "super": "java/lang/Object",
+      "access": 49,
+      "interfaces": [
+        "java/lang/AutoCloseable"
+      ],
+      "methods": [
+        {
+          "name": "close",
+          "desc": "()V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/init/Element": {
+      "super": "com/sighs/apricityui/init/Node",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "setAttribute",
+          "desc": "(Ljava/lang/String;Ljava/lang/String;)V",
+          "access": 1
+        },
+        {
+          "name": "removeAttribute",
+          "desc": "(Ljava/lang/String;)V",
+          "access": 1
+        },
+        {
+          "name": "hasAttribute",
+          "desc": "(Ljava/lang/String;)Z",
+          "access": 1
+        },
+        {
+          "name": "setScrollTop",
+          "desc": "(D)V",
+          "access": 1
+        },
+        {
+          "name": "getScrollTop",
+          "desc": "()D",
+          "access": 1
+        },
+        {
+          "name": "getValue",
+          "desc": "()Ljava/lang/String;",
+          "access": 1
+        },
+        {
+          "name": "setValue",
+          "desc": "(Ljava/lang/String;)V",
+          "access": 1
+        },
+        {
+          "name": "isChecked",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
+          "name": "setChecked",
+          "desc": "(Z)V",
+          "access": 1
+        },
+        {
+          "name": "appendChild",
+          "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/init/Element;",
+          "access": 1
+        },
+        {
+          "name": "setInnerText",
+          "desc": "(Ljava/lang/String;)V",
+          "access": 1
+        },
+        {
+          "name": "focus",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "blur",
+          "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "getClientHeight",
+          "desc": "()D",
+          "access": 1
+        },
+        {
+          "name": "getBoundingClientRect",
+          "desc": "()Lcom/sighs/apricityui/init/Element$DOMRect;",
+          "access": 1
+        },
+        {
+          "name": "addEventListener",
+          "desc": "(Ljava/lang/String;Ljava/util/function/Consumer;)V",
+          "access": 1
+        },
+        {
+          "name": "removeEventListener",
+          "desc": "(Ljava/lang/String;Ljava/util/function/Consumer;Z)V",
+          "access": 1
+        },
+        {
+          "name": "remove",
+          "desc": "()V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/init/Element$DOMRect": {
+      "super": "java/lang/Object",
+      "access": 49,
+      "interfaces": [],
+      "methods": [],
+      "fields": [
+        {
+          "name": "x",
+          "desc": "D",
+          "access": 17
+        },
+        {
+          "name": "y",
+          "desc": "D",
+          "access": 17
+        },
+        {
+          "name": "right",
+          "desc": "D",
+          "access": 17
+        },
+        {
+          "name": "bottom",
+          "desc": "D",
+          "access": 17
+        }
+      ]
+    },
+    "com/sighs/apricityui/init/Node": {
+      "super": "java/lang/Object",
+      "access": 1057,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "getChildNodes",
+          "desc": "()Ljava/util/List;",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/layout/Position": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(DD)V",
+          "access": 1
+        }
+      ],
+      "fields": [
+        {
+          "name": "x",
+          "desc": "D",
+          "access": 1
+        },
+        {
+          "name": "y",
+          "desc": "D",
+          "access": 1
+        }
+      ]
+    },
+    "com/sighs/apricityui/layout/Size": {
+      "super": "java/lang/Record",
+      "access": 49,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "width",
+          "desc": "()D",
+          "access": 1
+        },
+        {
+          "name": "height",
+          "desc": "()D",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/parser/Color": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "parse",
+          "desc": "(Ljava/lang/String;)I",
+          "access": 9
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/render/Base": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "drawOverlayDocument",
+          "desc": "(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/sighs/apricityui/init/Document;)V",
+          "access": 9
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/render/BodyRenderNodeProvider": {
+      "super": "java/lang/Object",
+      "access": 1537,
+      "interfaces": [],
+      "methods": [],
+      "fields": []
+    },
+    "com/sighs/apricityui/render/ForegroundRenderNodeProvider": {
+      "super": "java/lang/Object",
+      "access": 1537,
+      "interfaces": [],
+      "methods": [],
+      "fields": []
+    },
+    "com/sighs/apricityui/screen/ApricityScreen": {
+      "super": "net/minecraft/client/gui/screens/Screen",
+      "access": 33,
+      "interfaces": [
+        "com/sighs/apricityui/screen/AuiLinkedScreen"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "desc": "(Ljava/lang/String;)V",
+          "access": 1
+        },
+        {
+          "name": "setPauseGame",
+          "desc": "(Z)Lcom/sighs/apricityui/screen/ApricityScreen;",
+          "access": 1
+        },
+        {
+          "name": "setShowDefaultBackground",
+          "desc": "(Z)Lcom/sighs/apricityui/screen/ApricityScreen;",
+          "access": 1
+        },
+        {
+          "name": "getLinkedDocument",
+          "desc": "()Lcom/sighs/apricityui/init/Document;",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/screen/AuiLinkedScreen": {
+      "super": "java/lang/Object",
+      "access": 1537,
+      "interfaces": [],
+      "methods": [],
+      "fields": []
+    },
+    "com/sighs/apricityui/ui/ColorPicker": {
+      "super": "java/lang/Object",
+      "access": 49,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "pickIn",
+          "desc": "(Lcom/sighs/apricityui/init/Document;Lcom/sighs/apricityui/init/Element;Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;",
+          "access": 41
+        },
+        {
+          "name": "isOpen",
+          "desc": "()Z",
+          "access": 41
+        },
+        {
+          "name": "closeActive",
+          "desc": "()V",
+          "access": 41
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/ui/Tooltip": {
+      "super": "java/lang/Object",
+      "access": 49,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "bind",
+          "desc": "(Lcom/sighs/apricityui/init/Element;Ljava/lang/String;)Lcom/sighs/apricityui/ui/Tooltip$Binding;",
+          "access": 9
+        },
+        {
+          "name": "hide",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)V",
+          "access": 41
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/ui/Tooltip$Binding": {
+      "super": "java/lang/Object",
+      "access": 49,
+      "interfaces": [
+        "java/lang/AutoCloseable"
+      ],
+      "methods": [
+        {
+          "name": "close",
+          "desc": "()V",
+          "access": 1
+        }
+      ],
+      "fields": []
+    }
+  }
+}

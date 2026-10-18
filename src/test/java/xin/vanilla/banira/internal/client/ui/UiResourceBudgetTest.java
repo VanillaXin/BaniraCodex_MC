@@ -6,6 +6,25 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.Assert.*;
 
 public class UiResourceBudgetTest {
+    static java.util.List<String> violations(java.util.Map<String, byte[]> files, boolean shared) { return UiBoundaryChecks.resources(files, shared); }
+    @Test public void everyOwnedUiResourceIsBudgeted() throws Exception {
+        assertEquals(java.util.List.of(), violations(UiBoundaryChecks.ownResources("banira_codex"), true));
+    }
+    @Test public void injectedRemoteScriptsFontsAndOversizedResourcesAreRejected() {
+        for (var fixture : java.util.List.of(
+                java.util.Map.of("page.html", "<script src='https://example.invalid/a.js'></script>".getBytes(StandardCharsets.UTF_8)),
+                java.util.Map.of("large.html", new byte[12289]),
+                java.util.Map.of("large.css", new byte[16385]),
+                java.util.Map.of("font.woff", new byte[1]),
+                java.util.Map.of("large.png", new byte[65537]),
+                java.util.Map.of("large.js", new byte[8193]))) {
+            assertFalse("Unsafe resource accepted", violations(fixture, true).isEmpty());
+        }
+    }
+    @Test public void downstreamCannotDuplicateSharedStylesOrExceedItsCssBudget() {
+        assertFalse(violations(java.util.Map.of("shared.css", new byte[1]), false).isEmpty());
+        assertFalse(violations(java.util.Map.of("mod.css", new byte[4097]), false).isEmpty());
+    }
     @Test public void listHeaderCommandsFitTheFixedVirtualRow() throws Exception {
         try (InputStream stream = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             String css = new String(stream.readAllBytes(), StandardCharsets.UTF_8);

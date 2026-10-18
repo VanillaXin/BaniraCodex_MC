@@ -24,6 +24,9 @@ public final class AuiCapabilityContract {
 
     public static Result inspect(ClassLoader loader) {
         if (loader == null) return new Result(false, "Missing class loader");
+        try (InputStream marker = loader.getResourceAsStream("META-INF/banira-aui-compile-api.properties")) {
+            if (marker != null) return new Result(false, "Compile-only AUI declarations");
+        } catch (IOException failure) { return new Result(false, "Cannot inspect AUI declaration marker"); }
         try {
             Map<String, ClassNode> classes = new LinkedHashMap<>();
             for (Member member : MEMBERS) {
@@ -96,6 +99,7 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "setReloadPersistent", "(Z)V");
         add(result, "init/Document", "getRefreshGeneration", "()J");
         add(result, "init/Document", "isDisposed", "()Z");
+        add(result, "init/Document", "interceptsMouseEvents", "()Z");
         add(result, "init/Document", "applyViewport", "(Z)V");
         result.add(new Member(ROOT + "init/Document", "withContext", "(" + DOCUMENT + ")L" + ROOT + "init/Document$ContextScope;", true));
         add(result, "init/Document$ContextScope", "close", "()V");

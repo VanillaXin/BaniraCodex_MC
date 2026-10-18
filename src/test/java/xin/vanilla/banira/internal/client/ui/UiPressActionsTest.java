@@ -31,6 +31,8 @@ public class UiPressActionsTest {
             }
         }, 120);
         var button = dom.created.stream().filter(node -> node.tag.equals("button") && node.text.equals("10/9")).findFirst().orElseThrow();
+        assertEquals("row-action", button.attributes.get("class"));
+        assertNull(button.gameElement);
         button.emit("click", 0); assertEquals(1, count.get()); view.close();
     }
     @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
@@ -87,7 +89,8 @@ public class UiPressActionsTest {
                 row.onAction("reset", () -> { });
             }
         }, 120);
-        assertTrue("Reset must be a keyboard-accessible button", dom.created.stream().anyMatch(node -> node.tag.equals("button") && node.text.equals("R")));
+        assertTrue("Reset must be a named, keyboard-accessible icon button", dom.created.stream().anyMatch(node -> node.tag.equals("button")
+                && "R".equals(node.attributes.get("aria-label")) && node.text.isEmpty() && node.gameElement != null));
         view.close();
     }
 }

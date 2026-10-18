@@ -57,6 +57,18 @@ public class UiVisualStyleTest {
         }
     }
 
+    @Test public void buttonsAndIconSlotsHaveStableCenteredGeometry() throws Exception {
+        try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
+            assertNotNull(input);
+            String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(css.contains(".row-icon"));
+            assertTrue(css.contains(".game-icon"));
+            assertTrue(css.contains("height: 22px"));
+            assertTrue(css.contains("justify-content: center"));
+            assertTrue(css.contains(".selector-selection #selected_icon"));
+        }
+    }
+
     @Test public void sharedControlsUseDedicatedPageRolesAndCompactStableSizes() throws Exception {
         try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             assertNotNull(input);

@@ -27,6 +27,20 @@ public class UiSelectorParityTest {
     static Object session(Object args) throws Exception { return type().getConstructor(args.getClass()).newInstance(args); }
     static FormUiSession editor(Object session, String name) throws Exception { return (FormUiSession) call(session, "editor", new Class<?>[]{String.class}, name); }
     static void draft(FormUiSession form, String text) { form.draft(0, text); }
+
+    @Test public void selectorToolsReuseNativeGameIconsWithoutFontGlyphs() throws Exception {
+        Object effect = session(new EffectSelectScreen.Args().parentScreen(parent()).defaultEffect(new MobEffectInstance(MobEffects.LUCK, 600, 0)).onDataReceived1(value -> { }));
+        NativeUiView view = new NativeUiView(new Object());
+        call(effect, "bind", new Class<?>[]{UiView.class}, view);
+        assertNotNull("Duration needs a real clock icon", view.gameElements.get("duration"));
+        assertEquals(Items.CLOCK, view.gameElements.get("duration").option().icon().getItem());
+        assertEquals(Items.ANVIL, view.gameElements.get("amplifier").option().icon().getItem());
+        assertEquals(UiGameElement.Kind.EFFECT, view.gameElements.get("effect").kind());
+        assertEquals("", view.texts.get("duration").toVanilla().getString());
+        assertEquals("", view.texts.get("mode").toVanilla().getString());
+        assertFalse(view.tooltips.get("duration").toVanilla().getString().isEmpty());
+        call(effect, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.CANCEL);
+    }
     @Test public void itemDefaultAndCallbackAreCopiesAndSubmitIsSingleShot() throws Exception {
         ItemStack original = new ItemStack(Items.DIAMOND, 7); AtomicInteger calls = new AtomicInteger();
         Object s = session(new ItemSelectScreen.Args().parentScreen(parent()).defaultItem(original).onDataReceived1(stack -> { calls.incrementAndGet(); stack.setCount(30); }));

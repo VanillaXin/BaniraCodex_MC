@@ -186,13 +186,27 @@ public final class SelectorUiSession implements UiPageSession {
         for (String operation : operations()) {
             view.tooltip(operation, tr("enter_" + (operation.equals("item") || operation.equals("effect") || operation.equals("advancement") ? operation + "_id"
                     : operation.equals("count") ? "item_quantity" : operation.equals("nbt") ? "item_nbt" : "effect_" + operation)));
-            view.text(operation, BaniraComponent.get().literal(operation.equals("count") ? "\u00d7" : operation.equals("nbt") ? "{}" : operation.equals("duration") ? "\u25f7" : operation.equals("amplifier") ? "+" : "#"));
+            view.text(operation, BaniraComponent.get().literal(""));
+            view.gameElement(operation, toolIcon(operation));
             bindings.own(view.onAction(operation, () -> { if (this.view == view) openEditor(operation); }));
         }
         rebuild(); updateSelection();
     }
     private String[] operations() {
         return kind == Kind.ITEM ? new String[]{"item", "count", "nbt"} : kind == Kind.EFFECT ? new String[]{"effect", "duration", "amplifier"} : new String[]{"advancement"};
+    }
+    private UiGameElement toolIcon(String operation) {
+        if (operation.equals("effect")) return UiGameElement.effect(effect());
+        ItemStack icon;
+        switch (operation) {
+            case "item": icon = item.isEmpty() ? new ItemStack(Items.PAPER) : item(); break;
+            case "count": icon = new ItemStack(Items.WRITABLE_BOOK); break;
+            case "nbt": icon = new ItemStack(Items.NAME_TAG); break;
+            case "duration": icon = new ItemStack(Items.CLOCK); break;
+            case "amplifier": icon = new ItemStack(Items.ANVIL); break;
+            default: icon = new ItemStack(Items.END_CRYSTAL); break;
+        }
+        return UiGameElement.option(new DropdownOption(operation, icon, null));
     }
     private static final class Row {
         final String id, title, tooltip; final UiGameElement icon;
@@ -256,16 +270,21 @@ public final class SelectorUiSession implements UiPageSession {
         view.text("error", BaniraComponent.get().literal(error)); view.enabled("submit", !submitted && !submitting);
         if (kind == Kind.ITEM) {
             view.gameElement("selected_icon", UiGameElement.option(new DropdownOption("selected", item(), null)));
+            view.gameElement("item", toolIcon("item"));
             view.tooltip("count", tr("set_quantity", item.getCount()));
         } else if (kind == Kind.EFFECT) {
             view.gameElement("selected_icon", UiGameElement.effect(effect()));
+            view.gameElement("effect", toolIcon("effect"));
             view.tooltip("duration", tr("set_duration", effect.getDuration())); view.tooltip("amplifier", tr("set_amplifier", NumberUtils.intToRoman(effect.getAmplifier() + 1)));
         } else {
             ItemStack icon = ItemStack.EMPTY;
             for (AdvancementData data : AdvancementUtils.getAllAdvancements()) if (data.id().equals(advancement)) { icon = data.displayInfo().getIcon().copy(); break; }
             view.gameElement("selected_icon", UiGameElement.option(new DropdownOption("selected", icon, null)));
+            view.gameElement("advancement", UiGameElement.option(new DropdownOption("advancement", icon.isEmpty() ? new ItemStack(Items.END_CRYSTAL) : icon, null)));
         }
-        view.text("mode", BaniraComponent.get().literal("\u21c4"));
+        view.text("mode", BaniraComponent.get().literal(""));
+        view.gameElement("mode", UiGameElement.option(new DropdownOption("mode", new ItemStack(kind == Kind.ADVANCEMENT
+                ? mode ? Items.MAP : Items.BOOK : mode ? Items.CHEST : Items.COMPASS), null)));
         view.tooltip("mode", tr(kind == Kind.ITEM ? mode ? "item_display_mode_inventory" : "item_display_mode_all"
                 : kind == Kind.EFFECT ? mode ? "effect_display_mode_player" : "effect_display_mode_all"
                 : mode ? "advancement_display_mode_icon" : "advancement_display_mode_all", resultCount));

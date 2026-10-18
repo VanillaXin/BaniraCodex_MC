@@ -3,9 +3,11 @@ package xin.vanilla.banira.internal.client.ui;
 import xin.vanilla.banira.api.client.ui.UiControlSpec;
 import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.api.client.ui.UiPointer;
+import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -111,7 +113,8 @@ public class UiDomView extends NativeUiView {
             if (editor == null) { editor = make("div", scope, "editor"); nodes.put("editor", editor); }
             else editor.removeAttribute("style");
             node = make(id.equals("input") ? "input" : "button", editor, id.equals("input") ? "input" : "tool");
-        } else node = make(id.equals("open") ? "button" : "div", scope, id.equals("label") ? "label" : "paragraph");
+        } else node = make(id.equals("open") ? "button" : "div", scope,
+                id.equals("label") ? "label" : id.equals("open") ? "row-action" : "paragraph");
         if (node != null) nodes.put(id, node);
         return node;
     }
@@ -148,7 +151,7 @@ public class UiDomView extends NativeUiView {
         if (node == null) return;
         if (gameElements.containsKey(id)) {
             node.gameElement(gameElements.get(id));
-            if (scope != null && id.equals("icon")) node.attribute("style", "position:absolute;left:0;top:0;width:24px;height:20px");
+            if (scope != null && id.equals("icon")) node.attribute("class", "game-icon row-icon");
             ScreenCoordinate area = gameAreas.get(id);
             if (area != null) node.attribute("style", "position:absolute;left:" + area.x() + "px;top:" + area.y()
                     + "px;width:" + area.width() + "px;height:" + area.height() + "px;display:"
@@ -158,11 +161,25 @@ public class UiDomView extends NativeUiView {
         if (control != null) configure(id, node, control);
         if (texts.containsKey(id)) {
             String text = texts.get(id).toVanilla().getString();
-            node.text(text);
+            ButtonWidget.PresetStyle preset = scope == null ? null : toolPreset(id, text);
+            if (scope != null && id.equals("apply")) node.attribute("class", preset == null ? "row-action" : "tool");
+            node.text(preset == null ? text : "");
             node.component(texts.get(id));
-            if (id.equals("label")) node.tooltip(text);
+            if (preset != null) {
+                node.gameElement(UiGameElement.preset(preset));
+                node.attribute("aria-label", text);
+            } else if (scope != null && id.equals("apply")) {
+                node.gameElement(null);
+                node.removeAttribute("aria-label");
+            }
+            if (id.equals("label") || preset != null) node.tooltip(text);
         }
-        if (tooltips.containsKey(id)) node.tooltip(tooltips.get(id).toVanilla().getString());
+        if (tooltips.containsKey(id)) {
+            String tooltip = tooltips.get(id).toVanilla().getString();
+            node.tooltip(tooltip);
+            if (gameElements.get(id) != null || scope != null && texts.containsKey(id)
+                    && toolPreset(id, texts.get(id).toVanilla().getString()) != null) node.attribute("aria-label", tooltip);
+        }
         if (enabled.containsKey(id)) {
             if (enabled.get(id)) node.removeAttribute("disabled");
             else {
@@ -208,6 +225,15 @@ public class UiDomView extends NativeUiView {
         return String.join(", ", labels);
     }
 
+    private static ButtonWidget.PresetStyle toolPreset(String id, String text) {
+        switch (id) {
+            case "reset": return ButtonWidget.PresetStyle.RESET;
+            case "delete": return "\u21b6".equals(text) ? ButtonWidget.PresetStyle.RESET : ButtonWidget.PresetStyle.CLOSE;
+            case "apply": return "+".equals(text) ? ButtonWidget.PresetStyle.PLUS : "\u2713".equals(text) ? ButtonWidget.PresetStyle.CHECK : null;
+            default: return null;
+        }
+    }
+
     private void configure(String id, UiDomAccess.Node node, UiControlSpec control) {
         node.attribute("type", control.kind() == UiControlSpec.Kind.PASSWORD ? "password" : "text");
         node.attribute("maxlength", Integer.toString(control.maxLength()));
@@ -220,7 +246,9 @@ public class UiDomView extends NativeUiView {
                 || control.kind() == UiControlSpec.Kind.PICKER || control.kind() == UiControlSpec.Kind.SELECT)) {
             UiDomAccess.Node pick = node("pick");
             pick.removeAttribute("style");
-            pick.text(control.kind() == UiControlSpec.Kind.SELECT ? "v" : "...");
+            boolean select = control.kind() == UiControlSpec.Kind.SELECT;
+            pick.text(select ? "" : "...");
+            pick.gameElement(select ? UiGameElement.preset(ButtonWidget.PresetStyle.ARROW_DOWN) : null);
             pick.tooltip(texts.containsKey("label") ? texts.get("label").toVanilla().getString() : "");
             listen("pick:control", pick, "click", event -> {
                 if (!enabled.getOrDefault(id, true)) return;
@@ -245,6 +273,7 @@ public class UiDomView extends NativeUiView {
             node.tooltip("");
             node.gameElement(null);
             node.removeAttribute("disabled"); node.removeAttribute("aria-invalid"); node.removeAttribute("placeholder");
+            node.removeAttribute("aria-label");
             node.removeAttribute("readonly"); node.removeAttribute("type"); node.removeAttribute("maxlength");
             node.attribute("style", "display:none");
             if (entry.getKey().equals("input")) node.value("");

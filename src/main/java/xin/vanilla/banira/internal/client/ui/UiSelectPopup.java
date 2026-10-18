@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.client.ui;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiControlSpec;
 import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 
@@ -12,6 +13,7 @@ import java.util.function.Consumer;
 
 final class UiSelectPopup implements AutoCloseable {
     private final UiDomAccess dom;
+    private final UiDomAccess.Node anchor;
     private final UiDomAccess.Node layer, panel, search, options;
     private final UiControlSpec control;
     private final Consumer<UiValue> selection;
@@ -28,7 +30,7 @@ final class UiSelectPopup implements AutoCloseable {
 
     UiSelectPopup(UiDomAccess dom, UiDomAccess.Node anchor, UiControlSpec control, UiValue value,
                   Consumer<UiValue> selection, BooleanSupplier live, Runnable closed, Consumer<Throwable> failure) {
-        this.dom = dom; this.control = control; this.selection = selection; this.live = live; this.closed = closed;
+        this.dom = dom; this.anchor = anchor; this.control = control; this.selection = selection; this.live = live; this.closed = closed;
         this.failure = failure;
         if (value != null) {
             if (control.multiple()) selected.addAll(value.asStrings());
@@ -77,8 +79,25 @@ final class UiSelectPopup implements AutoCloseable {
         for (DropdownOption option : control.options()) {
             if (option.valueLowerCase().contains(query) || option.displayLabelLowerCase().contains(query)) filtered.add(option);
         }
+        ScreenCoordinate area = placement(anchor.bounds(), dom.overlayRoot().bounds(), control.options().size());
+        panel.attribute("style", "left:" + area.x() + "px;top:" + area.y() + "px;width:" + area.width() + "px;height:" + area.height() + "px");
         options.scrollTop(0);
         render();
+    }
+
+    static ScreenCoordinate placement(ScreenCoordinate anchor, ScreenCoordinate viewport, int optionCount) {
+        double width = Math.min(Math.max(0, viewport.width() - 16), Math.max(120, anchor.width()));
+        double height = Math.min(Math.max(0, viewport.height() - 16), 40 + Math.min(8, Math.max(1, optionCount)) * 22);
+        double left = viewport.x() + 8, top = viewport.y() + 8, right = viewport.x() + viewport.width() - 8;
+        double bottom = viewport.y() + viewport.height() - 8;
+        double below = bottom - anchor.y() - anchor.height() - 4, above = anchor.y() - 4 - top;
+        double x = Math.max(left, Math.min(anchor.x(), right - width));
+        boolean down = below >= height || below >= above;
+        double available = Math.max(0, down ? below : above);
+        if (available < 62) return new ScreenCoordinate(x, top, width, height);
+        height = Math.min(height, available);
+        double y = down ? anchor.y() + anchor.height() + 4 : anchor.y() - 4 - height;
+        return new ScreenCoordinate(x, Math.max(top, Math.min(y, bottom - height)), width, height);
     }
 
     private void render() {
@@ -104,7 +123,8 @@ final class UiSelectPopup implements AutoCloseable {
                         if (live.getAsBoolean() && !resources.closed() && slot < rowOptions.size()) choose(rowOptions.get(slot).value());
                     });
                 }
-                button.text((selected.contains(option.value()) ? "+ " : "") + option.displayLabel());
+                button.text(option.displayLabel());
+                button.attribute("aria-selected", Boolean.toString(selected.contains(option.value())));
                 button.attribute("style", "height:22px;flex-shrink:0");
                 button.icon(option);
                 button.tooltip(option.tooltip() == null ? option.displayLabel() : option.tooltip().toVanilla().getString());

@@ -56,6 +56,16 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         body = wrap(bodies.get(0));
         count = count(document.getDocumentElement());
         checkBudget();
+        linkParents(document.getDocumentElement(), null);
+    }
+
+    private void linkParents(com.sighs.apricityui.init.Node node, AuiNode parent) {
+        if (node instanceof Element) {
+            AuiNode current = wrap((Element) node);
+            current.parent = parent;
+            parent = current;
+        }
+        for (com.sighs.apricityui.init.Node child : node.getChildNodes()) linkParents(child, parent);
     }
 
     private int count(com.sighs.apricityui.init.Node node) {
@@ -127,7 +137,9 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
         for (AuiNode node : icons) {
             if (popupLayers > 0 && !node.inPopup) continue;
-            AuiGameElements.renderOption(graphics, node.icon, node.bounds(), node.clip == null ? null : node.clip.bounds());
+            ScreenCoordinate bounds = node.bounds();
+            ScreenCoordinate leading = new ScreenCoordinate(bounds.x() + 2, bounds.y(), Math.min(22, bounds.width() - 2), bounds.height());
+            AuiGameElements.renderOption(graphics, node.icon, leading, node.clip == null ? null : node.clip.bounds());
         }
         if (popupLayers == 0) for (AuiNode node : gameElements) {
             AuiGameElements.renderElement(graphics, node.gameElement, node.bounds(), node.clip == null ? contentBounds() : node.clip.bounds(), theme);
@@ -204,7 +216,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                 if (!Objects.equals(attributes.put(name, value), value)) element.setAttribute(name, value);
                 return;
             }
-            if (!Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder", "aria-invalid").contains(name)) {
+            if (!Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder", "aria-invalid", "aria-label", "aria-selected").contains(name)) {
                 throw new IllegalArgumentException("Unsupported UI attribute");
             }
             if (Objects.equals(attributes.put(name, value), value)) return;
@@ -277,9 +289,10 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             AuiNode ancestor = parent;
             while (ancestor != null && !ancestor.clips) ancestor = ancestor.parent;
             clip = ancestor != null ? ancestor : value.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC ? wrap(content) : body;
-            if (value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC
-                    && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE)
-                attribute("style", "width:24px;height:20px;flex-shrink:0");
+            if (created && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC
+                    && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE
+                    && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.PRESET)
+                attribute("style", "width:24px;height:24px;flex-shrink:0");
         }
         @Override public AutoCloseable on(String name, Consumer<Event> action) {
             Consumer<com.sighs.apricityui.event.Event> listener = event -> {

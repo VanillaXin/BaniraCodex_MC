@@ -147,6 +147,47 @@ public class UiDomControlsTest {
         view.close();
     }
 
+    @Test public void rowActionsDoNotInheritParagraphMargins() throws Exception {
+        Dom dom = new Dom();
+        NativeUiView view = dom.view();
+        view.rows("fields", new UiRowProvider() {
+            public int size() { return 1; }
+            public String key(int index) { return "first"; }
+            public void bind(UiView row, int index) { row.text("open", xin.vanilla.banira.BaniraComponent.get().literal("Action")); }
+        }, 120);
+        assertEquals("row-action", dom.created.stream().filter(node -> node.tag.equals("button") && node.text.equals("Action"))
+                .findFirst().orElseThrow().attributes.get("class"));
+        view.close();
+    }
+
+    @Test public void scopedToolsUsePresetIconsAndRetainTheirActions() throws Exception {
+        Dom dom = new Dom();
+        NativeUiView view = dom.view();
+        int[] resets = {0};
+        view.rows("fields", new UiRowProvider() {
+            public int size() { return 1; }
+            public String key(int index) { return "first"; }
+            public void bind(UiView row, int index) {
+                row.text("reset", xin.vanilla.banira.BaniraComponent.get().literal("Reset"));
+                row.tooltip("reset", xin.vanilla.banira.BaniraComponent.get().literal("Reset value"));
+                row.onAction("reset", () -> resets[0]++);
+                row.control("input", new UiControlSpec(UiControlSpec.Kind.SELECT, 64, "", false));
+            }
+        }, 120);
+        Dom.Node reset = dom.created.stream().filter(node -> node.gameElement != null
+                && node.gameElement.kind() == UiGameElement.Kind.PRESET
+                && node.gameElement.preset() == xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.RESET).findFirst().orElse(null);
+        assertNotNull("Reset needs a centered icon instead of a font glyph", reset);
+        assertEquals("", reset.text);
+        assertEquals("Reset value", reset.attributes.get("aria-label"));
+        assertEquals("Reset value", reset.tooltip);
+        reset.emit("click");
+        assertEquals(1, resets[0]);
+        assertTrue(dom.created.stream().anyMatch(node -> node.gameElement != null && node.gameElement.kind() == UiGameElement.Kind.PRESET
+                && node.gameElement.preset() == xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.ARROW_DOWN));
+        view.close();
+    }
+
     @Test public void longListHasBoundedNodesAndScrollPreservesFullData() throws Exception {
         Dom dom = new Dom();
         NativeUiView view = dom.view();

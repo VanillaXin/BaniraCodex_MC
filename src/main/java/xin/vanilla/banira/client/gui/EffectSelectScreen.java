@@ -362,7 +362,7 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
                 iconWidget.enableTooltip(false);
                 durationTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 durationTooltip.seasonTooltip(useSeasonTooltip);
-                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", this.currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", EffectDurationModel.clockText(this.currentEffect.getDuration())));
                 btn.addChild(durationTooltip);
                 btn.addChild(iconWidget);
             } else if (opCode == ButtonType.AMPLIFIER.code()) {
@@ -522,7 +522,7 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
         }
         if (durationTooltip != null) {
             if (currentEffect != null) {
-                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", EffectDurationModel.clockText(currentEffect.getDuration())));
             }
         }
         if (amplifierTooltip != null) {

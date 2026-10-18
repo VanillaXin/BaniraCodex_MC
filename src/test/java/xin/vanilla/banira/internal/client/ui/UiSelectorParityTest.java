@@ -66,11 +66,11 @@ public class UiSelectorParityTest {
         FormUiSession id = editor(s, "item"); draft(id, "minecraft:iron_sword"); assertTrue(id.submit());
         item = (ItemStack) call(s, "item"); assertEquals(Items.IRON_SWORD, item.getItem()); assertEquals(23, item.getCount()); assertEquals(4, item.getTag().getInt("Damage"));
     }
-    @Test public void effectDurationAndLevelRetainRawTickContract() throws Exception {
+    @Test public void effectDurationUsesClockInputAndPreservesStoredTickPrecision() throws Exception {
         MobEffectInstance original = new MobEffectInstance(MobEffects.LUCK, 601, 2);
         Object s = session(new EffectSelectScreen.Args().parentScreen(parent()).defaultEffect(original).onDataReceived1(effect -> { }));
-        FormUiSession duration = editor(s, "duration"); assertEquals("601", duration.draft(0));
-        draft(duration, "0"); assertFalse(duration.submit()); draft(duration, "1201"); assertTrue(duration.submit());
+        FormUiSession duration = editor(s, "duration"); assertEquals("0:00:30.05", duration.draft(0));
+        draft(duration, "0"); assertFalse(duration.submit()); draft(duration, "0:01:00.05"); assertTrue(duration.submit());
         FormUiSession level = editor(s, "amplifier"); draft(level, "101"); assertFalse(level.submit()); draft(level, "4"); assertTrue(level.submit());
         MobEffectInstance effect = (MobEffectInstance) call(s, "effect"); assertEquals(1201, effect.getDuration()); assertEquals(3, effect.getAmplifier());
         FormUiSession id = editor(s, "effect"); draft(id, "minecraft:strength"); assertTrue(id.submit());

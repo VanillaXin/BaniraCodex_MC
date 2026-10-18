@@ -144,12 +144,12 @@ public final class SelectorUiSession implements UiPageSession {
             apply = input -> effect = new MobEffectInstance(EffectUtils.getEffectFromRegistry(input.firstValue()), effect.getDuration(), effect.getAmplifier());
         } else if (kind == Kind.EFFECT && operation.equals("duration")) {
             int currentTicks = effect.getDuration();
-            widget.title(Text.transAuto(Banira.MOD_ID, "enter_effect_duration")).maxLength(EffectDurationModel.inputDigits(currentTicks))
-                    .regex("[0-9]{0," + EffectDurationModel.inputDigits(currentTicks) + "}").defaultValue(Integer.toString(currentTicks)).validator(input -> {
-                        try { EffectDurationModel.parseTicks(input.value(), currentTicks); return null; }
+            widget.title(Text.transAuto(Banira.MOD_ID, "enter_effect_duration")).maxLength(16)
+                    .regex("[0-9:.\u221e]{0,16}").defaultValue(EffectDurationModel.clockText(currentTicks)).validator(input -> {
+                        try { EffectDurationModel.parseTime(input.value(), currentTicks); return null; }
                         catch (IllegalArgumentException invalid) { return failure("enter_effect_duration_error", input.value()); }
                     });
-            apply = input -> effect = new MobEffectInstance(effect.getEffect(), EffectDurationModel.parseTicks(input.firstValue(), currentTicks), effect.getAmplifier());
+            apply = input -> effect = new MobEffectInstance(effect.getEffect(), EffectDurationModel.parseTime(input.firstValue(), currentTicks), effect.getAmplifier());
         } else if (kind == Kind.EFFECT && operation.equals("amplifier")) {
             widget.title(Text.transAuto(Banira.MOD_ID, "enter_effect_amplifier")).regex("\\d{0,3}").defaultValue(Integer.toString(effect.getAmplifier() + 1))
                     .validator(input -> NumberUtils.toInt(input.value()) <= 0 || NumberUtils.toInt(input.value()) > 100 ? failure("enter_effect_amplifier_error", input.value()) : null);
@@ -265,7 +265,7 @@ public final class SelectorUiSession implements UiPageSession {
         if (view == null || closed) return;
         if (view instanceof NativeUiView) ((NativeUiView) view).state().selectedId(selectedKey());
         String description = selectedKey() + (kind == Kind.ITEM ? " \u00d7" + item.getCount()
-                : kind == Kind.EFFECT ? " " + NumberUtils.intToRoman(effect.getAmplifier() + 1) + " " + EffectDurationModel.ticksText(effect.getDuration()) : "");
+                : kind == Kind.EFFECT ? " " + NumberUtils.intToRoman(effect.getAmplifier() + 1) + " " + EffectDurationModel.clockText(effect.getDuration()) : "");
         view.text("selection", BaniraComponent.get().literal(description)); view.tooltip("selection", BaniraComponent.get().literal(description));
         view.text("error", BaniraComponent.get().literal(error)); view.enabled("submit", !submitted && !submitting);
         if (kind == Kind.ITEM) {
@@ -275,7 +275,7 @@ public final class SelectorUiSession implements UiPageSession {
         } else if (kind == Kind.EFFECT) {
             view.gameElement("selected_icon", UiGameElement.effect(effect()));
             view.gameElement("effect", toolIcon("effect"));
-            view.tooltip("duration", tr("set_duration", effect.getDuration())); view.tooltip("amplifier", tr("set_amplifier", NumberUtils.intToRoman(effect.getAmplifier() + 1)));
+            view.tooltip("duration", tr("set_duration", EffectDurationModel.clockText(effect.getDuration()))); view.tooltip("amplifier", tr("set_amplifier", NumberUtils.intToRoman(effect.getAmplifier() + 1)));
         } else {
             ItemStack icon = ItemStack.EMPTY;
             for (AdvancementData data : AdvancementUtils.getAllAdvancements()) if (data.id().equals(advancement)) { icon = data.displayInfo().getIcon().copy(); break; }

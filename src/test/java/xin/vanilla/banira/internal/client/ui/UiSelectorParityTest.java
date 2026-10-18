@@ -158,4 +158,20 @@ public class UiSelectorParityTest {
         ItemStack copy = (ItemStack) call(s, "item"); assertNotSame(ItemStack.EMPTY, copy); copy.setCount(10);
         assertTrue(((ItemStack) call(s, "item")).isEmpty());
     }
+    @Test public void selectorLabelsUseWordTranslationsWithoutFormatArguments() throws Exception {
+        var translate = xin.vanilla.banira.internal.client.ui.page.SelectorUiSession.class
+                .getDeclaredMethod("tr", String.class, Object[].class);
+        translate.setAccessible(true);
+        for (String key : new String[]{"search_item", "search_effect", "search_advancement", "submit", "cancel", "enter_item_id"}) {
+            var label = (xin.vanilla.banira.common.data.Component) translate.invoke(null, key, new Object[0]);
+            assertEquals(key, xin.vanilla.banira.common.enums.EnumI18nType.WORD, label.i18nType());
+        }
+    }
+    @Test public void selectorTooltipsKeepFormatTranslationsWithArguments() throws Exception {
+        var translate = xin.vanilla.banira.internal.client.ui.page.SelectorUiSession.class
+                .getDeclaredMethod("tr", String.class, Object[].class);
+        translate.setAccessible(true);
+        var label = (xin.vanilla.banira.common.data.Component) translate.invoke(null, "set_quantity", new Object[]{9});
+        assertEquals(xin.vanilla.banira.common.enums.EnumI18nType.FORMAT, label.i18nType());
+    }
 }

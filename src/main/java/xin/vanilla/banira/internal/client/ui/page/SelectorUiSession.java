@@ -169,7 +169,9 @@ public final class SelectorUiSession implements UiPageSession {
     }
     public void openEditor(String operation) { Minecraft.getInstance().setScreen(new InputFormScreen(editor(operation))); }
     private static String failure(String key, String input) { return BaniraComponent.get().transClientAuto(key, input).toString(); }
-    private static Component tr(String key, Object... args) { return BaniraComponent.get().transClientAuto(key, args); }
+    private static Component tr(String key, Object... args) {
+        return args.length == 0 ? BaniraComponent.get().transClientAuto(key) : BaniraComponent.get().transClientAuto(key, args);
+    }
     @Override public void bind(UiView view) {
         detach(UiDetachReason.RELOAD); if (closed) return;
         this.view = Objects.requireNonNull(view); bindings = new UiOwnedResources();

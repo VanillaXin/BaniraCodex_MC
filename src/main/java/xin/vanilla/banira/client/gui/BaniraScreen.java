@@ -40,7 +40,7 @@ import java.util.function.Predicate;
  * <p>
  * 事件分发顺序：
  * <ul>
- *   <li><b>mouseClicked</b>: cursor → popupOption(悬停则处理) → 否则 popupOption.clear + unfocusAllExcept
+ *   <li><b>mouseClicked</b>: cursor → popupOption(按事件坐标处理) → 否则 popupOption.clear + unfocusAllExcept
  *       → 逆序 widgets(visible+enabled, shouldWidgetReceiveClick) handleMouseClick → 首个 consumed 的获得 focus
  *       → 未 consumed 则 onMouseClicked</li>
  *   <li><b>mouseScrolled</b>: cursor → popupOption → 正序 wantsScrollBeforeSiblings 且 isMouseInside 的 widget 优先
@@ -319,10 +319,8 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionPress(clickEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionPress(clickEvent)) {
+            args.consumed(true);
         } else {
             this.popupOption.clear();
             unfocusAllExcept(null);
@@ -385,12 +383,10 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
+            args.consumed(true);
         }
-        if (!this.popupOption.isHovered()) {
+        if (!args.consumed() && !this.popupOption.isHovered()) {
             this.popupOption.clear();
 
             if (findFirstHandlingWidget(w -> w.handleMouseRelease(MouseEvent.of(mouseX, mouseY, button))) != null) {

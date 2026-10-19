@@ -62,6 +62,11 @@ public final class BaniraCodexClientBootstrap {
     private BaniraCodexClientBootstrap() {
     }
 
+    private static void disconnectUi() {
+        try { xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect(); }
+        finally { xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient(); }
+    }
+
     public static void init() {
         UI_SESSIONS.hudHost(UI_HUDS);
         xin.vanilla.banira.internal.client.ui.SharedHudHosts.install(UI_HUDS);
@@ -121,13 +126,13 @@ public final class BaniraCodexClientBootstrap {
             UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
         });
         BaniraClientEventHub.Player.onClientLoggedOut(player -> {
-            UI_SESSIONS.disconnect();
+            disconnectUi();
             hadConnection = false;
         });
         BaniraClientEventHub.Client.onClientTick(event -> {
             if (event != BaniraClientTickEvent.END) return;
             boolean connected = BaniraClientRuntime.hasConnection();
-            if (hadConnection && !connected) UI_SESSIONS.disconnect();
+            if (hadConnection && !connected) disconnectUi();
             hadConnection = connected;
             xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();

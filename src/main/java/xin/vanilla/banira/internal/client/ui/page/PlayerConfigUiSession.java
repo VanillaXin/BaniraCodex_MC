@@ -16,8 +16,33 @@ public final class PlayerConfigUiSession implements UiPageSession {
     private UiView view;
     private String query = "";
     private boolean closed;
+    private final java.util.function.Supplier<java.util.Map<String, String>> source;
+    private final java.util.Map<String, String> baseline = new java.util.LinkedHashMap<>();
 
-    public PlayerConfigUiSession(InputFormScreen.Args args) { fields = new FormUiSession(args); }
+    public PlayerConfigUiSession(InputFormScreen.Args args) { this(args, null); }
+    public PlayerConfigUiSession(InputFormScreen.Args args, java.util.function.Supplier<java.util.Map<String, String>> source) {
+        fields = new FormUiSession(args);
+        this.source = source;
+        for (InputFormScreen.Widget widget : args.getWidgets()) baseline.put(widget.name(), widget.defaultValue());
+    }
+    public boolean refresh() {
+        if (closed || source == null) return false;
+        java.util.Map<String, String> snapshot = source.get();
+        if (snapshot == null) return false;
+        boolean changed = false;
+        for (int index = 0; index < fields.args().getWidgets().size(); index++) {
+            String name = fields.args().getWidgets().get(index).name(), value = snapshot.get(name);
+            if (value == null) continue;
+            String current = fields.draft(index);
+            if (java.util.Objects.equals(current, baseline.get(name))) {
+                fields.acceptNative(index, value);
+                changed |= !java.util.Objects.equals(current, fields.draft(index));
+            }
+            baseline.put(name, value);
+        }
+        if (changed) applyFilter();
+        return changed;
+    }
     public FormUiSession fields() { return fields; }
     public String query() { return query; }
     public void query(String value) { query = value == null ? "" : value; applyFilter(); }
@@ -34,6 +59,7 @@ public final class PlayerConfigUiSession implements UiPageSession {
     @Override public void bind(UiView view) {
         detach(UiDetachReason.RELOAD);
         if (closed) return;
+        refresh();
         this.view = view;
         bindings = new UiOwnedResources();
         applyFilter();
@@ -44,7 +70,7 @@ public final class PlayerConfigUiSession implements UiPageSession {
         view.draft("search", query);
         bindings.own(view.onDraft("search", value -> { if (this.view == view) query(value); }));
     }
-    @Override public void tick() { fields.tick(); }
+    @Override public void tick() { refresh(); fields.tick(); }
     @Override public void detach(UiDetachReason reason) {
         view = null;
         try { bindings.close(); }

@@ -70,9 +70,20 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
                             .defaultValue(CustomConfig.notificationReceiveModeVanillaMessage.equals(mode)
                                     ? CustomConfig.notificationReceiveModeVanillaMessage : CustomConfig.notificationReceiveModeNotification))
                     .setCallback(this::persistPlayerConfig);
-            uiSession = new PlayerConfigUiSession(form);
+            uiSession = new PlayerConfigUiSession(form, () -> CustomConfig.playerPreferencesClient(uuid));
         }
         return uiSession;
+    }
+
+    @Override public void tick() {
+        super.tick();
+        if (uiSession == null || languageDropdown == null || modeDropdown == null) return;
+        captureUiState(null);
+        if (uiSession.refresh()) {
+            languageDropdown.selectedValues(Collections.singletonList(uiSession.fields().draft("language")));
+            modeDropdown.selectedValues(Collections.singletonList(CustomConfig.notificationReceiveModeVanillaMessage
+                    .equals(uiSession.fields().draft("notificationReceiveMode")) ? labelVanillaMode : labelBaniraMode));
+        }
     }
 
     @Override public void captureUiState(UiViewState state) {
@@ -228,13 +239,10 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
             return;
         }
 
-        String uuid = PlayerUtils.getPlayerUUIDString(minecraft.player);
         String language = result.value("language");
         String mode = result.value("notificationReceiveMode");
         try {
             PacketUtils.sendPacketToServer(new CustomPlayerConfigSyncToServer(language, mode));
-            CustomConfig.setPlayerLanguageClient(uuid, language);
-            CustomConfig.setPlayerNotificationReceiveModeClient(uuid, mode);
         } catch (Exception exception) {
             result.runningResult(exception);
             notifySyncFailure("custom_player_config_sync_failed",

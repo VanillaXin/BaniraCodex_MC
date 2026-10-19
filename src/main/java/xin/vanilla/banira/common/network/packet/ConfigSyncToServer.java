@@ -16,13 +16,13 @@ import xin.vanilla.banira.internal.server.ServerSenderAccess;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 配置同步包：客户端将修改的配置项同步至服务端
  */
 public class ConfigSyncToServer implements NetworkPacket {
 
-    private static final long NOTIFY_OK_MS = 3000L;
     private static final long NOTIFY_ERR_MS = 4500L;
 
     private final String configName;
@@ -99,14 +99,22 @@ public class ConfigSyncToServer implements NetworkPacket {
                 }
                 holder.setAll(parsedChanges, xin.vanilla.banira.common.config.ConfigEditOrigin.REMOTE);
                 saveConfig(holder);
-                sendNotify(sender, "config_editor_sync_server_ok", NOTIFY_OK_MS,
-                        String.valueOf(packet.changes.size()));
+                ServerSenderAccess.sendPacket(sender, acknowledgement(holder, parsedChanges.keySet()));
             } catch (Exception ex) {
                 String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
                 sendNotify(sender, "config_editor_sync_server_save_failed", NOTIFY_ERR_MS, msg);
             }
         });
         ctx.markHandled();
+    }
+
+    static ConfigSnapshotToClient acknowledgement(ConfigHolder holder, Set<String> savedPaths) {
+        Map<String, Object> values = holder.snapshotForRead(savedPaths).getValues();
+        Map<String, String> snapshot = new HashMap<>();
+        for (String path : savedPaths) {
+            if (values.containsKey(path)) snapshot.put(path, encodeConfigValue(values.get(path)));
+        }
+        return new ConfigSnapshotToClient(holder.getConfigName(), snapshot);
     }
 
     static void applyValidatedChanges(ConfigHolder holder, Map<String, String> changes) {

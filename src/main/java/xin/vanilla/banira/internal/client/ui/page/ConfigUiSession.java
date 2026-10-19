@@ -144,7 +144,6 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         saving = true;
         try {
             services.sync(holder, ConfigEditorSyncService.encodePayload(values));
-            services.fetch(holder);
             return true;
         } catch (Exception failure) {
             notice(all ? "config_editor_sync_full_failed" : "config_editor_sync_failed", 4000, detail(failure));

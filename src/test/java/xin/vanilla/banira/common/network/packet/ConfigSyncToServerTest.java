@@ -9,6 +9,24 @@ import static org.junit.Assert.*;
 
 public class ConfigSyncToServerTest {
 
+    @Test public void acknowledgementContainsOnlySavedFieldsAndFreezesAuthoritativeValues() throws Exception {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("first", 6); values.put("secret", 9);
+        ConfigHolder holder = holder(values, integerDescriptor("first", 0, 10), integerDescriptor("secret", 0, 10));
+        java.lang.reflect.Method method;
+        try { method = ConfigSyncToServer.class.getDeclaredMethod("acknowledgement", ConfigHolder.class, Set.class); }
+        catch (NoSuchMethodException missing) { throw new AssertionError("Saved-field acknowledgement unavailable", missing); }
+        method.setAccessible(true);
+        ConfigSnapshotToClient receipt = (ConfigSnapshotToClient) method.invoke(null, holder, Set.of("first"));
+        assertEquals(holder.getConfigName(), receipt.configName());
+        assertEquals(Map.of("first", "6"), receipt.snapshot());
+        values.put("first", 8);
+        ConfigSnapshotToClient next = (ConfigSnapshotToClient) method.invoke(null, holder, Set.of("first"));
+        assertEquals(Map.of("first", "8"), next.snapshot());
+        assertEquals(Map.of("first", "6"), receipt.snapshot());
+        assertFalse(next.snapshot().containsKey("secret"));
+    }
+
     @Test
     public void remoteGuardRejectsEveryFieldBeforeAnyWrite() {
         Map<String, Object> values = new LinkedHashMap<>();

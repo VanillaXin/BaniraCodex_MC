@@ -213,6 +213,24 @@ public class UiDomControlsTest {
         assertTrue(dom.created.stream().filter(node -> !node.removed).count() < 2000);
     }
 
+    @Test public void engineScrollWithoutAnEventRefreshesTheVirtualWindowAfterLayout() throws Exception {
+        Dom dom = new Dom();
+        UiDomView view = (UiDomView) dom.view();
+        List<Integer> bound = new ArrayList<>();
+        view.rows("fields", new UiRowProvider() {
+            public int size() { return 5000; }
+            public String key(int index) { return "key:" + index; }
+            public void bind(UiView row, int index) { bound.add(index); }
+        }, 120);
+        view.afterLayout(); view.afterLayout(); bound.clear();
+        dom.ids.get("content").scroll = 4800d * 48;
+        view.afterLayout();
+        assertTrue("Silent scroll must realize the current viewport", bound.contains(4800));
+        assertEquals(4800, view.state().rowPosition(), .001);
+        assertTrue(dom.created.stream().anyMatch(node -> "height:230400px;flex-shrink:0".equals(node.attributes.get("style"))));
+        view.close();
+    }
+
     @Test public void keyCapturePreviewsWithoutPublishingAndEscapeRestoresPreviousChord() throws Exception {
         Dom dom = new Dom(); NativeUiView view = dom.view();
         view.control("text", new UiControlSpec(UiControlSpec.Kind.KEY_CHORD, 64, "", false));

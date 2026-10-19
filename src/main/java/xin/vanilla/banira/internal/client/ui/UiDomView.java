@@ -517,6 +517,7 @@ public class UiDomView extends NativeUiView {
                 update(true);
                 return;
             }
+            update();
             if (focusViewportRestored) return;
             for (UiDomView row : rows) for (Map.Entry<String, UiDomAccess.Node> control : row.nodes.entrySet()) {
                 UiDomAccess.Node node = control.getValue();

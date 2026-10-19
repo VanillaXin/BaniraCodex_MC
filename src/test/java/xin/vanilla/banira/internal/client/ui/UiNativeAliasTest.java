@@ -8,6 +8,34 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiNativeAliasTest {
+    @Test public void nativeAdoptionKeepsCurrentWidgetsButExplicitReloadPresentsOnce() throws Exception {
+        Session session = new Session(); Alias screen = new Alias(session);
+        AtomicInteger presents = new AtomicInteger(), factories = new AtomicInteger();
+        java.util.concurrent.atomic.AtomicReference<UiSessionHost> current = new java.util.concurrent.atomic.AtomicReference<>();
+        UiSessionHost host = new UiSessionHost(new UiBackendController(() -> false, () -> false),
+                (page, previous) -> { throw new AssertionError("Native adoption requested AUI"); },
+                value -> { presents.incrementAndGet(); current.get().screenRemoved(value); }, value -> value == screen);
+        current.set(host);
+        UiPageSpec page = new UiPageSpec("banira_codex:config", "banira_codex/ui/config.html", session,
+                previous -> { factories.incrementAndGet(); return screen; });
+        UiViewState state = new UiViewState(); state.rowPosition(7);
+        java.lang.reflect.Method adopt;
+        try { adopt = UiSessionHost.class.getMethod("adoptNative", UiPageSpec.class, Object.class, Object.class, UiViewState.class); }
+        catch (NoSuchMethodException missing) { throw new AssertionError("Native adoption without re-presentation unavailable", missing); }
+        assertEquals(true, adopt.invoke(host, page, screen, null, state));
+        NativeUiView old = host.view();
+        assertSame(screen, old.screen()); assertEquals(1, session.binds.get());
+        assertEquals(0, presents.get()); assertEquals(0, factories.get());
+        host.reload(); host.tick();
+        assertSame(page, host.page()); assertSame(state, host.view().state());
+        assertEquals(7, host.view().state().rowPosition(), 0);
+        assertEquals(1, presents.get()); assertEquals(2, session.binds.get());
+        assertEquals(0, factories.get()); assertTrue(old.closed());
+        host.disconnect(); host.disconnect();
+        host.resumeScreen(screen); host.tick();
+        assertNull(host.page()); assertEquals(1, session.closes.get()); assertEquals(1, presents.get());
+    }
+
     private static final class Session implements UiPageSession {
         final AtomicInteger binds = new AtomicInteger(), closes = new AtomicInteger();
         public void bind(UiView view) { binds.incrementAndGet(); }

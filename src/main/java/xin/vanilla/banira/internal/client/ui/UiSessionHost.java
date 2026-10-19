@@ -25,6 +25,7 @@ public final class UiSessionHost {
     private Entry active;
     private Entry returning;
     private Object returningScreen;
+    private Object presentingScreen;
     private UiDetachReason pending;
     private long generation;
     private long backendRevision;
@@ -43,12 +44,25 @@ public final class UiSessionHost {
     }
 
     public boolean open(UiPageSpec page, Object previousScreen, UiViewState initialState) {
+        return open(page, previousScreen, initialState, null);
+    }
+
+    public boolean adoptNative(UiPageSpec page, Object screen, Object previousScreen, UiViewState initialState) {
+        if (screen == null || !screenValidator.test(screen)) return false;
+        return open(page, previousScreen, initialState, screen);
+    }
+
+    private boolean open(UiPageSpec page, Object previousScreen, UiViewState initialState, Object nativeScreen) {
         if (active != null && active.page == page) return true;
         returning = null;
         returningScreen = null;
         previousScreen = retainedParent(previousScreen);
         Entry entry = new Entry(Objects.requireNonNull(page, "page"), previousScreen, Objects.requireNonNull(initialState, "initialState"));
-        NativeUiView view = createView(entry);
+        NativeUiView view;
+        if (nativeScreen != null) {
+            entry.nativeScreen = nativeScreen;
+            view = new NativeUiView(nativeScreen);
+        } else view = createView(entry);
         if (view == null) return false;
         if (active != null) {
             if (active.view != null && active.view.screen() == previousScreen) parents.put(previousScreen, active);
@@ -58,7 +72,7 @@ public final class UiSessionHost {
         if (suspendedParent != null) parents.put(previousScreen, suspendedParent);
         active = entry;
         pending = null;
-        return present(entry, view);
+        return present(entry, view, nativeScreen == null);
     }
 
     private NativeUiView createView(Entry entry) {
@@ -84,6 +98,10 @@ public final class UiSessionHost {
     }
 
     private boolean present(Entry entry, NativeUiView view) {
+        return present(entry, view, true);
+    }
+
+    private boolean present(Entry entry, NativeUiView view, boolean displayScreen) {
         long token = ++generation;
         entry.view = view;
         view.restoreState(entry.state);
@@ -92,7 +110,12 @@ public final class UiSessionHost {
         try {
             view.theme(entry.page.theme());
             entry.page.session().bind(view);
-            presenter.accept(view.screen());
+            if (displayScreen) {
+                Object previousPresentation = presentingScreen;
+                presentingScreen = view.screen();
+                try { presenter.accept(view.screen()); }
+                finally { presentingScreen = previousPresentation; }
+            }
             if (entry.aui) backend.attach(entry.page.id());
             backendRevision = backend.revision();
             return true;
@@ -139,7 +162,7 @@ public final class UiSessionHost {
     }
 
     public void screenRemoved(Object screen) {
-        if (ownsScreen(screen)) suspendScreen(active.view);
+        if (screen != presentingScreen && ownsScreen(screen)) suspendScreen(active.view);
     }
 
     public void observeScreen(Object screen) {

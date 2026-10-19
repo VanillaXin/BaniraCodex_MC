@@ -16,6 +16,35 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
 
 public class UiCommonPagesTest {
+    @Test public void nativeConfigurationOwnershipDoesNotDependOnAuiBeingInstalled() throws Exception {
+        try (java.io.InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/client/ui/CommonUiPages.class")) {
+            org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
+            new org.objectweb.asm.ClassReader(input).accept(node, 0);
+            boolean nativeConfig = false;
+            for (org.objectweb.asm.tree.MethodNode method : node.methods) if (method.name.equals("tick")) {
+                for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.TypeInsnNode type
+                            && type.getOpcode() == org.objectweb.asm.Opcodes.INSTANCEOF
+                            && type.desc.equals("xin/vanilla/banira/client/gui/ConfigEditorScreen")) nativeConfig = true;
+            }
+            assertTrue("Native config sessions require the shared disconnect owner", nativeConfig);
+        }
+    }
+
+    @Test public void clientLogoutClosesOwnedSessionsBeforeTheNextTick() throws Exception {
+        try (java.io.InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/client/BaniraCodexClientBootstrap.class")) {
+            org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
+            new org.objectweb.asm.ClassReader(input).accept(node, 0);
+            boolean registered = false;
+            for (org.objectweb.asm.tree.MethodNode method : node.methods)
+                for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
+                            && call.owner.equals("xin/vanilla/banira/internal/client/BaniraClientEventHub$Player")
+                            && call.name.equals("onClientLoggedOut")) registered = true;
+            assertTrue("Logout must not wait for an observed disconnected tick", registered);
+        }
+    }
+
     @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
 
     private void requireMethod(Class<?> owner, String name) {

@@ -120,6 +120,10 @@ public final class BaniraCodexClientBootstrap {
             });
             UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
         });
+        BaniraClientEventHub.Player.onClientLoggedOut(player -> {
+            UI_SESSIONS.disconnect();
+            hadConnection = false;
+        });
         BaniraClientEventHub.Client.onClientTick(event -> {
             if (event != BaniraClientTickEvent.END) return;
             boolean connected = BaniraClientRuntime.hasConnection();

@@ -18,6 +18,20 @@ public class UiConfigSessionTest {
     @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
     enum Mode { FIRST, SECOND }
 
+    @Test public void disconnectedSessionCannotPublishOrAcceptOldStateAfterReopen() throws Exception {
+        Fixture old = new Fixture(); old.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1); old.open();
+        call(old.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class}, old.holder.getConfigName(), Map.of("value", 7));
+        old.draft("value", "8"); call(old.session, "query", new Class<?>[]{String.class}, "old query");
+        call(old.session, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.DISCONNECT);
+        call(old.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class}, old.holder.getConfigName(), Map.of("value", 99));
+        assertEquals(false, call(old.session, "sync", new Class<?>[]{boolean.class}, false));
+        call(old.session, "fetch"); assertTrue(old.sent.isEmpty()); assertEquals(0, old.fetches.get());
+        assertEquals(8, old.value("value"));
+        Fixture fresh = new Fixture(); fresh.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1); fresh.open();
+        assertEquals(1, fresh.value("value")); assertEquals("", call(fresh.session, "query"));
+        assertFalse(((xin.vanilla.banira.internal.client.ConfigEditorState) call(fresh.session, "state")).isRemoteSnapshot());
+    }
+
     static final class Fixture {
         final UiConfigParityTest.Store store = new UiConfigParityTest.Store();
         final List<ConfigEntryDescriptor> descriptors = new ArrayList<>();

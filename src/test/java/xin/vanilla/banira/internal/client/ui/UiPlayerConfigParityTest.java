@@ -25,6 +25,59 @@ public class UiPlayerConfigParityTest {
                 .getConstructor(InputFormScreen.Args.class, java.util.function.Supplier.class).newInstance(args(new AtomicInteger()), source); }
         catch (NoSuchMethodException missing) { throw new AssertionError("Player drafts need authoritative refresh without replacing edits", missing); }
     }
+    private Object remoteSession(InputFormScreen.Args args, java.util.function.Supplier<java.util.Map<String, String>> source) throws Exception {
+        return type("internal.client.ui.page.PlayerConfigUiSession")
+                .getConstructor(InputFormScreen.Args.class, java.util.function.Supplier.class).newInstance(args, source);
+    }
+    @Test public void missingAuthoritativeSnapshotDisablesSaveAndBlocksDirectSubmit() throws Exception {
+        AtomicInteger saves = new AtomicInteger();
+        Object session = remoteSession(args(saves), () -> null);
+        Object fields = call(session, "fields");
+        assertEquals(false, call(fields, "canSubmit"));
+        assertEquals(false, call(fields, "submit"));
+        assertEquals(0, saves.get());
+        assertEquals(false, call(fields, "finished"));
+    }
+    @Test public void snapshotArrivingBeforeTheNextTickIsMergedBeforeSubmit() throws Exception {
+        java.util.concurrent.atomic.AtomicReference<java.util.Map<String, String>> source = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<String> saved = new java.util.concurrent.atomic.AtomicReference<>();
+        Object session = remoteSession(args(new AtomicInteger()).setCallback(result -> saved.set(result.value("language") + "/" + result.value("notification"))), source::get);
+        Object fields = call(session, "fields");
+        source.set(java.util.Map.of("language", "server", "notification", "vanilla_message"));
+        assertEquals(true, call(fields, "submit"));
+        assertEquals("server/vanilla_message", saved.get());
+    }
+    @Test public void earlyUserDraftSurvivesReadinessAndIsSubmittedOnlyOnce() throws Exception {
+        AtomicInteger saves = new AtomicInteger();
+        java.util.concurrent.atomic.AtomicReference<java.util.Map<String, String>> source = new java.util.concurrent.atomic.AtomicReference<>();
+        Object session = remoteSession(args(saves), source::get);
+        Object fields = call(session, "fields");
+        call(fields, "draft", new Class<?>[]{String.class, String.class}, "language", "zh_cn");
+        assertEquals(false, call(fields, "submit"));
+        source.set(java.util.Map.of("language", "server", "notification", "vanilla_message"));
+        assertEquals(true, call(fields, "submit"));
+        assertEquals("zh_cn", call(fields, "draft", new Class<?>[]{String.class}, "language"));
+        assertEquals("vanilla_message", call(fields, "draft", new Class<?>[]{String.class}, "notification"));
+        assertEquals(false, call(fields, "submit"));
+        assertEquals(1, saves.get());
+    }
+    @Test public void clearedSnapshotBlocksAnExistingUnsubmittedSession() throws Exception {
+        AtomicInteger saves = new AtomicInteger();
+        java.util.concurrent.atomic.AtomicReference<java.util.Map<String, String>> source = new java.util.concurrent.atomic.AtomicReference<>(java.util.Map.of("language", "server", "notification", "vanilla_message"));
+        Object session = remoteSession(args(saves), source::get);
+        Object fields = call(session, "fields");
+        call(session, "tick");
+        source.set(null);
+        assertEquals(false, call(fields, "canSubmit"));
+        assertEquals(false, call(fields, "submit"));
+        assertEquals(0, saves.get());
+    }
+    @Test public void localPlayerFormWithoutRemoteSourceStillSubmits() throws Exception {
+        AtomicInteger saves = new AtomicInteger();
+        Object session = remoteSession(args(saves), null);
+        assertEquals(true, call(call(session, "fields"), "submit"));
+        assertEquals(1, saves.get());
+    }
     @Test public void lateSnapshotRefreshesOnlyUneditedFieldsAndKeepsQuery() throws Exception {
         java.util.concurrent.atomic.AtomicReference<java.util.Map<String, String>> source = new java.util.concurrent.atomic.AtomicReference<>();
         Object session = remoteSession(source::get);

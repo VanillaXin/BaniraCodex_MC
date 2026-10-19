@@ -27,6 +27,8 @@ import java.util.Objects;
 
 public final class FormUiSession implements UiPageSession {
     private final InputFormScreen.Args args;
+    private final java.util.function.BooleanSupplier submissionReady;
+    private final Runnable prepareSubmission;
     private final List<String> drafts = new ArrayList<>();
     private final List<Integer> visibleIndices = new ArrayList<>();
     private final Map<Integer, List<String>> selections = new LinkedHashMap<>();
@@ -44,7 +46,13 @@ public final class FormUiSession implements UiPageSession {
     private final Map<UiView, Integer> boundIndices = new LinkedHashMap<>();
 
     public FormUiSession(InputFormScreen.Args args) {
+        this(args, () -> true, () -> { });
+    }
+
+    FormUiSession(InputFormScreen.Args args, java.util.function.BooleanSupplier submissionReady, Runnable prepareSubmission) {
         this.args = Objects.requireNonNull(args, "args");
+        this.submissionReady = Objects.requireNonNull(submissionReady, "submissionReady");
+        this.prepareSubmission = Objects.requireNonNull(prepareSubmission, "prepareSubmission");
         args.validate();
         for (int index = 0; index < args.getWidgets().size(); index++) {
             InputFormScreen.Widget widget = args.getWidgets().get(index);
@@ -161,6 +169,7 @@ public final class FormUiSession implements UiPageSession {
     public boolean finished() { return closed || submitted; }
 
     public boolean canSubmit() {
+        if (closed || submitted || !submissionReady.getAsBoolean()) return false;
         InputFormScreen.Results result = results();
         errors.clear();
         boolean valid = !closed && !submitted;
@@ -191,6 +200,7 @@ public final class FormUiSession implements UiPageSession {
 
     private boolean submitOnce() {
         error = "";
+        prepareSubmission.run();
         if (!canSubmit()) { error = errors.isEmpty() ? "" : errors.values().iterator().next(); return false; }
         InputFormScreen.Results result = results();
         if (!args.getWidgets().isEmpty()) result.curIndex(args.getWidgets().size() - 1).curName(args.getWidgets().get(args.getWidgets().size() - 1).name());

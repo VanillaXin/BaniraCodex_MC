@@ -21,8 +21,8 @@ public final class PlayerConfigUiSession implements UiPageSession {
 
     public PlayerConfigUiSession(InputFormScreen.Args args) { this(args, null); }
     public PlayerConfigUiSession(InputFormScreen.Args args, java.util.function.Supplier<java.util.Map<String, String>> source) {
-        fields = new FormUiSession(args);
         this.source = source;
+        fields = new FormUiSession(args, () -> source == null || source.get() != null, this::refresh);
         for (InputFormScreen.Widget widget : args.getWidgets()) baseline.put(widget.name(), widget.defaultValue());
     }
     public boolean refresh() {

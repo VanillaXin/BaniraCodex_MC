@@ -189,6 +189,10 @@ public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativ
 
     protected abstract void savePlayerConfig();
 
+    protected final void playerSaveEnabled(boolean enabled) {
+        if (!bottomButtons.isEmpty()) bottomButtons.get(0).enabled(enabled);
+    }
+
     protected void afterPlayerConfigBuilt() {
     }
 

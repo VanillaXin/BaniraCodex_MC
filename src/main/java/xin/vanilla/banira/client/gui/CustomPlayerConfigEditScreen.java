@@ -79,11 +79,19 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         super.tick();
         if (uiSession == null || languageDropdown == null || modeDropdown == null) return;
         captureUiState(null);
-        if (uiSession.refresh()) {
-            languageDropdown.selectedValues(Collections.singletonList(uiSession.fields().draft("language")));
-            modeDropdown.selectedValues(Collections.singletonList(CustomConfig.notificationReceiveModeVanillaMessage
-                    .equals(uiSession.fields().draft("notificationReceiveMode")) ? labelVanillaMode : labelBaniraMode));
-        }
+        refreshPlayerControls();
+        playerSaveEnabled(uiSession.fields().canSubmit());
+    }
+
+    private void refreshPlayerControls() {
+        if (!uiSession.refresh()) return;
+        languageDropdown.selectedValues(Collections.singletonList(uiSession.fields().draft("language")));
+        modeDropdown.selectedValues(Collections.singletonList(CustomConfig.notificationReceiveModeVanillaMessage
+                .equals(uiSession.fields().draft("notificationReceiveMode")) ? labelVanillaMode : labelBaniraMode));
+    }
+
+    @Override protected void afterPlayerConfigBuilt() {
+        playerSaveEnabled(playerUiSession().fields().canSubmit());
     }
 
     @Override public void captureUiState(UiViewState state) {
@@ -224,6 +232,7 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
     @Override
     protected void savePlayerConfig() {
         captureUiState(null);
+        refreshPlayerControls();
         if (playerUiSession().fields().submit()) onClose();
     }
 

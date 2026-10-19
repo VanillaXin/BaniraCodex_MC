@@ -27,6 +27,8 @@ final class UiSelectPopup implements AutoCloseable {
     private boolean rendering;
     private final List<String> selected = new ArrayList<>();
     private List<DropdownOption> filtered;
+    private int activeIndex = -1;
+    private boolean navigating;
 
     UiSelectPopup(UiDomAccess dom, UiDomAccess.Node anchor, UiControlSpec control, UiValue value,
                   Consumer<UiValue> selection, BooleanSupplier live, Runnable closed, Consumer<Throwable> failure) {
@@ -46,12 +48,7 @@ final class UiSelectPopup implements AutoCloseable {
         listen(layer, "click", event -> { event.consume(); close(); });
         listen(panel, "click", UiDomAccess.Event::consume);
         listen(search, "input", event -> filter());
-        listen(search, "keydown", event -> {
-            if (event.keyCode() == 256) { event.consume(); close(); }
-            else if (event.keyCode() == 257 && control.inputMode() == DropdownInputMode.EDITABLE && !search.value().isEmpty()) {
-                event.consume(); choose(search.value());
-            }
-        });
+        listen(search, "keydown", this::key);
         listen(options, "scroll", event -> render());
         filter();
         search.focus();
@@ -79,9 +76,40 @@ final class UiSelectPopup implements AutoCloseable {
         for (DropdownOption option : control.options()) {
             if (option.valueLowerCase().contains(query) || option.displayLabelLowerCase().contains(query)) filtered.add(option);
         }
+        activeIndex = filtered.isEmpty() ? -1 : 0;
+        for (int index = 0; index < filtered.size(); index++) {
+            if (selected.contains(filtered.get(index).value())) { activeIndex = index; break; }
+        }
+        navigating = false;
         ScreenCoordinate area = placement(anchor.bounds(), dom.overlayRoot().bounds(), control.options().size());
         panel.attribute("style", "left:" + area.x() + "px;top:" + area.y() + "px;width:" + area.width() + "px;height:" + area.height() + "px");
         options.scrollTop(0);
+        render();
+    }
+
+    private void key(UiDomAccess.Event event) {
+        int code = event.keyCode();
+        if (code == 256) { event.consume(); close(); return; }
+        if (code == 258) { close(); return; }
+        if (code == 257 || code == 335) {
+            event.consume();
+            if (!navigating && control.inputMode() == DropdownInputMode.EDITABLE && !search.value().isEmpty()) choose(search.value());
+            else if (activeIndex >= 0 && activeIndex < filtered.size()) choose(filtered.get(activeIndex).value());
+            return;
+        }
+        int target = activeIndex;
+        if (code == 264) target++;
+        else if (code == 265) target--;
+        else if (code == 266 || code == 267) target += (code == 266 ? -1 : 1) * Math.max(1, (int) (options.clientHeight() / 22));
+        else if ((code == 268 || code == 269) && (navigating || control.inputMode() != DropdownInputMode.EDITABLE)) target = code == 268 ? 0 : filtered.size() - 1;
+        else return;
+        event.consume(); navigating = true;
+        activeIndex = filtered.isEmpty() ? -1 : Math.max(0, Math.min(target, filtered.size() - 1));
+        if (activeIndex >= 0) {
+            double top = activeIndex * 22d, offset = options.scrollTop(), height = options.clientHeight();
+            if (top < offset) options.scrollTop(top);
+            else if (top + 22 > offset + height) options.scrollTop(Math.max(0, top + 22 - height));
+        }
         render();
     }
 
@@ -122,9 +150,14 @@ final class UiSelectPopup implements AutoCloseable {
                         event.consume();
                         if (live.getAsBoolean() && !resources.closed() && slot < rowOptions.size()) choose(rowOptions.get(slot).value());
                     });
+                    listen(button, "focus", event -> {
+                        if (slot < rowOptions.size()) activeIndex = filtered.indexOf(rowOptions.get(slot));
+                    });
+                    listen(button, "keydown", this::key);
                 }
                 button.text(option.displayLabel());
                 button.attribute("aria-selected", Boolean.toString(selected.contains(option.value())));
+                button.attribute("aria-current", Boolean.toString(first + index == activeIndex));
                 button.attribute("style", "height:22px;flex-shrink:0");
                 button.icon(option);
                 button.tooltip(option.tooltip() == null ? option.displayLabel() : option.tooltip().toVanilla().getString());
@@ -155,6 +188,7 @@ final class UiSelectPopup implements AutoCloseable {
             } finally {
                 top.remove(); bottom.remove(); rowOptions.clear();
                 search.remove(); options.remove(); panel.remove(); layer.remove(); closed.run();
+                if (live.getAsBoolean()) anchor.focus();
             }
         }
     }

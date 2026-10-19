@@ -216,7 +216,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                 if (!Objects.equals(attributes.put(name, value), value)) element.setAttribute(name, value);
                 return;
             }
-            if (!Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder", "aria-invalid", "aria-label", "aria-selected").contains(name)) {
+            if (!Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder", "aria-invalid", "aria-label", "aria-selected", "aria-current").contains(name)) {
                 throw new IllegalArgumentException("Unsupported UI attribute");
             }
             if (Objects.equals(attributes.put(name, value), value)) return;

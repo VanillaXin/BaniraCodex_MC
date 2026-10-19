@@ -119,7 +119,7 @@ public class UiConfigSessionTest {
         assertEquals(Collections.singletonMap("one", "b"), f.sent.get(0));
         call(f.session, "sync", new Class<?>[]{boolean.class}, true);
         assertEquals(2, f.sent.get(1).size());
-        call(f.session, "fetch"); assertEquals(1, f.fetches.get());
+        call(f.session, "fetch"); assertEquals(3, f.fetches.get());
         call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
                 f.holder.getConfigName(), Collections.singletonMap("one", "remote"));
         assertEquals("a", f.holder.get("one"));
@@ -128,7 +128,7 @@ public class UiConfigSessionTest {
         assertEquals(Collections.singletonMap("one", "remote edit"), f.sent.get(2));
         assertEquals("a", f.holder.get("one"));
         f.connected = false; call(f.session, "fetch");
-        assertEquals(1, f.fetches.get());
+        assertEquals(4, f.fetches.get());
     }
 
     @Test public void failedSyncDoesNotCleanDraftAndClosedSessionIgnoresOldActions() throws Exception {
@@ -142,6 +142,42 @@ public class UiConfigSessionTest {
         f.failSend = false;
         call(f.session, "sync", new Class<?>[]{boolean.class}, false);
         assertTrue(f.sent.isEmpty());
+    }
+
+    @Test public void queuedSyncKeepsRetryableDraftUntilAuthoritativeSnapshotConfirmsIt() throws Exception {
+        Fixture f = new Fixture(); f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
+        f.open(); f.draft("one", "b");
+        assertEquals(true, call(f.session, "sync", new Class<?>[]{boolean.class}, false));
+        var state = (xin.vanilla.banira.internal.client.ConfigEditorState) call(f.session, "state");
+        assertEquals("A queued packet is not a server acknowledgement", 1, state.pendingChangeCount());
+        assertEquals(1, f.fetches.get());
+        call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
+                f.holder.getConfigName(), Map.of("one", "a"));
+        assertEquals("b", f.value("one")); assertEquals(1, state.pendingChangeCount());
+        assertEquals(true, call(f.session, "save"));
+        assertEquals(Map.of("one", "b"), f.sent.get(1));
+        call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
+                f.holder.getConfigName(), Map.of("one", "b"));
+        assertEquals(0, state.pendingChangeCount());
+        assertEquals("a", f.holder.get("one"));
+        assertEquals(0, f.saves.get());
+    }
+
+    @Test public void snapshotForEarlierSyncCannotDiscardNewerOrInvalidEdits() throws Exception {
+        Fixture f = new Fixture(); f.field("one", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1);
+        f.open(); f.draft("one", "2");
+        call(f.session, "sync", new Class<?>[]{boolean.class}, false);
+        f.draft("one", "3");
+        call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
+                f.holder.getConfigName(), Map.of("one", 2));
+        assertEquals(3, f.value("one"));
+        assertEquals(1, ((xin.vanilla.banira.internal.client.ConfigEditorState) call(f.session, "state")).pendingChangeCount());
+        f.draft("one", "-");
+        call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
+                f.holder.getConfigName(), Map.of("one", 3));
+        assertEquals("-", call(f.session, "draft", new Class<?>[]{String.class}, "one"));
+        assertEquals(false, call(f.session, "save"));
+        assertEquals(1, f.sent.size());
     }
 
     @Test public void escapeProtectsDirtySessionButDisconnectReleasesIt() throws Exception {

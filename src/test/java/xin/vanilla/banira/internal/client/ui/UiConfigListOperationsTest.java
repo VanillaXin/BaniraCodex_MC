@@ -91,4 +91,25 @@ public class UiConfigListOperationsTest {
         assertEquals(List.of("Tab"), f.holder.get("keys"));
         assertEquals(1, f.saves.get());
     }
+
+    @Test public void emptyCapturedChordRetainsAnUnboundEntryAndRoundTripsThroughClearUndo() throws Exception {
+        var f = new UiConfigSessionTest.Fixture();
+        f.field("keys", ConfigValueType.STRING_LIST, List.of("Tab"));
+        f.descriptors.set(0, xin.vanilla.banira.common.config.ConfigEntryDescriptor.builder()
+                .path("keys").displayName("keys").valueType(ConfigValueType.STRING_LIST)
+                .defaultValue(List.of("Tab")).keyChords(true).build());
+        f.open();
+        NativeUiView root = bind(f); row(root, 0).activate("open");
+        NativeUiView edit = row(root, 1);
+        edit.input("input", UiValue.keyChords(List.of())); edit.activate("apply");
+        assertEquals(List.of(""), f.value("keys"));
+        assertEquals(true, call(f.session, "save"));
+        NativeUiView add = row(root, 2);
+        add.input("input", UiValue.keyChords(List.of())); add.activate("apply");
+        assertEquals(List.of("", ""), f.value("keys"));
+        assertEquals(true, call(f.session, "save"));
+        assertEquals(2, f.saves.get());
+        row(root, 0).activate("delete"); row(root, 0).activate("delete");
+        assertEquals(List.of("", ""), f.value("keys"));
+    }
 }

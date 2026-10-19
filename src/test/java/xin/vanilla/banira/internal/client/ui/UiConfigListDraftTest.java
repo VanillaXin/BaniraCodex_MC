@@ -159,6 +159,18 @@ public class UiConfigListDraftTest {
         assertEquals(List.of("Tab"), tags.items());
     }
 
+    @Test public void nativeKeyClearRetainsUnboundRowsForBothEditAndAdd() throws Exception {
+        TagListEditorWidget tags = new TagListEditorWidget(screen).itemType(TagListEditorWidget.ItemType.KEY_CHORD);
+        tags.items(new ArrayList<>(List.of("Tab")));
+        var press = KeyCaptureInputWidget.class.getDeclaredMethod("onKeyPress", int.class, int.class, int.class);
+        press.setAccessible(true);
+        InputWidget edit = tags.focusInput(0); screen.requestFocus(edit); press.invoke(edit, 261, 0, 0);
+        assertEquals(List.of(""), tags.items());
+        InputWidget add = tags.focusInput(1); screen.requestFocus(add); press.invoke(add, 259, 0, 0);
+        assertEquals(List.of("", ""), tags.items());
+        assertTrue(tags.draftCommitted());
+    }
+
     @Test public void booleanAddSelectionSurvivesBothBackends() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
         f.field("flags", ConfigEntryDescriptor.ConfigValueType.BOOLEAN_LIST, Collections.singletonList(false)); f.open();

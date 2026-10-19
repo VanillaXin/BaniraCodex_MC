@@ -331,7 +331,6 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
     }
 
     private void openIconPicker(QuickActionIconType type) {
-        definition.setIconType(type);
         switch (type) {
             case ITEM:
                 Item item = optionalItem(definition.getIcon());
@@ -352,11 +351,11 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
                         })));
                 break;
             case EXTERNAL_FILE:
-                openIconInput(InputFormScreen.WidgetType.FILE, null);
+                openIconInput(type, InputFormScreen.WidgetType.FILE, null);
                 break;
             case RESOURCE:
             default:
-                openIconInput(InputFormScreen.WidgetType.DROPDOWN, Arrays.asList(
+                openIconInput(type, InputFormScreen.WidgetType.DROPDOWN, Arrays.asList(
                         new DropdownOption("banira_codex:gui/quick_icon.png"),
                         new DropdownOption("banira_codex:gui/sakura_cat.png"),
                         new DropdownOption("banira_codex:gui/aotake_cat.png"),
@@ -366,16 +365,8 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         }
     }
 
-    private void openIconInput(InputFormScreen.WidgetType type, List<DropdownOption> options) {
-        InputFormScreen.Widget icon = new InputFormScreen.Widget().name("icon")
-                .title(CustomQuickActionEditor.t("custom_quick_action_icon_value"))
-                .type(type).defaultValue(definition.getIcon()).allowEmpty(false);
-        if (type == InputFormScreen.WidgetType.DROPDOWN) {
-            icon.dropdownOptionEntries(options).dropdownInputMode(DropdownInputMode.EDITABLE);
-        }
-        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args()
-                .setParentScreen(this).setHeaderTitle(CustomQuickActionEditor.t("custom_quick_action_select_icon"))
-                .addWidget(icon).setCallback(result -> definition.setIcon(result.firstValue().trim()))));
+    private void openIconInput(QuickActionIconType iconType, InputFormScreen.WidgetType type, List<DropdownOption> options) {
+        Minecraft.getInstance().setScreen(new InputFormScreen(CustomQuickActionEditor.iconArgs(this, definition, iconType, type, options)));
     }
 
     private static Item optionalItem(String value) {

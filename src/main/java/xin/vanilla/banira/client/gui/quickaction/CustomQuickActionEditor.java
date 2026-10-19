@@ -108,6 +108,18 @@ final class CustomQuickActionEditor {
         Minecraft.getInstance().setScreen(new InputFormScreen(menuItemArgs(parent, source, accepted)));
     }
 
+    static InputFormScreen.Args iconArgs(Screen parent, CustomQuickActionDefinition draft, QuickActionIconType iconType,
+                                         InputFormScreen.WidgetType type, List<DropdownOption> options) {
+        InputFormScreen.Widget icon = new InputFormScreen.Widget().name("icon")
+                .title(t("custom_quick_action_icon_value"))
+                .type(type).defaultValue(draft.getIcon()).allowEmpty(false);
+        if (type == InputFormScreen.WidgetType.DROPDOWN) {
+            icon.dropdownOptionEntries(options).dropdownInputMode(DropdownInputMode.EDITABLE);
+        }
+        return new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(t("custom_quick_action_select_icon"))
+                .addWidget(icon).setCallback(result -> draft.setIconType(iconType).setIcon(result.firstValue().trim()));
+    }
+
     static InputFormScreen.Args menuItemArgs(Screen parent, CustomQuickActionMenuItem source,
                                             Consumer<CustomQuickActionMenuItem> accepted) {
         CustomQuickActionMenuItem draft = copy(source);

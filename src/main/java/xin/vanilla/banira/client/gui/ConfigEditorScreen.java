@@ -101,11 +101,18 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
     @Override public String uiSurfaceId() { return "banira_codex:config"; }
     @Override public UiPageSpec uiPage() { return uiSession.spec(); }
     @Override public void prepareUiState(UiViewState state) { uiState = state; searchText = uiSession.query(); }
+    @Override public void resize(Minecraft minecraft, int width, int height) {
+        UiViewState state = uiState != null ? uiState : new UiViewState();
+        captureUiState(state);
+        prepareUiState(state);
+        super.resize(minecraft, width, height);
+    }
     @Override public void captureUiState(UiViewState state) {
         uiSession.query(searchText);
         contentTreeBuilder.categoryPanels().forEach((path, panel) ->
                 uiSession.categoryExpansion(path, expandedBeforeSearch.getOrDefault(path, panel.expanded())));
         if (state == null) return;
+        state.selection("", 0, 0);
         if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : editorState.entryWidgets().entrySet()) {
             if (entry.getValue().getWidget() == null) continue;

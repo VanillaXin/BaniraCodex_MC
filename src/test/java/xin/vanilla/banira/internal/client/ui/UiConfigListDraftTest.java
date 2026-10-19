@@ -171,6 +171,34 @@ public class UiConfigListDraftTest {
         assertTrue(tags.draftCommitted());
     }
 
+    @Test public void confirmedNativeNumberAddLeavesNoPhantomPendingZero() throws Exception {
+        TagListEditorWidget tags = new TagListEditorWidget(screen).itemType(TagListEditorWidget.ItemType.NUMBER);
+        tags.items(new ArrayList<>());
+        InputWidget add = tags.focusInput(0); add.value("2.25");
+        var confirm = TagListEditorWidget.class.getDeclaredMethod("confirmAddFromInput"); confirm.setAccessible(true);
+        confirm.invoke(tags);
+        assertEquals(List.of(2.25), tags.items());
+        assertTrue("The confirmed item must not create a new pending zero", tags.draftCommitted());
+        add.value("0"); confirm.invoke(tags);
+        assertEquals(List.of(2.25, 0.0), tags.items());
+        assertTrue(tags.draftCommitted());
+        confirm.invoke(tags);
+        assertEquals(List.of(2.25, 0.0), tags.items());
+    }
+
+    @Test public void invalidNativeBooleanEditStaysPendingWithoutChangingTheValue() throws Exception {
+        TagListEditorWidget tags = new TagListEditorWidget(screen).itemType(TagListEditorWidget.ItemType.BOOLEAN);
+        tags.items(new ArrayList<>(List.of(true)));
+        InputWidget edit = tags.focusInput(0); edit.value("not-a-boolean");
+        var confirm = TagListEditorWidget.class.getDeclaredMethod("commitInlineEdit"); confirm.setAccessible(true);
+        confirm.invoke(tags);
+        assertEquals(List.of(true), tags.items());
+        assertFalse(tags.draftCommitted());
+        edit.value("false"); confirm.invoke(tags);
+        assertEquals(List.of(false), tags.items());
+        assertTrue(tags.draftCommitted());
+    }
+
     @Test public void booleanAddSelectionSurvivesBothBackends() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
         f.field("flags", ConfigEntryDescriptor.ConfigValueType.BOOLEAN_LIST, Collections.singletonList(false)); f.open();

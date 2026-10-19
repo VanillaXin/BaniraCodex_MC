@@ -607,7 +607,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             if (parsed == null) return;
             items.add(parsed);
             added = true;
-            numInput.value("0");
+            numInput.value("");
         }
         if (added) {
             exitUndoModeIfNeeded();
@@ -747,6 +747,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
                     cancelInlineEdit();
                     return;
                 }
+                if (!"true".equalsIgnoreCase(v.trim()) && !"false".equalsIgnoreCase(v.trim())) return;
                 parsed = Boolean.parseBoolean(v.trim());
                 break;
             }

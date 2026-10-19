@@ -67,6 +67,11 @@ public final class BaniraClientRuntime {
         return Minecraft.getInstance().getConnection() != null;
     }
 
+    public static boolean isCurrentConnection(Object origin) {
+        var listener = Minecraft.getInstance().getConnection();
+        return origin != null && listener != null && listener.getConnection() == origin && listener.getConnection().isConnected();
+    }
+
     public static boolean chatLinksEnabled() {
         return Minecraft.getInstance().options.chatLinks().get();
     }

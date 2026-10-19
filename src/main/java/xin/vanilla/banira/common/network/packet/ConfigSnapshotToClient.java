@@ -7,9 +7,11 @@ import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
- * 服务端下发的配置全量快照，客户端写入 {@link ConfigHolder} 并刷新打开中的配置编辑界面
+ * 服务端下发的配置快照，用于更新打开中的配置编辑会话。
  */
 public class ConfigSnapshotToClient implements NetworkPacket {
 
@@ -50,12 +52,18 @@ public class ConfigSnapshotToClient implements NetworkPacket {
     }
 
     public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
-        ctx.enqueueWork(() -> {
-            if (!ctx.isClientSide()) {
-                return;
-            }
-            BaniraClientPacketHandlers.applyConfigSnapshot(packet);
-        });
+        if (!ctx.isClientSide()) { ctx.markHandled(); return; }
+        handle(packet, ctx, BaniraClientPacketHandlers::isCurrentConfigConnection, BaniraClientPacketHandlers::applyConfigSnapshot);
+    }
+
+    static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx,
+                       Predicate<Object> currentConnection, Consumer<ConfigSnapshotToClient> apply) {
+        Object origin = ctx.isClientSide() ? ctx.connectionKey() : null;
+        if (origin != null) {
+            ctx.enqueueWork(() -> {
+                if (ctx.isClientSide() && currentConnection.test(origin)) apply.accept(packet);
+            });
+        }
         ctx.markHandled();
     }
 }

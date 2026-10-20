@@ -87,9 +87,12 @@ public class MinimapLineAdapterContractTest {
     }
 
     @Test
-    public void journeySupplierRespectsNativeScreenPolicyBeforeClaimingHost() throws Exception {
-        assertTrue(calls(node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin"),
+    public void journeySupplierKeepsVisibleMapRowsAcrossInventory() throws Exception {
+        ClassNode adapter = node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin");
+        assertFalse("Visible map rows must not be suppressed by an inventory screen", calls(adapter,
                 "xin/vanilla/banira/internal/client/minimap/MinimapLineLayout", "allowsLegacyJourneyScreen"));
+        assertTrue(calls(adapter, "journeymap/client/ui/UIManager", "isMiniMapEnabled"));
+        assertTrue(calls(adapter, "journeymap/client/InternalStateHandler", "isMinimapEnabled"));
     }
 
     @Test

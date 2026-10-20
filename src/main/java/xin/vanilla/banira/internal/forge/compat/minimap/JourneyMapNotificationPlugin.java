@@ -9,7 +9,6 @@ import journeymap.api.v2.common.event.ClientEventRegistry;
 import journeymap.api.v2.common.event.MinimapEventRegistry;
 import journeymap.client.ui.UIManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
@@ -17,7 +16,6 @@ import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
-import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 
 @JourneyMapPlugin(apiVersion = "2.0.0")
@@ -68,9 +66,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
         if (registry == null || !registered.add(line.id())) return;
         registry.register(getModId(), line.displayName(), 100, () -> {
             if (!UIManager.INSTANCE.isMiniMapEnabled()
-                    || !journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled()
-                    || !MinimapLineLayout.allowsLegacyJourneyScreen(Minecraft.getInstance().screen != null,
-                    Minecraft.getInstance().screen instanceof ChatScreen))
+                    || !journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled())
                 return Component.empty();
             for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.JOURNEYMAP))
                 if (row.id().equals(line.id())) return xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(
@@ -88,9 +84,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
             return;
         }
         boolean allowed = UIManager.INSTANCE.isMiniMapEnabled()
-                && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled()
-                && MinimapLineLayout.allowsLegacyJourneyScreen(Minecraft.getInstance().screen != null,
-                Minecraft.getInstance().screen instanceof ChatScreen);
+                && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled();
         java.util.List<net.minecraft.resources.ResourceLocation> requested =
                 MinimapLineRegistry.shared().requestedIds(EnumNotificationHudHost.JOURNEYMAP);
         EnumNotificationHudHost automaticOwner = MinimapLineRegistry.shared()

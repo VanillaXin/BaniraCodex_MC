@@ -24,4 +24,10 @@ public final class OptionalCompatibilityMixinPluginTest {
         assertFalse(plugin.shouldApplyMixin("missing.optional.IpnButton",
                 "xin.vanilla.banira.internal.mixin.compat.ipn.IpnButtonMixin"));
     }
+
+    @Test
+    public void skipsAuiNetworkMixinWhenItsTargetIsMissing() {
+        assertFalse(plugin.shouldApplyMixin("missing.optional.AuiNetworkManager",
+                "xin.vanilla.banira.internal.mixin.compat.aui.AuiNetworkManagerMixin"));
+    }
 }

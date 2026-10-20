@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "sourceSha256": "B4281C962F7A93B485D5F55F779A23B12C591AC6505A571C9578CC9F0C1372C2",
+  "sourceSha256": "8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2",
   "classes": {
     "com/sighs/apricityui/element/AbstractText": {
       "super": "com/sighs/apricityui/init/Element",

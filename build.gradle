@@ -178,7 +178,7 @@ configurations {
 }
 
 dependencies {
-    auiContract 'maven.modrinth:UfPdUeGy:QimFJQz4'
+    auiContract "com.sighs:ApricityUI-forge-1.20.1:${aui_version}"
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 

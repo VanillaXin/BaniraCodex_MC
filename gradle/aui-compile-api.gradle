@@ -11,7 +11,20 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 
-def sourceSha = 'B4281C962F7A93B485D5F55F779A23B12C591AC6505A571C9578CC9F0C1372C2'
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'ApricityUIOfficial'
+                url = 'https://maven.sighs.cc/repository/maven-public/'
+            }
+        }
+        forRepositories(fg.repository)
+        filter { includeModule('com.sighs', 'ApricityUI-forge-1.20.1') }
+    }
+}
+
+def sourceSha = '8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2'
 def marker = 'META-INF/banira-aui-compile-api.properties'
 def selected = providers.gradleProperty('banira.auiCompileApi').orNull
 def ownedRoot = new File((providers.gradleProperty('banira.validationOutputRoot').orNull ?: layout.buildDirectory.get().asFile.absolutePath), 'aui-compile-api')
@@ -34,7 +47,7 @@ if (selected != null) {
     dependencies.add('auiCompileApi', files(input))
     configurations.compileOnly.extendsFrom(configurations.auiCompileApi)
 } else {
-    dependencies.add('compileOnly', fg.deobf('maven.modrinth:UfPdUeGy:QimFJQz4')) { transitive = false }
+    dependencies.add('compileOnly', fg.deobf("com.sighs:ApricityUI-forge-1.20.1:${aui_version}")) { transitive = false }
 }
 
 tasks.register('verifyAuiCompileApi') {

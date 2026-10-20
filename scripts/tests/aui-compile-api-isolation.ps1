@@ -38,17 +38,17 @@ function Read-Model([string]$Name) {
 function Check-Isolation([string]$Name, $Model, [string]$Selected) {
     foreach ($configuration in @('runtimeClasspath','testRuntimeClasspath','annotationProcessor','testAnnotationProcessor')) {
         Check "$Name-$configuration" (@($Model.paths.$configuration | Where-Object {
-            $_ -match 'api-(52|61)\.jar|UfPdUeGy|QimFJQz4|apricityui|apricity-ui'
+            $_ -match 'api-(52|61)\.jar|apricityui|apricity-ui'
         }).Count -eq 0)
     }
     if ($Selected) {
         Check "$Name-selected" (@($Model.configuration).Count -eq 1 -and
             [IO.Path]::GetFullPath($Model.configuration[0]) -eq $Selected -and
             @($Model.paths.compileClasspath | Where-Object { [IO.Path]::GetFullPath($_) -eq $Selected }).Count -eq 1 -and
-            @($Model.paths.compileClasspath | Where-Object { $_ -match 'QimFJQz4' }).Count -eq 0)
+            @($Model.paths.compileClasspath | Where-Object { $_ -match 'ApricityUI-forge-1\.20\.1' }).Count -eq 0)
     } else {
         Check 'control:default-official' (@($Model.configuration).Count -eq 0 -and
-            @($Model.paths.compileClasspath | Where-Object { $_ -match 'QimFJQz4' }).Count -eq 1)
+            @($Model.paths.compileClasspath | Where-Object { $_ -match 'ApricityUI-forge-1\.20\.1' }).Count -eq 1)
     }
 }
 function Mutate-Jar([string]$Name, [scriptblock]$Mutation) {

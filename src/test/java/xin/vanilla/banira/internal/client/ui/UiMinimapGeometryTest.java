@@ -6,6 +6,35 @@ import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import static org.junit.Assert.*;
 
 public class UiMinimapGeometryTest {
+    Object viewport(String name, Class<?>[] types, Object... args) throws Exception {
+        try { return UiMinimapHostContractTest.call(name, types, args); }
+        catch (NoSuchMethodException missing) { throw new AssertionError("Viewport-aware minimap projection missing", missing); }
+    }
+    @Test public void journeyPixelProjectionConvertsToGuiOnceAndRetainsDepth() throws Exception {
+        var projection = new org.joml.Matrix4f().setOrtho(0, 854, 480, 0, -1000, 1000);
+        var pose = new org.joml.Matrix4f().translation(0, 0, 4);
+        var guiPose = (org.joml.Matrix4f) viewport("guiPose",
+                new Class[]{org.joml.Matrix4f.class, org.joml.Matrix4f.class, int.class, int.class}, pose, projection, 427, 240);
+        var bounds = MinimapUiRows.project(guiPose, new ScreenCoordinate(750, 204, 51, 9), 427, 240);
+        assertNotNull(bounds); assertEquals(375, bounds.x(), .001); assertEquals(102, bounds.y(), .001);
+        assertEquals(25.5, bounds.width(), .001); assertEquals(4.5, bounds.height(), .001);
+        assertEquals(4, guiPose.m32(), .001);
+        var guiProjection = (org.joml.Matrix4f) viewport("guiProjection",
+                new Class[]{org.joml.Matrix4f.class, int.class, int.class}, projection, 427, 240);
+        assertEquals(2f / 427, guiProjection.m00(), .00001); assertEquals(-2f / 240, guiProjection.m11(), .00001);
+        assertEquals(projection.m22(), guiProjection.m22(), 0); assertEquals(projection.m32(), guiProjection.m32(), 0);
+        assertEquals(2f / 854, projection.m00(), .00001);
+    }
+    @Test public void guiProjectionKeepsExistingGuiPoseAndRejectsPerspective() throws Exception {
+        var projection = new org.joml.Matrix4f().setOrtho(0, 427, 240, 0, -1000, 1000);
+        var pose = new org.joml.Matrix4f().translation(100, 50, 2).scale(.75f, .75f, 1);
+        var types = new Class[]{org.joml.Matrix4f.class, org.joml.Matrix4f.class, int.class, int.class};
+        var result = (org.joml.Matrix4f) viewport("guiPose", types, pose, projection, 427, 240);
+        assertTrue(pose.equals(result, .00001f));
+        assertNull(viewport("guiPose", types, pose, new org.joml.Matrix4f().perspective(1, 1, .1f, 100), 427, 240));
+        assertNull(viewport("guiPose", types, pose, projection, 0, 240));
+        assertNull(viewport("guiPose", types, pose, new org.joml.Matrix4f(projection).m00(Float.NaN), 427, 240));
+    }
     ScreenCoordinate fit(ScreenCoordinate measured, ScreenCoordinate reserved) throws Exception {
         return (ScreenCoordinate) UiMinimapHostContractTest.call("fit", new Class[]{ScreenCoordinate.class, ScreenCoordinate.class}, measured, reserved);
     }

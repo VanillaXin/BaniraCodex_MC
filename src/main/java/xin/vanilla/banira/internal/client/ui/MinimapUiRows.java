@@ -114,6 +114,24 @@ public final class MinimapUiRows implements AutoCloseable {
         });
     }
 
+    public static Matrix4f guiProjection(Matrix4f projection, int width, int height) {
+        if (width <= 0 || height <= 0 || !projection.isFinite() || projection.m00() <= 0 || projection.m11() >= 0
+                || Math.abs(projection.m01()) > .00001 || Math.abs(projection.m10()) > .00001
+                || Math.abs(projection.m02()) > .00001 || Math.abs(projection.m12()) > .00001
+                || Math.abs(projection.m20()) > .00001 || Math.abs(projection.m21()) > .00001
+                || Math.abs(projection.m03()) > .00001 || Math.abs(projection.m13()) > .00001
+                || Math.abs(projection.m23()) > .00001 || Math.abs(projection.m33() - 1) > .00001) return null;
+        return new Matrix4f(projection).m00(2f / width).m11(-2f / height).m30(-1).m31(1);
+    }
+
+    public static Matrix4f guiPose(Matrix4f pose, Matrix4f projection, int width, int height) {
+        if (guiProjection(projection, width, height) == null || !pose.isFinite()) return null;
+        // Native map labels may use window pixels while AUI uses scaled GUI units.
+        return new Matrix4f().translation((projection.m30() + 1) * width / 2f,
+                        (1 - projection.m31()) * height / 2f, 0)
+                .scale(projection.m00() * width / 2f, -projection.m11() * height / 2f, 1).mul(pose);
+    }
+
     public static ScreenCoordinate project(Matrix4f pose, ScreenCoordinate bounds, int width, int height) {
         if (!valid(bounds) || !pose.isFinite()
                 || pose.m00() <= 0 || pose.m11() <= 0 || Math.abs(pose.m01()) > .00001

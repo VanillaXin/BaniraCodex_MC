@@ -153,6 +153,11 @@
           "name": "keyCode",
           "desc": "I",
           "access": 17
+        },
+        {
+          "name": "modifiers",
+          "desc": "I",
+          "access": 17
         }
       ]
     },
@@ -209,6 +214,11 @@
         {
           "name": "refresh",
           "desc": "()V",
+          "access": 1
+        },
+        {
+          "name": "hitTest",
+          "desc": "(Lcom/sighs/apricityui/layout/Position;)Lcom/sighs/apricityui/init/Element;",
           "access": 1
         },
         {
@@ -335,6 +345,11 @@
           "access": 1
         },
         {
+          "name": "isDisabled",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
           "name": "isChecked",
           "desc": "()Z",
           "access": 1
@@ -430,6 +445,11 @@
       "access": 1057,
       "interfaces": [],
       "methods": [
+        {
+          "name": "getParentNode",
+          "desc": "()Lcom/sighs/apricityui/init/Node;",
+          "access": 1
+        },
         {
           "name": "getChildNodes",
           "desc": "()Ljava/util/List;",

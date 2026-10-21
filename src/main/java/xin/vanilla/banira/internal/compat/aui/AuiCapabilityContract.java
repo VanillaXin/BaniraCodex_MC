@@ -59,7 +59,7 @@ public final class AuiCapabilityContract {
                     {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
                     {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
                     {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
-                    {"event/MouseEvent", "button", "I"}}) {
+                    {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}}) {
                 String name = ROOT + field[0];
                 ClassNode owner = classes.get(name);
                 if (owner == null) {
@@ -112,6 +112,9 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "getFocusedElement", "()" + ELEMENT);
         add(result, "init/Document", "guiToDocumentPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Node", "getChildNodes", "()Ljava/util/List;");
+        add(result, "init/Node", "getParentNode", "()L" + ROOT + "init/Node;");
+        add(result, "init/Document", "hitTest", "(L" + ROOT + "layout/Position;)" + ELEMENT);
+        add(result, "init/Element", "isDisabled", "()Z");
         add(result, "init/Document", "getViewportVersion", "()J");
         add(result, "init/Document", "documentToGuiPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Element", "setInnerText", "(Ljava/lang/String;)V");

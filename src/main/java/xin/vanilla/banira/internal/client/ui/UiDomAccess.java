@@ -15,10 +15,12 @@ public interface UiDomAccess {
     Node create(String tag);
     Node overlayRoot();
     boolean current();
+    default Node nextFocus(boolean reverse) { return null; }
     AutoCloseable color(Node anchor, String initial, Consumer<String> result);
 
     interface Event {
         int keyCode();
+        default int modifiers() { return 0; }
         default int button() { return -1; }
         default double x() { return Double.NaN; }
         default double y() { return Double.NaN; }

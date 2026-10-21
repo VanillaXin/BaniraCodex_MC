@@ -18,7 +18,8 @@ public final class AuiCompileApiTool {
     static final String MARKER = "META-INF/banira-aui-compile-api.properties";
     static final String[][] FIELDS = {{"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
             {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
-            {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"}, {"event/MouseEvent", "button", "I"}};
+            {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
+            {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}};
     private AuiCompileApiTool() { }
 
     public static void main(String[] args) throws Exception {

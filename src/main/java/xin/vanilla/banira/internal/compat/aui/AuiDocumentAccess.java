@@ -109,6 +109,44 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         return !closed && !document.isDisposed() && document.getRefreshGeneration() == generation
                 && owner.getAsBoolean();
     }
+    @Override public Node nextFocus(boolean reverse) {
+        if (!current()) return null;
+        Set<Element> controls = Collections.newSetFromMap(new IdentityHashMap<>());
+        controls.addAll(document.getElementsByTagName("button"));
+        controls.addAll(document.getElementsByTagName("input"));
+        List<Element> order = new ArrayList<>();
+        focusOrder(document.getDocumentElement(), controls, order);
+        Element target = xin.vanilla.banira.internal.client.ui.UiFocusTraversal.next(order,
+                document.getFocusedElement(), this::focusVisible, reverse);
+        return wrap(target);
+    }
+
+    private void focusOrder(com.sighs.apricityui.init.Node node, Set<Element> controls, List<Element> order) {
+        if (node instanceof Element && controls.contains(node)) order.add((Element) node);
+        for (com.sighs.apricityui.init.Node child : node.getChildNodes()) focusOrder(child, controls, order);
+    }
+
+    private boolean focusVisible(Element element) {
+        if (element.isDisabled()) return false;
+        Element.DOMRect rect = element.getBoundingClientRect(), viewport = body.element.getBoundingClientRect();
+        double left = Math.max(rect.x, viewport.x), top = Math.max(rect.y, viewport.y);
+        double right = Math.min(rect.right, viewport.right), bottom = Math.min(rect.bottom, viewport.bottom);
+        for (com.sighs.apricityui.init.Node parent = ((com.sighs.apricityui.init.Node) element).getParentNode(); parent != null; parent = parent.getParentNode()) {
+            if (!(parent instanceof Element)) continue;
+            Element ancestor = (Element) parent;
+            if (ancestor.isDisabled()) return false;
+            AuiNode known = nodes.get(ancestor);
+            if (ancestor == content || (known != null && known.clips)) {
+                Element.DOMRect clip = ancestor.getBoundingClientRect();
+                left = Math.max(left, clip.x); top = Math.max(top, clip.y);
+                right = Math.min(right, clip.right); bottom = Math.min(bottom, clip.bottom);
+            }
+        }
+        if (!(right > left && bottom > top)) return false;
+        com.sighs.apricityui.init.Node hit = document.hitTest(new Position((left + right) / 2, (top + bottom) / 2));
+        while (hit != null && hit != element) hit = hit.getParentNode();
+        return hit == element;
+    }
     @Override public AutoCloseable color(Node anchor, String initial, Consumer<String> result) {
         Tooltip.hide(document);
         CompletableFuture<Optional<String>> future = ColorPicker.pickIn(document, ((AuiNode) anchor).element, UiColorBridge.toCss(initial));
@@ -299,6 +337,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                 if (!current()) return;
                 action.accept(new Event() {
                     @Override public int keyCode() { return event instanceof KeyEvent ? ((KeyEvent) event).keyCode : -1; }
+                    @Override public int modifiers() { return event instanceof KeyEvent ? ((KeyEvent) event).modifiers : 0; }
                     @Override public int button() { return event instanceof com.sighs.apricityui.event.MouseEvent
                             ? ((com.sighs.apricityui.event.MouseEvent) event).button : -1; }
                     @Override public double x() { return InputStateManager.getGuiCursorPos().key(); }

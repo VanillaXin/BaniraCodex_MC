@@ -63,14 +63,17 @@ public class UiDomView extends NativeUiView {
     protected final void attach(UiDomAccess access) {
         if (dom != null) throw new IllegalStateException("Document already attached");
         dom = Objects.requireNonNull(access, "access");
-        if (scope == null && screen() != null) listen("page:tab", dom.overlayRoot(), "keydown", event -> {
-            if (event.keyCode() != 258) return;
-            UiDomAccess.Node target = dom.nextFocus((event.modifiers() & 1) != 0);
-            if (target == null) return;
-            if (!target.focused()) state().selection("", 0, 0);
-            target.focus();
-            event.consume();
-        });
+        if (scope == null && screen() != null) resources.own(dom.overlayRoot().on("keydown", event -> {
+            if (event.keyCode() != 258 || !live()) return;
+            if (modal()) { event.consume(); return; }
+            try {
+                UiDomAccess.Node target = dom.nextFocus((event.modifiers() & 1) != 0);
+                if (target == null) return;
+                if (!target.focused()) state().selection("", 0, 0);
+                target.focus();
+                event.consume();
+            } catch (RuntimeException | LinkageError failure) { fail(failure); }
+        }));
         scrollContent = dom.find("content");
         detailContent = scope == null ? dom.find("detail") : null;
         if (detailContent != null) resources.own(detailContent.on("scroll", event -> {

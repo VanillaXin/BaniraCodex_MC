@@ -29,16 +29,19 @@ public class UiDomFocusTraversalTest {
         return new UiDomView(new Object(), access);
     }
 
-    private static void key(UiDomControlsTest.Dom dom, String id, int code, int modifiers) {
+    private static int key(UiDomControlsTest.Dom dom, String id, int code, int modifiers) {
+        java.util.concurrent.atomic.AtomicInteger consumed = new java.util.concurrent.atomic.AtomicInteger();
         Object event = Proxy.newProxyInstance(dom.eventType.getClassLoader(), new Class<?>[]{dom.eventType},
                 (proxy, method, args) -> {
                     if (method.getName().equals("keyCode")) return code;
                     if (method.getName().equals("modifiers")) return modifiers;
+                    if (method.getName().equals("consume")) { consumed.incrementAndGet(); return null; }
                     if (method.getReturnType() == int.class) return -1;
                     if (method.getReturnType() == double.class) return 0d;
                     return null;
                 });
         for (var listener : new ArrayList<>(dom.ids.get(id).events.getOrDefault("keydown", List.of()))) listener.accept(event);
+        return consumed.get();
     }
 
     @Test public void tabAndShiftTabTraverseWithoutRestoringOldInputFocusOrChangingDraft() throws Exception {
@@ -88,6 +91,9 @@ public class UiDomFocusTraversalTest {
                 xin.vanilla.banira.client.gui.widget.DropdownInputMode.SELECTION_ONLY));
         view.value("amount", UiValue.text("one"));
         dom.ids.get("amount").emit("click");
+        assertEquals("Page traversal must preserve popup text-editing defaults", 0, key(dom, "body", 259, 0));
+        assertEquals(0, key(dom, "body", 261, 0));
+        assertEquals(0, key(dom, "body", 263, 0));
         key(dom, "body", 258, 0);
         assertEquals(List.of(), directions);
         dom.created.stream().filter(node -> "popup-search".equals(node.attributes.get("class")))

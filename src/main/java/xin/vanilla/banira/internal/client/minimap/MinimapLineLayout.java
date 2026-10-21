@@ -19,4 +19,9 @@ public final class MinimapLineLayout {
     public static boolean allowsLegacyJourneyScreen(boolean screenOpen, boolean chat) {
         return !screenOpen || chat;
     }
+
+    public static boolean allowsNativeJourneyScreen(boolean screenOpen, boolean chat, boolean hideGui,
+                                                    boolean behindScreens, boolean nativeAllowed) {
+        return screenOpen && !chat ? behindScreens && nativeAllowed : !hideGui;
+    }
 }

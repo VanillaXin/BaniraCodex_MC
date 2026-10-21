@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import xin.vanilla.banira.internal.mixin.OptionalCompatibilityMixinPlugin;
 
 import java.io.InputStream;
@@ -87,18 +88,88 @@ public class MinimapLineAdapterContractTest {
     }
 
     @Test
-    public void journeySupplierKeepsVisibleMapRowsAcrossInventory() throws Exception {
+    public void journeyVisibleMapRowsRetainNativePermissions() throws Exception {
         ClassNode adapter = node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin");
-        assertFalse("Visible map rows must not be suppressed by an inventory screen", calls(adapter,
-                "xin/vanilla/banira/internal/client/minimap/MinimapLineLayout", "allowsLegacyJourneyScreen"));
-        assertTrue(calls(adapter, "journeymap/client/ui/UIManager", "isMiniMapEnabled"));
-        assertTrue(calls(adapter, "journeymap/client/InternalStateHandler", "isMinimapEnabled"));
+        int checked = 0;
+        for (MethodNode method : adapter.methods) {
+            ClassNode boundary = new ClassNode();
+            boundary.methods.add(method);
+            if (!method.name.equals("refreshLayout") && !calls(boundary, BRIDGE, "rows")) continue;
+            assertFalse(method.name + " suppresses visible map rows behind screens", calls(boundary,
+                    "xin/vanilla/banira/internal/client/minimap/MinimapLineLayout", "allowsLegacyJourneyScreen"));
+            assertTrue(method.name + " must retain the map switch", calls(boundary,
+                    "journeymap/client/ui/UIManager", "isMiniMapEnabled"));
+            assertTrue(method.name + " must retain native permissions", calls(boundary,
+                    "journeymap/client/InternalStateHandler", "isMinimapEnabled"));
+            checked++;
+        }
+        assertEquals("Supplier and layout refresh must both be checked", 2, checked);
     }
 
     @Test
     public void journeyRefreshTracksSharedLayoutRevision() throws Exception {
         assertTrue(calls(node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin"),
                 "xin/vanilla/banira/internal/client/minimap/MinimapLineRegistry", "layoutRevision"));
+    }
+
+    @Test
+    public void journeyNativeScreenPolicyMatchesNativeVisibility() throws Exception {
+        Method policy;
+        try {
+            policy = Class.forName("xin.vanilla.banira.internal.client.minimap.MinimapLineLayout")
+                    .getDeclaredMethod("allowsNativeJourneyScreen", boolean.class, boolean.class,
+                            boolean.class, boolean.class, boolean.class);
+        } catch (NoSuchMethodException missing) {
+            fail("Missing native JourneyMap screen visibility policy");
+            return;
+        }
+        for (int flags = 0; flags < 32; flags++) {
+            boolean screen = (flags & 1) != 0;
+            boolean chat = (flags & 2) != 0;
+            boolean hideGui = (flags & 4) != 0;
+            boolean behindScreens = (flags & 8) != 0;
+            boolean nativeAllowed = (flags & 16) != 0;
+            boolean expected = screen && !chat ? behindScreens && nativeAllowed : !hideGui;
+            assertEquals("Native screen flags " + flags, Boolean.valueOf(expected),
+                    policy.invoke(null, screen, chat, hideGui, behindScreens, nativeAllowed));
+        }
+    }
+
+    @Test
+    public void journeySupplierAndLayoutDoNotReactivateAnInvisibleNativeMap() throws Exception {
+        String owner = "xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin";
+        ClassNode adapter = node(owner);
+        int checked = 0;
+        for (MethodNode method : adapter.methods) {
+            ClassNode boundary = new ClassNode();
+            boundary.methods.add(method);
+            if (!method.name.equals("refreshLayout") && !calls(boundary, BRIDGE, "rows")) continue;
+            assertTrue(method.name + " can reactivate a hidden native map", calls(boundary, owner, "nativeScreenVisible"));
+            checked++;
+        }
+        assertEquals(2, checked);
+        assertTrue(calls(adapter, "journeymap/client/event/handlers/ScreenEventHandler", "getInstance"));
+        assertTrue(calls(adapter, "java/lang/reflect/Method", "invoke"));
+        boolean nativeRule = false;
+        for (MethodNode method : adapter.methods) for (AbstractInsnNode instruction : method.instructions)
+            if (instruction instanceof LdcInsnNode && "allowableDrawScreens".equals(((LdcInsnNode) instruction).cst))
+                nativeRule = true;
+        assertTrue("Native screen exclusions must be delegated", nativeRule);
+    }
+
+    @Test
+    public void journeyAuiTagRemainsInTheVisibleSupplier() throws Exception {
+        ClassNode adapter = node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin");
+        int checked = 0;
+        for (MethodNode method : adapter.methods) {
+            ClassNode boundary = new ClassNode();
+            boundary.methods.add(method);
+            if (!calls(boundary, BRIDGE, "rows")) continue;
+            assertTrue("Visible rows must retain the AUI identity", calls(boundary,
+                    "xin/vanilla/banira/internal/client/ui/MinimapUiRows", "tag"));
+            checked++;
+        }
+        assertEquals(1, checked);
     }
 
     @Test

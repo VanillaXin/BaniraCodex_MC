@@ -312,6 +312,19 @@ public class UiDomView extends NativeUiView {
         for (String event : Arrays.asList("select", "keyup", "mouseup", "focus")) {
             listen(id + ":" + event, node, event, ignored -> captureSelection(id, node));
         }
+        // AUI 1.2.8 deletes text without dispatching an input event.
+        listen(id + ":deletion", node, "keyup", event -> {
+            if ((event.keyCode() != 259 && event.keyCode() != 261) || !enabled.getOrDefault(id, true)) return;
+            UiValue current = values.get(id);
+            String text = node.value();
+            if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
+                if (!control.multiple() && control.inputMode() == DropdownInputMode.EDITABLE
+                        && (current == null || !Objects.equals(current.asText(), text))) input(id, UiValue.text(text));
+            } else if (control != null && control.kind() != UiControlSpec.Kind.KEY_CHORD) {
+                if (!Objects.equals(drafts.get(id), text)) inputDraft(id, text);
+            } else if (control == null && current != null && current.kind() == UiValue.Kind.TEXT
+                    && !Objects.equals(current.asText(), text)) input(id, UiValue.text(text));
+        });
         if (control != null && control.kind() == UiControlSpec.Kind.KEY_CHORD) {
             UiKeyCapture capture = keys.computeIfAbsent(id, ignored -> new UiKeyCapture());
             listen(id + ":keydown", node, "keydown", event -> {

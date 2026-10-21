@@ -29,6 +29,7 @@ final class UiSelectPopup implements AutoCloseable {
     private List<DropdownOption> filtered;
     private int activeIndex = -1;
     private boolean navigating;
+    private String filteredQuery;
 
     UiSelectPopup(UiDomAccess dom, UiDomAccess.Node anchor, UiControlSpec control, UiValue value,
                   Consumer<UiValue> selection, BooleanSupplier live, Runnable closed, Consumer<Throwable> failure) {
@@ -48,6 +49,10 @@ final class UiSelectPopup implements AutoCloseable {
         listen(layer, "click", event -> { event.consume(); close(); });
         listen(panel, "click", UiDomAccess.Event::consume);
         listen(search, "input", event -> filter());
+        listen(search, "keyup", event -> {
+            if ((event.keyCode() == 259 || event.keyCode() == 261)
+                    && !Objects.equals(filteredQuery, search.value().toLowerCase(Locale.ROOT))) filter();
+        });
         listen(search, "keydown", this::key);
         listen(options, "scroll", event -> render());
         filter();
@@ -72,6 +77,7 @@ final class UiSelectPopup implements AutoCloseable {
 
     private void filter() {
         String query = search.value().toLowerCase(Locale.ROOT);
+        filteredQuery = query;
         filtered = new ArrayList<>();
         for (DropdownOption option : control.options()) {
             if (option.valueLowerCase().contains(query) || option.displayLabelLowerCase().contains(query)) filtered.add(option);

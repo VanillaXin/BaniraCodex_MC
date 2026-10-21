@@ -297,6 +297,7 @@ public class UiDomView extends NativeUiView {
         for (UiDomView pressed : new ArrayList<>(pressedViews)) pressed.updatePresses();
         if (!live()) return;
         for (VirtualRows list : lists.values()) list.afterLayout();
+        if (popup != null) popup.afterLayout();
         if (detailContent != null && detailContent.clientHeight() > 0 && restoredDetail != state().detailScroll()) {
             detailContent.scrollTop(state().detailScroll()); restoredDetail = state().detailScroll();
         }

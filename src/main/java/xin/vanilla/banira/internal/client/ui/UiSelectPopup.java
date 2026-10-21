@@ -30,6 +30,7 @@ final class UiSelectPopup implements AutoCloseable {
     private int activeIndex = -1;
     private boolean navigating;
     private String filteredQuery;
+    private int renderedFirst = -1, renderedCount = -1;
 
     UiSelectPopup(UiDomAccess dom, UiDomAccess.Node anchor, UiControlSpec control, UiValue value,
                   Consumer<UiValue> selection, BooleanSupplier live, Runnable closed, Consumer<Throwable> failure) {
@@ -134,13 +135,20 @@ final class UiSelectPopup implements AutoCloseable {
         return new ScreenCoordinate(x, Math.max(top, Math.min(y, bottom - height)), width, height);
     }
 
-    private void render() {
+    void afterLayout() {
+        if (options.clientHeight() > 0) render(false);
+    }
+
+    private void render() { render(true); }
+
+    private void render(boolean force) {
         if (rendering || resources.closed()) return;
+        int first = Math.max(0, Math.min((int) (options.scrollTop() / 22), Math.max(0, filtered.size() - 1)));
+        int count = Math.min(filtered.size() - first, Math.min(120, Math.max(1, (int) Math.ceil(options.clientHeight() / 22) + 2)));
+        if (!force && first == renderedFirst && count == renderedCount) return;
         rendering = true;
         double offset = options.scrollTop();
         try {
-            int first = Math.max(0, Math.min((int) (options.scrollTop() / 22), Math.max(0, filtered.size() - 1)));
-            int count = Math.min(filtered.size() - first, Math.min(120, Math.max(1, (int) Math.ceil(options.clientHeight() / 22) + 2)));
             top.attribute("style", "height:" + first * 22L + "px;flex-shrink:0");
             rowOptions.clear();
             for (int index = 0; index < count; index++) {
@@ -174,6 +182,7 @@ final class UiSelectPopup implements AutoCloseable {
             }
             bottom.attribute("style", "height:" + Math.max(0, filtered.size() - first - count) * 22L + "px;flex-shrink:0");
             options.append(bottom);
+            renderedFirst = first; renderedCount = count;
         } finally { options.scrollTop(offset); rendering = false; }
     }
 

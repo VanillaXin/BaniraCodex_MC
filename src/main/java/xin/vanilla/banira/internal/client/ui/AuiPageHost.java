@@ -36,6 +36,7 @@ public final class AuiPageHost extends ApricityScreen {
 
     @Override protected void init() {
         if (view.closed()) { sessions.resumeScreen(this); return; }
+        if (view.attached()) { sessions.reload(); return; }
         super.init();
         if (getLinkedDocument() == null) throw new IllegalStateException("AUI document was not created");
         view.attach(getLinkedDocument());
@@ -82,6 +83,7 @@ public final class AuiPageHost extends ApricityScreen {
         private AuiDocumentAccess access;
 
         DocumentView() { super(null, null); }
+        boolean attached() { return document != null; }
         void attach(Document document) {
             this.document = document;
             generation = document.getRefreshGeneration();

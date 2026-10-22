@@ -18,7 +18,7 @@ public final class SharedHudHosts {
             public boolean visible() { return visible.getAsBoolean(); }
             public void bind(UiView view) { }
             public void detach(UiDetachReason reason) { }
-        }));
+        }, false, true));
     }
     public static boolean render(String id, GuiGraphics graphics, HudDrawList frame) {
         return host != null && host.render(id, view -> {

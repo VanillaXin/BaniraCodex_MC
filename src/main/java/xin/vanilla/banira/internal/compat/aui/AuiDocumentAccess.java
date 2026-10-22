@@ -35,6 +35,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final Set<AuiNode> gameElements = Collections.newSetFromMap(new IdentityHashMap<>());
     private final AuiNode body;
     private final Element content;
+    private final Element scopeRoot;
     private int background = 0xfff4f5f7;
     private BaniraColorConfig theme;
     private boolean preview;
@@ -48,15 +49,20 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     }
 
     public AuiDocumentAccess(Document document, java.util.function.BooleanSupplier owner) {
+        this(document, owner, null);
+    }
+
+    public AuiDocumentAccess(Document document, java.util.function.BooleanSupplier owner, Element scopeRoot) {
         this.document = document; this.owner = Objects.requireNonNull(owner, "owner");
+        this.scopeRoot = scopeRoot;
         generation = document.getRefreshGeneration();
         content = document.getElementById("content");
         List<Element> bodies = document.getElementsByTagName("body");
         if (bodies.isEmpty()) throw new IllegalStateException("UI document has no body");
-        body = wrap(bodies.get(0));
-        count = count(document.getDocumentElement());
+        body = wrap(scopeRoot == null ? bodies.get(0) : scopeRoot);
+        count = count(scopeRoot == null ? document.getDocumentElement() : scopeRoot);
         checkBudget();
-        linkParents(document.getDocumentElement(), null);
+        linkParents(scopeRoot == null ? document.getDocumentElement() : scopeRoot, null);
     }
 
     private void linkParents(com.sighs.apricityui.init.Node node, AuiNode parent) {
@@ -87,7 +93,10 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private AuiNode wrap(Element element) { return element == null ? null : nodes.computeIfAbsent(element, AuiNode::new); }
 
     @Override public Node find(String id) {
-        AuiNode node = wrap(document.getElementById(id));
+        Element element = scopeRoot != null && (id.equals("overlay") || id.equals("progress"))
+                ? scopeRoot : document.getElementById(id);
+        if (scopeRoot != null && !nodes.containsKey(element)) return null;
+        AuiNode node = wrap(element);
         if (node != null && (id.equals("text") || id.equals("message"))) {
             node.richSlot = true;
             Element detail = document.getElementById("detail");
@@ -148,7 +157,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         return hit == element;
     }
     @Override public AutoCloseable color(Node anchor, String initial, Consumer<String> result) {
-        Tooltip.hide(document);
+        if (scopeRoot == null) Tooltip.hide(document);
         CompletableFuture<Optional<String>> future = ColorPicker.pickIn(document, ((AuiNode) anchor).element, UiColorBridge.toCss(initial));
         try { count = count(document.getDocumentElement()); checkBudget(); }
         catch (RuntimeException failure) { if (!future.isDone()) ColorPicker.closeActive(); throw failure; }
@@ -215,7 +224,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         if (closed) return;
         closed = true;
         for (AuiNode node : new ArrayList<>(nodes.values())) { node.disposeTooltip(); node.disposeRichClick(); }
-        Tooltip.hide(document);
+        if (scopeRoot == null) Tooltip.hide(document);
         icons.clear(); richTexts.clear(); gameElements.clear(); nodes.clear();
     }
 
@@ -261,7 +270,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             element.setAttribute(name, value);
             if (name.equals("class") && value.contains("popup-options")) clips = true;
             if (name.equals("class") && value.equals("popup-layer") && !popupLayer) { popupLayer = true; popupLayers++; }
-            if (name.equals("disabled")) { disposeTooltip(); Tooltip.hide(document); }
+            if (name.equals("disabled")) { disposeTooltip(); if (scopeRoot == null) Tooltip.hide(document); }
         }
         @Override public void removeAttribute(String name) {
             if (attributes.remove(name) != null || element.hasAttribute(name)) element.removeAttribute(name);

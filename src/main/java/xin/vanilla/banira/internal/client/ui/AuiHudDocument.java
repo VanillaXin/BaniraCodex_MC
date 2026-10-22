@@ -5,9 +5,11 @@ import com.sighs.apricityui.render.Base;
 import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
+import xin.vanilla.banira.internal.compat.aui.AuiSharedHudDocuments;
 
 public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Renderer, MinimapUiRows.Renderer, AuiHudHost.ManualRenderer {
     private final Document document;
+    private final UiSharedHudPool<AuiSharedHudDocuments.SharedDocument, AuiSharedHudDocuments.Branch>.Lease shared;
     private final AuiDocumentAccess access;
     private final HudDomPresentation presentation;
     private final long generation;
@@ -16,15 +18,17 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
     private AuiHudDocument(UiHudSpec spec) {
         super(null, null);
-        document = Document.create(spec.template());
+        shared = spec.shared() ? AuiSharedHudDocuments.acquire() : null;
+        document = shared == null ? Document.create(spec.template()) : shared.document().document();
         if (document == null) throw new IllegalStateException("HUD document unavailable");
-        resources.own(() -> { if (!document.isDisposed()) document.remove(); });
+        resources.own(shared == null ? () -> { if (!document.isDisposed()) document.remove(); } : shared);
         try {
             document.setManuallyRendered(true);
             document.setReloadPersistent(true);
             document.applyViewport(false);
             generation = document.getRefreshGeneration();
-            access = new AuiDocumentAccess(document, () -> !closed());
+            access = new AuiDocumentAccess(document, () -> !closed(), shared == null ? null : shared.branch().root());
+            if (shared != null) shared.branch().access(access);
             resources.own(access);
             presentation = new HudDomPresentation(access, access::guiBounds);
             resources.own(presentation);
@@ -44,6 +48,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     @Override public void renderHud(GuiGraphics graphics) {
         if (progress == null || progressFrame == null || !live() || document.isDisposed() || generation != document.getRefreshGeneration())
             throw new IllegalStateException("Manual HUD document expired");
+        if (shared != null) shared.show();
         document.applyViewport(false);
         boolean painted = false;
         try (Document.ContextScope ignored = Document.withContext(document)) {
@@ -60,6 +65,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     }
     @Override public void render(GuiGraphics graphics, HudDrawList frame) {
         if (!live() || document.isDisposed() || generation != document.getRefreshGeneration()) throw new IllegalStateException("HUD document expired");
+        if (shared != null) shared.show();
         document.applyViewport(false);
         presentation.update(frame);
         access.prepare();

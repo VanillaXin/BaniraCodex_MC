@@ -98,11 +98,18 @@ public class UiGameIconLayoutTest {
             if (field.getOpcode() == org.objectweb.asm.Opcodes.PUTFIELD && field.name.equals("parent")) parent = true;
         }
         assertTrue(parent);
-        var constructor = type.methods.stream().filter(value -> value.name.equals("<init>") && value.desc.contains("BooleanSupplier")).findFirst().orElseThrow();
+        var constructor = type.methods.stream().filter(value -> value.name.equals("<init>")
+                && value.desc.contains("BooleanSupplier") && value.desc.contains("/Element;")).findFirst().orElseThrow();
         boolean initialized = false;
         for (var instruction : constructor.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode
                 && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("linkParents")) initialized = true;
         assertTrue("Parent indexing must run on the loaded HTML tree", initialized);
+        var original = type.methods.stream().filter(value -> value.name.equals("<init>")
+                && value.desc.contains("BooleanSupplier") && !value.desc.contains("/Element;")).findFirst().orElseThrow();
+        boolean delegated = false;
+        for (var instruction : original.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
+                && call.name.equals("<init>") && call.owner.equals(type.name) && call.desc.equals(constructor.desc)) delegated = true;
+        assertTrue("The legacy owner constructor must retain indexed-parent initialization", delegated);
     }
 
     @Test public void accessibleControlMetadataPassesTheActualAttributeGuard() throws Exception {

@@ -79,7 +79,9 @@ public final class BaniraCodexClientBootstrap {
         xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS,
                 () -> xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay.isSupportedInventoryScreen(net.minecraft.client.Minecraft.getInstance().screen));
         xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.POINTER,
-                () -> net.minecraft.client.Minecraft.getInstance().screen instanceof xin.vanilla.banira.client.gui.BaniraScreen && ClientConfig.get().useCustomCursor());
+                () -> ClientConfig.get().useCustomCursor()
+                        && (net.minecraft.client.Minecraft.getInstance().screen instanceof xin.vanilla.banira.client.gui.BaniraScreen
+                        || UI_SESSIONS.ownsScreen(net.minecraft.client.Minecraft.getInstance().screen)));
         BaniraUi.install(new BaniraUi.Driver() {
             @Override public void screenRemoved(Object screen) { xin.vanilla.banira.internal.client.ui.CommonUiPages.removed(screen); }
             @Override public boolean closePage(Object screen, xin.vanilla.banira.api.client.ui.UiCloseReason reason) {

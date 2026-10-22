@@ -9,15 +9,18 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
 
-public final class AuiPageHost extends ApricityScreen {
+public final class AuiPageHost extends ApricityScreen implements UiPointerFeedback {
     private static final Logger LOGGER = LogManager.getLogger();
     private final DocumentView view;
     private final UiSessionHost sessions;
+    private final UiPagePointer pointer;
     private boolean failed;
 
     private AuiPageHost(UiPageSpec page, DocumentView view, UiSessionHost sessions) {
         super(page.template());
         this.view = view; this.sessions = sessions;
+        pointer = new UiPagePointer(this, () -> !failed && !view.closed() && sessions.ownsScreen(this), page::theme);
+        view.ownPointer(pointer);
         view.failureHandler(failure -> {
             if (failed) return;
             failed = true;
@@ -40,11 +43,17 @@ public final class AuiPageHost extends ApricityScreen {
         super.init();
         if (getLinkedDocument() == null) throw new IllegalStateException("AUI document was not created");
         view.attach(getLinkedDocument());
+        pointer.sync();
     }
 
     @Override public void resize(Minecraft minecraft, int width, int height) { sessions.resize(); }
     @Override public void onClose() { if (!view.dismissOverlay()) view.requestClose(); }
-    @Override public void removed() { sessions.suspendScreen(view); super.removed(); }
+    @Override public void removed() {
+        try { pointer.close(); sessions.suspendScreen(view); } finally { super.removed(); }
+    }
+
+    @Override public void pointerButton(int button, boolean down) { pointer.button(button, down); }
+    @Override public void pointerScroll(double delta) { pointer.scroll(delta); }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         return sessionKey(key, scan, modifiers, true) || super.keyPressed(key, scan, modifiers);
@@ -70,6 +79,7 @@ public final class AuiPageHost extends ApricityScreen {
             super.render(graphics, mouseX, mouseY, partialTick);
             view.afterLayout();
             view.access.render(graphics);
+            pointer.render(graphics, mouseX, mouseY);
         } catch (RuntimeException | LinkageError failure) {
             failed = true;
             LOGGER.warn("AUI renderer failed; returning to native interface", failure);
@@ -83,6 +93,7 @@ public final class AuiPageHost extends ApricityScreen {
         private AuiDocumentAccess access;
 
         DocumentView() { super(null, null); }
+        void ownPointer(UiPagePointer pointer) { resources.own(pointer); }
         boolean attached() { return document != null; }
         void attach(Document document) {
             this.document = document;

@@ -20,7 +20,11 @@ public class UiConfigLayoutTest {
             assertNotNull(search);
             Element parent = (Element) search.getParentNode();
             assertEquals("search", parent.getAttribute("class"));
-            assertEquals("page", ((Element) parent.getParentNode()).getAttribute("class"));
+            assertEquals("config-main", ((Element) parent.getParentNode()).getAttribute("class"));
+            for (org.w3c.dom.Node node = parent; node instanceof Element; node = node.getParentNode()) {
+                assertNotEquals("content", ((Element) node).getAttribute("id"));
+                assertNotEquals("category_content", ((Element) node).getAttribute("id"));
+            }
         }
     }
 }

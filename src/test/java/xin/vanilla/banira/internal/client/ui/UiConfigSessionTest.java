@@ -41,6 +41,7 @@ public class UiConfigSessionTest {
         final Map<String, ConfigCategoryTitleSpec> titles = new LinkedHashMap<>();
         ConfigHolder holder;
         Object session;
+        String modId = "test";
         boolean connected = true, failSend, failFetch;
 
         void field(String path, ConfigEntryDescriptor.ConfigValueType kind, Object value) {
@@ -50,7 +51,7 @@ public class UiConfigSessionTest {
                     .valueType(kind).defaultValue(value).enumClass(Mode.class).build());
         }
         void open() throws Exception {
-            holder = ConfigHolder.create("test", "test-common.toml", ConfigScope.COMMON, store,
+            holder = ConfigHolder.create(modId, "test-common.toml", ConfigScope.COMMON, store,
                     descriptors, Collections.emptyMap(), titles);
             holder.onSaved(paths -> saves.incrementAndGet());
             Class<?> sessionType = type("internal.client.ui.page.ConfigUiSession");

@@ -141,11 +141,18 @@ public class UiDomView extends NativeUiView {
             return;
         }
         if (id.equals("preview")) { dom.hudPosition(hudX, hudY); return; }
+        if (scope == null && id.equals("search_hint")) {
+            UiDomAccess.Node search = node("search");
+            if (search != null) search.attribute("placeholder", texts.get(id).toVanilla().getString());
+            return;
+        }
         if (rowProviders.containsKey(id)) {
             VirtualRows old = lists.remove(id);
+            double independentPosition = old != null && !old.tracksPageScroll
+                    ? old.restored ? old.scroller.scrollTop() / old.rowHeight : old.initialPosition : 0;
             if (old != null) old.close();
             UiDomAccess.Node container = node(id);
-            if (container != null) lists.put(id, new VirtualRows(id, container));
+            if (container != null) lists.put(id, new VirtualRows(id, container, independentPosition));
             return;
         }
         if (scope != null && (id.equals("hint") || id.equals("tooltip") || id.equals("validation"))) {
@@ -522,7 +529,7 @@ public class UiDomView extends NativeUiView {
         final int rowHeight;
         final boolean tracksPageScroll;
 
-        VirtualRows(String id, UiDomAccess.Node container) {
+        VirtualRows(String id, UiDomAccess.Node container, double independentPosition) {
             this.id = id; this.container = container;
             presentation = rowProviders.get(id) instanceof UiRowPresentation ? (UiRowPresentation) rowProviders.get(id) : null;
             rowHeight = presentation == null ? 48 : presentation.rowHeight();
@@ -531,7 +538,7 @@ public class UiDomView extends NativeUiView {
             UiDomAccess.Node content = dom.find(presentation == null ? "content" : presentation.scrollerId());
             scroller = content != null ? content : container;
             window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
-            initialPosition = tracksPageScroll ? state().rowPosition() : 0;
+            initialPosition = tracksPageScroll ? state().rowPosition() : independentPosition;
             top = dom.create("div"); bottom = dom.create("div");
             container.append(top);
             scrolling = scroller.on("scroll", event -> {

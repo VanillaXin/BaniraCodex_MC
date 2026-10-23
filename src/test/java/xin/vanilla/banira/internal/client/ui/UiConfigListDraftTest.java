@@ -258,10 +258,10 @@ public class UiConfigListDraftTest {
         assertEquals(4, ((InputWidget) input).highlightPos());
     }
 
-    @Test public void groupExpansionUsesTheSameRetainedMapForBothBackends() throws Exception {
+    @Test public void sidebarSelectionSeedsNativeExpansionAndRetainsItsFoldState() throws Exception {
         var f = new UiConfigSessionTest.Fixture(); f.field("group.name", ConfigEntryDescriptor.ConfigValueType.STRING, "value"); f.open();
         NativeUiView root = new NativeUiView(new Object()); call(f.session, "bind", new Class<?>[]{UiView.class}, root);
-        NativeUiView group = new NativeUiView(new Object()); root.rowProviders.get("fields").bind(group, 0); group.activate("open");
+        NativeUiView group = new NativeUiView(new Object()); root.rowProviders.get("categories").bind(group, 1); group.activate("open");
         assertEquals(Boolean.TRUE, ((Map<?, ?>) invoke(f.session, "categoryExpansion", new Class<?>[0])).get("group"));
         invoke(f.session, "categoryExpansion", new Class<?>[]{String.class, boolean.class}, "group", false);
         NativeUiView next = new NativeUiView(new Object()); call(f.session, "bind", new Class<?>[]{UiView.class}, next);

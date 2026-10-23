@@ -19,6 +19,7 @@ public class UiDomView extends NativeUiView {
     private final UiDomView root;
     private final UiDomAccess.Node scope;
     private String prefix;
+    private boolean textTools;
     private final Map<String, UiDomAccess.Node> nodes = new LinkedHashMap<>();
     private final List<UiDomAccess.Node> ownedNodes = new ArrayList<>();
     private final Set<String> listeners = new HashSet<>();
@@ -172,7 +173,7 @@ public class UiDomView extends NativeUiView {
         if (control != null) configure(id, node, control);
         if (texts.containsKey(id)) {
             String text = texts.get(id).toVanilla().getString();
-            ButtonWidget.PresetStyle preset = scope == null ? null : toolPreset(id, text);
+            ButtonWidget.PresetStyle preset = scope == null || textTools ? null : toolPreset(id, text);
             if (scope != null && id.equals("apply")) node.attribute("class", preset == null ? "row-action" : "tool");
             node.text(preset == null ? text : "");
             node.component(texts.get(id));
@@ -258,8 +259,8 @@ public class UiDomView extends NativeUiView {
             UiDomAccess.Node pick = node("pick");
             pick.removeAttribute("style");
             boolean select = control.kind() == UiControlSpec.Kind.SELECT;
-            pick.text(select ? "" : "...");
-            pick.gameElement(select ? UiGameElement.preset(ButtonWidget.PresetStyle.ARROW_DOWN) : null);
+            pick.text(select ? textTools ? "\u2304" : "" : "...");
+            pick.gameElement(select && !textTools ? UiGameElement.preset(ButtonWidget.PresetStyle.ARROW_DOWN) : null);
             pick.tooltip(texts.containsKey("label") ? texts.get("label").toVanilla().getString() : "");
             listen("pick:control", pick, "click", event -> {
                 if (!enabled.getOrDefault(id, true)) return;
@@ -517,13 +518,20 @@ public class UiDomView extends NativeUiView {
         boolean restored;
         boolean focusViewportRestored;
         final double initialPosition;
+        final UiRowPresentation presentation;
+        final int rowHeight;
+        final boolean tracksPageScroll;
 
         VirtualRows(String id, UiDomAccess.Node container) {
             this.id = id; this.container = container;
-            UiDomAccess.Node content = dom.find("content");
+            presentation = rowProviders.get(id) instanceof UiRowPresentation ? (UiRowPresentation) rowProviders.get(id) : null;
+            rowHeight = presentation == null ? 48 : presentation.rowHeight();
+            if (rowHeight < 12 || rowHeight > 256) throw new IllegalArgumentException("Invalid UI row height");
+            tracksPageScroll = presentation == null || presentation.tracksPageScroll();
+            UiDomAccess.Node content = dom.find(presentation == null ? "content" : presentation.scrollerId());
             scroller = content != null ? content : container;
             window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
-            initialPosition = state().rowPosition();
+            initialPosition = tracksPageScroll ? state().rowPosition() : 0;
             top = dom.create("div"); bottom = dom.create("div");
             container.append(top);
             scrolling = scroller.on("scroll", event -> {
@@ -538,7 +546,7 @@ public class UiDomView extends NativeUiView {
             if (scroller.clientHeight() <= 0) return;
             if (!restored) {
                 restored = true;
-                scroller.scrollTop(initialPosition * 48);
+                scroller.scrollTop(initialPosition * rowHeight);
                 update(true);
                 return;
             }
@@ -556,7 +564,9 @@ public class UiDomView extends NativeUiView {
                 focusViewportRestored = true;
                 if (delta != 0) {
                     scroller.scrollTop(Math.max(0, scroller.scrollTop() + delta));
-                    state().scrollOffset(scroller.scrollTop()); state().rowPosition(scroller.scrollTop() / 48);
+                    if (tracksPageScroll) {
+                        state().scrollOffset(scroller.scrollTop()); state().rowPosition(scroller.scrollTop() / rowHeight);
+                    }
                     update();
                 }
                 return;
@@ -569,15 +579,15 @@ public class UiDomView extends NativeUiView {
             if (updating) return;
             updating = true;
             try {
-                int next = Math.max(0, Math.min((int) (scroller.scrollTop() / 48), Math.max(0, window.total() - 1)));
-                if (restored) {
+                int next = Math.max(0, Math.min((int) (scroller.scrollTop() / rowHeight), Math.max(0, window.total() - 1)));
+                if (restored && tracksPageScroll) {
                     state().scrollOffset(scroller.scrollTop());
-                    state().rowPosition(scroller.scrollTop() / 48);
+                    state().rowPosition(scroller.scrollTop() / rowHeight);
                 }
                 if (next == first && !force) return;
                 first = next; window.moveTo(first);
-                top.attribute("style", "height:" + (first * 48L) + "px;flex-shrink:0");
-                int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / 48) + 2));
+                top.attribute("style", "height:" + (first * (long) rowHeight) + "px;flex-shrink:0");
+                int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / rowHeight) + 2));
                 while (rows.size() > count) {
                     UiDomView row = rows.remove(rows.size() - 1);
                     row.close(); row.scope.remove();
@@ -590,16 +600,18 @@ public class UiDomView extends NativeUiView {
                     } else {
                         UiDomAccess.Node element = dom.create("div");
                         element.attribute("class", "row");
-                        element.attribute("style", "height:48px;flex-shrink:0");
+                        element.attribute("style", "height:" + rowHeight + "px;flex-shrink:0");
                         container.append(element);
                         row = new UiDomView(UiDomView.this, element, window.key(index) + "/");
                         rows.add(row);
                     }
+                    row.textTools = presentation != null && presentation.textTools();
+                    if (presentation != null) row.scope.attribute("class", "row " + presentation.rowClass(first + index));
                     window.bind(index, row);
                 }
-                bottom.attribute("style", "height:" + Math.max(0L, (window.total() - first - count) * 48L) + "px;flex-shrink:0");
+                bottom.attribute("style", "height:" + Math.max(0L, (window.total() - first - count) * (long) rowHeight) + "px;flex-shrink:0");
                 container.append(bottom);
-                if (count > 0 && restored) state().scrollAnchor(window.key(0));
+                if (count > 0 && restored && tracksPageScroll) state().scrollAnchor(window.key(0));
             } finally { updating = false; }
         }
 

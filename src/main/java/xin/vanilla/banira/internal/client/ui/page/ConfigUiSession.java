@@ -39,6 +39,8 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
     private final Map<UiView, UiOwnedResources> rowBindings = new LinkedHashMap<>();
     private final Map<UiView, ConfigEntryDescriptor> boundEntries = new LinkedHashMap<>();
     private final Map<UiView, Row> boundListRows = new LinkedHashMap<>();
+    private final Map<UiView, UiOwnedResources> categoryBindings = new LinkedHashMap<>();
+    private String selectedCategory;
     private final Map<String, Boolean> expanded = new LinkedHashMap<>();
     private List<Row> visibleRows = Collections.emptyList();
     private String queryText = "";
@@ -218,8 +220,14 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         view.text("title", BaniraComponent.get().transClientAuto("config_editor_title"));
         view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, ConfigEditorInputLimits.STRING_VALUE, "", false));
         view.draft("search", queryText);
+        view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
+        view.tooltip("clear_search", BaniraComponent.get().transClientAuto("config_editor_clear_search"));
+        bindings.own(view.onAction("clear_search", () -> {
+            if (this.view != view) return;
+            queryText = ""; view.draft("search", ""); resetScroll(); rebuildRows();
+        }));
         bindings.own(view.onDraft("search", text -> {
-            if (this.view == view) { queryText = text; rebuildRows(); }
+            if (this.view == view) { queryText = text; resetScroll(); rebuildRows(); }
         }));
         view.text("save", BaniraComponent.get().transClientAuto("config_editor_save"));
         view.tooltip("save", BaniraComponent.get().transClientAuto(holder.canSyncToServer() ? "config_editor_save_tooltip_network" : "config_editor_save_tooltip"));
@@ -227,8 +235,15 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         view.tooltip("sync", BaniraComponent.get().transClientAuto("config_editor_sync_tooltip"));
         view.text("close", BaniraComponent.get().transClientAuto("config_editor_close"));
         view.enabled("sync", holder.canSyncToServer());
+        view.text("fetch", BaniraComponent.get().transClientAuto("config_editor_fetch"));
+        view.text("sync_all", BaniraComponent.get().transClientAuto("config_editor_sync_all"));
+        view.enabled("server_actions", holder.canSyncToServer());
+        view.enabled("fetch", holder.canSyncToServer());
+        view.enabled("sync_all", holder.canSyncToServer());
         bindings.own(view.onAction("save", () -> { if (this.view == view) save(); }));
         bindings.own(view.onAction("sync", () -> { if (this.view == view) sync(false); }));
+        bindings.own(view.onAction("fetch", () -> { if (this.view == view) fetch(); }));
+        bindings.own(view.onAction("sync_all", () -> { if (this.view == view) sync(true); }));
         if (holder.canSyncToServer()) {
             bindings.own(view.onLongAction("save", () -> { if (this.view == view) fetch(); }));
             bindings.own(view.onLongAction("sync", () -> { if (this.view == view) sync(true); }));
@@ -236,10 +251,69 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         bindings.own(view.onAction("close", () -> {
             if (this.view == view) { discardClose = true; view.requestClose(); }
         }));
-        rebuildRows();
+        rebuildCategories(); rebuildRows();
     }
 
     private boolean discardClose;
+
+    private void resetScroll() {
+        if (view != null && view.state() != null) {
+            view.state().rowPosition(0); view.state().scrollOffset(0); view.state().scrollAnchor("");
+        }
+    }
+
+    private void rebuildCategories() {
+        for (UiOwnedResources owned : categoryBindings.values()) owned.close();
+        categoryBindings.clear();
+        List<Navigation> navigation = new ArrayList<>();
+        navigation.add(new Navigation("__all", BaniraComponent.get().transClientAuto("config_editor_all"), holder.getDescriptors().size()));
+        long rootCount = holder.getDescriptors().stream().filter(d -> !d.getPath().contains(".")).count();
+        if (rootCount > 0) navigation.add(new Navigation("__general", BaniraComponent.get().transClientAuto("config_editor_general"), (int) rootCount));
+        for (ConfigHolder.CategoryTreeNode root : holder.getCategoryTree()) appendCategories(root, navigation);
+        if (selectedCategory == null) selectedCategory = rootCount > 0 ? "__general" : navigation.size() > 1 ? navigation.get(1).path : "__all";
+        UiView owner = view;
+        view.rows("categories", new UiRowPresentation() {
+            public int rowHeight() { return 20; }
+            public String scrollerId() { return "category_content"; }
+            public boolean tracksPageScroll() { return false; }
+            public boolean textTools() { return true; }
+            public String rowClass(int index) { return "config-navigation" + (navigation.get(index).path.equals(selectedCategory) ? " config-selected" : ""); }
+            public int size() { return navigation.size(); }
+            public String key(int index) { return "category:" + navigation.get(index).path; }
+            public void bind(UiView row, int index) {
+                if (ConfigUiSession.this.view != owner) return;
+                UiOwnedResources old = categoryBindings.remove(row); if (old != null) old.close();
+                UiOwnedResources owned = new UiOwnedResources(); categoryBindings.put(row, owned);
+                Navigation item = navigation.get(index);
+                String indent = "  ".repeat(Math.min(3, Math.max(0, item.path.split("\\.").length - 1)));
+                row.text("open", BaniraComponent.get().literal(indent + item.title.getString(Translator.getClientLanguage())));
+                row.text("count", BaniraComponent.get().literal(String.valueOf(item.count)));
+                row.tooltip("open", item.title);
+                owned.own(row.onAction("open", () -> {
+                    if (ConfigUiSession.this.view != owner) return;
+                    selectedCategory = item.path; queryText = ""; owner.draft("search", "");
+                    if (!item.path.startsWith("__")) expanded.put(item.path, true);
+                    resetScroll(); rebuildCategories(); rebuildRows();
+                }));
+            }
+        }, 120);
+    }
+
+    private void appendCategories(ConfigHolder.CategoryTreeNode node, List<Navigation> navigation) {
+        if (!node.getCategoryPath().isEmpty()) {
+            String prefix = node.getCategoryPath() + ".";
+            int count = (int) holder.getDescriptors().stream().filter(d -> d.getPath().startsWith(prefix)).count();
+            if (count > 0) navigation.add(new Navigation(node.getCategoryPath(), categoryTitle(node), count));
+        }
+        for (ConfigHolder.CategoryTreeNode child : node.getChildren()) appendCategories(child, navigation);
+    }
+
+    private static final class Navigation {
+        final String path;
+        final Component title;
+        final int count;
+        Navigation(String path, Component title, int count) { this.path = path; this.title = title; this.count = count; }
+    }
 
     private void rebuildRows() {
         if (view == null) return;
@@ -247,10 +321,27 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         rowBindings.clear(); boundEntries.clear(); boundListRows.clear();
         List<Row> rows = new ArrayList<>();
         Set<String> matches = new LinkedHashSet<>(search(queryText));
-        for (ConfigHolder.CategoryTreeNode root : holder.getCategoryTree()) appendRows(root, matches, rows);
+        for (ConfigEntryDescriptor descriptor : holder.getDescriptors()) {
+            String path = descriptor.getPath();
+            boolean selected = !queryText.isBlank() || "__all".equals(selectedCategory)
+                    || "__general".equals(selectedCategory) && !path.contains(".")
+                    || selectedCategory != null && path.startsWith(selectedCategory + ".");
+            if (!selected || !matches.contains(path)) continue;
+            rows.add(new Row(path, descriptor, null));
+            if (isList(descriptor) && listDraft(path).expanded) {
+                int size = ((List<?>) value(path)).size();
+                for (int index = 0; index <= size; index++) rows.add(new Row(path, descriptor, null, index));
+            }
+        }
         visibleRows = rows;
         UiView owner = view;
-        view.rows("fields", new UiRowProvider() {
+        view.rows("fields", new UiRowPresentation() {
+            public int rowHeight() { return 28; }
+            public boolean textTools() { return true; }
+            public String rowClass(int index) {
+                Row row = visibleRows.get(index);
+                return row.listIndex >= 0 ? "config-list-item" : isList(row.descriptor) ? "config-list-header" : "config-field";
+            }
             public int size() { return visibleRows.size(); }
             public String key(int index) { return visibleRows.get(index).key(); }
             public void bind(UiView row, int index) {
@@ -280,7 +371,8 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
                         return;
                     }
                     boundEntries.put(row, descriptor);
-                    row.text("label", BaniraComponent.get().literal(descriptor.getDisplayName()));
+                    row.text("label", entryTitle(descriptor));
+                    row.text("key", BaniraComponent.get().literal(descriptor.getPath()));
                     row.text("tooltip", tooltip(descriptor));
                     row.text("reset", BaniraComponent.get().literal("\u21ba"));
                     row.tooltip("reset", BaniraComponent.get().transClientAuto("config_editor_reset_tooltip"));
@@ -348,6 +440,8 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
     private void updateStatus() {
         if (view == null) return;
         view.enabled("save", !state.hasInvalidEntryWidgets());
+        view.enabled("sync", holder.canSyncToServer() && !state.hasInvalidEntryWidgets());
+        view.enabled("sync_all", holder.canSyncToServer() && !state.hasInvalidEntryWidgets());
         for (Map.Entry<UiView, ConfigEntryDescriptor> row : boundEntries.entrySet()) row.getKey().text("validation",
                 entry(row.getValue().getPath()).isValid() ? BaniraComponent.get().literal("")
                         : BaniraComponent.get().transClientAuto("config_editor_validation_failed"));
@@ -367,6 +461,8 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         bindings.close();
         for (UiOwnedResources owned : rowBindings.values()) owned.close();
         rowBindings.clear(); boundEntries.clear(); boundListRows.clear();
+        for (UiOwnedResources owned : categoryBindings.values()) owned.close();
+        categoryBindings.clear();
     }
     @Override public void close(UiCloseReason reason) {
         if (closed) return;
@@ -388,6 +484,12 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
     }
 
     private static boolean isList(ConfigEntryDescriptor descriptor) { return descriptor.isListType(); }
+    private Component entryTitle(ConfigEntryDescriptor descriptor) {
+        String text = tooltip(descriptor).getString(Translator.getClientLanguage());
+        if (text.isBlank()) text = descriptor.getDisplayName();
+        int newline = text.indexOf('\n');
+        return BaniraComponent.get().literal(newline < 0 ? text : text.substring(0, newline));
+    }
     private ConfigListDraft listDraft(String path) { return ConfigListDraft.decode(draft(path)); }
     private void listDraft(String path, ConfigListDraft draft) { draft(path, draft.encode()); }
 

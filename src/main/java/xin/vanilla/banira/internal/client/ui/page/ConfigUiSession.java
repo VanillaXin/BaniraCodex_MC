@@ -220,6 +220,8 @@ public final class ConfigUiSession implements UiPageSession, UiCloseGuard {
         state.clearEntries();
         slots.forEach(state::registerEntry);
         view.text("title", ConfigUiTexts.heading(holder));
+        var brand = UiModuleHeaderIcons.resolve(holder.getModId(), xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder());
+        view.gameElement("brand", brand); view.enabled("brand", brand != null);
         view.text("filename", BaniraComponent.get().literal(holder.getConfigName()));
         view.text("category_title", BaniraComponent.get().transClientAuto("config_editor_categories"));
         view.text("category_count", BaniraComponent.get().literal(String.valueOf(holder.getDescriptors().size())));

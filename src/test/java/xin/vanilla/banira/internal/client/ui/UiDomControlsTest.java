@@ -29,6 +29,7 @@ public class UiDomControlsTest {
         Consumer<String> colorResult;
         int colorCloses;
         boolean failingTooltips;
+        boolean rejectUnsupportedId;
 
         Dom() throws Exception {
             Class<?> api = type("internal.client.ui.UiDomAccess");
@@ -75,7 +76,9 @@ public class UiDomControlsTest {
                         case "gameElement": gameElement = (UiGameElement) args[0]; return null;
                         case "tooltip": if (failingTooltips) throw new IllegalStateException("Tooltip adapter failure"); tooltip = (String) args[0]; return null;
                         case "value": if (args == null || args.length == 0) return value; value = (String) args[0]; writes++; return null;
-                        case "attribute": attributes.put((String) args[0], (String) args[1]); writes++; return null;
+                        case "attribute":
+                            if (rejectUnsupportedId && args[0].equals("id")) throw new IllegalArgumentException("Unsupported UI attribute");
+                            attributes.put((String) args[0], (String) args[1]); writes++; return null;
                         case "removeAttribute": attributes.remove(args[0]); writes++; return null;
                         case "append": children.remove(args[0]); children.add(args[0]); return null;
                         case "remove": removed = true; return null;

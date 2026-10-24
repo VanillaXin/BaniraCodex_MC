@@ -20,6 +20,8 @@ public class UiDomView extends NativeUiView {
     private final UiDomAccess.Node scope;
     private String prefix;
     private boolean textTools;
+    private final Set<String> normalizedCloses = new HashSet<>();
+    private UiGameElement closeGlyph;
     private final Map<String, UiDomAccess.Node> nodes = new LinkedHashMap<>();
     private final List<UiDomAccess.Node> ownedNodes = new ArrayList<>();
     private final Set<String> listeners = new HashSet<>();
@@ -178,7 +180,7 @@ public class UiDomView extends NativeUiView {
         }
         UiControlSpec control = controls.get(id);
         if (control != null) configure(id, node, control);
-        if (texts.containsKey(id)) {
+        if (texts.containsKey(id) && !closeButton(id)) {
             String text = texts.get(id).toVanilla().getString();
             ButtonWidget.PresetStyle preset = scope == null || textTools ? null : toolPreset(id, text);
             if (scope != null && id.equals("apply")) node.attribute("class", preset == null ? "row-action" : "tool");
@@ -230,6 +232,41 @@ public class UiDomView extends NativeUiView {
         if (drafts.containsKey(id)) node.value(drafts.get(id));
         bindInput(id, node);
         restoreSelection(id, node);
+        normalizeClose(id);
+    }
+
+    private boolean closeButton(String id) {
+        return scope == null && (id.equals("close") || id.equals("cancel") && dom.find("cancel_close_icon") != null);
+    }
+
+    private void normalizeClose(String changed) {
+        if (scope != null) return;
+        String id = changed.equals("close") || changed.equals("close_icon") ? "close"
+                : (changed.equals("cancel") || changed.equals("cancel_close_icon")) && dom.find("cancel_close_icon") != null ? "cancel" : null;
+        if (id == null) return;
+        UiDomAccess.Node button = dom.find(id);
+        if (button == null) return;
+        String glyphId = id.equals("close") ? "close_icon" : "cancel_close_icon";
+        UiDomAccess.Node glyph = nodes.get(glyphId);
+        if (glyph == null) glyph = dom.find(glyphId);
+        if (normalizedCloses.add(id)) {
+            button.text("");
+            if (glyph == null) glyph = make("div", button, "ui-close-glyph");
+            else button.append(glyph);
+            nodes.put(glyphId, glyph);
+        }
+        button.attribute("class", "ui-close"); button.gameElement(null);
+        glyph.attribute("class", "ui-close-glyph");
+        if (closeGlyph == null) closeGlyph = UiGameElement.sprite(xin.vanilla.banira.client.data.Texture.of(
+                new net.minecraft.resources.ResourceLocation("apricityui", "apricity/banira_codex/icons/close.png"), 16, 16));
+        glyph.gameElement(closeGlyph);
+        if (!enabled.getOrDefault(id, true)) { button.tooltip(""); button.blur(); }
+        else {
+            String label = tooltips.containsKey(id) ? tooltips.get(id).toVanilla().getString()
+                    : texts.containsKey(id) ? texts.get(id).toVanilla().getString()
+                    : xin.vanilla.banira.BaniraComponent.get().transClientAuto("close").toString();
+            button.tooltip(label); button.attribute("aria-label", label);
+        }
     }
 
     private String selectionLabel(UiControlSpec control, List<String> selected) {

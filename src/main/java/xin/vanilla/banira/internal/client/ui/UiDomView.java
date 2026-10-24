@@ -149,6 +149,11 @@ public class UiDomView extends NativeUiView {
 
     @Override protected void changed(String id) {
         if (dom == null || !live()) return;
+        if (scope == null && id.equals("history_detail") && values.containsKey(id)) {
+            UiDomAccess.Node workspace = dom.find("history_workspace");
+            if (workspace != null) workspace.attribute("class", "notification-columns" + (values.get(id).asBoolean() ? " detail-open" : ""));
+            return;
+        }
         if (id.equals("theme")) {
             if (theme != null) {
                 dom.theme(theme);

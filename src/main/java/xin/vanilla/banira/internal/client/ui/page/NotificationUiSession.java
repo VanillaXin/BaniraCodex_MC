@@ -47,6 +47,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     private List<NotificationLogEntry> entries = Collections.emptyList();
     private long revision = Long.MIN_VALUE, selectedId;
     private String query = "";
+    private boolean historyDetailOpen;
     private double x, y, originalX, originalY;
     private UiView view;
     private UiOwnedResources bindings = new UiOwnedResources();
@@ -105,16 +106,22 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     public String query() { return query; }
     public void query(String text) {
         if (closed) return;
-        query = text == null ? "" : text;
+        String next = text == null ? "" : text;
+        if (!query.equals(next) && history != null && view instanceof NativeUiView) {
+            UiViewState state = ((NativeUiView) view).state();
+            state.rowPosition(0); state.scrollOffset(0); state.scrollAnchor("");
+        }
+        query = next;
         if (history != null && history.entries().stream().noneMatch(entry -> entry.id() == selectedId && matches(entry, query))) selectedId = 0;
         rebuild();
     }
     public long selectedId() { return selectedId; }
-    public void restoreSelection(long id) { if (!closed) { selectedId = id; updateDetail(); } }
+    public void restoreSelection(long id) { if (!closed) { selectedId = id; historyDetailOpen = id != 0; updateDetail(); } }
     public void select(long id) {
         if (closed || history == null || history.entries().stream().noneMatch(entry -> entry.id() == id)) return;
         if (selectedId != id && view instanceof NativeUiView) ((NativeUiView) view).state().detailScroll(0);
         selectedId = id;
+        historyDetailOpen = true;
         history.markRead(id);
         refresh(); updateDetail();
     }
@@ -208,19 +215,37 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
             bindings.own(view.onDraft("search", value -> { if (this.view == view) query(value); }));
         }
         if (history != null) {
-            view.text("mark_all_read", BaniraComponent.get().literal("\u2713"));
+            view.gameElement("brand", UiModuleHeaderIcons.resolve("banira_codex", xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder()));
+            view.text("module_name", BaniraComponent.get().literal("BANIRA CODEX"));
+            view.text("search_hint", tr("notification_log_search_hint"));
+            view.tooltip("search", tr("notification_log_search_hint"));
+            view.gameElement("mark_all_read", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.CHECK));
             view.tooltip("mark_all_read", tr("notification_log_mark_all_read"));
             bindings.own(view.onAction("mark_all_read", () -> { if (this.view == view) markAllRead(); }));
-            view.text("types", BaniraComponent.get().literal("\u2699"));
+            view.gameElement("types", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.SETTINGS));
             view.tooltip("types", tr("notification_type_config_open"));
             bindings.own(view.onAction("types", () -> {
                 if (this.view == view) Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen(nativeScreen)));
             }));
-            view.text("position", BaniraComponent.get().literal("\u2725"));
+            view.gameElement("position", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.MOVE));
             view.tooltip("position", tr("notification_hud_position"));
             bindings.own(view.onAction("position", () -> {
                 if (this.view == view) Minecraft.getInstance().setScreen(new NotificationHudPositionScreen(nativeScreen));
             }));
+            view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
+            view.tooltip("clear_search", tr("config_editor_clear_search"));
+            bindings.own(view.onAction("clear_search", () -> {
+                if (this.view != view) return;
+                view.draft("search", ""); query("");
+            }));
+            view.gameElement("back", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.ARROW_LEFT));
+            view.tooltip("back", tr("notification_log_back"));
+            bindings.own(view.onAction("back", () -> {
+                if (this.view != view) return;
+                historyDetailOpen = false; updateDetail();
+            }));
+            view.text("footer_close", tr("config_editor_close"));
+            bindings.own(view.onAction("footer_close", () -> { if (this.view == view) view.requestClose(); }));
             revision = Long.MIN_VALUE; refresh();
         } else {
             view.text("save", tr("config_editor_save"));
@@ -242,6 +267,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         if (view == null || closed) return;
         if (history == null) { if (settings != null) rebuildTypes(); return; }
         releaseRows(); entries = filteredEntries();
+        if (entries.stream().noneMatch(entry -> entry.id() == selectedId)) selectedId = 0;
         UiView owner = view;
         List<NotificationLogEntry> snapshot = new ArrayList<>(entries);
         if (view instanceof NativeUiView) {
@@ -251,7 +277,13 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 state.rowPosition(i + state.rowPosition() % 1); break;
             }
         }
-        view.rows("fields", new UiRowProvider() {
+        view.rows("fields", new UiRowPresentation() {
+            public int rowHeight() { return 48; }
+            public String rowClass(int index) {
+                NotificationLogEntry entry = snapshot.get(index);
+                return "log-row " + entry.style().name().toLowerCase(Locale.ROOT)
+                        + (entry.read() ? "" : " unread") + (entry.id() == selectedId ? " selected" : "");
+            }
             public int size() { return snapshot.size(); }
             public String key(int index) { return "notification:" + snapshot.get(index).id(); }
             public void bind(UiView row, int index) {
@@ -261,18 +293,38 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 String summary = entry.component().toString().replace('\n', ' ').replace('\r', ' ');
                 row.text("open", BaniraComponent.get().literal((entry.read() ? "" : "\u2022 ") + summary));
                 row.tooltip("open", entry.component());
-                row.text("label", BaniraComponent.get().literal(DateUtils.toDateTimeString(new Date(entry.timestamp()))));
+                row.text("label", BaniraComponent.get().literal(moduleName(entry) + " / " + DateUtils.toDateTimeString(new Date(entry.timestamp()))));
                 owned.own(row.onAction("open", () -> { if (view == owner) select(entry.id()); }));
             }
             public void unbind(UiView row, int index) { UiOwnedResources owned = rows.remove(row); if (owned != null) owned.close(); }
         }, 120);
         view.enabled("mark_all_read", history.unread() > 0);
+        view.text("unread_count", BaniraComponent.get().literal(tr("notification_log_unread") + ": " + history.unread()));
+        view.text("list_count", BaniraComponent.get().literal(entries.size() + " / " + history.entries().size()));
+        view.text("empty", tr(history.entries().isEmpty() ? "notification_log_empty" : "notification_log_no_results"));
+        view.enabled("empty", entries.isEmpty());
         updateDetail();
     }
     private void updateDetail() {
         if (view == null || history == null) return;
         NotificationLogEntry selected = history.entries().stream().filter(entry -> entry.id() == selectedId).findFirst().orElse(null);
+        if (selected == null) { selectedId = 0; historyDetailOpen = false; }
+        view.value("history_detail", UiValue.bool(historyDetailOpen));
+        view.enabled("history_detail_content", selected != null);
+        view.text("select_hint", tr("notification_log_select_hint"));
+        view.enabled("select_hint", selected == null);
         view.text("text", selected == null ? BaniraComponent.get().literal("") : selected.component());
+        String[] keys = {"source", "type", "style", "position", "animation", "duration"};
+        String[] values = selected == null ? new String[6] : new String[]{sourceName(selected), Objects.toString(selected.notificationType(), ""),
+                selected.style().name(), Objects.toString(selected.positionName(), ""), Objects.toString(selected.animationName(), ""), selected.durationTime() + " ms"};
+        for (int i = 0; i < keys.length; i++) {
+            Component value = BaniraComponent.get().literal(selected == null ? "" : tr("notification_log_meta_" + keys[i]) + ": " + values[i]);
+            view.text("meta_" + keys[i], value); view.tooltip("meta_" + keys[i], value);
+        }
+        view.text("detail_type", BaniraComponent.get().literal(selected == null ? "" : moduleName(selected)));
+        view.tooltip("detail_type", BaniraComponent.get().literal(selected == null ? "" : Objects.toString(selected.notificationType(), "")));
+        view.text("detail_time", BaniraComponent.get().literal(selected == null ? "" : DateUtils.toDateTimeString(new Date(selected.timestamp()))));
+        view.text("read_status", selected == null ? BaniraComponent.get().empty() : tr(selected.read() ? "notification_log_read" : "notification_log_unread"));
         if (selected == null) { view.text("metadata", BaniraComponent.get().literal("")); return; }
         String metadata = DateUtils.toDateTimeString(new Date(selected.timestamp())) + "\n"
                 + tr("notification_log_meta_source") + ": " + Objects.toString(selected.source(), "") + "\n"
@@ -283,6 +335,16 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 + tr("notification_log_meta_duration") + ": " + selected.durationTime() + " ms";
         view.text("metadata", BaniraComponent.get().literal(metadata));
         view.tooltip("metadata", BaniraComponent.get().literal(metadata));
+    }
+    private static String sourceName(NotificationLogEntry entry) {
+        return "network".equals(entry.source()) ? tr("notification_log_source_network").toString()
+                : "local".equals(entry.source()) ? tr("notification_log_source_local").toString() : Objects.toString(entry.source(), "");
+    }
+    private static String moduleName(NotificationLogEntry entry) {
+        String type = Objects.toString(entry.notificationType(), "default");
+        String namespace = type.split("[.:]", 2)[0];
+        Component display = NotificationTypeRegistry.modDisplayNameInternal(namespace);
+        return display == null ? namespace : display.toString();
     }
     private void rebuildTypes() {
         releaseRows();

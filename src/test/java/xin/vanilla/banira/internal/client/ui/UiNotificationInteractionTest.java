@@ -10,6 +10,43 @@ import xin.vanilla.banira.platform.*;
 import static org.junit.Assert.*;
 
 public class UiNotificationInteractionTest {
+    @org.junit.BeforeClass public static void bootstrap() {
+        net.minecraft.SharedConstants.tryDetectVersion(); net.minecraft.server.Bootstrap.bootStrap();
+    }
+    @Test public void historyDetailModeIsScopedToItsWorkspace() throws Exception {
+        UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
+        var workspace = dom.new Node("history_workspace"); dom.ids.put("history_workspace", workspace);
+        NativeUiView view = dom.view();
+        view.value("history_detail", UiValue.bool(true));
+        assertEquals("notification-columns detail-open", workspace.attributes.get("class"));
+        view.value("history_detail", UiValue.bool(false));
+        assertEquals("notification-columns", workspace.attributes.get("class"));
+        assertFalse(dom.ids.get("body").attributes.containsKey("class"));
+    }
+    @Test public void historyBackAndClearDoNotReadAnotherRecord() throws Exception {
+        var f = new UiNotificationPagesTest.Fixture(); f.history.append(new xin.vanilla.banira.client.data.NotificationLogEntry().id(1), 10);
+        var session = (NotificationUiSession) f.session("HistoryPort");
+        var view = new NativeUiView(new Object()); session.bind(view); session.select(1);
+        view.activate("back"); assertEquals(1, session.selectedId()); assertEquals(1, f.marks);
+        assertNotNull(view.values.get("history_detail")); assertFalse(view.values.get("history_detail").asBoolean());
+        session.query("missing"); view.activate("clear_search"); assertEquals("", session.query());
+        assertEquals(1, f.marks);
+    }
+    @Test public void historyMarkupRemainsLiteralComponentAndOldActionsRetire() throws Exception {
+        var f = new UiNotificationPagesTest.Fixture();
+        f.history.append(new xin.vanilla.banira.client.data.NotificationLogEntry().id(1)
+                .componentJson(xin.vanilla.banira.common.data.AbstractComponent.serialize(
+                        xin.vanilla.banira.BaniraComponent.get().literal("<b>literal</b>").clickEvent(
+                                new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/list"))).toString()), 10);
+        var session = (NotificationUiSession) f.session("HistoryPort");
+        var old = new NativeUiView(new Object()); session.bind(old); session.restoreSelection(1);
+        assertEquals("<b>literal</b>", old.texts.get("text").toString());
+        assertNotNull(old.texts.get("text").toVanilla().getStyle().getClickEvent());
+        session.detach(UiDetachReason.SWITCH); session.bind(new NativeUiView(new Object()));
+        old.activate("mark_all_read"); old.activate("types"); old.activate("position");
+        assertEquals(0, f.allMarks); assertEquals(0, f.marks);
+        assertEquals(0, old.subscriptionCount());
+    }
     @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
     @Test public void previewDragUsesOriginalPixelSpaceAndLosesCaptureOnSwitch() throws Exception {
         UiNotificationPagesTest.Fixture f = new UiNotificationPagesTest.Fixture();

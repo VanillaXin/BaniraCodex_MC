@@ -52,6 +52,57 @@ public class UiNotificationPagesTest {
             return type.getConstructor(port).newInstance(proxy);
         }
     }
+    @Test public void historySearchRemainsOneTrimmedSubstring() {
+        var entry = new NotificationLogEntry().id(7).source("network").notificationType("test.alpha.beta")
+                .componentJson(xin.vanilla.banira.common.data.AbstractComponent.serialize(
+                        xin.vanilla.banira.BaniraComponent.get().literal("Alpha other Beta")).toString());
+        assertTrue(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "other"));
+        assertTrue(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, " NETWORK "));
+        assertTrue(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "alpha.beta"));
+        assertFalse(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "alpha beta"));
+        assertTrue(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "  "));
+    }
+    @Test public void filteredMarkAllIncludesHiddenHistory() throws Exception {
+        Fixture f = new Fixture();
+        for (long id = 1; id <= 3; id++) f.history.append(new NotificationLogEntry().id(id).notificationType("test." + id), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        session.bind(new NativeUiView(new Object())); session.query("test.1");
+        assertEquals(1, session.filteredEntries().size()); session.markAllRead(); session.markAllRead();
+        assertEquals(1, f.allMarks); assertEquals(0, f.history.unreadCount());
+        assertTrue(f.history.snapshot().stream().allMatch(NotificationLogEntry::read));
+    }
+    @Test public void trimmedSelectionClearsDetailAndRetiredAction() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1), 1);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()); session.bind(root);
+        NativeUiView row = new NativeUiView(new Object()); root.rowProviders.get("fields").bind(row, 0);
+        session.restoreSelection(1);
+        f.history.append(new NotificationLogEntry().id(2), 1); session.tick();
+        assertEquals(0, session.selectedId());
+        assertTrue(root.texts.get("text").isEmpty());
+        row.activate("open"); assertEquals(0, f.marks);
+    }
+    @Test public void historyRowsUseFixedPresentationAndRetainReadStyle() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(4).styleName("WARNING"), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()); session.bind(root);
+        assertTrue(root.rowProviders.get("fields") instanceof UiRowPresentation);
+        UiRowPresentation rows = (UiRowPresentation) root.rowProviders.get("fields");
+        assertEquals(48, rows.rowHeight()); assertTrue(rows.rowClass(0).contains("unread"));
+        session.select(4);
+        assertTrue(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(0).contains("selected"));
+    }
+    @Test public void selectingAlreadyReadHistoryRefreshesItsHighlight() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1).read(true), 10);
+        f.history.append(new NotificationLogEntry().id(2).read(true), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()); session.bind(root);
+        session.select(1);
+        assertTrue(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(1).contains("selected"));
+        session.select(2);
+        assertTrue(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(0).contains("selected"));
+        assertFalse(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(1).contains("selected"));
+    }
     @Test public void bindSwitchAndRestoreSelectionNeverMarkHistoryRead() throws Exception {
         Fixture f = new Fixture();
         f.history.append(new NotificationLogEntry().id(1).notificationType("test.first"), 10);

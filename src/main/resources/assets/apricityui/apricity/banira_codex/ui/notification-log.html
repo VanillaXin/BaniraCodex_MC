@@ -1,12 +1,14 @@
 <html>
-<head><meta name="aui-viewport" content="mode=gui" /><meta charset="utf-8" /><link rel="stylesheet" href="../shared.css" /></head>
+<head><meta name="aui-viewport" content="mode=gui" /><meta charset="utf-8" /><link rel="stylesheet" href="../shared.css" /><link rel="stylesheet" href="notification-log.css" /></head>
 <body>
-<div class="page">
-    <div class="header notification-toolbar"><div id="title" class="title"></div><button id="types" class="tool"></button><button id="position" class="tool"></button><button id="mark_all_read" class="tool"></button><button id="close"></button></div>
-    <div class="notification-columns">
-        <div class="notification-list"><div class="search"><input id="search" /></div><div id="content" class="content"><div id="fields"></div></div></div>
-        <div class="notification-details"><div id="metadata" class="paragraph notification-metadata"></div><div id="detail" class="content"><div id="text" class="paragraph"></div></div></div>
+<div class="page notification-page">
+    <div class="header notification-toolbar"><div id="brand" class="game-icon"></div><div class="log-heading"><div id="title" class="title"></div><div id="module_name"></div></div><div id="unread_count"></div><button id="close"></button></div>
+    <div class="log-tools"><input id="search" /><button id="clear_search" class="tool"></button><button id="mark_all_read" class="tool"></button><button id="types" class="tool"></button><button id="position" class="tool"></button></div>
+    <div id="history_workspace" class="notification-columns">
+        <div class="notification-list"><div id="list_count" class="log-count"></div><div id="content" class="content"><div id="empty"></div><div id="fields"></div></div></div>
+        <div class="notification-details"><div id="select_hint"></div><div id="history_detail_content" class="log-detail-content"><div class="log-detail-heading"><button id="back" class="tool"></button><div id="detail_type"></div><div id="read_status"></div></div><div id="detail_time" class="log-count"></div><div class="log-metadata"><div id="meta_source"></div><div id="meta_type"></div><div id="meta_style"></div><div id="meta_position"></div><div id="meta_animation"></div><div id="meta_duration"></div></div><div id="detail" class="content"><div id="text" class="paragraph"></div></div></div></div>
     </div>
+    <div class="footer"><button id="footer_close"></button></div>
 </div>
 </body>
 </html>

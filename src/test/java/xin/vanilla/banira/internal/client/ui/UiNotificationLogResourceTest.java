@@ -29,4 +29,9 @@ public class UiNotificationLogResourceTest {
         assertFalse(css.contains("@font-face"));
         assertEquals(java.util.List.of(), UiResourceBudgetTest.violations(UiBoundaryChecks.ownResources("banira_codex"), true));
     }
+    @Test public void compactChromeReservesFourRowsAndReadableDetailSpace() throws Exception {
+        String css = resource("notification-log.css");
+        assertTrue("Count padding must leave at least96px in the measured111px workspace", css.contains(".log-count{padding:2px 8px;"));
+        assertTrue("Metadata must leave room for the independently clipped body", css.contains("max-height:40px"));
+    }
 }

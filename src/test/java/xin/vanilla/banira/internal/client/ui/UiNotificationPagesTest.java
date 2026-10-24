@@ -62,6 +62,17 @@ public class UiNotificationPagesTest {
         assertFalse(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "alpha beta"));
         assertTrue(xin.vanilla.banira.internal.client.ui.page.NotificationUiSession.matches(entry, "  "));
     }
+    @Test public void styledHistorySummaryUsesReadablePlainText() throws Exception {
+        var component = xin.vanilla.banira.BaniraComponent.get().literal("Before")
+                .color(xin.vanilla.banira.common.data.Color.argb(0xffffaa00)).append(
+                xin.vanilla.banira.BaniraComponent.get().literal(" Styled").color(xin.vanilla.banira.common.data.Color.argb(0xffffffff)));
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1)
+                .componentJson(xin.vanilla.banira.common.data.AbstractComponent.serialize(component).toString()), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()), row = new NativeUiView(new Object()); session.bind(root);
+        root.rowProviders.get("fields").bind(row, 0);
+        assertEquals("\u2022 Before Styled", row.texts.get("open").toVanilla().getString());
+    }
     @Test public void filteredMarkAllIncludesHiddenHistory() throws Exception {
         Fixture f = new Fixture();
         for (long id = 1; id <= 3; id++) f.history.append(new NotificationLogEntry().id(id).notificationType("test." + id), 10);

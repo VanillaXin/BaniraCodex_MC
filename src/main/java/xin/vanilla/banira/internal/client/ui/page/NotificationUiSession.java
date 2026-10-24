@@ -294,7 +294,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 NotificationLogEntry entry = snapshot.get(index);
                 UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
                 UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
-                String summary = entry.component().toString().replace('\n', ' ').replace('\r', ' ');
+                String summary = net.minecraft.ChatFormatting.stripFormatting(entry.component().toString()).replace('\n', ' ').replace('\r', ' ');
                 row.text("open", BaniraComponent.get().literal((entry.read() ? "" : "\u2022 ") + summary));
                 row.tooltip("open", entry.component());
                 row.text("label", BaniraComponent.get().literal(moduleName(entry) + " / " + DateUtils.toDateTimeString(new Date(entry.timestamp()))));

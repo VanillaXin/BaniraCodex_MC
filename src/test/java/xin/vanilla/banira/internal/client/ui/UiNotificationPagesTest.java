@@ -103,6 +103,33 @@ public class UiNotificationPagesTest {
         assertTrue(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(0).contains("selected"));
         assertFalse(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(1).contains("selected"));
     }
+    @Test public void alreadyReadSelectionRefreshesRealizedDomClass() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1).read(true), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom(); session.bind(dom.view());
+        session.select(1);
+        assertTrue(dom.created.stream().anyMatch(node -> !node.removed
+                && node.attributes.getOrDefault("class", "").contains("log-row")
+                && node.attributes.getOrDefault("class", "").contains("selected")));
+    }
+    @Test public void historyStyleClassesCannotCollideWithGlobalValidation() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1).styleName("ERROR"), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()); session.bind(root);
+        assertFalse(Arrays.asList(((UiRowPresentation) root.rowProviders.get("fields")).rowClass(0).split(" ")).contains("error"));
+    }
+    @Test public void compactHistoryUsesOneConsistentVirtualRowHeight() throws Exception {
+        Fixture f = new Fixture(); f.history.append(new NotificationLogEntry().id(1), 10);
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) f.session("HistoryPort");
+        NativeUiView root = new NativeUiView(new Object()) {
+            @Override public xin.vanilla.banira.client.data.ScreenCoordinate bounds(String id) {
+                return new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 320, 100);
+            }
+        };
+        session.bind(root);
+        UiRowPresentation rows = (UiRowPresentation) root.rowProviders.get("fields");
+        assertEquals(24, rows.rowHeight()); assertTrue(rows.rowClass(0).contains("compact"));
+    }
     @Test public void bindSwitchAndRestoreSelectionNeverMarkHistoryRead() throws Exception {
         Fixture f = new Fixture();
         f.history.append(new NotificationLogEntry().id(1).notificationType("test.first"), 10);

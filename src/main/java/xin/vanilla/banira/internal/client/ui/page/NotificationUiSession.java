@@ -48,6 +48,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     private long revision = Long.MIN_VALUE, selectedId;
     private String query = "";
     private boolean historyDetailOpen;
+    private int historyRowHeight = 48;
     private double x, y, originalX, originalY;
     private UiView view;
     private UiOwnedResources bindings = new UiOwnedResources();
@@ -123,7 +124,8 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         selectedId = id;
         historyDetailOpen = true;
         history.markRead(id);
-        refresh(); updateDetail();
+        revision = history.revision();
+        rebuild();
     }
     public void markAllRead() {
         if (!closed && history != null && history.unread() > 0) { history.markAllRead(); refresh(); }
@@ -270,6 +272,8 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         if (entries.stream().noneMatch(entry -> entry.id() == selectedId)) selectedId = 0;
         UiView owner = view;
         List<NotificationLogEntry> snapshot = new ArrayList<>(entries);
+        final int rowHeight = preferredHistoryRowHeight();
+        historyRowHeight = rowHeight;
         if (view instanceof NativeUiView) {
             UiViewState state = ((NativeUiView) view).state();
             String anchor = state.scrollAnchor();
@@ -278,10 +282,10 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
             }
         }
         view.rows("fields", new UiRowPresentation() {
-            public int rowHeight() { return 48; }
+            public int rowHeight() { return rowHeight; }
             public String rowClass(int index) {
                 NotificationLogEntry entry = snapshot.get(index);
-                return "log-row " + entry.style().name().toLowerCase(Locale.ROOT)
+                return "log-row log-" + entry.style().name().toLowerCase(Locale.ROOT) + (rowHeight == 24 ? " compact" : "")
                         + (entry.read() ? "" : " unread") + (entry.id() == selectedId ? " selected" : "");
             }
             public int size() { return snapshot.size(); }
@@ -339,6 +343,10 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     private static String sourceName(NotificationLogEntry entry) {
         return "network".equals(entry.source()) ? tr("notification_log_source_network").toString()
                 : "local".equals(entry.source()) ? tr("notification_log_source_local").toString() : Objects.toString(entry.source(), "");
+    }
+    private int preferredHistoryRowHeight() {
+        double height = view == null ? 0 : view.bounds("content").height();
+        return height > 0 && height < 192 ? 24 : 48;
     }
     private static String moduleName(NotificationLogEntry entry) {
         String type = Objects.toString(entry.notificationType(), "default");
@@ -422,7 +430,10 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     private void updatePosition() {
         if (view != null && position != null) view.hudPosition(x, y);
     }
-    @Override public void tick() { refresh(); }
+    @Override public void tick() {
+        refresh();
+        if (history != null && view != null && !view.nativeView() && !closed && historyRowHeight != preferredHistoryRowHeight()) rebuild();
+    }
     @Override public void detach(UiDetachReason reason) {
         dragging = false; view = null; bindings.close(); releaseRows();
     }

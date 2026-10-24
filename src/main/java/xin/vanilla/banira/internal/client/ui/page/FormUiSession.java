@@ -320,6 +320,7 @@ public final class FormUiSession implements UiPageSession {
                     owned.own(row.onAction("pick", () -> { if (FormUiSession.this.view == view) pick(index); }));
                 }
                 if (presentation != null) presentation.bind(row, index, widget);
+                updateRowStatus(row, index);
             }
         };
         if (presentation == null) view.rows("fields", provider, 120);
@@ -340,11 +341,15 @@ public final class FormUiSession implements UiPageSession {
         for (UiView row : rowBindings.keySet()) {
             Integer index = boundIndices.get(row);
             if (index != null) {
-                String validation = errors.getOrDefault(index, "");
-                row.text("validation", BaniraComponent.get().literal(validation));
-                if (presentation != null) presentation.update(row, index, args.getWidgets().get(index), drafts.get(index), validation);
+                updateRowStatus(row, index);
             }
         }
+    }
+
+    private void updateRowStatus(UiView row, int index) {
+        String validation = errors.getOrDefault(index, "");
+        row.text("validation", BaniraComponent.get().literal(validation));
+        if (presentation != null) presentation.update(row, index, args.getWidgets().get(index), drafts.get(index), validation);
     }
 
     @Override public void tick() {

@@ -109,6 +109,34 @@ public class UiPlayerConfigEditorTest {
         assertFalse(root.texts.get("error").text().isEmpty()); assertTrue("Failed send feedback remains hidden", root.enabled.get("error"));
         failing.set(false); root.activate("submit"); root.activate("submit"); assertEquals(1, sends.get()); assertEquals(1, closes.get());
     }
+    @Test public void tooltipRefreshPreservesCurrentSelectionDuringConsecutiveInput() throws Exception {
+        PlayerConfigUiSession session = styled(new AtomicInteger()); UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
+        UiDomView root = (UiDomView) dom.view(); session.bind(root); root.afterLayout();
+        var input = dom.created.stream().filter(n -> !n.removed && n.tag.equals("input") && n.value.equals("0")).findFirst().orElseThrow();
+        input.focused = true; input.start = input.end = 1; input.emit("focus");
+        input.value = "01"; input.start = input.end = 2; input.emit("input");
+        assertEquals("Tooltip refresh restored the previous caret", 2, input.start); assertEquals(2, input.end);
+        input.value = input.value.substring(0, input.start) + "2" + input.value.substring(input.end);
+        input.start = input.end = 3; input.emit("input");
+        assertEquals("012", session.fields().draft("FIELD_0")); assertEquals(3, input.start); assertEquals(3, input.end);
+        assertTrue(session.fields().canSubmit()); session.close(UiCloseReason.CANCEL); root.close();
+    }
+    @Test public void recycledAndLayoutReboundRowsRestoreValidationAndCompleteTooltips() throws Exception {
+        PlayerConfigUiSession session = styled(new AtomicInteger()); UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
+        UiDomView root = (UiDomView) dom.view(); session.bind(root); root.afterLayout();
+        session.fields().draft("FIELD_0", "1.5"); session.tick();
+        dom.ids.get("content").scroll = 400; root.afterLayout();
+        dom.ids.get("content").scroll = 0; root.afterLayout();
+        var input = dom.created.stream().filter(n -> !n.removed && n.tag.equals("input") && n.value.equals("1.5")).findFirst().orElseThrow();
+        assertEquals("Recycled invalid row lost its error marker", "true", input.attributes.get("aria-invalid"));
+        assertEquals("Invalid integer", input.tooltip);
+        session.fields().draft("FIELD_0", "01"); session.tick();
+        NativeUiView rebound = new NativeUiView(new Object()); root.rowProviders.get("fields").bind(rebound, 0);
+        assertNotNull("Layout rebound input lost its complete tooltip", rebound.tooltips.get("input"));
+        assertTrue(rebound.tooltips.get("input").text().contains("Complete description 0"));
+        assertTrue(rebound.tooltips.get("input").text().contains("0-300 s"));
+        assertEquals("01", session.fields().draft("FIELD_0")); session.close(UiCloseReason.CANCEL); root.close();
+    }
     @Test public void actualDomDeletionAndRecycledInputsRetainRawIdentityAndUnits() throws Exception {
         PlayerConfigUiSession session = styled(new AtomicInteger()); UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         for (String id : new String[]{"search", "categories", "category_content", "close", "clear_search", "error", "status"}) dom.ids.put(id, dom.new Node(id));

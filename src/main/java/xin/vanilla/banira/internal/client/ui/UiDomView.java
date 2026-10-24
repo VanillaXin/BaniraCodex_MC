@@ -5,6 +5,7 @@ import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.api.client.ui.UiPointer;
 import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
@@ -132,6 +133,18 @@ public class UiDomView extends NativeUiView {
                         : id.equals("field_unit") ? "paragraph field-unit" : "paragraph");
         if (node != null) nodes.put(id, node);
         return node;
+    }
+
+    @Override public void tooltip(String id, Component text) {
+        if (!live()) return;
+        tooltips.put(id, Objects.requireNonNull(text, "text"));
+        if (dom == null) return;
+        UiDomAccess.Node node = node(id);
+        if (node == null) return;
+        String tooltip = text.toVanilla().getString();
+        node.tooltip(enabled.getOrDefault(id, true) ? tooltip : "");
+        if (gameElements.get(id) != null || scope != null && texts.containsKey(id)
+                && toolPreset(id, texts.get(id).toVanilla().getString()) != null) node.attribute("aria-label", tooltip);
     }
 
     @Override protected void changed(String id) {

@@ -137,6 +137,14 @@ public class UiPlayerConfigEditorTest {
         assertTrue(rebound.tooltips.get("input").text().contains("0-300 s"));
         assertEquals("01", session.fields().draft("FIELD_0")); session.close(UiCloseReason.CANCEL); root.close();
     }
+    @Test public void sharedEditorUsesCompactRowsWithoutChangingDefaultForms() throws Exception {
+        NativeUiView plain = new NativeUiView(new Object()); new PlayerConfigUiSession(args(new AtomicInteger())).bind(plain);
+        assertFalse(plain.rowProviders.get("fields") instanceof UiRowPresentation);
+        PlayerConfigUiSession session = styled(new AtomicInteger()); NativeUiView root = new NativeUiView(new Object()); session.bind(root);
+        assertEquals("Compact player editor must fit five complete rows at GUI scale two", 24,
+                ((UiRowPresentation) root.rowProviders.get("fields")).rowHeight());
+        session.close(UiCloseReason.CANCEL);
+    }
     @Test public void actualDomDeletionAndRecycledInputsRetainRawIdentityAndUnits() throws Exception {
         PlayerConfigUiSession session = styled(new AtomicInteger()); UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         for (String id : new String[]{"search", "categories", "category_content", "close", "clear_search", "error", "status"}) dom.ids.put(id, dom.new Node(id));

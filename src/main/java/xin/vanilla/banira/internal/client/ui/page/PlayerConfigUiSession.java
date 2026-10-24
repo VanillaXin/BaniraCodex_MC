@@ -92,7 +92,7 @@ public final class PlayerConfigUiSession implements UiPageSession {
         bindings = new UiOwnedResources();
         applyFilter();
         fields.bind(view, presentation == null ? null : new FormUiSession.FieldPresentation() {
-            public int rowHeight() { return 28; }
+            public int rowHeight() { return 24; }
             public String rowClass(int index) { return "player-config-field"; }
             public void bind(UiView row, int index, InputFormScreen.Widget widget) {
                 row.text("key", BaniraComponent.get().literal(widget.name()));

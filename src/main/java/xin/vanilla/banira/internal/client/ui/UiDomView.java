@@ -128,7 +128,8 @@ public class UiDomView extends NativeUiView {
             else editor.removeAttribute("style");
             node = make(id.equals("input") ? "input" : "button", editor, id.equals("input") ? "input" : "tool");
         } else node = make(id.equals("open") ? "button" : "div", scope,
-                id.equals("label") ? "label" : id.equals("open") ? "row-action" : "paragraph");
+                id.equals("label") ? "label" : id.equals("open") ? "row-action"
+                        : id.equals("field_unit") ? "paragraph field-unit" : "paragraph");
         if (node != null) nodes.put(id, node);
         return node;
     }

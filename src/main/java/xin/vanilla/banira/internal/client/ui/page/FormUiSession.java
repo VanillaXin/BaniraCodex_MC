@@ -15,6 +15,7 @@ import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.GLFWKeyUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.ui.UiOwnedResources;
+import xin.vanilla.banira.internal.client.ui.UiRowPresentation;
 import xin.vanilla.banira.BaniraComponent;
 
 import java.math.BigDecimal;
@@ -44,6 +45,14 @@ public final class FormUiSession implements UiPageSession {
     private UiOwnedResources bindings = new UiOwnedResources();
     private final Map<UiView, UiOwnedResources> rowBindings = new LinkedHashMap<>();
     private final Map<UiView, Integer> boundIndices = new LinkedHashMap<>();
+    private FieldPresentation presentation;
+
+    public interface FieldPresentation {
+        int rowHeight();
+        String rowClass(int originalIndex);
+        void bind(UiView row, int originalIndex, InputFormScreen.Widget widget);
+        void update(UiView row, int originalIndex, InputFormScreen.Widget widget, String draft, String validation);
+    }
 
     public FormUiSession(InputFormScreen.Args args) {
         this(args, () -> true, () -> { });
@@ -178,11 +187,15 @@ public final class FormUiSession implements UiPageSession {
             String text = drafts.get(index);
             if (!widget.allowEmpty() && (selections.containsKey(index) ? selections.get(index).isEmpty() : text.isEmpty())) {
                 valid = false;
+                errors.put(index, BaniraComponent.get().transClientAuto("config_editor_validation_failed").toString());
             }
             if (!selections.containsKey(index)) {
                 if (widget.type() == InputFormScreen.WidgetType.NUMERIC && !text.isEmpty()) {
                     try { new BigDecimal(text); }
-                    catch (NumberFormatException invalid) { valid = false; }
+                    catch (NumberFormatException invalid) {
+                        valid = false;
+                        errors.put(index, BaniraComponent.get().transClientAuto("config_editor_validation_failed").toString());
+                    }
                 }
             }
         }
@@ -247,8 +260,13 @@ public final class FormUiSession implements UiPageSession {
 
     @Override
     public void bind(UiView view) {
+        bind(view, null);
+    }
+
+    public void bind(UiView view, FieldPresentation presentation) {
         detach(UiDetachReason.RELOAD);
         this.view = Objects.requireNonNull(view, "view");
+        this.presentation = presentation;
         bindings = new UiOwnedResources();
         if (args.getHeaderTitle() != null) view.text("title", args.getHeaderTitle().toComponent());
         else if (args.getTitle() != null) view.text("title", args.getTitle().toComponent());
@@ -266,7 +284,7 @@ public final class FormUiSession implements UiPageSession {
 
     private void bindRows(UiView view) {
         List<Integer> indices = new ArrayList<>(visibleIndices);
-        view.rows("fields", new UiRowProvider() {
+        UiRowProvider provider = new UiRowProvider() {
             @Override public int size() { return indices.size(); }
             @Override public String key(int index) { return "field:" + indices.get(index); }
             @Override public void bind(UiView row, int position) {
@@ -301,17 +319,31 @@ public final class FormUiSession implements UiPageSession {
                 if (widget.type() == InputFormScreen.WidgetType.FILE || widget.type() == InputFormScreen.WidgetType.PICKER) {
                     owned.own(row.onAction("pick", () -> { if (FormUiSession.this.view == view) pick(index); }));
                 }
+                if (presentation != null) presentation.bind(row, index, widget);
             }
+        };
+        if (presentation == null) view.rows("fields", provider, 120);
+        else view.rows("fields", new UiRowPresentation() {
+            public int size() { return provider.size(); }
+            public String key(int index) { return provider.key(index); }
+            public int rowHeight() { return presentation.rowHeight(); }
+            public boolean textTools() { return true; }
+            public String rowClass(int index) { return presentation.rowClass(indices.get(index)); }
+            public void bind(UiView row, int index) { provider.bind(row, index); }
         }, 120);
     }
 
-    private void updateStatus() {
+    void updateStatus() {
         if (view == null) return;
         view.enabled("submit", canSubmit());
         view.text("error", BaniraComponent.get().literal(error));
         for (UiView row : rowBindings.keySet()) {
             Integer index = boundIndices.get(row);
-            if (index != null) row.text("validation", BaniraComponent.get().literal(errors.getOrDefault(index, "")));
+            if (index != null) {
+                String validation = errors.getOrDefault(index, "");
+                row.text("validation", BaniraComponent.get().literal(validation));
+                if (presentation != null) presentation.update(row, index, args.getWidgets().get(index), drafts.get(index), validation);
+            }
         }
     }
 
@@ -322,6 +354,7 @@ public final class FormUiSession implements UiPageSession {
     @Override
     public void detach(UiDetachReason reason) {
         view = null;
+        presentation = null;
         try { bindings.close(); }
         finally {
             try { for (UiOwnedResources owned : rowBindings.values()) owned.close(); }

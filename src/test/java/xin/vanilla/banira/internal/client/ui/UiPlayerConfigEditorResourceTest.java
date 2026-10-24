@@ -7,6 +7,15 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import static org.junit.Assert.*;
 
 public class UiPlayerConfigEditorResourceTest {
+    @Test public void compactFieldOffsetsDoNotMoveNavigationCountsOrOverrideUnits() throws Exception {
+        try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.css")) {
+            assertNotNull(input); String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            assertFalse("Field key offset also moves the sidebar count", css.contains(".player-config-page .row>.paragraph"));
+            int key = css.indexOf(".player-config-page .player-config-field>.paragraph");
+            int unit = css.indexOf(".player-config-page #content .player-config-field>.field-unit");
+            assertTrue("Specific unit placement must follow the shared paragraph offset", key >= 0 && unit > key);
+        }
+    }
     @Test public void approvedEditorHasFixedActionsAndIndependentScrollers() throws Exception {
         try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.html")) {
             assertNotNull("Approved personal editor template missing", input);

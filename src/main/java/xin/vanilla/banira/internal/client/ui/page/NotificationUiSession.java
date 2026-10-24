@@ -108,9 +108,10 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     public void query(String text) {
         if (closed) return;
         String next = text == null ? "" : text;
-        if (!query.equals(next) && history != null && view instanceof NativeUiView) {
-            UiViewState state = ((NativeUiView) view).state();
+        if (!query.equals(next) && view != null && view.state() != null && (history != null || settings != null)) {
+            UiPageState state = view.state();
             state.rowPosition(0); state.scrollOffset(0); state.scrollAnchor("");
+            if (settings != null) state.selectedId("");
         }
         query = next;
         if (history != null && history.entries().stream().noneMatch(entry -> entry.id() == selectedId && matches(entry, query))) selectedId = 0;
@@ -150,6 +151,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         if (!closed) {
             if (settings(type).durationMs() != Objects.requireNonNull(value).durationMs()) durationDrafts.remove(type);
             draft.put(type, NotificationTypeSettingsStore.copyOf(value));
+            updateTypeStatus();
         }
     }
     public String durationDraft(String type) { return durationDrafts.get(type); }
@@ -159,7 +161,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
             long value = Long.parseLong(text);
             if (value < 0) throw new NumberFormatException();
             durationDrafts.remove(type); settings(type, settings(type).durationMs(value)); return true;
-        } catch (NumberFormatException invalid) { durationDrafts.put(type, text); return false; }
+        } catch (NumberFormatException invalid) { durationDrafts.put(type, text); updateTypeStatus(); return false; }
     }
     public int changedCount() {
         if (settings == null) return position != null && (x != originalX || y != originalY) ? 1 : 0;
@@ -191,7 +193,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
             else { position.save(x, y); originalX = x; originalY = y; }
             return true;
         } catch (RuntimeException failure) { saveFailure = Objects.toString(failure.getMessage(), failure.getClass().getSimpleName()); return false; }
-        finally { saving = false; }
+        finally { saving = false; updateTypeStatus(); }
     }
     public boolean saveWithFeedback() {
         boolean saved = save();
@@ -256,7 +258,23 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 boolean saved = saveWithFeedback();
                 if (saved && position != null) view.requestClose();
             }));
-            if (settings != null) rebuildTypes(); else bindPosition();
+            if (settings != null) {
+                view.gameElement("brand", UiModuleHeaderIcons.resolve("banira_codex", xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder()));
+                view.text("module_name", tr("mod_name"));
+                view.text("origin", tr("config_editor_client_scope"));
+                view.text("category_title", tr("config_editor_categories"));
+                view.text("search_hint", tr("config_editor_search_hint"));
+                view.tooltip("search", tr("config_editor_search_hint"));
+                view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
+                view.tooltip("clear_search", tr("config_editor_clear_search"));
+                bindings.own(view.onAction("clear_search", () -> {
+                    if (this.view != view) return;
+                    view.draft("search", ""); query("");
+                }));
+                view.text("cancel", tr("config_editor_close"));
+                bindings.own(view.onAction("cancel", () -> { if (this.view == view) { discard = true; view.requestClose(); } }));
+                rebuildTypes();
+            } else bindPosition();
         }
     }
     private static Component tr(String key) { return BaniraComponent.get().transClientAuto(key); }
@@ -358,25 +376,97 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         releaseRows();
         List<String> types = new ArrayList<>(new TreeSet<>(settings.knownTypes()));
         types.addAll(draft.keySet().stream().filter(type -> !types.contains(type)).sorted().toList());
+        int total = types.size();
         xin.vanilla.banira.client.gui.search.ConfigSearchQuery search = xin.vanilla.banira.client.gui.search.ConfigSearchQuery.of(query);
         types.removeIf(type -> !search.matches(type, Objects.toString(NotificationTypeRegistry.tooltipInternal(type), ""),
-                Objects.toString(NotificationTypeRegistry.modDisplayNameInternal(type.split("\\.")[0]), "")));
+                Objects.toString(NotificationTypeRegistry.modDisplayNameInternal(typeNamespace(type)), "")));
         UiView owner = view;
-        view.rows("fields", new UiRowProvider() {
+        view.rows("fields", new UiRowPresentation() {
+            public int rowHeight() { return 24; }
+            public String rowClass(int index) { return "player-config-field"; }
             public int size() { return types.size() * 5; }
             public String key(int index) { return "type:" + types.get(index / 5) + ":" + index % 5; }
             public void bind(UiView row, int index) { bindType(row, types.get(index / 5), index % 5, owner); }
             public void unbind(UiView row, int index) { UiOwnedResources owned = rows.remove(row); if (owned != null) owned.close(); }
         }, 120);
+        bindTypeNavigation(types, owner);
+        view.text("breadcrumb", tr("notification_type_config_root_title"));
+        view.tooltip("breadcrumb", tr("notification_type_config_root_title"));
+        view.text("entry_count", BaniraComponent.get().literal(types.size() + " / " + total));
+        view.text("category_count", BaniraComponent.get().literal(Integer.toString(types.size())));
+        view.text("empty", tr("config_editor_empty"));
+        view.enabled("empty", types.isEmpty());
+        updateTypeStatus();
+    }
+    private static String typeNamespace(String type) {
+        return "default".equals(type) ? "banira_codex" : type.split("[.:]", 2)[0];
+    }
+    private void bindTypeNavigation(List<String> types, UiView owner) {
+        Map<String, Integer> anchors = new LinkedHashMap<>();
+        anchors.put("all", 0);
+        for (int index = 0; index < types.size(); index++) {
+            anchors.putIfAbsent("module:" + typeNamespace(types.get(index)), index * 5);
+            anchors.put("type:" + types.get(index), index * 5);
+        }
+        List<String> keys = new ArrayList<>(anchors.keySet());
+        view.rows("categories", new UiRowPresentation() {
+            public int rowHeight() { return 20; }
+            public String scrollerId() { return "category_content"; }
+            public boolean tracksPageScroll() { return false; }
+            public boolean textTools() { return true; }
+            public String rowClass(int index) {
+                String selected = owner.state() == null ? "" : owner.state().selectedId();
+                return "config-navigation" + (keys.get(index).equals(selected.isEmpty() ? "all" : selected) ? " config-selected" : "");
+            }
+            public int size() { return keys.size(); }
+            public String key(int index) { return keys.get(index); }
+            public void bind(UiView row, int index) {
+                if (view != owner) return;
+                UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
+                UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
+                String key = keys.get(index);
+                boolean module = key.startsWith("module:"), type = key.startsWith("type:");
+                String id = key.equals("all") ? "" : key.substring(key.indexOf(':') + 1);
+                Component label = key.equals("all") ? tr("notification_type_config_root_title")
+                        : module ? NotificationTypeRegistry.modDisplayNameInternal(id) : NotificationTypeRegistry.tooltipInternal(id);
+                if (label == null || label.isEmpty()) label = BaniraComponent.get().literal(id);
+                row.text("open", type ? BaniraComponent.get().literal("  ").append(label) : label);
+                row.tooltip("open", BaniraComponent.get().literal(id).append(id.isEmpty() ? "" : "\n").append(label));
+                long count = type ? 1 : module ? types.stream().filter(value -> typeNamespace(value).equals(id)).count() : types.size();
+                row.text("count", BaniraComponent.get().literal(Long.toString(count)));
+                owned.own(row.onAction("open", () -> {
+                    if (view != owner || owner.state() == null) return;
+                    int target = anchors.get(key);
+                    owner.state().selection("", 0, 0); owner.state().selectedId(key);
+                    owner.state().rowPosition(target); owner.state().scrollOffset(target * 24.0);
+                    owner.state().scrollAnchor(types.isEmpty() ? "" : "type:" + types.get(target / 5) + ":0");
+                    rebuildTypes();
+                }));
+            }
+        }, 120);
+    }
+    private void updateTypeStatus() {
+        if (settings == null || view == null || closed) return;
+        int changed = changedCount();
+        view.text("status", !durationDrafts.isEmpty() ? BaniraComponent.get().transClientAuto("player_config_invalid_status", durationDrafts.size())
+                : changed == 0 ? tr("config_editor_clean_status") : BaniraComponent.get().transClientAuto("config_editor_pending_status", changed));
+        Component error = !durationDrafts.isEmpty() ? tr("config_editor_validation_failed").append(": " + String.join(", ", new TreeSet<>(durationDrafts.keySet())))
+                : BaniraComponent.get().literal(saveFailure);
+        view.text("error", error); view.tooltip("error", error); view.enabled("error", !error.isEmpty());
     }
     private void bindType(UiView row, String type, int field, UiView owner) {
         UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
         UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
         String key = new String[]{"hidden", "duration", "animation", "position", "display"}[field];
-        row.text("label", BaniraComponent.get().literal(type + " / " + tr("notification_type_config_" + key)));
+        row.text("label", tr("notification_type_config_" + key));
+        row.text("key", BaniraComponent.get().literal(type));
+        row.text("field_unit", BaniraComponent.get().literal(field == 1 ? "ms" : ""));
         Component tooltip = NotificationTypeRegistry.tooltipInternal(type);
-        row.text("tooltip", BaniraComponent.get().literal(type + " / " + tr("notification_type_config_" + key))
-                .append(tooltip == null ? "" : "\n", tooltip == null ? "" : tooltip));
+        Component fieldDescription = BaniraComponent.get().literal(type + " / " + tr("notification_type_config_" + key))
+                .append(tooltip == null ? "" : "\n", tooltip == null ? "" : tooltip);
+        row.text("tooltip", fieldDescription);
+        row.tooltip("key", fieldDescription);
+        row.tooltip("input", fieldDescription);
         NotificationTypeSettingsStore.TypeSettings value = settings(type);
         Consumer<NotificationTypeSettingsStore.TypeSettings> update = next -> { if (view == owner) settings(type, next); };
         if (field == 0) {
@@ -385,11 +475,15 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         } else if (field == 1) {
             row.control("input", new UiControlSpec(UiControlSpec.Kind.DECIMAL, 19, "", false));
             row.draft("input", durationDrafts.getOrDefault(type, Long.toString(value.durationMs())));
-            if (durationDrafts.containsKey(type)) row.text("validation", tr("config_editor_validation_failed"));
+            if (durationDrafts.containsKey(type)) {
+                row.text("validation", tr("config_editor_validation_failed"));
+                row.tooltip("input", tr("config_editor_validation_failed"));
+            }
             owned.own(row.onDraft("input", text -> {
                 if (view != owner) return;
                 boolean valid = duration(type, text);
                 row.text("validation", valid ? BaniraComponent.get().literal("") : tr("config_editor_validation_failed"));
+                row.tooltip("input", valid ? fieldDescription : tr("config_editor_validation_failed"));
             }));
         } else {
             List<DropdownOption> options = new ArrayList<>();

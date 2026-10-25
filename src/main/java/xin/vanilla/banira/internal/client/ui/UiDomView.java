@@ -4,6 +4,7 @@ import xin.vanilla.banira.api.client.ui.UiControlSpec;
 import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.api.client.ui.UiPointer;
 import xin.vanilla.banira.api.client.ui.UiGameElement;
+import xin.vanilla.banira.api.client.ui.UiRowLayout;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
@@ -616,13 +617,13 @@ public class UiDomView extends NativeUiView {
         boolean restored;
         boolean focusViewportRestored;
         final double initialPosition;
-        final UiRowPresentation presentation;
+        final UiRowLayout presentation;
         final int rowHeight;
         final boolean tracksPageScroll;
 
         VirtualRows(String id, UiDomAccess.Node container, double independentPosition) {
             this.id = id; this.container = container;
-            presentation = rowProviders.get(id) instanceof UiRowPresentation ? (UiRowPresentation) rowProviders.get(id) : null;
+            presentation = rowProviders.get(id) instanceof UiRowLayout ? (UiRowLayout) rowProviders.get(id) : null;
             rowHeight = presentation == null ? 48 : presentation.rowHeight();
             if (rowHeight < 12 || rowHeight > 256) throw new IllegalArgumentException("Invalid UI row height");
             tracksPageScroll = presentation == null || presentation.tracksPageScroll();

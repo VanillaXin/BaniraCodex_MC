@@ -193,7 +193,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
             else { position.save(x, y); originalX = x; originalY = y; }
             return true;
         } catch (RuntimeException failure) { saveFailure = Objects.toString(failure.getMessage(), failure.getClass().getSimpleName()); return false; }
-        finally { saving = false; updateTypeStatus(); }
+        finally { saving = false; updateTypeStatus(); updatePositionStatus(); }
     }
     public boolean saveWithFeedback() {
         boolean saved = save();
@@ -507,9 +507,14 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         }
     }
     private void bindPosition() {
+        view.gameElement("brand", UiModuleHeaderIcons.resolve("banira_codex", xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder()));
+        view.text("module_name", tr("mod_name"));
+        view.text("origin", tr("config_editor_client_scope"));
+        view.text("cancel", tr("cancel"));
         updatePosition();
         view.tooltip("preview", tr("notification_hud_drag"));
         UiView owner = view;
+        bindings.own(view.onAction("cancel", () -> { if (view == owner) { discard = true; owner.requestClose(); } }));
         bindings.own(view.onPointer("preview", event -> {
             if (view != owner || !event.finite()) return;
             if (event.kind() == UiPointer.Kind.UP) { if (event.button() == 0) dragging = false; return; }
@@ -523,7 +528,15 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         }));
     }
     private void updatePosition() {
-        if (view != null && position != null) view.hudPosition(x, y);
+        if (view != null && position != null) { view.hudPosition(x, y); updatePositionStatus(); }
+    }
+    private void updatePositionStatus() {
+        if (view == null || position == null || view.nativeView()) return;
+        view.text("status", changedCount() == 0 ? tr("config_editor_clean_status")
+                : BaniraComponent.get().transClientAuto("config_editor_pending_status", changedCount()));
+        Component error = saveFailure.isEmpty() ? BaniraComponent.get().empty()
+                : BaniraComponent.get().transClientAuto("config_editor_save_failed", saveFailure);
+        view.text("error", error); view.tooltip("error", error); view.enabled("error", !error.isEmpty());
     }
     @Override public void tick() {
         refresh();

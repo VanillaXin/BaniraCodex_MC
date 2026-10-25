@@ -195,6 +195,27 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     private ScreenCoordinate contentBounds() { return content == null ? body.bounds() : wrap(content).bounds(); }
 
+    public boolean richLayoutReady() {
+        for (AuiNode node : richTexts) {
+            boolean hidden = false;
+            for (AuiNode ancestor = node; ancestor != null; ancestor = ancestor.parent) {
+                if (!ancestor.element.isVisible) { hidden = true; break; }
+            }
+            if (hidden) continue;
+            ScreenCoordinate bounds = node.bounds();
+            if (bounds.width() <= 0) return false;
+            if (!node.rich.preparedFor((int) bounds.width()) || bounds.height() + .5 < node.rich.height()) return false;
+        }
+        return true;
+    }
+
+    public double restoreContentScroll(double value) {
+        if (content == null) return 0;
+        double maximum = Math.max(0, content.scrollHeight - com.sighs.apricityui.layout.Box.of(content).innerSize().height());
+        content.setScrollTop(Math.max(0, Math.min(value, maximum)));
+        return content.getTargetScrollTop();
+    }
+
     public void prepare() {
         if (!current()) return;
         if (preview) {

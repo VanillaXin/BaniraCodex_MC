@@ -56,6 +56,7 @@ public final class AuiCapabilityContract {
                 if (!found) return new Result(false, "Missing contract " + member.key());
             }
             for (String[] field : new String[][]{
+                    {"init/Element", "isVisible", "Z"}, {"init/Element", "scrollHeight", "D"},
                     {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
                     {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
                     {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
@@ -128,6 +129,9 @@ public final class AuiCapabilityContract {
         add(result, "init/Element", "focus", "()V");
         add(result, "init/Element", "blur", "()V");
         add(result, "init/Element", "getScrollTop", "()D");
+        add(result, "init/Element", "getTargetScrollTop", "()D");
+        result.add(new Member(ROOT + "layout/Box", "of", "(" + ELEMENT + ")L" + ROOT + "layout/Box;", true));
+        add(result, "layout/Box", "innerSize", "()L" + ROOT + "layout/Size;");
         add(result, "init/Element", "setScrollTop", "(D)V");
         add(result, "init/Element", "getClientHeight", "()D");
         add(result, "init/Element", "appendChild", "(" + ELEMENT + ")" + ELEMENT);

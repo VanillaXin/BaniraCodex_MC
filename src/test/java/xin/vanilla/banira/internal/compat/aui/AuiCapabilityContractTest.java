@@ -104,6 +104,22 @@ public class AuiCapabilityContractTest {
         }
     }
 
+    @Test public void missingScrollOrVisibilityFieldFallsBack() throws Exception {
+        for (String field : new String[]{"scrollHeight", "isVisible"}) try (URLClassLoader jar = official()) {
+            assertFalse(field, compatible(new ClassLoader(null) {
+                @Override public InputStream getResourceAsStream(String name) {
+                    InputStream stream = jar.getResourceAsStream(name);
+                    if (!name.equals("com/sighs/apricityui/init/Element.class")) return stream;
+                    try (InputStream input = stream) {
+                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node,0);
+                        node.fields.removeIf(value -> value.name.equals(field));
+                        ClassWriter writer = new ClassWriter(0); node.accept(writer); return new ByteArrayInputStream(writer.toByteArray());
+                    } catch (Exception failure) { throw new AssertionError(failure); }
+                }
+            }));
+        }
+    }
+
     private URLClassLoader official() throws Exception {
         String path = System.getProperty("banira.aui.contractJar");
         assertNotNull("Pinned official AUI binary must be provided", path);

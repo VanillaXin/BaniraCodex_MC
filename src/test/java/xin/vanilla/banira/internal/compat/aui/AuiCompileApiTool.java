@@ -16,7 +16,8 @@ public final class AuiCompileApiTool {
     static final String ROOT = "com/sighs/apricityui/";
     static final String SOURCE = "8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2";
     static final String MARKER = "META-INF/banira-aui-compile-api.properties";
-    static final String[][] FIELDS = {{"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
+    static final String[][] FIELDS = {{"init/Element", "isVisible", "Z"}, {"init/Element", "scrollHeight", "D"},
+            {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
             {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
             {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
             {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}};

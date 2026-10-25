@@ -71,6 +71,7 @@ public final class AuiGameElements {
             return true;
         }
         public int height() { return lines.size() * Minecraft.getInstance().font.lineHeight; }
+        public boolean preparedFor(int availableWidth) { return availableWidth > 0 && width == availableWidth; }
         public net.minecraft.network.chat.Style styleAt(ScreenCoordinate bounds, ScreenCoordinate clip, double x, double y) {
             int index = lineAt(bounds, clip, x, y, Minecraft.getInstance().font.lineHeight, lines.size());
             return index < 0 ? null : Minecraft.getInstance().font.getSplitter().componentStyleAtWidth(lines.get(index), (int) (x - bounds.x()));
@@ -94,8 +95,9 @@ public final class AuiGameElements {
             int lineHeight = Minecraft.getInstance().font.lineHeight;
             int first = Math.max(0, (int) Math.floor((clip.y() - bounds.y()) / lineHeight));
             int last = Math.min(layout.lines.size(), (int) Math.ceil((clip.y() + clip.height() - bounds.y()) / lineHeight));
-            for (int index = first; index < last; index++) graphics.drawString(Minecraft.getInstance().font,
-                    layout.lines.get(index), (int) bounds.x(), (int) bounds.y() + index * lineHeight, 0xff24272c, false);
+            for (int index = first; index < last; index++) Minecraft.getInstance().font.drawInBatch(
+                    layout.lines.get(index), (float) bounds.x(), (float) bounds.y() + index * lineHeight, 0xff24272c, false,
+                    graphics.pose().last().pose(), graphics.bufferSource(), net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, 0, 15728880);
         } finally {
             try { graphics.flush(); }
             finally {

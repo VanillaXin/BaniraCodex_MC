@@ -335,6 +335,11 @@
           "access": 1
         },
         {
+          "name": "getTargetScrollTop",
+          "desc": "()D",
+          "access": 1
+        },
+        {
           "name": "getValue",
           "desc": "()Ljava/lang/String;",
           "access": 1
@@ -410,7 +415,18 @@
           "access": 1
         }
       ],
-      "fields": []
+      "fields": [
+        {
+          "name": "isVisible",
+          "desc": "Z",
+          "access": 1
+        },
+        {
+          "name": "scrollHeight",
+          "desc": "D",
+          "access": 1
+        }
+      ]
     },
     "com/sighs/apricityui/init/Element$DOMRect": {
       "super": "java/lang/Object",
@@ -453,6 +469,24 @@
         {
           "name": "getChildNodes",
           "desc": "()Ljava/util/List;",
+          "access": 1
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/layout/Box": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "of",
+          "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/layout/Box;",
+          "access": 9
+        },
+        {
+          "name": "innerSize",
+          "desc": "()Lcom/sighs/apricityui/layout/Size;",
           "access": 1
         }
       ],

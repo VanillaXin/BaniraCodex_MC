@@ -52,8 +52,20 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
         try { pointer.close(); sessions.suspendScreen(view); } finally { super.removed(); }
     }
 
-    @Override public void pointerButton(int button, boolean down) { pointer.button(button, down); }
-    @Override public void pointerScroll(double delta) { pointer.scroll(delta); }
+    @Override public void pointerButton(int button, boolean down) {
+        if (down && button == 0) {
+            var position = xin.vanilla.banira.internal.client.InputStateManager.getGuiCursorPos();
+            view.scrollInput(position.key(), position.val());
+        }
+        pointer.button(button, down);
+    }
+    @Override public void pointerScroll(double delta) {
+        if (delta != 0) {
+            var position = xin.vanilla.banira.internal.client.InputStateManager.getGuiCursorPos();
+            view.scrollInput(position.key(), position.val());
+        }
+        pointer.scroll(delta);
+    }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         return sessionKey(key, scan, modifiers, true) || super.keyPressed(key, scan, modifiers);
@@ -101,6 +113,7 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
             resources.own(() -> { if (!document.isDisposed()) document.remove(); });
             access = new AuiDocumentAccess(document, screen());
             resources.own(access);
+            scrollRestoration(access::richLayoutReady, access::restoreContentScroll);
             super.attach(access);
         }
         boolean currentDocument() {

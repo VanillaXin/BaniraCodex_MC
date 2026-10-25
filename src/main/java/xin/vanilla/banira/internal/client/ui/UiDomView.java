@@ -13,6 +13,8 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleUnaryOperator;
 import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
 
 public class UiDomView extends NativeUiView {
@@ -38,6 +40,9 @@ public class UiDomView extends NativeUiView {
     private UiDomAccess.Node detailContent;
     private double restoredDetail = Double.NaN;
     private boolean layoutRestored;
+    private BooleanSupplier scrollReady = () -> true;
+    private DoubleUnaryOperator scrollRequest;
+    private double pendingScrollTarget = Double.NaN;
     private final LongSupplier clock;
     private final Map<String, BaniraPressGestureState> presses = new LinkedHashMap<>();
     private final Set<String> suppressClicks = new HashSet<>();
@@ -64,6 +69,11 @@ public class UiDomView extends NativeUiView {
 
     public void failureHandler(Consumer<Throwable> handler) { root.onFailure = Objects.requireNonNull(handler, "handler"); }
 
+    public void scrollRestoration(BooleanSupplier ready, DoubleUnaryOperator request) {
+        if (scope != null || layoutRestored) throw new IllegalStateException("Scroll restoration already owned");
+        scrollReady = Objects.requireNonNull(ready, "ready"); scrollRequest = Objects.requireNonNull(request, "request");
+    }
+
     protected final void attach(UiDomAccess access) {
         if (dom != null) throw new IllegalStateException("Document already attached");
         dom = Objects.requireNonNull(access, "access");
@@ -86,8 +96,12 @@ public class UiDomView extends NativeUiView {
             }
         }));
         if (scope == null && scrollContent != null) resources.own(scrollContent.on("scroll", event -> {
-            if (live() && !modal() && lists.isEmpty()) state().scrollOffset(scrollContent.scrollTop());
+            if (live() && !modal() && lists.isEmpty() && layoutRestored) state().scrollOffset(scrollContent.scrollTop());
         }));
+        if (scope == null && scrollContent != null) {
+            resources.own(scrollContent.on("wheel", event -> takeScrollOwnership()));
+            resources.own(scrollContent.on("mousedown", event -> { if (event.button() == 0) takeScrollOwnership(); }));
+        }
         if (theme != null) changed("theme");
         for (String id : controls.keySet()) changed(id);
         for (String id : texts.keySet()) changed(id);
@@ -356,6 +370,22 @@ public class UiDomView extends NativeUiView {
         }
     }
 
+    public void scrollInput(double x, double y) {
+        if (scrollContent == null) return;
+        try {
+            ScreenCoordinate bounds = scrollContent.bounds();
+            if (x >= bounds.x() && x < bounds.x() + bounds.width() && y >= bounds.y() && y < bounds.y() + bounds.height()) takeScrollOwnership();
+        } catch (RuntimeException | LinkageError failure) { fail(failure); }
+    }
+
+    private void takeScrollOwnership() {
+        if (!live() || modal() || layoutRestored || !lists.isEmpty() || scrollContent == null) return;
+        double position = scrollContent.scrollTop();
+        if (scrollRequest != null) position = scrollRequest.applyAsDouble(position);
+        else scrollContent.scrollTop(position);
+        pendingScrollTarget = position; state().scrollOffset(position); layoutRestored = true;
+    }
+
     public void afterLayout() {
         if (!live() || dom == null || scope != null) return;
         for (UiDomView pressed : new ArrayList<>(pressedViews)) pressed.updatePresses();
@@ -365,9 +395,14 @@ public class UiDomView extends NativeUiView {
         if (detailContent != null && detailContent.clientHeight() > 0 && restoredDetail != state().detailScroll()) {
             detailContent.scrollTop(state().detailScroll()); restoredDetail = state().detailScroll();
         }
-        if (!layoutRestored && lists.isEmpty() && scrollContent != null && scrollContent.clientHeight() > 0) {
-            layoutRestored = true;
-            scrollContent.scrollTop(state().scrollOffset());
+        if (!layoutRestored && lists.isEmpty() && scrollContent != null && scrollContent.clientHeight() > 0 && scrollReady.getAsBoolean()) {
+            if (Double.isNaN(pendingScrollTarget)) {
+                if (scrollRequest == null) { pendingScrollTarget = state().scrollOffset(); scrollContent.scrollTop(pendingScrollTarget); }
+                else pendingScrollTarget = scrollRequest.applyAsDouble(state().scrollOffset());
+            }
+            if (Math.abs(scrollContent.scrollTop() - pendingScrollTarget) < .5) {
+                state().scrollOffset(pendingScrollTarget); layoutRestored = true;
+            }
         }
     }
 

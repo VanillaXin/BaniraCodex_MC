@@ -63,8 +63,8 @@ public class UiVisualStyleTest {
             String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(css.contains(".row-icon"));
             assertTrue(css.contains(".game-icon"));
-            assertTrue(css.contains("height: 22px"));
-            assertTrue(css.contains("justify-content: center"));
+            assertTrue(css.matches("(?s).*height:\\s*22px.*"));
+            assertTrue(css.matches("(?s).*justify-content:\\s*center.*"));
             assertTrue(css.contains(".selector-selection #selected_icon"));
         }
     }
@@ -78,8 +78,8 @@ public class UiVisualStyleTest {
             }
             assertTrue(css.contains(".primary:hover"));
             assertTrue(css.contains(".row > button:hover"));
-            assertTrue(css.contains("min-height: 20px"));
-            assertTrue(css.contains("letter-spacing: 0"));
+            assertTrue(css.matches("(?s).*min-height:\\s*20px.*"));
+            assertTrue(css.matches("(?s).*letter-spacing:\\s*0.*"));
             assertFalse(css.contains("@import"));
             assertFalse(css.contains("@font-face"));
             assertFalse(css.contains("box-shadow:"));

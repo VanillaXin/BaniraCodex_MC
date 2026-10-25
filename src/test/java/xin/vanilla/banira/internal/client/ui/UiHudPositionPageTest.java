@@ -35,7 +35,7 @@ public class UiHudPositionPageTest {
         assertTrue(resource("shared.css").contains(".hud-position #preview{min-width:0}"));
     }
     @Test public void hudChromeInheritsTheCommonConfigurationFont() throws Exception {
-        assertTrue(resource("shared.css").contains(".hud-position { padding: 0; font-family: default; }"));
+        assertTrue(resource("shared.css").matches("(?s).*\\.hud-position\\s*\\{\\s*padding:\\s*0;\\s*font-family:\\s*default;?\\s*}.*"));
     }
     @Test public void commonHeaderAndCancelRetainDraftAndReleaseOldActions() throws Exception {
         var f=new UiNotificationPagesTest.Fixture();var session=(NotificationUiSession)f.session("PositionPort");

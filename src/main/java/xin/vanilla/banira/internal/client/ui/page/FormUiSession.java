@@ -46,6 +46,7 @@ public final class FormUiSession implements UiPageSession {
     private final Map<UiView, UiOwnedResources> rowBindings = new LinkedHashMap<>();
     private final Map<UiView, Integer> boundIndices = new LinkedHashMap<>();
     private FieldPresentation presentation;
+    private boolean commonPresentation;
 
     public interface FieldPresentation {
         int rowHeight();
@@ -260,7 +261,36 @@ public final class FormUiSession implements UiPageSession {
 
     @Override
     public void bind(UiView view) {
-        bind(view, null);
+        bind(view, new FieldPresentation() {
+            public int rowHeight() { return 28; }
+            public String rowClass(int index) { return "player-config-field"; }
+            public void bind(UiView row, int index, InputFormScreen.Widget widget) {
+                if (widget.tooltip() != null) row.text("description", widget.tooltip().toComponent());
+            }
+            public void update(UiView row, int index, InputFormScreen.Widget widget, String draft, String validation) {
+                row.tooltip("input", !validation.isEmpty() ? BaniraComponent.get().literal(validation)
+                        : widget.tooltip() != null ? widget.tooltip().toComponent()
+                        : widget.title() != null ? widget.title().toComponent() : BaniraComponent.get().empty());
+            }
+        });
+        commonPresentation = true;
+        var title = args.getHeaderTitle() != null ? args.getHeaderTitle() : args.getTitle();
+        String namespace = title == null ? null : title.toComponent().modId();
+        if ((namespace == null || namespace.isEmpty()) && args.getTitle() != null)
+            namespace = args.getTitle().toComponent().modId();
+        if ((namespace == null || namespace.isEmpty()) && args.getParentScreen() instanceof xin.vanilla.banira.api.client.ui.UiPageSource) {
+            String surface = ((xin.vanilla.banira.api.client.ui.UiPageSource) args.getParentScreen()).uiSurfaceId();
+            if (surface != null && surface.indexOf(':') > 0) namespace = surface.substring(0, surface.indexOf(':'));
+        }
+        if (namespace == null || namespace.isEmpty()) namespace = "banira_codex";
+        var brand = UiModuleHeaderIcons.resolve(namespace,
+                xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder());
+        view.gameElement("brand", brand);
+        view.enabled("brand", brand != null);
+        view.text("module_name", new xin.vanilla.banira.common.data.ScopedComponent(namespace).transClientAuto("mod_name"));
+        view.text("close", BaniraComponent.get().transClientAuto("config_editor_close"));
+        bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));
+        updateStatus();
     }
 
     public void bind(UiView view, FieldPresentation presentation) {
@@ -338,6 +368,7 @@ public final class FormUiSession implements UiPageSession {
         if (view == null) return;
         view.enabled("submit", canSubmit());
         view.text("error", BaniraComponent.get().literal(error));
+        if (commonPresentation) view.enabled("error", !error.isEmpty());
         for (UiView row : rowBindings.keySet()) {
             Integer index = boundIndices.get(row);
             if (index != null) {
@@ -360,6 +391,7 @@ public final class FormUiSession implements UiPageSession {
     public void detach(UiDetachReason reason) {
         view = null;
         presentation = null;
+        commonPresentation = false;
         try { bindings.close(); }
         finally {
             try { for (UiOwnedResources owned : rowBindings.values()) owned.close(); }

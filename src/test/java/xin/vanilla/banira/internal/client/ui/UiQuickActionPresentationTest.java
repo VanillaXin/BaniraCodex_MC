@@ -56,9 +56,11 @@ public class UiQuickActionPresentationTest {
         first.activate("save");second.activate("save");assertEquals(1,saves.get());
         s.close(UiCloseReason.DISCONNECT);second.activate("save");assertEquals(1,saves.get());
     }
-    @Test public void baseNavigationRetainsItsOriginalPresentation() {
+    @Test public void baseNavigationUsesCompactRowsAndRetainsActionIdentity() {
         var s=new NavigationUiSession(BaniraComponent.get().literal("Navigation"),List.of(action("a","Alpha",()->{},null)));
-        var root=new NativeUiView(new Object());s.bind(root);assertFalse(root.rowProviders.get("fields") instanceof UiRowPresentation);
+        var root=new NativeUiView(new Object());s.bind(root);assertTrue(root.rowProviders.get("fields") instanceof UiRowPresentation);
+        assertEquals(24,((UiRowPresentation)root.rowProviders.get("fields")).rowHeight());
+        assertEquals("a",root.rowProviders.get("fields").key(0));
         assertEquals(1,root.rowProviders.get("fields").size());
     }
     @Test public void iconSelectionHasOneCurrentCallbackAfterSearchRefresh() {

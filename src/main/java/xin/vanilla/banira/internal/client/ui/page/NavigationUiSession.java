@@ -45,7 +45,10 @@ public class NavigationUiSession implements UiPageSession {
 
     public List<Action> actions() { return Collections.unmodifiableList(new ArrayList<>(rows.get())); }
     protected List<Action> visibleActions() { return actions(); }
-    protected UiRowProvider presentRows(UiRowProvider provider, UiView owner) { return provider; }
+    protected UiRowProvider presentRows(UiRowProvider provider, UiView owner) {
+        return page == null || page.template().equals("banira_codex/ui/navigation.html")
+                ? new UiCommonRows(provider, 24, "config-navigation") : provider;
+    }
     public void longClose(Runnable action) { longClose = action; }
     protected final boolean boundTo(UiView view) { return !closed && this.view == view; }
     protected final void ownBinding(AutoCloseable resource) { bindings.own(resource); }
@@ -61,6 +64,7 @@ public class NavigationUiSession implements UiPageSession {
         this.view = Objects.requireNonNull(view, "view");
         bindings = new UiOwnedResources();
         view.text("title", title);
+        if (page == null || page.template().equals("banira_codex/ui/navigation.html")) UiCommonChrome.bind(view, title, null);
         view.text("close", BaniraComponent.get().transClientAuto("close"));
         bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));
         if (longClose != null) bindings.own(view.onLongAction("close", () -> { if (this.view == view) longClose.run(); }));

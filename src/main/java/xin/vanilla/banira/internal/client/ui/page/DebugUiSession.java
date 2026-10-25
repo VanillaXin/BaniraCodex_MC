@@ -74,6 +74,7 @@ public final class DebugUiSession implements UiPageSession {
         this.view = Objects.requireNonNull(view); bindings = new UiOwnedResources();
         if (view instanceof NativeUiView && ((NativeUiView) view).screen() instanceof BaniraScreen) return;
         view.text("title", BaniraComponent.get().literal("Banira Debug")); view.text("close", BaniraComponent.get().transClientAuto("cancel"));
+        UiCommonChrome.bind(view, BaniraComponent.get().literal("Banira Debug"), null);
         bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));
         ACTIONS.forEach((id, label) -> {
             view.text(id, BaniraComponent.get().literal(id.startsWith("preset_") ? "" : label)); view.tooltip(id, BaniraComponent.get().literal(label));

@@ -16,6 +16,7 @@ public final class TextUiSession implements UiPageSession {
     @Override public void bind(UiView view) {
         detach(UiDetachReason.RELOAD); bindings = new UiOwnedResources();
         view.text("title", args.title() != null ? args.title() : BaniraComponent.get().literal(""));
+        UiCommonChrome.bind(view, args.title(), args.parentScreen());
         Component text = BaniraComponent.get().literal("");
         if (args.paragraphs() != null) for (Component paragraph : args.paragraphs()) {
             if (paragraph == null) continue;
@@ -24,7 +25,9 @@ public final class TextUiSession implements UiPageSession {
         }
         view.text("text", text);
         view.text("close", args.closeText() != null ? args.closeText() : BaniraComponent.get().transClientAuto("close"));
+        view.text("footer_close", args.closeText() != null ? args.closeText() : BaniraComponent.get().transClientAuto("close"));
         bindings.own(view.onAction("close", view::requestClose));
+        bindings.own(view.onAction("footer_close", view::requestClose));
     }
     @Override public void detach(UiDetachReason reason) { bindings.close(); }
     @Override public void close(UiCloseReason reason) { detach(UiDetachReason.SWITCH); }

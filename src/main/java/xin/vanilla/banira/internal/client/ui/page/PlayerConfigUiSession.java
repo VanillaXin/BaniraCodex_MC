@@ -91,7 +91,8 @@ public final class PlayerConfigUiSession implements UiPageSession {
         this.view = view;
         bindings = new UiOwnedResources();
         applyFilter();
-        fields.bind(view, presentation == null ? null : new FormUiSession.FieldPresentation() {
+        if (presentation == null) fields.bind(view);
+        else fields.bind(view, new FormUiSession.FieldPresentation() {
             public int rowHeight() { return 24; }
             public String rowClass(int index) { return "player-config-field"; }
             public void bind(UiView row, int index, InputFormScreen.Widget widget) {
@@ -113,6 +114,12 @@ public final class PlayerConfigUiSession implements UiPageSession {
         view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, ConfigEditorInputLimits.STRING_VALUE, "", false));
         view.draft("search", query);
         bindings.own(view.onDraft("search", value -> { if (this.view == view) query(value); }));
+        if (presentation == null) {
+            view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
+            view.tooltip("clear_search", BaniraComponent.get().transClientAuto("config_editor_clear_search"));
+            view.text("search_hint", BaniraComponent.get().transClientAuto("config_editor_search_hint"));
+            bindings.own(view.onAction("clear_search", () -> { if (this.view == view) { query(""); view.draft("search", ""); } }));
+        }
         if (presentation != null) {
             view.text("close", BaniraComponent.get().transClientAuto("config_editor_close"));
             bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));

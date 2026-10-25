@@ -32,11 +32,14 @@ public final class DialogUiSession implements UiPageSession {
         detach(UiDetachReason.RELOAD);
         bindings = new UiOwnedResources();
         view.text("title", args.title() != null ? args.title() : BaniraComponent.get().literal(""));
+        UiCommonChrome.bind(view, args.title(), args.parentScreen());
+        view.text("close", BaniraComponent.get().transClientAuto("close"));
         view.text("message", args.message() != null ? args.message() : BaniraComponent.get().literal(""));
         view.text("confirm", args.confirmText() != null ? args.confirmText() : BaniraComponent.get().transClientAuto("confirm"));
         view.text("cancel", args.cancelText() != null ? args.cancelText() : BaniraComponent.get().transClientAuto("cancel"));
         bindings.own(view.onAction("confirm", () -> { if (!resolved) { confirm(); view.requestClose(); } }));
         bindings.own(view.onAction("cancel", () -> { if (!resolved) { cancel(); view.requestClose(); } }));
+        bindings.own(view.onAction("close", () -> { if (!resolved) { cancel(); view.requestClose(); } }));
     }
     @Override public void detach(UiDetachReason reason) { bindings.close(); }
     @Override public void close(UiCloseReason reason) {

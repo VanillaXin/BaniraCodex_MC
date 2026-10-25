@@ -177,10 +177,13 @@ public final class SelectorUiSession implements UiPageSession {
         this.view = Objects.requireNonNull(view); bindings = new UiOwnedResources();
         if (view instanceof NativeUiView && ((NativeUiView) view).screen() instanceof BaniraScreen) return;
         view.text("title", tr("search_" + kind.name().toLowerCase(Locale.ROOT)));
+        UiCommonChrome.bind(view, tr("search_" + kind.name().toLowerCase(Locale.ROOT)), parent);
+        view.text("close", tr("close"));
         view.text("submit", tr("submit")); view.text("cancel", tr("cancel"));
         view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false)); view.draft("search", query);
         bindings.own(view.onDraft("search", text -> { if (this.view == view) query(text); }));
         bindings.own(view.onAction("cancel", () -> { if (this.view == view) view.requestClose(); }));
+        bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));
         bindings.own(view.onAction("submit", () -> { if (this.view == view && submit() && (closesAfterSubmit || emptySelection())) view.requestClose(); }));
         bindings.own(view.onAction("mode", () -> { if (this.view == view) mode(!mode); }));
         for (String operation : operations()) {
@@ -247,7 +250,7 @@ public final class SelectorUiSession implements UiPageSession {
     private void rebuild() {
         if (view == null || closed || view instanceof NativeUiView && ((NativeUiView) view).screen() instanceof BaniraScreen) return;
         releaseRows(); final UiView root = view; List<Row> rows = results(); resultCount = rows.size();
-        view.rows("fields", new UiRowProvider() {
+        UiRowProvider provider = new UiRowProvider() {
             public int size() { return rows.size(); }
             public String key(int index) { return rows.get(index).key; }
             public void bind(UiView row, int index) {
@@ -259,7 +262,8 @@ public final class SelectorUiSession implements UiPageSession {
                 row.gameElement("icon", value.icon); row.text("label", BaniraComponent.get().literal(value.id));
                 owned.own(row.onAction("open", () -> { if (view == root) select(value.id); }));
             }
-        }, 120);
+        };
+        view.rows("fields", new UiCommonRows(provider, 40, "common-choice"), 120);
     }
     private void updateSelection() {
         if (view == null || closed) return;

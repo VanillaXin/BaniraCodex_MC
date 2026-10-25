@@ -59,6 +59,7 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
             String next = texts.get(id).toVanilla().getString();
             if (!next.equals(labels.put(id, next))) node.text(next);
         }
+        if (gameElements.containsKey(id)) node.gameElement(gameElements.get(id));
     }
     @Override public ScreenCoordinate bounds(String id) {
         UiDomAccess.Node node = nodes.get(id);
@@ -71,6 +72,7 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
             for (String id : new ArrayList<>(nodes.keySet())) if (!regions.containsKey(id)) {
                 String hidden = "display:none;pointer-events:none";
                 if (!hidden.equals(styles.put(id, hidden))) node(id).attribute("style", hidden);
+                node(id).gameElement(null);
             }
             for (var entry : regions.entrySet()) {
                 String id = entry.getKey();
@@ -78,6 +80,7 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
                 String style = "position:absolute;pointer-events:none;left:" + b.x() + "px;top:" + b.y() + "px;width:" + b.width() + "px;height:" + b.height() + "px;"
                         + (enabled.getOrDefault(id, true) ? "" : "opacity:0.45;");
                 if (!style.equals(styles.put(id, style))) node(id).attribute("style", style);
+                if (gameElements.containsKey(id)) node(id).gameElement(gameElements.get(id));
             }
             document.commitPendingStyleRecalcForRender();
             document.commitRenderState();
@@ -90,6 +93,7 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
             graphics.flush();
             try {
                 Base.drawOverlayDocument(graphics.pose(), document);
+                access.render(graphics);
                 graphics.flush();
             } catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
         }

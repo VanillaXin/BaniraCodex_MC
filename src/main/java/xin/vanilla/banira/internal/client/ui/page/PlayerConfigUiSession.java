@@ -94,6 +94,7 @@ public final class PlayerConfigUiSession implements UiPageSession {
         if (presentation == null) fields.bind(view);
         else fields.bind(view, new FormUiSession.FieldPresentation() {
             public int rowHeight() { return 24; }
+            public boolean checkbox(InputFormScreen.Widget widget) { return presentation.checkbox(widget.name()); }
             public String rowClass(int index) { return "player-config-field"; }
             public void bind(UiView row, int index, InputFormScreen.Widget widget) {
                 row.text("key", BaniraComponent.get().literal(widget.name()));

@@ -53,6 +53,7 @@ public final class FormUiSession implements UiPageSession {
         String rowClass(int originalIndex);
         void bind(UiView row, int originalIndex, InputFormScreen.Widget widget);
         void update(UiView row, int originalIndex, InputFormScreen.Widget widget, String draft, String validation);
+        default boolean checkbox(InputFormScreen.Widget widget) { return false; }
     }
 
     public FormUiSession(InputFormScreen.Args args) {
@@ -333,11 +334,13 @@ public final class FormUiSession implements UiPageSession {
                 boundIndices.put(row, index);
                 InputFormScreen.Widget widget = args.getWidgets().get(index);
                 if (widget.title() != null) row.text("label", widget.title().toComponent());
-                row.control("input", control(index));
+                boolean checkbox = presentation != null && presentation.checkbox(widget);
+                if (!checkbox) row.control("input", control(index));
                 row.enabled("input", !widget.disabled());
                 if (widget.hint() != null) row.text("hint", widget.hint().toComponent());
                 if (widget.tooltip() != null) row.text("tooltip", widget.tooltip().toComponent());
-                if (selections.containsKey(index)) row.value("input", UiValue.strings(selections.get(index)));
+                if (checkbox) row.value("input", UiValue.bool(Boolean.parseBoolean(drafts.get(index))));
+                else if (selections.containsKey(index)) row.value("input", UiValue.strings(selections.get(index)));
                 else if (widget.type() != InputFormScreen.WidgetType.KEY_CHORD
                         && widget.type() != InputFormScreen.WidgetType.DROPDOWN) {
                     row.draft("input", drafts.get(index));
@@ -346,7 +349,11 @@ public final class FormUiSession implements UiPageSession {
                     }));
                 } else row.value("input", get(index));
                 owned.own(row.onValue("input", value -> {
-                    if (FormUiSession.this.view == view) { set(index, value); updateStatus(); }
+                    if (FormUiSession.this.view == view) {
+                        if (checkbox && value.kind() == UiValue.Kind.BOOLEAN) draft(index, Boolean.toString(value.asBoolean()));
+                        else set(index, value);
+                        updateStatus();
+                    }
                 }));
                 if (widget.type() == InputFormScreen.WidgetType.FILE || widget.type() == InputFormScreen.WidgetType.PICKER) {
                     owned.own(row.onAction("pick", () -> { if (FormUiSession.this.view == view) pick(index); }));

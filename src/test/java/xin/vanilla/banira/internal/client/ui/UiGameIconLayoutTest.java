@@ -44,13 +44,13 @@ public class UiGameIconLayoutTest {
         assertEquals(-1, AuiGameElements.lineAt(bounds, bounds, 9, 22, 9, 3));
     }
 
-    @Test public void iconDrawingDisablesDepthAfterScissorAndRestoresItOnExit() throws Exception {
+    @Test public void gameDrawingDisablesDepthAfterScissorAndRestoresItOnExit() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = AuiGameElements.class.getResourceAsStream("AuiGameElements.class")) {
             assertNotNull(input);
             new org.objectweb.asm.ClassReader(input).accept(type, 0);
         }
-        for (String name : new String[]{"renderElement", "renderOption"}) {
+        for (String name : new String[]{"renderElement", "renderOption", "renderText"}) {
             var method = type.methods.stream().filter(value -> value.name.equals(name)).findFirst().orElseThrow();
             var calls = new java.util.ArrayList<String>();
             for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
@@ -65,6 +65,21 @@ public class UiGameIconLayoutTest {
             assertTrue(name + " must restore both prior states", calls.lastIndexOf("com/mojang/blaze3d/systems/RenderSystem.enableDepthTest") > disable
                     && calls.lastIndexOf("com/mojang/blaze3d/systems/RenderSystem.disableDepthTest") > disable);
             assertFalse(name + " must restore state on failure", method.tryCatchBlocks.isEmpty());
+            if (name.equals("renderText")) {
+                boolean clipped = false;
+                for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                    var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                    if (call.name.equals("enableScissor")) clipped = true;
+                    if (clipped && call.owner.equals("net/minecraft/client/gui/GuiGraphics")
+                            && (call.name.equals("flush") || call.name.equals("disableScissor"))) {
+                        int position = method.instructions.indexOf(call);
+                        assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails",
+                                method.tryCatchBlocks.stream().anyMatch(block -> block.type == null
+                                        && method.instructions.indexOf(block.start) <= position
+                                        && position < method.instructions.indexOf(block.end)));
+                    }
+                }
+            }
         }
     }
 

@@ -86,14 +86,23 @@ public final class AuiGameElements {
 
     public static void renderText(GuiGraphics graphics, TextLayout layout, ScreenCoordinate bounds, ScreenCoordinate clip) {
         if (layout == null || bounds.width() <= 0 || bounds.height() <= 0) return;
+        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        graphics.flush();
         graphics.enableScissor((int) clip.x(), (int) clip.y(), (int) Math.ceil(clip.x() + clip.width()), (int) Math.ceil(clip.y() + clip.height()));
+        RenderSystem.disableDepthTest();
         try {
             int lineHeight = Minecraft.getInstance().font.lineHeight;
             int first = Math.max(0, (int) Math.floor((clip.y() - bounds.y()) / lineHeight));
             int last = Math.min(layout.lines.size(), (int) Math.ceil((clip.y() + clip.height() - bounds.y()) / lineHeight));
             for (int index = first; index < last; index++) graphics.drawString(Minecraft.getInstance().font,
                     layout.lines.get(index), (int) bounds.x(), (int) bounds.y() + index * lineHeight, 0xff24272c, false);
-        } finally { graphics.disableScissor(); }
+        } finally {
+            try { graphics.flush(); }
+            finally {
+                try { graphics.disableScissor(); }
+                finally { if (depth) RenderSystem.enableDepthTest(); else RenderSystem.disableDepthTest(); }
+            }
+        }
     }
 
     public static void renderEffect(GuiGraphics graphics, MobEffectInstance effect, ScreenCoordinate bounds) {

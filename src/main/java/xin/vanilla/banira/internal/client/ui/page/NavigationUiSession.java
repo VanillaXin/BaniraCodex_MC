@@ -44,6 +44,8 @@ public class NavigationUiSession implements UiPageSession {
     }
 
     public List<Action> actions() { return Collections.unmodifiableList(new ArrayList<>(rows.get())); }
+    protected List<Action> visibleActions() { return actions(); }
+    protected UiRowProvider presentRows(UiRowProvider provider, UiView owner) { return provider; }
     public void longClose(Runnable action) { longClose = action; }
     protected final boolean boundTo(UiView view) { return !closed && this.view == view; }
     protected final void ownBinding(AutoCloseable resource) { bindings.own(resource); }
@@ -67,8 +69,16 @@ public class NavigationUiSession implements UiPageSession {
             view.enabled(action.id, true);
             bindings.own(view.onAction(action.id, () -> { if (this.view == view) action.open(); }));
         }
-        List<Action> snapshot = actions();
-        view.rows("fields", new UiRowProvider() {
+        refreshRows();
+    }
+
+    protected final void refreshRows() {
+        UiView view = this.view;
+        if (view == null || closed) return;
+        for (UiOwnedResources owned : rowBindings.values()) owned.close();
+        rowBindings.clear();
+        List<Action> snapshot = visibleActions();
+        UiRowProvider provider = new UiRowProvider() {
             public int size() { return snapshot.size(); }
             public String key(int index) { return snapshot.get(index).id; }
             public void bind(UiView row, int index) {
@@ -88,7 +98,8 @@ public class NavigationUiSession implements UiPageSession {
                     owned.own(row.onAction("delete", () -> { if (NavigationUiSession.this.view == view) action.delete.run(); }));
                 }
             }
-        }, 120);
+        };
+        view.rows("fields", presentRows(provider, view), 120);
     }
 
     @Override public void detach(UiDetachReason reason) {

@@ -263,8 +263,8 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 view.text("module_name", tr("mod_name"));
                 view.text("origin", tr("config_editor_client_scope"));
                 view.text("category_title", tr("config_editor_categories"));
-                view.text("search_hint", tr("config_editor_search_hint"));
-                view.tooltip("search", tr("config_editor_search_hint"));
+                view.text("search_hint", tr("notification_type_config_search_hint"));
+                view.tooltip("search", tr("notification_type_config_search_hint"));
                 view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
                 view.tooltip("clear_search", tr("config_editor_clear_search"));
                 bindings.own(view.onAction("clear_search", () -> {
@@ -429,7 +429,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
                 String id = key.equals("all") ? "" : key.substring(key.indexOf(':') + 1);
                 Component label = key.equals("all") ? tr("notification_type_config_root_title")
                         : module ? NotificationTypeRegistry.modDisplayNameInternal(id) : NotificationTypeRegistry.tooltipInternal(id);
-                if (label == null || label.isEmpty()) label = BaniraComponent.get().literal(id);
+                if (label == null || label.isEmpty()) label = tr(module ? "notification_log_meta_source" : "notification_log_meta_type");
                 row.text("open", type ? BaniraComponent.get().literal("  ").append(label) : label);
                 row.tooltip("open", BaniraComponent.get().literal(id).append(id.isEmpty() ? "" : "\n").append(label));
                 long count = type ? 1 : module ? types.stream().filter(value -> typeNamespace(value).equals(id)).count() : types.size();
@@ -459,9 +459,10 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
         String key = new String[]{"hidden", "duration", "animation", "position", "display"}[field];
         row.text("label", tr("notification_type_config_" + key));
-        row.text("key", BaniraComponent.get().literal(type));
         row.text("field_unit", BaniraComponent.get().literal(field == 1 ? "ms" : ""));
         Component tooltip = NotificationTypeRegistry.tooltipInternal(type);
+        Component subtitle = tooltip == null || tooltip.isEmpty() ? NotificationTypeRegistry.modDisplayNameInternal(typeNamespace(type)) : tooltip;
+        row.text("key", subtitle == null || subtitle.isEmpty() ? tr("notification_log_meta_type") : subtitle);
         Component fieldDescription = BaniraComponent.get().literal(type + " / " + tr("notification_type_config_" + key))
                 .append(tooltip == null ? "" : "\n", tooltip == null ? "" : tooltip);
         row.text("tooltip", fieldDescription);

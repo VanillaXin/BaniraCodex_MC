@@ -90,6 +90,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
                 }
                 return rows;
             }, tools);
+            uiSession.context(() -> BaniraComponent.get().literal(isMenuItem() ? menuItem.getLabel() : definition.getLabel()));
             if (!isMenuItem()) {
                 List<DropdownOption> icons = new ArrayList<>();
                 for (QuickActionIconType type : QuickActionIconType.values()) icons.add(new DropdownOption(type.name(),

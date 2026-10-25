@@ -37,7 +37,8 @@ public class UiNotificationTypesPresentationTest {
         assertTrue(root.rowProviders.get("fields") instanceof UiRowPresentation);
         assertEquals(24, ((UiRowPresentation) root.rowProviders.get("fields")).rowHeight());
         var row = new NativeUiView(new Object()); root.rowProviders.get("fields").bind(row, 1);
-        assertEquals("test.first", row.texts.get("key").toString());
+        assertFalse(row.texts.get("key").toString().contains("test.first"));
+        assertTrue(row.tooltips.get("key").toString().contains("test.first"));
         assertEquals("ms", row.texts.get("field_unit").toString());
         assertFalse(row.texts.get("label").toString().contains("test.first"));
         assertNotNull(row.tooltips.get("input"));
@@ -83,5 +84,16 @@ public class UiNotificationTypesPresentationTest {
             var s = session(new UiNotificationPagesTest.Fixture()); var root = new NativeUiView(new Object()); s.bind(root); s.query("registry module");
             assertEquals(10, root.rowProviders.get("fields").size()); assertEquals("type:test.first:0", root.rowProviders.get("fields").key(0));
         } finally { NotificationTypeRegistry.registerModDisplayNameInternal("test", null); }
+    }
+    @Test public void visibleSubtitleUsesRegisteredDescriptionNotInternalId() throws Exception {
+        NotificationTypeRegistry.registerInternal("test.first", BaniraComponent.get().literal("Teleport search progress"));
+        try {
+            var s = session(new UiNotificationPagesTest.Fixture()); var root = new NativeUiView(new Object()); s.bind(root);
+            var row = new NativeUiView(new Object()); root.rowProviders.get("fields").bind(row, 0);
+            assertEquals("Teleport search progress", row.texts.get("key").toString());
+            assertTrue(row.tooltips.get("key").toString().contains("test.first"));
+            root.inputDraft("search", "test.first");
+            assertEquals("test.first", s.query()); assertEquals(5, root.rowProviders.get("fields").size());
+        } finally { NotificationTypeRegistry.registerInternal("test.first", (xin.vanilla.banira.common.data.Component) null); }
     }
 }

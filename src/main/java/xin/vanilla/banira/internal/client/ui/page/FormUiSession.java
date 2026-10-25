@@ -261,18 +261,7 @@ public final class FormUiSession implements UiPageSession {
 
     @Override
     public void bind(UiView view) {
-        bind(view, new FieldPresentation() {
-            public int rowHeight() { return 28; }
-            public String rowClass(int index) { return "player-config-field"; }
-            public void bind(UiView row, int index, InputFormScreen.Widget widget) {
-                if (widget.tooltip() != null) row.text("description", widget.tooltip().toComponent());
-            }
-            public void update(UiView row, int index, InputFormScreen.Widget widget, String draft, String validation) {
-                row.tooltip("input", !validation.isEmpty() ? BaniraComponent.get().literal(validation)
-                        : widget.tooltip() != null ? widget.tooltip().toComponent()
-                        : widget.title() != null ? widget.title().toComponent() : BaniraComponent.get().empty());
-            }
-        });
+        bind(view, new CommonFieldPresentation());
         commonPresentation = true;
         var title = args.getHeaderTitle() != null ? args.getHeaderTitle() : args.getTitle();
         String namespace = title == null ? null : title.toComponent().modId();
@@ -291,6 +280,19 @@ public final class FormUiSession implements UiPageSession {
         view.text("close", BaniraComponent.get().transClientAuto("config_editor_close"));
         bindings.own(view.onAction("close", () -> { if (this.view == view) view.requestClose(); }));
         updateStatus();
+    }
+
+    private static final class CommonFieldPresentation implements FieldPresentation {
+        public int rowHeight() { return 28; }
+        public String rowClass(int index) { return "player-config-field"; }
+        public void bind(UiView row, int index, InputFormScreen.Widget widget) {
+            if (widget.tooltip() != null) row.text("description", widget.tooltip().toComponent());
+        }
+        public void update(UiView row, int index, InputFormScreen.Widget widget, String draft, String validation) {
+            row.tooltip("input", !validation.isEmpty() ? BaniraComponent.get().literal(validation)
+                    : widget.tooltip() != null ? widget.tooltip().toComponent()
+                    : widget.title() != null ? widget.title().toComponent() : BaniraComponent.get().empty());
+        }
     }
 
     public void bind(UiView view, FieldPresentation presentation) {

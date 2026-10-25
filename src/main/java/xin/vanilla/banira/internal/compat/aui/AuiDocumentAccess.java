@@ -205,6 +205,10 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             ScreenCoordinate bounds = node.bounds();
             if (bounds.width() <= 0) return false;
             if (!node.rich.preparedFor((int) bounds.width()) || bounds.height() + .5 < node.rich.height()) return false;
+            if (node.clip != null && node.clip.element == content) {
+                Element.DOMRect text = node.element.getBoundingClientRect(), viewport = content.getBoundingClientRect();
+                if (!AuiGameElements.scrollExtentReady(content.scrollHeight, text.bottom - viewport.y + content.getScrollTop())) return false;
+            }
         }
         return true;
     }

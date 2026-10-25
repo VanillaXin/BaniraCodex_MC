@@ -17,6 +17,9 @@ import java.util.Collections;
 import java.util.List;
 
 public final class AuiGameElements {
+    static boolean scrollExtentReady(double measured, double required) {
+        return Double.isFinite(measured) && Double.isFinite(required) && measured + .5 >= Math.max(0, required);
+    }
     private AuiGameElements() { }
 
     public static ScreenCoordinate iconBounds(ScreenCoordinate slot, int maximum, int inset) {

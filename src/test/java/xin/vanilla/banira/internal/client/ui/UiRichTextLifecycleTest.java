@@ -80,6 +80,18 @@ public class UiRichTextLifecycleTest {
         f.content.scroll = 20; f.content.emit("scroll"); f.view.afterLayout();
         assertEquals(20, f.view.state().scrollOffset(), 0); assertEquals(1, f.requests); f.view.close();
     }
+    @Test public void renderedTextMustWaitForContainerExtent() throws Exception {
+        Method ready;
+        try { ready = AuiGameElements.class.getDeclaredMethod("scrollExtentReady", double.class, double.class); }
+        catch (NoSuchMethodException missing) { throw new AssertionError("Text bounds can settle before scrollHeight; both metrics must be ready", missing); }
+        ready.setAccessible(true);
+        assertEquals(false, ready.invoke(null, 0d, 2076.4d));
+        assertEquals(false, ready.invoke(null, 300d, 2076.4d));
+        assertEquals(true, ready.invoke(null, 2082.4d, 2076.4d));
+        assertEquals(true, ready.invoke(null, 0d, 0d));
+        assertEquals(false, ready.invoke(null, Double.NaN, 10d));
+        assertEquals(false, ready.invoke(null, 10d, Double.POSITIVE_INFINITY));
+    }
     @Test public void userInputTakesOverPendingRestoration() throws Exception {
         for (String event : new String[]{"wheel", "mousedown", "pre-input"}) {
             var f = new ScrollFixture(); f.installGate(); f.maximum = 300; f.ready = true; f.smooth = true; f.view.afterLayout();
@@ -105,6 +117,8 @@ public class UiRichTextLifecycleTest {
         var ready = type.methods.stream().filter(m -> m.name.equals("richLayoutReady")).findFirst().orElseThrow();
         assertTrue("Unmeasured and hidden nodes need distinct treatment", java.util.stream.StreamSupport.stream(ready.instructions.spliterator(),false)
                 .anyMatch(i -> i instanceof org.objectweb.asm.tree.FieldInsnNode && ((org.objectweb.asm.tree.FieldInsnNode)i).name.equals("isVisible")));
+        assertTrue("Container scroll metrics must include the rendered rich text extent before restoring", java.util.stream.StreamSupport.stream(ready.instructions.spliterator(),false)
+                .anyMatch(i -> i instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode)i).name.equals("scrollExtentReady")));
         var restore = type.methods.stream().filter(m -> m.name.equals("restoreContentScroll")).findFirst().orElseThrow();
         int bounded = -1, setter = -1;
         for (var i : restore.instructions) if (i instanceof org.objectweb.asm.tree.MethodInsnNode) {

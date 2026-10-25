@@ -31,6 +31,12 @@ public class UiHudPositionPageTest {
         String css=resource("shared.css");assertTrue(css.contains(".hud-position #toolbar"));
         assertFalse(css.matches("(?s).*\\.hud-position \\.footer\\s*\\{[^}]*position:\\s*fixed.*"));
     }
+    @Test public void previewHitAreaDoesNotInheritTheGenericButtonMinimum() throws Exception {
+        assertTrue(resource("shared.css").contains(".hud-position #preview{min-width:0}"));
+    }
+    @Test public void hudChromeInheritsTheCommonConfigurationFont() throws Exception {
+        assertTrue(resource("shared.css").contains(".hud-position { padding: 0; font-family: default; }"));
+    }
     @Test public void commonHeaderAndCancelRetainDraftAndReleaseOldActions() throws Exception {
         var f=new UiNotificationPagesTest.Fixture();var session=(NotificationUiSession)f.session("PositionPort");
         var old=new NativeUiView(new Object());session.bind(old);

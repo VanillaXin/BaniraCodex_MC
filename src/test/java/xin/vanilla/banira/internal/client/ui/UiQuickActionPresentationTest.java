@@ -80,6 +80,16 @@ public class UiQuickActionPresentationTest {
             }
         }
     }
+    @Test public void englishToolLabelsFitTheCompactCommonSidebar() throws Exception {
+        try(var in=getClass().getResourceAsStream("/assets/banira_codex/lang/en_us.json")) {
+            assertNotNull(in);
+            var language=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in,StandardCharsets.UTF_8)).getAsJsonObject();
+            for(String key:List.of("custom_quick_action_edit_details","custom_quick_action_add_command","custom_quick_action_add_screen","custom_quick_action_add_menu")) {
+                String value=language.get("word.banira_codex."+key).getAsString();
+                assertTrue(key+" exceeds the compact sidebar's single-line label budget",value.length()<=16);
+            }
+        }
+    }
     @Test public void typingSearchDoesNotRestoreThePreviousDomCaret() throws Exception {
         var dom=new UiDomControlsTest.Dom();var search=dom.new Node("input");dom.ids.put("search",search);
         var s=new QuickActionEditUiSession(BaniraComponent.get().literal("Shortcuts"),()->List.of(action("a","Alpha",()->{},null),action("b","Beta",()->{},null)),List.of());

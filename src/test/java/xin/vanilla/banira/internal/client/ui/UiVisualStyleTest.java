@@ -85,4 +85,30 @@ public class UiVisualStyleTest {
             assertFalse(css.contains("box-shadow:"));
         }
     }
+    @Test public void primaryButtonsPreferWhiteWithoutLosingAccentHueOrContrast() {
+        for (int accent : new int[]{0xffee7fa8, 0xff65c978, 0xfff59a4c, 0xff78bdf7, 0xff202020}) {
+            BaniraColorConfig theme = new BaniraColorConfig().accent(accent);
+            Map<String, Integer> colors = palette(theme);
+            assertEquals(Integer.valueOf(0xffffffff), colors.get("--action-text"));
+            assertEquals(0xffffffff, ColorUtils.ensureReadableTextArgb(0xffffffff, colors.get("--action")));
+            assertEquals(0xffffffff, ColorUtils.ensureReadableTextArgb(0xffffffff, colors.get("--action-hover")));
+            assertEquals(accent, theme.accent());
+            assertEquals(Integer.valueOf(accent), colors.get("--accent"));
+        }
+    }
+    @Test public void primaryLabelsAndDisabledLabelsUseTheirOwnForeground() throws Exception {
+        String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/assets/apricityui/apricity/banira_codex/shared.css"), StandardCharsets.UTF_8);
+        assertTrue(css.contains(".primary>*{color:var(--action-text,#ffffff)}"));
+        assertTrue(css.contains(".primary:disabled>*{color:var(--muted,#637168)}"));
+        assertTrue(css.contains(".sakura-ui .primary:hover"));
+        assertTrue(css.contains("var(--action,#b74777)"));
+    }
+    @Test public void sharedStyleBudgetSurvivesWindowsCheckout() throws Exception {
+        int bytes = 0;
+        for (var entry : UiBoundaryChecks.ownResources("banira_codex").entrySet()) if (entry.getKey().endsWith(".css")) {
+            String text = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n");
+            bytes += text.getBytes(StandardCharsets.UTF_8).length;
+        }
+        assertTrue("Shared CSS must fit 16KiB after CRLF checkout", bytes <= 16384);
+    }
 }

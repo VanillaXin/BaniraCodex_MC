@@ -30,9 +30,9 @@ public final class UiColorBridge {
         int soft = tint(dark ? 0xff323835 : 0xffedf1ef, theme.bgPrimary(), 4);
         int line = tint(dark ? 0xff505853 : 0xffcbd3ce, theme.border(), 6);
         int ink = ColorUtils.ensureReadableTextArgb(dark ? 0xffe8ede9 : 0xff252d28, new int[]{canvas, panel, soft});
-        int action = 0xff000000 | theme.accent() & 0x00ffffff;
-        int actionHover = tint(action, dark ? 0xffffffff : 0xff000000, 8);
-        int actionText = ColorUtils.ensureReadableTextArgb(ink, new int[]{action, actionHover});
+        int action = ColorUtils.ensureReadableTextArgb(0xff000000 | theme.accent() & 0x00ffffff, 0xffffffff);
+        int actionHover = tint(action, 0xff000000, 8);
+        int actionText = 0xffffffff;
         return "--canvas:" + css(canvas) + ";--panel:" + css(panel) + ";--panel-soft:" + css(soft)
                 + ";--line:" + css(line) + ";--ink:" + css(ink)
                 + ";--muted:" + css(ColorUtils.ensureReadableTextArgb(dark ? 0xffa6b2aa : 0xff637168, panel))

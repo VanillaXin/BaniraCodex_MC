@@ -247,7 +247,11 @@ public final class UiSessionHost {
             parents.clear();
         } else {
             Entry parent = parents.remove(entry.previous);
-            if (parent == null) presenter.accept(entry.previous);
+            if (parent == null) {
+                presenter.accept(entry.previous);
+                if (entry.page.session() instanceof UiParentReturn)
+                    ((UiParentReturn) entry.page.session()).afterParentReturn(entry.previous);
+            }
             else {
                 active = parent;
                 NativeUiView restored = createView(parent);

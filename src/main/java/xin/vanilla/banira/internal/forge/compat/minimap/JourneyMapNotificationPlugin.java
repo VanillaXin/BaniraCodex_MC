@@ -77,8 +77,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
                     || !nativeScreenVisible())
                 return Component.empty();
             for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.JOURNEYMAP))
-                if (row.id().equals(line.id())) return xin.vanilla.banira.internal.client.ui.MinimapUiRows.tag(
-                        EnumNotificationHudHost.JOURNEYMAP, line.id(), row.text());
+                if (row.id().equals(line.id())) return row.text();
             return Component.empty();
         });
         previousRevision = -1;

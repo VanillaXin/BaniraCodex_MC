@@ -21,7 +21,7 @@ import xin.vanilla.banira.internal.config.ClientConfig;
 import java.util.*;
 import java.util.function.Consumer;
 
-public final class NotificationUiSession implements UiPageSession, UiCloseGuard {
+public final class NotificationUiSession implements UiPageSession, UiCloseGuard, UiParentReturn {
     public interface HistoryPort {
         List<NotificationLogEntry> entries();
         long revision();
@@ -54,6 +54,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     private UiOwnedResources bindings = new UiOwnedResources();
     private final Map<UiView, UiOwnedResources> rows = new IdentityHashMap<>();
     private BaniraScreen nativeScreen;
+    private Consumer<Object> parentReturn;
     private UiPageSpec spec;
     private boolean closed, saving, discard;
     private String saveFailure = "";
@@ -98,6 +99,13 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
         });
     }
     public void attachNative(BaniraScreen screen) { nativeScreen = screen; }
+    public void onParentReturn(Consumer<Object> action) { if (!closed) parentReturn = action; }
+    @Override public void afterParentReturn(Object parent) {
+        if (!closed) return;
+        Consumer<Object> action = parentReturn;
+        parentReturn = null;
+        if (action != null) action.accept(parent);
+    }
     public UiPageSpec spec() {
         String surface = history != null ? "notification-log" : settings != null ? "notification-types" : "hud-position";
         if (spec == null) spec = new UiPageSpec("banira_codex:" + surface, "banira_codex/ui/" + surface + ".html",
@@ -547,6 +555,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard 
     }
     @Override public void close(UiCloseReason reason) {
         if (closed) return;
+        if (reason == UiCloseReason.DISCONNECT) parentReturn = null;
         closed = true; detach(UiDetachReason.DISCONNECT);
     }
 }

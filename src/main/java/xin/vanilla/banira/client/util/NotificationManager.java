@@ -303,6 +303,8 @@ public final class NotificationManager {
             int[] settings = regionSettings(pos);
             NotificationRegionLayout.Rect region = NotificationRegionLayout.region(pos, (int) screenInfo.width(), (int) screenInfo.height(),
                     settings[0], settings[1], regions.margin());
+            n.auiLayout(n.supportsAuiText() && xin.vanilla.banira.internal.client.ui.SharedHudHosts.canRender(
+                    xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS));
             n.fitToRegion(region.width, region.height);
             NotificationRegionLayout.Rect target = layout.place(pos, region, (int) Math.ceil(n.cachedWidth()),
                     (int) Math.ceil(n.cachedHeight()), (int) Math.max(0, n.margin()), settings[2]);

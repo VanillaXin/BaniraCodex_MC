@@ -64,6 +64,7 @@ public final class HudDrawList {
     public void renderContents(GuiGraphics graphics, boolean nativeShells) {
         for (Part part : parts) {
             if (part.kind == Kind.BOX && !nativeShells) continue;
+            if (!nativeShells && (part.kind == Kind.NOTIFICATION && part.notification.usesAuiLayout() || part.kind == Kind.UNREAD)) continue;
             if (part.clip != null) AbstractGuiUtils.pushScissor((int) part.clip.x(), (int) part.clip.y(), (int) part.clip.width(), (int) part.clip.height());
             try {
                 AbstractGuiUtils.renderByDepth(graphics.pose(), part.kind == Kind.NOTIFICATION ? 0 : (int) part.depth, stack -> {
@@ -78,7 +79,7 @@ public final class HudDrawList {
                             else part.icon.render(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
                             break;
                         case NOTIFICATION:
-                            part.notification.paintPrepared(stack, new ScreenCoordinate(part.x, part.y, part.width, part.height), nativeShells); break;
+                            part.notification.paintPrepared(stack, new ScreenCoordinate(part.x, part.y, part.width, part.height), true); break;
                         case UNREAD:
                             xin.vanilla.banira.client.notification.NotificationUnreadHud.draw(graphics, (int) part.x, (int) part.y, part.color, unreadTheme); break;
                     }

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -103,17 +102,8 @@ public final class NotificationUnreadHud {
     }
 
     private static NotificationLogScreen historyScreen(ChatScreen chat) {
-        String draft = chat.children().stream().filter(EditBox.class::isInstance)
-                .map(EditBox.class::cast).map(EditBox::getValue).findFirst().orElse("");
         return new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(chat)) {
-            @Override
-            public void onClose() {
-                super.onClose();
-                if (Minecraft.getInstance().screen == chat) {
-                    chat.children().stream().filter(EditBox.class::isInstance)
-                            .map(EditBox.class::cast).findFirst().ifPresent(input -> input.setValue(draft));
-                }
-            }
+            @Override public void onClose() { super.onClose(); }
         };
     }
 

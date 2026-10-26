@@ -1,80 +1,52 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentContents;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
-import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
-import java.util.*;
+import java.util.Objects;
 import java.util.function.LongSupplier;
 
+/** Unsupported compatibility shim. Shared minimap rows always use their native map renderer. */
+@Deprecated
 public final class MinimapUiRows implements AutoCloseable {
     public static final String ID = "banira_codex:minimap";
-    private static final long LIVE_NANOS = 500_000_000L;
-    private static final Map<String, Tagged> TAGS = new LinkedHashMap<>();
-    private static final Map<ComponentContents, Tagged> IDENTITIES = new IdentityHashMap<>();
-    private static MinimapUiRows installed;
-    private final AuiHudHost host;
-    private final LongSupplier clock;
-    private final AutoCloseable lease;
-    private long lastDraw;
-    private boolean active;
 
     public interface Renderer {
         void renderRow(GuiGraphics graphics, String key, Component text, ScreenCoordinate bounds,
                        int color, boolean shadow, float depth);
     }
 
+    private static xin.vanilla.banira.api.client.ui.UiHudBinding nativeOnlyBinding() {
+        return new xin.vanilla.banira.api.client.ui.UiHudBinding() {
+            public boolean visible() { return false; }
+            public void bind(xin.vanilla.banira.api.client.ui.UiView view) { }
+            public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) { }
+        };
+    }
+
+    private static final class Tagged { }
+
     public MinimapUiRows(AuiHudHost host, LongSupplier clock) {
-        this.host = Objects.requireNonNull(host);
-        this.clock = Objects.requireNonNull(clock);
-        lease = host.register(new UiHudSpec(ID, "banira_codex/hud/minimap.html", new UiHudBinding() {
-            public boolean visible() { long age = clock.getAsLong() - lastDraw; return active && age >= 0 && age <= LIVE_NANOS; }
-            public void bind(UiView view) { }
-            public void detach(UiDetachReason reason) { }
-        }));
+        Objects.requireNonNull(host);
+        Objects.requireNonNull(clock);
     }
 
     public static void install(AuiHudHost host) {
-        if (installed != null) installed.close();
-        installed = new MinimapUiRows(host, System::nanoTime);
     }
 
-    public static synchronized Component tag(EnumNotificationHudHost host, ResourceLocation id, Component text) {
-        String key = host.name() + "/" + id;
-        Tagged previous = TAGS.get(key);
-        if (previous != null && text != null && previous.value.equals(text.getString()) && plain(text)
-                && previous.value.equals(previous.text.getString()) && plain(previous.text)) return previous.text;
-        if (previous != null) IDENTITIES.remove(previous.text.getContents());
-        TAGS.remove(key);
-        if (text == null || text.getString().isEmpty() || !plain(text)) return text;
-        if (TAGS.size() >= 120) return text;
-        // A fresh literal identity survives Component.copy without matching unrelated equal labels.
-        Component copy = Component.literal(text.getString());
-        Tagged next = new Tagged(host, key, copy);
-        TAGS.put(key, next);
-        IDENTITIES.put(copy.getContents(), next);
-        return copy;
+    public static Component tag(EnumNotificationHudHost host, ResourceLocation id, Component text) {
+        return text;
     }
 
-    private static boolean plain(Component text) {
-        return !text.visit((style, fragment) -> style.isEmpty() ? Optional.empty() : Optional.of(Boolean.TRUE), Style.EMPTY).isPresent();
+    public static boolean owns(EnumNotificationHudHost host, Component text) {
+        return false;
     }
 
-    public static synchronized boolean owns(EnumNotificationHudHost host, Component text) {
-        Tagged tag = text == null ? null : IDENTITIES.get(text.getContents());
-        return tag != null && tag.host == host && tag.value.equals(text.getString()) && plain(text) && tag.text.equals(text);
-    }
-
-    public static synchronized void reset() {
-        TAGS.clear(); IDENTITIES.clear();
-        if (installed != null) installed.active = false;
+    public static void reset() {
     }
 
     public static ResourceLocation partId(ResourceLocation id, int index) {
@@ -83,35 +55,16 @@ public final class MinimapUiRows implements AutoCloseable {
 
     public static boolean drawOwned(EnumNotificationHudHost host, GuiGraphics graphics, Component text,
                                     ScreenCoordinate bounds, int color, boolean shadow, Runnable flush) {
-        return owns(host, text) && draw(graphics, text, bounds, color, shadow, flush);
+        return false;
     }
 
     public static boolean draw(GuiGraphics graphics, Component text, ScreenCoordinate bounds, int color, boolean shadow) {
-        return draw(graphics, text, bounds, color, shadow, graphics::flush);
-    }
-
-    private static boolean draw(GuiGraphics graphics, Component text, ScreenCoordinate bounds, int color,
-                                boolean shadow, Runnable flush) {
-        Tagged tag;
-        synchronized (MinimapUiRows.class) { tag = text == null ? null : IDENTITIES.get(text.getContents()); }
-        if (installed == null || tag == null || !owns(tag.host, text)) return false;
-        Minecraft mc = Minecraft.getInstance();
-        ScreenCoordinate projected = project(graphics.pose().last().pose(), bounds,
-                mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
-        if (projected == null) return false;
-        return installed.paint(graphics, tag.key, text, projected, color, shadow,
-                graphics.pose().last().pose().m32(), flush);
+        return false;
     }
 
     boolean paint(GuiGraphics graphics, String key, Component text, ScreenCoordinate bounds,
                   int color, boolean shadow, float depth, Runnable flush) {
-        if (!valid(bounds)) return false;
-        active = true; lastDraw = clock.getAsLong();
-        return host.render(ID, view -> {
-            if (!(view instanceof Renderer)) throw new IllegalStateException("Minimap UI renderer unavailable");
-            flush.run();
-            ((Renderer) view).renderRow(graphics, key, text, bounds, color, shadow, depth);
-        });
+        return false;
     }
 
     public static Matrix4f guiProjection(Matrix4f projection, int width, int height) {
@@ -159,15 +112,5 @@ public final class MinimapUiRows implements AutoCloseable {
     }
 
     @Override public void close() {
-        active = false;
-        try { lease.close(); } catch (Exception failure) { throw new IllegalStateException("Cannot release minimap UI", failure); }
-    }
-
-    private static final class Tagged {
-        final EnumNotificationHudHost host;
-        final String key;
-        final Component text;
-        final String value;
-        Tagged(EnumNotificationHudHost host, String key, Component text) { this.host = host; this.key = key; this.text = text; this.value = text.getString(); }
     }
 }

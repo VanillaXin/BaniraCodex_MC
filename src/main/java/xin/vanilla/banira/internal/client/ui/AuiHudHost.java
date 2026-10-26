@@ -74,6 +74,13 @@ public final class AuiHudHost {
         } catch (RuntimeException | LinkageError failure) { fail(entry, failure); return failure instanceof PaintedFailure; }
     }
 
+    public boolean canRender(String id) {
+        Entry entry = entries.get(id);
+        if (!connected || entry == null) return false;
+        try { return backend.wantsAui(id) && entry.spec.binding().visible(); }
+        catch (RuntimeException | LinkageError failure) { fail(entry, failure); return false; }
+    }
+
     private boolean current(Entry entry, NativeUiView view) {
         return connected && entries.get(entry.spec.id()) == entry && view != null && entry.view == view && !view.closed()
                 && backend.wantsAui(entry.spec.id()) && entry.spec.binding().visible();

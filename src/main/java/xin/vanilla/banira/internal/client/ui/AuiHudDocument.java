@@ -13,7 +13,6 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     private final AuiDocumentAccess access;
     private final HudDomPresentation presentation;
     private final long generation;
-    private final MinimapDomPresentation mapRows;
     private final ProgressDomPresentation progress;
     private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
     private AuiHudDocument(UiHudSpec spec) {
@@ -32,8 +31,6 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             resources.own(access);
             presentation = new HudDomPresentation(access, access::guiBounds);
             resources.own(presentation);
-            mapRows = MinimapUiRows.ID.equals(spec.id()) ? new MinimapDomPresentation(access) : null;
-            if (mapRows != null) resources.own(mapRows);
             progress = spec.manual() ? new ProgressDomPresentation(access, access::guiBounds) : null;
             if (progress != null) resources.own(progress);
             attach(access);
@@ -72,34 +69,16 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         try {
             Base.drawOverlayDocument(graphics.pose(), document);
             afterLayout();
+            presentation.afterLayout();
             access.render(graphics);
             frame.renderContents(graphics, false);
         } catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
     }
 
+    @Deprecated
     @Override public void renderRow(GuiGraphics graphics, String key, net.minecraft.network.chat.Component text,
                                     xin.vanilla.banira.client.data.ScreenCoordinate bounds,
                                     int color, boolean shadow, float depth) {
-        if (mapRows == null || !live() || document.isDisposed() || generation != document.getRefreshGeneration())
-            throw new IllegalStateException("Minimap UI document expired");
-        document.applyViewport(false);
-        try (Document.ContextScope ignored = Document.withContext(document)) {
-            mapRows.select(key, text.getString(), color, shadow);
-            document.commitPendingStyleRecalcForRender();
-            document.commitRenderState();
-            var measured = mapRows.measure();
-            var target = MinimapUiRows.fit(measured, bounds);
-            if (target == null) throw new IllegalStateException("Minimap UI measurement unavailable");
-            double scale = target.width() / measured.width();
-            graphics.pose().pushPose();
-            try {
-                graphics.pose().last().pose().identity();
-                graphics.pose().last().normal().identity();
-                graphics.pose().translate(target.x() - measured.x() * scale, target.y() - measured.y() * scale, depth);
-                graphics.pose().scale((float) scale, (float) scale, 1);
-                try { Base.drawOverlayDocument(graphics.pose(), document); }
-                catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
-            } finally { graphics.pose().popPose(); }
-        }
+        throw new UnsupportedOperationException("Minimap rows use native map rendering");
     }
 }

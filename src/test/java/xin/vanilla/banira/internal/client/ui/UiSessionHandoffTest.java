@@ -48,17 +48,41 @@ public class UiSessionHandoffTest {
         final List<String> detached = new ArrayList<>();
         final AtomicInteger submitted = new AtomicInteger();
         final AtomicInteger closed = new AtomicInteger();
+        final List<String> parentReturnOrder = new ArrayList<>();
+        final List<Object> returnedParents = new ArrayList<>();
+        final String capturedParentDraft = "edited parent draft";
+        String parentDraft = capturedParentDraft;
+        Object currentScreen;
         String draft = "initial";
 
         Fixture(boolean aui, BiFunction<Object, Object, Object> factory,
                 BaniraQuickActionScreenFactory nativeFactory) throws Exception {
+            this(aui, factory, nativeFactory, false);
+        }
+
+        Fixture(boolean aui, BiFunction<Object, Object, Object> factory,
+                BaniraQuickActionScreenFactory nativeFactory, boolean observeParentReturn) throws Exception {
             backend = new UiBackendController(() -> aui, () -> true);
             host = type("internal.client.ui.UiSessionHost")
                     .getConstructor(UiBackendController.class, BiFunction.class, Consumer.class, Predicate.class)
-                    .newInstance(backend, factory, (Consumer<Object>) shown::add,
+                    .newInstance(backend, factory, (Consumer<Object>) screen -> {
+                                shown.add(screen);
+                                currentScreen = screen;
+                                if (screen == parent) {
+                                    parentReturnOrder.add("present-parent");
+                                    parentDraft = "reinitialized parent draft";
+                                }
+                            },
                             (Predicate<Object>) value -> value instanceof FakeScreen);
             Class<?> sessionType = type("api.client.ui.UiPageSession");
-            Object session = Proxy.newProxyInstance(sessionType.getClassLoader(), new Class<?>[]{sessionType},
+            Class<?>[] interfaces = new Class<?>[]{sessionType};
+            if (observeParentReturn) {
+                Class<?> parentReturnType = type("internal.client.ui.UiParentReturn");
+                assertTrue(parentReturnType.isInterface());
+                parentReturnType.getMethod("afterParentReturn", Object.class);
+                interfaces = new Class<?>[]{sessionType, parentReturnType};
+            }
+            Object session = Proxy.newProxyInstance(sessionType.getClassLoader(), interfaces,
                     (proxy, method, args) -> {
                         if (method.getName().equals("bind")) {
                             Object active = args[0];
@@ -72,6 +96,13 @@ public class UiSessionHandoffTest {
                             detached.add(args[0].toString());
                         } else if (method.getName().equals("close")) {
                             closed.incrementAndGet();
+                        } else if (method.getName().equals("afterParentReturn")) {
+                            assertSame("Restore must receive the original parent", parent, args[0]);
+                            assertSame("Presenter must finish before draft restoration", parent, currentScreen);
+                            assertSame(parent, shown.get(shown.size() - 1));
+                            parentReturnOrder.add("restore-parent");
+                            returnedParents.add(args[0]);
+                            parentDraft = capturedParentDraft;
                         }
                         return null;
                     });
@@ -82,6 +113,10 @@ public class UiSessionHandoffTest {
 
         Fixture() throws Exception {
             this(true, (page, parent) -> view(new FakeScreen()), parent -> new FakeScreen());
+        }
+
+        Fixture(boolean aui, boolean observeParentReturn) throws Exception {
+            this(aui, (page, parent) -> view(new FakeScreen()), parent -> new FakeScreen(), observeParentReturn);
         }
 
         boolean open() throws Exception {
@@ -193,5 +228,58 @@ public class UiSessionHandoffTest {
         assertEquals("Same page must keep its active binding", 1, f.bound.size());
         call(f.host, "disconnect");
         assertEquals(1, f.closed.get());
+    }
+
+    @Test
+    public void parentDraftRestoresAfterPresenterAndOnlyOnceForNativeAndAui() throws Exception {
+        for (boolean aui : new boolean[]{false, true}) {
+            Fixture f = new Fixture(aui, true);
+            assertTrue(f.open());
+            assertNotSame(f.parent, f.currentScreen);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            Object reason = Enum.valueOf((Class) type("api.client.ui.UiCloseReason"), "USER_CLOSE");
+            call(f.host, "close", new Class<?>[]{type("api.client.ui.UiCloseReason")}, reason);
+            assertEquals(java.util.Arrays.asList("present-parent", "restore-parent"), f.parentReturnOrder);
+            assertEquals(f.capturedParentDraft, f.parentDraft);
+            assertSame(f.parent, f.returnedParents.get(0));
+            call(f.host, "close", new Class<?>[]{type("api.client.ui.UiCloseReason")}, reason);
+            call(f.host, "tick");
+            call(f.host, "disconnect");
+            assertEquals("Repeated close/tick/disconnect must not restore again", 1, f.returnedParents.size());
+            assertEquals(2, f.parentReturnOrder.size());
+            assertEquals(1, f.closed.get());
+        }
+    }
+
+    @Test
+    public void backendSwitchDoesNotInvokeParentReturn() throws Exception {
+        Fixture f = new Fixture(true, true);
+        assertTrue(f.open());
+        for (boolean aui : new boolean[]{false, true}) {
+            call(f.host, "switchBackend", new Class<?>[]{boolean.class}, aui);
+            call(f.host, "tick");
+            assertSame(f.page, call(f.host, "page"));
+            assertNotSame(f.parent, f.currentScreen);
+            assertTrue(f.returnedParents.isEmpty());
+            assertTrue(f.parentReturnOrder.isEmpty());
+            assertEquals(f.capturedParentDraft, f.parentDraft);
+            assertEquals(0, f.closed.get());
+        }
+    }
+
+    @Test
+    public void disconnectDoesNotInvokeParentReturnForNativeOrAui() throws Exception {
+        for (boolean aui : new boolean[]{false, true}) {
+            Fixture f = new Fixture(aui, true);
+            assertTrue(f.open());
+            call(f.host, "disconnect");
+            call(f.host, "disconnect");
+            call(f.host, "tick");
+            assertTrue(f.returnedParents.isEmpty());
+            assertTrue(f.parentReturnOrder.isEmpty());
+            assertEquals(f.capturedParentDraft, f.parentDraft);
+            assertEquals(1, f.closed.get());
+            assertNull(call(f.host, "page"));
+        }
     }
 }

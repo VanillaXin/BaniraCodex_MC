@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -131,6 +133,16 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         previousScreen(this.args.parentScreen());
         uiSession = NotificationUiSession.history();
         uiSession.attachNative(this);
+        if (this.args.parentScreen() instanceof ChatScreen) {
+            ChatScreen chat = (ChatScreen) this.args.parentScreen();
+            String draft = chat.children().stream().filter(EditBox.class::isInstance)
+                    .map(EditBox.class::cast).map(EditBox::getValue).findFirst().orElse("");
+            uiSession.onParentReturn(parent -> {
+                if (parent == chat && Minecraft.getInstance().screen == chat)
+                    chat.children().stream().filter(EditBox.class::isInstance).map(EditBox.class::cast)
+                            .findFirst().ifPresent(input -> input.setValue(draft));
+            });
+        }
         this.pendingSelectLogEntryId = this.args.selectLogEntryId();
         uiSession.restoreSelection(pendingSelectLogEntryId);
         BaniraScreen.inheritThemeAndSeason(this, this.args.parentScreen(), this.args.theme(), this.args.season());
@@ -740,6 +752,7 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         } else {
             super.onClose();
         }
+        uiSession.afterParentReturn(Minecraft.getInstance().screen);
     }
 
     @Override

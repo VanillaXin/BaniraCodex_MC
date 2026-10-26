@@ -62,14 +62,15 @@ public class UiMinimapBinaryContractTest {
         assertTrue(atlas.fields.stream().anyMatch(f -> f.name.equals("globalScale") && f.desc.equals("F")));
         assertTrue(atlas.methods.stream().anyMatch(m -> m.name.equals("render") && m.desc.equals("(Lnet/minecraft/client/gui/GuiGraphics;FII)V")));
     }
-    @Test public void mapTextUsesActualAuiPaintingWithNoNativeContentsOrInputLayer() throws Exception {
-        ClassNode n = UiMinimapHostContractTest.node("internal/client/ui/AuiHudDocument");
-        assertEquals(1, calls(n, "renderRow", "com/sighs/apricityui/render/Base").stream().filter(c -> c.name.equals("drawOverlayDocument")).count());
-        assertTrue(calls(n, "renderRow", "xin/vanilla/banira/internal/client/ui/HudDrawList").isEmpty());
-        assertTrue(calls(n, "renderRow", "net/minecraft/client/Minecraft").isEmpty());
-        try (InputStream in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/hud/minimap.html")) {
-            assertNotNull(in); String html = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-            assertTrue(html.contains("aui-mouse-events\" content=\"false")); assertTrue(html.contains("pointer-events:none")); assertFalse(html.contains("<script"));
+    @Test public void productionHostAndLegacyRowsCannotRegisterOrPaintMinimapAui() throws Exception {
+        String legacy = "xin/vanilla/banira/internal/client/ui/MinimapUiRows";
+        ClassNode hosts = UiMinimapHostContractTest.node("internal/client/ui/SharedHudHosts");
+        assertTrue(calls(hosts, "install", legacy).isEmpty());
+        ClassNode rows = UiMinimapHostContractTest.node("internal/client/ui/MinimapUiRows");
+        for (MethodNode method : rows.methods) {
+            assertTrue(calls(rows, method.name, "xin/vanilla/banira/internal/client/ui/AuiHudHost").isEmpty());
+            assertTrue(calls(rows, method.name, "com/sighs/apricityui/render/Base").isEmpty());
+            assertTrue(calls(rows, method.name, "net/minecraft/client/Minecraft").isEmpty());
         }
     }
 }

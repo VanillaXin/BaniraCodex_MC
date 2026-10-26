@@ -158,15 +158,17 @@ public class MinimapLineAdapterContractTest {
     }
 
     @Test
-    public void journeyAuiTagRemainsInTheVisibleSupplier() throws Exception {
+    public void journeyVisibleSupplierReturnsTheNativeSnapshotWithoutAuiTagging() throws Exception {
         ClassNode adapter = node("xin/vanilla/banira/internal/forge/compat/minimap/JourneyMapNotificationPlugin");
         int checked = 0;
         for (MethodNode method : adapter.methods) {
             ClassNode boundary = new ClassNode();
             boundary.methods.add(method);
             if (!calls(boundary, BRIDGE, "rows")) continue;
-            assertTrue("Visible rows must retain the AUI identity", calls(boundary,
+            assertFalse("Visible rows must not acquire an AUI identity", calls(boundary,
                     "xin/vanilla/banira/internal/client/ui/MinimapUiRows", "tag"));
+            assertTrue("Return the registered row's native component", calls(boundary,
+                    "xin/vanilla/banira/internal/client/minimap/MinimapLineSnapshot", "text"));
             checked++;
         }
         assertEquals(1, checked);

@@ -52,6 +52,28 @@ public class UiNotificationPagesTest {
             return type.getConstructor(port).newInstance(proxy);
         }
     }
+    @Test public void parentRestoreSurvivesBackendDetachAndRunsOnlyOnceAfterClose() throws Exception {
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) new Fixture().session("HistoryPort");
+        List<Object> restored = new ArrayList<>(); Object parent = new Object();
+        session.onParentReturn(restored::add);
+        session.afterParentReturn(parent);
+        assertTrue(restored.isEmpty());
+        session.detach(UiDetachReason.SWITCH);
+        session.close(UiCloseReason.CANCEL);
+        session.afterParentReturn(parent);
+        session.afterParentReturn(parent);
+        session.onParentReturn(restored::add);
+        session.afterParentReturn(parent);
+        assertEquals(Collections.singletonList(parent), restored);
+    }
+    @Test public void disconnectDropsThePendingParentRestore() throws Exception {
+        var session = (xin.vanilla.banira.internal.client.ui.page.NotificationUiSession) new Fixture().session("HistoryPort");
+        List<Object> restored = new ArrayList<>();
+        session.onParentReturn(restored::add);
+        session.close(UiCloseReason.DISCONNECT);
+        session.afterParentReturn(new Object());
+        assertTrue(restored.isEmpty());
+    }
     @Test public void historySearchRemainsOneTrimmedSubstring() {
         var entry = new NotificationLogEntry().id(7).source("network").notificationType("test.alpha.beta")
                 .componentJson(xin.vanilla.banira.common.data.AbstractComponent.serialize(

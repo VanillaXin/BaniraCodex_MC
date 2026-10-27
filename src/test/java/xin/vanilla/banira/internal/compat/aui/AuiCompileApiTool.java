@@ -14,7 +14,7 @@ import java.util.zip.ZipFile;
 /** Generates non-executable declarations from the pinned public binary contract. */
 public final class AuiCompileApiTool {
     static final String ROOT = "com/sighs/apricityui/";
-    static final String SOURCE = "8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2";
+    static final String SOURCE = "080AC4987E2EEBEF174287F106AD53132D1B874728F0BBD6A8AB1F74F7188EBF";
     static final String MARKER = "META-INF/banira-aui-compile-api.properties";
     static final String[][] FIELDS = {{"init/Element", "isVisible", "Z"}, {"init/Element", "scrollHeight", "D"},
             {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},

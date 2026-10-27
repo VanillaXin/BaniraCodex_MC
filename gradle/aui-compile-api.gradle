@@ -24,7 +24,7 @@ repositories {
     }
 }
 
-def sourceSha = '8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2'
+def sourceSha = '080AC4987E2EEBEF174287F106AD53132D1B874728F0BBD6A8AB1F74F7188EBF'
 def marker = 'META-INF/banira-aui-compile-api.properties'
 def selected = providers.gradleProperty('banira.auiCompileApi').orNull
 def ownedRoot = new File((providers.gradleProperty('banira.validationOutputRoot').orNull ?: layout.buildDirectory.get().asFile.absolutePath), 'aui-compile-api')

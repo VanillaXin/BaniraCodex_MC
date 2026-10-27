@@ -22,7 +22,7 @@ public class AuiCompileApiIsolationTest {
         try (var reader = Files.newBufferedReader(Path.of("gradle.properties"), StandardCharsets.UTF_8)) {
             properties.load(reader);
         }
-        assertEquals("1.2.8", properties.getProperty("aui_version"));
+        assertEquals("1.2.9", properties.getProperty("aui_version"));
         assertTrue(build.contains("com.sighs:ApricityUI-forge-1.20.1:${aui_version}"));
         assertTrue(script.contains("com.sighs:ApricityUI-forge-1.20.1:${aui_version}"));
         assertFalse(build.contains("maven.modrinth:UfPdUeGy"));

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "sourceSha256": "8BD99EC21320A8D4ABFE65B7C913B31CFC0F29C08DFC758FF4F4557683D5D3C2",
+  "sourceSha256": "080AC4987E2EEBEF174287F106AD53132D1B874728F0BBD6A8AB1F74F7188EBF",
   "classes": {
     "com/sighs/apricityui/element/AbstractText": {
       "super": "com/sighs/apricityui/init/Element",
@@ -182,6 +182,16 @@
       "interfaces": [],
       "methods": [
         {
+          "name": "create",
+          "desc": "(Ljava/lang/String;)Lcom/sighs/apricityui/init/Document;",
+          "access": 9
+        },
+        {
+          "name": "withContext",
+          "desc": "(Lcom/sighs/apricityui/init/Document;)Lcom/sighs/apricityui/init/Document$ContextScope;",
+          "access": 9
+        },
+        {
           "name": "interceptsMouseEvents",
           "desc": "()Z",
           "access": 1
@@ -267,16 +277,6 @@
           "access": 1
         },
         {
-          "name": "create",
-          "desc": "(Ljava/lang/String;)Lcom/sighs/apricityui/init/Document;",
-          "access": 9
-        },
-        {
-          "name": "withContext",
-          "desc": "(Lcom/sighs/apricityui/init/Document;)Lcom/sighs/apricityui/init/Document$ContextScope;",
-          "access": 9
-        },
-        {
           "name": "remove",
           "desc": "()V",
           "access": 1
@@ -310,6 +310,11 @@
       "interfaces": [],
       "methods": [
         {
+          "name": "init",
+          "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/init/Element;",
+          "access": 9
+        },
+        {
           "name": "setAttribute",
           "desc": "(Ljava/lang/String;Ljava/lang/String;)V",
           "access": 1
@@ -325,13 +330,13 @@
           "access": 1
         },
         {
-          "name": "setScrollTop",
-          "desc": "(D)V",
+          "name": "getScrollTop",
+          "desc": "()D",
           "access": 1
         },
         {
-          "name": "getScrollTop",
-          "desc": "()D",
+          "name": "setScrollTop",
+          "desc": "(D)V",
           "access": 1
         },
         {
@@ -363,11 +368,6 @@
           "name": "setChecked",
           "desc": "(Z)V",
           "access": 1
-        },
-        {
-          "name": "init",
-          "desc": "(Lcom/sighs/apricityui/init/Element;)Lcom/sighs/apricityui/init/Element;",
-          "access": 9
         },
         {
           "name": "appendChild",

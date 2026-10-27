@@ -236,6 +236,10 @@ public final class QuickActionOverlay {
     }
 
     public void onRegistryChanged() {
+        if (!layoutLoaded) {
+            invalidateContextMenuCache();
+            return;
+        }
         syncLayoutWithRegistry();
         invalidateContextMenuCache();
         markSave();

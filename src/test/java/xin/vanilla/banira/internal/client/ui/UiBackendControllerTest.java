@@ -1,5 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import com.electronwill.nightconfig.core.CommentedConfig;
+import net.minecraftforge.common.ForgeConfigSpec;
 import org.junit.Test;
 import xin.vanilla.banira.internal.compat.aui.AuiCapabilityContractTest;
 
@@ -10,9 +12,17 @@ import static org.junit.Assert.*;
 
 public class UiBackendControllerTest {
     private Object controller(boolean preference, BooleanSupplier capability) throws Exception {
-        return AuiCapabilityContractTest.required("xin.vanilla.banira.internal.client.ui.UiBackendController")
-                .getConstructor(BooleanSupplier.class, BooleanSupplier.class)
-                .newInstance((BooleanSupplier) () -> preference, capability);
+        return controller(() -> preference, capability);
+    }
+
+    private Object controller(BooleanSupplier preference, BooleanSupplier capability) throws Exception {
+        try {
+            return AuiCapabilityContractTest.required("xin.vanilla.banira.internal.client.ui.UiBackendController")
+                    .getConstructor(BooleanSupplier.class, BooleanSupplier.class)
+                    .newInstance(preference, capability);
+        } catch (java.lang.reflect.InvocationTargetException failure) {
+            throw new AssertionError("Controller construction must not read unloaded config", failure.getCause());
+        }
     }
 
     private Object call(Object controller, String name, Class<?>[] types, Object... args) throws Exception {
@@ -21,6 +31,90 @@ public class UiBackendControllerTest {
 
     private boolean flag(Object controller, String name, String id) throws Exception {
         return (boolean) call(controller, name, new Class<?>[]{String.class}, id);
+    }
+
+    @Test
+    public void constructionAndIdleLifecycleDoNotReadUnloadedConfig() throws Exception {
+        AtomicInteger reads = new AtomicInteger();
+        AtomicInteger probes = new AtomicInteger();
+        Object controller = controller(() -> {
+            reads.incrementAndGet();
+            throw new IllegalStateException("Cannot get config value before config is loaded");
+        }, () -> { probes.incrementAndGet(); return true; });
+        call(controller, "revision", new Class<?>[0]);
+        call(controller, "tick", new Class<?>[0]);
+        call(controller, "reload", new Class<?>[0]);
+        assertFalse(flag(controller, "usesAui", "page"));
+        assertEquals(0, reads.get());
+        assertEquals(0, probes.get());
+    }
+
+    @Test
+    public void firstDemandReadsLoadedPreferenceOnce() throws Exception {
+        for (boolean enabled : new boolean[]{false, true}) {
+            boolean[] loaded = {false};
+            AtomicInteger reads = new AtomicInteger();
+            AtomicInteger probes = new AtomicInteger();
+            Object controller = controller(() -> {
+                assertTrue("Config read before loading", loaded[0]);
+                reads.incrementAndGet();
+                return enabled;
+            }, () -> { probes.incrementAndGet(); return true; });
+            loaded[0] = true;
+            for (int i = 0; i < 5; i++) assertEquals(enabled, flag(controller, "wantsAui", "page"));
+            assertEquals(1, reads.get());
+            assertEquals(enabled ? 1 : 0, probes.get());
+        }
+    }
+
+    @Test
+    public void setupSwitchOverridesUnresolvedPreference() throws Exception {
+        for (boolean enabled : new boolean[]{false, true}) {
+            Object controller = controller(() -> {
+                fail("Setup already supplied the loaded preference");
+                return false;
+            }, () -> true);
+            call(controller, "requestSwitch", new Class<?>[]{boolean.class}, enabled);
+            call(controller, "tick", new Class<?>[0]);
+            assertEquals(enabled, flag(controller, "wantsAui", "page"));
+            assertFalse(flag(controller, "usesAui", "page"));
+        }
+    }
+
+    @Test
+    public void lateConfigFailuresRemainVisibleAndCanRetryAfterLoading() throws Exception {
+        boolean[] loaded = {false};
+        Object controller = controller(() -> {
+            if (!loaded[0]) throw new IllegalStateException("Config not loaded");
+            return true;
+        }, () -> true);
+        try {
+            flag(controller, "wantsAui", "page");
+            fail("Unexpected config failures must not be masked as native fallback");
+        } catch (java.lang.reflect.InvocationTargetException failure) {
+            assertTrue(failure.getCause() instanceof IllegalStateException);
+        }
+        loaded[0] = true;
+        assertTrue(flag(controller, "wantsAui", "page"));
+    }
+
+    @Test
+    public void realForgeConfigUsesLoadedValueInsteadOfStartupDefault() throws Exception {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ForgeConfigSpec.BooleanValue useAui = builder.define("useAui", true);
+        ForgeConfigSpec spec = builder.build();
+        AtomicInteger probes = new AtomicInteger();
+        Object controller = controller(useAui::get, () -> { probes.incrementAndGet(); return true; });
+        CommentedConfig loaded = CommentedConfig.inMemory();
+        loaded.set("useAui", false);
+        spec.setConfig(loaded);
+        assertFalse(flag(controller, "wantsAui", "page"));
+        assertEquals(0, probes.get());
+        useAui.set(true);
+        call(controller, "requestSwitch", new Class<?>[]{boolean.class}, useAui.get());
+        call(controller, "tick", new Class<?>[0]);
+        assertTrue(flag(controller, "wantsAui", "page"));
+        assertEquals(1, probes.get());
     }
 
     @Test

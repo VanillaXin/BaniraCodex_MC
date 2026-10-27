@@ -10,22 +10,25 @@ import java.util.function.BooleanSupplier;
 
 public final class UiBackendController {
     private static final Logger LOGGER = LogManager.getLogger();
+    private final BooleanSupplier preference;
     private final BooleanSupplier capability;
     private final Set<String> owned = new HashSet<>();
     private final Set<String> isolated = new HashSet<>();
-    private boolean requested;
+    private Boolean requested;
     private long revision;
     private Boolean available;
     private volatile Boolean pending;
     private volatile boolean reloadPending;
 
     public UiBackendController(BooleanSupplier preference, BooleanSupplier capability) {
-        this.requested = Objects.requireNonNull(preference, "preference").getAsBoolean();
+        this.preference = Objects.requireNonNull(preference, "preference");
         this.capability = Objects.requireNonNull(capability, "capability");
     }
 
     public boolean wantsAui(String surface) {
         Objects.requireNonNull(surface, "surface");
+        // Construction runs before Forge loads client config; resolve it only on UI demand.
+        if (requested == null) requested = preference.getAsBoolean();
         if (!requested || isolated.contains(surface)) return false;
         if (available == null) {
             try {
@@ -66,7 +69,7 @@ public final class UiBackendController {
     public void tick() {
         Boolean next = pending;
         pending = null;
-        if (next != null && requested != next) {
+        if (next != null && !Objects.equals(requested, next)) {
             requested = next;
             reload();
         }

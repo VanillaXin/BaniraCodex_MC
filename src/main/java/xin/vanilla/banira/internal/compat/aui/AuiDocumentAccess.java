@@ -24,6 +24,8 @@ import xin.vanilla.banira.internal.client.InputStateManager;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 
 public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final Document document;
@@ -36,6 +38,9 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final AuiNode body;
     private final Element content;
     private final Element scopeRoot;
+    private final AuiTransientTooltip tooltips;
+    private final AuiWindowsIme ime = new AuiWindowsIme();
+    private final Element transientStylesheet;
     private int background = 0xfff4f5f7;
     private BaniraColorConfig theme;
     private boolean preview;
@@ -63,6 +68,26 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         count = count(scopeRoot == null ? document.getDocumentElement() : scopeRoot);
         checkBudget();
         linkParents(scopeRoot == null ? document.getDocumentElement() : scopeRoot, null);
+        String transientStyles;
+        try (var input = Minecraft.getInstance().getResourceManager().open(
+                new net.minecraft.resources.ResourceLocation("banira_codex", "aui/transients.css"))) {
+            byte[] css = input.readNBytes(16385);
+            if (css.length > 16384) throw new IllegalStateException("Transient stylesheet budget");
+            transientStyles = new String(css, StandardCharsets.UTF_8);
+        } catch (IOException failure) { throw new IllegalStateException("Cannot load AUI transient styles", failure); }
+        transientStylesheet = Element.init(document.createElement("style"));
+        transientStylesheet.setAttribute("style", "display:none");
+        transientStylesheet.setInnerText(transientStyles);
+        bodies.get(0).appendChild(transientStylesheet);
+        AuiTransientTooltip tooltip = null;
+        try {
+            tooltip = new AuiTransientTooltip(document, bodies.get(0));
+            count += 4; checkBudget();
+        } catch (RuntimeException | LinkageError failure) {
+            if (tooltip != null) tooltip.close();
+            transientStylesheet.remove(); throw failure;
+        }
+        tooltips = tooltip;
     }
 
     private void linkParents(com.sighs.apricityui.init.Node node, AuiNode parent) {
@@ -222,6 +247,14 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     public void prepare() {
         if (!current()) return;
+        try (Document.ContextScope ignored = Document.withContext(document)) { prepareCurrent(); }
+    }
+
+    private void prepareCurrent() {
+        document.applyViewport(false);
+        document.commitPendingStyleRecalcForRender();
+        document.commitRenderState();
+        updateTransientInput();
         if (preview) {
             AuiNode node = wrap(document.getElementById("preview"));
             if (node != null) {
@@ -245,9 +278,37 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
     }
 
+    private void updateTransientInput() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!mc.isWindowActive()) { tooltips.hide(); ime.close(); return; }
+        Element focused = document.getFocusedElement();
+        AuiTransientLayout.ImeArea area = focused instanceof AbstractText && ((AbstractText) focused).canEditText()
+                ? AuiTransientLayout.ime(wrap(focused).bounds(), mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(),
+                    mc.getWindow().getScreenWidth(), mc.getWindow().getScreenHeight()) : null;
+        ime.update(mc.getWindow().getWindow(), area);
+        if (ColorPicker.isOpen()) { tooltips.hide(); return; }
+        var mouse = InputStateManager.getGuiCursorPos();
+        Position point = document.guiToDocumentPosition(new Position(mouse.key(), mouse.val()));
+        com.sighs.apricityui.init.Node hit = document.hitTest(point);
+        while (hit != null) {
+            AuiNode node = hit instanceof Element ? nodes.get(hit) : null;
+            if (node != null && !node.tooltipText.isBlank() && !node.attributes.containsKey("disabled")) {
+                if (node.element instanceof AbstractText && node.element == focused) break;
+                Element.DOMRect viewport = document.getElementsByTagName("body").get(0).getBoundingClientRect();
+                tooltips.update(node.element, node.tooltipText, point, viewport.right - viewport.x, viewport.bottom - viewport.y);
+                return;
+            }
+            hit = hit.getParentNode();
+        }
+        tooltips.hide();
+    }
+
     @Override public void close() {
         if (closed) return;
         closed = true;
+        try { ime.close(); } finally {
+            try { tooltips.close(); } finally { transientStylesheet.remove(); }
+        }
         for (AuiNode node : new ArrayList<>(nodes.values())) { node.disposeTooltip(); node.disposeRichClick(); }
         if (scopeRoot == null) Tooltip.hide(document);
         icons.clear(); richTexts.clear(); gameElements.clear(); nodes.clear();
@@ -257,7 +318,6 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         final Element element;
         final Map<String, String> attributes = new HashMap<>();
         AuiNode parent, clip;
-        Tooltip.Binding tooltip;
         String tooltipText = "";
         DropdownOption icon;
         xin.vanilla.banira.api.client.ui.UiGameElement gameElement;
@@ -309,7 +369,6 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
         @Override public void removeAttribute(String name) {
             if (attributes.remove(name) != null || element.hasAttribute(name)) element.removeAttribute(name);
-            if (name.equals("disabled") && tooltip == null && !tooltipText.isEmpty()) tooltip = Tooltip.bind(element, tooltipText);
         }
         @Override public void append(Node node) {
             AuiNode child = (AuiNode) node; child.parent = this; element.appendChild(child.element); child.removed = false;
@@ -346,9 +405,8 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         @Override public void tooltip(String text) {
             if (Objects.equals(tooltipText, text)) return;
             disposeTooltip(); tooltipText = text;
-            if (!text.isEmpty() && !attributes.containsKey("disabled")) tooltip = Tooltip.bind(element, text);
         }
-        void disposeTooltip() { if (tooltip != null) { tooltip.close(); tooltip = null; } }
+        void disposeTooltip() { if (tooltips.owns(element)) tooltips.hide(); }
         void disposeRichClick() {
             if (richClick == null) return;
             try { richClick.close(); }

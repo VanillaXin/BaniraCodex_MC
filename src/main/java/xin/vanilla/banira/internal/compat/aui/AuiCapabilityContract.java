@@ -112,6 +112,8 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "getElementsByTagName", "(Ljava/lang/String;)Ljava/util/List;");
         add(result, "init/Document", "getDocumentElement", "()" + ELEMENT);
         add(result, "init/Document", "getFocusedElement", "()" + ELEMENT);
+        add(result, "init/Element", "setTopLayer", "(Z)V");
+        add(result, "element/AbstractText", "canEditText", "()Z");
         add(result, "init/Document", "guiToDocumentPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Node", "getChildNodes", "()Ljava/util/List;");
         add(result, "init/Node", "getParentNode", "()L" + ROOT + "init/Node;");

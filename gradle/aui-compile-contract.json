@@ -8,6 +8,11 @@
       "interfaces": [],
       "methods": [
         {
+          "name": "canEditText",
+          "desc": "()Z",
+          "access": 1
+        },
+        {
           "name": "getCursor",
           "desc": "()I",
           "access": 1
@@ -332,6 +337,11 @@
         {
           "name": "hasAttribute",
           "desc": "(Ljava/lang/String;)Z",
+          "access": 1
+        },
+        {
+          "name": "setTopLayer",
+          "desc": "(Z)V",
           "access": 1
         },
         {

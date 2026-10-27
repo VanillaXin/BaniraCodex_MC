@@ -57,6 +57,8 @@ public final class AuiHudHost {
                 detach(entry, UiDetachReason.SWITCH);
                 return false;
             }
+            if (entry.spec.manual() && entry.view instanceof ManualRenderer
+                    && !((ManualRenderer) entry.view).currentDocument()) detach(entry, UiDetachReason.RELOAD);
             if (entry.view == null) {
                 NativeUiView view = Objects.requireNonNull(factory.apply(entry.spec), "HUD view");
                 entry.view = view;
@@ -100,7 +102,10 @@ public final class AuiHudHost {
         }
     }
 
-    public interface ManualRenderer { void renderHud(net.minecraft.client.gui.GuiGraphics graphics); }
+    public interface ManualRenderer {
+        default boolean currentDocument() { return true; }
+        void renderHud(net.minecraft.client.gui.GuiGraphics graphics);
+    }
 
     public boolean renderManual(String id, net.minecraft.client.gui.GuiGraphics graphics) {
         Entry entry = entries.get(id);

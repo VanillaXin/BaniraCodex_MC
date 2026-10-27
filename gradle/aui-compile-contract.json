@@ -539,6 +539,26 @@
       ],
       "fields": []
     },
+    "com/sighs/apricityui/loader/ClientLoader": {
+      "super": "com/sighs/apricityui/loader/Loader",
+      "access": 33,
+      "interfaces": [],
+      "methods": [
+        {
+          "name": "listFinalStaticResources",
+          "desc": "()Ljava/util/List;",
+          "access": 9
+        }
+      ],
+      "fields": []
+    },
+    "com/sighs/apricityui/loader/Loader": {
+      "super": "java/lang/Object",
+      "access": 33,
+      "interfaces": [],
+      "methods": [],
+      "fields": []
+    },
     "com/sighs/apricityui/parser/Color": {
       "super": "java/lang/Object",
       "access": 33,

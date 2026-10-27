@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.render.Base;
+import com.sighs.apricityui.loader.ClientLoader;
 import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
@@ -13,6 +14,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     private final AuiDocumentAccess access;
     private final HudDomPresentation presentation;
     private final long generation;
+    private final Object resourceSnapshot;
     private final ProgressDomPresentation progress;
     private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
     private AuiHudDocument(UiHudSpec spec) {
@@ -26,6 +28,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             document.setReloadPersistent(true);
             document.applyViewport(false);
             generation = document.getRefreshGeneration();
+            resourceSnapshot = spec.manual() ? ClientLoader.listFinalStaticResources() : null;
             access = new AuiDocumentAccess(document, () -> !closed(), shared == null ? null : shared.branch().root());
             if (shared != null) shared.branch().access(access);
             resources.own(access);
@@ -37,13 +40,18 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         } catch (RuntimeException | LinkageError failure) { close(); throw failure; }
     }
     public static NativeUiView create(UiHudSpec spec) { return new AuiHudDocument(spec); }
+    @Override public boolean currentDocument() {
+        // AUI preserves persistent documents but replaces its resource cache on reload.
+        return !closed() && !document.isDisposed() && generation == document.getRefreshGeneration()
+                && (resourceSnapshot == null || resourceSnapshot == ClientLoader.listFinalStaticResources());
+    }
     @Override public void hudFrame(xin.vanilla.banira.api.client.ui.UiHudFrame frame) {
         if (!live() || progress == null) throw new IllegalStateException("Manual HUD frame unavailable");
         progressFrame = java.util.Objects.requireNonNull(frame);
     }
 
     @Override public void renderHud(GuiGraphics graphics) {
-        if (progress == null || progressFrame == null || !live() || document.isDisposed() || generation != document.getRefreshGeneration())
+        if (progress == null || progressFrame == null || !live() || !currentDocument())
             throw new IllegalStateException("Manual HUD document expired");
         if (shared != null) shared.show();
         document.applyViewport(false);

@@ -99,6 +99,7 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "setManuallyRendered", "(Z)V");
         add(result, "init/Document", "setReloadPersistent", "(Z)V");
         add(result, "init/Document", "getRefreshGeneration", "()J");
+        result.add(new Member(ROOT + "loader/ClientLoader", "listFinalStaticResources", "()Ljava/util/List;", true));
         add(result, "init/Document", "isDisposed", "()Z");
         add(result, "init/Document", "interceptsMouseEvents", "()Z");
         add(result, "init/Document", "applyViewport", "(Z)V");

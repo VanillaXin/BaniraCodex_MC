@@ -218,6 +218,9 @@ public final class QuickActionOverlay {
     }
 
     public void onRegistryChanged() {
+        if (!layoutLoaded) {
+            return;
+        }
         syncLayoutWithRegistry();
         markSave();
     }

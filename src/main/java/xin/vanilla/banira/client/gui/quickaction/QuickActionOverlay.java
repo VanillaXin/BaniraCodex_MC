@@ -35,6 +35,9 @@ import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
+import xin.vanilla.banira.internal.client.ui.QuickActionHudFrame;
+import xin.vanilla.banira.internal.client.ui.SharedHudHosts;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 
 import javax.annotation.Nullable;
 import java.nio.file.Files;
@@ -110,6 +113,9 @@ public final class QuickActionOverlay {
     private boolean layoutLoaded;
 
     private xin.vanilla.banira.internal.client.ui.HudDrawList hudFrame;
+    private QuickActionHudFrame quickFrame;
+    private boolean cachedContextLayoutAui;
+    private static final int AUI_MENU_HEADER_H = 18;
     private int lastScreenW;
     private int lastScreenH;
 
@@ -235,6 +241,11 @@ public final class QuickActionOverlay {
     }
 
     public void onRegistryChanged() {
+        // Client setup registers entries in batches; do not overwrite an unread saved layout.
+        if (!layoutLoaded) {
+            invalidateContextMenuCache();
+            return;
+        }
         syncLayoutWithRegistry();
         invalidateContextMenuCache();
         markSave();
@@ -678,6 +689,8 @@ public final class QuickActionOverlay {
             return;
         }
         hudFrame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
+        quickFrame = auiMenu() ? new QuickActionHudFrame() : null;
+        if (quickFrame != null) hudFrame.quickActions(quickFrame);
         ensureLoaded();
         QuickActionRegistry.get().validateMenuAnchor();
         pollDragCancel();
@@ -747,6 +760,13 @@ public final class QuickActionOverlay {
             List<String> gChrome = previewGrid != null ? previewGrid : userGrid;
             boolean userFilledChrome = s >= 1 && slotShowsVisibleUserIcon(s, gChrome);
             boolean dropEmptyHint = layout.layoutEditMode() && editIconDragging && s == editDragHoverSlot && s >= 1 && !userFilledChrome;
+            if (quickFrame != null && (s == 0 || userFilledChrome || layout.layoutEditMode())) {
+                QuickActionEntry entry = s == 0 ? null : userEntryAtLinearSlot(s);
+                BaniraColorConfig colors = entry == null ? theme : BaniraColorConfig.forSeason(entrySeason(entry));
+                quickFrame.add(QuickActionHudFrame.Kind.SLOT, xy[0], xy[1], cell, cell, null, "", colors,
+                        s == hoveredSlot || dropEmptyHint, s > 0 && !userFilledChrome,
+                        EnumRenderDepth.OVERLAY.depth());
+            }
             if (layout.layoutEditMode() && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawSlotBorder(stack, xy[0], xy[1], cell, borderRgb);
             }
@@ -787,6 +807,8 @@ public final class QuickActionOverlay {
                 prepareQuickActionSlotDrawState();
                 drawSlotBorder(stack, gx, gy, cell, borderRgb);
                 hudFrame.icon(dragged.quickIcon(), gx + iconOff, gy + iconOff, iconSize, false);
+                if (quickFrame != null) quickFrame.add(QuickActionHudFrame.Kind.SLOT, gx, gy, cell, cell, null, "",
+                        theme, true, false, EnumRenderDepth.OVERLAY.depth());
             }
         }
 
@@ -1729,14 +1751,15 @@ public final class QuickActionOverlay {
         int innerW = Math.min(MENU_MAX_W - sbExtra, Math.max(MENU_MIN_W - sbExtra, maxTextInner));
         ctxInnerW = innerW;
         ctxLayoutW = innerW + sbExtra + 2;
-        ctxLayoutH = ctxInnerH + innerPad * 2;
+        int header = auiMenu() ? AUI_MENU_HEADER_H : 0;
+        ctxLayoutH = ctxInnerH + innerPad * 2 + header;
         ctxScrollMaxPx = Math.max(0, contentH - ctxInnerH);
 
-        int x = Math.min(contextX, lastScreenW - ctxLayoutW - 4);
-        int y = Math.min(contextY, lastScreenH - ctxLayoutH - 4);
+        int x = Math.max(2, Math.min(contextX, lastScreenW - ctxLayoutW - 4));
+        int y = Math.max(2, Math.min(contextY, lastScreenH - ctxLayoutH - 4));
         ctxLayoutX = x;
         ctxLayoutY = y;
-        ctxInnerTop = y + innerPad;
+        ctxInnerTop = y + innerPad + header;
         ctxScrollbarLeft = x + innerW + MENU_SCROLLBAR_GAP;
 
         contextScrollPx = Math.max(0, Math.min(ctxScrollMaxPx, contextScrollPx));
@@ -1747,12 +1770,14 @@ public final class QuickActionOverlay {
                 && cachedContextLayoutFont == mc.font
                 && cachedContextLayoutScreenW == lastScreenW
                 && cachedContextLayoutScreenH == lastScreenH
+                && cachedContextLayoutAui == auiMenu()
                 && cachedContextLayoutX == contextX
                 && cachedContextLayoutY == contextY) {
             return;
         }
         layoutContextMenu(rows, mc);
         cachedContextLayoutFont = mc.font;
+        cachedContextLayoutAui = auiMenu();
         cachedContextLayoutScreenW = lastScreenW;
         cachedContextLayoutScreenH = lastScreenH;
         cachedContextLayoutX = contextX;
@@ -1772,6 +1797,17 @@ public final class QuickActionOverlay {
         int borderArgb = theme.border() | 0xFF000000;
         hudFrame.box(x, y, w, h, bg, CONTEXT_MENU_CORNER_RADIUS, 0);
         hudFrame.box(x, y, w, h, borderArgb, CONTEXT_MENU_CORNER_RADIUS, CONTEXT_MENU_BORDER_THICKNESS);
+        if (quickFrame != null) {
+            quickFrame.add(QuickActionHudFrame.Kind.MENU, x, y, w, h, null, "", theme, false, false,
+                    EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+            QuickActionEntry entry = contextThemeEntry();
+            String label = entry == null ? xin.vanilla.banira.BaniraComponent.get().transClient("key.banira_codex.categories").toVanilla().getString() : entry.label().toVanilla().getString();
+            hudFrame.icon(entry == null ? systemIcon() : entry.quickIcon(), x + 6, y + 5, 9, true);
+            hudFrame.icon(QuickIcon.resource(Identifier.id().create("apricityui", "apricity/banira_codex/icons/close.png")), x + w - 14, y + 5, 8, true);
+            hudFrame.text(label, x + 20, y + 5, theme.textPrimary() | 0xff000000);
+            quickFrame.add(QuickActionHudFrame.Kind.TITLE, x + 20, y + 3, Math.max(0, w - 38), 13, null,
+                    label, theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+        }
         // 圆角菜单绘制后需保证混合与 GUI 着色器可用（见 AbstractGuiUtils#restoreGuiRenderState）
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -1788,6 +1824,8 @@ public final class QuickActionOverlay {
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
             int accent = theme.accentHover() | 0xFF000000;
             hudFrame.box( sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent, 0, 0);
+            if (quickFrame != null) quickFrame.add(QuickActionHudFrame.Kind.SCROLL, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH,
+                    null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
         }
 
         Font font = mc.font;
@@ -1821,6 +1859,13 @@ public final class QuickActionOverlay {
                         : x + MENU_TEXT_PAD_X;
                 float textY = ry + (MENU_ROW_H - font.lineHeight) / 2f;
                 hudFrame.text(shown, textX, textY, textColor);
+                if (quickFrame != null) {
+                    ScreenCoordinate clip = new ScreenCoordinate(x + 1, innerTop, Math.max(1, ctxInnerW - 1), ctxInnerH);
+                    quickFrame.add(QuickActionHudFrame.Kind.ROW, x + 2, ry, Math.max(1, ctxInnerW - 3), rh,
+                            clip, "", theme, hi, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+                    quickFrame.add(QuickActionHudFrame.Kind.ROW, textX, ry, contextMenuRowTextMaxWidth(ctxInnerW, row), rh,
+                            clip, full, theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+                }
                 if (hi && !shown.equals(full)) {
                     contextTooltipLine = full;
                     contextTooltipTheme = theme;
@@ -1847,6 +1892,8 @@ public final class QuickActionOverlay {
         int border = theme.border() | 0xFF000000;
         hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, bg, CONTEXT_MENU_CORNER_RADIUS, 0);
         hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, border, CONTEXT_MENU_CORNER_RADIUS, CONTEXT_MENU_BORDER_THICKNESS);
+        if (quickFrame != null) quickFrame.add(QuickActionHudFrame.Kind.MENU, ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH,
+                null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
         AbstractGuiUtils.restoreGuiRenderState();
 
         Font font = mc.font;
@@ -1872,6 +1919,12 @@ public final class QuickActionOverlay {
                     : ctxRowActionX + MENU_TEXT_PAD_X;
             int textY = rowY + (MENU_ROW_H - font.lineHeight) / 2;
             hudFrame.text(shown, textX, textY, textColor);
+            if (quickFrame != null) {
+                quickFrame.add(QuickActionHudFrame.Kind.ROW, ctxRowActionX + 2, rowY, Math.max(1, ctxRowActionW - 4), MENU_ROW_H,
+                        null, "", theme, hovered, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+                quickFrame.add(QuickActionHudFrame.Kind.ROW, textX, rowY, contextMenuRowTextMaxWidth(ctxRowActionW - 2, row), MENU_ROW_H,
+                        null, row.text, theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+            }
             if (hovered && !shown.equals(row.text)) {
                 contextTooltipLine = row.text;
                 contextTooltipTheme = theme;
@@ -2014,6 +2067,10 @@ public final class QuickActionOverlay {
         int y = ctxLayoutY;
         int w = ctxLayoutW;
         int h = ctxLayoutH;
+        if (auiMenu() && auiCloseHit(mouseX, mouseY, x, y, w)) {
+            closeUi();
+            return true;
+        }
         if (mouseX < x || mouseY < y || mouseX >= x + w || mouseY >= y + h) {
             contextOpen = false;
             contextMenuKind = ContextMenuKind.NONE;
@@ -2064,6 +2121,13 @@ public final class QuickActionOverlay {
         markSave();
         flushSaveIfNeeded();
         return true;
+    }
+
+    private static boolean auiMenu() { return SharedHudHosts.canRender(SharedHudHosts.QUICK_ACTIONS); }
+
+    static boolean auiCloseHit(double mouseX, double mouseY, int x, int y, int width) {
+        return mouseX >= x + width - 17 && mouseX < x + width - 2
+                && mouseY >= y + 2 && mouseY < y + AUI_MENU_HEADER_H;
     }
 
     private void nudgeAnchor(int dx, int dy) {

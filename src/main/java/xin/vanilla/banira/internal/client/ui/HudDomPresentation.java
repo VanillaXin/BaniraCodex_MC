@@ -12,18 +12,21 @@ public final class HudDomPresentation implements AutoCloseable {
     private boolean closed;
     private final java.util.function.Function<ScreenCoordinate, ScreenCoordinate> projection;
     private final NotificationHudPresentation notifications;
+    private final QuickActionHudPresentation quickActions;
     public HudDomPresentation(UiDomAccess dom) { this(dom, java.util.function.Function.identity()); }
     public HudDomPresentation(UiDomAccess dom, java.util.function.Function<ScreenCoordinate, ScreenCoordinate> projection) {
         this.dom = Objects.requireNonNull(dom); this.projection = Objects.requireNonNull(projection);
         notifications = new NotificationHudPresentation(dom, projection);
+        quickActions = new QuickActionHudPresentation(dom, projection);
     }
     public void update(HudDrawList frame) {
         if (closed || !dom.current()) return;
         if (frame.parts().size() > 512) throw new IllegalStateException("AUI HUD node budget");
         notifications.update(frame);
+        quickActions.update(frame.quickActions());
         int index = 0;
         for (HudDrawList.Part part : frame.parts()) {
-            if (part.kind != HudDrawList.Kind.BOX) continue;
+            if (part.kind != HudDrawList.Kind.BOX || frame.quickActions() != null) continue;
             ScreenCoordinate bounds = projection.apply(new ScreenCoordinate(part.x, part.y, part.width, part.height));
             ScreenCoordinate clip = part.clip == null ? null : projection.apply(part.clip);
             String maskStyle = "position:absolute; pointer-events:none; z-index:" + (int) part.depth + ";";
@@ -53,5 +56,5 @@ public final class HudDomPresentation implements AutoCloseable {
         styles.remove(styles.size() - 1); maskStyles.remove(maskStyles.size() - 1);
     }
     public void afterLayout() { notifications.afterLayout(); }
-    @Override public void close() { if (closed) return; closed = true; notifications.close(); while (!nodes.isEmpty()) removeLast(); }
+    @Override public void close() { if (closed) return; closed = true; notifications.close(); quickActions.close(); while (!nodes.isEmpty()) removeLast(); }
 }

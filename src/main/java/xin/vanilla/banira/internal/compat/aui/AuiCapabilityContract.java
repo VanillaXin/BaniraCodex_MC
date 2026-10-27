@@ -120,6 +120,8 @@ public final class AuiCapabilityContract {
         add(result, "init/Document", "documentToGuiPosition", "(L" + ROOT + "layout/Position;)L" + ROOT + "layout/Position;");
         add(result, "init/Element", "setInnerText", "(Ljava/lang/String;)V");
         add(result, "init/Element", "setAttribute", "(Ljava/lang/String;Ljava/lang/String;)V");
+        add(result, "init/Element", "getStyle", "()L" + ROOT + "style/Style;");
+        add(result, "style/Style", "setProperty", "(Ljava/lang/String;Ljava/lang/String;)V");
         add(result, "init/Element", "removeAttribute", "(Ljava/lang/String;)V");
         add(result, "init/Element", "setValue", "(Ljava/lang/String;)V");
         add(result, "init/Element", "getValue", "()Ljava/lang/String;");

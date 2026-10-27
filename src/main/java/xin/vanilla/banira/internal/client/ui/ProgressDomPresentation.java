@@ -29,8 +29,12 @@ public final class ProgressDomPresentation implements AutoCloseable {
             if (entry == null) {
                 entry = new PartNodes(dom.create(sprite ? "texture" : "div"), sprite);
                 nodes.put(part.id(), entry); root.append(entry.root);
+                entry.root.hudId(part.id());
+                entry.root.attribute("class", sprite ? "progress-sprite" : "progress-text");
                 if (!sprite) {
                     entry.shadow = dom.create("div"); entry.text = dom.create("div");
+                    entry.shadow.attribute("class", "progress-shadow");
+                    entry.text.attribute("class", "progress-value");
                     entry.root.append(entry.shadow); entry.root.append(entry.text);
                 }
             }
@@ -38,22 +42,23 @@ public final class ProgressDomPresentation implements AutoCloseable {
                 UiHudFrame.Sprite s = (UiHudFrame.Sprite) part;
                 ScreenCoordinate b = project(s.x(), s.y(), s.width(), s.height());
                 entry.attribute("src", s.texture().toString());
-                entry.style(position(b) + "transform-origin:50% 50%;transform:rotate(" + s.angleDegrees() + "deg);");
+                entry.position(b);
+                entry.variable("angle", s.angleDegrees() + "deg");
             } else {
                 UiHudFrame.Text t = (UiHudFrame.Text) part;
                 ScreenCoordinate b = project(t.x(), t.y(), t.width(), t.height());
                 ScreenCoordinate pivot = project(0, 0, t.pivotX(), t.pivotY());
                 ScreenCoordinate unit = project(0, 0, 1, t.fontSize());
-                entry.style(position(b) + "transform-origin:0 0;transform:rotate(" + Math.toDegrees(t.angleRadians())
-                        + "deg) scale(" + t.scale() + ") translate(" + -pivot.width() + "px," + -pivot.height() + "px);");
-                String base = "position:absolute;margin:0;padding:0;border:0;white-space:pre;pointer-events:none;"
-                        + "width:" + b.width() + "px;height:" + b.height() + "px;font-size:" + unit.height() + "px;line-height:" + unit.height() + "px;";
+                entry.position(b);
+                entry.variable("angle", Math.toDegrees(t.angleRadians()) + "deg");
+                entry.variable("scale", Double.toString(t.scale()));
+                entry.variable("pivot-x", -pivot.width() + "px");
+                entry.variable("pivot-y", -pivot.height() + "px");
+                entry.variable("font-size", unit.height() + "px");
+                entry.variable("shadow-offset", unit.width() + "px");
                 int color = (t.color() & 0xff000000) == 0 ? t.color() | 0xff000000 : t.color();
-                String foreground = base + "left:0;top:0;color:" + HudDrawList.css(color) + ";";
-                String shadow = base + "left:" + unit.width() + "px;top:" + unit.width() + "px;color:"
-                        + HudDrawList.css((color & 0xfcfcfc) >> 2 | color & 0xff000000) + ";";
-                if (!foreground.equals(entry.foreground)) { entry.text.attribute("style", foreground); entry.foreground = foreground; }
-                if (!shadow.equals(entry.shadowStyle)) { entry.shadow.attribute("style", shadow); entry.shadowStyle = shadow; }
+                entry.variable("color", HudDrawList.css(color));
+                entry.variable("shadow-color", HudDrawList.css((color & 0xfcfcfc) >> 2 | color & 0xff000000));
                 if (!t.value().equals(entry.value)) { entry.text.text(t.value()); entry.shadow.text(t.value()); entry.value = t.value(); }
             }
         }
@@ -72,20 +77,25 @@ public final class ProgressDomPresentation implements AutoCloseable {
             throw new IllegalStateException("HUD projection unavailable");
         return b;
     }
-    private static String position(ScreenCoordinate b) {
-        return "position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;left:" + b.x() + "px;top:"
-                + b.y() + "px;width:" + b.width() + "px;height:" + b.height() + "px;";
-    }
     @Override public void close() { if (closed) return; closed = true; nodes.values().forEach(PartNodes::close); nodes.clear(); order = List.of(); }
 
     private static final class PartNodes {
         final UiDomAccess.Node root;
         final boolean sprite;
         UiDomAccess.Node text, shadow;
-        String style, source, foreground, shadowStyle, value;
+        String source, value;
+        final Map<String, String> variables = new HashMap<>();
         PartNodes(UiDomAccess.Node root, boolean sprite) { this.root = root; this.sprite = sprite; }
         void attribute(String key, String next) { if (!next.equals(source)) { root.attribute(key, next); source = next; } }
-        void style(String next) { if (!next.equals(style)) { root.attribute("style", next); style = next; } }
+        void position(ScreenCoordinate b) {
+            variable("x", b.x() + "px"); variable("y", b.y() + "px");
+            variable("width", b.width() + "px"); variable("height", b.height() + "px");
+        }
+        void variable(String name, String value) {
+            if (!value.equals(variables.get(name))) {
+                root.styleProperty("--hud-" + name, value); variables.put(name, value);
+            }
+        }
         void close() { if (text != null) text.remove(); if (shadow != null) shadow.remove(); root.remove(); }
     }
 }

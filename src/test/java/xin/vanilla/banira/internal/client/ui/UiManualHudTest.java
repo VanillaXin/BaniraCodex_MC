@@ -42,9 +42,11 @@ public class UiManualHudTest {
         ui.update(new UiHudFrame(List.of(sprite("leaf"))));
         var node = dom.created.get(0);
         assertEquals("texture", node.tag); assertEquals("aotake_sweep:gui/leaf.png", node.attributes.get("src"));
-        String style = node.attributes.get("style");
-        assertTrue(style, style.contains("left:60.0px")); assertTrue(style, style.contains("width:40.0px"));
-        assertTrue(style, style.contains("rotate(90.0deg)")); assertTrue(style, style.contains("pointer-events:none"));
+        assertEquals("60.0px", node.styleProperties.get("--hud-x"));
+        assertEquals("40.0px", node.styleProperties.get("--hud-width"));
+        assertEquals("90.0deg", node.styleProperties.get("--hud-angle"));
+        assertEquals("progress-sprite", node.attributes.get("class"));
+        assertFalse(node.attributes.containsKey("style"));
         ui.update(new UiHudFrame(List.of())); assertTrue(node.removed);
     }
     @Test public void finiteFramesRejectDuplicateIdsNanAndExcessNodes() {

@@ -35,6 +35,8 @@ public interface UiDomAccess {
         boolean checked();
         void checked(boolean checked);
         void attribute(String name, String value);
+        void hudId(String id);
+        void styleProperty(String name, String value);
         void removeAttribute(String name);
         void append(Node node);
         void remove();

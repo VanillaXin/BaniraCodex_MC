@@ -315,6 +315,11 @@
           "access": 9
         },
         {
+          "name": "getStyle",
+          "desc": "()Lcom/sighs/apricityui/style/Style;",
+          "access": 1
+        },
+        {
           "name": "setAttribute",
           "desc": "(Ljava/lang/String;Ljava/lang/String;)V",
           "access": 1
@@ -609,6 +614,21 @@
       "access": 1537,
       "interfaces": [],
       "methods": [],
+      "fields": []
+    },
+    "com/sighs/apricityui/style/Style": {
+      "super": "java/util/AbstractMap",
+      "access": 33,
+      "interfaces": [
+        "java/lang/Cloneable"
+      ],
+      "methods": [
+        {
+          "name": "setProperty",
+          "desc": "(Ljava/lang/String;Ljava/lang/String;)V",
+          "access": 1
+        }
+      ],
       "fields": []
     },
     "com/sighs/apricityui/ui/ColorPicker": {

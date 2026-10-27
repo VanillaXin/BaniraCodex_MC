@@ -54,6 +54,7 @@ public class UiDomControlsTest {
             final String tag;
             final Object proxy;
             final Map<String, String> attributes = new HashMap<>();
+            final Map<String, String> styleProperties = new HashMap<>();
             final Map<String, List<Consumer<Object>>> events = new HashMap<>();
             final List<Object> children = new ArrayList<>();
             String text = "", value = "", tooltip = "";
@@ -79,6 +80,8 @@ public class UiDomControlsTest {
                         case "attribute":
                             if (rejectUnsupportedId && args[0].equals("id")) throw new IllegalArgumentException("Unsupported UI attribute");
                             attributes.put((String) args[0], (String) args[1]); writes++; return null;
+                        case "hudId": attributes.put("id", (String) args[0]); writes++; return null;
+                        case "styleProperty": styleProperties.put((String) args[0], (String) args[1]); writes++; return null;
                         case "removeAttribute": attributes.remove(args[0]); writes++; return null;
                         case "append": children.remove(args[0]); children.add(args[0]); return null;
                         case "remove": removed = true; return null;

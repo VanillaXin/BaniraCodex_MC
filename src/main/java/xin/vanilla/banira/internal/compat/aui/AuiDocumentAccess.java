@@ -297,6 +297,16 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             if (name.equals("class") && value.equals("popup-layer") && !popupLayer) { popupLayer = true; popupLayers++; }
             if (name.equals("disabled")) { disposeTooltip(); if (scopeRoot == null) Tooltip.hide(document); }
         }
+        @Override public void hudId(String id) {
+            if (id == null || !id.matches("[a-z0-9_-]{1,64}")) throw new IllegalArgumentException("HUD part id");
+            Element existing = document.getElementById(id);
+            if (existing != null && existing != element) throw new IllegalArgumentException("HUD part id already owned");
+            element.setAttribute("id", id);
+        }
+        @Override public void styleProperty(String name, String value) {
+            if (!name.matches("--hud-[a-z-]+")) throw new IllegalArgumentException("Unsupported HUD property");
+            element.getStyle().setProperty(name, Objects.requireNonNull(value));
+        }
         @Override public void removeAttribute(String name) {
             if (attributes.remove(name) != null || element.hasAttribute(name)) element.removeAttribute(name);
             if (name.equals("disabled") && tooltip == null && !tooltipText.isEmpty()) tooltip = Tooltip.bind(element, tooltipText);

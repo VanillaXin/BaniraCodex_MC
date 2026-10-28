@@ -40,7 +40,10 @@ public class UiBackendControllerTest {
         Object controller = controller(() -> {
             reads.incrementAndGet();
             throw new IllegalStateException("Cannot get config value before config is loaded");
-        }, () -> { probes.incrementAndGet(); return true; });
+        }, () -> {
+            probes.incrementAndGet();
+            return true;
+        });
         call(controller, "revision", new Class<?>[0]);
         call(controller, "tick", new Class<?>[0]);
         call(controller, "reload", new Class<?>[0]);
@@ -59,7 +62,10 @@ public class UiBackendControllerTest {
                 assertTrue("Config read before loading", loaded[0]);
                 reads.incrementAndGet();
                 return enabled;
-            }, () -> { probes.incrementAndGet(); return true; });
+            }, () -> {
+                probes.incrementAndGet();
+                return true;
+            });
             loaded[0] = true;
             for (int i = 0; i < 5; i++) assertEquals(enabled, flag(controller, "wantsAui", "page"));
             assertEquals(1, reads.get());
@@ -104,7 +110,10 @@ public class UiBackendControllerTest {
         ForgeConfigSpec.BooleanValue useAui = builder.define("useAui", true);
         ForgeConfigSpec spec = builder.build();
         AtomicInteger probes = new AtomicInteger();
-        Object controller = controller(useAui::get, () -> { probes.incrementAndGet(); return true; });
+        Object controller = controller(useAui::get, () -> {
+            probes.incrementAndGet();
+            return true;
+        });
         CommentedConfig loaded = CommentedConfig.inMemory();
         loaded.set("useAui", false);
         spec.setConfig(loaded);
@@ -120,7 +129,10 @@ public class UiBackendControllerTest {
     @Test
     public void userFalseNeverProbesOrClaimsAui() throws Exception {
         AtomicInteger probes = new AtomicInteger();
-        Object controller = controller(false, () -> { probes.incrementAndGet(); return true; });
+        Object controller = controller(false, () -> {
+            probes.incrementAndGet();
+            return true;
+        });
         assertFalse(flag(controller, "wantsAui", "page"));
         assertFalse(flag(controller, "usesAui", "page"));
         assertEquals(0, probes.get());
@@ -129,7 +141,10 @@ public class UiBackendControllerTest {
     @Test
     public void capabilityIsCachedAndPreferenceDoesNotClaimOwnership() throws Exception {
         AtomicInteger probes = new AtomicInteger();
-        Object controller = controller(true, () -> { probes.incrementAndGet(); return true; });
+        Object controller = controller(true, () -> {
+            probes.incrementAndGet();
+            return true;
+        });
         for (int i = 0; i < 100; i++) assertTrue(flag(controller, "wantsAui", "page"));
         assertFalse(flag(controller, "usesAui", "page"));
         call(controller, "attach", new Class<?>[]{String.class}, "page");
@@ -147,7 +162,10 @@ public class UiBackendControllerTest {
     @Test
     public void switchingIsDeferredAndReenableReprobes() throws Exception {
         AtomicInteger probes = new AtomicInteger();
-        Object controller = controller(true, () -> { probes.incrementAndGet(); return true; });
+        Object controller = controller(true, () -> {
+            probes.incrementAndGet();
+            return true;
+        });
         call(controller, "attach", new Class<?>[]{String.class}, "page");
         call(controller, "requestSwitch", new Class<?>[]{boolean.class}, false);
         assertTrue(flag(controller, "usesAui", "page"));
@@ -189,7 +207,9 @@ public class UiBackendControllerTest {
 
     @Test
     public void fatalVmErrorsAreNotHidden() throws Exception {
-        Object controller = controller(true, () -> { throw new OutOfMemoryError("test sentinel"); });
+        Object controller = controller(true, () -> {
+            throw new OutOfMemoryError("test sentinel");
+        });
         try {
             flag(controller, "wantsAui", "page");
             fail("Fatal error was hidden");

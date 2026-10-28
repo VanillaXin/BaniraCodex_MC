@@ -5,14 +5,22 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
-import xin.vanilla.banira.common.enums.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.gui.*;
-import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.NotificationHudPositionScreen;
+import xin.vanilla.banira.client.gui.NotificationTypeConfigScreen;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
-import xin.vanilla.banira.client.notification.*;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.banira.client.notification.NotificationHudState;
+import xin.vanilla.banira.client.notification.NotificationTypeRegistry;
+import xin.vanilla.banira.client.notification.NotificationTypeSettingsStore;
+import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumMoveType;
+import xin.vanilla.banira.common.enums.EnumNotificationTypeDisplayMode;
+import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
 import xin.vanilla.banira.internal.client.ui.*;
@@ -24,21 +32,32 @@ import java.util.function.Consumer;
 public final class NotificationUiSession implements UiPageSession, UiCloseGuard, UiParentReturn {
     public interface HistoryPort {
         List<NotificationLogEntry> entries();
+
         long revision();
+
         int unread();
+
         boolean markRead(long id);
+
         boolean markAllRead();
     }
+
     public interface SettingsPort {
         Map<String, NotificationTypeSettingsStore.TypeSettings> snapshot();
+
         List<String> knownTypes();
+
         void save(Map<String, NotificationTypeSettingsStore.TypeSettings> values);
     }
+
     public interface PositionPort {
         double x();
+
         double y();
+
         void save(double x, double y);
     }
+
     private final HistoryPort history;
     private final SettingsPort settings;
     private final PositionPort position;
@@ -62,71 +81,139 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
     private double grabX, grabY;
 
     public NotificationUiSession(HistoryPort port) {
-        history = Objects.requireNonNull(port); settings = null; position = null;
+        history = Objects.requireNonNull(port);
+        settings = null;
+        position = null;
     }
+
     public NotificationUiSession(SettingsPort port) {
-        history = null; settings = Objects.requireNonNull(port); position = null;
-        baseline = copy(port.snapshot()); draft = copy(baseline);
+        history = null;
+        settings = Objects.requireNonNull(port);
+        position = null;
+        baseline = copy(port.snapshot());
+        draft = copy(baseline);
     }
+
     public NotificationUiSession(PositionPort port) {
-        history = null; settings = null; position = Objects.requireNonNull(port);
-        x = originalX = finite(port.x()); y = originalY = finite(port.y());
+        history = null;
+        settings = null;
+        position = Objects.requireNonNull(port);
+        x = originalX = finite(port.x());
+        y = originalY = finite(port.y());
     }
+
     public static NotificationUiSession history() {
         return new NotificationUiSession(new HistoryPort() {
-            public List<NotificationLogEntry> entries() { return NotificationManager.get().getLog(); }
-            public long revision() { return NotificationManager.get().historyRevision(); }
-            public int unread() { return NotificationManager.get().unreadCount(); }
-            public boolean markRead(long id) { return NotificationManager.get().markRead(id); }
-            public boolean markAllRead() { return NotificationManager.get().markAllRead(); }
+            public List<NotificationLogEntry> entries() {
+                return NotificationManager.get().getLog();
+            }
+
+            public long revision() {
+                return NotificationManager.get().historyRevision();
+            }
+
+            public int unread() {
+                return NotificationManager.get().unreadCount();
+            }
+
+            public boolean markRead(long id) {
+                return NotificationManager.get().markRead(id);
+            }
+
+            public boolean markAllRead() {
+                return NotificationManager.get().markAllRead();
+            }
         });
     }
+
     public static NotificationUiSession types() {
         return new NotificationUiSession(new SettingsPort() {
-            public Map<String, NotificationTypeSettingsStore.TypeSettings> snapshot() { return NotificationTypeSettingsStore.get().snapshot(); }
-            public List<String> knownTypes() { return NotificationTypeRegistry.knownTypesSorted(); }
-            public void save(Map<String, NotificationTypeSettingsStore.TypeSettings> values) { NotificationTypeSettingsStore.get().replaceAllAndSave(values); }
+            public Map<String, NotificationTypeSettingsStore.TypeSettings> snapshot() {
+                return NotificationTypeSettingsStore.get().snapshot();
+            }
+
+            public List<String> knownTypes() {
+                return NotificationTypeRegistry.knownTypesSorted();
+            }
+
+            public void save(Map<String, NotificationTypeSettingsStore.TypeSettings> values) {
+                NotificationTypeSettingsStore.get().replaceAllAndSave(values);
+            }
         });
     }
+
     public static NotificationUiSession position() {
         return new NotificationUiSession(new PositionPort() {
-            public double x() { return ClientConfig.get().notificationHud().x(); }
-            public double y() { return ClientConfig.get().notificationHud().y(); }
+            public double x() {
+                return ClientConfig.get().notificationHud().x();
+            }
+
+            public double y() {
+                return ClientConfig.get().notificationHud().y();
+            }
+
             public void save(double x, double y) {
                 ClientConfig.get().notificationHud().x(x).y(y);
                 BaniraConfigs.save(ClientConfig.class);
             }
         });
     }
-    public void attachNative(BaniraScreen screen) { nativeScreen = screen; }
-    public void onParentReturn(Consumer<Object> action) { if (!closed) parentReturn = action; }
-    @Override public void afterParentReturn(Object parent) {
+
+    public void attachNative(BaniraScreen screen) {
+        nativeScreen = screen;
+    }
+
+    public void onParentReturn(Consumer<Object> action) {
+        if (!closed) parentReturn = action;
+    }
+
+    @Override
+    public void afterParentReturn(Object parent) {
         if (!closed) return;
         Consumer<Object> action = parentReturn;
         parentReturn = null;
         if (action != null) action.accept(parent);
     }
+
     public UiPageSpec spec() {
         String surface = history != null ? "notification-log" : settings != null ? "notification-types" : "hud-position";
         if (spec == null) spec = new UiPageSpec("banira_codex:" + surface, "banira_codex/ui/" + surface + ".html",
                 this, previous -> nativeScreen, nativeScreen::getEffectiveTheme);
         return spec;
     }
-    public String query() { return query; }
+
+    public String query() {
+        return query;
+    }
+
     public void query(String text) {
         if (closed) return;
         String next = text == null ? "" : text;
         if (!query.equals(next) && view != null && view.state() != null && (history != null || settings != null)) {
             UiPageState state = view.state();
-            state.rowPosition(0); state.scrollOffset(0); state.scrollAnchor("");
+            state.rowPosition(0);
+            state.scrollOffset(0);
+            state.scrollAnchor("");
             if (settings != null) state.selectedId("");
         }
         query = next;
-        if (history != null && history.entries().stream().noneMatch(entry -> entry.id() == selectedId && matches(entry, query))) selectedId = 0;
+        if (history != null && history.entries().stream().noneMatch(entry -> entry.id() == selectedId && matches(entry, query)))
+            selectedId = 0;
         rebuild();
     }
-    public long selectedId() { return selectedId; }
-    public void restoreSelection(long id) { if (!closed) { selectedId = id; historyDetailOpen = id != 0; updateDetail(); } }
+
+    public long selectedId() {
+        return selectedId;
+    }
+
+    public void restoreSelection(long id) {
+        if (!closed) {
+            selectedId = id;
+            historyDetailOpen = id != 0;
+            updateDetail();
+        }
+    }
+
     public void select(long id) {
         if (closed || history == null || history.entries().stream().noneMatch(entry -> entry.id() == id)) return;
         if (selectedId != id && view instanceof NativeUiView) ((NativeUiView) view).state().detailScroll(0);
@@ -136,15 +223,21 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         revision = history.revision();
         rebuild();
     }
+
     public void markAllRead() {
-        if (!closed && history != null && history.unread() > 0) { history.markAllRead(); refresh(); }
+        if (!closed && history != null && history.unread() > 0) {
+            history.markAllRead();
+            refresh();
+        }
     }
+
     public List<NotificationLogEntry> filteredEntries() {
         if (history == null) return Collections.emptyList();
         List<NotificationLogEntry> result = new ArrayList<>();
         for (NotificationLogEntry entry : history.entries()) if (matches(entry, query)) result.add(entry);
         return result;
     }
+
     public static boolean matches(NotificationLogEntry entry, String query) {
         if (query == null || query.trim().isEmpty()) return true;
         String text = entry.component().toString().replace('\r', ' ').replace('\n', ' ') + '\n' + entry.source() + '\n' + entry.notificationType() + '\n'
@@ -152,9 +245,11 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 + entry.durationTime() + '\n' + DateUtils.toDateTimeString(new Date(entry.timestamp()));
         return text.toLowerCase(Locale.ROOT).contains(query.trim().toLowerCase(Locale.ROOT));
     }
+
     public NotificationTypeSettingsStore.TypeSettings settings(String type) {
         return NotificationTypeSettingsStore.copyOf(draft.getOrDefault(type, new NotificationTypeSettingsStore.TypeSettings()));
     }
+
     public void settings(String type, NotificationTypeSettingsStore.TypeSettings value) {
         if (!closed) {
             if (settings(type).durationMs() != Objects.requireNonNull(value).durationMs()) durationDrafts.remove(type);
@@ -162,47 +257,89 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
             updateTypeStatus();
         }
     }
-    public String durationDraft(String type) { return durationDrafts.get(type); }
+
+    public String durationDraft(String type) {
+        return durationDrafts.get(type);
+    }
+
     public boolean duration(String type, String text) {
         if (closed) return false;
         try {
             long value = Long.parseLong(text);
             if (value < 0) throw new NumberFormatException();
-            durationDrafts.remove(type); settings(type, settings(type).durationMs(value)); return true;
-        } catch (NumberFormatException invalid) { durationDrafts.put(type, text); updateTypeStatus(); return false; }
+            durationDrafts.remove(type);
+            settings(type, settings(type).durationMs(value));
+            return true;
+        } catch (NumberFormatException invalid) {
+            durationDrafts.put(type, text);
+            updateTypeStatus();
+            return false;
+        }
     }
+
     public int changedCount() {
         if (settings == null) return position != null && (x != originalX || y != originalY) ? 1 : 0;
-        Set<String> keys = new HashSet<>(baseline.keySet()); keys.addAll(draft.keySet());
+        Set<String> keys = new HashSet<>(baseline.keySet());
+        keys.addAll(draft.keySet());
         int count = 0;
-        for (String key : keys) if (!Objects.equals(baseline.getOrDefault(key, new NotificationTypeSettingsStore.TypeSettings()),
-                draft.getOrDefault(key, new NotificationTypeSettingsStore.TypeSettings()))) count++;
+        for (String key : keys)
+            if (!Objects.equals(baseline.getOrDefault(key, new NotificationTypeSettingsStore.TypeSettings()),
+                    draft.getOrDefault(key, new NotificationTypeSettingsStore.TypeSettings()))) count++;
         return count + (int) durationDrafts.keySet().stream().filter(key -> Objects.equals(baseline.getOrDefault(key,
                 new NotificationTypeSettingsStore.TypeSettings()), draft.getOrDefault(key, new NotificationTypeSettingsStore.TypeSettings()))).count();
     }
+
     private static Map<String, NotificationTypeSettingsStore.TypeSettings> copy(Map<String, NotificationTypeSettingsStore.TypeSettings> values) {
         Map<String, NotificationTypeSettingsStore.TypeSettings> result = new LinkedHashMap<>();
         values.forEach((key, value) -> result.put(key, NotificationTypeSettingsStore.copyOf(value)));
         return result;
     }
-    private static double finite(double value) { return Double.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0; }
-    public double x() { return x; }
-    public double y() { return y; }
-    public void moveTo(double x, double y) {
-        if (!closed && Double.isFinite(x) && Double.isFinite(y)) { this.x = finite(x); this.y = finite(y); updatePosition(); }
+
+    private static double finite(double value) {
+        return Double.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
     }
+
+    public double x() {
+        return x;
+    }
+
+    public double y() {
+        return y;
+    }
+
+    public void moveTo(double x, double y) {
+        if (!closed && Double.isFinite(x) && Double.isFinite(y)) {
+            this.x = finite(x);
+            this.y = finite(y);
+            updatePosition();
+        }
+    }
+
     public boolean save() {
         if (closed || saving || history != null) return false;
         if (!durationDrafts.isEmpty()) return false;
         saving = true;
         saveFailure = "";
         try {
-            if (settings != null) { settings.save(copy(draft)); baseline = copy(draft); }
-            else { position.save(x, y); originalX = x; originalY = y; }
+            if (settings != null) {
+                settings.save(copy(draft));
+                baseline = copy(draft);
+            } else {
+                position.save(x, y);
+                originalX = x;
+                originalY = y;
+            }
             return true;
-        } catch (RuntimeException failure) { saveFailure = Objects.toString(failure.getMessage(), failure.getClass().getSimpleName()); return false; }
-        finally { saving = false; updateTypeStatus(); updatePositionStatus(); }
+        } catch (RuntimeException failure) {
+            saveFailure = Objects.toString(failure.getMessage(), failure.getClass().getSimpleName());
+            return false;
+        } finally {
+            saving = false;
+            updateTypeStatus();
+            updatePositionStatus();
+        }
     }
+
     public boolean saveWithFeedback() {
         boolean saved = save();
         if (settings != null) {
@@ -212,19 +349,33 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         }
         return saved;
     }
-    @Override public boolean canClose(UiCloseReason reason) { return reason != UiCloseReason.USER_CLOSE || discard || changedCount() == 0; }
-    @Override public void bind(UiView view) {
+
+    @Override
+    public boolean canClose(UiCloseReason reason) {
+        return reason != UiCloseReason.USER_CLOSE || discard || changedCount() == 0;
+    }
+
+    @Override
+    public void bind(UiView view) {
         detach(UiDetachReason.RELOAD);
         if (closed) return;
-        this.view = Objects.requireNonNull(view); bindings = new UiOwnedResources();
+        this.view = Objects.requireNonNull(view);
+        bindings = new UiOwnedResources();
         if (view instanceof NativeUiView && ((NativeUiView) view).screen() instanceof BaniraScreen) return;
         view.text("title", tr(history != null ? "notification_log_title" : settings != null ? "notification_type_config_title" : "notification_hud_position"));
         view.text("close", tr("config_editor_close"));
-        bindings.own(view.onAction("close", () -> { if (this.view == view) { discard = true; view.requestClose(); } }));
+        bindings.own(view.onAction("close", () -> {
+            if (this.view == view) {
+                discard = true;
+                view.requestClose();
+            }
+        }));
         if (history != null || settings != null) {
             view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
             view.draft("search", query);
-            bindings.own(view.onDraft("search", value -> { if (this.view == view) query(value); }));
+            bindings.own(view.onDraft("search", value -> {
+                if (this.view == view) query(value);
+            }));
         }
         if (history != null) {
             view.gameElement("brand", UiModuleHeaderIcons.resolve("banira_codex", xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder()));
@@ -233,32 +384,41 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
             view.tooltip("search", tr("notification_log_search_hint"));
             view.gameElement("mark_all_read", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.CHECK));
             view.tooltip("mark_all_read", tr("notification_log_mark_all_read"));
-            bindings.own(view.onAction("mark_all_read", () -> { if (this.view == view) markAllRead(); }));
+            bindings.own(view.onAction("mark_all_read", () -> {
+                if (this.view == view) markAllRead();
+            }));
             view.gameElement("types", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.SETTINGS));
             view.tooltip("types", tr("notification_type_config_open"));
             bindings.own(view.onAction("types", () -> {
-                if (this.view == view) Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen(nativeScreen)));
+                if (this.view == view)
+                    Minecraft.getInstance().setScreen(new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen(nativeScreen)));
             }));
             view.gameElement("position", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.MOVE));
             view.tooltip("position", tr("notification_hud_position"));
             bindings.own(view.onAction("position", () -> {
-                if (this.view == view) Minecraft.getInstance().setScreen(new NotificationHudPositionScreen(nativeScreen));
+                if (this.view == view)
+                    Minecraft.getInstance().setScreen(new NotificationHudPositionScreen(nativeScreen));
             }));
             view.text("clear_search", BaniraComponent.get().literal("\u00d7"));
             view.tooltip("clear_search", tr("config_editor_clear_search"));
             bindings.own(view.onAction("clear_search", () -> {
                 if (this.view != view) return;
-                view.draft("search", ""); query("");
+                view.draft("search", "");
+                query("");
             }));
             view.gameElement("back", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.ARROW_LEFT));
             view.tooltip("back", tr("notification_log_back"));
             bindings.own(view.onAction("back", () -> {
                 if (this.view != view) return;
-                historyDetailOpen = false; updateDetail();
+                historyDetailOpen = false;
+                updateDetail();
             }));
             view.text("footer_close", tr("config_editor_close"));
-            bindings.own(view.onAction("footer_close", () -> { if (this.view == view) view.requestClose(); }));
-            revision = Long.MIN_VALUE; refresh();
+            bindings.own(view.onAction("footer_close", () -> {
+                if (this.view == view) view.requestClose();
+            }));
+            revision = Long.MIN_VALUE;
+            refresh();
         } else {
             view.text("save", tr("config_editor_save"));
             bindings.own(view.onAction("save", () -> {
@@ -277,24 +437,44 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 view.tooltip("clear_search", tr("config_editor_clear_search"));
                 bindings.own(view.onAction("clear_search", () -> {
                     if (this.view != view) return;
-                    view.draft("search", ""); query("");
+                    view.draft("search", "");
+                    query("");
                 }));
                 view.text("cancel", tr("config_editor_close"));
-                bindings.own(view.onAction("cancel", () -> { if (this.view == view) { discard = true; view.requestClose(); } }));
+                bindings.own(view.onAction("cancel", () -> {
+                    if (this.view == view) {
+                        discard = true;
+                        view.requestClose();
+                    }
+                }));
                 rebuildTypes();
             } else bindPosition();
         }
     }
-    private static Component tr(String key) { return BaniraComponent.get().transClientAuto(key); }
-    private void releaseRows() { rows.values().forEach(UiOwnedResources::close); rows.clear(); }
+
+    private static Component tr(String key) {
+        return BaniraComponent.get().transClientAuto(key);
+    }
+
+    private void releaseRows() {
+        rows.values().forEach(UiOwnedResources::close);
+        rows.clear();
+    }
+
     private void refresh() {
         if (history == null || closed || revision == history.revision()) return;
-        revision = history.revision(); rebuild();
+        revision = history.revision();
+        rebuild();
     }
+
     private void rebuild() {
         if (view == null || closed) return;
-        if (history == null) { if (settings != null) rebuildTypes(); return; }
-        releaseRows(); entries = filteredEntries();
+        if (history == null) {
+            if (settings != null) rebuildTypes();
+            return;
+        }
+        releaseRows();
+        entries = filteredEntries();
         if (entries.stream().noneMatch(entry -> entry.id() == selectedId)) selectedId = 0;
         UiView owner = view;
         List<NotificationLogEntry> snapshot = new ArrayList<>(entries);
@@ -303,30 +483,50 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         if (view instanceof NativeUiView) {
             UiViewState state = ((NativeUiView) view).state();
             String anchor = state.scrollAnchor();
-            for (int i = 0; i < snapshot.size(); i++) if (anchor.equals("notification:" + snapshot.get(i).id())) {
-                state.rowPosition(i + state.rowPosition() % 1); break;
-            }
+            for (int i = 0; i < snapshot.size(); i++)
+                if (anchor.equals("notification:" + snapshot.get(i).id())) {
+                    state.rowPosition(i + state.rowPosition() % 1);
+                    break;
+                }
         }
         view.rows("fields", new UiRowPresentation() {
-            public int rowHeight() { return rowHeight; }
+            public int rowHeight() {
+                return rowHeight;
+            }
+
             public String rowClass(int index) {
                 NotificationLogEntry entry = snapshot.get(index);
                 return "log-row log-" + entry.style().name().toLowerCase(Locale.ROOT) + (rowHeight == 24 ? " compact" : "")
                         + (entry.read() ? "" : " unread") + (entry.id() == selectedId ? " selected" : "");
             }
-            public int size() { return snapshot.size(); }
-            public String key(int index) { return "notification:" + snapshot.get(index).id(); }
+
+            public int size() {
+                return snapshot.size();
+            }
+
+            public String key(int index) {
+                return "notification:" + snapshot.get(index).id();
+            }
+
             public void bind(UiView row, int index) {
                 NotificationLogEntry entry = snapshot.get(index);
-                UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
-                UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
+                UiOwnedResources previous = rows.remove(row);
+                if (previous != null) previous.close();
+                UiOwnedResources owned = new UiOwnedResources();
+                rows.put(row, owned);
                 String summary = net.minecraft.ChatFormatting.stripFormatting(entry.component().toString()).replace('\n', ' ').replace('\r', ' ');
                 row.text("open", BaniraComponent.get().literal((entry.read() ? "" : "\u2022 ") + summary));
                 row.tooltip("open", entry.component());
                 row.text("label", BaniraComponent.get().literal(moduleName(entry) + " / " + DateUtils.toDateTimeString(new Date(entry.timestamp()))));
-                owned.own(row.onAction("open", () -> { if (view == owner) select(entry.id()); }));
+                owned.own(row.onAction("open", () -> {
+                    if (view == owner) select(entry.id());
+                }));
             }
-            public void unbind(UiView row, int index) { UiOwnedResources owned = rows.remove(row); if (owned != null) owned.close(); }
+
+            public void unbind(UiView row, int index) {
+                UiOwnedResources owned = rows.remove(row);
+                if (owned != null) owned.close();
+            }
         }, 120);
         view.enabled("mark_all_read", history.unread() > 0);
         view.text("unread_count", BaniraComponent.get().literal(tr("notification_log_unread") + ": " + history.unread()));
@@ -335,10 +535,14 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         view.enabled("empty", entries.isEmpty());
         updateDetail();
     }
+
     private void updateDetail() {
         if (view == null || history == null) return;
         NotificationLogEntry selected = history.entries().stream().filter(entry -> entry.id() == selectedId).findFirst().orElse(null);
-        if (selected == null) { selectedId = 0; historyDetailOpen = false; }
+        if (selected == null) {
+            selectedId = 0;
+            historyDetailOpen = false;
+        }
         view.value("history_detail", UiValue.bool(historyDetailOpen));
         view.enabled("history_detail_content", selected != null);
         view.text("select_hint", tr("notification_log_select_hint"));
@@ -349,13 +553,17 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 selected.style().name(), Objects.toString(selected.positionName(), ""), Objects.toString(selected.animationName(), ""), selected.durationTime() + " ms"};
         for (int i = 0; i < keys.length; i++) {
             Component value = BaniraComponent.get().literal(selected == null ? "" : tr("notification_log_meta_" + keys[i]) + ": " + values[i]);
-            view.text("meta_" + keys[i], value); view.tooltip("meta_" + keys[i], value);
+            view.text("meta_" + keys[i], value);
+            view.tooltip("meta_" + keys[i], value);
         }
         view.text("detail_type", BaniraComponent.get().literal(selected == null ? "" : moduleName(selected)));
         view.tooltip("detail_type", BaniraComponent.get().literal(selected == null ? "" : Objects.toString(selected.notificationType(), "")));
         view.text("detail_time", BaniraComponent.get().literal(selected == null ? "" : DateUtils.toDateTimeString(new Date(selected.timestamp()))));
         view.text("read_status", selected == null ? BaniraComponent.get().empty() : tr(selected.read() ? "notification_log_read" : "notification_log_unread"));
-        if (selected == null) { view.text("metadata", BaniraComponent.get().literal("")); return; }
+        if (selected == null) {
+            view.text("metadata", BaniraComponent.get().literal(""));
+            return;
+        }
         String metadata = DateUtils.toDateTimeString(new Date(selected.timestamp())) + "\n"
                 + tr("notification_log_meta_source") + ": " + Objects.toString(selected.source(), "") + "\n"
                 + tr("notification_log_meta_type") + ": " + Objects.toString(selected.notificationType(), "") + "\n"
@@ -366,20 +574,24 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         view.text("metadata", BaniraComponent.get().literal(metadata));
         view.tooltip("metadata", BaniraComponent.get().literal(metadata));
     }
+
     private static String sourceName(NotificationLogEntry entry) {
         return "network".equals(entry.source()) ? tr("notification_log_source_network").toString()
                 : "local".equals(entry.source()) ? tr("notification_log_source_local").toString() : Objects.toString(entry.source(), "");
     }
+
     private int preferredHistoryRowHeight() {
         double height = view == null ? 0 : view.bounds("content").height();
         return height > 0 && height < 192 ? 24 : 48;
     }
+
     private static String moduleName(NotificationLogEntry entry) {
         String type = Objects.toString(entry.notificationType(), "default");
         String namespace = type.split("[.:]", 2)[0];
         Component display = NotificationTypeRegistry.modDisplayNameInternal(namespace);
         return display == null ? namespace : display.toString();
     }
+
     private void rebuildTypes() {
         releaseRows();
         List<String> types = new ArrayList<>(new TreeSet<>(settings.knownTypes()));
@@ -390,12 +602,30 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 Objects.toString(NotificationTypeRegistry.modDisplayNameInternal(typeNamespace(type)), "")));
         UiView owner = view;
         view.rows("fields", new UiRowPresentation() {
-            public int rowHeight() { return 24; }
-            public String rowClass(int index) { return "player-config-field"; }
-            public int size() { return types.size() * 5; }
-            public String key(int index) { return "type:" + types.get(index / 5) + ":" + index % 5; }
-            public void bind(UiView row, int index) { bindType(row, types.get(index / 5), index % 5, owner); }
-            public void unbind(UiView row, int index) { UiOwnedResources owned = rows.remove(row); if (owned != null) owned.close(); }
+            public int rowHeight() {
+                return 24;
+            }
+
+            public String rowClass(int index) {
+                return "player-config-field";
+            }
+
+            public int size() {
+                return types.size() * 5;
+            }
+
+            public String key(int index) {
+                return "type:" + types.get(index / 5) + ":" + index % 5;
+            }
+
+            public void bind(UiView row, int index) {
+                bindType(row, types.get(index / 5), index % 5, owner);
+            }
+
+            public void unbind(UiView row, int index) {
+                UiOwnedResources owned = rows.remove(row);
+                if (owned != null) owned.close();
+            }
         }, 120);
         bindTypeNavigation(types, owner);
         view.text("breadcrumb", tr("notification_type_config_root_title"));
@@ -406,9 +636,11 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         view.enabled("empty", types.isEmpty());
         updateTypeStatus();
     }
+
     private static String typeNamespace(String type) {
         return "default".equals(type) ? "banira_codex" : type.split("[.:]", 2)[0];
     }
+
     private void bindTypeNavigation(List<String> types, UiView owner) {
         Map<String, Integer> anchors = new LinkedHashMap<>();
         anchors.put("all", 0);
@@ -418,26 +650,48 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         }
         List<String> keys = new ArrayList<>(anchors.keySet());
         view.rows("categories", new UiRowPresentation() {
-            public int rowHeight() { return 20; }
-            public String scrollerId() { return "category_content"; }
-            public boolean tracksPageScroll() { return false; }
-            public boolean textTools() { return true; }
+            public int rowHeight() {
+                return 20;
+            }
+
+            public String scrollerId() {
+                return "category_content";
+            }
+
+            public boolean tracksPageScroll() {
+                return false;
+            }
+
+            public boolean textTools() {
+                return true;
+            }
+
             public String rowClass(int index) {
                 String selected = owner.state() == null ? "" : owner.state().selectedId();
                 return "config-navigation" + (keys.get(index).equals(selected.isEmpty() ? "all" : selected) ? " config-selected" : "");
             }
-            public int size() { return keys.size(); }
-            public String key(int index) { return keys.get(index); }
+
+            public int size() {
+                return keys.size();
+            }
+
+            public String key(int index) {
+                return keys.get(index);
+            }
+
             public void bind(UiView row, int index) {
                 if (view != owner) return;
-                UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
-                UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
+                UiOwnedResources previous = rows.remove(row);
+                if (previous != null) previous.close();
+                UiOwnedResources owned = new UiOwnedResources();
+                rows.put(row, owned);
                 String key = keys.get(index);
                 boolean module = key.startsWith("module:"), type = key.startsWith("type:");
                 String id = key.equals("all") ? "" : key.substring(key.indexOf(':') + 1);
                 Component label = key.equals("all") ? tr("notification_type_config_root_title")
                         : module ? NotificationTypeRegistry.modDisplayNameInternal(id) : NotificationTypeRegistry.tooltipInternal(id);
-                if (label == null || label.isEmpty()) label = tr(module ? "notification_log_meta_source" : "notification_log_meta_type");
+                if (label == null || label.isEmpty())
+                    label = tr(module ? "notification_log_meta_source" : "notification_log_meta_type");
                 row.text("open", type ? BaniraComponent.get().literal("  ").append(label) : label);
                 row.tooltip("open", BaniraComponent.get().literal(id).append(id.isEmpty() ? "" : "\n").append(label));
                 long count = type ? 1 : module ? types.stream().filter(value -> typeNamespace(value).equals(id)).count() : types.size();
@@ -445,14 +699,17 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 owned.own(row.onAction("open", () -> {
                     if (view != owner || owner.state() == null) return;
                     int target = anchors.get(key);
-                    owner.state().selection("", 0, 0); owner.state().selectedId(key);
-                    owner.state().rowPosition(target); owner.state().scrollOffset(target * 24.0);
+                    owner.state().selection("", 0, 0);
+                    owner.state().selectedId(key);
+                    owner.state().rowPosition(target);
+                    owner.state().scrollOffset(target * 24.0);
                     owner.state().scrollAnchor(types.isEmpty() ? "" : "type:" + types.get(target / 5) + ":0");
                     rebuildTypes();
                 }));
             }
         }, 120);
     }
+
     private void updateTypeStatus() {
         if (settings == null || view == null || closed) return;
         int changed = changedCount();
@@ -460,11 +717,16 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                 : changed == 0 ? tr("config_editor_clean_status") : BaniraComponent.get().transClientAuto("config_editor_pending_status", changed));
         Component error = !durationDrafts.isEmpty() ? tr("config_editor_validation_failed").append(": " + String.join(", ", new TreeSet<>(durationDrafts.keySet())))
                 : BaniraComponent.get().literal(saveFailure);
-        view.text("error", error); view.tooltip("error", error); view.enabled("error", !error.isEmpty());
+        view.text("error", error);
+        view.tooltip("error", error);
+        view.enabled("error", !error.isEmpty());
     }
+
     private void bindType(UiView row, String type, int field, UiView owner) {
-        UiOwnedResources previous = rows.remove(row); if (previous != null) previous.close();
-        UiOwnedResources owned = new UiOwnedResources(); rows.put(row, owned);
+        UiOwnedResources previous = rows.remove(row);
+        if (previous != null) previous.close();
+        UiOwnedResources owned = new UiOwnedResources();
+        rows.put(row, owned);
         String key = new String[]{"hidden", "duration", "animation", "position", "display"}[field];
         row.text("label", tr("notification_type_config_" + key));
         row.text("field_unit", BaniraComponent.get().literal(field == 1 ? "ms" : ""));
@@ -477,7 +739,9 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         row.tooltip("key", fieldDescription);
         row.tooltip("input", fieldDescription);
         NotificationTypeSettingsStore.TypeSettings value = settings(type);
-        Consumer<NotificationTypeSettingsStore.TypeSettings> update = next -> { if (view == owner) settings(type, next); };
+        Consumer<NotificationTypeSettingsStore.TypeSettings> update = next -> {
+            if (view == owner) settings(type, next);
+        };
         if (field == 0) {
             row.value("input", UiValue.bool(value.hidden()));
             owned.own(row.onValue("input", next -> update.accept(settings(type).hidden(next.asBoolean()))));
@@ -514,6 +778,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
             }));
         }
     }
+
     private void bindPosition() {
         view.gameElement("brand", UiModuleHeaderIcons.resolve("banira_codex", xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().allEntriesInOrder()));
         view.text("module_name", tr("mod_name"));
@@ -522,40 +787,69 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         updatePosition();
         view.tooltip("preview", tr("notification_hud_drag"));
         UiView owner = view;
-        bindings.own(view.onAction("cancel", () -> { if (view == owner) { discard = true; owner.requestClose(); } }));
+        bindings.own(view.onAction("cancel", () -> {
+            if (view == owner) {
+                discard = true;
+                owner.requestClose();
+            }
+        }));
         bindings.own(view.onPointer("preview", event -> {
             if (view != owner || !event.finite()) return;
-            if (event.kind() == UiPointer.Kind.UP) { if (event.button() == 0) dragging = false; return; }
+            if (event.kind() == UiPointer.Kind.UP) {
+                if (event.button() == 0) dragging = false;
+                return;
+            }
             ScreenCoordinate area = view.bounds("viewport"), preview = view.bounds("preview");
             if (event.kind() == UiPointer.Kind.DOWN) {
                 if (event.button() != 0 || event.x() < preview.x() || event.x() >= preview.x() + preview.width()
                         || event.y() < preview.y() || event.y() >= preview.y() + preview.height()) return;
-                dragging = true; grabX = event.x() - preview.x(); grabY = event.y() - preview.y();
-            } else if (dragging) moveTo(NotificationHudState.relative(event.x() - grabX - area.x(), (int) area.width(), NotificationUnreadHud.WIDTH),
-                    NotificationHudState.relative(event.y() - grabY - area.y(), (int) area.height(), NotificationUnreadHud.HEIGHT));
+                dragging = true;
+                grabX = event.x() - preview.x();
+                grabY = event.y() - preview.y();
+            } else if (dragging)
+                moveTo(NotificationHudState.relative(event.x() - grabX - area.x(), (int) area.width(), NotificationUnreadHud.WIDTH),
+                        NotificationHudState.relative(event.y() - grabY - area.y(), (int) area.height(), NotificationUnreadHud.HEIGHT));
         }));
     }
+
     private void updatePosition() {
-        if (view != null && position != null) { view.hudPosition(x, y); updatePositionStatus(); }
+        if (view != null && position != null) {
+            view.hudPosition(x, y);
+            updatePositionStatus();
+        }
     }
+
     private void updatePositionStatus() {
         if (view == null || position == null || view.nativeView()) return;
         view.text("status", changedCount() == 0 ? tr("config_editor_clean_status")
                 : BaniraComponent.get().transClientAuto("config_editor_pending_status", changedCount()));
         Component error = saveFailure.isEmpty() ? BaniraComponent.get().empty()
                 : BaniraComponent.get().transClientAuto("config_editor_save_failed", saveFailure);
-        view.text("error", error); view.tooltip("error", error); view.enabled("error", !error.isEmpty());
+        view.text("error", error);
+        view.tooltip("error", error);
+        view.enabled("error", !error.isEmpty());
     }
-    @Override public void tick() {
+
+    @Override
+    public void tick() {
         refresh();
-        if (history != null && view != null && !view.nativeView() && !closed && historyRowHeight != preferredHistoryRowHeight()) rebuild();
+        if (history != null && view != null && !view.nativeView() && !closed && historyRowHeight != preferredHistoryRowHeight())
+            rebuild();
     }
-    @Override public void detach(UiDetachReason reason) {
-        dragging = false; view = null; bindings.close(); releaseRows();
+
+    @Override
+    public void detach(UiDetachReason reason) {
+        dragging = false;
+        view = null;
+        bindings.close();
+        releaseRows();
     }
-    @Override public void close(UiCloseReason reason) {
+
+    @Override
+    public void close(UiCloseReason reason) {
         if (closed) return;
         if (reason == UiCloseReason.DISCONNECT) parentReturn = null;
-        closed = true; detach(UiDetachReason.DISCONNECT);
+        closed = true;
+        detach(UiDetachReason.DISCONNECT);
     }
 }

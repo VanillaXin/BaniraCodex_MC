@@ -7,7 +7,8 @@ import xin.vanilla.banira.api.client.ui.UiHudFrame;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class UiProgressCustomizationTest {
     private UiDomControlsTest.Dom dom() throws Exception {
@@ -22,8 +23,10 @@ public class UiProgressCustomizationTest {
                 new UiHudFrame.Text("cleanup-time", time, 50, 60, 30, 9, 9, .5, 0, 15, 0, 0xff5da530)));
     }
 
-    @Test public void stableIdsAndClassesExposeOnlyFiniteHudParts() throws Exception {
-        var dom = dom(); var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
+    @Test
+    public void stableIdsAndClassesExposeOnlyFiniteHudParts() throws Exception {
+        var dom = dom();
+        var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
         ui.update(frame("01:00", 30));
         assertEquals("cleanup-leaf", dom.created.get(0).attributes.get("id"));
         assertEquals("progress-sprite", dom.created.get(0).attributes.get("class"));
@@ -33,22 +36,30 @@ public class UiProgressCustomizationTest {
         assertEquals("progress-value", dom.created.get(3).attributes.get("class"));
     }
 
-    @Test public void layoutUpdatesNeverReplaceAuthoredInlineAppearance() throws Exception {
-        var dom = dom(); var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
+    @Test
+    public void layoutUpdatesNeverReplaceAuthoredInlineAppearance() throws Exception {
+        var dom = dom();
+        var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
         ui.update(frame("01:00", 30));
         String custom = "color:#abcdef;background:#182a20;font-family:serif;transform:scale(2)";
         for (var node : dom.created) node.attributes.put("style", custom);
         ui.update(frame("00:59", 31));
-        for (var node : dom.created) assertEquals("Dynamic data must preserve authored style", custom, node.attributes.get("style"));
+        for (var node : dom.created)
+            assertEquals("Dynamic data must preserve authored style", custom, node.attributes.get("style"));
         assertEquals(4, dom.created.size());
     }
 
-    @Test public void staticFrameIsWriteFreeAndTextRemainsLiteral() throws Exception {
-        var dom = dom(); var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
-        var frame = frame("<b>00:59</b>", 30); ui.update(frame);
-        int writes = dom.created.stream().mapToInt(n -> n.writes).sum(); ui.update(frame);
+    @Test
+    public void staticFrameIsWriteFreeAndTextRemainsLiteral() throws Exception {
+        var dom = dom();
+        var ui = new ProgressDomPresentation((UiDomAccess) dom.access, Function.identity());
+        var frame = frame("<b>00:59</b>", 30);
+        ui.update(frame);
+        int writes = dom.created.stream().mapToInt(n -> n.writes).sum();
+        ui.update(frame);
         assertEquals(writes, dom.created.stream().mapToInt(n -> n.writes).sum());
         assertEquals("<b>00:59</b>", dom.created.get(3).text);
-        ui.close(); assertTrue(dom.created.stream().allMatch(n -> n.removed));
+        ui.close();
+        assertTrue(dom.created.stream().allMatch(n -> n.removed));
     }
 }

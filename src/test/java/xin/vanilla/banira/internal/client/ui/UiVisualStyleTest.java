@@ -16,19 +16,22 @@ public class UiVisualStyleTest {
         Map<String, Integer> result = new HashMap<>();
         for (String entry : UiColorBridge.tokens(theme).split(";")) {
             String[] pair = entry.split(":", 2);
-            if (pair.length == 2) result.put(pair[0], Color.rgba((int) Long.parseLong(pair[1].substring(1), 16)).getArgb());
+            if (pair.length == 2)
+                result.put(pair[0], Color.rgba((int) Long.parseLong(pair[1].substring(1), 16)).getArgb());
         }
         return result;
     }
 
-    @Test public void nativeTokensPreserveTheirRgbaEncoding() {
+    @Test
+    public void nativeTokensPreserveTheirRgbaEncoding() {
         assertEquals("#12345678", UiColorBridge.css(0x78123456));
         Map<String, Integer> colors = palette(new BaniraColorConfig().bgSurface(0xff102030).accent(0xffabcdef));
         assertEquals(Integer.valueOf(0xff102030), colors.get("--surface"));
         assertEquals(Integer.valueOf(0xffabcdef), colors.get("--accent"));
     }
 
-    @Test public void neutralPageSurfacesRetainSeasonalAccentAndNativePalette() {
+    @Test
+    public void neutralPageSurfacesRetainSeasonalAccentAndNativePalette() {
         for (int accent : new int[]{0xffed8438, 0xff6fa16a, 0xffcc6c98, 0xff8c9ed6}) {
             BaniraColorConfig theme = new BaniraColorConfig().bgPrimary(0xfffff4e8).bgSurface(0xffffe8d4)
                     .textPrimary(0xff684932).accent(accent);
@@ -45,7 +48,8 @@ public class UiVisualStyleTest {
         }
     }
 
-    @Test public void pagePaletteFollowsLightAndDarkThemeWithoutLosingContrast() {
+    @Test
+    public void pagePaletteFollowsLightAndDarkThemeWithoutLosingContrast() {
         for (int background : new int[]{0xfffaf7ef, 0xff171b1c}) {
             BaniraColorConfig theme = new BaniraColorConfig().bgPrimary(background).accent(0xffce739b).textPrimary(0xff9a7b6c);
             Map<String, Integer> colors = palette(theme);
@@ -57,7 +61,8 @@ public class UiVisualStyleTest {
         }
     }
 
-    @Test public void buttonsAndIconSlotsHaveStableCenteredGeometry() throws Exception {
+    @Test
+    public void buttonsAndIconSlotsHaveStableCenteredGeometry() throws Exception {
         try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             assertNotNull(input);
             String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
@@ -69,7 +74,8 @@ public class UiVisualStyleTest {
         }
     }
 
-    @Test public void sharedControlsUseDedicatedPageRolesAndCompactStableSizes() throws Exception {
+    @Test
+    public void sharedControlsUseDedicatedPageRolesAndCompactStableSizes() throws Exception {
         try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             assertNotNull(input);
             String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
@@ -85,7 +91,9 @@ public class UiVisualStyleTest {
             assertFalse(css.contains("box-shadow:"));
         }
     }
-    @Test public void primaryButtonsPreferWhiteWithoutLosingAccentHueOrContrast() {
+
+    @Test
+    public void primaryButtonsPreferWhiteWithoutLosingAccentHueOrContrast() {
         for (int accent : new int[]{0xffee7fa8, 0xff65c978, 0xfff59a4c, 0xff78bdf7, 0xff202020}) {
             BaniraColorConfig theme = new BaniraColorConfig().accent(accent);
             Map<String, Integer> colors = palette(theme);
@@ -96,19 +104,24 @@ public class UiVisualStyleTest {
             assertEquals(Integer.valueOf(accent), colors.get("--accent"));
         }
     }
-    @Test public void primaryLabelsAndDisabledLabelsUseTheirOwnForeground() throws Exception {
+
+    @Test
+    public void primaryLabelsAndDisabledLabelsUseTheirOwnForeground() throws Exception {
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/assets/apricityui/apricity/banira_codex/shared.css"), StandardCharsets.UTF_8);
         assertTrue(css.contains(".primary>*{color:var(--action-text,#ffffff)}"));
         assertTrue(css.contains(".primary:disabled>*{color:var(--muted,#637168)}"));
         assertTrue(css.contains(".sakura-ui .primary:hover"));
         assertTrue(css.contains("var(--action,#b74777)"));
     }
-    @Test public void sharedStyleBudgetSurvivesWindowsCheckout() throws Exception {
+
+    @Test
+    public void sharedStyleBudgetSurvivesWindowsCheckout() throws Exception {
         int bytes = 0;
-        for (var entry : UiBoundaryChecks.ownResources("banira_codex").entrySet()) if (entry.getKey().endsWith(".css")) {
-            String text = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n");
-            bytes += text.getBytes(StandardCharsets.UTF_8).length;
-        }
+        for (var entry : UiBoundaryChecks.ownResources("banira_codex").entrySet())
+            if (entry.getKey().endsWith(".css")) {
+                String text = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n");
+                bytes += text.getBytes(StandardCharsets.UTF_8).length;
+            }
         assertTrue("Shared CSS must fit 16KiB after CRLF checkout", bytes <= 16384);
     }
 }

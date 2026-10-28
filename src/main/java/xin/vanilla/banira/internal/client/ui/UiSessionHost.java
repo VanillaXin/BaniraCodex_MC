@@ -113,8 +113,11 @@ public final class UiSessionHost {
             if (displayScreen) {
                 Object previousPresentation = presentingScreen;
                 presentingScreen = view.screen();
-                try { presenter.accept(view.screen()); }
-                finally { presentingScreen = previousPresentation; }
+                try {
+                    presenter.accept(view.screen());
+                } finally {
+                    presentingScreen = previousPresentation;
+                }
             }
             if (entry.aui) backend.attach(entry.page.id());
             backendRevision = backend.revision();
@@ -139,22 +142,39 @@ public final class UiSessionHost {
         pending = UiDetachReason.SWITCH;
     }
 
-    public void resize() { if (pending == null) pending = UiDetachReason.RESIZE; }
-    public void reload() { backend.requestReload(); if (pending == null) pending = UiDetachReason.RELOAD; }
+    public void resize() {
+        if (pending == null) pending = UiDetachReason.RESIZE;
+    }
+
+    public void reload() {
+        backend.requestReload();
+        if (pending == null) pending = UiDetachReason.RELOAD;
+    }
+
     public void fallback() {
-        if (active != null) { backend.isolate(active.page.id()); pending = UiDetachReason.FALLBACK; }
+        if (active != null) {
+            backend.isolate(active.page.id());
+            pending = UiDetachReason.FALLBACK;
+        }
     }
 
     public void suspendScreen(NativeUiView view) {
         if (active == null || active.view != view) return;
         Entry entry = active;
         suspended.put(view.screen(), entry);
-        try { detach(UiDetachReason.RELOAD); }
-        finally { active = null; pending = null; }
+        try {
+            detach(UiDetachReason.RELOAD);
+        } finally {
+            active = null;
+            pending = null;
+        }
     }
 
     public void resumeScreen(Object screen) {
-        if (active == null) { returning = suspended.get(screen); returningScreen = screen; }
+        if (active == null) {
+            returning = suspended.get(screen);
+            returningScreen = screen;
+        }
     }
 
     public boolean ownsScreen(Object screen) {
@@ -166,26 +186,36 @@ public final class UiSessionHost {
     }
 
     public void observeScreen(Object screen) {
-        if (returning != null && returningScreen != screen) { returning = null; returningScreen = null; }
+        if (returning != null && returningScreen != screen) {
+            returning = null;
+            returningScreen = null;
+        }
         if (active != null && !ownsScreen(screen)) suspendScreen(active.view);
         if (active == null && suspended.containsKey(screen)) resumeScreen(screen);
         else if (active == null && screen instanceof xin.vanilla.banira.api.client.ui.UiPageSource) {
             xin.vanilla.banira.api.client.ui.UiPageSession session = ((xin.vanilla.banira.api.client.ui.UiPageSource) screen).pageSession();
-            if (session != null) for (Entry entry : suspended.values()) if (entry.page.session() == session) {
-                returning = entry; returningScreen = screen; break;
-            }
+            if (session != null) for (Entry entry : suspended.values())
+                if (entry.page.session() == session) {
+                    returning = entry;
+                    returningScreen = screen;
+                    break;
+                }
         }
     }
 
-    public boolean isReturning(Object screen) { return returning != null && returningScreen == screen; }
+    public boolean isReturning(Object screen) {
+        return returning != null && returningScreen == screen;
+    }
 
     private Object retainedParent(Object screen) {
         if (!(screen instanceof xin.vanilla.banira.api.client.ui.UiPageSource)) return screen;
         xin.vanilla.banira.api.client.ui.UiPageSession session = ((xin.vanilla.banira.api.client.ui.UiPageSource) screen).pageSession();
         if (session == null) return screen;
         if (active != null && active.view != null && active.page.session() == session) return active.view.screen();
-        for (Map.Entry<Object, Entry> entry : suspended.entrySet()) if (entry.getValue().page.session() == session) return entry.getKey();
-        for (Map.Entry<Object, Entry> entry : parents.entrySet()) if (entry.getValue().page.session() == session) return entry.getKey();
+        for (Map.Entry<Object, Entry> entry : suspended.entrySet())
+            if (entry.getValue().page.session() == session) return entry.getKey();
+        for (Map.Entry<Object, Entry> entry : parents.entrySet())
+            if (entry.getValue().page.session() == session) return entry.getKey();
         return screen;
     }
 
@@ -202,7 +232,11 @@ public final class UiSessionHost {
                 present(entry, restored);
             }
         }
-        if (active == null) { pending = null; backendRevision = backend.revision(); return; }
+        if (active == null) {
+            pending = null;
+            backendRevision = backend.revision();
+            return;
+        }
         active.page.session().tick();
         if (active == null) return;
         if (pending == null && backendRevision != backend.revision()) {
@@ -214,7 +248,10 @@ public final class UiSessionHost {
         Entry entry = active;
         detach(reason);
         NativeUiView next = createView(entry);
-        if (next == null) { active = null; return; }
+        if (next == null) {
+            active = null;
+            return;
+        }
         present(entry, next);
     }
 
@@ -227,8 +264,11 @@ public final class UiSessionHost {
             ((xin.vanilla.banira.api.client.ui.UiPageSource) view.screen()).capturePageState(entry.state);
         entry.view = null;
         backend.detach(entry.page.id());
-        try { entry.page.session().detach(reason); }
-        finally { view.close(); }
+        try {
+            entry.page.session().detach(reason);
+        } finally {
+            view.close();
+        }
     }
 
     public void close(UiCloseReason reason) {
@@ -236,8 +276,9 @@ public final class UiSessionHost {
         if (entry == null) return;
         if (reason != UiCloseReason.DISCONNECT && entry.page.session() instanceof UiCloseGuard
                 && !((UiCloseGuard) entry.page.session()).canClose(reason)) return;
-        try { detach(reason == UiCloseReason.DISCONNECT ? UiDetachReason.DISCONNECT : UiDetachReason.SWITCH); }
-        finally {
+        try {
+            detach(reason == UiCloseReason.DISCONNECT ? UiDetachReason.DISCONNECT : UiDetachReason.SWITCH);
+        } finally {
             active = null;
             pending = null;
             entry.page.session().close(reason);
@@ -251,8 +292,7 @@ public final class UiSessionHost {
                 presenter.accept(entry.previous);
                 if (entry.page.session() instanceof UiParentReturn)
                     ((UiParentReturn) entry.page.session()).afterParentReturn(entry.previous);
-            }
-            else {
+            } else {
                 active = parent;
                 NativeUiView restored = createView(parent);
                 if (restored != null) present(parent, restored);
@@ -270,18 +310,33 @@ public final class UiSessionHost {
         suspended.clear();
         returning = null;
         returningScreen = null;
-        try { close(UiCloseReason.DISCONNECT); }
-        finally { for (Entry entry : remaining) entry.page.session().close(UiCloseReason.DISCONNECT); }
+        try {
+            close(UiCloseReason.DISCONNECT);
+        } finally {
+            for (Entry entry : remaining) entry.page.session().close(UiCloseReason.DISCONNECT);
+        }
     }
-    public UiPageSpec page() { return active == null ? null : active.page; }
-    public Object previousScreen() { return active == null ? null : active.previous; }
-    public NativeUiView view() { return active == null ? null : active.view; }
+
+    public UiPageSpec page() {
+        return active == null ? null : active.page;
+    }
+
+    public Object previousScreen() {
+        return active == null ? null : active.previous;
+    }
+
+    public NativeUiView view() {
+        return active == null ? null : active.view;
+    }
+
     public AutoCloseable registerHud(UiHudSpec hud) {
         if (huds == null) throw new IllegalStateException("HUD host unavailable");
         return huds.register(hud);
     }
 
-    public void hudHost(AuiHudHost host) { this.huds = Objects.requireNonNull(host, "host"); }
+    public void hudHost(AuiHudHost host) {
+        this.huds = Objects.requireNonNull(host, "host");
+    }
 
     private static final class Entry {
         final UiPageSpec page;
@@ -290,6 +345,11 @@ public final class UiSessionHost {
         Object nativeScreen;
         NativeUiView view;
         boolean aui;
-        Entry(UiPageSpec page, Object previous, UiViewState state) { this.page = page; this.previous = previous; this.state = state; }
+
+        Entry(UiPageSpec page, Object previous, UiViewState state) {
+            this.page = page;
+            this.previous = previous;
+            this.state = state;
+        }
     }
 }

@@ -65,11 +65,12 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
 
     private static boolean calls(ClassNode target, String owner, String name, String descriptor) {
         int count = 0;
-        for (var method : target.methods) for (var instruction : method.instructions)
-            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                if (call.owner.equals(owner) && call.name.equals(name) && call.desc.equals(descriptor)) count++;
-            }
+        for (var method : target.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                    var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                    if (call.owner.equals(owner) && call.name.equals(name) && call.desc.equals(descriptor)) count++;
+                }
         return count == 1;
     }
 

@@ -4,10 +4,13 @@ import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionEntry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+
 import java.util.List;
 
 final class UiModuleHeaderIcons {
-    private UiModuleHeaderIcons() { }
+    private UiModuleHeaderIcons() {
+    }
+
     static UiGameElement resolve(String namespace, List<QuickActionEntry> entries) {
         if (namespace == null || namespace.isEmpty()) return null;
         for (QuickActionEntry entry : entries) {

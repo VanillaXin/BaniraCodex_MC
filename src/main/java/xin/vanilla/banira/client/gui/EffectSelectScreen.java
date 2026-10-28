@@ -1,9 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -19,6 +16,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -36,7 +35,10 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -130,23 +132,51 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
     }
 
 
-    @Override public SelectorUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:" + uiSession.surface(); }
-    @Override public UiPageSpec uiPage() { captureUiState(uiState); return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; restoreUiScroll = true; }
-    @Override public void captureUiState(UiViewState state) {
+    @Override
+    public SelectorUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:" + uiSession.surface();
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiScroll = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
         if (searchInputWidget != null) {
             uiSession.query(searchInputWidget.value());
-            if (state != null && searchInputWidget.focused()) state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
+            if (state != null && searchInputWidget.focused())
+                state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
         }
         if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() * 1);
     }
+
     private void restoreUiSelection() {
         currentEffect = uiSession.effect();
         uiVersion = uiSession.version();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
-    @Override public void onClose() {
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         uiSession.close(UiCloseReason.CANCEL);
         Minecraft.getInstance().setScreen(args.parentScreen());
@@ -246,7 +276,8 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
         });
         addWidget(searchInputWidget);
         if (uiState != null && uiState.focusedField().equals("search")) {
-            requestFocus(searchInputWidget); searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            requestFocus(searchInputWidget);
+            searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
         }
 
         scrollbarWidget = new ScrollbarWidget(this);
@@ -395,7 +426,10 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
 
     @Override
     public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        if (uiVersion != uiSession.version()) { restoreUiSelection(); markEffectButtonsDirty(); }
+        if (uiVersion != uiSession.version()) {
+            restoreUiSelection();
+            markEffectButtonsDirty();
+        }
         PoseStack stack = graphics.pose();
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -566,7 +600,8 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
 
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
-        uiSession.query(s); uiSession.mode(playerMode);
+        uiSession.query(s);
+        uiSession.mode(playerMode);
         this.effectList.clear();
 
         if (this.playerMode) {

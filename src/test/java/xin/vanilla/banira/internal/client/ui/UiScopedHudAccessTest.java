@@ -1,25 +1,31 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class UiScopedHudAccessTest {
     private ClassNode source() throws Exception {
         ClassNode node = new ClassNode();
         try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess.class")) {
-            assertNotNull(input); new ClassReader(input).accept(node, 0);
+            assertNotNull(input);
+            new ClassReader(input).accept(node, 0);
         }
         return node;
     }
 
-    @Test public void closingOneBranchDoesNotHideAnotherOwnersTooltip() throws Exception {
+    @Test
+    public void closingOneBranchDoesNotHideAnotherOwnersTooltip() throws Exception {
         MethodNode close = source().methods.stream().filter(method -> method.name.equals("close")).findFirst().orElseThrow();
         int hide = -1;
         for (int i = 0; i < close.instructions.size(); i++) {
             var instruction = close.instructions.get(i);
-            if (instruction instanceof MethodInsnNode call && call.owner.endsWith("/Tooltip") && call.name.equals("hide")) hide = i;
+            if (instruction instanceof MethodInsnNode call && call.owner.endsWith("/Tooltip") && call.name.equals("hide"))
+                hide = i;
         }
         assertTrue("Exclusive document cleanup must remain", hide >= 0);
         boolean scoped = false;
@@ -35,7 +41,8 @@ public class UiScopedHudAccessTest {
         assertTrue("Scoped cleanup must skip document-wide tooltip disposal", scoped);
     }
 
-    @Test public void scopedLookupChecksItsOwnedNodeSet() throws Exception {
+    @Test
+    public void scopedLookupChecksItsOwnedNodeSet() throws Exception {
         MethodNode find = source().methods.stream().filter(method -> method.name.equals("find")).findFirst().orElseThrow();
         boolean root = false, membership = false;
         for (var instruction : find.instructions) {
@@ -45,7 +52,8 @@ public class UiScopedHudAccessTest {
         assertTrue(root && membership);
     }
 
-    @Test public void oldOwnerConstructorAndScopedConstructorBothExist() throws Exception {
+    @Test
+    public void oldOwnerConstructorAndScopedConstructorBothExist() throws Exception {
         var constructors = source().methods.stream().filter(method -> method.name.equals("<init>")).map(method -> method.desc).toList();
         assertTrue(constructors.contains("(Lcom/sighs/apricityui/init/Document;Ljava/util/function/BooleanSupplier;)V"));
         assertTrue(constructors.contains("(Lcom/sighs/apricityui/init/Document;Ljava/util/function/BooleanSupplier;Lcom/sighs/apricityui/init/Element;)V"));

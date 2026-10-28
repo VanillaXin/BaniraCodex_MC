@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public final class UiFocusTraversal {
-    private UiFocusTraversal() { }
+    private UiFocusTraversal() {
+    }
 
     public static <T> T next(List<T> order, T current, Predicate<T> eligible, boolean reverse) {
         int size = order.size();

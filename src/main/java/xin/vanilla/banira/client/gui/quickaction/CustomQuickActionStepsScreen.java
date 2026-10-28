@@ -13,6 +13,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.api.quickaction.*;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -25,8 +27,9 @@ import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
 import xin.vanilla.banira.internal.client.ui.page.QuickActionEditUiSession;
 
@@ -71,8 +74,14 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
     private NavigationUiSession.Action action(String id, String label, Runnable callback) {
         return new NavigationUiSession.Action(id, BaniraComponent.get().transClientAuto(label), callback, null);
     }
-    @Override public String uiSurfaceId() { return "banira_codex:quick-steps"; }
-    @Override public QuickActionEditUiSession uiSession() {
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:quick-steps";
+    }
+
+    @Override
+    public QuickActionEditUiSession uiSession() {
         if (uiSession == null) {
             List<NavigationUiSession.Action> tools = new ArrayList<>();
             tools.add(action("details", isMenuItem() ? "custom_quick_action_menu_details" : "custom_quick_action_edit_details", this::openDefinitionEditor));
@@ -93,22 +102,42 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
             uiSession.context(() -> BaniraComponent.get().literal(isMenuItem() ? menuItem.getLabel() : definition.getLabel()));
             if (!isMenuItem()) {
                 List<DropdownOption> icons = new ArrayList<>();
-                for (QuickActionIconType type : QuickActionIconType.values()) icons.add(new DropdownOption(type.name(),
-                        CustomQuickActionEditor.t("custom_quick_action_icon_" + type.name().toLowerCase(java.util.Locale.ROOT)).content()));
+                for (QuickActionIconType type : QuickActionIconType.values())
+                    icons.add(new DropdownOption(type.name(),
+                            CustomQuickActionEditor.t("custom_quick_action_icon_" + type.name().toLowerCase(java.util.Locale.ROOT)).content()));
                 uiSession.icons(icons, () -> definition.getIconType().name(), value -> openIconPicker(QuickActionIconType.valueOf(value)));
             }
         }
         return uiSession;
     }
-    @Override public UiPageSpec uiPage() { return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-steps.html"); }
-    @Override public void captureUiState(UiViewState state) { if (state != null) state.rowPosition(scrollIndex); }
-    @Override public void prepareUiState(UiViewState state) { scrollIndex = (int) state.rowPosition(); }
-    @Override public void onClose() {
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-steps.html");
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (state != null) state.rowPosition(scrollIndex);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        scrollIndex = (int) state.rowPosition();
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         if (uiSession != null) uiSession.close(UiCloseReason.CANCEL);
         super.onClose();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     CustomQuickActionStepsScreen(CustomQuickActionConfigScreen parent,
                                  CustomQuickActionDefinition definition, int originalIndex) {
@@ -314,7 +343,8 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
     }
 
     private void reopen() {
-        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId())) uiSession.refresh();
+        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId()))
+            uiSession.refresh();
         else Minecraft.getInstance().setScreen(this);
     }
 

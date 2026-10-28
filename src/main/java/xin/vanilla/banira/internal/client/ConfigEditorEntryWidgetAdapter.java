@@ -64,8 +64,15 @@ public final class ConfigEditorEntryWidgetAdapter implements ConfigEditorEntryWi
         return this;
     }
 
-    @Override public String getDraft() { return draftGetter != null ? draftGetter.get() : null; }
-    @Override public void setDraft(String draft) { if (draftSetter != null) draftSetter.accept(draft); }
+    @Override
+    public String getDraft() {
+        return draftGetter != null ? draftGetter.get() : null;
+    }
+
+    @Override
+    public void setDraft(String draft) {
+        if (draftSetter != null) draftSetter.accept(draft);
+    }
 
     private static LabelWidget findLabel(BaseWidget rowWidget) {
         for (IWidget child : rowWidget.children()) {

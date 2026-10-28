@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import org.junit.Test;
 import net.minecraft.client.gui.screens.Screen;
+import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiValue;
-import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
+import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 
 import java.math.BigDecimal;
@@ -14,7 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
-import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
+import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
+import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.type;
 
 public class UiFormParityTest {
     @org.junit.BeforeClass
@@ -29,7 +30,8 @@ public class UiFormParityTest {
     }
 
     private InputFormScreen.Args args(java.util.function.Consumer<InputFormScreen.Results> callback) {
-        return new InputFormScreen.Args().setParentScreen(new Screen(net.minecraft.network.chat.Component.empty()) { })
+        return new InputFormScreen.Args().setParentScreen(new Screen(net.minecraft.network.chat.Component.empty()) {
+                })
                 .setCallback(callback)
                 .addWidget(new InputFormScreen.Widget().name("text").title(Text.literal("Text"))
                         .defaultValue("<script>payload()</script>"))
@@ -46,19 +48,26 @@ public class UiFormParityTest {
 
     @Test
     public void typedValuesKeepStructuredSelectionsAndLiteralText() throws Exception {
-        Object form = form(args(result -> { }));
+        Object form = form(args(result -> {
+        }));
         assertEquals("<script>payload()</script>", ((UiValue) call(form, "get", new Class<?>[]{String.class}, "text")).asText());
         assertEquals(new BigDecimal("2.50"), ((UiValue) call(form, "get", new Class<?>[]{String.class}, "amount")).asDecimal());
         InputFormScreen.Results result = (InputFormScreen.Results) call(form, "results");
         assertEquals(Arrays.asList("a,b", "z"), result.values("tags"));
-        try { result.value("tags"); fail("Structured selections were flattened"); }
-        catch (IllegalStateException expected) { }
+        try {
+            result.value("tags");
+            fail("Structured selections were flattened");
+        } catch (IllegalStateException expected) {
+        }
     }
 
     @Test
     public void submitUsesExistingValidatorAndCallbackFailureContract() throws Exception {
         AtomicInteger submissions = new AtomicInteger();
-        InputFormScreen.Args args = args(result -> { submissions.incrementAndGet(); result.runningResult("rejected"); });
+        InputFormScreen.Args args = args(result -> {
+            submissions.incrementAndGet();
+            result.runningResult("rejected");
+        });
         args.getWidgets().get(0).validator(result -> result.value("text").equals("bad") ? "invalid" : "");
         Object form = form(args);
         call(form, "set", new Class<?>[]{String.class, UiValue.class}, "text", UiValue.text("bad"));
@@ -96,7 +105,8 @@ public class UiFormParityTest {
 
     @Test
     public void controlsRetainNonValuePresentationTypes() throws Exception {
-        InputFormScreen.Args args = args(result -> { });
+        InputFormScreen.Args args = args(result -> {
+        });
         args.addWidget(new InputFormScreen.Widget().name("password").title(Text.literal("Password"))
                 .type(InputFormScreen.WidgetType.PASSWORD));
         args.addWidget(new InputFormScreen.Widget().name("file").title(Text.literal("File"))
@@ -129,7 +139,8 @@ public class UiFormParityTest {
 
     @Test
     public void partialNumericDraftSurvivesDetachWithoutBecomingTextValue() throws Exception {
-        Object form = form(args(result -> { }));
+        Object form = form(args(result -> {
+        }));
         call(form, "draft", new Class<?>[]{String.class, String.class}, "amount", "-");
         call(form, "detach", new Class<?>[]{UiDetachReason.class}, UiDetachReason.SWITCH);
         assertEquals("-", call(form, "draft", new Class<?>[]{String.class}, "amount"));
@@ -161,8 +172,11 @@ public class UiFormParityTest {
         AtomicReference<Boolean> nested = new AtomicReference<>();
         form.set(form(args(result -> {
             if (submissions.incrementAndGet() == 1) {
-                try { nested.set((Boolean) call(form.get(), "submit")); }
-                catch (Exception failure) { throw new AssertionError(failure); }
+                try {
+                    nested.set((Boolean) call(form.get(), "submit"));
+                } catch (Exception failure) {
+                    throw new AssertionError(failure);
+                }
             }
         })));
         assertEquals(true, call(form.get(), "submit"));
@@ -172,7 +186,8 @@ public class UiFormParityTest {
 
     @Test
     public void numericRowBindingPreservesPartialDraftAndDropsOldEvents() throws Exception {
-        Object form = form(args(result -> { }));
+        Object form = form(args(result -> {
+        }));
         NativeUiView view = new NativeUiView(new Object());
         call(form, "bind", new Class<?>[]{xin.vanilla.banira.api.client.ui.UiView.class}, view);
         assertTrue("Missing form row bindings", view.rowProviders.containsKey("fields"));
@@ -188,9 +203,11 @@ public class UiFormParityTest {
         assertEquals(0, row.subscriptionCount());
     }
 
-    @Test public void incompleteNumberNeverReachesDomainValidator() throws Exception {
+    @Test
+    public void incompleteNumberNeverReachesDomainValidator() throws Exception {
         AtomicInteger validations = new AtomicInteger();
-        InputFormScreen.Args args = args(result -> { });
+        InputFormScreen.Args args = args(result -> {
+        });
         args.getWidgets().get(1).validator(result -> {
             validations.incrementAndGet();
             new BigDecimal(result.value("amount"));
@@ -198,8 +215,11 @@ public class UiFormParityTest {
         });
         Object form = form(args);
         call(form, "draft", new Class<?>[]{String.class, String.class}, "amount", "-");
-        try { assertEquals(false, call(form, "canSubmit")); }
-        catch (java.lang.reflect.InvocationTargetException failure) { fail("Incomplete input reached domain validator: " + failure.getCause()); }
+        try {
+            assertEquals(false, call(form, "canSubmit"));
+        } catch (java.lang.reflect.InvocationTargetException failure) {
+            fail("Incomplete input reached domain validator: " + failure.getCause());
+        }
         assertEquals(0, validations.get());
     }
 }

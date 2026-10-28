@@ -86,7 +86,8 @@ public final class ConfigEditorState {
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : entryWidgets.entrySet()) {
             Object value = entry.getValue().getValue();
             if (!entry.getValue().isValid()) {
-                if (!Objects.equals(entry.getValue().getDraft(), baselineDrafts.get(entry.getKey()))) paths.add(entry.getKey());
+                if (!Objects.equals(entry.getValue().getDraft(), baselineDrafts.get(entry.getKey())))
+                    paths.add(entry.getKey());
                 continue;
             }
             if (value != null && !Objects.deepEquals(value, baselineValues.get(entry.getKey()))) {

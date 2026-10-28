@@ -31,7 +31,9 @@ public class AuiCapabilityContractTest {
     public void absentAuiFallsBackWithoutLoadingClientClasses() throws Exception {
         assertFalse(compatible(new ClassLoader(null) {
             @Override
-            public InputStream getResourceAsStream(String name) { return null; }
+            public InputStream getResourceAsStream(String name) {
+                return null;
+            }
         }));
     }
 
@@ -68,7 +70,9 @@ public class AuiCapabilityContractTest {
                         ClassWriter writer = new ClassWriter(0);
                         node.accept(writer);
                         return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception e) { throw new AssertionError(e); }
+                    } catch (Exception e) {
+                        throw new AssertionError(e);
+                    }
                 }
             };
             assertFalse(compatible(changed));
@@ -104,20 +108,28 @@ public class AuiCapabilityContractTest {
         }
     }
 
-    @Test public void missingScrollOrVisibilityFieldFallsBack() throws Exception {
-        for (String field : new String[]{"scrollHeight", "isVisible"}) try (URLClassLoader jar = official()) {
-            assertFalse(field, compatible(new ClassLoader(null) {
-                @Override public InputStream getResourceAsStream(String name) {
-                    InputStream stream = jar.getResourceAsStream(name);
-                    if (!name.equals("com/sighs/apricityui/init/Element.class")) return stream;
-                    try (InputStream input = stream) {
-                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node,0);
-                        node.fields.removeIf(value -> value.name.equals(field));
-                        ClassWriter writer = new ClassWriter(0); node.accept(writer); return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception failure) { throw new AssertionError(failure); }
-                }
-            }));
-        }
+    @Test
+    public void missingScrollOrVisibilityFieldFallsBack() throws Exception {
+        for (String field : new String[]{"scrollHeight", "isVisible"})
+            try (URLClassLoader jar = official()) {
+                assertFalse(field, compatible(new ClassLoader(null) {
+                    @Override
+                    public InputStream getResourceAsStream(String name) {
+                        InputStream stream = jar.getResourceAsStream(name);
+                        if (!name.equals("com/sighs/apricityui/init/Element.class")) return stream;
+                        try (InputStream input = stream) {
+                            ClassNode node = new ClassNode();
+                            new ClassReader(input).accept(node, 0);
+                            node.fields.removeIf(value -> value.name.equals(field));
+                            ClassWriter writer = new ClassWriter(0);
+                            node.accept(writer);
+                            return new ByteArrayInputStream(writer.toByteArray());
+                        } catch (Exception failure) {
+                            throw new AssertionError(failure);
+                        }
+                    }
+                }));
+            }
     }
 
     private URLClassLoader official() throws Exception {
@@ -125,10 +137,13 @@ public class AuiCapabilityContractTest {
         assertNotNull("Pinned official AUI binary must be provided", path);
         return new URLClassLoader(new URL[]{new java.io.File(path).toURI().toURL()}, null);
     }
-    @Test public void compileOnlyMarkerRejectsEvenAnOtherwiseOfficialContract() throws Exception {
+
+    @Test
+    public void compileOnlyMarkerRejectsEvenAnOtherwiseOfficialContract() throws Exception {
         try (URLClassLoader jar = official()) {
             assertFalse(compatible(new ClassLoader(null) {
-                @Override public InputStream getResourceAsStream(String name) {
+                @Override
+                public InputStream getResourceAsStream(String name) {
                     return name.equals("META-INF/banira-aui-compile-api.properties")
                             ? new ByteArrayInputStream("compileOnly=true".getBytes(java.nio.charset.StandardCharsets.UTF_8)) : jar.getResourceAsStream(name);
                 }
@@ -136,30 +151,38 @@ public class AuiCapabilityContractTest {
         }
     }
 
-    @Test public void changedPublicCoordinateFieldFallsBack() throws Exception {
+    @Test
+    public void changedPublicCoordinateFieldFallsBack() throws Exception {
         try (URLClassLoader jar = official()) {
             assertFalse(compatible(new ClassLoader(null) {
-                @Override public InputStream getResourceAsStream(String name) {
+                @Override
+                public InputStream getResourceAsStream(String name) {
                     InputStream stream = jar.getResourceAsStream(name);
                     if (!name.equals("com/sighs/apricityui/init/Element$DOMRect.class")) return stream;
                     try (InputStream input = stream) {
-                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                        ClassNode node = new ClassNode();
+                        new ClassReader(input).accept(node, 0);
                         node.fields.stream().filter(field -> field.name.equals("x")).forEach(field -> field.desc = "F");
-                        ClassWriter writer = new ClassWriter(0); node.accept(writer);
+                        ClassWriter writer = new ClassWriter(0);
+                        node.accept(writer);
                         return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception failure) { throw new AssertionError(failure); }
+                    } catch (Exception failure) {
+                        throw new AssertionError(failure);
+                    }
                 }
             }));
         }
     }
 
-    @Test public void everyDocumentAdapterMethodIsGuarded() throws Exception {
+    @Test
+    public void everyDocumentAdapterMethodIsGuarded() throws Exception {
         java.util.Set<String> guarded = new java.util.HashSet<>();
         for (AuiCapabilityContract.Member member : AuiCapabilityContract.requiredMembers()) guarded.add(member.key());
         for (String name : new String[]{"AuiDocumentAccess", "AuiDocumentAccess$AuiNode", "AuiDocumentAccess$AuiNode$1"}) {
             try (InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/" + name + ".class")) {
                 assertNotNull(input);
-                ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                ClassNode node = new ClassNode();
+                new ClassReader(input).accept(node, 0);
                 for (org.objectweb.asm.tree.MethodNode method : node.methods) {
                     for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions) {
                         if (!(instruction instanceof org.objectweb.asm.tree.MethodInsnNode)) continue;
@@ -173,16 +196,21 @@ public class AuiCapabilityContractTest {
         }
         try (InputStream input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/client/ui/AuiHudDocument.class")) {
             assertNotNull(input);
-            ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
-            for (var method : node.methods) for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                if (call.owner.startsWith("com/sighs/apricityui/")) assertTrue("Unguarded HUD call " + call.owner + "#" + call.name + call.desc,
-                        guarded.contains(call.owner + "#" + call.name + call.desc));
-            }
+            ClassNode node = new ClassNode();
+            new ClassReader(input).accept(node, 0);
+            for (var method : node.methods)
+                for (var instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                        var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                        if (call.owner.startsWith("com/sighs/apricityui/"))
+                            assertTrue("Unguarded HUD call " + call.owner + "#" + call.name + call.desc,
+                                    guarded.contains(call.owner + "#" + call.name + call.desc));
+                    }
         }
     }
 
-    @Test public void allProductAuiCallsAreGuarded() throws Exception {
+    @Test
+    public void allProductAuiCallsAreGuarded() throws Exception {
         var guarded = new java.util.HashSet<String>();
         for (var member : AuiCapabilityContract.requiredMembers()) guarded.add(member.key());
         var root = java.nio.file.Path.of("build/classes/java/main/xin/vanilla/banira/internal");
@@ -190,31 +218,39 @@ public class AuiCapabilityContractTest {
             var classes = paths.filter(path -> path.getFileName().toString().startsWith("Aui") && path.toString().endsWith(".class")).toList();
             assertTrue(classes.size() > 4);
             for (var path : classes) {
-                ClassNode node = new ClassNode(); new ClassReader(java.nio.file.Files.readAllBytes(path)).accept(node, 0);
-                for (var method : node.methods) for (var instruction : method.instructions)
-                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.owner.startsWith("com/sighs/apricityui/")
-                            && !(call.getOpcode() == org.objectweb.asm.Opcodes.INVOKESPECIAL
-                            && call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")
-                            && java.util.Set.of("init()V", "removed()V", "keyPressed(III)Z", "keyReleased(III)Z",
-                                    "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V").contains(call.name + call.desc)))
-                        assertTrue("Unguarded " + path + ": " + call.owner + "#" + call.name + call.desc,
-                                guarded.contains(call.owner + "#" + call.name + call.desc));
+                ClassNode node = new ClassNode();
+                new ClassReader(java.nio.file.Files.readAllBytes(path)).accept(node, 0);
+                for (var method : node.methods)
+                    for (var instruction : method.instructions)
+                        if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.owner.startsWith("com/sighs/apricityui/")
+                                && !(call.getOpcode() == org.objectweb.asm.Opcodes.INVOKESPECIAL
+                                && call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")
+                                && java.util.Set.of("init()V", "removed()V", "keyPressed(III)Z", "keyReleased(III)Z",
+                                "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V").contains(call.name + call.desc)))
+                            assertTrue("Unguarded " + path + ": " + call.owner + "#" + call.name + call.desc,
+                                    guarded.contains(call.owner + "#" + call.name + call.desc));
             }
         }
     }
 
-    @Test public void changedMouseButtonFieldFallsBackBeforeInputBinding() throws Exception {
+    @Test
+    public void changedMouseButtonFieldFallsBackBeforeInputBinding() throws Exception {
         try (URLClassLoader jar = official()) {
             assertFalse(compatible(new ClassLoader(null) {
-                @Override public InputStream getResourceAsStream(String name) {
+                @Override
+                public InputStream getResourceAsStream(String name) {
                     InputStream stream = jar.getResourceAsStream(name);
                     if (!name.equals("com/sighs/apricityui/event/MouseEvent.class")) return stream;
                     try (InputStream input = stream) {
-                        ClassNode node = new ClassNode(); new ClassReader(input).accept(node, 0);
+                        ClassNode node = new ClassNode();
+                        new ClassReader(input).accept(node, 0);
                         node.fields.removeIf(field -> field.name.equals("button"));
-                        ClassWriter writer = new ClassWriter(0); node.accept(writer);
+                        ClassWriter writer = new ClassWriter(0);
+                        node.accept(writer);
                         return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception failure) { throw new AssertionError(failure); }
+                    } catch (Exception failure) {
+                        throw new AssertionError(failure);
+                    }
                 }
             }));
         }
@@ -238,7 +274,9 @@ public class AuiCapabilityContractTest {
                     ClassWriter writer = new ClassWriter(0);
                     node.accept(writer);
                     return new ByteArrayInputStream(writer.toByteArray());
-                } catch (Exception e) { throw new AssertionError(e); }
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
             }
         };
     }

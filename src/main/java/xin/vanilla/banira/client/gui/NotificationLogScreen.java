@@ -12,6 +12,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -21,8 +23,8 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.notification.NotificationDetailViewport;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
@@ -31,13 +33,17 @@ import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static xin.vanilla.banira.client.data.BaniraColorToken.*;
@@ -170,21 +176,45 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         refreshHistory();
     }
 
-    @Override public NotificationUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:notification-log"; }
-    @Override public UiPageSpec uiPage() { return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) {
-        uiState = state; scrollValue = state.rowPosition(); restoreDetail = true; pendingSelectLogEntryId = 0;
+    @Override
+    public NotificationUiSession uiSession() {
+        return uiSession;
     }
-    @Override public void captureUiState(UiViewState state) {
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:notification-log";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        scrollValue = state.rowPosition();
+        restoreDetail = true;
+        pendingSelectLogEntryId = 0;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
         uiSession.query(searchQuery);
         state.rowPosition(scrollValue);
         if ((int) scrollValue < filteredEntries.size() && !filteredEntries.isEmpty())
             state.scrollAnchor("notification:" + filteredEntries.get((int) scrollValue).id());
         state.detailScroll(detailViewport.scrollRows() * font.lineHeight);
-        if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        if (searchInput != null && searchInput.focused())
+            state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     private void applyPendingLogSelection() {
         if (pendingSelectLogEntryId == 0L) {
@@ -378,7 +408,8 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
 
         applyPendingLogSelection();
         if (uiState != null && uiState.focusedField().equals("search")) {
-            requestFocus(searchInput); searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            requestFocus(searchInput);
+            searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
         }
     }
 
@@ -563,7 +594,10 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         }
 
         NotificationLogEntry entry = filteredEntries.get(selectedIndex);
-        if (detailEntryId != entry.id()) { detailViewport.reset(); detailEntryId = entry.id(); }
+        if (detailEntryId != entry.id()) {
+            detailViewport.reset();
+            detailEntryId = entry.id();
+        }
         String timeStr = DateUtils.toDateTimeString(new Date(entry.timestamp())) + "  "
                 + BaniraComponent.get().transClientAuto(entry.read() ? "notification_log_read" : "notification_log_unread").toString();
 

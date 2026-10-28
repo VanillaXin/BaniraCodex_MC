@@ -20,12 +20,20 @@ final class AuiTransientTooltip implements AutoCloseable {
         body.appendChild(root);
     }
 
-    boolean owns(Element element) { return owner == element; }
+    boolean owns(Element element) {
+        return owner == element;
+    }
 
     void update(Element next, String value, Position point, double width, double height) {
-        if (next == null || value == null || value.isBlank()) { hide(); return; }
+        if (next == null || value == null || value.isBlank()) {
+            hide();
+            return;
+        }
         if (owner != next || !text.equals(value)) {
-            hide(); owner = next; text = value; entered = System.nanoTime();
+            hide();
+            owner = next;
+            text = value;
+            entered = System.nanoTime();
             root.setInnerText(value);
         }
         if (System.nanoTime() - entered < 350_000_000L) return;
@@ -34,11 +42,21 @@ final class AuiTransientTooltip implements AutoCloseable {
                 + "px;width:" + bounds.width() + "px;max-height:" + Math.max(0, height - 8) + "px");
     }
 
-    void hide() { owner = null; css("position:fixed;pointer-events:none;z-index:10001;display:none"); }
-
-    private void css(String value) {
-        if (!style.equals(value)) { style = value; root.setAttribute("style", value); }
+    void hide() {
+        owner = null;
+        css("position:fixed;pointer-events:none;z-index:10001;display:none");
     }
 
-    @Override public void close() { hide(); root.remove(); }
+    private void css(String value) {
+        if (!style.equals(value)) {
+            style = value;
+            root.setAttribute("style", value);
+        }
+    }
+
+    @Override
+    public void close() {
+        hide();
+        root.remove();
+    }
 }

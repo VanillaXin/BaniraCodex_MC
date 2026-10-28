@@ -1,16 +1,24 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+
 import static org.junit.Assert.*;
 
 public class UiResourceBudgetTest {
-    static java.util.List<String> violations(java.util.Map<String, byte[]> files, boolean shared) { return UiBoundaryChecks.resources(files, shared); }
-    @Test public void everyOwnedUiResourceIsBudgeted() throws Exception {
+    static java.util.List<String> violations(java.util.Map<String, byte[]> files, boolean shared) {
+        return UiBoundaryChecks.resources(files, shared);
+    }
+
+    @Test
+    public void everyOwnedUiResourceIsBudgeted() throws Exception {
         assertEquals(java.util.List.of(), violations(UiBoundaryChecks.ownResources("banira_codex"), true));
     }
-    @Test public void injectedRemoteScriptsFontsAndOversizedResourcesAreRejected() {
+
+    @Test
+    public void injectedRemoteScriptsFontsAndOversizedResourcesAreRejected() {
         for (var fixture : java.util.List.of(
                 java.util.Map.of("page.html", "<script src='https://example.invalid/a.js'></script>".getBytes(StandardCharsets.UTF_8)),
                 java.util.Map.of("large.html", new byte[12289]),
@@ -21,11 +29,15 @@ public class UiResourceBudgetTest {
             assertFalse("Unsafe resource accepted", violations(fixture, true).isEmpty());
         }
     }
-    @Test public void downstreamCannotDuplicateSharedStylesOrExceedItsCssBudget() {
+
+    @Test
+    public void downstreamCannotDuplicateSharedStylesOrExceedItsCssBudget() {
         assertFalse(violations(java.util.Map.of("shared.css", new byte[1]), false).isEmpty());
         assertFalse(violations(java.util.Map.of("mod.css", new byte[4097]), false).isEmpty());
     }
-    @Test public void listHeaderCommandsFitTheFixedVirtualRow() throws Exception {
+
+    @Test
+    public void listHeaderCommandsFitTheFixedVirtualRow() throws Exception {
         try (InputStream stream = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             String css = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             java.util.regex.Matcher row = java.util.regex.Pattern.compile("(?s)\\.row\\s*\\{([^}]+)}").matcher(css);
@@ -36,17 +48,22 @@ public class UiResourceBudgetTest {
             assertTrue("Long command labels need a bounded line and their full tooltip", css.matches("(?s).*\\.row > button\\s*\\{[^}]*max-height:\\s*20px[^}]*white-space:\\s*nowrap[^}]*}.*"));
         }
     }
+
     private static int pixels(String rule, String property) {
         var match = java.util.regex.Pattern.compile("(?:^|;)\\s*" + property + ":\\s*(\\d+)px").matcher(rule);
-        assertTrue(property, match.find()); return Integer.parseInt(match.group(1));
+        assertTrue(property, match.find());
+        return Integer.parseInt(match.group(1));
     }
-    @Test public void longTitlesHaveBoundedHeaderHeight() throws Exception {
+
+    @Test
+    public void longTitlesHaveBoundedHeaderHeight() throws Exception {
         try (InputStream stream = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
             assertNotNull(stream);
             String css = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue("Long headers must leave room for content and footer", css.matches("(?s).*\\.header\\s*\\{[^}]*max-height:\\s*\\d+px[^}]*}.*"));
         }
     }
+
     @Test
     public void sharedResourcesStayLocalSmallAndScriptFree() throws Exception {
         int total = 0;

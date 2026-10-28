@@ -20,12 +20,12 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.client.ConfigEditorInputLimits;
 import xin.vanilla.banira.internal.client.ConfigListDraft;
-import xin.vanilla.banira.common.config.ConfigListSpecHelper;
-import xin.vanilla.banira.common.util.JsonUtils;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -235,48 +235,60 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
     public String captureDraft() {
         ConfigListDraft draft = new ConfigListDraft();
-        draft.expanded = expanded; draft.adding = addingMode; draft.scroll = listScrollOffset;
+        draft.expanded = expanded;
+        draft.adding = addingMode;
+        draft.scroll = listScrollOffset;
         draft.editingIndex = editingIndex;
         if (editWidget instanceof InputWidget) draft.editText = editWidget instanceof KeyCaptureInputWidget
                 ? ((KeyCaptureInputWidget) editWidget).retainedValue() : ((InputWidget) editWidget).value();
         if (addInputWidget instanceof InputWidget) draft.addText = addInputWidget instanceof KeyCaptureInputWidget
                 ? ((KeyCaptureInputWidget) addInputWidget).retainedValue() : ((InputWidget) addInputWidget).value();
-        if (addInputWidget instanceof DropdownSelectWidget) draft.selected.addAll(((DropdownSelectWidget) addInputWidget).getSelectedValues());
+        if (addInputWidget instanceof DropdownSelectWidget)
+            draft.selected.addAll(((DropdownSelectWidget) addInputWidget).getSelectedValues());
         draft.raw = invalidRawDraft;
         if (undoMode) draft.undo = ConfigListSpecHelper.encodeNetworkList(lastClearedItems);
         return draft.encode();
     }
 
-    public boolean draftCommitted() { return !ConfigListDraft.decode(captureDraft()).pending(); }
+    public boolean draftCommitted() {
+        return !ConfigListDraft.decode(captureDraft()).pending();
+    }
 
     public void restoreDraft(String encoded) {
         ConfigListDraft draft = ConfigListDraft.decode(encoded);
         restoringDraft = true;
         try {
-            cancelInlineEdit(); exitAddingMode();
-            expanded = draft.expanded; invalidRawDraft = draft.raw;
+            cancelInlineEdit();
+            exitAddingMode();
+            expanded = draft.expanded;
+            invalidRawDraft = draft.raw;
             ensureChildren();
             if (draft.adding) {
                 enterAddingMode();
                 if (addInputWidget instanceof InputWidget) ((InputWidget) addInputWidget).value(draft.addText);
-                if (addInputWidget instanceof DropdownSelectWidget) ((DropdownSelectWidget) addInputWidget).selectedValues(
-                        draft.selected.isEmpty() && !draft.addText.isEmpty() ? Collections.singletonList(draft.addText) : draft.selected);
+                if (addInputWidget instanceof DropdownSelectWidget)
+                    ((DropdownSelectWidget) addInputWidget).selectedValues(
+                            draft.selected.isEmpty() && !draft.addText.isEmpty() ? Collections.singletonList(draft.addText) : draft.selected);
             }
             if (draft.editingIndex >= 0 && draft.editingIndex < items.size()) {
                 startInlineEdit(draft.editingIndex);
-                if (editWidget instanceof InputWidget && draft.editText != null) ((InputWidget) editWidget).value(draft.editText);
+                if (editWidget instanceof InputWidget && draft.editText != null)
+                    ((InputWidget) editWidget).value(draft.editText);
             }
             undoMode = draft.undo != null;
             lastClearedItems.clear();
-            if (undoMode) for (com.google.gson.JsonElement element : JsonUtils.GSON.fromJson(draft.undo, com.google.gson.JsonArray.class)) {
-                com.google.gson.JsonPrimitive value = element.getAsJsonPrimitive();
-                lastClearedItems.add(value.isBoolean() ? value.getAsBoolean() : value.isNumber() ? value.getAsBigDecimal() : value.getAsString());
-            }
+            if (undoMode)
+                for (com.google.gson.JsonElement element : JsonUtils.GSON.fromJson(draft.undo, com.google.gson.JsonArray.class)) {
+                    com.google.gson.JsonPrimitive value = element.getAsJsonPrimitive();
+                    lastClearedItems.add(value.isBoolean() ? value.getAsBoolean() : value.isNumber() ? value.getAsBigDecimal() : value.getAsString());
+                }
             clearButton.presetStyle(undoMode ? ButtonWidget.PresetStyle.ARROW_LEFT : ButtonWidget.PresetStyle.MINUS);
             clearButtonTooltip.text(BaniraComponent.get().transClientAuto(undoMode ? "tag_list_undo_tooltip" : "tag_list_clear_tooltip"));
             listScrollOffset = Math.max(0, draft.scroll);
             updateBoundsHeight();
-        } finally { restoringDraft = false; }
+        } finally {
+            restoringDraft = false;
+        }
     }
 
     public TagListEditorWidget(BaniraScreen screen) {
@@ -1033,7 +1045,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         if (item == null) return "";
         if (item instanceof Boolean b) return b ? "true" : "false";
         if (item instanceof BigDecimal bd) return bd.toPlainString();
-        if (item instanceof Byte || item instanceof Short || item instanceof Integer || item instanceof Long) return item.toString();
+        if (item instanceof Byte || item instanceof Short || item instanceof Integer || item instanceof Long)
+            return item.toString();
         if (item instanceof Number n) {
             double d = n.doubleValue();
             if (d == (long) d) return String.valueOf((long) d);
@@ -1050,7 +1063,9 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             if (listNumberIntegerOnly) return number.longValueExact();
             double value = number.doubleValue();
             return Double.isFinite(value) ? value : null;
-        } catch (NumberFormatException | ArithmeticException invalid) { return null; }
+        } catch (NumberFormatException | ArithmeticException invalid) {
+            return null;
+        }
     }
 
     private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {

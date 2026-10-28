@@ -7,7 +7,10 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -34,7 +37,12 @@ final class UiSelectPopup implements AutoCloseable {
 
     UiSelectPopup(UiDomAccess dom, UiDomAccess.Node anchor, UiControlSpec control, UiValue value,
                   Consumer<UiValue> selection, BooleanSupplier live, Runnable closed, Consumer<Throwable> failure) {
-        this.dom = dom; this.anchor = anchor; this.control = control; this.selection = selection; this.live = live; this.closed = closed;
+        this.dom = dom;
+        this.anchor = anchor;
+        this.control = control;
+        this.selection = selection;
+        this.live = live;
+        this.closed = closed;
         this.failure = failure;
         if (value != null) {
             if (control.multiple()) selected.addAll(value.asStrings());
@@ -47,7 +55,10 @@ final class UiSelectPopup implements AutoCloseable {
         options = add("div", panel, "popup-options");
         top = add("div", options, null);
         bottom = add("div", options, null);
-        listen(layer, "click", event -> { event.consume(); close(); });
+        listen(layer, "click", event -> {
+            event.consume();
+            close();
+        });
         listen(panel, "click", UiDomAccess.Event::consume);
         listen(search, "input", event -> filter());
         listen(search, "keyup", event -> {
@@ -63,17 +74,24 @@ final class UiSelectPopup implements AutoCloseable {
     private void listen(UiDomAccess.Node node, String event, Consumer<UiDomAccess.Event> handler) {
         resources.own(node.on(event, input -> {
             if (resources.closed() || !live.getAsBoolean()) return;
-            try { handler.accept(input); }
-            catch (RuntimeException | LinkageError error) {
-                try { close(); }
-                catch (RuntimeException | LinkageError cleanup) { error.addSuppressed(cleanup); }
+            try {
+                handler.accept(input);
+            } catch (RuntimeException | LinkageError error) {
+                try {
+                    close();
+                } catch (RuntimeException | LinkageError cleanup) {
+                    error.addSuppressed(cleanup);
+                }
                 failure.accept(error);
             }
         }));
     }
 
     private UiDomAccess.Node add(String tag, UiDomAccess.Node parent, String css) {
-        UiDomAccess.Node node = dom.create(tag); node.attribute("class", css); parent.append(node); return node;
+        UiDomAccess.Node node = dom.create(tag);
+        node.attribute("class", css);
+        parent.append(node);
+        return node;
     }
 
     private void filter() {
@@ -81,11 +99,15 @@ final class UiSelectPopup implements AutoCloseable {
         filteredQuery = query;
         filtered = new ArrayList<>();
         for (DropdownOption option : control.options()) {
-            if (option.valueLowerCase().contains(query) || option.displayLabelLowerCase().contains(query)) filtered.add(option);
+            if (option.valueLowerCase().contains(query) || option.displayLabelLowerCase().contains(query))
+                filtered.add(option);
         }
         activeIndex = filtered.isEmpty() ? -1 : 0;
         for (int index = 0; index < filtered.size(); index++) {
-            if (selected.contains(filtered.get(index).value())) { activeIndex = index; break; }
+            if (selected.contains(filtered.get(index).value())) {
+                activeIndex = index;
+                break;
+            }
         }
         navigating = false;
         ScreenCoordinate area = placement(anchor.bounds(), dom.overlayRoot().bounds(), control.options().size());
@@ -96,21 +118,32 @@ final class UiSelectPopup implements AutoCloseable {
 
     private void key(UiDomAccess.Event event) {
         int code = event.keyCode();
-        if (code == 256) { event.consume(); close(); return; }
-        if (code == 258) { close(); return; }
+        if (code == 256) {
+            event.consume();
+            close();
+            return;
+        }
+        if (code == 258) {
+            close();
+            return;
+        }
         if (code == 257 || code == 335) {
             event.consume();
-            if (!navigating && control.inputMode() == DropdownInputMode.EDITABLE && !search.value().isEmpty()) choose(search.value());
+            if (!navigating && control.inputMode() == DropdownInputMode.EDITABLE && !search.value().isEmpty())
+                choose(search.value());
             else if (activeIndex >= 0 && activeIndex < filtered.size()) choose(filtered.get(activeIndex).value());
             return;
         }
         int target = activeIndex;
         if (code == 264) target++;
         else if (code == 265) target--;
-        else if (code == 266 || code == 267) target += (code == 266 ? -1 : 1) * Math.max(1, (int) (options.clientHeight() / 22));
-        else if ((code == 268 || code == 269) && (navigating || control.inputMode() != DropdownInputMode.EDITABLE)) target = code == 268 ? 0 : filtered.size() - 1;
+        else if (code == 266 || code == 267)
+            target += (code == 266 ? -1 : 1) * Math.max(1, (int) (options.clientHeight() / 22));
+        else if ((code == 268 || code == 269) && (navigating || control.inputMode() != DropdownInputMode.EDITABLE))
+            target = code == 268 ? 0 : filtered.size() - 1;
         else return;
-        event.consume(); navigating = true;
+        event.consume();
+        navigating = true;
         activeIndex = filtered.isEmpty() ? -1 : Math.max(0, Math.min(target, filtered.size() - 1));
         if (activeIndex >= 0) {
             double top = activeIndex * 22d, offset = options.scrollTop(), height = options.clientHeight();
@@ -139,7 +172,9 @@ final class UiSelectPopup implements AutoCloseable {
         if (options.clientHeight() > 0) render(false);
     }
 
-    private void render() { render(true); }
+    private void render() {
+        render(true);
+    }
 
     private void render(boolean force) {
         if (rendering || resources.closed()) return;
@@ -162,7 +197,8 @@ final class UiSelectPopup implements AutoCloseable {
                     int slot = index;
                     listen(button, "click", event -> {
                         event.consume();
-                        if (live.getAsBoolean() && !resources.closed() && slot < rowOptions.size()) choose(rowOptions.get(slot).value());
+                        if (live.getAsBoolean() && !resources.closed() && slot < rowOptions.size())
+                            choose(rowOptions.get(slot).value());
                     });
                     listen(button, "focus", event -> {
                         if (slot < rowOptions.size()) activeIndex = filtered.indexOf(rowOptions.get(slot));
@@ -178,12 +214,18 @@ final class UiSelectPopup implements AutoCloseable {
             }
             for (int index = count; index < rowNodes.size(); index++) {
                 UiDomAccess.Node node = rowNodes.get(index);
-                node.attribute("style", "display:none"); node.icon(null); node.tooltip("");
+                node.attribute("style", "display:none");
+                node.icon(null);
+                node.tooltip("");
             }
             bottom.attribute("style", "height:" + Math.max(0, filtered.size() - first - count) * 22L + "px;flex-shrink:0");
             options.append(bottom);
-            renderedFirst = first; renderedCount = count;
-        } finally { options.scrollTop(offset); rendering = false; }
+            renderedFirst = first;
+            renderedCount = count;
+        } finally {
+            options.scrollTop(offset);
+            rendering = false;
+        }
     }
 
     private void choose(String value) {
@@ -191,18 +233,30 @@ final class UiSelectPopup implements AutoCloseable {
             if (!selected.remove(value)) selected.add(value);
             selection.accept(UiValue.strings(selected));
             render();
-        } else { selection.accept(UiValue.text(value)); close(); }
+        } else {
+            selection.accept(UiValue.text(value));
+            close();
+        }
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (resources.closed()) return;
-        try { resources.close(); }
-        finally {
+        try {
+            resources.close();
+        } finally {
             try {
-                for (UiDomAccess.Node node : rowNodes) node.remove(); rowNodes.clear();
+                for (UiDomAccess.Node node : rowNodes) node.remove();
+                rowNodes.clear();
             } finally {
-                top.remove(); bottom.remove(); rowOptions.clear();
-                search.remove(); options.remove(); panel.remove(); layer.remove(); closed.run();
+                top.remove();
+                bottom.remove();
+                rowOptions.clear();
+                search.remove();
+                options.remove();
+                panel.remove();
+                layer.remove();
+                closed.run();
                 if (live.getAsBoolean()) anchor.focus();
             }
         }

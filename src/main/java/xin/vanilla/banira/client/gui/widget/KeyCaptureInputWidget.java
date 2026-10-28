@@ -64,7 +64,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     }
 
     private void capture(String shortcut) {
-        retained = shortcut; previewing = false;
+        retained = shortcut;
+        previewing = false;
         value(shortcut);
         if (onCaptured != null) {
             onCaptured.accept(shortcut);
@@ -72,20 +73,27 @@ public class KeyCaptureInputWidget extends InputWidget {
         screen.unfocusWidget(this);
     }
 
-    @Override public void focused(boolean focused) {
+    @Override
+    public void focused(boolean focused) {
         if (!focused) cancelPreview();
         super.focused(focused);
     }
 
-    @Override public void enabled(boolean enabled) {
+    @Override
+    public void enabled(boolean enabled) {
         if (!enabled) cancelPreview();
         super.enabled(enabled);
     }
 
-    public String retainedValue() { return previewing ? retained : value(); }
+    public String retainedValue() {
+        return previewing ? retained : value();
+    }
 
     private void cancelPreview() {
         pending.clear();
-        if (previewing) { previewing = false; value(retained); }
+        if (previewing) {
+            previewing = false;
+            value(retained);
+        }
     }
 }

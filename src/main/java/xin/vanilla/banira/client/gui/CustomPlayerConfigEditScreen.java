@@ -22,9 +22,9 @@ import xin.vanilla.banira.common.network.packet.CustomPlayerConfigSyncToServer;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.PlayerConfigUiSession;
+import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -48,7 +48,8 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
     private String labelVanillaMode;
     private PlayerConfigUiSession uiSession;
 
-    @Override public PlayerConfigUiSession playerUiSession() {
+    @Override
+    public PlayerConfigUiSession playerUiSession() {
         if (uiSession == null) {
             initializeOptions();
             String uuid = currentPlayerUuid();
@@ -75,7 +76,8 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         return uiSession;
     }
 
-    @Override public void tick() {
+    @Override
+    public void tick() {
         super.tick();
         if (uiSession == null || languageDropdown == null || modeDropdown == null) return;
         captureUiState(null);
@@ -90,11 +92,13 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
                 .equals(uiSession.fields().draft("notificationReceiveMode")) ? labelVanillaMode : labelBaniraMode));
     }
 
-    @Override protected void afterPlayerConfigBuilt() {
+    @Override
+    protected void afterPlayerConfigBuilt() {
         playerSaveEnabled(playerUiSession().fields().canSubmit());
     }
 
-    @Override public void captureUiState(UiViewState state) {
+    @Override
+    public void captureUiState(UiViewState state) {
         if (languageDropdown != null && modeDropdown != null) {
             List<String> languages = languageDropdown.getSelectedValues();
             List<String> modes = modeDropdown.getSelectedValues();

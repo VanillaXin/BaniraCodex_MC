@@ -1,13 +1,16 @@
 package xin.vanilla.banira.internal.client.ui.page;
 
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.common.config.*;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.Translator;
 
 final class ConfigUiTexts {
-    private ConfigUiTexts() { }
+    private ConfigUiTexts() {
+    }
 
     static Component title(ConfigHolder holder, ConfigEntryDescriptor descriptor) {
         var translator = Translator.of(holder.getModId());

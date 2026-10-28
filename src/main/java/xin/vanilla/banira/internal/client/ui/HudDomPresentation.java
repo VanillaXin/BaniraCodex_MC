@@ -1,7 +1,10 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import java.util.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public final class HudDomPresentation implements AutoCloseable {
     private final UiDomAccess dom;
@@ -13,12 +16,18 @@ public final class HudDomPresentation implements AutoCloseable {
     private final java.util.function.Function<ScreenCoordinate, ScreenCoordinate> projection;
     private final NotificationHudPresentation notifications;
     private final QuickActionHudPresentation quickActions;
-    public HudDomPresentation(UiDomAccess dom) { this(dom, java.util.function.Function.identity()); }
+
+    public HudDomPresentation(UiDomAccess dom) {
+        this(dom, java.util.function.Function.identity());
+    }
+
     public HudDomPresentation(UiDomAccess dom, java.util.function.Function<ScreenCoordinate, ScreenCoordinate> projection) {
-        this.dom = Objects.requireNonNull(dom); this.projection = Objects.requireNonNull(projection);
+        this.dom = Objects.requireNonNull(dom);
+        this.projection = Objects.requireNonNull(projection);
         notifications = new NotificationHudPresentation(dom, projection);
         quickActions = new QuickActionHudPresentation(dom, projection);
     }
+
     public void update(HudDrawList frame) {
         if (closed || !dom.current()) return;
         if (frame.parts().size() > 512) throw new IllegalStateException("AUI HUD node budget");
@@ -38,23 +47,48 @@ public final class HudDomPresentation implements AutoCloseable {
             String style = part.style(bounds);
             if (index == nodes.size()) {
                 UiDomAccess.Node node = dom.create("div"), mask = dom.create("div");
-                mask.append(node); dom.find("overlay").append(mask);
-                nodes.add(node); masks.add(mask); styles.add(""); maskStyles.add("");
+                mask.append(node);
+                dom.find("overlay").append(mask);
+                nodes.add(node);
+                masks.add(mask);
+                styles.add("");
+                maskStyles.add("");
             }
-            if (!style.equals(styles.get(index))) { nodes.get(index).attribute("style", style); styles.set(index, style); }
-            if (!maskStyle.equals(maskStyles.get(index))) { masks.get(index).attribute("style", maskStyle); maskStyles.set(index, maskStyle); }
+            if (!style.equals(styles.get(index))) {
+                nodes.get(index).attribute("style", style);
+                styles.set(index, style);
+            }
+            if (!maskStyle.equals(maskStyles.get(index))) {
+                masks.get(index).attribute("style", maskStyle);
+                maskStyles.set(index, maskStyle);
+            }
             index++;
         }
         while (nodes.size() > index) removeLast();
     }
+
     static String origin(String name) {
         return (name.contains("RIGHT") ? "100%" : name.contains("LEFT") ? "0%" : "50%") + " "
                 + (name.startsWith("BOTTOM") ? "100%" : name.startsWith("TOP") ? "0%" : "50%");
     }
+
     private void removeLast() {
-        nodes.remove(nodes.size() - 1).remove(); masks.remove(masks.size() - 1).remove();
-        styles.remove(styles.size() - 1); maskStyles.remove(maskStyles.size() - 1);
+        nodes.remove(nodes.size() - 1).remove();
+        masks.remove(masks.size() - 1).remove();
+        styles.remove(styles.size() - 1);
+        maskStyles.remove(maskStyles.size() - 1);
     }
-    public void afterLayout() { notifications.afterLayout(); }
-    @Override public void close() { if (closed) return; closed = true; notifications.close(); quickActions.close(); while (!nodes.isEmpty()) removeLast(); }
+
+    public void afterLayout() {
+        notifications.afterLayout();
+    }
+
+    @Override
+    public void close() {
+        if (closed) return;
+        closed = true;
+        notifications.close();
+        quickActions.close();
+        while (!nodes.isEmpty()) removeLast();
+    }
 }

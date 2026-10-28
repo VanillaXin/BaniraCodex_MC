@@ -16,8 +16,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 public class ConfigAdapterConcurrencyTest {
-    private static class Marker {}
-    public interface CountView { int count(); }
+    private static class Marker {
+    }
+
+    public interface CountView {
+        int count();
+    }
 
     @SuppressWarnings("unchecked")
     private static <K, V> Map<K, V> cache(String name) throws Exception {
@@ -77,15 +81,18 @@ public class ConfigAdapterConcurrencyTest {
         }
     }
 
-    @Test public void classCacheCoordinatesPublicationWithOrderedSnapshots() throws Exception {
+    @Test
+    public void classCacheCoordinatesPublicationWithOrderedSnapshots() throws Exception {
         assertGuardedPublication(cache("HOLDER_MAP"), Marker.class, fixture(1).holder);
     }
 
-    @Test public void nativeIdentityCacheCoordinatesPublicationWithReaders() throws Exception {
+    @Test
+    public void nativeIdentityCacheCoordinatesPublicationWithReaders() throws Exception {
         assertGuardedPublication(cache("HOLDER_BY_CONFIG"), nativeIdentity(), fixture(2).holder);
     }
 
-    @Test public void replacementsKeepClassInsertionOrderAndNativeIdentity() throws Exception {
+    @Test
+    public void replacementsKeepClassInsertionOrderAndNativeIdentity() throws Exception {
         Map<Class<?>, ConfigHolder> classes = cache("HOLDER_MAP");
         Map<ModConfig, ConfigHolder> identities = cache("HOLDER_BY_CONFIG");
         Class<?> a = Array.newInstance(Marker.class, new int[1]).getClass();
@@ -97,7 +104,9 @@ public class ConfigAdapterConcurrencyTest {
             classes.put(b, first.holder);
             classes.put(a, replacement.holder);
             List<Class<?>> order;
-            synchronized (classes) { order = new ArrayList<>(classes.keySet()); }
+            synchronized (classes) {
+                order = new ArrayList<>(classes.keySet());
+            }
             assertTrue(order.indexOf(a) < order.indexOf(b));
             assertSame(replacement.holder, ForgeConfigAdapter.getHolder(a));
             identities.put(left, first.holder);
@@ -107,12 +116,15 @@ public class ConfigAdapterConcurrencyTest {
             identities.remove(left);
             assertSame(replacement.holder, identities.get(right));
         } finally {
-            classes.remove(a); classes.remove(b);
-            identities.remove(left); identities.remove(right);
+            classes.remove(a);
+            classes.remove(b);
+            identities.remove(left);
+            identities.remove(right);
         }
     }
 
-    @Test public void concurrentRealCachePublicationAllowsImmediateHandleViewAndSavedListener() throws Exception {
+    @Test
+    public void concurrentRealCachePublicationAllowsImmediateHandleViewAndSavedListener() throws Exception {
         Map<Class<?>, ConfigHolder> classes = cache("HOLDER_MAP");
         Map<ModConfig, ConfigHolder> identities = cache("HOLDER_BY_CONFIG");
         List<Class<?>> keys = new ArrayList<>();
@@ -135,7 +147,8 @@ public class ConfigAdapterConcurrencyTest {
                     while (writersDone.getCount() > 0 && !Thread.currentThread().isInterrupted()) {
                         synchronized (classes) {
                             for (Map.Entry<Class<?>, ConfigHolder> entry : classes.entrySet()) {
-                                assertNotNull(entry.getKey()); assertNotNull(entry.getValue());
+                                assertNotNull(entry.getKey());
+                                assertNotNull(entry.getValue());
                             }
                         }
                         Thread.yield();
@@ -164,10 +177,14 @@ public class ConfigAdapterConcurrencyTest {
                             immediate.set("count", index + 1);
                             assertEquals(index + 1, ForgeConfigAdapter.view(key, CountView.class).count());
                             immediate.save();
-                        } finally { remove.run(); }
+                        } finally {
+                            remove.run();
+                        }
                         assertSame(f.holder, identities.get(nativeKeys.get(index)));
                         return null;
-                    } finally { writersDone.countDown(); }
+                    } finally {
+                        writersDone.countDown();
+                    }
                 }));
             }
             start.countDown();
@@ -189,8 +206,10 @@ public class ConfigAdapterConcurrencyTest {
     private static final class Fixture {
         final ConfigHolder holder;
         final ForgeConfigValueStore store;
+
         Fixture(ConfigHolder holder, ForgeConfigValueStore store) {
-            this.holder = holder; this.store = store;
+            this.holder = holder;
+            this.store = store;
         }
     }
 }

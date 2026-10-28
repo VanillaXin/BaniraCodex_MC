@@ -14,7 +14,8 @@ public class UiPopupLayoutTest {
         return (ScreenCoordinate) method.invoke(null, anchor, viewport, options);
     }
 
-    @Test public void shortMenuFitsAboveAControlNearTheBottom() throws Exception {
+    @Test
+    public void shortMenuFitsAboveAControlNearTheBottom() throws Exception {
         var box = place(new ScreenCoordinate(20, 160, 180, 22), new ScreenCoordinate(0, 0, 427, 240), 2);
         assertEquals(20, box.x(), 0);
         assertEquals(72, box.y(), 0);
@@ -22,7 +23,8 @@ public class UiPopupLayoutTest {
         assertEquals(84, box.height(), 0);
     }
 
-    @Test public void largeMenusCapVisibleRowsAndRemainInsideTheViewport() throws Exception {
+    @Test
+    public void largeMenusCapVisibleRowsAndRemainInsideTheViewport() throws Exception {
         var box = place(new ScreenCoordinate(20, 20, 180, 22), new ScreenCoordinate(0, 0, 427, 600), 1000);
         assertEquals(216, box.height(), 0);
         assertEquals(46, box.y(), 0);
@@ -30,7 +32,8 @@ public class UiPopupLayoutTest {
         assertTrue(box.y() + box.height() <= 232);
     }
 
-    @Test public void rightEdgeAndTinyViewportsKeepTheWholeMenuVisible() throws Exception {
+    @Test
+    public void rightEdgeAndTinyViewportsKeepTheWholeMenuVisible() throws Exception {
         var box = place(new ScreenCoordinate(390, 100, 80, 22), new ScreenCoordinate(0, 0, 427, 240), 2);
         assertEquals(299, box.x(), 0);
         assertEquals(120, box.width(), 0);
@@ -41,11 +44,13 @@ public class UiPopupLayoutTest {
         assertEquals(64, box.height(), 0);
     }
 
-    @Test public void emptyMenusStillLeaveRoomForSearch() throws Exception {
+    @Test
+    public void emptyMenusStillLeaveRoomForSearch() throws Exception {
         assertEquals(62, place(new ScreenCoordinate(20, 20, 180, 22), new ScreenCoordinate(0, 0, 427, 240), 0).height(), 0);
     }
 
-    @Test public void originalResourceBudgetsRemainBinding() throws Exception {
+    @Test
+    public void originalResourceBudgetsRemainBinding() throws Exception {
         assertEquals(java.util.List.of(), UiResourceBudgetTest.violations(UiBoundaryChecks.ownResources("banira_codex"), true));
     }
 }

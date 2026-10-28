@@ -1,12 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.api.client.ui.UiCloseReason;
-import xin.vanilla.banira.api.client.ui.UiPageSpec;
-import xin.vanilla.banira.internal.client.ui.CommonUiPages;
-import xin.vanilla.banira.internal.client.ui.UiNativePage;
-import xin.vanilla.banira.internal.client.ui.UiViewState;
-import xin.vanilla.banira.internal.client.ui.page.TextUiSession;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -14,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -23,6 +18,10 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.TextUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -63,15 +62,31 @@ public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePa
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
-    public TextUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:text"; }
-    @Override public UiPageSpec uiPage() {
+    public TextUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:text";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
         if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
                 "banira_codex/ui/text.html", uiSession, previous -> this, this::getEffectiveTheme);
         return uiPage;
     }
-    @Override public void captureUiState(UiViewState state) { state.scrollOffset(scroll); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        state.scrollOffset(scroll);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+    }
 
     /**
      * 只读文本页参数。每个段落会独立换行，并在段落间保留一行间距。
@@ -198,7 +213,8 @@ public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePa
         Minecraft.getInstance().setScreen(args.parentScreen());
     }
 
-    @Override public void removed() {
+    @Override
+    public void removed() {
         CommonUiPages.removed(this);
         super.removed();
     }

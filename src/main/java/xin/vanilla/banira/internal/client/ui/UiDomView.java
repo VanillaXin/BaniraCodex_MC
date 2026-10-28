@@ -1,22 +1,18 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import xin.vanilla.banira.api.client.ui.UiControlSpec;
-import xin.vanilla.banira.api.client.ui.UiValue;
-import xin.vanilla.banira.api.client.ui.UiPointer;
-import xin.vanilla.banira.api.client.ui.UiGameElement;
-import xin.vanilla.banira.api.client.ui.UiRowLayout;
+import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
+import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.LongSupplier;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.DoubleUnaryOperator;
-import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
+import java.util.function.LongSupplier;
 
 public class UiDomView extends NativeUiView {
     private UiDomAccess dom;
@@ -31,7 +27,9 @@ public class UiDomView extends NativeUiView {
     private final Set<String> listeners = new HashSet<>();
     private final Map<String, VirtualRows> lists = new LinkedHashMap<>();
     private final Map<String, UiKeyCapture> keys = new HashMap<>();
-    private Consumer<Throwable> onFailure = failure -> { throw new IllegalStateException("UI binding failed", failure); };
+    private Consumer<Throwable> onFailure = failure -> {
+        throw new IllegalStateException("UI binding failed", failure);
+    };
     private UiSelectPopup popup;
     private AutoCloseable color;
     private boolean coloring;
@@ -56,23 +54,31 @@ public class UiDomView extends NativeUiView {
     public UiDomView(Object screen, UiDomAccess dom, LongSupplier clock) {
         super(screen);
         this.clock = Objects.requireNonNull(clock, "clock");
-        root = this; scope = null; prefix = "";
+        root = this;
+        scope = null;
+        prefix = "";
         if (dom != null) attach(dom);
     }
 
     private UiDomView(UiDomView parent, UiDomAccess.Node scope, String prefix) {
         super(parent.screen());
-        root = parent.root; dom = parent.dom; this.scope = scope; this.prefix = prefix;
+        root = parent.root;
+        dom = parent.dom;
+        this.scope = scope;
+        this.prefix = prefix;
         clock = parent.clock;
         restoreState(parent.state());
         gate(parent::live);
     }
 
-    public void failureHandler(Consumer<Throwable> handler) { root.onFailure = Objects.requireNonNull(handler, "handler"); }
+    public void failureHandler(Consumer<Throwable> handler) {
+        root.onFailure = Objects.requireNonNull(handler, "handler");
+    }
 
     public void scrollRestoration(BooleanSupplier ready, DoubleUnaryOperator request) {
         if (scope != null || layoutRestored) throw new IllegalStateException("Scroll restoration already owned");
-        scrollReady = Objects.requireNonNull(ready, "ready"); scrollRequest = Objects.requireNonNull(request, "request");
+        scrollReady = Objects.requireNonNull(ready, "ready");
+        scrollRequest = Objects.requireNonNull(request, "request");
     }
 
     protected final void attach(UiDomAccess access) {
@@ -80,28 +86,37 @@ public class UiDomView extends NativeUiView {
         dom = Objects.requireNonNull(access, "access");
         if (scope == null && screen() != null) resources.own(dom.overlayRoot().on("keydown", event -> {
             if (event.keyCode() != 258 || !live()) return;
-            if (modal()) { event.consume(); return; }
+            if (modal()) {
+                event.consume();
+                return;
+            }
             try {
                 UiDomAccess.Node target = dom.nextFocus((event.modifiers() & 1) != 0);
                 if (target == null) return;
                 if (!target.focused()) state().selection("", 0, 0);
                 target.focus();
                 event.consume();
-            } catch (RuntimeException | LinkageError failure) { fail(failure); }
+            } catch (RuntimeException | LinkageError failure) {
+                fail(failure);
+            }
         }));
         scrollContent = dom.find("content");
         detailContent = scope == null ? dom.find("detail") : null;
         if (detailContent != null) resources.own(detailContent.on("scroll", event -> {
             if (live() && !modal() && restoredDetail == state().detailScroll()) {
-                state().detailScroll(detailContent.scrollTop()); restoredDetail = state().detailScroll();
+                state().detailScroll(detailContent.scrollTop());
+                restoredDetail = state().detailScroll();
             }
         }));
         if (scope == null && scrollContent != null) resources.own(scrollContent.on("scroll", event -> {
-            if (live() && !modal() && lists.isEmpty() && layoutRestored) state().scrollOffset(scrollContent.scrollTop());
+            if (live() && !modal() && lists.isEmpty() && layoutRestored)
+                state().scrollOffset(scrollContent.scrollTop());
         }));
         if (scope == null && scrollContent != null) {
             resources.own(scrollContent.on("wheel", event -> takeScrollOwnership()));
-            resources.own(scrollContent.on("mousedown", event -> { if (event.button() == 0) takeScrollOwnership(); }));
+            resources.own(scrollContent.on("mousedown", event -> {
+                if (event.button() == 0) takeScrollOwnership();
+            }));
         }
         if (theme != null) changed("theme");
         for (String id : controls.keySet()) changed(id);
@@ -117,7 +132,10 @@ public class UiDomView extends NativeUiView {
         for (String id : pointerIds()) subscribed(id);
     }
 
-    @Override protected boolean live() { return super.live() && !root.failed && (dom == null || dom.current()); }
+    @Override
+    protected boolean live() {
+        return super.live() && !root.failed && (dom == null || dom.current());
+    }
 
     private UiDomAccess.Node make(String tag, UiDomAccess.Node parent, String css) {
         UiDomAccess.Node node = dom.create(tag);
@@ -140,8 +158,10 @@ public class UiDomView extends NativeUiView {
         if (scope == null) node = dom.find(id);
         else if (id.equals("input") || id.equals("pick") || id.equals("reset") || id.equals("delete") || id.equals("apply")) {
             UiDomAccess.Node editor = nodes.get("editor");
-            if (editor == null) { editor = make("div", scope, "editor"); nodes.put("editor", editor); }
-            else editor.removeAttribute("style");
+            if (editor == null) {
+                editor = make("div", scope, "editor");
+                nodes.put("editor", editor);
+            } else editor.removeAttribute("style");
             node = make(id.equals("input") ? "input" : "button", editor, id.equals("input") ? "input" : "tool");
         } else node = make(id.equals("open") ? "button" : "div", scope,
                 id.equals("label") ? "label" : id.equals("open") ? "row-action"
@@ -150,7 +170,8 @@ public class UiDomView extends NativeUiView {
         return node;
     }
 
-    @Override public void tooltip(String id, Component text) {
+    @Override
+    public void tooltip(String id, Component text) {
         if (!live()) return;
         tooltips.put(id, Objects.requireNonNull(text, "text"));
         if (dom == null) return;
@@ -162,11 +183,13 @@ public class UiDomView extends NativeUiView {
                 && toolPreset(id, texts.get(id).toVanilla().getString()) != null) node.attribute("aria-label", tooltip);
     }
 
-    @Override protected void changed(String id) {
+    @Override
+    protected void changed(String id) {
         if (dom == null || !live()) return;
         if (scope == null && id.equals("history_detail") && values.containsKey(id)) {
             UiDomAccess.Node workspace = dom.find("history_workspace");
-            if (workspace != null) workspace.attribute("class", "notification-columns" + (values.get(id).asBoolean() ? " detail-open" : ""));
+            if (workspace != null)
+                workspace.attribute("class", "notification-columns" + (values.get(id).asBoolean() ? " detail-open" : ""));
             return;
         }
         if (id.equals("theme")) {
@@ -176,7 +199,10 @@ public class UiDomView extends NativeUiView {
             }
             return;
         }
-        if (id.equals("preview")) { dom.hudPosition(hudX, hudY); return; }
+        if (id.equals("preview")) {
+            dom.hudPosition(hudX, hudY);
+            return;
+        }
         if (scope == null && id.equals("search_hint")) {
             UiDomAccess.Node search = node("search");
             if (search != null) search.attribute("placeholder", texts.get(id).toVanilla().getString());
@@ -198,8 +224,7 @@ public class UiDomView extends NativeUiView {
                 if (message.isEmpty()) node("input").removeAttribute("aria-invalid");
                 else node("input").attribute("aria-invalid", "true");
                 node("input").tooltip(message);
-            }
-            else node("label").tooltip(texts.get(id).toVanilla().getString());
+            } else node("label").tooltip(texts.get(id).toVanilla().getString());
             return;
         }
         UiDomAccess.Node node = node(id);
@@ -233,7 +258,8 @@ public class UiDomView extends NativeUiView {
             String tooltip = tooltips.get(id).toVanilla().getString();
             node.tooltip(tooltip);
             if (gameElements.get(id) != null || scope != null && texts.containsKey(id)
-                    && toolPreset(id, texts.get(id).toVanilla().getString()) != null) node.attribute("aria-label", tooltip);
+                    && toolPreset(id, texts.get(id).toVanilla().getString()) != null)
+                node.attribute("aria-label", tooltip);
         }
         if (enabled.containsKey(id)) {
             if (enabled.get(id)) node.removeAttribute("disabled");
@@ -255,12 +281,22 @@ public class UiDomView extends NativeUiView {
         UiValue value = values.get(id);
         if (value != null) {
             switch (value.kind()) {
-                case BOOLEAN: node.attribute("type", "checkbox"); node.checked(value.asBoolean()); break;
-                case DECIMAL: node.value(value.asDecimal().toPlainString()); break;
-                case KEY_CHORDS: node.value(String.join("+", value.asKeyChords())); break;
-                case STRING_LIST: node.value(selectionLabel(control, value.asStrings())); break;
-                default: node.value(control != null && control.kind() == UiControlSpec.Kind.SELECT
-                        ? selectionLabel(control, Collections.singletonList(value.asText())) : value.asText());
+                case BOOLEAN:
+                    node.attribute("type", "checkbox");
+                    node.checked(value.asBoolean());
+                    break;
+                case DECIMAL:
+                    node.value(value.asDecimal().toPlainString());
+                    break;
+                case KEY_CHORDS:
+                    node.value(String.join("+", value.asKeyChords()));
+                    break;
+                case STRING_LIST:
+                    node.value(selectionLabel(control, value.asStrings()));
+                    break;
+                default:
+                    node.value(control != null && control.kind() == UiControlSpec.Kind.SELECT
+                            ? selectionLabel(control, Collections.singletonList(value.asText())) : value.asText());
             }
         }
         if (drafts.containsKey(id)) node.value(drafts.get(id));
@@ -289,17 +325,21 @@ public class UiDomView extends NativeUiView {
             else button.append(glyph);
             nodes.put(glyphId, glyph);
         }
-        button.attribute("class", "ui-close"); button.gameElement(null);
+        button.attribute("class", "ui-close");
+        button.gameElement(null);
         glyph.attribute("class", "ui-close-glyph");
         if (closeGlyph == null) closeGlyph = UiGameElement.sprite(xin.vanilla.banira.client.data.Texture.of(
                 new net.minecraft.resources.ResourceLocation("apricityui", "apricity/banira_codex/icons/close.png"), 16, 16));
         glyph.gameElement(closeGlyph);
-        if (!enabled.getOrDefault(id, true)) { button.tooltip(""); button.blur(); }
-        else {
+        if (!enabled.getOrDefault(id, true)) {
+            button.tooltip("");
+            button.blur();
+        } else {
             String label = tooltips.containsKey(id) ? tooltips.get(id).toVanilla().getString()
                     : texts.containsKey(id) ? texts.get(id).toVanilla().getString()
                     : xin.vanilla.banira.BaniraComponent.get().transClientAuto("close").toString();
-            button.tooltip(label); button.attribute("aria-label", label);
+            button.tooltip(label);
+            button.attribute("aria-label", label);
         }
     }
 
@@ -308,7 +348,10 @@ public class UiDomView extends NativeUiView {
         for (String value : selected) {
             String label = value;
             if (control != null) for (DropdownOption option : control.options()) {
-                if (option.value().equals(value)) { label = option.displayLabel(); break; }
+                if (option.value().equals(value)) {
+                    label = option.displayLabel();
+                    break;
+                }
             }
             labels.add(label);
         }
@@ -317,10 +360,14 @@ public class UiDomView extends NativeUiView {
 
     private static ButtonWidget.PresetStyle toolPreset(String id, String text) {
         switch (id) {
-            case "reset": return ButtonWidget.PresetStyle.RESET;
-            case "delete": return "\u21b6".equals(text) ? ButtonWidget.PresetStyle.RESET : ButtonWidget.PresetStyle.CLOSE;
-            case "apply": return "+".equals(text) ? ButtonWidget.PresetStyle.PLUS : "\u2713".equals(text) ? ButtonWidget.PresetStyle.CHECK : null;
-            default: return null;
+            case "reset":
+                return ButtonWidget.PresetStyle.RESET;
+            case "delete":
+                return "\u21b6".equals(text) ? ButtonWidget.PresetStyle.RESET : ButtonWidget.PresetStyle.CLOSE;
+            case "apply":
+                return "+".equals(text) ? ButtonWidget.PresetStyle.PLUS : "\u2713".equals(text) ? ButtonWidget.PresetStyle.CHECK : null;
+            default:
+                return null;
         }
     }
 
@@ -352,19 +399,28 @@ public class UiDomView extends NativeUiView {
     }
 
     private void reuse(String nextPrefix) {
-        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
+        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet())
+            captureSelection(entry.getKey(), entry.getValue());
         super.close();
         resources = new UiOwnedResources();
-        presses.clear(); suppressClicks.clear(); root.pressedViews.remove(this);
-        listeners.clear(); keys.clear(); prefix = nextPrefix;
+        presses.clear();
+        suppressClicks.clear();
+        root.pressedViews.remove(this);
+        listeners.clear();
+        keys.clear();
+        prefix = nextPrefix;
         for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) {
             UiDomAccess.Node node = entry.getValue();
             node.blur();
             node.tooltip("");
             node.gameElement(null);
-            node.removeAttribute("disabled"); node.removeAttribute("aria-invalid"); node.removeAttribute("placeholder");
+            node.removeAttribute("disabled");
+            node.removeAttribute("aria-invalid");
+            node.removeAttribute("placeholder");
             node.removeAttribute("aria-label");
-            node.removeAttribute("readonly"); node.removeAttribute("type"); node.removeAttribute("maxlength");
+            node.removeAttribute("readonly");
+            node.removeAttribute("type");
+            node.removeAttribute("maxlength");
             node.attribute("style", "display:none");
             if (entry.getKey().equals("input")) node.value("");
             else if (!entry.getKey().equals("editor")) node.text("");
@@ -375,8 +431,11 @@ public class UiDomView extends NativeUiView {
         if (scrollContent == null) return;
         try {
             ScreenCoordinate bounds = scrollContent.bounds();
-            if (x >= bounds.x() && x < bounds.x() + bounds.width() && y >= bounds.y() && y < bounds.y() + bounds.height()) takeScrollOwnership();
-        } catch (RuntimeException | LinkageError failure) { fail(failure); }
+            if (x >= bounds.x() && x < bounds.x() + bounds.width() && y >= bounds.y() && y < bounds.y() + bounds.height())
+                takeScrollOwnership();
+        } catch (RuntimeException | LinkageError failure) {
+            fail(failure);
+        }
     }
 
     private void takeScrollOwnership() {
@@ -384,7 +443,9 @@ public class UiDomView extends NativeUiView {
         double position = scrollContent.scrollTop();
         if (scrollRequest != null) position = scrollRequest.applyAsDouble(position);
         else scrollContent.scrollTop(position);
-        pendingScrollTarget = position; state().scrollOffset(position); layoutRestored = true;
+        pendingScrollTarget = position;
+        state().scrollOffset(position);
+        layoutRestored = true;
     }
 
     public void afterLayout() {
@@ -394,15 +455,19 @@ public class UiDomView extends NativeUiView {
         for (VirtualRows list : lists.values()) list.afterLayout();
         if (popup != null) popup.afterLayout();
         if (detailContent != null && detailContent.clientHeight() > 0 && restoredDetail != state().detailScroll()) {
-            detailContent.scrollTop(state().detailScroll()); restoredDetail = state().detailScroll();
+            detailContent.scrollTop(state().detailScroll());
+            restoredDetail = state().detailScroll();
         }
         if (!layoutRestored && lists.isEmpty() && scrollContent != null && scrollContent.clientHeight() > 0 && scrollReady.getAsBoolean()) {
             if (Double.isNaN(pendingScrollTarget)) {
-                if (scrollRequest == null) { pendingScrollTarget = state().scrollOffset(); scrollContent.scrollTop(pendingScrollTarget); }
-                else pendingScrollTarget = scrollRequest.applyAsDouble(state().scrollOffset());
+                if (scrollRequest == null) {
+                    pendingScrollTarget = state().scrollOffset();
+                    scrollContent.scrollTop(pendingScrollTarget);
+                } else pendingScrollTarget = scrollRequest.applyAsDouble(state().scrollOffset());
             }
             if (Math.abs(scrollContent.scrollTop() - pendingScrollTarget) < .5) {
-                state().scrollOffset(pendingScrollTarget); layoutRestored = true;
+                state().scrollOffset(pendingScrollTarget);
+                layoutRestored = true;
             }
         }
     }
@@ -415,7 +480,8 @@ public class UiDomView extends NativeUiView {
             if (!enabled.getOrDefault(id, true)) return;
             UiValue current = values.get(id);
             if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
-                if (!control.multiple() && control.inputMode() == DropdownInputMode.EDITABLE) input(id, UiValue.text(node.value()));
+                if (!control.multiple() && control.inputMode() == DropdownInputMode.EDITABLE)
+                    input(id, UiValue.text(node.value()));
             } else if (control != null && control.kind() != UiControlSpec.Kind.KEY_CHORD) inputDraft(id, node.value());
             else if (current != null && current.kind() == UiValue.Kind.BOOLEAN) input(id, UiValue.bool(node.checked()));
             else if (current != null && current.kind() == UiValue.Kind.TEXT) input(id, UiValue.text(node.value()));
@@ -443,20 +509,30 @@ public class UiDomView extends NativeUiView {
                 if (!enabled.getOrDefault(id, true)) return;
                 event.consume();
                 if (event.keyCode() == xin.vanilla.banira.client.data.GLFWKey.GLFW_KEY_ESCAPE) {
-                    capture.clear(); restoreKeyValue(id, node); node.blur(); return;
+                    capture.clear();
+                    restoreKeyValue(id, node);
+                    node.blur();
+                    return;
                 }
                 List<String> completed = capture.press(event.keyCode());
-                if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
-                else node.value(capture.preview());
+                if (completed != null) {
+                    input(id, UiValue.keyChords(completed));
+                    changed(id);
+                } else node.value(capture.preview());
             });
             listen(id + ":keyrelease", node, "keyup", event -> {
                 if (!enabled.getOrDefault(id, true)) return;
                 event.consume();
                 List<String> completed = capture.release(event.keyCode());
-                if (completed != null) { input(id, UiValue.keyChords(completed)); changed(id); }
-                else if (capture.preview().isEmpty()) restoreKeyValue(id, node);
+                if (completed != null) {
+                    input(id, UiValue.keyChords(completed));
+                    changed(id);
+                } else if (capture.preview().isEmpty()) restoreKeyValue(id, node);
             });
-            listen(id + ":blur", node, "blur", event -> { capture.clear(); restoreKeyValue(id, node); });
+            listen(id + ":blur", node, "blur", event -> {
+                capture.clear();
+                restoreKeyValue(id, node);
+            });
         } else if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
             listen(id + ":open-selection", node, "click", event -> {
                 event.consume();
@@ -478,39 +554,58 @@ public class UiDomView extends NativeUiView {
             if (!live() || !root.coloring || token != root.colorToken) return;
             root.coloring = false;
             root.color = null;
-            try { if (result != null) { inputDraft(id, result); node.value(result); } }
-            catch (RuntimeException | LinkageError failure) { fail(failure); }
+            try {
+                if (result != null) {
+                    inputDraft(id, result);
+                    node.value(result);
+                }
+            } catch (RuntimeException | LinkageError failure) {
+                fail(failure);
+            }
         });
         if (root.coloring) root.color = opened;
         else release(opened);
     }
 
     private static void release(AutoCloseable resource) {
-        try { if (resource != null) resource.close(); }
-        catch (Exception failure) { throw new IllegalStateException(failure); }
+        try {
+            if (resource != null) resource.close();
+        } catch (Exception failure) {
+            throw new IllegalStateException(failure);
+        }
     }
 
-    private boolean modal() { return root.popup != null || root.coloring; }
+    private boolean modal() {
+        return root.popup != null || root.coloring;
+    }
 
     private void openSelection(String id, UiDomAccess.Node anchor, UiControlSpec control) {
         dismissOverlay();
         root.popup = new UiSelectPopup(dom, anchor, control, values.get(id), value -> {
-            if (live()) { input(id, value); changed(id); }
+            if (live()) {
+                input(id, value);
+                changed(id);
+            }
         }, root::live, () -> root.popup = null, this::fail);
     }
 
     private void fail(Throwable failure) {
         if (root.failed) return;
         root.failed = true;
-        try { dismissOverlay(); }
-        catch (RuntimeException | LinkageError cleanup) { failure.addSuppressed(cleanup); }
+        try {
+            dismissOverlay();
+        } catch (RuntimeException | LinkageError cleanup) {
+            failure.addSuppressed(cleanup);
+        }
         root.onFailure.accept(failure);
     }
 
     public boolean dismissOverlay() {
         boolean existed = modal();
-        root.coloring = false; root.colorToken++;
-        AutoCloseable previousColor = root.color; root.color = null;
+        root.coloring = false;
+        root.colorToken++;
+        AutoCloseable previousColor = root.color;
+        root.color = null;
         release(previousColor);
         if (root.popup == null) return existed;
         UiSelectPopup previous = root.popup;
@@ -519,7 +614,8 @@ public class UiDomView extends NativeUiView {
         return true;
     }
 
-    @Override protected void subscribed(String id) {
+    @Override
+    protected void subscribed(String id) {
         if (dom != null && live() && pointerIds().contains(id)) {
             UiDomAccess.Node target = node(id);
             if (target != null) {
@@ -534,7 +630,8 @@ public class UiDomView extends NativeUiView {
                 listen(id + ":leave", dom.overlayRoot(), "mouseleave", event -> pointer(id, new UiPointer(UiPointer.Kind.UP, 0, 0, 0)));
             }
         }
-        if (dom == null || !live() || (!actionIds().contains(id) && !longActionIds().contains(id)) || (id.equals("pick") && scope != null)) return;
+        if (dom == null || !live() || (!actionIds().contains(id) && !longActionIds().contains(id)) || (id.equals("pick") && scope != null))
+            return;
         UiDomAccess.Node node = node(id);
         if (node != null) listen(id + ":action", node, "click", event -> {
             if (event.button() != 0 && event.button() != -1) return;
@@ -545,20 +642,31 @@ public class UiDomView extends NativeUiView {
             BaniraPressGestureState press = presses.computeIfAbsent(id, ignored -> new BaniraPressGestureState(clock));
             listen(id + ":press", node, "mousedown", event -> {
                 if (event.button() == 0 && enabled.getOrDefault(id, true)) {
-                    suppressClicks.remove(id); press.press(0); root.pressedViews.add(this);
+                    suppressClicks.remove(id);
+                    press.press(0);
+                    root.pressedViews.add(this);
                 }
             });
-            listen(id + ":release", node, "mouseup", event -> { if (event.button() == 0) press.release(); });
-            listen(id + ":leave", node, "mouseleave", event -> { press.release(); suppressClicks.remove(id); });
+            listen(id + ":release", node, "mouseup", event -> {
+                if (event.button() == 0) press.release();
+            });
+            listen(id + ":leave", node, "mouseleave", event -> {
+                press.release();
+                suppressClicks.remove(id);
+            });
         }
     }
 
     private void updatePresses() {
-        if (!live() || modal()) { for (BaniraPressGestureState press : presses.values()) press.release(); }
+        if (!live() || modal()) {
+            for (BaniraPressGestureState press : presses.values()) press.release();
+        }
         for (Map.Entry<String, BaniraPressGestureState> entry : new ArrayList<>(presses.entrySet())) {
             if (!enabled.getOrDefault(entry.getKey(), true)) entry.getValue().release();
             if (entry.getValue().ready(longActionDuration(entry.getKey()))) {
-                entry.getValue().fire(); suppressClicks.add(entry.getKey()); activateLong(entry.getKey());
+                entry.getValue().fire();
+                suppressClicks.add(entry.getKey());
+                activateLong(entry.getKey());
             }
         }
         if (presses.values().stream().noneMatch(press -> press.pressing(0))) root.pressedViews.remove(this);
@@ -568,9 +676,15 @@ public class UiDomView extends NativeUiView {
         if (!listeners.add(key)) return;
         resources.own(node.on(event, input -> {
             if (!live()) return;
-            if (modal()) { input.consume(); return; }
-            try { action.accept(input); }
-            catch (RuntimeException | LinkageError failure) { fail(failure); }
+            if (modal()) {
+                input.consume();
+                return;
+            }
+            try {
+                action.accept(input);
+            } catch (RuntimeException | LinkageError failure) {
+                fail(failure);
+            }
         }));
     }
 
@@ -587,22 +701,35 @@ public class UiDomView extends NativeUiView {
         }
     }
 
-    @Override public ScreenCoordinate bounds(String id) {
+    @Override
+    public ScreenCoordinate bounds(String id) {
         UiDomAccess.Node node = dom == null ? null : node(id);
         return node == null ? super.bounds(id) : node.bounds();
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         for (BaniraPressGestureState press : presses.values()) press.release();
-        presses.clear(); suppressClicks.clear(); root.pressedViews.remove(this);
+        presses.clear();
+        suppressClicks.clear();
+        root.pressedViews.remove(this);
         if (scrollContent != null && lists.isEmpty() && layoutRestored) state().scrollOffset(scrollContent.scrollTop());
-        if (detailContent != null && restoredDetail == state().detailScroll()) state().detailScroll(detailContent.scrollTop());
-        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet()) captureSelection(entry.getKey(), entry.getValue());
+        if (detailContent != null && restoredDetail == state().detailScroll())
+            state().detailScroll(detailContent.scrollTop());
+        for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet())
+            captureSelection(entry.getKey(), entry.getValue());
         if (root == this) dismissOverlay();
-        try { for (VirtualRows list : lists.values()) list.close(); }
-        finally {
-            try { super.close(); }
-            finally { for (UiDomAccess.Node node : ownedNodes) node.remove(); ownedNodes.clear(); nodes.clear(); lists.clear(); }
+        try {
+            for (VirtualRows list : lists.values()) list.close();
+        } finally {
+            try {
+                super.close();
+            } finally {
+                for (UiDomAccess.Node node : ownedNodes) node.remove();
+                ownedNodes.clear();
+                nodes.clear();
+                lists.clear();
+            }
         }
     }
 
@@ -622,7 +749,8 @@ public class UiDomView extends NativeUiView {
         final boolean tracksPageScroll;
 
         VirtualRows(String id, UiDomAccess.Node container, double independentPosition) {
-            this.id = id; this.container = container;
+            this.id = id;
+            this.container = container;
             presentation = rowProviders.get(id) instanceof UiRowLayout ? (UiRowLayout) rowProviders.get(id) : null;
             rowHeight = presentation == null ? 48 : presentation.rowHeight();
             if (rowHeight < 12 || rowHeight > 256) throw new IllegalArgumentException("Invalid UI row height");
@@ -631,12 +759,17 @@ public class UiDomView extends NativeUiView {
             scroller = content != null ? content : container;
             window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
             initialPosition = tracksPageScroll ? state().rowPosition() : independentPosition;
-            top = dom.create("div"); bottom = dom.create("div");
+            top = dom.create("div");
+            bottom = dom.create("div");
             container.append(top);
             scrolling = scroller.on("scroll", event -> {
                 if (!live() || modal()) return;
-                try { restored = true; update(); }
-                catch (RuntimeException | LinkageError failure) { fail(failure); }
+                try {
+                    restored = true;
+                    update();
+                } catch (RuntimeException | LinkageError failure) {
+                    fail(failure);
+                }
             });
             update();
         }
@@ -651,29 +784,34 @@ public class UiDomView extends NativeUiView {
             }
             update();
             if (focusViewportRestored) return;
-            for (UiDomView row : rows) for (Map.Entry<String, UiDomAccess.Node> control : row.nodes.entrySet()) {
-                UiDomAccess.Node node = control.getValue();
-                if (!state().focusedField().equals(row.prefix + control.getKey()) || !node.focused()) continue;
-                ScreenCoordinate bounds = node.bounds(), viewport = scroller.bounds();
-                if (!(bounds.height() > 0 && bounds.width() > 0 && viewport.height() > 0)) return;
-                double delta = bounds.y() < viewport.y() || bounds.height() > viewport.height()
-                        ? bounds.y() - viewport.y()
-                        : Math.max(0, bounds.y() + bounds.height() - viewport.y() - viewport.height());
-                if (!Double.isFinite(delta)) return;
-                focusViewportRestored = true;
-                if (delta != 0) {
-                    scroller.scrollTop(Math.max(0, scroller.scrollTop() + delta));
-                    if (tracksPageScroll) {
-                        state().scrollOffset(scroller.scrollTop()); state().rowPosition(scroller.scrollTop() / rowHeight);
+            for (UiDomView row : rows)
+                for (Map.Entry<String, UiDomAccess.Node> control : row.nodes.entrySet()) {
+                    UiDomAccess.Node node = control.getValue();
+                    if (!state().focusedField().equals(row.prefix + control.getKey()) || !node.focused()) continue;
+                    ScreenCoordinate bounds = node.bounds(), viewport = scroller.bounds();
+                    if (!(bounds.height() > 0 && bounds.width() > 0 && viewport.height() > 0)) return;
+                    double delta = bounds.y() < viewport.y() || bounds.height() > viewport.height()
+                            ? bounds.y() - viewport.y()
+                            : Math.max(0, bounds.y() + bounds.height() - viewport.y() - viewport.height());
+                    if (!Double.isFinite(delta)) return;
+                    focusViewportRestored = true;
+                    if (delta != 0) {
+                        scroller.scrollTop(Math.max(0, scroller.scrollTop() + delta));
+                        if (tracksPageScroll) {
+                            state().scrollOffset(scroller.scrollTop());
+                            state().rowPosition(scroller.scrollTop() / rowHeight);
+                        }
+                        update();
                     }
-                    update();
+                    return;
                 }
-                return;
-            }
             focusViewportRestored = true;
         }
 
-        void update() { update(false); }
+        void update() {
+            update(false);
+        }
+
         void update(boolean force) {
             if (updating) return;
             updating = true;
@@ -684,12 +822,14 @@ public class UiDomView extends NativeUiView {
                     state().rowPosition(scroller.scrollTop() / rowHeight);
                 }
                 if (next == first && !force) return;
-                first = next; window.moveTo(first);
+                first = next;
+                window.moveTo(first);
                 top.attribute("style", "height:" + (first * (long) rowHeight) + "px;flex-shrink:0");
                 int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / rowHeight) + 2));
                 while (rows.size() > count) {
                     UiDomView row = rows.remove(rows.size() - 1);
-                    row.close(); row.scope.remove();
+                    row.close();
+                    row.scope.remove();
                 }
                 for (int index = 0; index < count; index++) {
                     UiDomView row;
@@ -705,21 +845,32 @@ public class UiDomView extends NativeUiView {
                         rows.add(row);
                     }
                     row.textTools = presentation != null && presentation.textTools();
-                    if (presentation != null) row.scope.attribute("class", "row " + presentation.rowClass(first + index));
+                    if (presentation != null)
+                        row.scope.attribute("class", "row " + presentation.rowClass(first + index));
                     window.bind(index, row);
                 }
                 bottom.attribute("style", "height:" + Math.max(0L, (window.total() - first - count) * (long) rowHeight) + "px;flex-shrink:0");
                 container.append(bottom);
                 if (count > 0 && restored && tracksPageScroll) state().scrollAnchor(window.key(0));
-            } finally { updating = false; }
+            } finally {
+                updating = false;
+            }
         }
 
-        @Override public void close() {
-            try { scrolling.close(); }
-            catch (Exception failure) { throw new IllegalStateException(failure); }
-            finally {
-                for (UiDomView row : rows) { row.close(); row.scope.remove(); }
-                rows.clear(); top.remove(); bottom.remove();
+        @Override
+        public void close() {
+            try {
+                scrolling.close();
+            } catch (Exception failure) {
+                throw new IllegalStateException(failure);
+            } finally {
+                for (UiDomView row : rows) {
+                    row.close();
+                    row.scope.remove();
+                }
+                rows.clear();
+                top.remove();
+                bottom.remove();
             }
         }
     }

@@ -8,7 +8,8 @@ import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 public final class CommonUiPages {
     private static final UiNativeSessions NATIVE_SESSIONS = new UiNativeSessions();
 
-    private CommonUiPages() { }
+    private CommonUiPages() {
+    }
 
     public static void tick() {
         Object current = BaniraClientRuntime.currentScreen();
@@ -35,11 +36,16 @@ public final class CommonUiPages {
         }
     }
 
-    public static void removed(Object screen) { BaniraCodexClientBootstrap.uiSessions().screenRemoved(screen); }
+    public static void removed(Object screen) {
+        BaniraCodexClientBootstrap.uiSessions().screenRemoved(screen);
+    }
 
     public static void disconnect() {
-        try { BaniraCodexClientBootstrap.uiSessions().disconnect(); }
-        finally { NATIVE_SESSIONS.disconnect(); }
+        try {
+            BaniraCodexClientBootstrap.uiSessions().disconnect();
+        } finally {
+            NATIVE_SESSIONS.disconnect();
+        }
     }
 
     public static boolean close(Object screen, UiCloseReason reason) {

@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
-import com.sighs.apricityui.render.Base;
 import com.sighs.apricityui.loader.ClientLoader;
+import com.sighs.apricityui.render.Base;
 import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
@@ -17,12 +17,15 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     private final Object resourceSnapshot;
     private final ProgressDomPresentation progress;
     private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
+
     private AuiHudDocument(UiHudSpec spec) {
         super(null, null);
         shared = spec.shared() ? AuiSharedHudDocuments.acquire() : null;
         document = shared == null ? Document.create(spec.template()) : shared.document().document();
         if (document == null) throw new IllegalStateException("HUD document unavailable");
-        resources.own(shared == null ? () -> { if (!document.isDisposed()) document.remove(); } : shared);
+        resources.own(shared == null ? () -> {
+            if (!document.isDisposed()) document.remove();
+        } : shared);
         try {
             document.setManuallyRendered(true);
             document.setReloadPersistent(true);
@@ -37,20 +40,31 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             progress = spec.manual() ? new ProgressDomPresentation(access, access::guiBounds) : null;
             if (progress != null) resources.own(progress);
             attach(access);
-        } catch (RuntimeException | LinkageError failure) { close(); throw failure; }
+        } catch (RuntimeException | LinkageError failure) {
+            close();
+            throw failure;
+        }
     }
-    public static NativeUiView create(UiHudSpec spec) { return new AuiHudDocument(spec); }
-    @Override public boolean currentDocument() {
+
+    public static NativeUiView create(UiHudSpec spec) {
+        return new AuiHudDocument(spec);
+    }
+
+    @Override
+    public boolean currentDocument() {
         // AUI preserves persistent documents but replaces its resource cache on reload.
         return !closed() && !document.isDisposed() && generation == document.getRefreshGeneration()
                 && (resourceSnapshot == null || resourceSnapshot == ClientLoader.listFinalStaticResources());
     }
-    @Override public void hudFrame(xin.vanilla.banira.api.client.ui.UiHudFrame frame) {
+
+    @Override
+    public void hudFrame(xin.vanilla.banira.api.client.ui.UiHudFrame frame) {
         if (!live() || progress == null) throw new IllegalStateException("Manual HUD frame unavailable");
         progressFrame = java.util.Objects.requireNonNull(frame);
     }
 
-    @Override public void renderHud(GuiGraphics graphics) {
+    @Override
+    public void renderHud(GuiGraphics graphics) {
         if (progress == null || progressFrame == null || !live() || !currentDocument())
             throw new IllegalStateException("Manual HUD document expired");
         if (shared != null) shared.show();
@@ -58,18 +72,25 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         boolean painted = false;
         try (Document.ContextScope ignored = Document.withContext(document)) {
             progress.update(progressFrame);
-            document.commitPendingStyleRecalcForRender(); document.commitRenderState();
+            document.commitPendingStyleRecalcForRender();
+            document.commitRenderState();
             graphics.flush();
             painted = true;
-            try { Base.drawOverlayDocument(graphics.pose(), document); }
-            finally { graphics.flush(); }
+            try {
+                Base.drawOverlayDocument(graphics.pose(), document);
+            } finally {
+                graphics.flush();
+            }
         } catch (RuntimeException | LinkageError failure) {
             if (painted) throw new AuiHudHost.PaintedFailure(failure);
             throw failure;
         }
     }
-    @Override public void render(GuiGraphics graphics, HudDrawList frame) {
-        if (!live() || document.isDisposed() || generation != document.getRefreshGeneration()) throw new IllegalStateException("HUD document expired");
+
+    @Override
+    public void render(GuiGraphics graphics, HudDrawList frame) {
+        if (!live() || document.isDisposed() || generation != document.getRefreshGeneration())
+            throw new IllegalStateException("HUD document expired");
         if (shared != null) shared.show();
         document.applyViewport(false);
         presentation.update(frame);
@@ -80,13 +101,16 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             presentation.afterLayout();
             access.render(graphics);
             frame.renderContents(graphics, false);
-        } catch (RuntimeException | LinkageError failure) { throw new AuiHudHost.PaintedFailure(failure); }
+        } catch (RuntimeException | LinkageError failure) {
+            throw new AuiHudHost.PaintedFailure(failure);
+        }
     }
 
     @Deprecated
-    @Override public void renderRow(GuiGraphics graphics, String key, net.minecraft.network.chat.Component text,
-                                    xin.vanilla.banira.client.data.ScreenCoordinate bounds,
-                                    int color, boolean shadow, float depth) {
+    @Override
+    public void renderRow(GuiGraphics graphics, String key, net.minecraft.network.chat.Component text,
+                          xin.vanilla.banira.client.data.ScreenCoordinate bounds,
+                          int color, boolean shadow, float depth) {
         throw new UnsupportedOperationException("Minimap rows use native map rendering");
     }
 }

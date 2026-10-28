@@ -4,7 +4,9 @@ import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class UiPageReinitializationTest {
     private ClassNode source(String name) throws Exception {
@@ -16,7 +18,8 @@ public class UiPageReinitializationTest {
         return node;
     }
 
-    @Test public void repeatedInitializationRequestsSafeReloadBeforeParentInitialization() throws Exception {
+    @Test
+    public void repeatedInitializationRequestsSafeReloadBeforeParentInitialization() throws Exception {
         MethodNode init = source("AuiPageHost").methods.stream().filter(method -> method.name.equals("init")).findFirst().orElseThrow();
         boolean attached = false, reload = false, returned = false, parent = false;
         for (AbstractInsnNode instruction : init.instructions) {
@@ -34,14 +37,16 @@ public class UiPageReinitializationTest {
         assertTrue("Parent initialization must remain available for the first attachment", parent);
     }
 
-    @Test public void lowLevelAttachmentStillRejectsDoubleOwnership() throws Exception {
+    @Test
+    public void lowLevelAttachmentStillRejectsDoubleOwnership() throws Exception {
         assertTrue(source("UiDomView").methods.stream().filter(method -> method.name.equals("attach"))
                 .flatMap(method -> java.util.stream.StreamSupport.stream(method.instructions.spliterator(), false))
                 .anyMatch(instruction -> instruction instanceof LdcInsnNode
                         && "Document already attached".equals(((LdcInsnNode) instruction).cst)));
     }
 
-    @Test public void explicitResizeKeepsTheSessionHandoff() throws Exception {
+    @Test
+    public void explicitResizeKeepsTheSessionHandoff() throws Exception {
         assertTrue(source("AuiPageHost").methods.stream().filter(method -> method.name.equals("resize"))
                 .flatMap(method -> java.util.stream.StreamSupport.stream(method.instructions.spliterator(), false))
                 .anyMatch(instruction -> instruction instanceof MethodInsnNode

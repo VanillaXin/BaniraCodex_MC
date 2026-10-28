@@ -6,6 +6,8 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
@@ -13,19 +15,16 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
-import xin.vanilla.banira.client.gui.widget.InputWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
-import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.*;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.ConfigUiSession;
 
 import javax.annotation.Nullable;
@@ -97,41 +96,64 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
         super.onRemoved();
     }
 
-    public ConfigUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:config"; }
-    @Override public UiPageSpec uiPage() { return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; searchText = uiSession.query(); }
-    @Override public void resize(Minecraft minecraft, int width, int height) {
+    public ConfigUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:config";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        searchText = uiSession.query();
+    }
+
+    @Override
+    public void resize(Minecraft minecraft, int width, int height) {
         UiViewState state = uiState != null ? uiState : new UiViewState();
         captureUiState(state);
         prepareUiState(state);
         super.resize(minecraft, width, height);
     }
-    @Override public void captureUiState(UiViewState state) {
+
+    @Override
+    public void captureUiState(UiViewState state) {
         uiSession.query(searchText);
         contentTreeBuilder.categoryPanels().forEach((path, panel) ->
                 uiSession.categoryExpansion(path, expandedBeforeSearch.getOrDefault(path, panel.expanded())));
         if (state == null) return;
         state.selection("", 0, 0);
-        if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        if (searchInput != null && searchInput.focused())
+            state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
         for (Map.Entry<String, ConfigEditorEntryWidget> entry : editorState.entryWidgets().entrySet()) {
             if (entry.getValue().getWidget() == null) continue;
             xin.vanilla.banira.client.gui.widget.TagListEditorWidget tags = entry.getValue().getWidget().findChildByType(xin.vanilla.banira.client.gui.widget.TagListEditorWidget.class);
             if (tags != null) {
                 int index = tags.focusedInputIndex();
-                if (index >= 0) for (IWidget child : tags.children()) if (child instanceof InputWidget && ((InputWidget) child).focused()) {
-                    InputWidget input = (InputWidget) child;
-                    state.selection("config:" + entry.getKey() + "/item:" + index + "/input", input.cursorPosition(), input.highlightPos());
-                }
+                if (index >= 0) for (IWidget child : tags.children())
+                    if (child instanceof InputWidget && ((InputWidget) child).focused()) {
+                        InputWidget input = (InputWidget) child;
+                        state.selection("config:" + entry.getKey() + "/item:" + index + "/input", input.cursorPosition(), input.highlightPos());
+                    }
                 continue;
             }
             InputWidget input = entry.getValue().getWidget().findChildByType(InputWidget.class);
-            if (input != null && input.focused()) state.selection("config:" + entry.getKey() + "/input", input.cursorPosition(), input.highlightPos());
+            if (input != null && input.focused())
+                state.selection("config:" + entry.getKey() + "/input", input.cursorPosition(), input.highlightPos());
         }
         if (scrollbar != null) state.rowPosition(scrollbar.value() / (ROW_HEIGHT + ROW_GAP));
     }
 
-    @Override public void onClose() {
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         uiSession.close(UiCloseReason.CANCEL);
         super.onClose();
@@ -184,7 +206,8 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
         if (uiState != null) {
             scrollbar.value(uiState.rowPosition() * (ROW_HEIGHT + ROW_GAP));
             if (uiState.focusedField().equals("search")) {
-                requestFocus(searchInput); searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                requestFocus(searchInput);
+                searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
             } else for (Map.Entry<String, ConfigEditorEntryWidget> entry : editorState.entryWidgets().entrySet()) {
                 String itemPrefix = "config:" + entry.getKey() + "/item:";
                 if (uiState.focusedField().startsWith(itemPrefix) && uiState.focusedField().endsWith("/input")) {
@@ -192,13 +215,20 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
                     if (tags != null) try {
                         int index = Integer.parseInt(uiState.focusedField().substring(itemPrefix.length(), uiState.focusedField().length() - "/input".length()));
                         InputWidget input = tags.focusInput(index);
-                        if (input != null) { requestFocus(input); input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd()); }
-                    } catch (NumberFormatException ignored) {}
+                        if (input != null) {
+                            requestFocus(input);
+                            input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
                     continue;
                 }
                 if (!uiState.focusedField().equals("config:" + entry.getKey() + "/input")) continue;
                 InputWidget input = entry.getValue().getWidget().findChildByType(InputWidget.class);
-                if (input != null) { requestFocus(input); input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd()); }
+                if (input != null) {
+                    requestFocus(input);
+                    input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                }
             }
         }
     }

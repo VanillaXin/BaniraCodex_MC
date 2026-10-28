@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.client.ui.page;
 
 import xin.vanilla.banira.common.data.Component;
+
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -25,10 +26,27 @@ public final class PlayerConfigUiPresentation {
         this.checkboxes = java.util.Set.copyOf(Objects.requireNonNull(checkboxes, "checkboxes"));
     }
 
-    public String namespace() { return namespace; }
-    public Component moduleName() { return moduleName; }
-    public Component sectionTitle() { return sectionTitle; }
-    public Component unit() { return unit; }
-    public Supplier<Component> rangeText() { return rangeText; }
-    public boolean checkbox(String field) { return checkboxes.contains(field); }
+    public String namespace() {
+        return namespace;
+    }
+
+    public Component moduleName() {
+        return moduleName;
+    }
+
+    public Component sectionTitle() {
+        return sectionTitle;
+    }
+
+    public Component unit() {
+        return unit;
+    }
+
+    public Supplier<Component> rangeText() {
+        return rangeText;
+    }
+
+    public boolean checkbox(String field) {
+        return checkboxes.contains(field);
+    }
 }

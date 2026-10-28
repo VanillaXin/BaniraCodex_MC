@@ -13,7 +13,8 @@ public final class AuiOptionalServerChannels {
     private static final String REGISTER = "(Lnet/minecraft/resources/ResourceLocation;Ljava/util/function/Supplier;"
             + "Ljava/util/function/Predicate;Ljava/util/function/Predicate;)Lnet/minecraftforge/network/simple/SimpleChannel;";
 
-    private AuiOptionalServerChannels() { }
+    private AuiOptionalServerChannels() {
+    }
 
     public static Predicate<String> clientVersions(String namespace, String path, Predicate<String> original, String absent) {
         if (!"apricityui".equals(namespace) || !("oelib_c2s".equals(path) || "oelib_s2c".equals(path))) return original;

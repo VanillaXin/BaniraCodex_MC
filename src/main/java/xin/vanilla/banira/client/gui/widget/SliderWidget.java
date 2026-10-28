@@ -339,8 +339,12 @@ public class SliderWidget extends BaseWidget {
         inlineInputMode = InlineInputMode.SLIDER_WITH_INPUT;
         ensureInlineInput();
         syncingInlineInput = true;
-        try { inlineInputWidget.value(text); inlineInputWidget.visible(true); }
-        finally { syncingInlineInput = false; }
+        try {
+            inlineInputWidget.value(text);
+            inlineInputWidget.visible(true);
+        } finally {
+            syncingInlineInput = false;
+        }
     }
 
     @Override

@@ -201,7 +201,10 @@ public class UiSessionHandoffTest {
         Class<?> sessionType = type("api.client.ui.UiPageSession");
         AtomicInteger childClosed = new AtomicInteger();
         Object childSession = Proxy.newProxyInstance(sessionType.getClassLoader(), new Class<?>[]{sessionType},
-                (proxy, method, args) -> { if (method.getName().equals("close")) childClosed.incrementAndGet(); return null; });
+                (proxy, method, args) -> {
+                    if (method.getName().equals("close")) childClosed.incrementAndGet();
+                    return null;
+                });
         Object child = type("api.client.ui.UiPageSpec")
                 .getConstructor(String.class, String.class, sessionType, BaniraQuickActionScreenFactory.class)
                 .newInstance("banira_codex:child", "banira_codex/ui/child.html", childSession,

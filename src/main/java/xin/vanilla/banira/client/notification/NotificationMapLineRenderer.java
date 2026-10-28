@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
@@ -18,15 +18,15 @@ public final class NotificationMapLineRenderer {
     }
 
     public static float drawRowsCentered(GuiGraphics graphics, List<MinimapLineSnapshot> rows,
-                                  float centerX, float y, float width, boolean above) {
+                                         float centerX, float y, float width, boolean above) {
         Minecraft mc = Minecraft.getInstance();
         return drawRowsCentered(graphics, rows, centerX, y, width, .75f, above,
                 mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 
     public static float drawRowsCentered(GuiGraphics graphics, List<MinimapLineSnapshot> rows,
-                                  float centerX, float y, float width, float scale, boolean above,
-                                  int screenWidth, int screenHeight) {
+                                         float centerX, float y, float width, float scale, boolean above,
+                                         int screenWidth, int screenHeight) {
         if (rows.isEmpty() || !Float.isFinite(width) || width <= 0 || !Float.isFinite(scale) || scale <= 0
                 || screenWidth <= 0 || screenHeight <= 0) return 0;
         Minecraft mc = Minecraft.getInstance();

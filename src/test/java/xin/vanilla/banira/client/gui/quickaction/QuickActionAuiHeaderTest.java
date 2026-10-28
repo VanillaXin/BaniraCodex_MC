@@ -1,10 +1,13 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QuickActionAuiHeaderTest {
-    @Test public void closeHitIsHalfOpenAndCannotReachTheFirstBodyRow() {
+    @Test
+    public void closeHitIsHalfOpenAndCannotReachTheFirstBodyRow() {
         assertTrue(QuickActionOverlay.auiCloseHit(93, 22, 10, 20, 100));
         assertTrue(QuickActionOverlay.auiCloseHit(107.9, 37.9, 10, 20, 100));
         assertFalse(QuickActionOverlay.auiCloseHit(108, 30, 10, 20, 100));

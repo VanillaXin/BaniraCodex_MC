@@ -9,7 +9,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-
 import xin.vanilla.banira.client.gui.widget.InputWidget;
 import xin.vanilla.banira.internal.client.ConfigEditorContentTreeBuilder;
 import xin.vanilla.banira.internal.client.ConfigEditorState;
@@ -26,8 +25,15 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class ConfigEditorResizeStateTest {
-    @Before public void setUp() { BaniraPlatforms.install(new TestBaniraPlatform()); }
-    @After public void tearDown() { BaniraPlatforms.install(new TestBaniraPlatform()); }
+    @Before
+    public void setUp() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+    }
+
+    @After
+    public void tearDown() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+    }
 
     @Test
     public void captureWithoutFocusedInputClearsPreviousFocusAndSelection() throws Exception {
@@ -85,7 +91,8 @@ public class ConfigEditorResizeStateTest {
         ConfigEditorState editor = new ConfigEditorState(null);
         set(screen, "uiSession", allocate(ConfigUiSession.class));
         set(screen, "editorState", editor);
-        set(screen, "contentTreeBuilder", new ConfigEditorContentTreeBuilder(screen, null, null, editor, () -> {}, 20, 2));
+        set(screen, "contentTreeBuilder", new ConfigEditorContentTreeBuilder(screen, null, null, editor, () -> {
+        }, 20, 2));
         return screen;
     }
 
@@ -96,7 +103,8 @@ public class ConfigEditorResizeStateTest {
                 field.setAccessible(true);
                 field.set(target, value);
                 return;
-            } catch (NoSuchFieldException ignored) { }
+            } catch (NoSuchFieldException ignored) {
+            }
         }
         throw new NoSuchFieldException(name);
     }

@@ -351,7 +351,9 @@ public abstract class BaniraScreen extends Screen {
         return true;
     }
 
-    /** Context clipping for tooltips deferred until after scissor rendering. */
+    /**
+     * Context clipping for tooltips deferred until after scissor rendering.
+     */
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         return true;
     }

@@ -16,7 +16,9 @@ public final class AuiUiBackend {
     private Method containerFactory;
     private AuiApiBindings bindings;
 
-    public AuiUiBackend(Supplier<UiSessionHost> host) { this.host = Objects.requireNonNull(host, "host"); }
+    public AuiUiBackend(Supplier<UiSessionHost> host) {
+        this.host = Objects.requireNonNull(host, "host");
+    }
 
     public NativeUiView create(UiPageSpec page, Object previousScreen) {
         try {
@@ -51,7 +53,9 @@ public final class AuiUiBackend {
             if (cause instanceof Error) throw (Error) cause;
             if (cause instanceof RuntimeException) throw (RuntimeException) cause;
             throw new IllegalStateException("AUI HUD factory failed", cause);
-        } catch (ReflectiveOperationException failure) { throw new IllegalStateException("AUI HUD factory unavailable", failure); }
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("AUI HUD factory unavailable", failure);
+        }
     }
 
     public NativeUiView createContainer(UiPageSpec page) {
@@ -68,8 +72,15 @@ public final class AuiUiBackend {
             if (cause instanceof Error) throw (Error) cause;
             if (cause instanceof RuntimeException) throw (RuntimeException) cause;
             throw new IllegalStateException("AUI container factory failed", cause);
-        } catch (ReflectiveOperationException failure) { throw new IllegalStateException("AUI container factory unavailable", failure); }
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("AUI container factory unavailable", failure);
+        }
     }
 
-    public void reload() { factory = null; hudFactory = null; containerFactory = null; bindings = null; }
+    public void reload() {
+        factory = null;
+        hudFactory = null;
+        containerFactory = null;
+        bindings = null;
+    }
 }

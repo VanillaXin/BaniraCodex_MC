@@ -4,31 +4,49 @@ import org.junit.Before;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
-import xin.vanilla.banira.common.config.*;
-import xin.vanilla.banira.platform.*;
+import xin.vanilla.banira.common.config.ConfigCategoryTitleSpec;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigScope;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
-import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
+import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
+import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.type;
 
 public class UiConfigSessionTest {
-    @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
-    enum Mode { FIRST, SECOND }
+    @Before
+    public void platform() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+    }
 
-    @Test public void disconnectedSessionCannotPublishOrAcceptOldStateAfterReopen() throws Exception {
-        Fixture old = new Fixture(); old.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1); old.open();
+    enum Mode {FIRST, SECOND}
+
+    @Test
+    public void disconnectedSessionCannotPublishOrAcceptOldStateAfterReopen() throws Exception {
+        Fixture old = new Fixture();
+        old.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1);
+        old.open();
         call(old.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class}, old.holder.getConfigName(), Map.of("value", 7));
-        old.draft("value", "8"); call(old.session, "query", new Class<?>[]{String.class}, "old query");
+        old.draft("value", "8");
+        call(old.session, "query", new Class<?>[]{String.class}, "old query");
         call(old.session, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.DISCONNECT);
         call(old.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class}, old.holder.getConfigName(), Map.of("value", 99));
         assertEquals(false, call(old.session, "sync", new Class<?>[]{boolean.class}, false));
-        call(old.session, "fetch"); assertTrue(old.sent.isEmpty()); assertEquals(0, old.fetches.get());
+        call(old.session, "fetch");
+        assertTrue(old.sent.isEmpty());
+        assertEquals(0, old.fetches.get());
         assertEquals(8, old.value("value"));
-        Fixture fresh = new Fixture(); fresh.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1); fresh.open();
-        assertEquals(1, fresh.value("value")); assertEquals("", call(fresh.session, "query"));
+        Fixture fresh = new Fixture();
+        fresh.field("value", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1);
+        fresh.open();
+        assertEquals(1, fresh.value("value"));
+        assertEquals("", call(fresh.session, "query"));
         assertFalse(((xin.vanilla.banira.internal.client.ConfigEditorState) call(fresh.session, "state")).isRemoteSnapshot());
     }
 
@@ -50,6 +68,7 @@ public class UiConfigSessionTest {
                     .tooltip(Collections.singletonList("Complete description " + path))
                     .valueType(kind).defaultValue(value).enumClass(Mode.class).build());
         }
+
         void open() throws Exception {
             holder = ConfigHolder.create(modId, "test-common.toml", ConfigScope.COMMON, store,
                     descriptors, Collections.emptyMap(), titles);
@@ -58,26 +77,41 @@ public class UiConfigSessionTest {
             Class<?> services = type("internal.client.ui.page.ConfigUiSession$Services");
             Object port = Proxy.newProxyInstance(services.getClassLoader(), new Class<?>[]{services}, (proxy, method, args) -> {
                 switch (method.getName()) {
-                    case "connected": return connected;
+                    case "connected":
+                        return connected;
                     case "sync":
                         if (failSend) throw new IllegalStateException("send rejected");
-                        sent.add(new LinkedHashMap<>((Map<String, String>) args[1])); return null;
+                        sent.add(new LinkedHashMap<>((Map<String, String>) args[1]));
+                        return null;
                     case "fetch":
                         if (failFetch) throw new SecurityException("read denied");
-                        fetches.incrementAndGet(); return null;
-                    case "notify": notices.add((String) args[0]); return null;
-                    case "execute": ((Runnable) args[0]).run(); return null;
-                    default: return null;
+                        fetches.incrementAndGet();
+                        return null;
+                    case "notify":
+                        notices.add((String) args[0]);
+                        return null;
+                    case "execute":
+                        ((Runnable) args[0]).run();
+                        return null;
+                    default:
+                        return null;
                 }
             });
             session = sessionType.getConstructor(ConfigHolder.class, ConfigEditorScreen.Args.class, services)
                     .newInstance(holder, new ConfigEditorScreen.Args(), port);
         }
-        void draft(String path, String text) throws Exception { call(session, "draft", new Class<?>[]{String.class, String.class}, path, text); }
-        Object value(String path) throws Exception { return call(session, "value", new Class<?>[]{String.class}, path); }
+
+        void draft(String path, String text) throws Exception {
+            call(session, "draft", new Class<?>[]{String.class, String.class}, path, text);
+        }
+
+        Object value(String path) throws Exception {
+            return call(session, "value", new Class<?>[]{String.class}, path);
+        }
     }
 
-    @Test public void descriptorsRetainExactScalarAndListTypesWithoutNativeWidgets() throws Exception {
+    @Test
+    public void descriptorsRetainExactScalarAndListTypesWithoutNativeWidgets() throws Exception {
         Fixture f = new Fixture();
         f.field("group.long", ConfigEntryDescriptor.ConfigValueType.LONG, 1L);
         f.field("group.enum", ConfigEntryDescriptor.ConfigValueType.ENUM, Mode.FIRST);
@@ -95,10 +129,12 @@ public class UiConfigSessionTest {
         assertEquals(3, state.pendingChangeCount());
     }
 
-    @Test public void invalidDraftSurvivesBindingAndReloadAndBlocksSave() throws Exception {
+    @Test
+    public void invalidDraftSurvivesBindingAndReloadAndBlocksSave() throws Exception {
         Fixture f = new Fixture();
         f.field("group.number", ConfigEntryDescriptor.ConfigValueType.INTEGER, 2);
-        f.open(); f.draft("group.number", "-");
+        f.open();
+        f.draft("group.number", "-");
         NativeUiView old = new NativeUiView(new Object());
         call(f.session, "bind", new Class<?>[]{UiView.class}, old);
         call(f.session, "detach", new Class<?>[]{UiDetachReason.class}, UiDetachReason.RELOAD);
@@ -112,7 +148,8 @@ public class UiConfigSessionTest {
         assertEquals(0, old.subscriptionCount());
     }
 
-    @Test public void resetChangesOnlyDraftUntilSuccessfulSave() throws Exception {
+    @Test
+    public void resetChangesOnlyDraftUntilSuccessfulSave() throws Exception {
         Fixture f = new Fixture();
         f.field("name", ConfigEntryDescriptor.ConfigValueType.STRING, "default");
         f.store.values.put("name", "saved");
@@ -127,16 +164,19 @@ public class UiConfigSessionTest {
         assertEquals(1, f.saves.get());
     }
 
-    @Test public void syncUsesTouchedOrAllValuesAndFetchNeverWritesLocalHolder() throws Exception {
+    @Test
+    public void syncUsesTouchedOrAllValuesAndFetchNeverWritesLocalHolder() throws Exception {
         Fixture f = new Fixture();
         f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
         f.field("two", ConfigEntryDescriptor.ConfigValueType.INTEGER, 2);
-        f.open(); f.draft("one", "b");
+        f.open();
+        f.draft("one", "b");
         call(f.session, "sync", new Class<?>[]{boolean.class}, false);
         assertEquals(Collections.singletonMap("one", "b"), f.sent.get(0));
         call(f.session, "sync", new Class<?>[]{boolean.class}, true);
         assertEquals(2, f.sent.get(1).size());
-        call(f.session, "fetch"); assertEquals(1, f.fetches.get());
+        call(f.session, "fetch");
+        assertEquals(1, f.fetches.get());
         call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
                 f.holder.getConfigName(), Collections.singletonMap("one", "remote"));
         assertEquals("a", f.holder.get("one"));
@@ -144,14 +184,18 @@ public class UiConfigSessionTest {
         call(f.session, "save");
         assertEquals(Collections.singletonMap("one", "remote edit"), f.sent.get(2));
         assertEquals("a", f.holder.get("one"));
-        f.connected = false; call(f.session, "fetch");
+        f.connected = false;
+        call(f.session, "fetch");
         assertEquals(1, f.fetches.get());
     }
 
-    @Test public void failedSyncDoesNotCleanDraftAndClosedSessionIgnoresOldActions() throws Exception {
+    @Test
+    public void failedSyncDoesNotCleanDraftAndClosedSessionIgnoresOldActions() throws Exception {
         Fixture f = new Fixture();
         f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
-        f.open(); f.draft("one", "b"); f.failSend = true;
+        f.open();
+        f.draft("one", "b");
+        f.failSend = true;
         call(f.session, "sync", new Class<?>[]{boolean.class}, false);
         var state = (xin.vanilla.banira.internal.client.ConfigEditorState) call(f.session, "state");
         assertEquals(1, state.pendingChangeCount());
@@ -161,16 +205,20 @@ public class UiConfigSessionTest {
         assertTrue(f.sent.isEmpty());
     }
 
-    @Test public void queuedSyncKeepsRetryableDraftUntilAuthoritativeSnapshotConfirmsIt() throws Exception {
-        Fixture f = new Fixture(); f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
-        f.open(); f.draft("one", "b");
+    @Test
+    public void queuedSyncKeepsRetryableDraftUntilAuthoritativeSnapshotConfirmsIt() throws Exception {
+        Fixture f = new Fixture();
+        f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
+        f.open();
+        f.draft("one", "b");
         assertEquals(true, call(f.session, "sync", new Class<?>[]{boolean.class}, false));
         var state = (xin.vanilla.banira.internal.client.ConfigEditorState) call(f.session, "state");
         assertEquals("A queued packet is not a server acknowledgement", 1, state.pendingChangeCount());
         assertEquals(0, f.fetches.get());
         call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
                 f.holder.getConfigName(), Map.of("one", "a"));
-        assertEquals("b", f.value("one")); assertEquals(1, state.pendingChangeCount());
+        assertEquals("b", f.value("one"));
+        assertEquals(1, state.pendingChangeCount());
         assertEquals(true, call(f.session, "save"));
         assertEquals(Map.of("one", "b"), f.sent.get(1));
         call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
@@ -180,9 +228,12 @@ public class UiConfigSessionTest {
         assertEquals(0, f.saves.get());
     }
 
-    @Test public void snapshotForEarlierSyncCannotDiscardNewerOrInvalidEdits() throws Exception {
-        Fixture f = new Fixture(); f.field("one", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1);
-        f.open(); f.draft("one", "2");
+    @Test
+    public void snapshotForEarlierSyncCannotDiscardNewerOrInvalidEdits() throws Exception {
+        Fixture f = new Fixture();
+        f.field("one", ConfigEntryDescriptor.ConfigValueType.INTEGER, 1);
+        f.open();
+        f.draft("one", "2");
         call(f.session, "sync", new Class<?>[]{boolean.class}, false);
         f.draft("one", "3");
         call(f.session, "acceptRemoteSnapshot", new Class<?>[]{String.class, Map.class},
@@ -197,9 +248,13 @@ public class UiConfigSessionTest {
         assertEquals(1, f.sent.size());
     }
 
-    @Test public void fieldWriteDoesNotDependOnPermissionToFetchTheWholeConfiguration() throws Exception {
-        Fixture f = new Fixture(); f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
-        f.open(); f.draft("one", "b"); f.failFetch = true;
+    @Test
+    public void fieldWriteDoesNotDependOnPermissionToFetchTheWholeConfiguration() throws Exception {
+        Fixture f = new Fixture();
+        f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
+        f.open();
+        f.draft("one", "b");
+        f.failFetch = true;
         assertEquals(true, call(f.session, "sync", new Class<?>[]{boolean.class}, false));
         assertEquals(List.of(Map.of("one", "b")), f.sent);
         assertEquals(0, f.fetches.get());
@@ -211,10 +266,12 @@ public class UiConfigSessionTest {
         assertEquals("a", f.holder.get("one"));
     }
 
-    @Test public void escapeProtectsDirtySessionButDisconnectReleasesIt() throws Exception {
+    @Test
+    public void escapeProtectsDirtySessionButDisconnectReleasesIt() throws Exception {
         Fixture f = new Fixture();
         f.field("one", ConfigEntryDescriptor.ConfigValueType.STRING, "a");
-        f.open(); f.draft("one", "unsaved");
+        f.open();
+        f.draft("one", "unsaved");
         List<Object> shown = new ArrayList<>();
         UiSessionHost host = new UiSessionHost(new UiBackendController(() -> true, () -> true),
                 (page, previous) -> new NativeUiView(new Object()), shown::add, screen -> true);

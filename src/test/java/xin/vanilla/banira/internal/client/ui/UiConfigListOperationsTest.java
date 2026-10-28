@@ -2,28 +2,38 @@ package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Before;
 import org.junit.Test;
-import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigValueType;
-import xin.vanilla.banira.platform.*;
-import java.util.*;
-import static org.junit.Assert.*;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiConfigListOperationsTest {
-    @Before public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
+    @Before
+    public void platform() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+    }
 
     private static NativeUiView row(NativeUiView root, int index) {
         NativeUiView row = new NativeUiView(new Object());
         root.rowProviders.get("fields").bind(row, index);
         return row;
     }
+
     private static NativeUiView bind(UiConfigSessionTest.Fixture f) throws Exception {
         NativeUiView root = new NativeUiView(new Object());
         call(f.session, "bind", new Class<?>[]{UiView.class}, root);
         return root;
     }
 
-    @Test public void clearUndoAndSavePreserveEveryListTypeAndDuplicateOrder() throws Exception {
+    @Test
+    public void clearUndoAndSavePreserveEveryListTypeAndDuplicateOrder() throws Exception {
         Object[][] cases = {
                 {ConfigValueType.STRING_LIST, List.of("a,b", "a,b", "quote \"")},
                 {ConfigValueType.INTEGER_LIST, List.of(2, 1, 2)},
@@ -35,7 +45,8 @@ public class UiConfigListOperationsTest {
         for (Object[] test : cases) {
             var f = new UiConfigSessionTest.Fixture();
             List<?> original = (List<?>) test[1];
-            f.field("values", (ConfigValueType) test[0], original); f.open();
+            f.field("values", (ConfigValueType) test[0], original);
+            f.open();
             NativeUiView first = bind(f);
             row(first, 0).activate("delete");
             assertEquals(List.of(), f.value("values"));
@@ -53,14 +64,18 @@ public class UiConfigListOperationsTest {
         }
     }
 
-    @Test public void staleRowsCannotApplyOrDeleteAnotherRebuiltItem() throws Exception {
+    @Test
+    public void staleRowsCannotApplyOrDeleteAnotherRebuiltItem() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
-        f.field("names", ConfigValueType.STRING_LIST, List.of("first", "second")); f.open();
+        f.field("names", ConfigValueType.STRING_LIST, List.of("first", "second"));
+        f.open();
         NativeUiView root = bind(f);
         row(root, 0).activate("open");
         NativeUiView stale = row(root, 1);
-        stale.inputDraft("input", "changed"); stale.activate("apply");
-        stale.activate("delete"); stale.activate("apply");
+        stale.inputDraft("input", "changed");
+        stale.activate("apply");
+        stale.activate("delete");
+        stale.activate("apply");
         assertEquals(List.of("changed", "second"), f.value("names"));
         row(root, 2).activate("delete");
         assertEquals(List.of("changed"), f.value("names"));
@@ -74,7 +89,8 @@ public class UiConfigListOperationsTest {
         assertEquals(List.of("changed"), f.holder.get("names"));
     }
 
-    @Test public void keyListClearUndoResetAndSaveKeepOriginalHolderUntilCommit() throws Exception {
+    @Test
+    public void keyListClearUndoResetAndSaveKeepOriginalHolderUntilCommit() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
         f.field("keys", ConfigValueType.STRING_LIST, List.of("Tab", "LeftControl+K", "Tab"));
         f.descriptors.set(0, xin.vanilla.banira.common.config.ConfigEntryDescriptor.builder()
@@ -82,7 +98,8 @@ public class UiConfigListOperationsTest {
                 .defaultValue(List.of("Tab")).keyChords(true).build());
         f.open();
         NativeUiView root = bind(f);
-        row(root, 0).activate("delete"); row(root, 0).activate("delete");
+        row(root, 0).activate("delete");
+        row(root, 0).activate("delete");
         assertEquals(List.of("Tab", "LeftControl+K", "Tab"), f.value("keys"));
         row(root, 0).activate("reset");
         assertEquals(List.of("Tab"), f.value("keys"));
@@ -92,24 +109,29 @@ public class UiConfigListOperationsTest {
         assertEquals(1, f.saves.get());
     }
 
-    @Test public void emptyCapturedChordRetainsAnUnboundEntryAndRoundTripsThroughClearUndo() throws Exception {
+    @Test
+    public void emptyCapturedChordRetainsAnUnboundEntryAndRoundTripsThroughClearUndo() throws Exception {
         var f = new UiConfigSessionTest.Fixture();
         f.field("keys", ConfigValueType.STRING_LIST, List.of("Tab"));
         f.descriptors.set(0, xin.vanilla.banira.common.config.ConfigEntryDescriptor.builder()
                 .path("keys").displayName("keys").valueType(ConfigValueType.STRING_LIST)
                 .defaultValue(List.of("Tab")).keyChords(true).build());
         f.open();
-        NativeUiView root = bind(f); row(root, 0).activate("open");
+        NativeUiView root = bind(f);
+        row(root, 0).activate("open");
         NativeUiView edit = row(root, 1);
-        edit.input("input", UiValue.keyChords(List.of())); edit.activate("apply");
+        edit.input("input", UiValue.keyChords(List.of()));
+        edit.activate("apply");
         assertEquals(List.of(""), f.value("keys"));
         assertEquals(true, call(f.session, "save"));
         NativeUiView add = row(root, 2);
-        add.input("input", UiValue.keyChords(List.of())); add.activate("apply");
+        add.input("input", UiValue.keyChords(List.of()));
+        add.activate("apply");
         assertEquals(List.of("", ""), f.value("keys"));
         assertEquals(true, call(f.session, "save"));
         assertEquals(2, f.saves.get());
-        row(root, 0).activate("delete"); row(root, 0).activate("delete");
+        row(root, 0).activate("delete");
+        row(root, 0).activate("delete");
         assertEquals(List.of("", ""), f.value("keys"));
     }
 }

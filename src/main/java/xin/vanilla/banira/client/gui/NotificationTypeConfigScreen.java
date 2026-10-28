@@ -9,6 +9,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -29,10 +31,11 @@ import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.ConfigEditorNotifier;
-import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
+import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -112,19 +115,44 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
         private EnumSeason season;
     }
 
-    @Override public NotificationUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:notification-types"; }
-    @Override public UiPageSpec uiPage() { return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; scrollOffset = state.scrollOffset(); }
-    @Override public void captureUiState(UiViewState state) {
+    @Override
+    public NotificationUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:notification-types";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        scrollOffset = state.scrollOffset();
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
         uiSession.query(searchText);
         state.scrollOffset(scrollOffset);
-        if (searchInput != null && searchInput.focused()) state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        if (searchInput != null && searchInput.focused())
+            state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
         durationInputs.forEach((type, input) -> {
-            if (input.focused()) state.selection("type:" + type + ":1/input", input.cursorPosition(), input.highlightPos());
+            if (input.focused())
+                state.selection("type:" + type + ":1/input", input.cursorPosition(), input.highlightPos());
         });
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     @Override
     protected void initWidgets() {
@@ -188,13 +216,18 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
         updateWidgetPositions();
         applySearchFilter(searchText);
         if (uiState != null && uiState.focusedField().equals("search")) {
-            requestFocus(searchInput); searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            requestFocus(searchInput);
+            searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
         }
         durationInputs.forEach((type, input) -> {
             if (uiState != null && uiState.focusedField().equals("type:" + type + ":1/input")) {
                 IWidget parent = input.parent();
-                while (parent != null) { if (parent instanceof CollapsiblePanelWidget) ((CollapsiblePanelWidget) parent).expanded(true); parent = parent.parent(); }
-                requestFocus(input); input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                while (parent != null) {
+                    if (parent instanceof CollapsiblePanelWidget) ((CollapsiblePanelWidget) parent).expanded(true);
+                    parent = parent.parent();
+                }
+                requestFocus(input);
+                input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
             }
         });
     }
@@ -374,11 +407,14 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
             double valueX = labelWidth + GAP_LABEL_TO_VALUE;
             InputWidget input = new InputWidget(this);
             input.bounds(new ScreenCoordinate(valueX, 0, Math.max(VALUE_AREA_MIN_WIDTH, cw - valueX), ROW_HEIGHT));
-            input.maxLength(19); input.value(uiSession.durationDraft(typeId));
+            input.maxLength(19);
+            input.value(uiSession.durationDraft(typeId));
             input.error(true).errorMessage(BaniraComponent.get().transClientAuto("config_editor_validation_failed").toString());
             input.onTextChanged(text -> input.error(!uiSession.duration(typeId, text)));
-            row.addChild(input); durationInputs.put(typeId, input);
-            panel.addChildAuto(row, ROW_HEIGHT + 4); return;
+            row.addChild(input);
+            durationInputs.put(typeId, input);
+            panel.addChildAuto(row, ROW_HEIGHT + 4);
+            return;
         }
         long current = Math.max(DURATION_SLIDER_MIN_MS, st.durationMs());
         SliderWidget slider = row.slider(cw);

@@ -34,8 +34,9 @@ public final class UiNativeSessions {
         sessions.clear();
         IllegalStateException failure = null;
         for (UiPageSession session : remaining) {
-            try { session.close(UiCloseReason.DISCONNECT); }
-            catch (RuntimeException exception) {
+            try {
+                session.close(UiCloseReason.DISCONNECT);
+            } catch (RuntimeException exception) {
                 if (failure == null) failure = new IllegalStateException("Native UI disconnect failed");
                 failure.addSuppressed(exception);
             }

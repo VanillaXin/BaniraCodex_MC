@@ -1,12 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.api.client.ui.UiCloseReason;
-import xin.vanilla.banira.api.client.ui.UiPageSpec;
-import xin.vanilla.banira.internal.client.ui.CommonUiPages;
-import xin.vanilla.banira.internal.client.ui.UiNativePage;
-import xin.vanilla.banira.internal.client.ui.UiViewState;
-import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -16,6 +9,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -31,11 +26,15 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -83,24 +82,38 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         BaniraScreen.inheritThemeAndSeason(this, args.getParentScreen(), null, null);
     }
 
-    public FormUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:form"; }
+    public FormUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:form";
+    }
+
     protected boolean auiCompatible() {
         if (nativeOnly) return false;
         nativeOnly = getClass() != InputFormScreen.class || args.getWidgets().stream().anyMatch(widget -> widget.changed() != null);
         return !nativeOnly;
     }
-    @Override public UiPageSpec uiPage() {
+
+    @Override
+    public UiPageSpec uiPage() {
         if (!auiCompatible()) return null;
         captureUiState(uiState);
         if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
                 "banira_codex/ui/form.html", uiSession, previous -> this, this::getEffectiveTheme);
         return uiPage;
     }
-    @Override public void prepareUiState(UiViewState state) {
-        uiState = state; restoreUiDraft = true;
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiDraft = true;
     }
-    @Override public void captureUiState(UiViewState state) {
+
+    @Override
+    public void captureUiState(UiViewState state) {
         for (int index = 0; index < inputFields.size(); index++) {
             InputField field = inputFields.get(index);
             if (field.input() instanceof DropdownSelectWidget && ((DropdownSelectWidget) field.input()).multiSelect()) {
@@ -110,14 +123,16 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
                 if (value != null) uiSession.acceptNative(index, value);
             }
             InputWidget input = field.input() != null ? field.input() : field.slider() != null ? field.slider().inlineInputWidget() : null;
-            if (state != null && input != null && input.focused()) state.selection("field:" + index + "/input", input.cursorPosition(), input.highlightPos());
+            if (state != null && input != null && input.focused())
+                state.selection("field:" + index + "/input", input.cursorPosition(), input.highlightPos());
         }
         if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() / ITEM_HEIGHT);
         uiVersion = uiSession.version();
     }
 
     private void restoreUiDrafts() {
-        inputValues.clear(); dropdownInputValues.clear();
+        inputValues.clear();
+        dropdownInputValues.clear();
         for (int index = 0; index < args.getWidgets().size(); index++) {
             inputValues.add(uiSession.draft(index));
             Widget widget = args.getWidgets().get(index);
@@ -1066,7 +1081,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         if (uiVersion != uiSession.version()) {
             for (int index = 0; index < inputFields.size(); index++) {
                 InputField field = inputFields.get(index);
-                if (field.input() != null && !(field.input() instanceof DropdownSelectWidget)) field.input().value(uiSession.draft(index));
+                if (field.input() != null && !(field.input() instanceof DropdownSelectWidget))
+                    field.input().value(uiSession.draft(index));
             }
             uiVersion = uiSession.version();
         }
@@ -1162,13 +1178,15 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         super.onMouseClicked(eventArgs);
     }
 
-    @Override public void onClose() {
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         uiSession.close(UiCloseReason.CANCEL);
         super.onClose();
     }
 
-    @Override public void removed() {
+    @Override
+    public void removed() {
         CommonUiPages.removed(this);
         super.removed();
     }

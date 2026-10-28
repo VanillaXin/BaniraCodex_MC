@@ -2,15 +2,22 @@ package xin.vanilla.banira.internal.client.ui;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.api.client.ui.UiDetachReason;
+import xin.vanilla.banira.api.client.ui.UiHudSpec;
+
 import java.util.*;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class AuiHudHost {
     public static final class PaintedFailure extends RuntimeException {
         private static final long serialVersionUID = 1L;
-        public PaintedFailure(Throwable cause) { super(cause); }
+
+        public PaintedFailure(Throwable cause) {
+            super(cause);
+        }
     }
+
     private static final Logger LOGGER = LogManager.getLogger();
     private final UiBackendController backend;
     private final Function<UiHudSpec, NativeUiView> factory;
@@ -29,8 +36,11 @@ public final class AuiHudHost {
         Entry next = new Entry(spec);
         Entry previous = entries.put(spec.id(), next);
         if (previous != null) {
-            try { detach(previous, UiDetachReason.SWITCH); }
-            catch (RuntimeException | LinkageError failure) { fail(previous, failure); }
+            try {
+                detach(previous, UiDetachReason.SWITCH);
+            } catch (RuntimeException | LinkageError failure) {
+                fail(previous, failure);
+            }
         }
         return () -> {
             if (entries.remove(spec.id(), next)) detach(next, UiDetachReason.SWITCH);
@@ -45,7 +55,9 @@ public final class AuiHudHost {
             try {
                 if (!connected || reload || !backend.wantsAui(entry.spec.id()) || !entry.spec.binding().visible())
                     detach(entry, !connected ? UiDetachReason.DISCONNECT : reload ? UiDetachReason.RELOAD : UiDetachReason.SWITCH);
-            } catch (RuntimeException | LinkageError failure) { fail(entry, failure); }
+            } catch (RuntimeException | LinkageError failure) {
+                fail(entry, failure);
+            }
         }
     }
 
@@ -66,21 +78,37 @@ public final class AuiHudHost {
                 entry.spec.binding().bind(view);
             }
             NativeUiView view = entry.view;
-            if (!current(entry, view)) { detach(entry, UiDetachReason.SWITCH); return false; }
+            if (!current(entry, view)) {
+                detach(entry, UiDetachReason.SWITCH);
+                return false;
+            }
             entry.spec.binding().update(view);
-            if (!current(entry, view)) { detach(entry, UiDetachReason.SWITCH); return false; }
+            if (!current(entry, view)) {
+                detach(entry, UiDetachReason.SWITCH);
+                return false;
+            }
             draw.accept(view);
-            if (!current(entry, view)) { detach(entry, UiDetachReason.SWITCH); return false; }
+            if (!current(entry, view)) {
+                detach(entry, UiDetachReason.SWITCH);
+                return false;
+            }
             backend.attach(id);
             return true;
-        } catch (RuntimeException | LinkageError failure) { fail(entry, failure); return failure instanceof PaintedFailure; }
+        } catch (RuntimeException | LinkageError failure) {
+            fail(entry, failure);
+            return failure instanceof PaintedFailure;
+        }
     }
 
     public boolean canRender(String id) {
         Entry entry = entries.get(id);
         if (!connected || entry == null) return false;
-        try { return backend.wantsAui(id) && entry.spec.binding().visible(); }
-        catch (RuntimeException | LinkageError failure) { fail(entry, failure); return false; }
+        try {
+            return backend.wantsAui(id) && entry.spec.binding().visible();
+        } catch (RuntimeException | LinkageError failure) {
+            fail(entry, failure);
+            return false;
+        }
     }
 
     private boolean current(Entry entry, NativeUiView view) {
@@ -90,8 +118,11 @@ public final class AuiHudHost {
 
     private void fail(Entry entry, Throwable failure) {
         if (entries.get(entry.spec.id()) == entry) backend.isolate(entry.spec.id());
-        try { detach(entry, UiDetachReason.SWITCH); }
-        catch (RuntimeException | LinkageError cleanup) { failure.addSuppressed(cleanup); }
+        try {
+            detach(entry, UiDetachReason.SWITCH);
+        } catch (RuntimeException | LinkageError cleanup) {
+            failure.addSuppressed(cleanup);
+        }
         LOGGER.warn("AUI HUD failed; native overlay remains active: {}", entry.spec.id(), failure);
     }
 
@@ -103,7 +134,10 @@ public final class AuiHudHost {
     }
 
     public interface ManualRenderer {
-        default boolean currentDocument() { return true; }
+        default boolean currentDocument() {
+            return true;
+        }
+
         void renderHud(net.minecraft.client.gui.GuiGraphics graphics);
     }
 
@@ -122,13 +156,19 @@ public final class AuiHudHost {
         entry.view = null;
         Entry replacement = entries.get(entry.spec.id());
         if (replacement == null || replacement == entry || replacement.view == null) backend.detach(entry.spec.id());
-        try { entry.spec.binding().detach(reason); }
-        finally { view.close(); }
+        try {
+            entry.spec.binding().detach(reason);
+        } finally {
+            view.close();
+        }
     }
 
     private static final class Entry {
         final UiHudSpec spec;
         NativeUiView view;
-        Entry(UiHudSpec spec) { this.spec = spec; }
+
+        Entry(UiHudSpec spec) {
+            this.spec = spec;
+        }
     }
 }

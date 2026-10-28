@@ -17,7 +17,8 @@ public class UiGameIconLayoutTest {
         return (ScreenCoordinate) method.invoke(null, slot, maximum, inset);
     }
 
-    @Test public void wideSlotsCenterIconsOnBothAxes() throws Exception {
+    @Test
+    public void wideSlotsCenterIconsOnBothAxes() throws Exception {
         ScreenCoordinate bounds = fit(new ScreenCoordinate(19, 85, 24, 24), 16, 2);
         assertEquals(23, bounds.x(), 0);
         assertEquals(89, bounds.y(), 0);
@@ -25,7 +26,8 @@ public class UiGameIconLayoutTest {
         assertEquals(16, bounds.height(), 0);
     }
 
-    @Test public void narrowAndFractionalSlotsNeverOverflow() throws Exception {
+    @Test
+    public void narrowAndFractionalSlotsNeverOverflow() throws Exception {
         ScreenCoordinate bounds = fit(new ScreenCoordinate(4.2, 7.8, 11.7, 9.1), 16, 2);
         assertEquals(4, bounds.width(), 0);
         assertEquals(4, bounds.height(), 0);
@@ -34,17 +36,20 @@ public class UiGameIconLayoutTest {
         assertTrue(bounds.y() + bounds.height() <= 14.9);
     }
 
-    @Test public void tinySlotsAreNotDrawn() throws Exception {
+    @Test
+    public void tinySlotsAreNotDrawn() throws Exception {
         assertEquals(0, fit(new ScreenCoordinate(0, 0, 3, 3), 16, 2).width(), 0);
     }
 
-    @Test public void textHitTestingRetainsClipping() {
+    @Test
+    public void textHitTestingRetainsClipping() {
         ScreenCoordinate bounds = new ScreenCoordinate(10, 20, 100, 40);
         assertEquals(0, AuiGameElements.lineAt(bounds, bounds, 12, 22, 9, 3));
         assertEquals(-1, AuiGameElements.lineAt(bounds, bounds, 9, 22, 9, 3));
     }
 
-    @Test public void gameDrawingDisablesDepthAfterScissorAndRestoresItOnExit() throws Exception {
+    @Test
+    public void gameDrawingDisablesDepthAfterScissorAndRestoresItOnExit() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = AuiGameElements.class.getResourceAsStream("AuiGameElements.class")) {
             assertNotNull(input);
@@ -53,10 +58,11 @@ public class UiGameIconLayoutTest {
         for (String name : new String[]{"renderElement", "renderOption", "renderText"}) {
             var method = type.methods.stream().filter(value -> value.name.equals(name)).findFirst().orElseThrow();
             var calls = new java.util.ArrayList<String>();
-            for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                calls.add(call.owner + "." + call.name);
-            }
+            for (var instruction : method.instructions)
+                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                    var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                    calls.add(call.owner + "." + call.name);
+                }
             int clip = calls.indexOf("net/minecraft/client/gui/GuiGraphics.enableScissor");
             int disable = calls.indexOf("com/mojang/blaze3d/systems/RenderSystem.disableDepthTest");
             assertTrue(name + " must disable depth after the scissor flush", clip >= 0 && disable > clip);
@@ -67,23 +73,25 @@ public class UiGameIconLayoutTest {
             assertFalse(name + " must restore state on failure", method.tryCatchBlocks.isEmpty());
             if (name.equals("renderText")) {
                 boolean clipped = false;
-                for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                    var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                    if (call.name.equals("enableScissor")) clipped = true;
-                    if (clipped && call.owner.equals("net/minecraft/client/gui/GuiGraphics")
-                            && (call.name.equals("flush") || call.name.equals("disableScissor"))) {
-                        int position = method.instructions.indexOf(call);
-                        assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails",
-                                method.tryCatchBlocks.stream().anyMatch(block -> block.type == null
-                                        && method.instructions.indexOf(block.start) <= position
-                                        && position < method.instructions.indexOf(block.end)));
+                for (var instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                        var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                        if (call.name.equals("enableScissor")) clipped = true;
+                        if (clipped && call.owner.equals("net/minecraft/client/gui/GuiGraphics")
+                                && (call.name.equals("flush") || call.name.equals("disableScissor"))) {
+                            int position = method.instructions.indexOf(call);
+                            assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails",
+                                    method.tryCatchBlocks.stream().anyMatch(block -> block.type == null
+                                            && method.instructions.indexOf(block.start) <= position
+                                            && position < method.instructions.indexOf(block.end)));
+                        }
                     }
-                }
             }
         }
     }
 
-    @Test public void itemIconsUseTheExistingGuiModelRenderer() throws Exception {
+    @Test
+    public void itemIconsUseTheExistingGuiModelRenderer() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = AuiGameElements.class.getResourceAsStream("AuiGameElements.class")) {
             assertNotNull(input);
@@ -91,15 +99,17 @@ public class UiGameIconLayoutTest {
         }
         var method = type.methods.stream().filter(value -> value.name.equals("renderOption")).findFirst().orElseThrow();
         boolean model = false;
-        for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-            var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-            assertNotEquals("A block's particle texture is not its inventory icon", "renderGuiItemFlatBlit", call.name);
-            if (call.name.equals("renderGuiItemScaled")) model = true;
-        }
+        for (var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                assertNotEquals("A block's particle texture is not its inventory icon", "renderGuiItemFlatBlit", call.name);
+                if (call.name.equals("renderGuiItemScaled")) model = true;
+            }
         assertTrue(model);
     }
 
-    @Test public void staticHtmlParentsAreIndexedForViewportClipping() throws Exception {
+    @Test
+    public void staticHtmlParentsAreIndexedForViewportClipping() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess.class")) {
             assertNotNull(input);
@@ -108,26 +118,33 @@ public class UiGameIconLayoutTest {
         var index = type.methods.stream().filter(value -> value.name.equals("linkParents")).findFirst().orElse(null);
         assertNotNull("Static containers need the same parent chain as appended nodes", index);
         boolean parent = false;
-        for (var instruction : index.instructions) if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
-            var field = (org.objectweb.asm.tree.FieldInsnNode) instruction;
-            if (field.getOpcode() == org.objectweb.asm.Opcodes.PUTFIELD && field.name.equals("parent")) parent = true;
-        }
+        for (var instruction : index.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
+                var field = (org.objectweb.asm.tree.FieldInsnNode) instruction;
+                if (field.getOpcode() == org.objectweb.asm.Opcodes.PUTFIELD && field.name.equals("parent"))
+                    parent = true;
+            }
         assertTrue(parent);
         var constructor = type.methods.stream().filter(value -> value.name.equals("<init>")
                 && value.desc.contains("BooleanSupplier") && value.desc.contains("/Element;")).findFirst().orElseThrow();
         boolean initialized = false;
-        for (var instruction : constructor.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode
-                && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("linkParents")) initialized = true;
+        for (var instruction : constructor.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode
+                    && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("linkParents"))
+                initialized = true;
         assertTrue("Parent indexing must run on the loaded HTML tree", initialized);
         var original = type.methods.stream().filter(value -> value.name.equals("<init>")
                 && value.desc.contains("BooleanSupplier") && !value.desc.contains("/Element;")).findFirst().orElseThrow();
         boolean delegated = false;
-        for (var instruction : original.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
-                && call.name.equals("<init>") && call.owner.equals(type.name) && call.desc.equals(constructor.desc)) delegated = true;
+        for (var instruction : original.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
+                    && call.name.equals("<init>") && call.owner.equals(type.name) && call.desc.equals(constructor.desc))
+                delegated = true;
         assertTrue("The legacy owner constructor must retain indexed-parent initialization", delegated);
     }
 
-    @Test public void accessibleControlMetadataPassesTheActualAttributeGuard() throws Exception {
+    @Test
+    public void accessibleControlMetadataPassesTheActualAttributeGuard() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
             assertNotNull(input);
@@ -135,16 +152,18 @@ public class UiGameIconLayoutTest {
         }
         var method = type.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow();
         var strings = new java.util.HashSet<String>();
-        for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode
-                && ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst instanceof String) {
-            strings.add((String) ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst);
-        }
+        for (var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode
+                    && ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst instanceof String) {
+                strings.add((String) ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst);
+            }
         assertTrue("Named icon buttons must not trigger native fallback", strings.contains("aria-label"));
         assertTrue("Selected menu rows need an explicit state", strings.contains("aria-selected"));
         assertTrue("The attribute boundary must remain closed", strings.contains("Unsupported UI attribute"));
     }
 
-    @Test public void templateToolIconsKeepTheirDeclaredButtonDimensions() throws Exception {
+    @Test
+    public void templateToolIconsKeepTheirDeclaredButtonDimensions() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
             assertNotNull(input);
@@ -152,9 +171,10 @@ public class UiGameIconLayoutTest {
         }
         var method = type.methods.stream().filter(value -> value.name.equals("gameElement")).findFirst().orElseThrow();
         boolean scoped = false;
-        for (var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode
-                && ((org.objectweb.asm.tree.FieldInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.GETFIELD
-                && ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("created")) scoped = true;
+        for (var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode
+                    && ((org.objectweb.asm.tree.FieldInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.GETFIELD
+                    && ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("created")) scoped = true;
         assertTrue("Static toolbar icons must use their 22px template boxes", scoped);
     }
 }

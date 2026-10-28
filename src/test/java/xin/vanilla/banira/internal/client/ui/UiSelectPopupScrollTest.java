@@ -16,8 +16,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class UiSelectPopupScrollTest {
-    @BeforeClass public static void bootstrap() { UiDomControlsTest.bootstrap(); }
-    @Before public void platform() { new UiDomControlsTest().platform(); }
+    @BeforeClass
+    public static void bootstrap() {
+        UiDomControlsTest.bootstrap();
+    }
+
+    @Before
+    public void platform() {
+        new UiDomControlsTest().platform();
+    }
 
     private static final class Fixture {
         final UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
@@ -30,7 +37,10 @@ public class UiSelectPopupScrollTest {
             for (int index = 0; index < 8; index++) options.add(new DropdownOption("value:" + index));
             view.control("amount", new UiControlSpec(UiControlSpec.Kind.SELECT, 256, "", false,
                     options, DropdownInputMode.SELECTION_ONLY));
-            view.onValue("amount", value -> { selected.set(value); callbacks.incrementAndGet(); });
+            view.onValue("amount", value -> {
+                selected.set(value);
+                callbacks.incrementAndGet();
+            });
             dom.ids.get("amount").emit("click");
             assertNotNull(node("popup-options"));
         }
@@ -44,10 +54,13 @@ public class UiSelectPopupScrollTest {
                     && !node.removed && !"display:none".equals(node.attributes.get("style"))).toList();
         }
 
-        int writes() { return dom.created.stream().mapToInt(node -> node.writes).sum(); }
+        int writes() {
+            return dom.created.stream().mapToInt(node -> node.writes).sum();
+        }
     }
 
-    @Test public void postLayoutRealizesTailAfterSilentSmoothScrollWithoutReallocatingRows() throws Exception {
+    @Test
+    public void postLayoutRealizesTailAfterSilentSmoothScrollWithoutReallocatingRows() throws Exception {
         Fixture fixture = new Fixture();
         assertFalse(fixture.rows().stream().anyMatch(node -> "value:7".equals(node.text)));
         int allocated = fixture.dom.created.size();
@@ -57,16 +70,20 @@ public class UiSelectPopupScrollTest {
         assertNotNull("A completed scroll must realize the last option without a second input event", tail);
         assertEquals(allocated, fixture.dom.created.size());
         int writes = fixture.writes();
-        fixture.view.afterLayout(); fixture.view.afterLayout();
+        fixture.view.afterLayout();
+        fixture.view.afterLayout();
         assertEquals("Unchanged viewport must not rewrite option DOM each frame", writes, fixture.writes());
-        tail.emit("click"); tail.emit("click");
+        tail.emit("click");
+        tail.emit("click");
         assertEquals("value:7", fixture.selected.get().asText());
         assertEquals(1, fixture.callbacks.get());
-        fixture.view.afterLayout(); fixture.view.close();
+        fixture.view.afterLayout();
+        fixture.view.close();
         assertTrue(fixture.node("popup-options").removed);
     }
 
-    @Test public void postLayoutRefreshesInitialAndResizedViewportWithoutScrollEvents() throws Exception {
+    @Test
+    public void postLayoutRefreshesInitialAndResizedViewportWithoutScrollEvents() throws Exception {
         Fixture fixture = new Fixture();
         UiDomControlsTest.Dom.Node viewport = fixture.node("popup-options");
         viewport.height = 0;

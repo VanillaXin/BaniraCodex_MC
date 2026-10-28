@@ -3,29 +3,56 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
-import java.util.*;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.Assert.*;
 
 public class UiContainerLayerTest {
     private static final UiPageSession SESSION = new UiPageSession() {
-        public void bind(UiView view) { }
-        public void detach(UiDetachReason reason) { }
-        public void close(UiCloseReason reason) { }
+        public void bind(UiView view) {
+        }
+
+        public void detach(UiDetachReason reason) {
+        }
+
+        public void close(UiCloseReason reason) {
+        }
     };
-    private UiPageSpec page() { return new UiPageSpec("test:container", "test/container.html", SESSION, previous -> previous); }
-    private Map<String, ScreenCoordinate> regions() { return Collections.singletonMap("panel", new ScreenCoordinate(10, 20, 176, 222)); }
+
+    private UiPageSpec page() {
+        return new UiPageSpec("test:container", "test/container.html", SESSION, previous -> previous);
+    }
+
+    private Map<String, ScreenCoordinate> regions() {
+        return Collections.singletonMap("panel", new ScreenCoordinate(10, 20, 176, 222));
+    }
+
     private static class View extends NativeUiView implements UiContainerLayerHost.Renderer {
         int renders, closes;
         RuntimeException failure;
-        View() { super(null); }
+
+        View() {
+            super(null);
+        }
+
         public void render(net.minecraft.client.gui.GuiGraphics graphics, Map<String, ScreenCoordinate> regions) {
             renders++;
             if (failure != null) throw failure;
         }
-        @Override public void close() { if (!closed()) closes++; super.close(); }
+
+        @Override
+        public void close() {
+            if (!closed()) closes++;
+            super.close();
+        }
     }
-    @Test public void existingMenuAppearanceHasAnOptionalPublicFactory() throws Exception {
+
+    @Test
+    public void existingMenuAppearanceHasAnOptionalPublicFactory() throws Exception {
         try {
             Class<?> layer = Class.forName("xin.vanilla.banira.api.client.ui.UiContainerLayer");
             assertTrue(AutoCloseable.class.isAssignableFrom(layer));
@@ -36,14 +63,18 @@ public class UiContainerLayerTest {
         }
     }
 
-    @Test public void absentOrDisabledCapabilityNeverCreatesTheEngine() {
+    @Test
+    public void absentOrDisabledCapabilityNeverCreatesTheEngine() {
         for (boolean preference : new boolean[]{false, true}) {
             UiBackendController backend = new UiBackendController(() -> preference, () -> false);
-            assertNull(UiContainerLayerHost.create(backend, page(), () -> true, () -> { throw new AssertionError("Unexpected engine creation"); }));
+            assertNull(UiContainerLayerHost.create(backend, page(), () -> true, () -> {
+                throw new AssertionError("Unexpected engine creation");
+            }));
         }
     }
 
-    @Test public void successfulFrameClaimsOnlyItsOwnSurfaceAndClosesOnce() {
+    @Test
+    public void successfulFrameClaimsOnlyItsOwnSurfaceAndClosesOnce() {
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View();
         UiContainerLayer layer = UiContainerLayerHost.create(backend, page(), () -> true, () -> view);
@@ -53,21 +84,26 @@ public class UiContainerLayerTest {
         assertTrue(layer.render(null, regions()));
         assertTrue(backend.usesAui("test:container"));
         assertFalse(backend.usesAui("test:other"));
-        layer.close(); layer.close();
+        layer.close();
+        layer.close();
         assertEquals(1, view.closes);
         assertFalse(backend.usesAui("test:container"));
     }
 
-    @Test public void switchReloadAndLostMenuRejectOldActionsAndReleaseAppearance() {
+    @Test
+    public void switchReloadAndLostMenuRejectOldActionsAndReleaseAppearance() {
         for (int mode = 0; mode < 3; mode++) {
             UiBackendController backend = new UiBackendController(() -> true, () -> true);
             AtomicBoolean owner = new AtomicBoolean(true);
             View view = new View();
             UiContainerLayer layer = UiContainerLayerHost.create(backend, page(), owner::get, () -> view);
-            int[] clicks = {0}; view.onAction("refresh", () -> clicks[0]++);
+            int[] clicks = {0};
+            view.onAction("refresh", () -> clicks[0]++);
             assertTrue(layer.render(null, regions()));
-            if (mode == 0) { backend.requestSwitch(false); backend.tick(); }
-            else if (mode == 1) backend.reload();
+            if (mode == 0) {
+                backend.requestSwitch(false);
+                backend.tick();
+            } else if (mode == 1) backend.reload();
             else owner.set(false);
             view.activate("refresh");
             assertEquals(0, clicks[0]);
@@ -77,7 +113,8 @@ public class UiContainerLayerTest {
         }
     }
 
-    @Test public void malformedGeometryFallsBackBeforePainting() {
+    @Test
+    public void malformedGeometryFallsBackBeforePainting() {
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View();
         UiContainerLayer layer = UiContainerLayerHost.create(backend, page(), () -> true, () -> view);
@@ -90,7 +127,8 @@ public class UiContainerLayerTest {
         assertFalse(UiContainerLayerHost.valid(tooMany));
     }
 
-    @Test public void failedPaintingSuppressesOnlyCurrentFrameThenIsolates() {
+    @Test
+    public void failedPaintingSuppressesOnlyCurrentFrameThenIsolates() {
         for (boolean painted : new boolean[]{false, true}) {
             UiBackendController backend = new UiBackendController(() -> true, () -> true);
             View view = new View();
@@ -104,7 +142,8 @@ public class UiContainerLayerTest {
         }
     }
 
-    @Test public void lostOwnerExceptionFallsBackWithoutEscapingIntoTheContainer() {
+    @Test
+    public void lostOwnerExceptionFallsBackWithoutEscapingIntoTheContainer() {
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         AtomicBoolean fail = new AtomicBoolean(false);
         View view = new View();
@@ -113,31 +152,43 @@ public class UiContainerLayerTest {
             return true;
         }, () -> view);
         fail.set(true);
-        try { assertFalse(layer.render(null, regions())); }
-        catch (IllegalStateException escaped) { fail("Owner failure escaped into the container"); }
+        try {
+            assertFalse(layer.render(null, regions()));
+        } catch (IllegalStateException escaped) {
+            fail("Owner failure escaped into the container");
+        }
         assertEquals(1, view.closes);
     }
 
-    @Test public void failedThemeBindingReleasesTheDocumentBeforeFallback() {
+    @Test
+    public void failedThemeBindingReleasesTheDocumentBeforeFallback() {
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View() {
-            @Override public void theme(xin.vanilla.banira.client.data.BaniraColorConfig theme) { throw new IllegalStateException("Theme binding failed"); }
+            @Override
+            public void theme(xin.vanilla.banira.client.data.BaniraColorConfig theme) {
+                throw new IllegalStateException("Theme binding failed");
+            }
         };
         assertNull(UiContainerLayerHost.create(backend, page(), () -> true, () -> view));
         assertEquals(1, view.closes);
     }
 
-    @Test public void containerBackgroundUsesTheNativeSafeFlatLayer() throws Exception {
+    @Test
+    public void containerBackgroundUsesTheNativeSafeFlatLayer() throws Exception {
         org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
         try (var input = getClass().getClassLoader().getResourceAsStream("xin/vanilla/banira/internal/client/ui/AuiContainerDocument.class")) {
-            assertNotNull(input); new org.objectweb.asm.ClassReader(input).accept(node, 0);
+            assertNotNull(input);
+            new org.objectweb.asm.ClassReader(input).accept(node, 0);
         }
         boolean negative = false;
         int flushes = 0;
-        for (var method : node.methods) if (method.name.equals("render")) for (var instruction : method.instructions) {
-            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && Double.valueOf(-10).equals(constant.cst)) negative = true;
-            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.name.equals("flush")) flushes++;
-        }
+        for (var method : node.methods)
+            if (method.name.equals("render")) for (var instruction : method.instructions) {
+                if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && Double.valueOf(-10).equals(constant.cst))
+                    negative = true;
+                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call && call.name.equals("flush"))
+                    flushes++;
+            }
         assertFalse("A negative document layer can be occluded by the screen dim background", negative);
         assertEquals("Native and AUI batches must be ordered around container painting", 2, flushes);
         assertEquals(100, net.minecraft.client.gui.screens.inventory.AbstractContainerScreen.SLOT_ITEM_BLIT_OFFSET);
@@ -153,14 +204,20 @@ public class UiContainerLayerTest {
         }
     }
 
-    @Test public void explicitFallbackAndCleanupFailureCannotKeepOwnership() {
+    @Test
+    public void explicitFallbackAndCleanupFailureCannotKeepOwnership() {
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View() {
-            @Override public void close() { super.close(); throw new IllegalStateException("Engine release failed"); }
+            @Override
+            public void close() {
+                super.close();
+                throw new IllegalStateException("Engine release failed");
+            }
         };
         UiContainerLayer layer = UiContainerLayerHost.create(backend, page(), () -> true, () -> view);
         assertTrue(layer.render(null, regions()));
-        layer.fallback(); layer.close();
+        layer.fallback();
+        layer.close();
         assertFalse(backend.usesAui(page().id()));
         assertFalse(backend.wantsAui(page().id()));
         assertEquals(1, view.closes);

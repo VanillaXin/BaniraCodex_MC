@@ -1,23 +1,11 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
-
-import xin.vanilla.banira.api.client.ui.UiRowProvider;
-import xin.vanilla.banira.api.client.ui.UiControlSpec;
-import xin.vanilla.banira.api.client.ui.UiValue;
-import xin.vanilla.banira.api.client.ui.UiView;
-import xin.vanilla.banira.api.client.ui.UiPointer;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.common.data.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Collections;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -43,22 +31,57 @@ public class NativeUiView implements UiView, AutoCloseable {
     private Object screen;
     private UiViewState state = new UiViewState();
     private BooleanSupplier current = () -> true;
-    private Runnable closeAction = () -> { };
+    private Runnable closeAction = () -> {
+    };
     protected BaniraColorConfig theme;
 
-    public NativeUiView(Object screen) { this.screen = screen; }
-    public Object screen() { return screen; }
-    @Override public boolean nativeView() { return screen instanceof xin.vanilla.banira.client.gui.BaniraScreen; }
-    public boolean closed() { return resources.closed(); }
-    protected void screen(Object screen) { this.screen = screen; }
-    public UiViewState state() { return state; }
-    void restoreState(UiViewState state) { this.state = Objects.requireNonNull(state, "state"); }
-    void gate(BooleanSupplier current) { this.current = current; }
-    void onClose(Runnable action) { closeAction = action; }
-    public void requestClose() { if (live()) closeAction.run(); }
-    protected boolean live() { return !resources.closed() && current.getAsBoolean(); }
+    public NativeUiView(Object screen) {
+        this.screen = screen;
+    }
 
-    @Override public void theme(BaniraColorConfig theme) {
+    public Object screen() {
+        return screen;
+    }
+
+    @Override
+    public boolean nativeView() {
+        return screen instanceof xin.vanilla.banira.client.gui.BaniraScreen;
+    }
+
+    public boolean closed() {
+        return resources.closed();
+    }
+
+    protected void screen(Object screen) {
+        this.screen = screen;
+    }
+
+    public UiViewState state() {
+        return state;
+    }
+
+    void restoreState(UiViewState state) {
+        this.state = Objects.requireNonNull(state, "state");
+    }
+
+    void gate(BooleanSupplier current) {
+        this.current = current;
+    }
+
+    void onClose(Runnable action) {
+        closeAction = action;
+    }
+
+    public void requestClose() {
+        if (live()) closeAction.run();
+    }
+
+    protected boolean live() {
+        return !resources.closed() && current.getAsBoolean();
+    }
+
+    @Override
+    public void theme(BaniraColorConfig theme) {
         if (!live()) return;
         this.theme = theme;
         changed("theme");
@@ -70,6 +93,7 @@ public class NativeUiView implements UiView, AutoCloseable {
         texts.put(id, Objects.requireNonNull(text, "text"));
         changed(id);
     }
+
     @Override
     public void tooltip(String id, Component text) {
         if (!live()) return;
@@ -84,6 +108,7 @@ public class NativeUiView implements UiView, AutoCloseable {
         values.put(id, Objects.requireNonNull(value, "value"));
         changed(id);
     }
+
     @Override
     public void enabled(String id, boolean value) {
         if (!live()) return;
@@ -136,11 +161,16 @@ public class NativeUiView implements UiView, AutoCloseable {
         return owned;
     }
 
-    @Override public AutoCloseable onLongAction(String id, long durationMs, Runnable action) {
+    @Override
+    public AutoCloseable onLongAction(String id, long durationMs, Runnable action) {
         if (durationMs < 1 || durationMs > 60000) throw new IllegalArgumentException("Invalid long action duration");
-        longDurations.put(id, durationMs); return onLongAction(id, action);
+        longDurations.put(id, durationMs);
+        return onLongAction(id, action);
     }
-    protected long longActionDuration(String id) { return longDurations.getOrDefault(id, 2000L); }
+
+    protected long longActionDuration(String id) {
+        return longDurations.getOrDefault(id, 2000L);
+    }
 
     public void activateLong(String id) {
         if (!live() || !enabled.getOrDefault(id, true)) return;
@@ -149,7 +179,9 @@ public class NativeUiView implements UiView, AutoCloseable {
         }
     }
 
-    protected java.util.Set<String> longActionIds() { return new java.util.LinkedHashSet<>(longActions.keySet()); }
+    protected java.util.Set<String> longActionIds() {
+        return new java.util.LinkedHashSet<>(longActions.keySet());
+    }
 
     @Override
     public AutoCloseable onValue(String id, Consumer<UiValue> action) {
@@ -187,36 +219,52 @@ public class NativeUiView implements UiView, AutoCloseable {
         }
     }
 
-    @Override public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element) {
+    @Override
+    public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element) {
         if (!live()) return;
-        gameElements.put(id, element); changed(id);
+        gameElements.put(id, element);
+        changed(id);
     }
-    @Override public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element, ScreenCoordinate area) {
+
+    @Override
+    public void gameElement(String id, xin.vanilla.banira.api.client.ui.UiGameElement element, ScreenCoordinate area) {
         if (!live()) return;
         Objects.requireNonNull(area, "area");
         if (!Double.isFinite(area.x()) || !Double.isFinite(area.y()) || !Double.isFinite(area.width())
                 || !Double.isFinite(area.height()) || area.width() < 0 || area.height() < 0)
             throw new IllegalArgumentException("Invalid game element bounds");
         gameAreas.put(id, new ScreenCoordinate(area.x(), area.y(), area.width(), area.height()));
-        gameElements.put(id, element); changed(id);
+        gameElements.put(id, element);
+        changed(id);
     }
-    @Override public void hudPosition(double x, double y) {
+
+    @Override
+    public void hudPosition(double x, double y) {
         if (!live() || !Double.isFinite(x) || !Double.isFinite(y)) return;
-        hudX = Math.max(0, Math.min(1, x)); hudY = Math.max(0, Math.min(1, y)); changed("preview");
+        hudX = Math.max(0, Math.min(1, x));
+        hudY = Math.max(0, Math.min(1, y));
+        changed("preview");
     }
-    @Override public AutoCloseable onPointer(String id, Consumer<UiPointer> action) {
+
+    @Override
+    public AutoCloseable onPointer(String id, Consumer<UiPointer> action) {
         requireOpen();
         List<Consumer<UiPointer>> listeners = pointers.computeIfAbsent(id, key -> new ArrayList<>());
         listeners.add(Objects.requireNonNull(action));
         AutoCloseable owned = resources.own(() -> listeners.remove(action));
-        subscribed(id); return owned;
+        subscribed(id);
+        return owned;
     }
+
     public void pointer(String id, UiPointer event) {
         if (!live() || !event.finite() || !enabled.getOrDefault(id, true)) return;
         for (Consumer<UiPointer> listener : new ArrayList<>(pointers.getOrDefault(id, Collections.emptyList())))
             if (live()) listener.accept(event);
     }
-    protected Set<String> pointerIds() { return new LinkedHashSet<>(pointers.keySet()); }
+
+    protected Set<String> pointerIds() {
+        return new LinkedHashSet<>(pointers.keySet());
+    }
 
     public void activate(String id) {
         if (!live() || !enabled.getOrDefault(id, true)) return;
@@ -229,7 +277,8 @@ public class NativeUiView implements UiView, AutoCloseable {
         if (!live() || !enabled.getOrDefault(id, true)) return;
         requireValue(id, value);
         UiValue previous = values.get(id);
-        if (previous != null && previous.kind() != value.kind()) throw new IllegalArgumentException("UI value type changed");
+        if (previous != null && previous.kind() != value.kind())
+            throw new IllegalArgumentException("UI value type changed");
         values.put(id, value);
         for (Consumer<UiValue> listener : new ArrayList<>(changes.getOrDefault(id, java.util.Collections.emptyList()))) {
             if (live()) listener.accept(value);
@@ -242,10 +291,17 @@ public class NativeUiView implements UiView, AutoCloseable {
         if (control == null) return;
         UiValue.Kind expected;
         switch (control.kind()) {
-            case DECIMAL: expected = UiValue.Kind.DECIMAL; break;
-            case KEY_CHORD: expected = UiValue.Kind.KEY_CHORDS; break;
-            case SELECT: expected = control.multiple() ? UiValue.Kind.STRING_LIST : UiValue.Kind.TEXT; break;
-            default: expected = UiValue.Kind.TEXT;
+            case DECIMAL:
+                expected = UiValue.Kind.DECIMAL;
+                break;
+            case KEY_CHORD:
+                expected = UiValue.Kind.KEY_CHORDS;
+                break;
+            case SELECT:
+                expected = control.multiple() ? UiValue.Kind.STRING_LIST : UiValue.Kind.TEXT;
+                break;
+            default:
+                expected = UiValue.Kind.TEXT;
         }
         if (value.kind() != expected) throw new IllegalArgumentException("UI control value type mismatch");
     }
@@ -253,17 +309,28 @@ public class NativeUiView implements UiView, AutoCloseable {
     @Override
     public void rows(String id, UiRowProvider rows, int maxRealizedRows) {
         if (!live()) return;
-        if (maxRealizedRows < 1 || maxRealizedRows > 120) throw new IllegalArgumentException("UI row realization limit");
+        if (maxRealizedRows < 1 || maxRealizedRows > 120)
+            throw new IllegalArgumentException("UI row realization limit");
         rowProviders.put(id, Objects.requireNonNull(rows, "rows"));
         rowLimits.put(id, maxRealizedRows);
         changed(id);
     }
 
     @Override
-    public ScreenCoordinate bounds(String id) { return new ScreenCoordinate(0, 0, 0, 0); }
-    protected void changed(String id) { }
-    protected void subscribed(String id) { }
-    protected java.util.Set<String> actionIds() { return new java.util.LinkedHashSet<>(actions.keySet()); }
+    public ScreenCoordinate bounds(String id) {
+        return new ScreenCoordinate(0, 0, 0, 0);
+    }
+
+    protected void changed(String id) {
+    }
+
+    protected void subscribed(String id) {
+    }
+
+    protected java.util.Set<String> actionIds() {
+        return new java.util.LinkedHashSet<>(actions.keySet());
+    }
+
     public int subscriptionCount() {
         return actions.values().stream().mapToInt(List::size).sum() + changes.values().stream().mapToInt(List::size).sum()
                 + draftChanges.values().stream().mapToInt(List::size).sum() + longActions.values().stream().mapToInt(List::size).sum()
@@ -272,10 +339,25 @@ public class NativeUiView implements UiView, AutoCloseable {
 
     @Override
     public void close() {
-        try { resources.close(); }
-        finally {
-            actions.clear(); longActions.clear(); longDurations.clear(); changes.clear(); draftChanges.clear(); pointers.clear(); texts.clear(); tooltips.clear(); values.clear();
-            controls.clear(); drafts.clear(); enabled.clear(); rowProviders.clear(); rowLimits.clear(); gameElements.clear(); gameAreas.clear();
+        try {
+            resources.close();
+        } finally {
+            actions.clear();
+            longActions.clear();
+            longDurations.clear();
+            changes.clear();
+            draftChanges.clear();
+            pointers.clear();
+            texts.clear();
+            tooltips.clear();
+            values.clear();
+            controls.clear();
+            drafts.clear();
+            enabled.clear();
+            rowProviders.clear();
+            rowLimits.clear();
+            gameElements.clear();
+            gameAreas.clear();
         }
     }
 }

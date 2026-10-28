@@ -10,18 +10,33 @@ public final class UiPointerState {
     private Integer light, dark;
     private int main, pressed;
 
-    public void colors(int light, int dark) { this.light = light; this.dark = dark; frames = 0; }
-    public void themeChanged() { frames = 0; }
-    public void reset() { buttons = 0; scroll = 0; frames = 0; }
+    public void colors(int light, int dark) {
+        this.light = light;
+        this.dark = dark;
+        frames = 0;
+    }
+
+    public void themeChanged() {
+        frames = 0;
+    }
+
+    public void reset() {
+        buttons = 0;
+        scroll = 0;
+        frames = 0;
+    }
+
     public void button(int button, boolean down) {
         if (button < 0 || button > 2) return;
         int mask = 1 << button;
         buttons = down ? buttons | mask : buttons & ~mask;
     }
+
     public void scroll(double delta) {
         if (!Double.isFinite(delta)) return;
         scroll = Math.max(-8, Math.min(8, scroll + (float) Math.max(-6, Math.min(6, delta * 3))));
     }
+
     public HudDrawList frame(BaniraColorConfig theme, int x, int y, double depth) {
         if (frames++ % 10 == 0) {
             boolean useDark = ColorUtils.getBrightnessFromArgb(theme.bgSurface()) < 0.5f;

@@ -12,7 +12,10 @@ import xin.vanilla.banira.common.config.ConfigEditSnapshot;
 
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,9 +23,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.*;
 
 public class ForgeConfigFileSharingTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void firstLoadCorrectionWaitsForShortWindowsSharingLease() throws Exception {
+    @Test
+    public void firstLoadCorrectionWaitsForShortWindowsSharingLease() throws Exception {
         Path path = file();
         ExecutorService worker = Executors.newSingleThreadExecutor();
         CountDownLatch writing = new CountDownLatch(1);
@@ -37,10 +42,13 @@ public class ForgeConfigFileSharingTest {
             result.get(5, TimeUnit.SECONDS);
             assertEquals(2, ((Number) config.get("a")).intValue());
             assertTrue(text(path).contains("a = 2"));
-        } finally { stop(worker); }
+        } finally {
+            stop(worker);
+        }
     }
 
-    @Test public void persistentSharingDenialPreservesOriginalAndMemory() throws Exception {
+    @Test
+    public void persistentSharingDenialPreservesOriginalAndMemory() throws Exception {
         Path path = file();
         try (ForgeConfigFile config = config(path, new CountDownLatch(1), false)) {
             config.load();
@@ -55,7 +63,8 @@ public class ForgeConfigFileSharingTest {
         }
     }
 
-    @Test public void externalEditDuringSharingRetryWinsOverStagedCandidate() throws Exception {
+    @Test
+    public void externalEditDuringSharingRetryWinsOverStagedCandidate() throws Exception {
         Path path = file();
         ExecutorService worker = Executors.newSingleThreadExecutor();
         CountDownLatch writing = new CountDownLatch(1);
@@ -72,10 +81,13 @@ public class ForgeConfigFileSharingTest {
                 assertEquals("a = 9\n", text(path));
                 assertEquals(1, ((Number) config.get("a")).intValue());
             }
-        } finally { stop(worker); }
+        } finally {
+            stop(worker);
+        }
     }
 
-    @Test public void interruptedSharingWaitPreservesInterruptAndOriginal() throws Exception {
+    @Test
+    public void interruptedSharingWaitPreservesInterruptAndOriginal() throws Exception {
         Path path = file();
         ExecutorService worker = Executors.newSingleThreadExecutor();
         CountDownLatch writing = new CountDownLatch(1);
@@ -87,8 +99,11 @@ public class ForgeConfigFileSharingTest {
             try (FileChannel ignored = lease(path)) {
                 Future<?> result = worker.submit(() -> {
                     thread.set(Thread.currentThread());
-                    try { config.compareAndSetAll(snapshot, Collections.singletonMap("a", 2)); }
-                    finally { interruptPreserved.set(Thread.currentThread().isInterrupted()); }
+                    try {
+                        config.compareAndSetAll(snapshot, Collections.singletonMap("a", 2));
+                    } finally {
+                        interruptPreserved.set(Thread.currentThread().isInterrupted());
+                    }
                 });
                 assertTrue(writing.await(5, TimeUnit.SECONDS));
                 Thread.sleep(75);
@@ -99,7 +114,9 @@ public class ForgeConfigFileSharingTest {
                 assertArrayEquals(snapshot.getSourceBytes(), Files.readAllBytes(path));
                 assertEquals(1, ((Number) config.get("a")).intValue());
             }
-        } finally { stop(worker); }
+        } finally {
+            stop(worker);
+        }
     }
 
     private Path file() throws Exception {
@@ -107,22 +124,28 @@ public class ForgeConfigFileSharingTest {
         Files.write(path, "a = 1\n".getBytes(StandardCharsets.UTF_8));
         return path;
     }
+
     private static String text(Path path) throws Exception {
         return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
     }
+
     private static ForgeConfigFile config(Path path, CountDownLatch writing, boolean correct) {
         return new ForgeConfigFile(CommentedFileConfig.of(path), new ForgeConfigSpec.Builder().build(),
-                candidate -> { if (correct) candidate.set("a", 2); }, (candidate, output) -> {
-                    com.electronwill.nightconfig.toml.TomlFormat.instance().createWriter().write(candidate, output);
-                    writing.countDown();
-                });
+                candidate -> {
+                    if (correct) candidate.set("a", 2);
+                }, (candidate, output) -> {
+            com.electronwill.nightconfig.toml.TomlFormat.instance().createWriter().write(candidate, output);
+            writing.countDown();
+        });
     }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static FileChannel lease(Path path) throws Exception {
         Assume.assumeTrue(System.getProperty("os.name", "").startsWith("Windows"));
         OpenOption denyDelete = (OpenOption) Enum.valueOf((Class) Class.forName("com.sun.nio.file.ExtendedOpenOption"), "NOSHARE_DELETE");
         return FileChannel.open(path, StandardOpenOption.READ, denyDelete);
     }
+
     private static void stop(ExecutorService worker) throws Exception {
         worker.shutdownNow();
         assertTrue(worker.awaitTermination(5, TimeUnit.SECONDS));

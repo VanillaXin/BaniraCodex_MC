@@ -2,8 +2,11 @@ package xin.vanilla.banira.internal.client.ui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import org.apache.logging.log4j.LogManager;
-import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.api.client.ui.UiContainerLayer;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
+import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -13,6 +16,7 @@ public final class UiContainerLayerHost implements UiContainerLayer {
     public interface Renderer {
         void render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions);
     }
+
     private final UiBackendController backend;
     private final UiPageSpec page;
     private final BooleanSupplier current;
@@ -21,15 +25,20 @@ public final class UiContainerLayerHost implements UiContainerLayer {
     private boolean closed;
 
     private UiContainerLayerHost(UiBackendController backend, UiPageSpec page,
-                                  BooleanSupplier current, Supplier<NativeUiView> factory) {
-        this.backend = backend; this.page = page; this.current = current;
+                                 BooleanSupplier current, Supplier<NativeUiView> factory) {
+        this.backend = backend;
+        this.page = page;
+        this.current = current;
         revision = backend.revision();
         view = Objects.requireNonNull(factory.get());
         view.gate(this::current);
         try {
             if (!(view instanceof Renderer)) throw new IllegalStateException("Container renderer unavailable");
             view.theme(page.theme());
-        } catch (RuntimeException | LinkageError failure) { release(view); throw failure; }
+        } catch (RuntimeException | LinkageError failure) {
+            release(view);
+            throw failure;
+        }
     }
 
     public static UiContainerLayer create(UiBackendController backend, UiPageSpec page,
@@ -37,22 +46,28 @@ public final class UiContainerLayerHost implements UiContainerLayer {
         try {
             if (!current.getAsBoolean() || !backend.wantsAui(page.id())) return null;
             return new UiContainerLayerHost(backend, page, current, factory);
-        }
-        catch (RuntimeException | LinkageError failure) {
+        } catch (RuntimeException | LinkageError failure) {
             backend.isolate(page.id());
             LogManager.getLogger().warn("AUI container unavailable; preserving native appearance", failure);
             return null;
         }
     }
+
     private boolean current() {
-        try { return !closed && backend.revision() == revision && backend.wantsAui(page.id()) && current.getAsBoolean(); }
-        catch (RuntimeException | LinkageError failure) {
+        try {
+            return !closed && backend.revision() == revision && backend.wantsAui(page.id()) && current.getAsBoolean();
+        } catch (RuntimeException | LinkageError failure) {
             backend.isolate(page.id());
             LogManager.getLogger().warn("AUI container owner expired; preserving native inventory", failure);
             return false;
         }
     }
-    @Override public UiView view() { return view; }
+
+    @Override
+    public UiView view() {
+        return view;
+    }
+
     public static boolean valid(Map<String, ScreenCoordinate> regions) {
         if (regions == null || regions.isEmpty() || regions.size() > 128 || !regions.containsKey("panel")) return false;
         for (var entry : regions.entrySet()) {
@@ -64,8 +79,13 @@ public final class UiContainerLayerHost implements UiContainerLayer {
         }
         return true;
     }
-    @Override public boolean render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions) {
-        if (!current() || !valid(regions)) { close(); return false; }
+
+    @Override
+    public boolean render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions) {
+        if (!current() || !valid(regions)) {
+            close();
+            return false;
+        }
         try {
             view.theme(page.theme());
             ((Renderer) view).render(graphics, regions);
@@ -79,14 +99,29 @@ public final class UiContainerLayerHost implements UiContainerLayer {
             return painted;
         }
     }
-    @Override public void close() {
+
+    @Override
+    public void close() {
         if (closed) return;
         closed = true;
-        try { release(view); } finally { backend.detach(page.id()); }
+        try {
+            release(view);
+        } finally {
+            backend.detach(page.id());
+        }
     }
-    @Override public void fallback() { backend.isolate(page.id()); close(); }
+
+    @Override
+    public void fallback() {
+        backend.isolate(page.id());
+        close();
+    }
+
     private static void release(NativeUiView view) {
-        try { view.close(); }
-        catch (RuntimeException | LinkageError failure) { LogManager.getLogger().warn("Unable to release AUI container appearance", failure); }
+        try {
+            view.close();
+        } catch (RuntimeException | LinkageError failure) {
+            LogManager.getLogger().warn("Unable to release AUI container appearance", failure);
+        }
     }
 }

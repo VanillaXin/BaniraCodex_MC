@@ -1,9 +1,6 @@
 package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.page.DebugUiSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +14,8 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -34,6 +33,10 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
 import xin.vanilla.banira.internal.client.GLFWKeyUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.DebugUiSession;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -71,41 +74,97 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
     }
 
 
-    @Override public DebugUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:debug"; }
-    @Override public UiPageSpec uiPage() { captureUiState(uiState); return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; restoreUiDraft = true; }
-    @Override public void captureUiState(UiViewState state) {
-        uiSession.setting("lines", Integer.toString(contentLines)); uiSession.setting("length", Integer.toString(contentLength));
-        uiSession.setting("font", Integer.toString(fontSize)); uiSession.setting("wrap", Boolean.toString(warp)); uiSession.content(content);
+    @Override
+    public DebugUiSession uiSession() {
+        return uiSession;
     }
-    @Override protected void onInit() {
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:debug";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiDraft = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        uiSession.setting("lines", Integer.toString(contentLines));
+        uiSession.setting("length", Integer.toString(contentLength));
+        uiSession.setting("font", Integer.toString(fontSize));
+        uiSession.setting("wrap", Boolean.toString(warp));
+        uiSession.content(content);
+    }
+
+    @Override
+    protected void onInit() {
         if (restoreUiDraft) {
-            contentLines = Integer.parseInt(uiSession.setting("lines")); contentLength = Integer.parseInt(uiSession.setting("length"));
-            fontSize = Integer.parseInt(uiSession.setting("font")); warp = Boolean.parseBoolean(uiSession.setting("wrap")); content = uiSession.content();
-            season(uiSession.season()); restoreUiDraft = false;
+            contentLines = Integer.parseInt(uiSession.setting("lines"));
+            contentLength = Integer.parseInt(uiSession.setting("length"));
+            fontSize = Integer.parseInt(uiSession.setting("font"));
+            warp = Boolean.parseBoolean(uiSession.setting("wrap"));
+            content = uiSession.content();
+            season(uiSession.season());
+            restoreUiDraft = false;
         }
         if (content.isEmpty()) genContent();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
-    @Override public void onClose() {
-        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
-        uiSession.close(UiCloseReason.CANCEL); super.onClose();
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
     }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
+    }
+
     private void uiAction(String id) {
         switch (id) {
-            case "notification": addNotificationTest(uiSession.position()); break;
-            case "config_client": ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this); break;
-            case "config_common": ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this); break;
-            case "quick_plus": debugQuickActionAdd(); break;
-            case "quick_minus": debugQuickActionRemove(); break;
+            case "notification":
+                addNotificationTest(uiSession.position());
+                break;
+            case "config_client":
+                ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this);
+                break;
+            case "config_common":
+                ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this);
+                break;
+            case "quick_plus":
+                debugQuickActionAdd();
+                break;
+            case "quick_minus":
+                debugQuickActionRemove();
+                break;
             case "config_test":
                 Notification notice = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
-                notice.durationTime(3000); NotificationManager.get().addNotification(notice); break;
-            case "input_large": openLargeInput(); break;
+                notice.durationTime(3000);
+                NotificationManager.get().addNotification(notice);
+                break;
+            case "input_large":
+                openLargeInput();
+                break;
             case "regenerate":
-                contentLines = Integer.parseInt(uiSession.setting("lines")); contentLength = Integer.parseInt(uiSession.setting("length"));
-                fontSize = Integer.parseInt(uiSession.setting("font")); warp = Boolean.parseBoolean(uiSession.setting("wrap")); genContent(); uiSession.content(content); break;
+                contentLines = Integer.parseInt(uiSession.setting("lines"));
+                contentLength = Integer.parseInt(uiSession.setting("length"));
+                fontSize = Integer.parseInt(uiSession.setting("font"));
+                warp = Boolean.parseBoolean(uiSession.setting("wrap"));
+                genContent();
+                uiSession.content(content);
+                break;
             default:
                 if (id.startsWith("preset_")) LOGGER.debug("Preset button clicked: {}", id);
                 else handlePopupSelect(id.startsWith("opt_") ? id : "opt_" + id, id);
@@ -154,7 +213,10 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
         dropdownMulti.text("选择水果（可多选）");
         dropdownMulti.multiSelect(true);
         dropdownMulti.selectedValues(uiSession.selected("fruit"));
-        dropdownMulti.onSelectionChanged(values -> { uiSession.selected("fruit", values); LOGGER.debug("多选下拉水果: {}", values); });
+        dropdownMulti.onSelectionChanged(values -> {
+            uiSession.selected("fruit", values);
+            LOGGER.debug("多选下拉水果: {}", values);
+        });
         addWidget(dropdownMulti);
 
         DropdownSelectWidget dropdownMultiEx = new DropdownSelectWidget(this);
@@ -164,7 +226,10 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
         dropdownMultiEx.text("选择蔬菜（可多选）");
         dropdownMultiEx.multiSelect(true);
         dropdownMultiEx.selectedValues(uiSession.selected("vegetable"));
-        dropdownMultiEx.onSelectionChanged(values -> { uiSession.selected("vegetable", values); LOGGER.debug("多选下拉蔬菜: {}", values); });
+        dropdownMultiEx.onSelectionChanged(values -> {
+            uiSession.selected("vegetable", values);
+            LOGGER.debug("多选下拉蔬菜: {}", values);
+        });
         addWidget(dropdownMultiEx);
 
         String cPlus = GLFWKeyUtils.getKeyDisplayString(GLFWKey.GLFW_KEY_C, GLFWKey.GLFW_KEY_EQUAL);
@@ -633,7 +698,9 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
     }
 
     private void genContent() {
-        contentLines = Math.max(1, Math.min(32, contentLines)); contentLength = Math.max(2, Math.min(256, contentLength)); fontSize = Math.max(4, Math.min(32, fontSize));
+        contentLines = Math.max(1, Math.min(32, contentLines));
+        contentLength = Math.max(2, Math.min(256, contentLength));
+        fontSize = Math.max(4, Math.min(32, fontSize));
         StringBuilder content = new StringBuilder(BaniraComponent.get().transClientAuto("banira_codex").toString()).append("\n");
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < contentLines - 1; i++) {

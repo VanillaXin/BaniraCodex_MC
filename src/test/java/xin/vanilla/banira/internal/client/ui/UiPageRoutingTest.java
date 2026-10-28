@@ -41,14 +41,17 @@ public class UiPageRoutingTest {
                 for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions) {
                     if (!(instruction instanceof org.objectweb.asm.tree.MethodInsnNode)) continue;
                     org.objectweb.asm.tree.MethodInsnNode call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                    if (call.owner.equals("xin/vanilla/banira/api/client/ui/BaniraUi") && call.name.equals("install")) installed = true;
-                    if (call.owner.equals("xin/vanilla/banira/internal/client/ui/UiSessionHost") && call.name.equals("tick")) ticked = true;
+                    if (call.owner.equals("xin/vanilla/banira/api/client/ui/BaniraUi") && call.name.equals("install"))
+                        installed = true;
+                    if (call.owner.equals("xin/vanilla/banira/internal/client/ui/UiSessionHost") && call.name.equals("tick"))
+                        ticked = true;
                 }
             }
             assertTrue("Client UI driver must be installed", installed);
             assertTrue("Session handoff must run on safe client tick", ticked);
         }
     }
+
     @Test
     public void invalidNativeFactoryDoesNotReachPresenter() throws Exception {
         for (Object invalid : new Object[]{null, "not a screen"}) {
@@ -76,7 +79,9 @@ public class UiPageRoutingTest {
 
     @Test
     public void fatalRendererErrorsAreNotSwallowed() throws Exception {
-        Fixture f = new Fixture(true, (page, parent) -> { throw new OutOfMemoryError("test sentinel"); },
+        Fixture f = new Fixture(true, (page, parent) -> {
+            throw new OutOfMemoryError("test sentinel");
+        },
                 parent -> new FakeScreen());
         try {
             f.open();

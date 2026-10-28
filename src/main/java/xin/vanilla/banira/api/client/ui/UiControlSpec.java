@@ -1,14 +1,15 @@
 package xin.vanilla.banira.api.client.ui;
 
-import java.util.Objects;
-import java.util.List;
+import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import xin.vanilla.banira.client.gui.widget.DropdownOption;
-import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
+import java.util.List;
+import java.util.Objects;
 
 public final class UiControlSpec {
-    public enum Kind { TEXT, PASSWORD, KEY_CHORD, DECIMAL, FILE, COLOR, PICKER, SELECT }
+    public enum Kind {TEXT, PASSWORD, KEY_CHORD, DECIMAL, FILE, COLOR, PICKER, SELECT}
 
     private final Kind kind;
     private final int maxLength;
@@ -33,10 +34,27 @@ public final class UiControlSpec {
         this.inputMode = Objects.requireNonNull(inputMode, "inputMode");
     }
 
-    public Kind kind() { return kind; }
-    public int maxLength() { return maxLength; }
-    public String regex() { return regex; }
-    public boolean multiple() { return multiple; }
-    public List<DropdownOption> options() { return options; }
-    public DropdownInputMode inputMode() { return inputMode; }
+    public Kind kind() {
+        return kind;
+    }
+
+    public int maxLength() {
+        return maxLength;
+    }
+
+    public String regex() {
+        return regex;
+    }
+
+    public boolean multiple() {
+        return multiple;
+    }
+
+    public List<DropdownOption> options() {
+        return options;
+    }
+
+    public DropdownInputMode inputMode() {
+        return inputMode;
+    }
 }

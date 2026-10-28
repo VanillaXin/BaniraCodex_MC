@@ -66,7 +66,7 @@ final class CustomQuickActionEditor {
     }
 
     static InputFormScreen.Args stepArgs(Screen parent, CustomQuickActionStep source, QuickActionExecutionMode mode,
-                                        Consumer<CustomQuickActionStep> accepted, java.util.Collection<String> screenIds) {
+                                         Consumer<CustomQuickActionStep> accepted, java.util.Collection<String> screenIds) {
         CustomQuickActionStep draft = copy(source);
         List<DropdownOption> targets = new ArrayList<>();
         for (String id : screenIds) targets.add(new DropdownOption(id));
@@ -121,7 +121,7 @@ final class CustomQuickActionEditor {
     }
 
     static InputFormScreen.Args menuItemArgs(Screen parent, CustomQuickActionMenuItem source,
-                                            Consumer<CustomQuickActionMenuItem> accepted) {
+                                             Consumer<CustomQuickActionMenuItem> accepted) {
         CustomQuickActionMenuItem draft = copy(source);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)

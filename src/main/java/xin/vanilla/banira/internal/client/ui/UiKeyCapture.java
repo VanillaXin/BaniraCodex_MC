@@ -13,11 +13,16 @@ public final class UiKeyCapture {
     private final Set<Integer> pressed = new LinkedHashSet<>();
 
     public List<String> press(int key) {
-        if (key == GLFWKey.GLFW_KEY_ESCAPE) { clear(); return null; }
-        if (key == GLFWKey.GLFW_KEY_BACKSPACE || key == GLFWKey.GLFW_KEY_DELETE) {
-            clear(); return Collections.emptyList();
+        if (key == GLFWKey.GLFW_KEY_ESCAPE) {
+            clear();
+            return null;
         }
-        captured.add(key); pressed.add(key);
+        if (key == GLFWKey.GLFW_KEY_BACKSPACE || key == GLFWKey.GLFW_KEY_DELETE) {
+            clear();
+            return Collections.emptyList();
+        }
+        captured.add(key);
+        pressed.add(key);
         return null;
     }
 
@@ -25,14 +30,23 @@ public final class UiKeyCapture {
         if (!captured.contains(key)) return null;
         pressed.remove(key);
         if (!pressed.isEmpty()) return null;
-        if (captured.stream().allMatch(UiKeyCapture::modifier)) { clear(); return null; }
+        if (captured.stream().allMatch(UiKeyCapture::modifier)) {
+            clear();
+            return null;
+        }
         List<String> result = GLFWKeyUtils.getKeyDisplayNames(true, captured.stream().mapToInt(Integer::intValue).toArray());
         clear();
         return result;
     }
 
-    public String preview() { return GLFWKeyUtils.getKeyDisplayString(captured.stream().mapToInt(Integer::intValue).toArray()); }
-    public void clear() { captured.clear(); pressed.clear(); }
+    public String preview() {
+        return GLFWKeyUtils.getKeyDisplayString(captured.stream().mapToInt(Integer::intValue).toArray());
+    }
+
+    public void clear() {
+        captured.clear();
+        pressed.clear();
+    }
 
     private static boolean modifier(int key) {
         return key == GLFWKey.GLFW_KEY_LEFT_CONTROL || key == GLFWKey.GLFW_KEY_RIGHT_CONTROL

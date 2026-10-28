@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.quickaction.CustomQuickActionConfigScreen;
@@ -16,14 +18,14 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.DebugScreen;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
-import java.util.Arrays;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 /**
  * 香草志功能导航
@@ -56,14 +58,29 @@ public class CodexNavigationScreen extends BaniraScreen implements UiNativePage 
     private NavigationUiSession.Action action(String id, Runnable action) {
         return new NavigationUiSession.Action(id, BaniraComponent.get().transClientAuto(id), action, null);
     }
-    @Override public String uiSurfaceId() { return "banira_codex:navigation"; }
-    @Override public UiPageSpec uiPage() { return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/navigation.html"); }
-    @Override public void onClose() {
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:navigation";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/navigation.html");
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.USER_CLOSE)) return;
         if (uiSession != null) uiSession.close(UiCloseReason.USER_CLOSE);
         super.onClose();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     public CodexNavigationScreen(@Nullable Args args) {
         super(BaniraComponent.get().transClientAuto("codex_navigation_title").toVanilla());

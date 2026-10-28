@@ -2,11 +2,7 @@ package xin.vanilla.banira.client.minimap;
 
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.*;
 import xin.vanilla.banira.internal.mixin.OptionalCompatibilityMixinPlugin;
 
 import java.io.InputStream;
@@ -27,12 +23,13 @@ public class MinimapLineAdapterContractTest {
     }
 
     private boolean calls(ClassNode node, String owner, String method) {
-        for (MethodNode m : node.methods) for (AbstractInsnNode instruction : m.instructions) {
-            if (instruction instanceof MethodInsnNode) {
-                MethodInsnNode call = (MethodInsnNode) instruction;
-                if (call.owner.equals(owner) && call.name.equals(method)) return true;
+        for (MethodNode m : node.methods)
+            for (AbstractInsnNode instruction : m.instructions) {
+                if (instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (call.owner.equals(owner) && call.name.equals(method)) return true;
+                }
             }
-        }
         return false;
     }
 
@@ -151,9 +148,10 @@ public class MinimapLineAdapterContractTest {
         assertTrue(calls(adapter, "journeymap/client/event/handlers/ScreenEventHandler", "getInstance"));
         assertTrue(calls(adapter, "java/lang/reflect/Method", "invoke"));
         boolean nativeRule = false;
-        for (MethodNode method : adapter.methods) for (AbstractInsnNode instruction : method.instructions)
-            if (instruction instanceof LdcInsnNode && "allowableDrawScreens".equals(((LdcInsnNode) instruction).cst))
-                nativeRule = true;
+        for (MethodNode method : adapter.methods)
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof LdcInsnNode && "allowableDrawScreens".equals(((LdcInsnNode) instruction).cst))
+                    nativeRule = true;
         assertTrue("Native screen exclusions must be delegated", nativeRule);
     }
 
@@ -186,11 +184,12 @@ public class MinimapLineAdapterContractTest {
         MethodNode raw = null;
         for (MethodNode method : node(BRIDGE).methods) if (method.name.equals("notificationText")) raw = method;
         assertNotNull("Missing non-recursive notification supplier", raw);
-        for (AbstractInsnNode instruction : raw.instructions) if (instruction instanceof MethodInsnNode) {
-            MethodInsnNode call = (MethodInsnNode) instruction;
-            assertFalse(call.name, call.owner.equals(BRIDGE) && (call.name.equals("rows")
-                    || call.name.equals("text") || call.name.equals("claim")));
-        }
+        for (AbstractInsnNode instruction : raw.instructions)
+            if (instruction instanceof MethodInsnNode) {
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                assertFalse(call.name, call.owner.equals(BRIDGE) && (call.name.equals("rows")
+                        || call.name.equals("text") || call.name.equals("claim")));
+            }
     }
 
     @Test

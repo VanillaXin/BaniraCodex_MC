@@ -14,8 +14,15 @@ import java.util.function.Predicate;
 import static org.junit.Assert.*;
 
 public class UiDomFocusTraversalTest {
-    @BeforeClass public static void bootstrap() { UiDomControlsTest.bootstrap(); }
-    @Before public void platform() { new UiDomControlsTest().platform(); }
+    @BeforeClass
+    public static void bootstrap() {
+        UiDomControlsTest.bootstrap();
+    }
+
+    @Before
+    public void platform() {
+        new UiDomControlsTest().platform();
+    }
 
     private static NativeUiView view(UiDomControlsTest.Dom dom, List<Boolean> directions) throws Exception {
         UiDomAccess access = (UiDomAccess) Proxy.newProxyInstance(UiDomAccess.class.getClassLoader(),
@@ -35,16 +42,21 @@ public class UiDomFocusTraversalTest {
                 (proxy, method, args) -> {
                     if (method.getName().equals("keyCode")) return code;
                     if (method.getName().equals("modifiers")) return modifiers;
-                    if (method.getName().equals("consume")) { consumed.incrementAndGet(); return null; }
+                    if (method.getName().equals("consume")) {
+                        consumed.incrementAndGet();
+                        return null;
+                    }
                     if (method.getReturnType() == int.class) return -1;
                     if (method.getReturnType() == double.class) return 0d;
                     return null;
                 });
-        for (var listener : new ArrayList<>(dom.ids.get(id).events.getOrDefault("keydown", List.of()))) listener.accept(event);
+        for (var listener : new ArrayList<>(dom.ids.get(id).events.getOrDefault("keydown", List.of())))
+            listener.accept(event);
         return consumed.get();
     }
 
-    @Test public void tabAndShiftTabTraverseWithoutRestoringOldInputFocusOrChangingDraft() throws Exception {
+    @Test
+    public void tabAndShiftTabTraverseWithoutRestoringOldInputFocusOrChangingDraft() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         List<Boolean> directions = new ArrayList<>();
         NativeUiView view = view(dom, directions);
@@ -64,7 +76,8 @@ public class UiDomFocusTraversalTest {
         assertEquals(2, directions.size());
     }
 
-    @Test public void inactiveDocumentAndOtherKeysCannotNavigate() throws Exception {
+    @Test
+    public void inactiveDocumentAndOtherKeysCannotNavigate() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         List<Boolean> directions = new ArrayList<>();
         NativeUiView view = view(dom, directions);
@@ -75,14 +88,16 @@ public class UiDomFocusTraversalTest {
         view.close();
     }
 
-    @Test public void persistentHudCannotOwnPageTabEvents() throws Exception {
+    @Test
+    public void persistentHudCannotOwnPageTabEvents() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         NativeUiView hud = new UiDomView(null, (UiDomAccess) dom.access);
         assertFalse(dom.ids.get("body").events.containsKey("keydown"));
         hud.close();
     }
 
-    @Test public void openPopupBlocksPageNavigationUntilItIsClosed() throws Exception {
+    @Test
+    public void openPopupBlocksPageNavigationUntilItIsClosed() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         List<Boolean> directions = new ArrayList<>();
         NativeUiView view = view(dom, directions);
@@ -103,7 +118,8 @@ public class UiDomFocusTraversalTest {
         view.close();
     }
 
-    @Test public void traversalWrapsAndSkipsDisabledHiddenAndOccludedCandidates() throws Exception {
+    @Test
+    public void traversalWrapsAndSkipsDisabledHiddenAndOccludedCandidates() throws Exception {
         List<Integer> order = List.of(0, 1, 2, 3, 4);
         Predicate<Integer> eligible = candidate -> candidate == 0 || candidate == 4;
         assertEquals(4, next(order, 0, eligible, false));
@@ -119,8 +135,11 @@ public class UiDomFocusTraversalTest {
 
     private static Object next(List<Integer> order, Integer current, Predicate<Integer> eligible, boolean reverse) throws Exception {
         Class<?> type;
-        try { type = Class.forName("xin.vanilla.banira.internal.client.ui.UiFocusTraversal"); }
-        catch (ClassNotFoundException missing) { throw new AssertionError("Missing DOM focus traversal policy", missing); }
+        try {
+            type = Class.forName("xin.vanilla.banira.internal.client.ui.UiFocusTraversal");
+        } catch (ClassNotFoundException missing) {
+            throw new AssertionError("Missing DOM focus traversal policy", missing);
+        }
         return type.getMethod("next", List.class, Object.class, Predicate.class, boolean.class)
                 .invoke(null, order, current, eligible, reverse);
     }

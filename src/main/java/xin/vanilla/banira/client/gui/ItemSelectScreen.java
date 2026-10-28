@@ -1,22 +1,20 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -30,9 +28,11 @@ import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
-import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -128,25 +128,56 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
     }
 
 
-    @Override public SelectorUiSession uiSession() { return uiSession; }
-    public String getSelectedItemId() { return uiSession.selectedKey(); }
-    @Override public String uiSurfaceId() { return "banira_codex:" + uiSession.surface(); }
-    @Override public UiPageSpec uiPage() { captureUiState(uiState); return uiSession.spec(); }
-    @Override public void prepareUiState(UiViewState state) { uiState = state; restoreUiScroll = true; }
-    @Override public void captureUiState(UiViewState state) {
+    @Override
+    public SelectorUiSession uiSession() {
+        return uiSession;
+    }
+
+    public String getSelectedItemId() {
+        return uiSession.selectedKey();
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:" + uiSession.surface();
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiScroll = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
         if (searchInputWidget != null) {
             uiSession.query(searchInputWidget.value());
-            if (state != null && searchInputWidget.focused()) state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
+            if (state != null && searchInputWidget.focused())
+                state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
         }
         if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() * ITEM_COLS);
     }
+
     private void restoreUiSelection() {
         selectedItem = uiSession.item();
         selectedItemId = ItemUtils.serializeItemStack(selectedItem);
         uiVersion = uiSession.version();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
-    @Override public void onClose() {
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         uiSession.close(UiCloseReason.CANCEL);
         Minecraft.getInstance().setScreen(args.parentScreen());
@@ -253,7 +284,8 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
         });
         addWidget(searchInputWidget);
         if (uiState != null && uiState.focusedField().equals("search")) {
-            requestFocus(searchInputWidget); searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            requestFocus(searchInputWidget);
+            searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
         }
 
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
@@ -385,7 +417,10 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
 
     @Override
     public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        if (uiVersion != uiSession.version()) { restoreUiSelection(); refreshButtons(); }
+        if (uiVersion != uiSession.version()) {
+            restoreUiSelection();
+            refreshButtons();
+        }
         PoseStack stack = graphics.pose();
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -443,7 +478,8 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
 
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
-        uiSession.query(s); uiSession.mode(inventoryMode);
+        uiSession.query(s);
+        uiSession.mode(inventoryMode);
         this.itemList.clear();
         LocalPlayer player = Minecraft.getInstance().player;
         if (this.inventoryMode && player != null) {

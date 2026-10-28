@@ -1,17 +1,13 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.api.client.ui.UiCloseReason;
-import xin.vanilla.banira.api.client.ui.UiPageSpec;
-import xin.vanilla.banira.internal.client.ui.CommonUiPages;
-import xin.vanilla.banira.internal.client.ui.UiNativePage;
-import xin.vanilla.banira.internal.client.ui.page.DialogUiSession;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -21,6 +17,9 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.page.DialogUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -51,9 +50,17 @@ public final class ConfirmDialogScreen extends BaniraScreen implements UiNativeP
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
-    public DialogUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:confirm"; }
-    @Override public UiPageSpec uiPage() {
+    public DialogUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:confirm";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
         if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
                 "banira_codex/ui/confirm.html", uiSession, previous -> this, this::getEffectiveTheme);
         return uiPage;
@@ -167,7 +174,8 @@ public final class ConfirmDialogScreen extends BaniraScreen implements UiNativeP
         Minecraft.getInstance().setScreen(args.parentScreen());
     }
 
-    @Override public void removed() {
+    @Override
+    public void removed() {
         CommonUiPages.removed(this);
         super.removed();
     }

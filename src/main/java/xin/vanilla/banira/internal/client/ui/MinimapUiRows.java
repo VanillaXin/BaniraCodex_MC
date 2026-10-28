@@ -10,7 +10,9 @@ import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
-/** Unsupported compatibility shim. Shared minimap rows always use their native map renderer. */
+/**
+ * Unsupported compatibility shim. Shared minimap rows always use their native map renderer.
+ */
 @Deprecated
 public final class MinimapUiRows implements AutoCloseable {
     public static final String ID = "banira_codex:minimap";
@@ -22,13 +24,20 @@ public final class MinimapUiRows implements AutoCloseable {
 
     private static xin.vanilla.banira.api.client.ui.UiHudBinding nativeOnlyBinding() {
         return new xin.vanilla.banira.api.client.ui.UiHudBinding() {
-            public boolean visible() { return false; }
-            public void bind(xin.vanilla.banira.api.client.ui.UiView view) { }
-            public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) { }
+            public boolean visible() {
+                return false;
+            }
+
+            public void bind(xin.vanilla.banira.api.client.ui.UiView view) {
+            }
+
+            public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) {
+            }
         };
     }
 
-    private static final class Tagged { }
+    private static final class Tagged {
+    }
 
     public MinimapUiRows(AuiHudHost host, LongSupplier clock) {
         Objects.requireNonNull(host);
@@ -111,6 +120,7 @@ public final class MinimapUiRows implements AutoCloseable {
                 && Double.isFinite(bounds.width()) && Double.isFinite(bounds.height()) && bounds.width() > 0 && bounds.height() > 0;
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
     }
 }

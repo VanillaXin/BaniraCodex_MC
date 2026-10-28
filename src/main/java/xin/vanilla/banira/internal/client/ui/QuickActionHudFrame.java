@@ -7,15 +7,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Visual metadata only. The inventory overlay remains the input and layout owner. */
+/**
+ * Visual metadata only. The inventory overlay remains the input and layout owner.
+ */
 public final class QuickActionHudFrame {
-    public enum Kind { SLOT, MENU, ROW, TITLE, SCROLL }
+    public enum Kind {SLOT, MENU, ROW, TITLE, SCROLL}
+
     public record Element(Kind kind, ScreenCoordinate bounds, ScreenCoordinate clip, String text,
                           int background, int border, int foreground, int accent, boolean active,
-                          boolean empty, double depth) { }
+                          boolean empty, double depth) {
+    }
+
     private final List<Element> elements = new ArrayList<>();
 
-    public List<Element> elements() { return Collections.unmodifiableList(elements); }
+    public List<Element> elements() {
+        return Collections.unmodifiableList(elements);
+    }
 
     public boolean occludes(ScreenCoordinate icon, double depth) {
         return elements.stream().anyMatch(e -> e.kind() == Kind.MENU && e.depth() > depth
@@ -23,7 +30,9 @@ public final class QuickActionHudFrame {
                 && icon.y() < e.bounds().y() + e.bounds().height() && icon.y() + icon.height() > e.bounds().y());
     }
 
-    /** Native icons paint after the DOM; exclude opaque menus above their original depth. */
+    /**
+     * Native icons paint after the DOM; exclude opaque menus above their original depth.
+     */
     public List<ScreenCoordinate> uncovered(ScreenCoordinate clip, double depth) {
         List<ScreenCoordinate> regions = List.of(clip);
         for (Element element : elements) {
@@ -34,11 +43,17 @@ public final class QuickActionHudFrame {
                 double left = Math.max(region.x(), menu.x()), top = Math.max(region.y(), menu.y());
                 double right = Math.min(region.x() + region.width(), menu.x() + menu.width());
                 double bottom = Math.min(region.y() + region.height(), menu.y() + menu.height());
-                if (left >= right || top >= bottom) { next.add(region); continue; }
-                if (top > region.y()) next.add(new ScreenCoordinate(region.x(), region.y(), region.width(), top - region.y()));
-                if (bottom < region.y() + region.height()) next.add(new ScreenCoordinate(region.x(), bottom, region.width(), region.y() + region.height() - bottom));
+                if (left >= right || top >= bottom) {
+                    next.add(region);
+                    continue;
+                }
+                if (top > region.y())
+                    next.add(new ScreenCoordinate(region.x(), region.y(), region.width(), top - region.y()));
+                if (bottom < region.y() + region.height())
+                    next.add(new ScreenCoordinate(region.x(), bottom, region.width(), region.y() + region.height() - bottom));
                 if (left > region.x()) next.add(new ScreenCoordinate(region.x(), top, left - region.x(), bottom - top));
-                if (right < region.x() + region.width()) next.add(new ScreenCoordinate(right, top, region.x() + region.width() - right, bottom - top));
+                if (right < region.x() + region.width())
+                    next.add(new ScreenCoordinate(right, top, region.x() + region.width() - right, bottom - top));
             }
             regions = next;
         }

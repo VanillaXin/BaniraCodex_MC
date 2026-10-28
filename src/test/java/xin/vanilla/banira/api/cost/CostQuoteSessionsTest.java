@@ -5,7 +5,8 @@ import org.junit.Test;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CostQuoteSessionsTest {
     @Test
@@ -89,7 +90,11 @@ public class CostQuoteSessionsTest {
         f.service.open(f.player, f.session);
         AtomicReference<Throwable> error = new AtomicReference<>();
         Thread thread = new Thread(() -> {
-            try { f.accept(1); } catch (Throwable e) { error.set(e); }
+            try {
+                f.accept(1);
+            } catch (Throwable e) {
+                error.set(e);
+            }
         });
         thread.start();
         thread.join();
@@ -103,6 +108,9 @@ public class CostQuoteSessionsTest {
         boolean connected = true;
         final CostQuoteSessions service = new CostQuoteSessions(() -> now, () -> generation,
                 id -> connected && player.equals(id));
-        CostFailure accept(long request) { return service.accept(player, session, request, generation); }
+
+        CostFailure accept(long request) {
+            return service.accept(player, session, request, generation);
+        }
     }
 }

@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.client.ui;
 
 import xin.vanilla.banira.api.client.ui.UiHudFrame;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+
 import java.util.*;
 import java.util.function.Function;
 
@@ -13,7 +14,8 @@ public final class ProgressDomPresentation implements AutoCloseable {
     private List<String> order = List.of();
 
     public ProgressDomPresentation(UiDomAccess dom, Function<ScreenCoordinate, ScreenCoordinate> projection) {
-        this.dom = Objects.requireNonNull(dom); this.projection = Objects.requireNonNull(projection);
+        this.dom = Objects.requireNonNull(dom);
+        this.projection = Objects.requireNonNull(projection);
         if (dom.find("progress") == null) throw new IllegalStateException("Missing progress root");
     }
 
@@ -25,17 +27,24 @@ public final class ProgressDomPresentation implements AutoCloseable {
             keep.add(part.id());
             boolean sprite = part instanceof UiHudFrame.Sprite;
             PartNodes entry = nodes.get(part.id());
-            if (entry != null && entry.sprite != sprite) { entry.close(); nodes.remove(part.id()); entry = null; }
+            if (entry != null && entry.sprite != sprite) {
+                entry.close();
+                nodes.remove(part.id());
+                entry = null;
+            }
             if (entry == null) {
                 entry = new PartNodes(dom.create(sprite ? "texture" : "div"), sprite);
-                nodes.put(part.id(), entry); root.append(entry.root);
+                nodes.put(part.id(), entry);
+                root.append(entry.root);
                 entry.root.hudId(part.id());
                 entry.root.attribute("class", sprite ? "progress-sprite" : "progress-text");
                 if (!sprite) {
-                    entry.shadow = dom.create("div"); entry.text = dom.create("div");
+                    entry.shadow = dom.create("div");
+                    entry.text = dom.create("div");
                     entry.shadow.attribute("class", "progress-shadow");
                     entry.text.attribute("class", "progress-value");
-                    entry.root.append(entry.shadow); entry.root.append(entry.text);
+                    entry.root.append(entry.shadow);
+                    entry.root.append(entry.text);
                 }
             }
             if (sprite) {
@@ -59,11 +68,21 @@ public final class ProgressDomPresentation implements AutoCloseable {
                 int color = (t.color() & 0xff000000) == 0 ? t.color() | 0xff000000 : t.color();
                 entry.variable("color", HudDrawList.css(color));
                 entry.variable("shadow-color", HudDrawList.css((color & 0xfcfcfc) >> 2 | color & 0xff000000));
-                if (!t.value().equals(entry.value)) { entry.text.text(t.value()); entry.shadow.text(t.value()); entry.value = t.value(); }
+                if (!t.value().equals(entry.value)) {
+                    entry.text.text(t.value());
+                    entry.shadow.text(t.value());
+                    entry.value = t.value();
+                }
             }
         }
         var iterator = nodes.entrySet().iterator();
-        while (iterator.hasNext()) { var entry = iterator.next(); if (!keep.contains(entry.getKey())) { entry.getValue().close(); iterator.remove(); } }
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (!keep.contains(entry.getKey())) {
+                entry.getValue().close();
+                iterator.remove();
+            }
+        }
         List<String> nextOrder = frame.parts().stream().map(UiHudFrame.Part::id).toList();
         if (!order.equals(nextOrder)) {
             for (String id : nextOrder) root.append(nodes.get(id).root);
@@ -77,7 +96,15 @@ public final class ProgressDomPresentation implements AutoCloseable {
             throw new IllegalStateException("HUD projection unavailable");
         return b;
     }
-    @Override public void close() { if (closed) return; closed = true; nodes.values().forEach(PartNodes::close); nodes.clear(); order = List.of(); }
+
+    @Override
+    public void close() {
+        if (closed) return;
+        closed = true;
+        nodes.values().forEach(PartNodes::close);
+        nodes.clear();
+        order = List.of();
+    }
 
     private static final class PartNodes {
         final UiDomAccess.Node root;
@@ -85,17 +112,37 @@ public final class ProgressDomPresentation implements AutoCloseable {
         UiDomAccess.Node text, shadow;
         String source, value;
         final Map<String, String> variables = new HashMap<>();
-        PartNodes(UiDomAccess.Node root, boolean sprite) { this.root = root; this.sprite = sprite; }
-        void attribute(String key, String next) { if (!next.equals(source)) { root.attribute(key, next); source = next; } }
-        void position(ScreenCoordinate b) {
-            variable("x", b.x() + "px"); variable("y", b.y() + "px");
-            variable("width", b.width() + "px"); variable("height", b.height() + "px");
+
+        PartNodes(UiDomAccess.Node root, boolean sprite) {
+            this.root = root;
+            this.sprite = sprite;
         }
-        void variable(String name, String value) {
-            if (!value.equals(variables.get(name))) {
-                root.styleProperty("--hud-" + name, value); variables.put(name, value);
+
+        void attribute(String key, String next) {
+            if (!next.equals(source)) {
+                root.attribute(key, next);
+                source = next;
             }
         }
-        void close() { if (text != null) text.remove(); if (shadow != null) shadow.remove(); root.remove(); }
+
+        void position(ScreenCoordinate b) {
+            variable("x", b.x() + "px");
+            variable("y", b.y() + "px");
+            variable("width", b.width() + "px");
+            variable("height", b.height() + "px");
+        }
+
+        void variable(String name, String value) {
+            if (!value.equals(variables.get(name))) {
+                root.styleProperty("--hud-" + name, value);
+                variables.put(name, value);
+            }
+        }
+
+        void close() {
+            if (text != null) text.remove();
+            if (shadow != null) shadow.remove();
+            root.remove();
+        }
     }
 }

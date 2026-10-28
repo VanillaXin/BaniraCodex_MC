@@ -52,7 +52,10 @@ public class ConfigSnapshotToClient implements NetworkPacket {
     }
 
     public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
-        if (!ctx.isClientSide()) { ctx.markHandled(); return; }
+        if (!ctx.isClientSide()) {
+            ctx.markHandled();
+            return;
+        }
         handle(packet, ctx, BaniraClientPacketHandlers::isCurrentConfigConnection, BaniraClientPacketHandlers::applyConfigSnapshot);
     }
 

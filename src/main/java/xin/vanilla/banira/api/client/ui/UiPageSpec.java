@@ -1,8 +1,8 @@
 package xin.vanilla.banira.api.client.ui;
 
+import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 
-import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import java.util.Objects;
 
 public final class UiPageSpec {
@@ -42,9 +42,23 @@ public final class UiPageSpec {
         return template;
     }
 
-    public String id() { return id; }
-    public String template() { return template; }
-    public UiPageSession session() { return session; }
-    public BaniraQuickActionScreenFactory nativeFactory() { return nativeFactory; }
-    public BaniraColorConfig theme() { return theme.get(); }
+    public String id() {
+        return id;
+    }
+
+    public String template() {
+        return template;
+    }
+
+    public UiPageSession session() {
+        return session;
+    }
+
+    public BaniraQuickActionScreenFactory nativeFactory() {
+        return nativeFactory;
+    }
+
+    public BaniraColorConfig theme() {
+        return theme.get();
+    }
 }

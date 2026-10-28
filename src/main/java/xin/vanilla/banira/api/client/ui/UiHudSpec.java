@@ -25,9 +25,23 @@ public final class UiHudSpec {
         this.shared = shared;
     }
 
-    public String id() { return id; }
-    public String template() { return template; }
-    public UiHudBinding binding() { return binding; }
-    public boolean manual() { return manual; }
-    public boolean shared() { return shared; }
+    public String id() {
+        return id;
+    }
+
+    public String template() {
+        return template;
+    }
+
+    public UiHudBinding binding() {
+        return binding;
+    }
+
+    public boolean manual() {
+        return manual;
+    }
+
+    public boolean shared() {
+        return shared;
+    }
 }

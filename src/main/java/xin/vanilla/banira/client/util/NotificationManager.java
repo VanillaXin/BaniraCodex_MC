@@ -321,7 +321,8 @@ public final class NotificationManager {
         }
 
         if (!frame.parts().isEmpty() && !xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
-                xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS, graphics, frame)) frame.renderNative(graphics);
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS, graphics, frame))
+            frame.renderNative(graphics);
 
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);

@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.api.quickaction.CustomQuickActionDefinition;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -17,8 +19,9 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
 import xin.vanilla.banira.internal.client.ui.page.QuickActionEditUiSession;
 
@@ -54,28 +57,53 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen implements
     private int scrollIndex;
     private QuickActionEditUiSession uiSession;
 
-    @Override public String uiSurfaceId() { return "banira_codex:quick-actions"; }
-    @Override public QuickActionEditUiSession uiSession() {
-        if (uiSession == null) uiSession = new QuickActionEditUiSession(BaniraComponent.get().transClientAuto("custom_quick_action_title"), () -> {
-            List<NavigationUiSession.Action> rows = new ArrayList<>();
-            for (int index = 0; index < definitions.size(); index++) {
-                int selected = index;
-                rows.add(new NavigationUiSession.Action(definitions.get(index).getId(), BaniraComponent.get().literal(rowText(index)),
-                        () -> openEditor(selected), () -> delete(selected)));
-            }
-            return rows;
-        }, java.util.Collections.singletonList(new NavigationUiSession.Action("add", BaniraComponent.get().transClientAuto("add"), this::add, null)));
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:quick-actions";
+    }
+
+    @Override
+    public QuickActionEditUiSession uiSession() {
+        if (uiSession == null)
+            uiSession = new QuickActionEditUiSession(BaniraComponent.get().transClientAuto("custom_quick_action_title"), () -> {
+                List<NavigationUiSession.Action> rows = new ArrayList<>();
+                for (int index = 0; index < definitions.size(); index++) {
+                    int selected = index;
+                    rows.add(new NavigationUiSession.Action(definitions.get(index).getId(), BaniraComponent.get().literal(rowText(index)),
+                            () -> openEditor(selected), () -> delete(selected)));
+                }
+                return rows;
+            }, java.util.Collections.singletonList(new NavigationUiSession.Action("add", BaniraComponent.get().transClientAuto("add"), this::add, null)));
         return uiSession;
     }
-    @Override public UiPageSpec uiPage() { return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-actions.html"); }
-    @Override public void captureUiState(UiViewState state) { if (state != null) state.rowPosition(scrollIndex); }
-    @Override public void prepareUiState(UiViewState state) { scrollIndex = (int) state.rowPosition(); }
-    @Override public void onClose() {
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-actions.html");
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (state != null) state.rowPosition(scrollIndex);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        scrollIndex = (int) state.rowPosition();
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
         if (uiSession != null) uiSession.close(UiCloseReason.CANCEL);
         super.onClose();
     }
-    @Override protected void onRemoved() { CommonUiPages.removed(this); super.onRemoved(); }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     public CustomQuickActionConfigScreen(Screen parent) {
         super(BaniraComponent.get().transClientAuto("custom_quick_action_title").toVanilla());
@@ -183,7 +211,8 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen implements
         if (index < 0 || index >= definitions.size()) return;
         definitions.remove(index);
         persist();
-        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId())) uiSession.refresh();
+        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId()))
+            uiSession.refresh();
         else Minecraft.getInstance().setScreen(this);
     }
 
@@ -202,7 +231,8 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen implements
         if (!replaced) values.add(definition);
         CustomQuickActionManager.get().replaceDefinitions(values);
         definitions.clear();
-        for (CustomQuickActionDefinition value : CustomQuickActionManager.get().definitions()) definitions.add(CustomQuickActionEditor.copy(value));
+        for (CustomQuickActionDefinition value : CustomQuickActionManager.get().definitions())
+            definitions.add(CustomQuickActionEditor.copy(value));
     }
 
     private void persist() {

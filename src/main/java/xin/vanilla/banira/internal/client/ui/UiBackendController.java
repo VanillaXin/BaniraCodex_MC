@@ -86,5 +86,7 @@ public final class UiBackendController {
         isolated.clear();
     }
 
-    public long revision() { return revision; }
+    public long revision() {
+        return revision;
+    }
 }

@@ -21,6 +21,7 @@ import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
@@ -33,11 +34,10 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.config.CustomConfig;
-import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 import xin.vanilla.banira.internal.client.ui.QuickActionHudFrame;
 import xin.vanilla.banira.internal.client.ui.SharedHudHosts;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.internal.config.CustomConfig;
+import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
 import javax.annotation.Nullable;
 import java.nio.file.Files;
@@ -472,10 +472,10 @@ public final class QuickActionOverlay {
 
     private void drawSlotBorder(PoseStack stack, int gx, int gy, int cell, int argbBorder) {
         int t = 1;
-        hudFrame.box( gx, gy, cell, t, argbBorder, 0, 0);
-        hudFrame.box( gx, gy + cell - t, cell, t, argbBorder, 0, 0);
-        hudFrame.box( gx, gy, t, cell, argbBorder, 0, 0);
-        hudFrame.box( gx + cell - t, gy, t, cell, argbBorder, 0, 0);
+        hudFrame.box(gx, gy, cell, t, argbBorder, 0, 0);
+        hudFrame.box(gx, gy + cell - t, cell, t, argbBorder, 0, 0);
+        hudFrame.box(gx, gy, t, cell, argbBorder, 0, 0);
+        hudFrame.box(gx + cell - t, gy, t, cell, argbBorder, 0, 0);
     }
 
     /**
@@ -489,10 +489,10 @@ public final class QuickActionOverlay {
         int x1 = gx + cell - inset;
         int y1 = gy + cell - inset;
         int thick = 1;
-        hudFrame.box( x0, y0, x1 - x0, thick, c, 0, 0);
-        hudFrame.box( x0, y1 - thick, x1 - x0, thick, c, 0, 0);
-        hudFrame.box( x0, y0, thick, y1 - y0, c, 0, 0);
-        hudFrame.box( x1 - thick, y0, thick, y1 - y0, c, 0, 0);
+        hudFrame.box(x0, y0, x1 - x0, thick, c, 0, 0);
+        hudFrame.box(x0, y1 - thick, x1 - x0, thick, c, 0, 0);
+        hudFrame.box(x0, y0, thick, y1 - y0, c, 0, 0);
+        hudFrame.box(x1 - thick, y0, thick, y1 - y0, c, 0, 0);
     }
 
     private void slotToCr(int slot, int cols, int[] out) {
@@ -793,7 +793,7 @@ public final class QuickActionOverlay {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
             } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
                 int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
-                hudFrame.box( xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi, 0, 0);
+                hudFrame.box(xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi, 0, 0);
             }
         }
 
@@ -824,7 +824,8 @@ public final class QuickActionOverlay {
         stack.popPose();
         stack.popPose();
         if (!xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
-                xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS, graphics, hudFrame)) hudFrame.renderNative(graphics);
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS, graphics, hudFrame))
+            hudFrame.renderNative(graphics);
 
         stack.pushPose();
         stack.translate(0, 0, EnumRenderDepth.OVERLAY.depth());
@@ -1818,14 +1819,15 @@ public final class QuickActionOverlay {
 
         if (ctxNeedsScrollbar) {
             int sbX = ctxScrollbarLeft;
-            hudFrame.box( sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000, 0, 0);
+            hudFrame.box(sbX, innerTop, MENU_SCROLLBAR_W, innerBottom - innerTop, (theme.border() & 0xFFFFFF) | 0x99000000, 0, 0);
             int contentH = rows.size() * MENU_ROW_H;
             int thumbH = Math.max(10, ctxInnerH * ctxInnerH / Math.max(1, contentH));
             int thumbY = innerTop + (ctxScrollMaxPx <= 0 ? 0 : contextScrollPx * (ctxInnerH - thumbH) / ctxScrollMaxPx);
             int accent = theme.accentHover() | 0xFF000000;
-            hudFrame.box( sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent, 0, 0);
-            if (quickFrame != null) quickFrame.add(QuickActionHudFrame.Kind.SCROLL, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH,
-                    null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+            hudFrame.box(sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH, accent, 0, 0);
+            if (quickFrame != null)
+                quickFrame.add(QuickActionHudFrame.Kind.SCROLL, sbX + 1, thumbY, MENU_SCROLLBAR_W - 2, thumbH,
+                        null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
         }
 
         Font font = mc.font;
@@ -1843,7 +1845,7 @@ public final class QuickActionOverlay {
                     int rowTop = Math.max(ry, innerTop);
                     int rowBot = Math.min(ry + rh, innerBottom);
                     int rowFillRight = x + w - (ctxNeedsScrollbar ? MENU_SCROLLBAR_W + MENU_SCROLLBAR_GAP + 2 : 2);
-                    hudFrame.box( x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
+                    hudFrame.box(x + 2, rowTop, rowFillRight - (x + 2), rowBot - rowTop,
                             (theme.accentHover() & 0xFFFFFF) | 0x66000000, 0, 0);
                 }
                 CtxRow row = rows.get(i);
@@ -1892,8 +1894,9 @@ public final class QuickActionOverlay {
         int border = theme.border() | 0xFF000000;
         hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, bg, CONTEXT_MENU_CORNER_RADIUS, 0);
         hudFrame.box(ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH, border, CONTEXT_MENU_CORNER_RADIUS, CONTEXT_MENU_BORDER_THICKNESS);
-        if (quickFrame != null) quickFrame.add(QuickActionHudFrame.Kind.MENU, ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH,
-                null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
+        if (quickFrame != null)
+            quickFrame.add(QuickActionHudFrame.Kind.MENU, ctxRowActionX, ctxRowActionY, ctxRowActionW, ctxRowActionH,
+                    null, "", theme, false, false, EnumRenderDepth.OVERLAY.depth() + CONTEXT_MENU_AND_TRAY_TOOLTIP_Z_OVER_ITEMS);
         AbstractGuiUtils.restoreGuiRenderState();
 
         Font font = mc.font;
@@ -1904,7 +1907,7 @@ public final class QuickActionOverlay {
             boolean hovered = mouseX >= ctxRowActionX + 1 && mouseX < ctxRowActionX + ctxRowActionW - 1
                     && mouseY >= rowY && mouseY < rowY + MENU_ROW_H;
             if (hovered) {
-                hudFrame.box( ctxRowActionX + 2, rowY,
+                hudFrame.box(ctxRowActionX + 2, rowY,
                         Math.max(1, ctxRowActionW - 4), MENU_ROW_H,
                         (theme.accentHover() & 0xFFFFFF) | 0x66000000, 0, 0);
             }
@@ -2123,7 +2126,9 @@ public final class QuickActionOverlay {
         return true;
     }
 
-    private static boolean auiMenu() { return SharedHudHosts.canRender(SharedHudHosts.QUICK_ACTIONS); }
+    private static boolean auiMenu() {
+        return SharedHudHosts.canRender(SharedHudHosts.QUICK_ACTIONS);
+    }
 
     static boolean auiCloseHit(double mouseX, double mouseY, int x, int y, int width) {
         return mouseX >= x + width - 17 && mouseX < x + width - 2

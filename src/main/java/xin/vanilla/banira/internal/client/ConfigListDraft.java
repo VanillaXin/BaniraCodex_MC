@@ -1,10 +1,13 @@
 package xin.vanilla.banira.internal.client;
 
 import xin.vanilla.banira.common.util.JsonUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/** Retained interaction state; committed list values stay in the configuration editor. */
+/**
+ * Retained interaction state; committed list values stay in the configuration editor.
+ */
 public final class ConfigListDraft {
     public boolean expanded, adding;
     public double scroll;
@@ -17,7 +20,9 @@ public final class ConfigListDraft {
         return raw != null || editingIndex >= 0 || adding && (!addText.isEmpty() || !selected.isEmpty());
     }
 
-    public String encode() { return JsonUtils.GSON.toJson(this); }
+    public String encode() {
+        return JsonUtils.GSON.toJson(this);
+    }
 
     public static ConfigListDraft decode(String encoded) {
         try {
@@ -28,7 +33,9 @@ public final class ConfigListDraft {
             if (!Double.isFinite(draft.scroll)) draft.scroll = 0;
             return draft;
         } catch (RuntimeException invalid) {
-            ConfigListDraft draft = new ConfigListDraft(); draft.raw = encoded; return draft;
+            ConfigListDraft draft = new ConfigListDraft();
+            draft.raw = encoded;
+            return draft;
         }
     }
 }

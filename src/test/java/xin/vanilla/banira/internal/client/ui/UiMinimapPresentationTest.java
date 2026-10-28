@@ -1,8 +1,11 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
+
 import java.lang.reflect.Proxy;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 public class UiMinimapPresentationTest {
     private MinimapDomPresentation rows() {
@@ -14,12 +17,16 @@ public class UiMinimapPresentationTest {
     }
 
     private void rejects(MinimapDomPresentation rows, String key, String text) {
-        try { rows.select(key, text, -1, true); fail("Minimap AUI presentation is unsupported"); }
-        catch (UnsupportedOperationException expected) { }
+        try {
+            rows.select(key, text, -1, true);
+            fail("Minimap AUI presentation is unsupported");
+        } catch (UnsupportedOperationException expected) {
+        }
         assertNull(rows.measure());
     }
 
-    @Test public void unreadCountdownAndThirdPartyRowsCannotCreateDom() {
+    @Test
+    public void unreadCountdownAndThirdPartyRowsCannotCreateDom() {
         var rows = rows();
         rejects(rows, "banira_codex:unread", "2 unread");
         rejects(rows, "aotake_sweep:countdown", "02:34");
@@ -27,9 +34,12 @@ public class UiMinimapPresentationTest {
         rows.close();
     }
 
-    @Test public void measureAndRepeatedCloseNeverAccessDomOrRestorePresentation() {
+    @Test
+    public void measureAndRepeatedCloseNeverAccessDomOrRestorePresentation() {
         var rows = rows();
-        assertNull(rows.measure()); rows.close(); rows.close();
+        assertNull(rows.measure());
+        rows.close();
+        rows.close();
         rejects(rows, "countdown", "02:33");
     }
 }

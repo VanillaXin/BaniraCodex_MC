@@ -5,13 +5,20 @@ import org.lwjgl.glfw.GLFW;
 
 public final class UiSystemCursor {
     private static final UiPointerOwnership OWNERS = new UiPointerOwnership();
-    private UiSystemCursor() { }
+
+    private UiSystemCursor() {
+    }
+
     public static boolean acquire(Object token, Object screen) {
         if (Minecraft.getInstance().screen != screen) return false;
         OWNERS.acquire(token, () -> mode(GLFW.GLFW_CURSOR_HIDDEN));
         return true;
     }
-    public static void release(Object token) { OWNERS.release(token, () -> mode(GLFW.GLFW_CURSOR_NORMAL)); }
+
+    public static void release(Object token) {
+        OWNERS.release(token, () -> mode(GLFW.GLFW_CURSOR_NORMAL));
+    }
+
     private static void mode(int mode) {
         GLFW.glfwSetInputMode(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_CURSOR, mode);
     }

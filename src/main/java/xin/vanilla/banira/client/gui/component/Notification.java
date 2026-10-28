@@ -112,9 +112,16 @@ public class Notification extends NotificationData {
     private transient List<TextHit> auiTextHits = List.of();
     private transient boolean auiHitReady;
 
-    public record TextHit(ScreenCoordinate bounds, Style style) { }
-    public boolean usesAuiLayout() { return auiLayout; }
-    public boolean supportsAuiText() { return xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(richDrawLines); }
+    public record TextHit(ScreenCoordinate bounds, Style style) {
+    }
+
+    public boolean usesAuiLayout() {
+        return auiLayout;
+    }
+
+    public boolean supportsAuiText() {
+        return xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(richDrawLines);
+    }
 
     public void auiLayout(boolean enabled) {
         if (auiLayout != enabled) {
@@ -126,9 +133,17 @@ public class Notification extends NotificationData {
     }
 
     public void auiHitLayout(ScreenCoordinate card, ScreenCoordinate close, ScreenCoordinate body, List<TextHit> text) {
-        hitX = card.x(); hitY = card.y(); hitW = card.width(); hitH = card.height();
-        closeBtnLeft = close.x(); closeBtnTop = close.y(); closeBtnSize = close.width();
-        bodyLeft = body.x(); bodyTop = body.y(); bodyW = body.width(); bodyH = body.height();
+        hitX = card.x();
+        hitY = card.y();
+        hitW = card.width();
+        hitH = card.height();
+        closeBtnLeft = close.x();
+        closeBtnTop = close.y();
+        closeBtnSize = close.width();
+        bodyLeft = body.x();
+        bodyTop = body.y();
+        bodyW = body.width();
+        bodyH = body.height();
         auiTextHits = List.copyOf(text);
         auiHitReady = true;
     }
@@ -353,13 +368,16 @@ public class Notification extends NotificationData {
         ScreenCoordinate coordinate = prepareInRegion(target, region, nowMs, Minecraft.getInstance().font.lineHeight);
         if (coordinate == null) return;
         AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
-        try { doRender(stack, coordinate); }
-        finally { AbstractGuiUtils.popScissor(); }
+        try {
+            doRender(stack, coordinate);
+        } finally {
+            AbstractGuiUtils.popScissor();
+        }
     }
 
     public ScreenCoordinate prepareInRegion(xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
-                                           xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region,
-                                           long nowMs, int lineHeight) {
+                                            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region,
+                                            long nowMs, int lineHeight) {
         if (finished || nowMs < scheduledTime()) return null;
         if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
         double progress = calculateProgress(nowMs);
@@ -382,12 +400,17 @@ public class Notification extends NotificationData {
     private void updateHitBounds(ScreenCoordinate coordinate, int lineHeight) {
         auiTextHits = List.of();
         auiHitReady = false;
-        hitX = coordinate.x(); hitY = coordinate.y(); hitW = cachedWidth; hitH = cachedHeight;
+        hitX = coordinate.x();
+        hitY = coordinate.y();
+        hitW = cachedWidth;
+        hitH = cachedHeight;
         closeBtnLeft = hitX + hitW - padding() - CLOSE_BTN;
         closeBtnTop = hitY + padding() + Math.max(0, (hitH - 2 * padding() - CLOSE_BTN) * .5);
         closeBtnSize = CLOSE_BTN;
-        bodyLeft = hitX + padding(); bodyTop = hitY + padding();
-        bodyW = hitW - 2 * padding() - CLOSE_GAP - CLOSE_BTN; bodyH = hitH - 2 * padding();
+        bodyLeft = hitX + padding();
+        bodyTop = hitY + padding();
+        bodyW = hitW - 2 * padding() - CLOSE_GAP - CLOSE_BTN;
+        bodyH = hitH - 2 * padding();
         bodyTextTop = bodyTop + Math.max(0, (bodyH - richDrawLines.size() * lineHeight) * .5);
     }
 
@@ -627,13 +650,13 @@ public class Notification extends NotificationData {
                         : this.richDefaultTextArgb;
 
                 if (nativeShell) {
-                ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
-                rect.rect().radius(this.radius());
-                BaseShapeWidget.drawShape(rect);
+                    ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
+                    rect.rect().radius(this.radius());
+                    BaseShapeWidget.drawShape(rect);
 
-                ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
-                rectBorder.rect().radius(this.radius()).border(this.borderSize());
-                BaseShapeWidget.drawShape(rectBorder);
+                    ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
+                    rectBorder.rect().radius(this.radius()).border(this.borderSize());
+                    BaseShapeWidget.drawShape(rectBorder);
                 }
 
                 Font font = Minecraft.getInstance().font;

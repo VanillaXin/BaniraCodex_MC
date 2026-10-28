@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.notification.NotificationHudState;
@@ -11,8 +13,8 @@ import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper
 import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.InputStateManager;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.internal.client.ui.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 
 import java.util.ArrayList;
@@ -32,13 +34,33 @@ public final class NotificationHudPositionScreen extends BaniraScreen implements
         uiSession.attachNative(this);
     }
 
-    @Override public NotificationUiSession uiSession() { return uiSession; }
-    @Override public String uiSurfaceId() { return "banira_codex:hud-position"; }
-    @Override public UiPageSpec uiPage() { return uiSession.spec(); }
-    @Override protected void onRemoved() { dragging = false; CommonUiPages.removed(this); super.onRemoved(); }
-    @Override public void onClose() {
+    @Override
+    public NotificationUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:hud-position";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    protected void onRemoved() {
+        dragging = false;
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
         if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
-        uiSession.close(UiCloseReason.CANCEL); super.onClose();
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
     }
 
     @Override

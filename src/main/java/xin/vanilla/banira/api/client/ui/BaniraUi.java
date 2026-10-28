@@ -5,16 +5,31 @@ import java.util.Objects;
 public final class BaniraUi {
     public interface Driver {
         void open(UiPageSpec page, Object previousScreen);
+
         boolean usesAui(String surfaceId);
+
         AutoCloseable registerHud(UiHudSpec hud);
-        default UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) { return null; }
-        default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) { return false; }
-        default void screenRemoved(Object screen) { }
-        default boolean closePage(Object screen, UiCloseReason reason) { return false; }
+
+        default UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {
+            return null;
+        }
+
+        default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+            return false;
+        }
+
+        default void screenRemoved(Object screen) {
+        }
+
+        default boolean closePage(Object screen, UiCloseReason reason) {
+            return false;
+        }
     }
+
     private static volatile Driver driver;
 
-    private BaniraUi() { }
+    private BaniraUi() {
+    }
 
     public static void screenRemoved(Object screen) {
         Driver current = driver;

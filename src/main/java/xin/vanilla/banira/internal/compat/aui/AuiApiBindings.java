@@ -2,11 +2,7 @@ package xin.vanilla.banira.internal.compat.aui;
 
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -64,16 +60,26 @@ public final class AuiApiBindings {
 
     private static Class<?> resolve(Type type, ClassLoader loader) throws ClassNotFoundException {
         switch (type.getSort()) {
-            case Type.BOOLEAN: return boolean.class;
-            case Type.INT: return int.class;
-            case Type.DOUBLE: return double.class;
-            case Type.LONG: return long.class;
-            case Type.FLOAT: return float.class;
-            case Type.BYTE: return byte.class;
-            case Type.CHAR: return char.class;
-            case Type.SHORT: return short.class;
-            case Type.VOID: return void.class;
-            default: return Class.forName(type.getClassName(), false, loader);
+            case Type.BOOLEAN:
+                return boolean.class;
+            case Type.INT:
+                return int.class;
+            case Type.DOUBLE:
+                return double.class;
+            case Type.LONG:
+                return long.class;
+            case Type.FLOAT:
+                return float.class;
+            case Type.BYTE:
+                return byte.class;
+            case Type.CHAR:
+                return char.class;
+            case Type.SHORT:
+                return short.class;
+            case Type.VOID:
+                return void.class;
+            default:
+                return Class.forName(type.getClassName(), false, loader);
         }
     }
 }

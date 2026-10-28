@@ -22,7 +22,7 @@ public abstract class AuiNetworkManagerMixin {
             + "Lnet/minecraft/resources/ResourceLocation;Ljava/util/function/Supplier;Ljava/util/function/Predicate;"
             + "Ljava/util/function/Predicate;)Lnet/minecraftforge/network/simple/SimpleChannel;"), require = 2, remap = false)
     private static SimpleChannel banira$optionalServer(ResourceLocation name, Supplier<String> version,
-                                                      Predicate<String> clientAccepted, Predicate<String> serverAccepted) {
+                                                       Predicate<String> clientAccepted, Predicate<String> serverAccepted) {
         // Forge evaluates the client predicate against the server's version.
         return NetworkRegistry.newSimpleChannel(name, version,
                 AuiOptionalServerChannels.clientVersions(name.getNamespace(), name.getPath(), clientAccepted,

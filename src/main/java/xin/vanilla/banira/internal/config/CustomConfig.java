@@ -196,7 +196,9 @@ public class CustomConfig {
         String uuid = snapshot.get("uuid"), language = snapshot.get("language"), mode = snapshot.get("notificationReceiveMode");
         try {
             if (uuid == null || !java.util.UUID.fromString(uuid).toString().equals(uuid)) return false;
-        } catch (IllegalArgumentException invalid) { return false; }
+        } catch (IllegalArgumentException invalid) {
+            return false;
+        }
         if (language == null || language.isBlank() || language.length() > 256 || mode == null) return false;
         setPlayerLanguageClient(uuid, language);
         setPlayerNotificationReceiveModeClient(uuid, mode);
@@ -210,7 +212,9 @@ public class CustomConfig {
                 "notificationReceiveMode", getPlayerNotificationReceiveModeClient(uuid));
     }
 
-    public static void clearPlayerPreferencesClient() { clientConfig.remove("player"); }
+    public static void clearPlayerPreferencesClient() {
+        clientConfig.remove("player");
+    }
 
     public static void setPlayerLanguage(String uuid, String language) {
         JsonUtils.setString(customConfig, String.format("player.%s.language", uuid), language);

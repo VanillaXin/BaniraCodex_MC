@@ -2,10 +2,10 @@ package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.UiRowProvider;
-import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.api.client.ui.UiValue;
-import xin.vanilla.banira.internal.client.ConfigEditorViewportModel;
+import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.internal.client.ConfigEditorViewportModel;
 
 import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
@@ -15,9 +15,16 @@ public class UiViewportInputTest {
     public void virtualRowsKeepAllDataAndAtMost120RealizedRows() throws Exception {
         Class<?> window = type("internal.client.ui.UiRowWindow");
         UiRowProvider rows = new UiRowProvider() {
-            public int size() { return 5000; }
-            public String key(int index) { return "row:" + index; }
-            public void bind(UiView row, int index) { }
+            public int size() {
+                return 5000;
+            }
+
+            public String key(int index) {
+                return "row:" + index;
+            }
+
+            public void bind(UiView row, int index) {
+            }
         };
         Object instance = window.getConstructor(UiRowProvider.class, int.class).newInstance(rows, 120);
         call(instance, "moveTo", new Class<?>[]{int.class}, 4800);
@@ -55,8 +62,15 @@ public class UiViewportInputTest {
     public void hiddenOrDisabledViewsDoNotDispatchOrUpdate() {
         class Probe extends NativeUiView {
             int updates;
-            Probe() { super(new Object()); }
-            @Override protected void changed(String id) { updates++; }
+
+            Probe() {
+                super(new Object());
+            }
+
+            @Override
+            protected void changed(String id) {
+                updates++;
+            }
         }
         Probe view = new Probe();
         java.util.concurrent.atomic.AtomicInteger actions = new java.util.concurrent.atomic.AtomicInteger();

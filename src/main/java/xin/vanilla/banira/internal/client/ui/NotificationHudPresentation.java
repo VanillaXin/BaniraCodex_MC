@@ -13,9 +13,13 @@ import xin.vanilla.banira.common.util.ColorUtils;
 import java.util.*;
 import java.util.function.Function;
 
-/** Presentation only; the notification manager retains all input and lifetime ownership. */
+/**
+ * Presentation only; the notification manager retains all input and lifetime ownership.
+ */
 public final class NotificationHudPresentation implements AutoCloseable {
-    public record Run(String text, Style style) { }
+    public record Run(String text, Style style) {
+    }
+
     private final UiDomAccess dom;
     private final Function<ScreenCoordinate, ScreenCoordinate> projection;
     private final Map<Notification, Card> cards = new IdentityHashMap<>();
@@ -24,7 +28,8 @@ public final class NotificationHudPresentation implements AutoCloseable {
     private String unreadStyle, countLabel;
 
     public NotificationHudPresentation(UiDomAccess dom, Function<ScreenCoordinate, ScreenCoordinate> projection) {
-        this.dom = dom; this.projection = projection;
+        this.dom = dom;
+        this.projection = projection;
     }
 
     public static List<Run> runs(FormattedCharSequence line) {
@@ -33,9 +38,12 @@ public final class NotificationHudPresentation implements AutoCloseable {
         Style[] current = {null};
         line.accept((index, style, codePoint) -> {
             if (!Objects.equals(current[0], style) && !text.isEmpty()) {
-                result.add(new Run(text.toString(), current[0])); text.setLength(0);
+                result.add(new Run(text.toString(), current[0]));
+                text.setLength(0);
             }
-            current[0] = style; text.appendCodePoint(codePoint); return true;
+            current[0] = style;
+            text.appendCodePoint(codePoint);
+            return true;
         });
         if (!text.isEmpty()) result.add(new Run(text.toString(), current[0]));
         return List.copyOf(result);
@@ -50,13 +58,21 @@ public final class NotificationHudPresentation implements AutoCloseable {
                 Notification n = part.notification;
                 keep.add(n);
                 Card card = cards.computeIfAbsent(n, key -> new Card(key));
-                card.update(part); active.add(card);
+                card.update(part);
+                active.add(card);
             } else if (part.kind == HudDrawList.Kind.UNREAD) {
-                showUnread = true; updateUnread(part);
+                showUnread = true;
+                updateUnread(part);
             }
         }
         var iterator = cards.entrySet().iterator();
-        while (iterator.hasNext()) { var entry = iterator.next(); if (!keep.contains(entry.getKey())) { entry.getValue().close(); iterator.remove(); } }
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (!keep.contains(entry.getKey())) {
+                entry.getValue().close();
+                iterator.remove();
+            }
+        }
         if (!showUnread) removeUnread();
     }
 
@@ -70,26 +86,33 @@ public final class NotificationHudPresentation implements AutoCloseable {
     }
 
     private UiDomAccess.Node child(UiDomAccess.Node parent, String tag, String css) {
-        UiDomAccess.Node node = dom.create(tag); node.attribute("class", css);
+        UiDomAccess.Node node = dom.create(tag);
+        node.attribute("class", css);
         String style = switch (css) {
             case "notice-mask" -> "position:absolute;pointer-events:none;";
             case "notice-icon" -> "position:absolute;left:6px;top:5px;width:9px;height:9px;image-rendering:pixelated;";
-            case "notice-name" -> "position:absolute;left:19px;top:5px;right:28px;height:10px;font-family:default;font-size:7px;line-height:10px;white-space:nowrap;overflow:hidden;";
+            case "notice-name" ->
+                    "position:absolute;left:19px;top:5px;right:28px;height:10px;font-family:default;font-size:7px;line-height:10px;white-space:nowrap;overflow:hidden;";
             case "notice-severity" -> "position:absolute;right:20px;top:5px;width:8px;height:8px;";
-            case "notice-close" -> "position:absolute;right:4px;top:4px;width:11px;height:11px;image-rendering:pixelated;";
-            case "notice-body" -> "position:absolute;left:6px;right:6px;top:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BODY_TOP
-                    + "px;bottom:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BOTTOM + "px;overflow:hidden;";
-            case "notice-line" -> "display:flex;flex-direction:row;align-items:flex-start;width:100%;height:10px;min-height:10px;overflow:hidden;";
+            case "notice-close" ->
+                    "position:absolute;right:4px;top:4px;width:11px;height:11px;image-rendering:pixelated;";
+            case "notice-body" ->
+                    "position:absolute;left:6px;right:6px;top:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BODY_TOP
+                            + "px;bottom:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BOTTOM + "px;overflow:hidden;";
+            case "notice-line" ->
+                    "display:flex;flex-direction:row;align-items:flex-start;width:100%;height:10px;min-height:10px;overflow:hidden;";
             default -> "";
         };
         if (!style.isEmpty()) node.attribute("style", style);
-        parent.append(node); return node;
+        parent.append(node);
+        return node;
     }
 
     private void updateUnread(HudDrawList.Part part) {
         if (unread == null) {
             unread = child(dom.find("overlay"), "div", "unread-hud");
-            mail = child(unread, "texture", "unread-mail"); mail.attribute("src", "apricityui:apricity/banira_codex/icons/hud-mail.png");
+            mail = child(unread, "texture", "unread-mail");
+            mail.attribute("src", "apricityui:apricity/banira_codex/icons/hud-mail.png");
             count = child(unread, "div", "unread-count");
         }
         ScreenCoordinate b = projection.apply(new ScreenCoordinate(part.x, part.y, part.width, part.height));
@@ -98,17 +121,28 @@ public final class NotificationHudPresentation implements AutoCloseable {
                 + "gap:" + 3 * units + "px;border:" + units + "px solid #c8d9ce;border-radius:" + 3 * units + "px;";
         boolean resized = !next.equals(unreadStyle);
         if (resized) {
-            unread.attribute("style", next); unreadStyle = next;
+            unread.attribute("style", next);
+            unreadStyle = next;
             mail.attribute("style", "flex-shrink:0;width:" + 12 * units + "px;height:" + 12 * units + "px;");
         }
         String label = NotificationHudState.countLabel(part.color);
-        if (resized || !label.equals(countLabel)) count.attribute("style", "display:" + (label.isEmpty() ? "none" : "block")
-                + ";white-space:nowrap;font-family:default;font-size:" + 8 * units + "px;line-height:" + 12 * units + "px;");
-        if (!label.equals(countLabel)) { count.text(label); countLabel = label; }
+        if (resized || !label.equals(countLabel))
+            count.attribute("style", "display:" + (label.isEmpty() ? "none" : "block")
+                    + ";white-space:nowrap;font-family:default;font-size:" + 8 * units + "px;line-height:" + 12 * units + "px;");
+        if (!label.equals(countLabel)) {
+            count.text(label);
+            countLabel = label;
+        }
     }
 
     private void removeUnread() {
-        if (unread != null) { mail.remove(); count.remove(); unread.remove(); unread = mail = count = null; unreadStyle = countLabel = null; }
+        if (unread != null) {
+            mail.remove();
+            count.remove();
+            unread.remove();
+            unread = mail = count = null;
+            unreadStyle = countLabel = null;
+        }
     }
 
     private final class Card implements AutoCloseable {
@@ -142,7 +176,10 @@ public final class NotificationHudPresentation implements AutoCloseable {
                 maskCss += position(clip) + "overflow:hidden;";
                 b = new ScreenCoordinate(b.x() - clip.x(), b.y() - clip.y(), b.width(), b.height());
             }
-            if (!maskCss.equals(maskStyle)) { mask.attribute("style", maskCss); maskStyle = maskCss; }
+            if (!maskCss.equals(maskStyle)) {
+                mask.attribute("style", maskCss);
+                maskStyle = maskCss;
+            }
             int alpha = notification.renderAlpha() < 0 ? 255 : Math.max(0, notification.renderAlpha());
             double units = part.width <= 0 ? 1 : b.width() / part.width;
             String style = notification.style() == null ? "normal" : notification.style().name().toLowerCase(Locale.ROOT);
@@ -153,7 +190,8 @@ public final class NotificationHudPresentation implements AutoCloseable {
                     + ";border:" + units + "px solid " + border + ";border-radius:" + 4 * units + "px;opacity:" + alpha / 255.0 + ";transform:scale(" + Math.max(.01, notification.renderScale())
                     + ");transform-origin:" + origin + ";";
             if (!css.equals(chrome)) {
-                root.attribute("style", css); chrome = css;
+                root.attribute("style", css);
+                chrome = css;
                 interior.attribute("style", "position:absolute;left:0;top:0;width:" + part.width + "px;height:" + part.height
                         + "px;transform-origin:0 0;transform:scale(" + units + ");");
             }
@@ -170,25 +208,37 @@ public final class NotificationHudPresentation implements AutoCloseable {
                         .orElse("banira_codex:gui/quick_icon.png");
                 icon.attribute("src", source);
             }
-            if (!label.equals(moduleName)) { name.text(label); moduleName = label; }
+            if (!label.equals(moduleName)) {
+                name.text(label);
+                moduleName = label;
+            }
             String nextAppearance = ns + ":" + style;
             if (!nextAppearance.equals(appearance)) {
                 root.attribute("class", "notice " + style);
                 name.attribute("style", "position:absolute;left:19px;top:5px;right:28px;height:10px;font-family:default;font-size:7px;line-height:10px;white-space:nowrap;overflow:hidden;color:"
                         + HudDrawList.css(notification.notificationTheme().textSecondary()) + ";");
-                String tone = switch (style) { case "warning" -> "#b4924d"; case "error" -> "#ba6a7a"; case "success" -> "#6f9e85"; default -> "#729789"; };
+                String tone = switch (style) {
+                    case "warning" -> "#b4924d";
+                    case "error" -> "#ba6a7a";
+                    case "success" -> "#6f9e85";
+                    default -> "#729789";
+                };
                 rule.attribute("style", "position:absolute;left:0;top:0;width:2px;height:100%;background:" + tone + ";");
                 severity.attribute("src", "apricityui:apricity/banira_codex/icons/hud-" + style + ".png");
                 appearance = nextAppearance;
             }
             List<List<Run>> next = notification.richDrawLines().stream().map(NotificationHudPresentation::runs).toList();
             if (!next.equals(content)) {
-                fragments.forEach(UiDomAccess.Node::remove); lines.forEach(UiDomAccess.Node::remove);
-                fragments.clear(); lines.clear(); styles.clear();
+                fragments.forEach(UiDomAccess.Node::remove);
+                lines.forEach(UiDomAccess.Node::remove);
+                fragments.clear();
+                lines.clear();
+                styles.clear();
                 int total = next.stream().mapToInt(List::size).sum();
                 if (total > 128) throw new IllegalStateException("Notification rich text budget");
                 for (List<Run> line : next) {
-                    UiDomAccess.Node row = child(body, "div", "notice-line"); lines.add(row);
+                    UiDomAccess.Node row = child(body, "div", "notice-line");
+                    lines.add(row);
                     for (Run run : line) {
                         UiDomAccess.Node span = child(row, "span", "notice-text");
                         Style s = run.style();
@@ -197,16 +247,21 @@ public final class NotificationHudPresentation implements AutoCloseable {
                         span.attribute("style", "flex-shrink:0;white-space:pre;font-family:default;font-size:8px;line-height:10px;color:" + HudDrawList.css(color) + ";"
                                 + (s.isBold() ? "font-weight:bold;" : "") + (s.isItalic() ? "font-style:italic;" : "")
                                 + (s.isUnderlined() || s.getClickEvent() != null ? "text-decoration:underline;" : ""));
-                        span.text(run.text()); fragments.add(span); styles.add(s);
+                        span.text(run.text());
+                        fragments.add(span);
+                        styles.add(s);
                     }
                 }
                 content = next;
             }
         }
 
-        @Override public void close() {
-            fragments.forEach(UiDomAccess.Node::remove); lines.forEach(UiDomAccess.Node::remove);
-            for (UiDomAccess.Node node : List.of(body, close, severity, name, icon, rule, interior, root, mask)) node.remove();
+        @Override
+        public void close() {
+            fragments.forEach(UiDomAccess.Node::remove);
+            lines.forEach(UiDomAccess.Node::remove);
+            for (UiDomAccess.Node node : List.of(body, close, severity, name, icon, rule, interior, root, mask))
+                node.remove();
         }
     }
 
@@ -214,5 +269,11 @@ public final class NotificationHudPresentation implements AutoCloseable {
         return "position:absolute;left:" + b.x() + "px;top:" + b.y() + "px;width:" + b.width() + "px;height:" + b.height() + "px;";
     }
 
-    @Override public void close() { cards.values().forEach(Card::close); cards.clear(); active.clear(); removeUnread(); }
+    @Override
+    public void close() {
+        cards.values().forEach(Card::close);
+        cards.clear();
+        active.clear();
+        removeUnread();
+    }
 }

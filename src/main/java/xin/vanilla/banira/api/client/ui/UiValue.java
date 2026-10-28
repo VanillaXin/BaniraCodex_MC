@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Objects;
 
 public final class UiValue {
-    public enum Kind { TEXT, DECIMAL, BOOLEAN, STRING_LIST, KEY_CHORDS }
+    public enum Kind {TEXT, DECIMAL, BOOLEAN, STRING_LIST, KEY_CHORDS}
+
     private final Kind kind;
     private final Object value;
 
@@ -16,11 +17,25 @@ public final class UiValue {
         this.value = Objects.requireNonNull(value, "value");
     }
 
-    public static UiValue text(String value) { return new UiValue(Kind.TEXT, value); }
-    public static UiValue decimal(BigDecimal value) { return new UiValue(Kind.DECIMAL, value); }
-    public static UiValue bool(boolean value) { return new UiValue(Kind.BOOLEAN, value); }
-    public static UiValue strings(List<String> value) { return list(Kind.STRING_LIST, value); }
-    public static UiValue keyChords(List<String> value) { return list(Kind.KEY_CHORDS, value); }
+    public static UiValue text(String value) {
+        return new UiValue(Kind.TEXT, value);
+    }
+
+    public static UiValue decimal(BigDecimal value) {
+        return new UiValue(Kind.DECIMAL, value);
+    }
+
+    public static UiValue bool(boolean value) {
+        return new UiValue(Kind.BOOLEAN, value);
+    }
+
+    public static UiValue strings(List<String> value) {
+        return list(Kind.STRING_LIST, value);
+    }
+
+    public static UiValue keyChords(List<String> value) {
+        return list(Kind.KEY_CHORDS, value);
+    }
 
     private static UiValue list(Kind kind, List<String> value) {
         List<String> copy = new ArrayList<>();
@@ -28,16 +43,34 @@ public final class UiValue {
         return new UiValue(kind, Collections.unmodifiableList(copy));
     }
 
-    public Kind kind() { return kind; }
+    public Kind kind() {
+        return kind;
+    }
+
     private Object require(Kind expected) {
         if (kind != expected) throw new IllegalStateException("Expected " + expected + ", found " + kind);
         return value;
     }
-    public String asText() { return (String) require(Kind.TEXT); }
-    public BigDecimal asDecimal() { return (BigDecimal) require(Kind.DECIMAL); }
-    public boolean asBoolean() { return (Boolean) require(Kind.BOOLEAN); }
+
+    public String asText() {
+        return (String) require(Kind.TEXT);
+    }
+
+    public BigDecimal asDecimal() {
+        return (BigDecimal) require(Kind.DECIMAL);
+    }
+
+    public boolean asBoolean() {
+        return (Boolean) require(Kind.BOOLEAN);
+    }
+
     @SuppressWarnings("unchecked")
-    public List<String> asStrings() { return (List<String>) require(Kind.STRING_LIST); }
+    public List<String> asStrings() {
+        return (List<String>) require(Kind.STRING_LIST);
+    }
+
     @SuppressWarnings("unchecked")
-    public List<String> asKeyChords() { return (List<String>) require(Kind.KEY_CHORDS); }
+    public List<String> asKeyChords() {
+        return (List<String>) require(Kind.KEY_CHORDS);
+    }
 }

@@ -12,10 +12,18 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class UiDomDeletionInputTest {
-    @BeforeClass public static void bootstrap() { UiDomControlsTest.bootstrap(); }
-    @Before public void platform() { new UiDomControlsTest().platform(); }
+    @BeforeClass
+    public static void bootstrap() {
+        UiDomControlsTest.bootstrap();
+    }
 
-    @Test public void silentBackspaceAndDeleteSynchronizeRawDraftOnce() throws Exception {
+    @Before
+    public void platform() {
+        new UiDomControlsTest().platform();
+    }
+
+    @Test
+    public void silentBackspaceAndDeleteSynchronizeRawDraftOnce() throws Exception {
         for (UiControlSpec.Kind kind : List.of(UiControlSpec.Kind.TEXT, UiControlSpec.Kind.PASSWORD, UiControlSpec.Kind.DECIMAL)) {
             UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
             NativeUiView view = dom.view();
@@ -44,7 +52,8 @@ public class UiDomDeletionInputTest {
         }
     }
 
-    @Test public void deletionFallbackPreservesTypedTextAndIgnoresOtherKeys() throws Exception {
+    @Test
+    public void deletionFallbackPreservesTypedTextAndIgnoresOtherKeys() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         NativeUiView view = dom.view();
         view.value("text", UiValue.text("abc"));
@@ -60,7 +69,8 @@ public class UiDomDeletionInputTest {
         view.close();
     }
 
-    @Test public void deletingPopupSearchRestoresOptionsWithoutChoosing() throws Exception {
+    @Test
+    public void deletingPopupSearchRestoresOptionsWithoutChoosing() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         var spec = new UiControlSpec(UiControlSpec.Kind.SELECT, 64, "", false,
                 List.of(new xin.vanilla.banira.client.gui.widget.DropdownOption("alpha"),
@@ -69,7 +79,10 @@ public class UiDomDeletionInputTest {
         List<UiValue> selected = new ArrayList<>();
         UiSelectPopup popup = new UiSelectPopup((UiDomAccess) dom.access,
                 (UiDomAccess.Node) dom.ids.get("text").proxy, spec, UiValue.text(""), selected::add,
-                () -> dom.current, () -> { }, failure -> { throw new AssertionError(failure); });
+                () -> dom.current, () -> {
+        }, failure -> {
+            throw new AssertionError(failure);
+        });
         var search = dom.created.stream().filter(node -> "popup-search".equals(node.attributes.get("class")))
                 .findFirst().orElseThrow();
         search.value = "alpha";

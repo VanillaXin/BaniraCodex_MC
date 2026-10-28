@@ -7,11 +7,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class AuiCapabilityContract {
     private static final String ROOT = "com/sighs/apricityui/";
@@ -26,7 +22,9 @@ public final class AuiCapabilityContract {
         if (loader == null) return new Result(false, "Missing class loader");
         try (InputStream marker = loader.getResourceAsStream("META-INF/banira-aui-compile-api.properties")) {
             if (marker != null) return new Result(false, "Compile-only AUI declarations");
-        } catch (IOException failure) { return new Result(false, "Cannot inspect AUI declaration marker"); }
+        } catch (IOException failure) {
+            return new Result(false, "Cannot inspect AUI declaration marker");
+        }
         try {
             Map<String, ClassNode> classes = new LinkedHashMap<>();
             for (Member member : MEMBERS) {

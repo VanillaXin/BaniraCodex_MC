@@ -30,6 +30,10 @@ public final class BaniraClientPacketHandlers {
         ConfigSnapshotClientHandler.apply(packet);
     }
 
+    public static boolean isCurrentConfigConnection(Object origin) {
+        return BaniraClientRuntime.isCurrentConnection(origin);
+    }
+
     public static void applyNotificationTypes(NotificationTypesSyncToClient packet) {
         for (NotificationTypeSyncEntry e : packet.entries()) {
             if (e == null) {

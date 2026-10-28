@@ -123,13 +123,15 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
                 sessions.reload();
                 return;
             }
-            view.access.prepare();
             float[] color = RenderSystem.getShaderColor().clone();
             graphics.flush();
             try {
                 // HTML and retained sprites own a neutral tint for this page pass.
                 RenderSystem.setShaderColor(1, 1, 1, 1);
+                view.access.prepare();
                 super.render(graphics, mouseX, mouseY, partialTick);
+                graphics.flush();
+                RenderSystem.setShaderColor(1, 1, 1, 1);
                 view.afterLayout();
                 view.access.render(graphics);
                 pointer.render(graphics, mouseX, mouseY);

@@ -30,11 +30,16 @@ public class UiCommonPagesPortTest {
     }
 
     @Test
-    public void bootstrapInstallsRealSessionsAndKeepsUnportedHudNative() throws Exception {
+    public void bootstrapInstallsRealSessionsAndFourOwnedHudSurfaces() throws Exception {
         var bootstrap = node("internal/client/BaniraCodexClientBootstrap");
         assertTrue(calls(bootstrap, "xin/vanilla/banira/api/client/ui/BaniraUi", "install"));
         assertTrue(calls(bootstrap, "xin/vanilla/banira/internal/client/ui/SharedHudHosts", "install"));
-        assertFalse(calls(bootstrap, "xin/vanilla/banira/internal/client/ui/SharedHudHosts", "register"));
+        long registrations = bootstrap.methods.stream()
+                .flatMap(method -> java.util.stream.StreamSupport.stream(method.instructions.spliterator(), false))
+                .filter(instruction -> instruction instanceof MethodInsnNode call
+                        && call.owner.equals("xin/vanilla/banira/internal/client/ui/SharedHudHosts") && call.name.equals("register"))
+                .count();
+        assertEquals(4L, registrations);
         for (String method : List.of("tick", "disconnect"))
             assertTrue(calls(bootstrap, "xin/vanilla/banira/internal/client/ui/CommonUiPages", method));
         assertTrue(calls(bootstrap, "xin/vanilla/banira/internal/client/ui/UiSessionHost", "reload"));

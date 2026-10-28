@@ -98,6 +98,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         try {
             Base.drawOverlayDocument(graphics.pose(), document);
             afterLayout();
+            presentation.afterLayout();
             access.render(graphics);
             frame.renderContents(graphics, false);
         } catch (RuntimeException | LinkageError failure) {

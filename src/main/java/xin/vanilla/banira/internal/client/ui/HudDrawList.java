@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
+import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
@@ -15,7 +16,7 @@ import java.util.*;
  * Finite GUI primitives shared by the native and persistent HUD renderers.
  */
 public final class HudDrawList {
-    public enum Kind {BOX, TEXT, ICON}
+    public enum Kind {BOX, TEXT, ICON, NOTIFICATION, UNREAD}
 
     public static final int LIMIT = 4096;
 
@@ -26,10 +27,11 @@ public final class HudDrawList {
         public final String text;
         public final QuickIcon icon;
         public final boolean menuIcon;
+        public final Notification notification;
         public final ScreenCoordinate clip;
 
         private Part(Kind kind, double x, double y, double width, double height, double radius, double border,
-                     int color, String text, QuickIcon icon, boolean menuIcon, ScreenCoordinate clip, double depth) {
+                     int color, String text, QuickIcon icon, boolean menuIcon, Notification notification, ScreenCoordinate clip, double depth) {
             this.kind = kind;
             this.x = finite(x);
             this.y = finite(y);
@@ -41,6 +43,7 @@ public final class HudDrawList {
             this.text = text;
             this.icon = icon;
             this.menuIcon = menuIcon;
+            this.notification = notification;
             this.clip = clip == null ? null : new ScreenCoordinate(clip.x(), clip.y(), clip.width(), clip.height());
             this.depth = depth;
         }
@@ -59,6 +62,16 @@ public final class HudDrawList {
     private final List<Part> parts = new ArrayList<>();
     private ScreenCoordinate clip;
     private double depth = EnumRenderDepth.OVERLAY.depth();
+    private xin.vanilla.banira.client.data.BaniraColorConfig unreadTheme;
+    private QuickActionHudFrame quickActions;
+
+    public QuickActionHudFrame quickActions() {
+        return quickActions;
+    }
+
+    public void quickActions(QuickActionHudFrame frame) {
+        quickActions = Objects.requireNonNull(frame);
+    }
 
     private static double finite(double value) {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("HUD coordinate");
@@ -91,15 +104,24 @@ public final class HudDrawList {
     }
 
     public void box(double x, double y, double w, double h, int color, double radius, double border) {
-        add(new Part(Kind.BOX, x, y, w, h, radius, border, color, null, null, false, clip, depth));
+        add(new Part(Kind.BOX, x, y, w, h, radius, border, color, null, null, false, null, clip, depth));
     }
 
     public void text(String text, double x, double y, int color) {
-        add(new Part(Kind.TEXT, x, y, 0, 0, 0, 0, color, Objects.requireNonNull(text), null, false, clip, depth));
+        add(new Part(Kind.TEXT, x, y, 0, 0, 0, 0, color, Objects.requireNonNull(text), null, false, null, clip, depth));
     }
 
     public void icon(QuickIcon icon, double x, double y, int size, boolean menu) {
-        add(new Part(Kind.ICON, x, y, size, size, 0, 0, 0, null, Objects.requireNonNull(icon), menu, clip, depth));
+        add(new Part(Kind.ICON, x, y, size, size, 0, 0, 0, null, Objects.requireNonNull(icon), menu, null, clip, depth));
+    }
+
+    public void notification(Notification notification, ScreenCoordinate at) {
+        add(new Part(Kind.NOTIFICATION, at.x(), at.y(), notification.cachedWidth(), notification.cachedHeight(), notification.radius(), notification.borderSize(), notification.bgColor().argb(), null, null, false, notification, clip, EnumRenderDepth.NOTIFICATION.depth()));
+    }
+
+    public void unread(int x, int y, int count, xin.vanilla.banira.client.data.BaniraColorConfig theme) {
+        unreadTheme = Objects.requireNonNull(theme);
+        add(new Part(Kind.UNREAD, x, y, 32, 22, 0, 0, count, null, null, false, null, clip, 0));
     }
 
     public void renderNative(GuiGraphics graphics) {
@@ -109,12 +131,21 @@ public final class HudDrawList {
     public void renderContents(GuiGraphics graphics, boolean nativeShells) {
         for (Part part : parts) {
             if (part.kind == Kind.BOX && !nativeShells) continue;
+            if (!nativeShells && quickActions != null && part.kind == Kind.TEXT) continue;
+            if (!nativeShells && (part.kind == Kind.NOTIFICATION && part.notification.usesAuiLayout() || part.kind == Kind.UNREAD))
+                continue;
             List<ScreenCoordinate> regions = Collections.singletonList(part.clip);
+            if (!nativeShells && quickActions != null && part.kind == Kind.ICON
+                    && quickActions.occludes(new ScreenCoordinate(part.x, part.y, part.width, part.height), part.depth)) {
+                ScreenCoordinate bounds = part.clip == null ? new ScreenCoordinate(0, 0,
+                        Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight()) : part.clip;
+                regions = quickActions.uncovered(bounds, part.depth);
+            }
             for (ScreenCoordinate region : regions) {
                 if (region != null)
                     AbstractGuiUtils.pushScissor((int) region.x(), (int) region.y(), (int) region.width(), (int) region.height());
                 try {
-                    AbstractGuiUtils.renderByDepth(graphics.pose(), (int) part.depth, stack -> {
+                    AbstractGuiUtils.renderByDepth(graphics.pose(), part.kind == Kind.NOTIFICATION ? 0 : (int) part.depth, stack -> {
                         switch (part.kind) {
                             case BOX:
                                 ShapeDrawArgs shape = ShapeDrawArgs.rect(stack, (float) part.x, (float) part.y, (float) part.width, (float) part.height, part.color);
@@ -129,6 +160,12 @@ public final class HudDrawList {
                                     part.icon.renderForMenu(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
                                 else
                                     part.icon.render(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
+                                break;
+                            case NOTIFICATION:
+                                part.notification.paintPrepared(stack, new ScreenCoordinate(part.x, part.y, part.width, part.height), true);
+                                break;
+                            case UNREAD:
+                                xin.vanilla.banira.client.notification.NotificationUnreadHud.draw(graphics, (int) part.x, (int) part.y, part.color, unreadTheme);
                                 break;
                         }
                     });

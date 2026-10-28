@@ -68,15 +68,24 @@ public class UiNotificationPortTest {
     }
 
     @Test
-    public void connectingPagesDoesNotEnableTheUnportedHudRenderer() throws Exception {
-        var hud = node("client/notification/NotificationUnreadHud");
-        for (var method : hud.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call)
-                assertFalse(call.owner.equals("xin/vanilla/banira/internal/client/ui/SharedHudHosts"));
+    public void builtinRegistrationUsesOnlyTheFourSharedHudSurfaces() throws Exception {
         var bootstrap = node("internal/client/BaniraCodexClientBootstrap");
-        for (var method : bootstrap.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call)
-                assertFalse(call.owner.equals("xin/vanilla/banira/internal/client/ui/SharedHudHosts") && call.name.equals("register"));
+        var ids = new java.util.LinkedHashSet<String>();
+        int registrations = 0;
+        for (var method : bootstrap.methods) {
+            String pending = null;
+            for (var instruction : method.instructions) {
+                if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && constant.cst instanceof String id
+                        && id.startsWith("banira_codex:")) pending = id;
+                if (instruction instanceof MethodInsnNode call && call.owner.endsWith("/SharedHudHosts") && call.name.equals("register")) {
+                    registrations++;
+                    ids.add(pending);
+                    pending = null;
+                }
+            }
+        }
+        assertEquals(4, registrations);
+        assertEquals(java.util.Set.of(SharedHudHosts.NOTIFICATIONS, SharedHudHosts.UNREAD, SharedHudHosts.QUICK_ACTIONS, SharedHudHosts.POINTER), ids);
     }
 
     @Test

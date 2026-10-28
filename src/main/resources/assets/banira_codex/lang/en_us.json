@@ -78,6 +78,8 @@
   "word.banira_codex.command_disabled": "§eThe command is disabled!",
   "word.banira_codex.command_not_found": "Command not found.",
   "word.banira_codex.config.notificationHud.mode.description": "Display mode",
+  "word.banira_codex.config.useAui": "Use AUI interfaces",
+  "word.banira_codex.config.useAui.description": "Use AUI for mod interfaces and HUDs",
   "word.banira_codex.config_editor_close": "Close",
   "word.banira_codex.config_editor_fetch_not_connected": "Not connected to a server; cannot fetch config",
   "word.banira_codex.config_editor_reset_tooltip": "Reset to default",
@@ -405,7 +407,5 @@
   "word.banira_codex.tag_list_row_hint": "Double-click to edit · Right-click to copy",
   "word.banira_codex.tag_list_undo_tooltip": "Undo clear",
   "word.banira_codex.vanilla_xin": "Vanilla Xin",
-  "word.banira_codex.virtual_op": "Manage virtual OP permissions",
-  "word.banira_codex.config.useAui": "Use AUI interfaces",
-  "word.banira_codex.config.useAui.description": "Use AUI for mod interfaces and HUDs"
+  "word.banira_codex.virtual_op": "Manage virtual OP permissions"
 }

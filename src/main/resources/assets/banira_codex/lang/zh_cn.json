@@ -405,5 +405,7 @@
   "word.banira_codex.tag_list_row_hint": "双击编辑 · 右键复制",
   "word.banira_codex.tag_list_undo_tooltip": "撤销清空",
   "word.banira_codex.vanilla_xin": "香草芯",
-  "word.banira_codex.virtual_op": "管理虚拟OP权限"
+  "word.banira_codex.virtual_op": "管理虚拟OP权限",
+  "word.banira_codex.config.useAui": "使用AUI界面",
+  "word.banira_codex.config.useAui.description": "使用AUI显示模组界面与HUD"
 }

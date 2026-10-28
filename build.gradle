@@ -9,7 +9,10 @@ plugins {
 
 def javaVer = 21
 
+apply from: 'gradle/aui-validation-output.gradle'
+
 apply from: 'gradle/config-view-processor.gradle'
+apply from: 'gradle/aui-contract.gradle'
 
 group = mod_group_id
 version = mod_version

@@ -26,13 +26,22 @@ dependencies {
     }
 }
 
-tasks.withType(Test).configureEach {
-    doFirst {
+configurations.compileOnly.extendsFrom(configurations.auiContract)
+
+def verifyAuiContract = tasks.register('verifyAuiContract') {
+    doLast {
         def artifact = configurations.auiContract.singleFile
         def actual = MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
         if (!actual.equalsIgnoreCase('A9C91B59ABC3A8B423DE80D8F7E2D187A16A0B50B152CD15162683CCF8643CA2')) {
             throw new GradleException('AUI NeoForge 1.21.1 contract SHA-256 mismatch')
         }
-        systemProperty 'banira.aui.contractJar', artifact.absolutePath
+    }
+}
+
+tasks.named('compileJava') { dependsOn verifyAuiContract }
+tasks.withType(Test).configureEach {
+    dependsOn verifyAuiContract
+    doFirst {
+        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
     }
 }

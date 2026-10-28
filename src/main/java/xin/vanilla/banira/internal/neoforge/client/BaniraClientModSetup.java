@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.neoforge.client;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.BaniraInput;
@@ -64,6 +65,11 @@ public final class BaniraClientModSetup {
 
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(BaniraColorThemeLoader.INSTANCE);
+    }
+
+    public static void onTextureAtlasStitched(TextureAtlasStitchedEvent event) {
+        BaniraClientEventHub.Client.fireTextureReload(new xin.vanilla.banira.api.client.event.BaniraTextureReloadEvent(
+                event.getAtlas().location().toString()));
     }
 
     private static void registerCodexScreenKeyCallback() {

@@ -13,6 +13,7 @@ public final class NeoForgeBaniraClientBootstrap {
         modBus.addListener(BaniraClientModSetup::onClientSetup);
         modBus.addListener(BaniraClientModSetup::onRegisterKeyMappings);
         modBus.addListener(BaniraClientModSetup::onRegisterReloadListeners);
+        modBus.addListener(BaniraClientModSetup::onTextureAtlasStitched);
         modBus.addListener(NeoForgeNotificationLayerRegistrar::onAddGuiLayers);
         xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.init();
         xin.vanilla.banira.internal.neoforge.compat.NeoForgeExternalInventoryCompatibility.init();

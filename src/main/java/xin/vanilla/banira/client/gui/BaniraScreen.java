@@ -172,6 +172,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     protected void init() {
+        if (this.cursor != null) this.cursor.removed();
         this.cursor = MouseWidget.init(this, ClientConfig.get().useCustomCursor());
         this.popupOption = PopupOption.init(this);
         this.openingTime = System.currentTimeMillis();
@@ -277,7 +278,7 @@ public abstract class BaniraScreen extends Screen {
         this.flushDeferredTooltipRenders(graphics);
 
         this.popupOption.render(graphics, inputState);
-        this.cursor.draw(stack, mouseX, mouseY);
+        this.cursor.draw(graphics, mouseX, mouseY);
         cachedTheme = null;
     }
 
@@ -319,10 +320,8 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionPress(clickEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionPress(clickEvent)) {
+            args.consumed(true);
         } else {
             this.popupOption.clear();
             unfocusAllExcept(null);
@@ -385,12 +384,10 @@ public abstract class BaniraScreen extends Screen {
                 .mouseY(mouseY)
                 .button(button);
 
-        if (this.popupOption.isHovered()) {
-            if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
-                args.consumed(true);
-            }
+        if (this.popupOption.tryHandleOptionRelease(releaseEvent)) {
+            args.consumed(true);
         }
-        if (!this.popupOption.isHovered()) {
+        if (!args.consumed() && !this.popupOption.isHovered()) {
             this.popupOption.clear();
 
             if (findFirstHandlingWidget(w -> w.handleMouseRelease(MouseEvent.of(mouseX, mouseY, button))) != null) {

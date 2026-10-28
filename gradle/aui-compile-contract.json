@@ -325,6 +325,11 @@
           "access": 1
         },
         {
+          "name": "getAttribute",
+          "desc": "(Ljava/lang/String;)Ljava/lang/String;",
+          "access": 1
+        },
+        {
           "name": "setAttribute",
           "desc": "(Ljava/lang/String;Ljava/lang/String;)V",
           "access": 1

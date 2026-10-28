@@ -35,6 +35,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private final Set<AuiNode> icons = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<AuiNode> richTexts = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<AuiNode> gameElements = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final List<AuiNode> modalRoots = new ArrayList<>();
     private final AuiNode body;
     private final Element content;
     private final Element scopeRoot;
@@ -247,6 +248,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                     NotificationHudState.position(hudY, mc.getWindow().getGuiScaledHeight(), NotificationUnreadHud.HEIGHT), 100, theme);
         }
         if (popupLayers == 0) for (AuiNode node : richTexts) {
+            if (!paintable(node)) continue;
             ScreenCoordinate bounds = node.bounds(), clip = node.clip == null ? contentBounds() : node.clip.bounds();
             AuiGameElements.renderText(graphics, node.rich, bounds, clip);
             xin.vanilla.banira.common.data.KeyValue<Integer, Integer> mouse = InputStateManager.getGuiCursorPos();
@@ -255,18 +257,38 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                     node.rich.styleAt(bounds, clip, mouse.key(), mouse.val()));
         }
         for (AuiNode node : icons) {
+            if (!paintable(node)) continue;
             if (popupLayers > 0 && !node.inPopup) continue;
             ScreenCoordinate bounds = node.bounds();
             ScreenCoordinate leading = new ScreenCoordinate(bounds.x() + 2, bounds.y(), Math.min(22, bounds.width() - 2), bounds.height());
             AuiGameElements.renderOption(graphics, node.icon, leading, node.clip == null ? null : node.clip.bounds());
         }
         if (popupLayers == 0) for (AuiNode node : gameElements) {
+            if (!paintable(node)) continue;
             AuiGameElements.renderElement(graphics, node.gameElement, node.bounds(), node.clip == null ? contentBounds() : node.clip.bounds(), theme);
         }
     }
 
     private ScreenCoordinate contentBounds() {
         return content == null ? body.bounds() : wrap(content).bounds();
+    }
+
+    private boolean visible(AuiNode node) {
+        for (AuiNode ancestor = node; ancestor != null; ancestor = ancestor.parent)
+            if (!ancestor.element.isVisible || ancestor.removed) return false;
+        return true;
+    }
+
+    private boolean paintable(AuiNode node) {
+        if (!visible(node)) return false;
+        AuiNode activeModal = null;
+        for (AuiNode modal : modalRoots)
+            if (visible(modal) && !modal.element.isDisabled()) activeModal = modal;
+        if (activeModal == null) return true;
+        // Retained Minecraft drawings run after HTML; background drawings must not cross a modal.
+        for (AuiNode ancestor = node; ancestor != null; ancestor = ancestor.parent)
+            if (ancestor == activeModal) return true;
+        return false;
     }
 
     public boolean richLayoutReady() {
@@ -387,6 +409,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         icons.clear();
         richTexts.clear();
         gameElements.clear();
+        modalRoots.clear();
         nodes.clear();
     }
 
@@ -404,6 +427,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         AuiNode(Element element) {
             this.element = element;
             clips = element == content;
+            if ("true".equals(element.getAttribute("aria-modal"))) modalRoots.add(this);
         }
 
         @Override

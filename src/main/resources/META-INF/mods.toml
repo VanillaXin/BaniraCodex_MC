@@ -41,3 +41,9 @@ logoFile = "pack.png"
     versionRange = "[0,)"
     ordering = "AFTER"
     side = "CLIENT"
+[[dependencies."${mod_id}"]]
+    modId = "apricityui"
+    mandatory = false
+    versionRange = "[0,)"
+    ordering = "AFTER"
+    side = "CLIENT"

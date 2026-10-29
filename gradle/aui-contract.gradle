@@ -1,0 +1,49 @@
+import java.security.MessageDigest
+
+repositories.exclusiveContent {
+    forRepository {
+        project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' }
+    }
+    filter { includeModule('com.sighs', 'ApricityUI-forge-1.19.2') }
+}
+
+configurations.create('auiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+dependencies {
+    testRuntimeOnly 'org.joml:joml:1.10.5'
+    def localContract = providers.gradleProperty('banira.auiContractJar').orNull
+    if (localContract != null) {
+        def artifact = new File(localContract)
+        if (!artifact.isAbsolute() || !artifact.isFile()) {
+            throw new GradleException('banira.auiContractJar must be an existing absolute file')
+        }
+        auiContract files(artifact)
+    } else {
+        auiContract('com.sighs:ApricityUI-forge-1.19.2:1.2.9') {
+            version { strictly('1.2.9') }
+        }
+    }
+}
+
+configurations.compileOnly.extendsFrom(configurations.auiContract)
+
+def verifyAuiContract = tasks.register('verifyAuiContract') {
+    doLast {
+        def artifact = configurations.auiContract.singleFile
+        def actual = MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
+        if (!actual.equalsIgnoreCase('96B74BE66F36EC290B1B081A7198629973D72CAF73D713B6DA8A4BB8F46490D5')) {
+            throw new GradleException('AUI Forge 1.19.2 contract SHA-256 mismatch')
+        }
+    }
+}
+
+tasks.named('compileJava') { dependsOn verifyAuiContract }
+
+tasks.withType(Test).configureEach {
+    dependsOn verifyAuiContract
+    doFirst {
+        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
+    }
+}

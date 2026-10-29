@@ -10,6 +10,8 @@
     "injections.PlayerListMixin"
   ],
   "client": [
+    "injections.AuiPointerInputMixin",
+    "injections.AuiTextureAtlasMixin",
     "compat.minimap.XaeroInfoDisplaysMixin",
     "compat.minimap.FtbChunksNotificationMixin",
     "compat.minimap.MapAtlasesNotificationMixin",

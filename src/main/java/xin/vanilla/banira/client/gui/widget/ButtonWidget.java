@@ -977,6 +977,10 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
      */
     private void drawPresetIcon(PoseStack stack, int x, int y, int w, int h, int color) {
+        drawPresetIcon(stack, presetStyle, x, y, w, h, color, iconStrokeWidth);
+    }
+
+    public static void drawPresetIcon(PoseStack stack, PresetStyle presetStyle, int x, int y, int w, int h, int color, float iconStrokeWidth) {
         float iw = Math.max(0f, (float) w);
         float ih = Math.max(0f, (float) h);
         float size = Math.min(iw, ih);
@@ -1063,7 +1067,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 绘制重置图标
      */
-    private void drawResetIcon(PoseStack stack, float cx, float cy, float r, float lw, int color) {
+    private static void drawResetIcon(PoseStack stack, float cx, float cy, float r, float lw, int color) {
         float d = r * 1.375f;
         float triR = r * 0.65f;
         float xL = cx - d;

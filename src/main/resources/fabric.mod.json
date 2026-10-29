@@ -37,6 +37,7 @@
     "minecraft": "${minecraft_version}"
   },
   "suggests": {
+    "apricityui": ">=1.2.9",
     "ftblibrary": "*",
     "jei": "*"
   }

@@ -76,6 +76,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             if (Minecraft.getInstance().screen == null) {
                 BaniraClientOverlayBridge.renderHud(stack, tickDelta.getGameTimeDeltaPartialTick(false));
             }
+            FabricAuiClientHooks.renderGame(stack);
         });
         ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             BaniraClientOverlayBridge.resetScreenInteraction();
@@ -87,6 +88,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             });
             ScreenEvents.afterRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
                 BaniraClientEventBridge.fireDrawScreenPost(stack, scr, mouseX, mouseY, tickDelta);
+                FabricAuiClientHooks.renderScreen(scr, stack);
             });
             ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) ->
                     BaniraClientInputBridge.allowMouseClick(scr, mouseX, mouseY, button));

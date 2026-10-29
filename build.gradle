@@ -305,3 +305,5 @@ tasks.named('test') {
 apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+apply from: 'gradle/aui-contract.gradle'
+apply from: 'gradle/aui-validation-output.gradle'

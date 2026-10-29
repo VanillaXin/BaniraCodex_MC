@@ -5,13 +5,12 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.client.gui.event.CharInputEvent;
+import xin.vanilla.banira.internal.client.ui.UiKeyCapture;
 import xin.vanilla.banira.client.gui.event.KeyEvent;
-import xin.vanilla.banira.internal.client.GLFWKeyUtils;
+import xin.vanilla.banira.client.gui.event.CharInputEvent;
 
 import javax.annotation.Nullable;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -22,8 +21,9 @@ public class KeyCaptureInputWidget extends InputWidget {
     @Setter
     @Nullable
     private Consumer<String> onCaptured;
-    private final Set<Integer> capturedKeys = new LinkedHashSet<>();
-    private final Set<Integer> pressedKeys = new LinkedHashSet<>();
+    private final UiKeyCapture pending = new UiKeyCapture();
+    private String retained = "";
+    private boolean previewing;
 
     public KeyCaptureInputWidget(BaniraScreen screen) {
         super(screen);
@@ -33,38 +33,34 @@ public class KeyCaptureInputWidget extends InputWidget {
 
     @Override
     protected boolean onKeyPress(KeyEvent event) {
-        if (!focused() || !enabled() || event == null) {
+        if (event == null) return false;
+        int keyCode = event.keyCode();
+        if (!focused() || !enabled()) {
             return false;
         }
-        int keyCode = event.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
-            clearPending();
+            pending.clear();
             screen.unfocusWidget(this);
             return true;
         }
-        if (keyCode == GLFWKey.GLFW_KEY_BACKSPACE || keyCode == GLFWKey.GLFW_KEY_DELETE) {
-            capture("");
-            return true;
-        }
-        capturedKeys.add(keyCode);
-        pressedKeys.add(keyCode);
-        value(GLFWKeyUtils.getKeyDisplayString(capturedKeys.stream().mapToInt(Integer::intValue).toArray()));
+        if (!previewing) retained = value();
+        previewing = true;
+        List<String> completed = pending.press(keyCode);
+        if (completed != null) capture(String.join("+", completed));
+        else value(pending.preview());
         return true;
     }
 
     @Override
     protected boolean onKeyRelease(KeyEvent event) {
-        if (!focused() || !capturedKeys.contains(event.keyCode())) {
+        if (event == null) return false;
+        int keyCode = event.keyCode();
+        if (!focused() || !enabled()) {
             return false;
         }
-        pressedKeys.remove(event.keyCode());
-        // 玩家全部松开后再提交，才能可靠捕获 A+B 及带修饰键的组合。
-        if (pressedKeys.isEmpty() && capturedKeys.stream().anyMatch(key -> !isModifierKey(key))) {
-            String shortcut = GLFWKeyUtils.getKeyDisplayString(
-                    capturedKeys.stream().mapToInt(Integer::intValue).toArray());
-            clearPending();
-            capture(shortcut);
-        }
+        List<String> completed = pending.release(keyCode);
+        if (completed != null) capture(String.join("+", completed));
+        else if (pending.preview().isEmpty()) cancelPreview();
         return true;
     }
 
@@ -74,6 +70,8 @@ public class KeyCaptureInputWidget extends InputWidget {
     }
 
     private void capture(String shortcut) {
+        retained = shortcut;
+        previewing = false;
         value(shortcut);
         if (onCaptured != null) {
             onCaptured.accept(shortcut);
@@ -81,15 +79,27 @@ public class KeyCaptureInputWidget extends InputWidget {
         screen.unfocusWidget(this);
     }
 
-    private void clearPending() {
-        capturedKeys.clear();
-        pressedKeys.clear();
+    @Override
+    public void focused(boolean focused) {
+        if (!focused) cancelPreview();
+        super.focused(focused);
     }
 
-    private static boolean isModifierKey(int keyCode) {
-        return keyCode == GLFWKey.GLFW_KEY_LEFT_CONTROL || keyCode == GLFWKey.GLFW_KEY_RIGHT_CONTROL
-                || keyCode == GLFWKey.GLFW_KEY_LEFT_SHIFT || keyCode == GLFWKey.GLFW_KEY_RIGHT_SHIFT
-                || keyCode == GLFWKey.GLFW_KEY_LEFT_ALT || keyCode == GLFWKey.GLFW_KEY_RIGHT_ALT
-                || keyCode == GLFWKey.GLFW_KEY_LEFT_SUPER || keyCode == GLFWKey.GLFW_KEY_RIGHT_SUPER;
+    @Override
+    public void enabled(boolean enabled) {
+        if (!enabled) cancelPreview();
+        super.enabled(enabled);
+    }
+
+    public String retainedValue() {
+        return previewing ? retained : value();
+    }
+
+    private void cancelPreview() {
+        pending.clear();
+        if (previewing) {
+            previewing = false;
+            value(retained);
+        }
     }
 }

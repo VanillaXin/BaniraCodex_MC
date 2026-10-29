@@ -185,6 +185,10 @@ public class CustomConfig {
         return JsonUtils.getString(clientConfig, String.format("player.%s.language", uuid), "client");
     }
 
+    public static void clearPlayerPreferencesClient() {
+        clientConfig.remove("player");
+    }
+
     public static void setPlayerLanguage(String uuid, String language) {
         JsonUtils.setString(customConfig, String.format("player.%s.language", uuid), language);
         setDirty(true);

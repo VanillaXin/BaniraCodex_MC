@@ -31,6 +31,26 @@ public final class BaniraCodexClientBootstrap {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final UiBackendController UI_BACKEND = new UiBackendController(
             () -> ClientConfigView.get().useAui(), BaniraCodexClientBootstrap::probeAui);
+    private static final xin.vanilla.banira.internal.client.ui.AuiUiBackend AUI =
+            new xin.vanilla.banira.internal.client.ui.AuiUiBackend(BaniraCodexClientBootstrap::uiSessions);
+    private static final xin.vanilla.banira.internal.client.ui.UiSessionHost UI_SESSIONS =
+            new xin.vanilla.banira.internal.client.ui.UiSessionHost(UI_BACKEND, AUI::create,
+                    BaniraClientRuntime::presentUiScreen, BaniraClientRuntime::isScreen);
+    private static final xin.vanilla.banira.internal.client.ui.AuiHudHost UI_HUDS =
+            new xin.vanilla.banira.internal.client.ui.AuiHudHost(UI_BACKEND, AUI::createHud);
+    private static boolean hadConnection;
+
+    public static xin.vanilla.banira.internal.client.ui.UiSessionHost uiSessions() {
+        return UI_SESSIONS;
+    }
+
+    private static void disconnectUi() {
+        try {
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
+        } finally {
+            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient();
+        }
+    }
 
     private static boolean probeAui() {
         ClassLoader loader = BaniraCodexClientBootstrap.class.getClassLoader();
@@ -50,6 +70,34 @@ public final class BaniraCodexClientBootstrap {
     }
 
     public static void init() {
+        UI_SESSIONS.hudHost(UI_HUDS);
+        xin.vanilla.banira.api.client.ui.BaniraUi.install(new xin.vanilla.banira.api.client.ui.BaniraUi.Driver() {
+            public void open(xin.vanilla.banira.api.client.ui.UiPageSpec page, Object previous) {
+                UI_SESSIONS.open(page, previous);
+            }
+
+            public boolean usesAui(String id) {
+                return UI_BACKEND.usesAui(id);
+            }
+
+            public AutoCloseable registerHud(xin.vanilla.banira.api.client.ui.UiHudSpec spec) {
+                return UI_SESSIONS.registerHud(spec);
+            }
+
+            public void screenRemoved(Object screen) {
+                xin.vanilla.banira.internal.client.ui.CommonUiPages.removed(screen);
+            }
+
+            public boolean closePage(Object screen, xin.vanilla.banira.api.client.ui.UiCloseReason reason) {
+                return xin.vanilla.banira.internal.client.ui.CommonUiPages.close(screen, reason);
+            }
+
+            public xin.vanilla.banira.api.client.ui.UiContainerLayer container(
+                    xin.vanilla.banira.api.client.ui.UiPageSpec page, java.util.function.BooleanSupplier current) {
+                return xin.vanilla.banira.internal.client.ui.UiContainerLayerHost.create(UI_BACKEND, page, current,
+                        () -> AUI.createContainer(page));
+            }
+        });
         BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
             LogoModifier.register(Banira.MOD_ID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
@@ -69,20 +117,33 @@ public final class BaniraCodexClientBootstrap {
                     parent -> new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen((net.minecraft.client.gui.screens.Screen) parent)));
             customActions.reload();
             BaniraConfigs.holder(ClientConfig.class).onSaved(changed -> {
-                UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
+                UI_SESSIONS.switchBackend(ClientConfigView.get().useAui());
                 ExternalInventoryButtonManager.get().refreshCurrentScreen();
             });
             BaniraConfigs.holder(ClientConfig.class).onReloaded(changed -> {
-                UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
-                UI_BACKEND.requestReload();
+                UI_SESSIONS.switchBackend(ClientConfigView.get().useAui());
+                UI_SESSIONS.reload();
                 ExternalInventoryButtonManager.get().refreshCurrentScreen();
             });
             UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
         });
-        BaniraClientEventHub.Client.onClientTick(event -> {
-            if (event == BaniraClientTickEvent.END) UI_BACKEND.tick();
+        BaniraClientEventHub.Player.onClientLoggedOut(player -> {
+            disconnectUi();
+            hadConnection = false;
         });
-        BaniraClientEventHub.Client.onTextureReload(event -> UI_BACKEND.requestReload());
+        BaniraClientEventHub.Client.onClientTick(event -> {
+            if (event != BaniraClientTickEvent.END) return;
+            boolean connected = BaniraClientRuntime.hasConnection();
+            if (hadConnection && !connected) disconnectUi();
+            hadConnection = connected;
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
+            UI_SESSIONS.tick();
+            UI_HUDS.tick(connected);
+        });
+        BaniraClientEventHub.Client.onTextureReload(event -> {
+            AUI.reload();
+            UI_SESSIONS.reload();
+        });
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);
         BaniraClientEventHub.Client.onGuiChanged(event ->
                 ExternalInventoryButtonManager.get().refreshCurrentScreen());

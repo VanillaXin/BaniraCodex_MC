@@ -478,6 +478,7 @@ public class UiDomView extends NativeUiView {
         if (control == null && typed == null) return;
         listen(id + ":input", node, "input", event -> {
             if (!enabled.getOrDefault(id, true)) return;
+            captureSelection(id, node);
             UiValue current = values.get(id);
             if (control != null && control.kind() == UiControlSpec.Kind.SELECT) {
                 if (!control.multiple() && control.inputMode() == DropdownInputMode.EDITABLE)
@@ -790,6 +791,7 @@ public class UiDomView extends NativeUiView {
                     if (!state().focusedField().equals(row.prefix + control.getKey()) || !node.focused()) continue;
                     ScreenCoordinate bounds = node.bounds(), viewport = scroller.bounds();
                     if (!(bounds.height() > 0 && bounds.width() > 0 && viewport.height() > 0)) return;
+                    row.restoreSelection(control.getKey(), node);
                     double delta = bounds.y() < viewport.y() || bounds.height() > viewport.height()
                             ? bounds.y() - viewport.y()
                             : Math.max(0, bounds.y() + bounds.height() - viewport.y() - viewport.height());

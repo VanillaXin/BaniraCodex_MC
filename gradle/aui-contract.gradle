@@ -11,7 +11,15 @@ configurations.create('auiContract') {
     canBeConsumed = false
     transitive = false
 }
+jarJar.enable()
 dependencies {
+    minecraftLibrary 'org.joml:joml:1.10.5'
+    jarJar('org.joml:joml:1.10.5') {
+        transitive = false
+        jarJar.ranged(it, '[1.10.5,1.11)')
+        jarJar.pin(it, '1.10.5')
+    }
+    testCompileOnly 'org.joml:joml:1.10.5'
     testRuntimeOnly 'org.joml:joml:1.10.5'
     def localContract = providers.gradleProperty('banira.auiContractJar').orNull
     if (localContract != null) {
@@ -29,6 +37,19 @@ dependencies {
 
 configurations.compileOnly.extendsFrom(configurations.auiContract)
 
+// Shadow expands nested jars, so attach Forge's unchanged library entries after shading.
+tasks.named('shadowJar').configure {
+    dependsOn tasks.named('jarJar')
+    inputs.file(tasks.named('jarJar').flatMap { it.archiveFile })
+    doLast {
+        ant.zip(destfile: archiveFile.get().asFile, update: true, encoding: 'UTF-8') {
+            zipfileset(src: tasks.named('jarJar').get().archiveFile.get().asFile) {
+                include(name: 'META-INF/jarjar/**')
+            }
+        }
+    }
+}
+
 def verifyAuiContract = tasks.register('verifyAuiContract') {
     doLast {
         def artifact = configurations.auiContract.singleFile
@@ -45,5 +66,8 @@ tasks.withType(Test).configureEach {
     dependsOn verifyAuiContract
     doFirst {
         systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
+        systemProperty 'banira.minimap.contractJars', configurations.compileClasspath.files.findAll {
+            it.name.startsWith('journeymap-') || it.name.startsWith('xaeros-minimap-') || it.name.startsWith('ftb-chunks-forge-')
+        }.collect { it.absolutePath }.join(File.pathSeparator)
     }
 }

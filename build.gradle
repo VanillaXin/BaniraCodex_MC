@@ -23,6 +23,7 @@ apply plugin: 'org.spongepowered.mixin'
 apply from: 'gradle/aui-validation-output.gradle'
 apply from: 'gradle/config-view-processor.gradle'
 apply from: 'gradle/aui-contract.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'
 
 group = mod_group_id
 version = mod_version
@@ -84,6 +85,8 @@ mixin {
 
     config "${mod_id}.mixins.json"
 }
+
+apply from: 'gradle/mixin-refmap.gradle'
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 

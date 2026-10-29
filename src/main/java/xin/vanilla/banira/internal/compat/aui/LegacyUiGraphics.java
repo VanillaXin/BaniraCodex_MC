@@ -17,6 +17,21 @@ public final class LegacyUiGraphics {
         buffers().endBatch();
     }
 
+    public static int drawString(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.gui.Font font,
+                                 String text, float x, float y, int color, boolean shadow) {
+        return shadow ? font.drawShadow(pose, text, x, y, color) : font.draw(pose, text, x, y, color);
+    }
+
+    public static int drawString(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.gui.Font font,
+                                 net.minecraft.util.FormattedCharSequence text, float x, float y, int color, boolean shadow) {
+        return shadow ? font.drawShadow(pose, text, x, y, color) : font.draw(pose, text, x, y, color);
+    }
+
+    public static int drawString(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.gui.Font font,
+                                 net.minecraft.network.chat.Component text, float x, float y, int color, boolean shadow) {
+        return shadow ? font.drawShadow(pose, text, x, y, color) : font.draw(pose, text, x, y, color);
+    }
+
     public static void pushScissor(int left, int top, int right, int bottom) {
         flush();
         AbstractGuiUtils.pushScissor(left, top, Math.max(0, right - left), Math.max(0, bottom - top));

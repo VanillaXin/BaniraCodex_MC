@@ -27,6 +27,10 @@ public final class BaniraClientPacketHandlers {
     }
 
     public static void applyConfigSnapshot(ConfigSnapshotToClient packet) {
+        if (xin.vanilla.banira.internal.config.CustomConfig.PLAYER_PREFERENCES_CONFIG.equals(packet.configName())) {
+            xin.vanilla.banira.internal.config.CustomConfig.applyPlayerPreferencesClient(packet.snapshot());
+            return;
+        }
         ConfigSnapshotClientHandler.apply(packet);
     }
 

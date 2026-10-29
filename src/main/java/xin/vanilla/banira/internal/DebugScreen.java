@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -12,7 +13,8 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraConfigs;
-import xin.vanilla.banira.api.client.notification.BaniraNotifications;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.*;
@@ -21,6 +23,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.PlayerSkinTextureUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;
@@ -28,8 +31,11 @@ import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.*;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.GLFWKeyUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.DebugUiSession;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.CommonConfig;
 
@@ -41,7 +47,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
-public class DebugScreen extends BaniraScreen {
+public class DebugScreen extends BaniraScreen implements UiNativePage {
+    private final DebugUiSession uiSession = new DebugUiSession(this::uiAction);
+    private UiViewState uiState;
+    private boolean restoreUiDraft;
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -57,11 +66,108 @@ public class DebugScreen extends BaniraScreen {
     private int fontSize = 9;
     private boolean warp = false;
 
-    private ButtonWidget longPressBtn;
-
 
     public DebugScreen() {
         super(BaniraComponent.get().empty().toVanilla());
+        uiSession.attachNative(this);
+    }
+
+
+    @Override
+    public DebugUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:debug";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiDraft = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        uiSession.setting("lines", Integer.toString(contentLines));
+        uiSession.setting("length", Integer.toString(contentLength));
+        uiSession.setting("font", Integer.toString(fontSize));
+        uiSession.setting("wrap", Boolean.toString(warp));
+        uiSession.content(content);
+    }
+
+    @Override
+    protected void onInit() {
+        if (restoreUiDraft) {
+            contentLines = Integer.parseInt(uiSession.setting("lines"));
+            contentLength = Integer.parseInt(uiSession.setting("length"));
+            fontSize = Integer.parseInt(uiSession.setting("font"));
+            warp = Boolean.parseBoolean(uiSession.setting("wrap"));
+            content = uiSession.content();
+            season(uiSession.season());
+            restoreUiDraft = false;
+        }
+        if (content.isEmpty()) genContent();
+    }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
+    }
+
+    private void uiAction(String id) {
+        switch (id) {
+            case "notification":
+                addNotificationTest(uiSession.position());
+                break;
+            case "config_client":
+                ConfigEditorScreen.open(BaniraConfigs.holder(ClientConfig.class), this);
+                break;
+            case "config_common":
+                ConfigEditorScreen.open(BaniraConfigs.holder(CommonConfig.class), this);
+                break;
+            case "quick_plus":
+                debugQuickActionAdd();
+                break;
+            case "quick_minus":
+                debugQuickActionRemove();
+                break;
+            case "config_test":
+                Notification notice = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
+                notice.durationTime(3000);
+                NotificationManager.get().addNotification(notice);
+                break;
+            case "input_large":
+                openLargeInput();
+                break;
+            case "regenerate":
+                contentLines = Integer.parseInt(uiSession.setting("lines"));
+                contentLength = Integer.parseInt(uiSession.setting("length"));
+                fontSize = Integer.parseInt(uiSession.setting("font"));
+                warp = Boolean.parseBoolean(uiSession.setting("wrap"));
+                genContent();
+                uiSession.content(content);
+                break;
+            default:
+                if (id.startsWith("preset_")) LOGGER.debug("Preset button clicked: {}", id);
+                else handlePopupSelect(id.startsWith("opt_") ? id : "opt_" + id, id);
+        }
     }
 
     /**
@@ -91,10 +197,11 @@ public class DebugScreen extends BaniraScreen {
         dropdownSingle.bounds(new ScreenCoordinate(110, 20, 150, 24));
         dropdownSingle.options(Arrays.asList("自动", "春", "夏", "秋", "冬"));
         dropdownSingle.text("选择季节");
-        dropdownSingle.selectedValues(Collections.singletonList("自动"));
+        dropdownSingle.selectedValues(Collections.singletonList(uiSession.season().getChineseName()));
         dropdownSingle.onSelectionChanged(values -> {
             LOGGER.debug("单选下拉: {}", values);
             season(EnumSeason.valueOfEx(values.isEmpty() ? "自动" : values.get(0)));
+            uiSession.selected("season", Collections.singletonList(season().name()));
         });
         addWidget(dropdownSingle);
 
@@ -104,25 +211,24 @@ public class DebugScreen extends BaniraScreen {
         dropdownMulti.options(Arrays.asList("苹果", "香蕉", "橙子", "葡萄", "草莓", "西瓜"));
         dropdownMulti.text("选择水果（可多选）");
         dropdownMulti.multiSelect(true);
-        dropdownMulti.onSelectionChanged(values -> LOGGER.debug("多选下拉水果: {}", values));
+        dropdownMulti.selectedValues(uiSession.selected("fruit"));
+        dropdownMulti.onSelectionChanged(values -> {
+            uiSession.selected("fruit", values);
+            LOGGER.debug("多选下拉水果: {}", values);
+        });
         addWidget(dropdownMulti);
 
         DropdownSelectWidget dropdownMultiEx = new DropdownSelectWidget(this);
         dropdownMultiEx.id("dropdown_multi_vegetable");
         dropdownMultiEx.bounds(new ScreenCoordinate(110, 80, 150, 24));
-        dropdownMultiEx.options(Arrays.asList("白菜", "菠菜", "油菜", "生菜", "空心菜", "韭菜", "芹菜", "香菜", "茼蒿", "苋菜",
-                "芥蓝", "小白菜", "大白菜", "卷心菜", "紫甘蓝", "羽衣甘蓝", "西兰花", "菜花", "芥菜", "雪里红",
-                "萝卜", "胡萝卜", "白萝卜", "青萝卜", "樱桃萝卜", "土豆", "红薯", "紫薯", "山药", "芋头",
-                "洋葱", "大蒜", "蒜苗", "蒜黄", "大葱", "小葱", "韭菜苔", "芦笋", "竹笋", "莴笋",
-                "莲藕", "菱角", "荸荠", "慈姑", "百合", "生姜", "洋姜", "豆芽", "绿豆芽", "黄豆芽",
-                "豇豆", "四季豆", "扁豆", "荷兰豆", "毛豆", "蚕豆", "豌豆", "黄豆", "绿豆", "红豆",
-                "黄瓜", "冬瓜", "南瓜", "苦瓜", "丝瓜", "西葫芦", "佛手瓜", "木瓜", "西红柿", "茄子",
-                "辣椒", "青椒", "彩椒", "甜椒", "秋葵", "玉米", "鲜玉米", "茴香", "萝卜苗", "豌豆苗",
-                "黑木耳", "银耳", "香菇", "金针菇", "平菇", "杏鲍菇", "口蘑", "猴头菇", "茶树菇", "竹荪",
-                "海带", "紫菜", "裙带菜", "石花菜", "地皮菜", "蕨菜", "马齿苋", "荠菜", "蒲公英", "鱼腥草"));
+        dropdownMultiEx.options(Arrays.asList(DebugUiSession.vegetables()));
         dropdownMultiEx.text("选择蔬菜（可多选）");
         dropdownMultiEx.multiSelect(true);
-        dropdownMultiEx.onSelectionChanged(values -> LOGGER.debug("多选下拉蔬菜: {}", values));
+        dropdownMultiEx.selectedValues(uiSession.selected("vegetable"));
+        dropdownMultiEx.onSelectionChanged(values -> {
+            uiSession.selected("vegetable", values);
+            LOGGER.debug("多选下拉蔬菜: {}", values);
+        });
         addWidget(dropdownMultiEx);
 
         String cPlus = GLFWKeyUtils.getKeyDisplayString(GLFWKey.GLFW_KEY_C, GLFWKey.GLFW_KEY_EQUAL);
@@ -140,7 +246,7 @@ public class DebugScreen extends BaniraScreen {
         addTooltipLabel(20, 100, "N+方向键 指定位置（支持组合：↑↓←→）");
         addTooltipLabel(20, 120, "Page Up 成就选择，Page Down 效果选择");
 
-        longPressBtn = new ButtonWidget(this);
+        ButtonWidget longPressBtn = new ButtonWidget(this);
         longPressBtn.id("test_config_editor");
         longPressBtn.bounds(new ScreenCoordinate(110, 140, 75, 24));
         longPressBtn.text("按钮长按测试");
@@ -148,7 +254,7 @@ public class DebugScreen extends BaniraScreen {
         longPressBtn.onLongPress(1000L, b -> {
             Notification n = Notification.ofComponent(BaniraComponent.get().literal(KaomojiUtils.random()));
             n.durationTime(3000);
-            BaniraNotifications.show(n);
+            NotificationManager.get().addNotification(n);
             int ordinal = longPressBtn.longPressProgressMode().ordinal();
             int i = (ordinal + 1) % ButtonWidget.LongPressProgressMode.values().length;
             longPressBtn.longPressProgressMode(ButtonWidget.LongPressProgressMode.values()[i]);
@@ -205,14 +311,14 @@ public class DebugScreen extends BaniraScreen {
             reg.registerIcon(id, Identifier.id().create("minecraft", "textures/item/emerald.png"), label, ctx -> {
                 Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked Quick Emerald Action %s", ctx.entryId())));
                 notification.durationTime(3000);
-                BaniraNotifications.show(notification);
+                NotificationManager.get().addNotification(notification);
             });
         } else {
             ItemStack itemStack = CollectionUtils.getRandomElement(ItemUtils.getAllItems());
             reg.registerIcon(id, itemStack, label, ctx -> {
                 Notification notification = Notification.ofComponent(BaniraComponent.get().literal(String.format("Clicked %s: %s", ctx.entryId(), ItemUtils.getItemHoverNameString(itemStack))));
                 notification.durationTime(3000);
-                BaniraNotifications.show(notification);
+                NotificationManager.get().addNotification(notification);
             });
         }
         if (reg.menuAnchorEntryId() == null) {
@@ -307,11 +413,13 @@ public class DebugScreen extends BaniraScreen {
         n.position(position)
                 .animation(EnumMoveType.SCALE_AND_FADE)
                 .durationTime(3000);
-        BaniraNotifications.show(n);
+        NotificationManager.get().addNotification(n);
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(PoseStack graphics, float partialTicks) {
+        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
+        PoseStack stack = graphics;
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width / 3f, this.height - 20, 0x88E8F4FF);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -361,39 +469,37 @@ public class DebugScreen extends BaniraScreen {
         rect11.rect().border(4).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).topLeft(4).topRight(35).bottomLeft(35).bottomRight(16);
         BaseShapeWidget.drawShape(rect11);
 
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("ButtonWidget 预置样式")).x(280).y(20).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("ButtonWidget 预置样式").stack(graphics)).x(280).y(20).padding(4).margin(0).inScreen(false));
 
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
 
         int hudY = 1;
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容行数：" + contentLines)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容长度：" + contentLength)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("字体大小：" + fontSize)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("自动换行：" + warp)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
-        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("通知测试")).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容行数：" + contentLines).stack(graphics)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("内容长度：" + contentLength).stack(graphics)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("字体大小：" + fontSize).stack(graphics)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("自动换行：" + warp).stack(graphics)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
+        LabelWidget.drawLimitedText(FontDrawArgs.ofPopo(Text.literal("通知测试").stack(graphics)).x(20).y(20 * hudY++).padding(4).margin(0).inScreen(false));
 
         if (StringUtils.isNullOrEmptyEx(content)) genContent();
-        if (!longPressBtn.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
-            if (inputState.isPressingLeftEx()) {
-                // 颜色绘制
-                TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                        .stack(stack)
-                                        .font(super.font)
-                                        .align(EnumAlignment.CENTER))
-                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
-                                .popupUseTexture(false),
-                        getEffectiveTheme(), season());
-            } else if (inputState.isPressingRightEx()) {
-                // 纹理绘制
-                TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
-                                        .stack(stack)
-                                        .font(super.font)
-                                        .align(EnumAlignment.CENTER))
-                                .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
-                                .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
-                        season());
-            }
+        if (inputState.isPressingLeftEx()) {
+            // 颜色绘制
+            TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                    .stack(stack)
+                                    .font(super.font)
+                                    .align(EnumAlignment.CENTER))
+                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0)
+                            .popupUseTexture(false),
+                    getEffectiveTheme(), season());
+        } else if (inputState.isPressingRightEx()) {
+            // 纹理绘制
+            TooltipWidget.drawPopupMessageWithSeasonTexture(stack, FontDrawArgs.ofPopo(Text.literal(content)
+                                    .stack(stack)
+                                    .font(super.font)
+                                    .align(EnumAlignment.CENTER))
+                            .x(inputState.mouseX()).y(inputState.mouseY()).fontSize(fontSize).align(EnumAlignment.CENTER)
+                            .wrap(warp).maxWidth(warp ? AbstractGuiUtils.getStringWidth(this.content) / 2 : 0),
+                    season());
         }
     }
 
@@ -456,11 +562,11 @@ public class DebugScreen extends BaniraScreen {
                                 .defaultValue("#FF0000")
                                 .hint(Text.transAuto(Banira.MOD_ID, "enter_color_hex")))
                         .setCallback(input -> LOGGER.debug("Entered: {}", input.value("input")));
-                BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
+                Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
                 break;
             case "opt_item":
                 Consumer<ItemStack> onItemSelect = is -> LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(is));
-                BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
+                Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
             case "opt_advancement":
                 Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
@@ -468,7 +574,7 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultAdvancement(Identifier.id().empty())
                         .onDataReceived(onAdvSelect);
-                BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
+                Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
                 break;
             case "opt_effect":
                 Consumer<MobEffectInstance> onEffectSelect = ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei));
@@ -476,10 +582,10 @@ public class DebugScreen extends BaniraScreen {
                         .parentScreen(this)
                         .defaultEffect(new MobEffectInstance(MobEffects.LUCK, 600, 0))
                         .onDataReceived(onEffectSelect);
-                BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
+                Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
                 break;
             case "opt_notification_log":
-                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
+                Minecraft.getInstance().setScreen(new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(this)));
                 break;
             default:
                 break;
@@ -515,79 +621,86 @@ public class DebugScreen extends BaniraScreen {
         } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_N) {
             addNotificationTest(positionFromArrowKeys());
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_INSERT)) {
-            BaniraClientRuntime.setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
+            Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived((itemStack) -> {
                 LOGGER.debug("Select itemStack: {}", ItemUtils.serializeItemStack(itemStack));
             })));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_HOME)) {
-            InputFormScreen.Args screenArgs = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("name")
-                            .title(Text.literal("enter_name"))
-                            .validator((input) -> {
-                                if (StringUtils.isNullOrEmptyEx(input.value())) {
-                                    return BaniraComponent.get().transClientAuto("enter_something_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("author")
-                            .title(Text.literal("enter_author_name"))
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("version")
-                            .title(Text.literal("enter_version"))
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("description")
-                            .title(Text.literal("enter_description"))
-                            .allowEmpty(true)
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("color")
-                            .title(Text.literal("enter_color"))
-                            .type(InputFormScreen.WidgetType.COLOR)
-                            .allowEmpty(true)
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("file")
-                            .title(Text.literal("enter_file_name"))
-                            .type(InputFormScreen.WidgetType.FILE)
-                            .allowEmpty(true)
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("1")
-                            .title(Text.literal("enter_1"))
-                            .allowEmpty(true)
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("2")
-                            .title(Text.literal("enter_2"))
-                            .allowEmpty(true)
-                    )
-                    .addWidget(new InputFormScreen.Widget()
-                            .name("3")
-                            .title(Text.literal("enter_3"))
-                            .allowEmpty(true)
-                    )
-                    .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
-            BaniraClientRuntime.setScreen(new InputFormScreen(screenArgs));
+            openLargeInput();
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
             args.parentScreen(this).defaultAdvancement(Identifier.id().empty());
             args.onDataReceived((Consumer<ResourceLocation>) rl -> LOGGER.debug("Selected advancement: {}", rl));
-            BaniraClientRuntime.setScreen(new AdvancementSelectScreen(args));
+            Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
             EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()
                     .parentScreen(this)
                     .defaultEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.LUCK, 600, 0));
             effectArgs.onDataReceived((Consumer<net.minecraft.world.effect.MobEffectInstance>) ei -> LOGGER.debug("Selected effect: {}", EffectUtils.serializeEffectInstance(ei)));
-            BaniraClientRuntime.setScreen(new EffectSelectScreen(effectArgs));
+            Minecraft.getInstance().setScreen(new EffectSelectScreen(effectArgs));
         }
     }
 
+    private void openLargeInput() {
+        InputFormScreen.Args screenArgs = new InputFormScreen.Args()
+                .setParentScreen(this)
+                .addWidget(new InputFormScreen.Widget()
+                        .name("name")
+                        .title(Text.literal("enter_name"))
+                        .validator((input) -> {
+                            if (StringUtils.isNullOrEmptyEx(input.value())) {
+                                return BaniraComponent.get().transClientAuto("enter_something_error", input.value()).toString();
+                            }
+                            return null;
+                        })
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("author")
+                        .title(Text.literal("enter_author_name"))
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("version")
+                        .title(Text.literal("enter_version"))
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("description")
+                        .title(Text.literal("enter_description"))
+                        .allowEmpty(true)
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("color")
+                        .title(Text.literal("enter_color"))
+                        .type(InputFormScreen.WidgetType.COLOR)
+                        .allowEmpty(true)
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("file")
+                        .title(Text.literal("enter_file_name"))
+                        .type(InputFormScreen.WidgetType.FILE)
+                        .allowEmpty(true)
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("1")
+                        .title(Text.literal("enter_1"))
+                        .allowEmpty(true)
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("2")
+                        .title(Text.literal("enter_2"))
+                        .allowEmpty(true)
+                )
+                .addWidget(new InputFormScreen.Widget()
+                        .name("3")
+                        .title(Text.literal("enter_3"))
+                        .allowEmpty(true)
+                )
+                .setCallback(input -> LOGGER.debug("Entered name: {}", input.value("name")));
+        Minecraft.getInstance().setScreen(new InputFormScreen(screenArgs));
+    }
+
     private void genContent() {
+        contentLines = Math.max(1, Math.min(32, contentLines));
+        contentLength = Math.max(2, Math.min(256, contentLength));
+        fontSize = Math.max(4, Math.min(32, fontSize));
         StringBuilder content = new StringBuilder(BaniraComponent.get().transClientAuto("banira_codex").toString()).append("\n");
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < contentLines - 1; i++) {

@@ -70,7 +70,7 @@ final class UiBoundaryChecks {
                 }
             }
             if (name.endsWith(".jar")) {
-                if (!merged || depth >= 3) errors.add("Unexpected embedded archive " + name);
+                if ((!merged && !AuiLegacyRuntimeLibraryTest.isRuntimeLibrary(name, bytes)) || depth >= 3) errors.add("Unexpected embedded archive " + name);
                 else try {
                     errors.addAll(artifact(readZip(new ByteArrayInputStream(bytes)), owner, true, depth + 1));
                 } catch (IOException failure) {

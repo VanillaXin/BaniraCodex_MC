@@ -24,6 +24,10 @@ final class NotificationAnimationState {
         return startedAt >= 0L;
     }
 
+    boolean acceptsInput(long nowMs) {
+        return started() && dismissedAt < 0L && nowMs >= startedAt && nowMs < holdUntil;
+    }
+
     void start(long nowMs, long animationTimeMs, long durationTimeMs) {
         if (started()) {
             return;

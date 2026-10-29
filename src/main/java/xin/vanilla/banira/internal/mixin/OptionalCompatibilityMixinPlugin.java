@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import xin.vanilla.banira.internal.compat.FtbLibraryContract;
+import xin.vanilla.banira.internal.compat.aui.AuiOptionalServerChannels;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,16 +26,19 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
         if (!mixinClassName.contains(".compat.jei.")
                 && !mixinClassName.contains(".compat.ftblibrary.")
                 && !mixinClassName.contains(".compat.ipn.")
-                && !mixinClassName.contains(".compat.minimap.")) return true;
+                && !mixinClassName.contains(".compat.minimap.")
+                && !mixinClassName.contains(".compat.aui.")) return true;
         URL target = OptionalCompatibilityMixinPlugin.class.getClassLoader().getResource(targetClassName.replace('.', '/') + ".class");
         if (target == null) return false;
         if (mixinClassName.contains(".compat.ftblibrary.")) return FtbLibraryContract.matches();
         boolean vanillaPacks = mixinClassName.endsWith(".compat.jei.VanillaClientRecipeLoaderMixin");
-        if (!mixinClassName.contains(".compat.minimap.") && !vanillaPacks) return true;
+        boolean aui = mixinClassName.contains(".compat.aui.");
+        if (!mixinClassName.contains(".compat.minimap.") && !vanillaPacks && !aui) return true;
         try (InputStream input = target.openStream()) {
             ClassNode node = new ClassNode();
             new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
-            return vanillaPacks ? matchesJeiVanillaPacks(node) : matchesMinimap(mixinClassName, node);
+            return aui ? mixinClassName.endsWith("AuiNetworkManagerMixin") && AuiOptionalServerChannels.matches(node)
+                    : vanillaPacks ? matchesJeiVanillaPacks(node) : matchesMinimap(mixinClassName, node);
         } catch (IOException | RuntimeException exception) {
             return false;
         }

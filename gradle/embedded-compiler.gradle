@@ -1,4 +1,4 @@
-// Only the compiler is embedded; optional game integrations stay external.
+// The compiler is relocated; optional game integrations stay external.
 configurations { embeddedCompiler; scriptCompilerCollision }
 configurations.implementation.extendsFrom(configurations.embeddedCompiler)
 repositories { mavenCentral() }

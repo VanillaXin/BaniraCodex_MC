@@ -29,6 +29,22 @@ public final class BaniraClientForgeEventHandler {
     private BaniraClientForgeEventHandler() {
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onOwnedPointerButton(InputEvent.MouseButton.Pre event) {
+        if (Minecraft.getInstance().screen instanceof xin.vanilla.banira.internal.client.ui.UiPointerFeedback pointer
+                && (event.getAction() == GLFW.GLFW_PRESS || event.getAction() == GLFW.GLFW_RELEASE)) {
+            pointer.pointerButton(event.getButton(), event.getAction() == GLFW.GLFW_PRESS);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onOwnedPointerScroll(ScreenEvent.MouseScrolled.Pre event) {
+        if (event.getScreen() == Minecraft.getInstance().screen
+                && event.getScreen() instanceof xin.vanilla.banira.internal.client.ui.UiPointerFeedback pointer) {
+            pointer.pointerScroll(event.getDeltaY() != 0 ? event.getDeltaY() : event.getDeltaX());
+        }
+    }
+
     // region BaniraClientEventHub Forge 转发
 
     @SubscribeEvent
@@ -122,6 +138,8 @@ public final class BaniraClientForgeEventHandler {
                 event.getMouseY(),
                 event.getPartialTick()
         );
+        if (event.getScreen() == Minecraft.getInstance().screen)
+            xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(event.getGuiGraphics());
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

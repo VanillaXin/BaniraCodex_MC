@@ -6,6 +6,8 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumOrientation;
@@ -13,17 +15,17 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.search.ConfigSearchText;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
-import xin.vanilla.banira.client.gui.widget.InputWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
-import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigEntryTooltipTexts;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.*;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.ConfigUiSession;
 
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
@@ -36,7 +38,7 @@ import java.util.Map;
  *   <li>可同步类配置下，长按「保存」可从服务端拉取全量快照并刷新界面。</li>
  * </ul>
  */
-public class ConfigEditorScreen extends BaniraScreen {
+public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
 
     private static final int CARD_MARGIN = 10;
     private static final int CARD_INNER = 10;
@@ -61,13 +63,20 @@ public class ConfigEditorScreen extends BaniraScreen {
     private ScrollbarWidget scrollbar;
     private String searchText = "";
     private boolean applyingSearch;
-    private final Runnable reloadUnsubscribe;
+    private final ConfigUiSession uiSession;
+    private UiViewState uiState;
 
     public ConfigEditorScreen(ConfigHolder holder, Args args) {
+        this(holder, args, new ConfigUiSession(holder, args));
+    }
+
+    public ConfigEditorScreen(ConfigHolder holder, Args args, ConfigUiSession session) {
         super(BaniraComponent.get().transClientAuto("config_editor_title").toVanilla());
         this.holder = holder;
         this.args = args != null ? args : new Args();
-        this.editorState = new ConfigEditorState(holder);
+        this.uiSession = session;
+        session.attachNative(this);
+        this.editorState = session.state();
         this.rowFactory = new ConfigEditorRowFactory(this, holder, editorState, this::syncContentHeight);
         this.contentTreeBuilder = new ConfigEditorContentTreeBuilder(this, holder, rowFactory, editorState,
                 this::syncContentHeight, ROW_HEIGHT, ROW_GAP);
@@ -75,11 +84,6 @@ public class ConfigEditorScreen extends BaniraScreen {
                 this::syncToServer, this::syncToServerFull, this::onClose);
         this.viewport = new ConfigEditorViewportModel(
                 CARD_MARGIN, CARD_INNER, SCROLL_WIDTH, SCROLL_GAP, SEARCH_HEIGHT + SEARCH_GAP);
-        this.reloadUnsubscribe = holder.onReloaded(changed -> Minecraft.getInstance().execute(() -> {
-            if (Minecraft.getInstance().screen == this) {
-                editorState.refreshEntriesFromHolder(holder.getConfigName());
-            }
-        }));
         previousScreen(args != null ? args.parentScreen() : null);
         BaniraScreen.inheritThemeAndSeason(this, args != null ? args.parentScreen() : null,
                 args != null ? args.theme() : null, args != null ? args.season() : null);
@@ -87,8 +91,72 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     @Override
     protected void onRemoved() {
-        reloadUnsubscribe.run();
+        CommonUiPages.removed(this);
+        uiSession.removedNative(this);
         super.onRemoved();
+    }
+
+    public ConfigUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:config";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        searchText = uiSession.query();
+    }
+
+    @Override
+    public void resize(Minecraft minecraft, int width, int height) {
+        UiViewState state = uiState != null ? uiState : new UiViewState();
+        captureUiState(state);
+        prepareUiState(state);
+        super.resize(minecraft, width, height);
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        uiSession.query(searchText);
+        contentTreeBuilder.categoryPanels().forEach((path, panel) ->
+                uiSession.categoryExpansion(path, expandedBeforeSearch.getOrDefault(path, panel.expanded())));
+        if (state == null) return;
+        state.selection("", 0, 0);
+        if (searchInput != null && searchInput.focused())
+            state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+        for (Map.Entry<String, ConfigEditorEntryWidget> entry : editorState.entryWidgets().entrySet()) {
+            if (entry.getValue().getWidget() == null) continue;
+            xin.vanilla.banira.client.gui.widget.TagListEditorWidget tags = entry.getValue().getWidget().findChildByType(xin.vanilla.banira.client.gui.widget.TagListEditorWidget.class);
+            if (tags != null) {
+                int index = tags.focusedInputIndex();
+                if (index >= 0) for (IWidget child : tags.children())
+                    if (child instanceof InputWidget && ((InputWidget) child).focused()) {
+                        InputWidget input = (InputWidget) child;
+                        state.selection("config:" + entry.getKey() + "/item:" + index + "/input", input.cursorPosition(), input.highlightPos());
+                    }
+                continue;
+            }
+            InputWidget input = entry.getValue().getWidget().findChildByType(InputWidget.class);
+            if (input != null && input.focused())
+                state.selection("config:" + entry.getKey() + "/input", input.cursorPosition(), input.highlightPos());
+        }
+        if (scrollbar != null) state.rowPosition(scrollbar.value() / (ROW_HEIGHT + ROW_GAP));
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
     }
 
     public static void open(ConfigHolder holder, @Nullable Screen parent) {
@@ -97,6 +165,7 @@ public class ConfigEditorScreen extends BaniraScreen {
 
     @Override
     protected void initWidgets() {
+        uiSession.activateNative();
         viewport.resize(width, height);
         editorState.clearEntries();
         expandedBeforeSearch.clear();
@@ -110,6 +179,11 @@ public class ConfigEditorScreen extends BaniraScreen {
         addWidget(searchInput);
 
         contentRootPanel = contentTreeBuilder.build(viewport.contentW());
+        uiSession.categoryExpansion().forEach((path, open) -> {
+            CollapsiblePanelWidget panel = contentTreeBuilder.categoryPanels().get(path);
+            if (panel != null) panel.expanded(open);
+        });
+        contentRootPanel.reflowVisibleChildren();
         addWidget(contentRootPanel);
 
         scrollbar = new ScrollbarWidget(this);
@@ -129,6 +203,34 @@ public class ConfigEditorScreen extends BaniraScreen {
         updateLayout();
         updateWidgetPositions();
         applySearchFilter(searchText);
+        if (uiState != null) {
+            scrollbar.value(uiState.rowPosition() * (ROW_HEIGHT + ROW_GAP));
+            if (uiState.focusedField().equals("search")) {
+                requestFocus(searchInput);
+                searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+            } else for (Map.Entry<String, ConfigEditorEntryWidget> entry : editorState.entryWidgets().entrySet()) {
+                String itemPrefix = "config:" + entry.getKey() + "/item:";
+                if (uiState.focusedField().startsWith(itemPrefix) && uiState.focusedField().endsWith("/input")) {
+                    var tags = entry.getValue().getWidget().findChildByType(xin.vanilla.banira.client.gui.widget.TagListEditorWidget.class);
+                    if (tags != null) try {
+                        int index = Integer.parseInt(uiState.focusedField().substring(itemPrefix.length(), uiState.focusedField().length() - "/input".length()));
+                        InputWidget input = tags.focusInput(index);
+                        if (input != null) {
+                            requestFocus(input);
+                            input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                    continue;
+                }
+                if (!uiState.focusedField().equals("config:" + entry.getKey() + "/input")) continue;
+                InputWidget input = entry.getValue().getWidget().findChildByType(InputWidget.class);
+                if (input != null) {
+                    requestFocus(input);
+                    input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                }
+            }
+        }
     }
 
     private void syncContentHeight() {
@@ -287,93 +389,25 @@ public class ConfigEditorScreen extends BaniraScreen {
     }
 
     private void saveConfig() {
-        if (editorState.isRemoteSnapshot()) {
-            syncToServer();
-            return;
-        }
-        editorState.collectModifiedFromWidgets();
-        if (editorState.hasInvalidEntryWidgets()) {
-            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
-            return;
-        }
-        try {
-            editorState.applyModifiedToHolder();
-            holder.save();
-            editorState.markClean();
-            ConfigEditorNotifier.show("config_editor_save_success", 2000);
-        } catch (Exception ex) {
-            ConfigEditorNotifier.show("config_editor_save_failed", 4000, ex.getMessage());
-        }
+        uiSession.save();
     }
 
     private void syncToServer() {
-        if (!ConfigEditorSyncService.hasServerConnection()) {
-            ConfigEditorNotifier.show("config_editor_sync_not_connected", 3500);
-            return;
-        }
-        if (editorState.hasInvalidEntryWidgets()) {
-            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
-            return;
-        }
-        Map<String, Object> syncPayload = editorState.collectTouchedPathsForSync();
-        if (syncPayload.isEmpty()) {
-            ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
-            return;
-        }
-        Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
-        try {
-            ConfigEditorSyncService.sendSync(holder, toSync);
-            editorState.markClean();
-        } catch (Exception ex) {
-            ConfigEditorNotifier.show("config_editor_sync_failed", 4000,
-                    ex.getMessage() != null ? ex.getMessage() : "");
-        }
+        uiSession.sync(false);
     }
 
     /**
      * 长按「同步至服务端」：上传当前界面中全部配置项（全量）。
      */
     private void syncToServerFull() {
-        if (editorState.hasInvalidEntryWidgets()) {
-            ConfigEditorNotifier.show("config_editor_validation_failed", 3000);
-            return;
-        }
-        if (!ConfigEditorSyncService.hasServerConnection()) {
-            ConfigEditorNotifier.show("config_editor_sync_not_connected", 3500);
-            return;
-        }
-        Map<String, Object> syncPayload = editorState.collectAllEntryValuesForSync();
-        if (syncPayload.isEmpty()) {
-            ConfigEditorNotifier.show("config_editor_sync_nothing", 2500);
-            return;
-        }
-        Map<String, String> toSync = ConfigEditorSyncService.encodePayload(syncPayload);
-        try {
-            ConfigEditorSyncService.sendSync(holder, toSync);
-            editorState.markClean();
-        } catch (Exception ex) {
-            ConfigEditorNotifier.show("config_editor_sync_full_failed", 4000,
-                    ex.getMessage() != null ? ex.getMessage() : "");
-        }
+        uiSession.sync(true);
     }
 
     /**
      * 长按「保存」：向服务端请求当前配置的全量快照并刷新本界面。
      */
     private void fetchConfigFromServer() {
-        if (!holder.canSyncToServer()) {
-            return;
-        }
-        if (!ConfigEditorSyncService.hasServerConnection()) {
-            ConfigEditorNotifier.show("config_editor_fetch_not_connected", 3500);
-            return;
-        }
-        try {
-            ConfigEditorSyncService.requestSnapshot(holder);
-        } catch (Exception ex) {
-            ConfigEditorNotifier.show("config_editor_fetch_send_failed", 4000,
-                    ex.getMessage() != null ? ex.getMessage() : "");
-        }
+        uiSession.fetch();
     }
 
     /**
@@ -383,23 +417,17 @@ public class ConfigEditorScreen extends BaniraScreen {
         if (!holder.getConfigName().equals(configName)) {
             return;
         }
-        editorState.refreshEntriesFromHolder(configName);
+        uiSession.refresh(configName);
     }
 
     public void applyRemoteSnapshot(String configName, Map<String, Object> snapshot) {
-        editorState.acceptRemoteSnapshot(configName, snapshot);
+        uiSession.acceptRemoteSnapshot(configName, snapshot);
     }
 
     @Override
     protected boolean requestClose(CloseReason reason) {
-        int changedCount = editorState.pendingChangeCount();
-        if (changedCount == 0) {
-            onClose();
-            return true;
-        } else {
-            ConfigEditorNotifier.show("config_editor_unsaved_changes", 4500, changedCount);
-            return true;
-        }
+        if (uiSession.canClose(UiCloseReason.USER_CLOSE)) onClose();
+        return true;
     }
 
     @Override

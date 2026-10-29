@@ -67,6 +67,11 @@ public final class BaniraClientRuntime {
         return Minecraft.getInstance().getConnection() != null;
     }
 
+    public static boolean isCurrentConnection(Object origin) {
+        var listener = Minecraft.getInstance().getConnection();
+        return origin != null && listener != null && listener.getConnection() == origin && listener.getConnection().isConnected();
+    }
+
     public static boolean chatLinksEnabled() {
         return Minecraft.getInstance().options.chatLinks().get();
     }
@@ -104,6 +109,15 @@ public final class BaniraClientRuntime {
 
     public static void setScreen(@Nullable Screen screen) {
         Minecraft.getInstance().setScreen(screen);
+    }
+
+    public static boolean isScreen(Object screen) {
+        return screen instanceof Screen;
+    }
+
+    public static void presentUiScreen(Object screen) {
+        if (screen != null && !isScreen(screen)) throw new IllegalArgumentException("Expected a native screen");
+        setScreen((Screen) screen);
     }
 
     @Nullable

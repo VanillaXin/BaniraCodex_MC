@@ -25,6 +25,7 @@ public final class ForgeNotificationLayerRegistrar {
         event.getLayeredDraw().add(NOTIFICATION_LAYER, (graphics, deltaTracker) -> {
             if (Minecraft.getInstance().screen == null) {
                 BaniraClientOverlayBridge.renderHudOverlay(graphics);
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(graphics);
             }
         });
     }

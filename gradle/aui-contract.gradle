@@ -1,0 +1,45 @@
+import java.security.MessageDigest
+
+// The official same-Minecraft API contract is compile-only, not a Forge runtime.
+repositories.exclusiveContent {
+    forRepository {
+        project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' }
+    }
+    filter { includeModule('com.sighs', 'ApricityUI-neoforge-1.21.1') }
+}
+
+configurations.create('auiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+dependencies {
+    def localContract = providers.gradleProperty('banira.auiContractJar').orNull
+    if (localContract != null) {
+        def artifact = new File(localContract)
+        if (!artifact.isAbsolute() || !artifact.isFile()) {
+            throw new GradleException('banira.auiContractJar must be an existing absolute file')
+        }
+        auiContract files(artifact)
+    } else {
+        auiContract('com.sighs:ApricityUI-neoforge-1.21.1:1.2.9') {
+            version { strictly('1.2.9') }
+        }
+    }
+}
+configurations.compileOnly.extendsFrom(configurations.auiContract)
+def verifyAuiContract = tasks.register('verifyAuiContract') {
+    doLast {
+        def artifact = configurations.auiContract.singleFile
+        def actual = MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
+        if (!actual.equalsIgnoreCase('A9C91B59ABC3A8B423DE80D8F7E2D187A16A0B50B152CD15162683CCF8643CA2')) {
+            throw new GradleException('AUI compile-only API contract SHA-256 mismatch')
+        }
+    }
+}
+tasks.named('compileJava') { dependsOn verifyAuiContract }
+tasks.withType(Test).configureEach {
+    dependsOn verifyAuiContract
+    doFirst {
+        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
+    }
+}

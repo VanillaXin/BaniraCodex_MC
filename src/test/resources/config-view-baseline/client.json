@@ -1,5 +1,17 @@
 {
   "schema": {
+    "useAui": {
+      "type": "BOOLEAN",
+      "default": true,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
     "externalInventoryButtonHost": {
       "type": "ENUM",
       "default": "BANIRA",
@@ -603,6 +615,7 @@
     "notificationRegions.topRight.visibleLimit": 3,
     "notificationRegions.topRight.widthPercent": 30,
     "notificationRegions.visibleLimit": 6,
+    "useAui": true,
     "useCustomCursor": true
   },
   "defaults": {
@@ -653,6 +666,7 @@
     "notificationRegions.topRight.visibleLimit": 3,
     "notificationRegions.topRight.widthPercent": 30,
     "notificationRegions.visibleLimit": 6,
+    "useAui": true,
     "useCustomCursor": true
   },
   "changed": {
@@ -701,6 +715,7 @@
     "notificationRegions.topRight.visibleLimit": 7,
     "notificationRegions.topRight.widthPercent": 7,
     "notificationRegions.visibleLimit": 7,
+    "useAui": false,
     "useCustomCursor": false
   }
 }

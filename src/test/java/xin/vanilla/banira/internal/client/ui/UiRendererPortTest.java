@@ -31,11 +31,18 @@ public class UiRendererPortTest {
     @Test
     public void installedDriverDelegatesPagesAndAppearanceWithoutReplacingNativeInventoryInput() throws Exception {
         ClassNode node = bytecode("internal/client/BaniraCodexClientBootstrap$1");
-        for (String operation : java.util.List.of("open", "registerHud", "screenRemoved", "ownsScreen", "close"))
+        for (String operation : java.util.List.of("open", "registerHud"))
             assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
+        for (String operation : java.util.List.of("removed", "close"))
+            assertTrue(operation, calls(node, "internal/client/ui/CommonUiPages", operation));
+        ClassNode pages = bytecode("internal/client/ui/CommonUiPages");
+        for (String operation : java.util.List.of("screenRemoved", "ownsScreen", "close"))
+            assertTrue(operation, calls(pages, "internal/client/ui/UiSessionHost", operation));
+        assertTrue(calls(node, "internal/client/ui/AuiHudHost", "renderManual"));
         assertTrue(calls(node, "internal/client/ui/UiContainerLayerHost", "create"));
         assertFalse(node.methods.stream().anyMatch(method -> method.name.equals("mouseClicked")
-                || method.name.equals("slotClicked") || method.name.equals("renderHud")));
+                || method.name.equals("mouseReleased") || method.name.equals("mouseDragged")
+                || method.name.equals("mouseScrolled") || method.name.equals("slotClicked")));
     }
 
     private static ClassNode bytecode(String type) throws Exception {

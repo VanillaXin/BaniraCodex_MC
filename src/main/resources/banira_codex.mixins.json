@@ -13,6 +13,7 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "compat.aui.AuiNetworkManagerMixin",
     "compat.minimap.XaeroInfoDisplaysMixin",
     "compat.minimap.XaeroInfoDisplayManagerMixin",
     "compat.minimap.JourneyMapTextBoundsMixin",

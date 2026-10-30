@@ -178,6 +178,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     protected void init() {
+        if (this.cursor != null) this.cursor.removed();
         this.cursor = MouseWidget.init(this, ClientConfig.get().useCustomCursor());
         this.popupOption = PopupOption.init(this);
         this.openingTime = System.currentTimeMillis();

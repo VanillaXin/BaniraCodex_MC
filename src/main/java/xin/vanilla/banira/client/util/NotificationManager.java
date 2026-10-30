@@ -1,8 +1,11 @@
 package xin.vanilla.banira.client.util;
 
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Style;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -11,12 +14,10 @@ import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.notification.*;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumMoveType;
 import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.JsonUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.NotificationLogStore;
 import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.config.ClientConfigView;
@@ -269,18 +270,20 @@ public final class NotificationManager {
         NotificationLogStore.saveAsync(history.snapshot());
     }
 
-    public void render(PoseStack stack) {
-        KeyValue<Integer, Integer> scaledSize = BaniraClientRuntime.guiScaledSize();
+    public void render(PoseStack graphics) {
+        Minecraft mc = Minecraft.getInstance();
+        PoseStack stack = graphics;
         ScreenCoordinate screenInfo = new ScreenCoordinate()
-                .width(scaledSize.key())
-                .height(scaledSize.val());
+                .width(mc.getWindow().getGuiScaledWidth())
+                .height(mc.getWindow().getGuiScaledHeight());
         long currentTime = System.currentTimeMillis();
 
         frameDrawOrder.clear();
         frameHoverStyle = null;
 
-        double mx = BaniraClientRuntime.scaledMouseX();
-        double my = BaniraClientRuntime.scaledMouseY();
+        double[] mouse = scaledMouse(mc);
+        double mx = mouse[0];
+        double my = mouse[1];
 
         for (Map.Entry<EnumPosition, List<Notification>> entry : notifications.entrySet()) {
             entry.getValue().forEach(n -> n.advance(currentTime));
@@ -292,12 +295,15 @@ public final class NotificationManager {
         List<Notification> pending = new ArrayList<>();
         for (List<Notification> group : notifications.values()) pending.addAll(group);
         EnumMap<EnumPosition, Integer> indices = new EnumMap<>(EnumPosition.class);
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
         for (Notification n : NotificationRegionLayout.admissionOrder(pending, item -> item.lastRenderTime() > 0)) {
             if (n.finished() || n.scheduledTime() > currentTime) continue;
             EnumPosition pos = n.position();
             int[] settings = regionSettings(pos);
-            NotificationRegionLayout.Rect region = NotificationRegionLayout.region(pos, scaledSize.key(), scaledSize.val(),
+            NotificationRegionLayout.Rect region = NotificationRegionLayout.region(pos, (int) screenInfo.width(), (int) screenInfo.height(),
                     settings[0], settings[1], regions.margin());
+            n.auiLayout(n.supportsAuiText() && xin.vanilla.banira.internal.client.ui.SharedHudHosts.canRender(
+                    xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS));
             n.fitToRegion(region.width, region.height);
             NotificationRegionLayout.Rect target = layout.place(pos, region, (int) Math.ceil(n.cachedWidth()),
                     (int) Math.ceil(n.cachedHeight()), (int) Math.max(0, n.margin()), settings[2]);
@@ -305,14 +311,21 @@ public final class NotificationManager {
             int index = indices.getOrDefault(pos, 0);
             indices.put(pos, index + 1);
             frameDrawOrder.add(n);
-            n.index(index).renderInRegion(stack, target, region, currentTime);
+            ScreenCoordinate at = n.index(index).prepareInRegion(target, region, currentTime, mc.font.lineHeight);
+            if (at == null) continue;
+            frame.clip(region.x, region.y, region.width, region.height);
+            frame.notification(n, at);
             layout.follow(pos, region, new NotificationRegionLayout.Rect((int) Math.floor(n.hitX()), (int) Math.floor(n.hitY()),
                     (int) Math.ceil(n.hitW()), (int) Math.ceil(n.hitH())), (int) Math.max(0, n.margin()));
         }
 
+        if (!frame.parts().isEmpty() && !xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS, graphics, frame))
+            frame.renderNative(graphics);
+
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished() || muteState.muted(n.notificationType())) {
+            if (!n.acceptsInput(currentTime) || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(mx, my)) {
@@ -332,9 +345,16 @@ public final class NotificationManager {
         }
 
         if (frameHoverStyle != null) {
-            NotificationStyleInteractionHelper.renderHoverTooltip(stack, (int) mx, (int) my,
+            NotificationStyleInteractionHelper.renderHoverTooltip(graphics, (int) mx, (int) my,
                     (int) screenInfo.width(), (int) screenInfo.height(), frameHoverStyle);
         }
+    }
+
+    private static double[] scaledMouse(Minecraft mc) {
+        Window win = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * win.getGuiScaledWidth() / Math.max(1, (double) win.getScreenWidth());
+        double my = mc.mouseHandler.ypos() * win.getGuiScaledHeight() / Math.max(1, (double) win.getScreenHeight());
+        return new double[]{mx, my};
     }
 
     /**
@@ -346,10 +366,11 @@ public final class NotificationManager {
         if (button != 0) {
             return false;
         }
+        Minecraft mc = Minecraft.getInstance();
         long currentTime = System.currentTimeMillis();
         for (int idx = frameDrawOrder.size() - 1; idx >= 0; idx--) {
             Notification n = frameDrawOrder.get(idx);
-            if (n.finished() || n.scheduledTime() > currentTime || muteState.muted(n.notificationType())) {
+            if (!n.acceptsInput(currentTime) || n.scheduledTime() > currentTime || muteState.muted(n.notificationType())) {
                 continue;
             }
             if (!n.containsPoint(guiMouseX, guiMouseY)) {
@@ -364,8 +385,8 @@ public final class NotificationManager {
                 return true;
             }
             if (n.isBodyHit(guiMouseX, guiMouseY)) {
-                BaniraClientRuntime.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
-                        .parentScreen(BaniraClientRuntime.currentScreen())
+                mc.setScreen(new NotificationLogScreen(new NotificationLogScreen.Args()
+                        .parentScreen(mc.screen)
                         .selectLogEntryId(n.logEntryId())));
                 return true;
             }
@@ -377,12 +398,15 @@ public final class NotificationManager {
      * 无 GUI 时于客户端刻检测鼠标左键按下（与 {@link #render} 使用同一 {@link #frameDrawOrder}）。
      */
     public void tickOutOfScreenClick() {
-        if (BaniraClientRuntime.currentScreen() != null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
             return;
         }
-        boolean down = BaniraClientRuntime.leftMouseDown();
+        Window win = mc.getWindow();
+        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (down && !prevLeftDown) {
-            tryHandleHudClick(BaniraClientRuntime.scaledMouseX(), BaniraClientRuntime.scaledMouseY(), 0);
+            double[] m = scaledMouse(mc);
+            tryHandleHudClick(m[0], m[1], 0);
         }
         prevLeftDown = down;
     }

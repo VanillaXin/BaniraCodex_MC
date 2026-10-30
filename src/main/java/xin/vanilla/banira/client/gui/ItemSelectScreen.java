@@ -4,14 +4,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -25,9 +27,11 @@ import xin.vanilla.banira.common.data.ArraySet;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ItemUtils;
-import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -42,7 +46,11 @@ import java.util.function.Supplier;
 /**
  * 物品选择界面。支持搜索、背包/全部模式切换、数量与 NBT 编辑、网格滚动选择。
  */
-public class ItemSelectScreen extends BaniraScreen {
+public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
+    private final SelectorUiSession uiSession;
+    private UiViewState uiState;
+    private boolean restoreUiScroll;
+    private long uiVersion = -1;
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final int INPUT_H = 16;
@@ -65,7 +73,6 @@ public class ItemSelectScreen extends BaniraScreen {
 
     private String inputFieldText = "";
     private final ArraySet<ItemStack> itemList = new ArraySet<>();
-    @Getter
     private String selectedItemId;
     private ItemStack selectedItem;
     private boolean inventoryMode = false;
@@ -111,9 +118,68 @@ public class ItemSelectScreen extends BaniraScreen {
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
-        this.selectedItem = args.defaultItem() != null ? args.defaultItem() : new ItemStack(Items.AIR);
+        this.uiSession = new SelectorUiSession(args);
+        this.uiSession.attachNative(this);
+        previousScreen(args.parentScreen());
+        this.selectedItem = uiSession.item();
         this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
+    }
+
+
+    @Override
+    public SelectorUiSession uiSession() {
+        return uiSession;
+    }
+
+    public String getSelectedItemId() {
+        return uiSession.selectedKey();
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:" + uiSession.surface();
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiScroll = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (searchInputWidget != null) {
+            uiSession.query(searchInputWidget.value());
+            if (state != null && searchInputWidget.focused())
+                state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
+        }
+        if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() * ITEM_COLS);
+    }
+
+    private void restoreUiSelection() {
+        selectedItem = uiSession.item();
+        selectedItemId = ItemUtils.serializeItemStack(selectedItem);
+        uiVersion = uiSession.version();
+    }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        Minecraft.getInstance().setScreen(args.parentScreen());
     }
 
     @Data
@@ -161,8 +227,13 @@ public class ItemSelectScreen extends BaniraScreen {
 
     @Override
     protected void onInit() {
+        searchInputWidget = null;
+        scrollbarWidget = null;
+        restoreUiSelection();
+        inputFieldText = uiSession.query();
+        inventoryMode = uiSession.mode();
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            onClose();
 
         updateSearchResults();
     }
@@ -211,6 +282,10 @@ public class ItemSelectScreen extends BaniraScreen {
             }
         });
         addWidget(searchInputWidget);
+        if (uiState != null && uiState.focusedField().equals("search")) {
+            requestFocus(searchInputWidget);
+            searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+        }
 
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
@@ -320,31 +395,14 @@ public class ItemSelectScreen extends BaniraScreen {
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
         cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
-        cancelButtonWidget.onClick(b -> BaniraClientRuntime.setScreen(args.parentScreen()));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
         submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
-        submitButtonWidget.onClick(b -> {
-            if (this.selectedItem == null || this.selectedItem.isEmpty()) {
-                BaniraClientRuntime.setScreen(args.parentScreen());
-            } else {
-                ItemStack itemStack = this.selectedItem;
-                if (args.onDataReceived1() != null) {
-                    args.onDataReceived1().accept(itemStack);
-                    LOGGER.debug("Item selected via callback1: {}", ItemUtils.getItemRegistryString(itemStack));
-                    closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
-                } else if (args.onDataReceived2() != null) {
-                    String result = args.onDataReceived2().apply(itemStack);
-                    if (StringUtils.isNullOrEmpty(result)) {
-                        LOGGER.debug("Item selected via callback2: {}", ItemUtils.getItemRegistryString(itemStack));
-                        closeAfterSubmit(args, () -> BaniraClientRuntime.setScreen(args.parentScreen()));
-                    }
-                }
-            }
-        });
+        submitButtonWidget.onClick(b -> uiSession.submitNative());
         addWidget(submitButtonWidget);
 
         updateSearchResults();
@@ -357,13 +415,18 @@ public class ItemSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(PoseStack graphics, float partialTicks) {
+        if (uiVersion != uiSession.version()) {
+            restoreUiSelection();
+            refreshButtons();
+        }
+        PoseStack stack = graphics;
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
 
         if (selectedItemWidget != null) selectedItemWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
 
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
@@ -374,7 +437,7 @@ public class ItemSelectScreen extends BaniraScreen {
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            onClose();
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -401,7 +464,7 @@ public class ItemSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            BaniraClientRuntime.setScreen(args.parentScreen());
+            onClose();
             eventArgs.consumed(true);
         }
     }
@@ -414,8 +477,10 @@ public class ItemSelectScreen extends BaniraScreen {
 
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
+        uiSession.query(s);
+        uiSession.mode(inventoryMode);
         this.itemList.clear();
-        LocalPlayer player = BaniraClientRuntime.localPlayer();
+        LocalPlayer player = Minecraft.getInstance().player;
         if (this.inventoryMode && player != null) {
             this.itemList.addAll(ItemUtils.searchPlayerItems(player, s));
         } else {
@@ -431,6 +496,10 @@ public class ItemSelectScreen extends BaniraScreen {
             }
         }
 
+        if (restoreUiScroll && uiState != null && scrollbarWidget != null) {
+            scrollbarWidget.setValue(Math.min(scrollbarWidget.maxValue(), uiState.rowPosition() / ITEM_COLS));
+            restoreUiScroll = false;
+        }
         refreshButtons();
         LOGGER.debug("Search results updated: count={}, query={}", itemList.size(), s);
     }
@@ -451,6 +520,7 @@ public class ItemSelectScreen extends BaniraScreen {
             BaseWidget buttonWidget = cell.button;
             int index = scrollRow * ITEM_COLS + i;
             ItemWidget iw = cell.item;
+            if (iw == null) continue;
             if (index >= 0 && index < itemList.size()) {
                 ItemStack itemStack = itemList.get(index);
                 String itemId = ItemUtils.serializeItemStack(itemStack);
@@ -494,9 +564,6 @@ public class ItemSelectScreen extends BaniraScreen {
         }
     }
 
-    /**
-     * 物品格子在 initWidgets 中固定，刷新时直接复用引用，避免滚动时遍历子树。
-     */
     private static final class ItemCell {
         private final BaseWidget button;
         private final ItemWidget item;
@@ -518,7 +585,8 @@ public class ItemSelectScreen extends BaniraScreen {
         if (StringUtils.isNotNullOrEmpty(this.selectedItemId)) {
             ItemStack itemStack = ItemUtils.deserializeItemStack(selectedItemId);
             itemStack.setCount(1);
-            this.selectedItem = itemStack.copy();
+            uiSession.select(itemId);
+            this.selectedItem = uiSession.item();
             LOGGER.debug("Select item: {}", ItemUtils.getItemRegistryString(itemStack));
             return true;
         }
@@ -546,84 +614,14 @@ public class ItemSelectScreen extends BaniraScreen {
     private void handleOperationInternal(int operationCode) {
         if (operationCode == ButtonType.TYPE.code()) {
             this.inventoryMode = !this.inventoryMode;
-            this.updateSearchResults();
+            uiSession.mode(this.inventoryMode);
+            updateSearchResults();
         } else if (operationCode == ButtonType.ITEM.code()) {
-            InputFormScreen.Args args = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_id"))
-                            .defaultValue(ItemUtils.getItemRegistryString(this.selectedItem))
-                            .validator((input) -> {
-                                Item item = ItemUtils.getItemFromRegistry(input.value());
-                                if (item == null) {
-                                    return BaniraComponent.get().transClientAuto("enter_item_id_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        int count = this.selectedItem.getCount();
-                        ItemStack itemStack = ItemUtils.deserializeItemStack(input.firstValue(), ItemUtils.serializeItemStackTag((this.selectedItem)));
-                        itemStack.setCount(count);
-                        this.selectedItem = itemStack.copy();
-                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
-                        refreshButtons();
-                    });
-            BaniraClientRuntime.setScreen(new InputFormScreen(args));
+            uiSession.openEditor("item");
         } else if (operationCode == ButtonType.COUNT.code()) {
-            InputFormScreen.Args args = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_quantity"))
-                            .regex("\\d{0,4}")
-                            .defaultValue(String.valueOf(this.selectedItem.getCount()))
-                            .validator((input) -> {
-                                int count = NumberUtils.toInt(input.value());
-                                if (count <= 0 || count > 64 * 9 * 5) {
-                                    return BaniraComponent.get().transClientAuto("enter_item_quantity_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        int count = NumberUtils.toInt(input.firstValue());
-                        ItemStack itemStack = this.selectedItem.copy();
-                        itemStack.setCount(count);
-                        this.selectedItem = itemStack;
-                        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
-                        refreshButtons();
-                    });
-            BaniraClientRuntime.setScreen(new InputFormScreen(args));
+            uiSession.openEditor("count");
         } else if (operationCode == ButtonType.NBT.code()) {
-            String itemNbtJsonString = ItemUtils.serializeItemStackTag((this.selectedItem));
-            InputFormScreen.Args args = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt"))
-                            .defaultValue(itemNbtJsonString)
-                            .validator((input) -> {
-                                try {
-                                    if (!ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(this.selectedItem.getItem()) + input.value()).hasTag()) {
-                                        throw new RuntimeException();
-                                    }
-                                } catch (Exception e) {
-                                    return BaniraComponent.get().transClientAuto("enter_item_nbt_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        try {
-                            ItemStack itemStack = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(this.selectedItem.getItem()) + input.firstValue());
-                            itemStack.setCount(this.selectedItem.getCount());
-                            this.selectedItem = itemStack;
-                            this.selectedItemId = ItemUtils.serializeItemStack(itemStack);
-                            refreshButtons();
-                        } catch (Exception e) {
-                            input.runningResult(e);
-                        }
-                    });
-            BaniraClientRuntime.setScreen(new InputFormScreen(args));
+            uiSession.openEditor("nbt");
         }
     }
 }

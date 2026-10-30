@@ -107,6 +107,15 @@ public final class BaniraClientRuntime {
         Minecraft.getInstance().setScreen(screen);
     }
 
+    public static boolean isScreen(Object screen) {
+        return screen instanceof Screen;
+    }
+
+    public static void presentUiScreen(Object screen) {
+        if (screen != null && !isScreen(screen)) throw new IllegalArgumentException("Expected a native screen");
+        setScreen((Screen) screen);
+    }
+
     @Nullable
     public static LocalPlayer localPlayer() {
         return Minecraft.getInstance().player;

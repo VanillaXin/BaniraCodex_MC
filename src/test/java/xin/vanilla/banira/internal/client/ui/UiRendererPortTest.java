@@ -15,7 +15,12 @@ public class UiRendererPortTest {
     public void clientBootstrapInstallsAndDrivesTheSharedPageHost() throws Exception {
         ClassNode node = bytecode("internal/client/BaniraCodexClientBootstrap");
         assertTrue(calls(node, "api/client/ui/BaniraUi", "install"));
-        for (String operation : com.google.common.collect.ImmutableList.of("hudHost", "switchBackend", "reload", "observeScreen", "tick", "disconnect")) assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
+        for (String operation : com.google.common.collect.ImmutableList.of("hudHost", "switchBackend", "reload", "tick")) assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
+        assertTrue(calls(node, "internal/client/ui/CommonUiPages", "tick"));
+        assertTrue(calls(node, "internal/client/ui/CommonUiPages", "disconnect"));
+        ClassNode pages = bytecode("internal/client/ui/CommonUiPages");
+        assertTrue(calls(pages, "internal/client/ui/UiSessionHost", "observeScreen"));
+        assertTrue(calls(pages, "internal/client/ui/UiSessionHost", "disconnect"));
         assertTrue(calls(node, "internal/client/ui/AuiUiBackend", "reload"));
         assertTrue(node.methods.stream().anyMatch(method -> method.name.equals("uiSessions") && method.desc.equals("()Lxin/vanilla/banira/internal/client/ui/UiSessionHost;")));
     }

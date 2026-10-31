@@ -4,9 +4,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigValueType;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
+import java.util.List;
 import static org.junit.Assert.*;
+import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiConfigInputSelectionTest {
     @BeforeClass
@@ -16,16 +19,12 @@ public class UiConfigInputSelectionTest {
     public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
 
     private UiDomControlsTest.Dom list() throws Exception {
+        lombok.var fixture = new UiConfigSessionTest.Fixture();
+        fixture.field("names", ConfigValueType.STRING_LIST, com.google.common.collect.ImmutableList.of("first"));
+        fixture.open();
+        fixture.draft("names", "{\"expanded\":true}");
         lombok.var dom = new UiDomControlsTest.Dom();
-        dom.view().rows("fields", new UiRowProvider() {
-            public int size() { return 2; }
-            public String key(int index) { return index == 0 ? "names/0" : "names/add"; }
-            public void bind(UiView row, int index) {
-                row.control("input", new UiControlSpec(UiControlSpec.Kind.TEXT, 128, "", false));
-                row.draft("input", index == 0 ? "first" : "");
-                row.onDraft("input", value -> row.enabled("input", true));
-            }
-        }, 120);
+        call(fixture.session, "bind", new Class<?>[]{UiView.class}, dom.view());
         return dom;
     }
 

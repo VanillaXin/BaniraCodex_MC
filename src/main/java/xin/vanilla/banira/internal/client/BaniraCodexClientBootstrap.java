@@ -132,14 +132,14 @@ public final class BaniraCodexClientBootstrap {
         BaniraClientEventHub.Client.onClientTick(event -> {
             if (event != BaniraClientTickEvent.END) return;
             boolean connected = net.minecraft.client.Minecraft.getInstance().getConnection() != null;
-            if (hadConnection && !connected) UI_SESSIONS.disconnect();
+            if (hadConnection && !connected) xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
             hadConnection = connected;
-            UI_SESSIONS.observeScreen(net.minecraft.client.Minecraft.getInstance().screen);
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();
             UI_HUDS.tick(connected);
         });
         BaniraClientEventHub.Player.onClientLoggedOut(player -> {
-            UI_SESSIONS.disconnect();
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
             hadConnection = false;
         });
         BaniraClientEventHub.Client.onTextureReload(event -> {

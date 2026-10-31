@@ -993,6 +993,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         setCursorPosition(pos);
     }
 
+    public void setSelectionRange(int cursor, int anchor) {
+        this.cursorPosition = MathHelper.clamp(cursor, 0, value.length());
+        this.highlightPos = MathHelper.clamp(anchor, 0, value.length());
+        this.updateDisplayPos();
+    }
+
     /**
      * 移动光标
      */

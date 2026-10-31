@@ -4,10 +4,11 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.IReorderingProcessor;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -17,6 +18,10 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.TextUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,7 +32,7 @@ import java.util.List;
 /**
  * 可滚动的只读长文本界面，适合帮助、规则说明和迁移提示。
  */
-public final class ReadOnlyTextScreen extends BaniraScreen {
+public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePage {
     private static final int MARGIN = 12;
     private static final int PADDING = 10;
     private static final int TITLE_HEIGHT = 18;
@@ -38,6 +43,9 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
     private static final int SCROLLBAR_GAP = 4;
 
     private final Args args;
+    private final TextUiSession uiSession;
+    private UiPageSpec uiPage;
+    private UiViewState uiState;
     private final List<IReorderingProcessor> lines = new ArrayList<>();
     private int contentX;
     private int contentY;
@@ -49,8 +57,35 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
     public ReadOnlyTextScreen(@Nonnull Args args) {
         super(args.title() != null ? args.title() : BaniraComponent.get().literal(""));
         this.args = args;
+        this.uiSession = new TextUiSession(args);
         previousScreen(args.parentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
+    }
+
+    public TextUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:text";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
+                "banira_codex/ui/text.html", uiSession, previous -> this, this::getEffectiveTheme);
+        return uiPage;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        state.scrollOffset(scroll);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
     }
 
     /**
@@ -101,6 +136,7 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
         addWidget(close);
 
         rebuildLines();
+        if (uiState != null) scroll = Math.max(0, Math.min(maxScroll, (int) uiState.scrollOffset()));
     }
 
     private void rebuildLines() {
@@ -124,11 +160,13 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
-        AbstractGui.fill(stack, 0, 0, width, height, 0x55000000);
+    protected void onRender(MatrixStack graphics, float partialTicks) {
+        int mouseX = (int) inputState().mouseX();
+        int mouseY = (int) inputState().mouseY();
+        net.minecraft.client.gui.AbstractGui.fill(graphics, 0, 0, width, height, 0x55000000);
         BaniraColorConfig theme = getEffectiveTheme();
         int cardColor = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
-        AbstractGuiUtils.drawRoundedRect(stack, MARGIN, MARGIN,
+        AbstractGuiUtils.drawRoundedRect(graphics, MARGIN, MARGIN,
                 width - MARGIN * 2, height - MARGIN * 2,
                 RADIUS, RADIUS, RADIUS, RADIUS, cardColor);
 
@@ -137,25 +175,25 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
         for (int i = 0; i < lines.size(); i++) {
             int y = contentY + i * font.lineHeight - scroll;
             if (y + font.lineHeight >= contentY && y < contentY + contentHeight) {
-                font.draw(stack, lines.get(i), contentX, y, color);
+                font.draw(graphics, lines.get(i), contentX, y, color);
             }
         }
         AbstractGuiUtils.disableScissor();
-        renderScrollbar(stack, theme);
-        renderWidgets(stack, partialTicks);
+        renderScrollbar(graphics, theme);
+        renderWidgets(graphics, partialTicks);
     }
 
-    private void renderScrollbar(MatrixStack stack, BaniraColorConfig theme) {
+    private void renderScrollbar(MatrixStack graphics, BaniraColorConfig theme) {
         if (maxScroll <= 0) {
             return;
         }
         int x = contentX + contentWidth - SCROLLBAR_WIDTH;
-        AbstractGui.fill(stack, x, contentY, x + SCROLLBAR_WIDTH, contentY + contentHeight,
+        net.minecraft.client.gui.AbstractGui.fill(graphics, x, contentY, x + SCROLLBAR_WIDTH, contentY + contentHeight,
                 ColorUtils.applyAlphaToArgb(theme.border(), 0x55));
         int totalHeight = contentHeight + maxScroll;
         int thumbHeight = Math.max(10, contentHeight * contentHeight / totalHeight);
         int thumbY = contentY + scroll * (contentHeight - thumbHeight) / maxScroll;
-        AbstractGui.fill(stack, x, thumbY, x + SCROLLBAR_WIDTH, thumbY + thumbHeight,
+        net.minecraft.client.gui.AbstractGui.fill(graphics, x, thumbY, x + SCROLLBAR_WIDTH, thumbY + thumbHeight,
                 theme.accentHover() | 0xFF000000);
     }
 
@@ -172,7 +210,15 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
 
     @Override
     public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.USER_CLOSE)) return;
+        uiSession.close(UiCloseReason.USER_CLOSE);
         Minecraft.getInstance().setScreen(args.parentScreen());
+    }
+
+    @Override
+    public void removed() {
+        CommonUiPages.removed(this);
+        super.removed();
     }
 
     @Override

@@ -77,6 +77,8 @@
   "word.banira_codex.command_disabled": "§e该指令已被服务器禁用！",
   "word.banira_codex.command_not_found": "未找到该指令",
   "word.banira_codex.config.notificationHud.mode.description": "显示模式",
+  "word.banira_codex.config.useAui": "使用AUI界面",
+  "word.banira_codex.config.useAui.description": "使用AUI显示模组界面与HUD",
   "word.banira_codex.config_editor_close": "关闭",
   "word.banira_codex.config_editor_fetch_not_connected": "未连接服务端，无法从服务端拉取配置",
   "word.banira_codex.config_editor_reset_tooltip": "重置为默认值",

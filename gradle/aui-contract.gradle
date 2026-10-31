@@ -1,0 +1,26 @@
+configurations.create('auiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+
+// Optional interfaces use reflection; declarations are never a runtime dependency.
+def localContract = providers.gradleProperty('banira.auiContractJar').orNull
+if (localContract != null) {
+    def artifact = new File(localContract)
+    if (!artifact.isAbsolute() || !artifact.isFile()) {
+        throw new GradleException('banira.auiContractJar must be an existing absolute file')
+    }
+    dependencies.add('auiContract', files(artifact))
+}
+configurations.compileOnly.extendsFrom(configurations.auiContract)
+
+tasks.register('auiFoundationArtifactTest', Test) {
+    dependsOn 'reobfShadowJar', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter { includeTestsMatching '*AuiFoundationRuntimeTest.actualProductionArchiveIsJava8AndVendorFree' }
+    inputs.file(tasks.shadowJar.archiveFile)
+    doFirst {
+        systemProperty 'banira.aui.foundationArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
+    }
+}

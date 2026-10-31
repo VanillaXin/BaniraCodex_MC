@@ -2,10 +2,13 @@ package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
@@ -17,10 +20,31 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
+import xin.vanilla.banira.internal.client.ui.UiBackendController;
+import xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract;
 
 import java.util.function.Consumer;
 
 public final class BaniraCodexClientBootstrap {
+    private static final Logger LOGGER = LogManager.getLogger();
+    private static final UiBackendController UI_BACKEND = new UiBackendController(
+            () -> ClientConfigView.get().useAui(), BaniraCodexClientBootstrap::probeAui);
+
+    private static boolean probeAui() {
+        ClassLoader loader = BaniraCodexClientBootstrap.class.getClassLoader();
+        if (loader.getResource("com/sighs/apricityui/screen/ApricityScreen.class") == null) return false;
+        AuiCapabilityContract.Result result = AuiCapabilityContract.inspect(loader);
+        if (!result.compatible()) {
+            LOGGER.warn("AUI capability mismatch; native interfaces remain active: {}", result.mismatch());
+        }
+        return result.compatible();
+    }
+
+    public static UiBackendController uiBackend() {
+        return UI_BACKEND;
+    }
+
     private BaniraCodexClientBootstrap() {
     }
 
@@ -43,11 +67,21 @@ public final class BaniraCodexClientBootstrap {
             customActions.registerScreen(BaniraCodex.MODID + ":notification_types",
                     parent -> new NotificationTypeConfigScreen(new NotificationTypeConfigScreen.Args().parentScreen((net.minecraft.client.gui.screen.Screen) parent)));
             customActions.reload();
-            BaniraConfigs.holder(ClientConfig.class).onSaved(changed ->
-                    ExternalInventoryButtonManager.get().refreshCurrentScreen());
-            BaniraConfigs.holder(ClientConfig.class).onReloaded(changed ->
-                    ExternalInventoryButtonManager.get().refreshCurrentScreen());
+            BaniraConfigs.holder(ClientConfig.class).onSaved(changed -> {
+                UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
+                ExternalInventoryButtonManager.get().refreshCurrentScreen();
+            });
+            BaniraConfigs.holder(ClientConfig.class).onReloaded(changed -> {
+                UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
+                UI_BACKEND.requestReload();
+                ExternalInventoryButtonManager.get().refreshCurrentScreen();
+            });
+            UI_BACKEND.requestSwitch(ClientConfigView.get().useAui());
         });
+        BaniraClientEventHub.Client.onClientTick(event -> {
+            if (event == BaniraClientTickEvent.END) UI_BACKEND.tick();
+        });
+        BaniraClientEventHub.Client.onTextureReload(event -> UI_BACKEND.requestReload());
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);
         BaniraClientEventHub.Client.onGuiChanged(event ->
                 ExternalInventoryButtonManager.get().refreshCurrentScreen());

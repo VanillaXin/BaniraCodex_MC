@@ -77,6 +77,8 @@
   "word.banira_codex.command_disabled": "§eThe command is disabled!",
   "word.banira_codex.command_not_found": "Command not found.",
   "word.banira_codex.config.notificationHud.mode.description": "Display mode",
+  "word.banira_codex.config.useAui": "Use AUI interfaces",
+  "word.banira_codex.config.useAui.description": "Use AUI for mod interfaces and HUDs",
   "word.banira_codex.config_editor_close": "Close",
   "word.banira_codex.config_editor_fetch_not_connected": "Not connected to a server; cannot fetch config",
   "word.banira_codex.config_editor_reset_tooltip": "Reset to default",

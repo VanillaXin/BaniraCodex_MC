@@ -180,6 +180,7 @@
   "word.banira_codex.custom_quick_action_new_menu": "新菜单项",
   "word.banira_codex.custom_quick_action_screen": "已注册窗口ID或窗口完整类名",
   "word.banira_codex.custom_quick_action_screen_hint": "输入已注册窗口ID或Java完整类名，最多1024个字符",
+  "word.banira_codex.custom_quick_action_search_hint": "搜索快捷入口或动作...",
   "word.banira_codex.custom_quick_action_select_icon": "选择图标",
   "word.banira_codex.custom_quick_action_step_condition": "执行条件",
   "word.banira_codex.custom_quick_action_step_edit_title": "编辑执行步骤",

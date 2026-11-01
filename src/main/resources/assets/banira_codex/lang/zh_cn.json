@@ -1,6 +1,4 @@
 {
-  "format.banira_codex.config_editor_entry_count": "%s 项配置",
-  "format.banira_codex.config_editor_pending_status": "%s 项未保存",
   "key.banira_codex.categories": "香草志",
   "key.banira_codex.codex_navigation": "打开香草志设置",
   "key.banira_codex.notification_log": "打开通知日志",
@@ -12,9 +10,11 @@
   "format.banira_codex.command_detail_language": "用法：/%1$s %2$s <语言|client|server>",
   "format.banira_codex.command_detail_virtual_op": "用法：/%1$s %2$s <add|set|del|clear|get> <玩家> [权限列表]",
   "format.banira_codex.concise": "详见%s",
+  "format.banira_codex.config_editor_entry_count": "%s 项配置",
   "format.banira_codex.config_editor_fetch_applied": "已读取服务端的 %s 项配置",
   "format.banira_codex.config_editor_fetch_apply_failed": "应用服务端配置失败：%s",
   "format.banira_codex.config_editor_fetch_send_failed": "拉取配置请求发送失败：%s",
+  "format.banira_codex.config_editor_pending_status": "%s 项未保存",
   "format.banira_codex.config_editor_save_failed": "配置保存失败：%s",
   "format.banira_codex.config_editor_sync_failed": "同步请求发送失败：%s",
   "format.banira_codex.config_editor_sync_full_failed": "全量同步请求发送失败：%s",

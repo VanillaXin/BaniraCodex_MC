@@ -292,7 +292,7 @@ public abstract class BaniraScreen extends Screen {
         this.flushDeferredTooltipRenders(graphics);
 
         this.popupOption.render(graphics, inputState);
-        this.cursor.draw(stack, mouseX, mouseY);
+        this.cursor.draw(graphics, mouseX, mouseY);
         cachedTheme = null;
     }
 

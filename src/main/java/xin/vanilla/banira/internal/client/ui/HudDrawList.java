@@ -63,6 +63,16 @@ public final class HudDrawList {
     private ScreenCoordinate clip;
     private double depth = EnumRenderDepth.OVERLAY.depth();
     private xin.vanilla.banira.client.data.BaniraColorConfig unreadTheme;
+    private QuickActionHudFrame quickActions;
+
+    public QuickActionHudFrame quickActions() {
+        return quickActions;
+    }
+
+    public void quickActions(QuickActionHudFrame frame) {
+        quickActions = Objects.requireNonNull(frame);
+    }
+
     private static double finite(double value) {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("HUD coordinate");
         return value;
@@ -121,9 +131,16 @@ public final class HudDrawList {
     public void renderContents(GuiGraphics graphics, boolean nativeShells) {
         for (Part part : parts) {
             if (part.kind == Kind.BOX && !nativeShells) continue;
+            if (!nativeShells && quickActions != null && part.kind == Kind.TEXT) continue;
             if (!nativeShells && (part.kind == Kind.NOTIFICATION && part.notification.usesAuiLayout() || part.kind == Kind.UNREAD))
                 continue;
             List<ScreenCoordinate> regions = Collections.singletonList(part.clip);
+            if (!nativeShells && quickActions != null && part.kind == Kind.ICON
+                    && quickActions.occludes(new ScreenCoordinate(part.x, part.y, part.width, part.height), part.depth)) {
+                ScreenCoordinate bounds = part.clip == null ? new ScreenCoordinate(0, 0,
+                        Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight()) : part.clip;
+                regions = quickActions.uncovered(bounds, part.depth);
+            }
             for (ScreenCoordinate region : regions) {
                 if (region != null)
                     AbstractGuiUtils.pushScissor((int) region.x(), (int) region.y(), (int) region.width(), (int) region.height());

@@ -66,9 +66,9 @@ public class UiFabric20NotificationHudPortTest {
     }
 
     @Test
-    public void bootstrapRegistersOnlyTheTwoNotificationSurfaces() throws Exception {
+    public void bootstrapKeepsNotificationSurfacesAndNativeMinimapIsolation() throws Exception {
         String source = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/BaniraCodexClientBootstrap.java"));
-        assertEquals(2, source.split("SharedHudHosts.register\\(", -1).length - 1);
+        assertEquals(4, source.split("SharedHudHosts.register\\(", -1).length - 1);
         assertTrue(source.contains("SharedHudHosts.install(UI_HUDS)"));
         assertTrue(source.contains("SharedHudHosts.NOTIFICATIONS"));
         assertTrue(source.contains("SharedHudHosts.UNREAD"));

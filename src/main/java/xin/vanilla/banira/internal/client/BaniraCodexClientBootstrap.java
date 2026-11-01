@@ -126,14 +126,14 @@ public final class BaniraCodexClientBootstrap {
         BaniraClientEventHub.Client.onClientTick(event -> {
             if (event != BaniraClientTickEvent.END) return;
             boolean connected = BaniraClientRuntime.hasConnection();
-            if (hadConnection && !connected) xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
+            if (hadConnection && !connected) disconnectUiPages();
             hadConnection = connected;
             xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();
             UI_HUDS.tick(connected);
         });
         BaniraClientEventHub.Player.onClientLoggedOut(player -> {
-            xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
+            disconnectUiPages();
             hadConnection = false;
         });
         BaniraClientEventHub.Client.onTextureReload(event -> {
@@ -143,5 +143,13 @@ public final class BaniraCodexClientBootstrap {
         BaniraClientEventHub.Client.onKeyPressedPre(CustomQuickActionManager.get()::onKeyPressed);
         BaniraClientEventHub.Client.onGuiChanged(event ->
                 ExternalInventoryButtonManager.get().refreshCurrentScreen());
+    }
+
+    private static void disconnectUiPages() {
+        try {
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
+        } finally {
+            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient();
+        }
     }
 }

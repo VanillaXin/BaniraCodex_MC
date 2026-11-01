@@ -32,7 +32,11 @@ public class UiFabric20CoreWiringTest {
         int observe = source.indexOf("CommonUiPages.tick()");
         int tick = source.indexOf("UI_SESSIONS.tick()");
         assertTrue(end >= 0 && observe > end && tick > observe);
-        assertTrue(source.contains("if (hadConnection && !connected) xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect()"));
+        assertTrue(source.contains("if (hadConnection && !connected) disconnectUiPages()"));
+        assertTrue(source.contains("private static void disconnectUiPages()"));
+        assertTrue(source.contains("CommonUiPages.disconnect()"));
+        assertTrue(source.contains("finally {\n            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient()")
+                || source.contains("finally {\r\n            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient()"));
         String pages = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/ui/CommonUiPages.java"));
         assertTrue(pages.contains("sessions.observeScreen(current)"));
         assertTrue(pages.contains("NATIVE_SESSIONS.disconnect()"));

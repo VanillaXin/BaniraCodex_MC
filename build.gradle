@@ -166,7 +166,7 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }
 processResources {
     inputs.property "mod_id", project.mod_id
     inputs.property "mod_name", project.mod_name

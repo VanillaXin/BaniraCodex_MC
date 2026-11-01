@@ -17,19 +17,25 @@ public class UiFabric20CoreWiringTest {
         String source = bootstrap();
         assertTrue(source.contains("BaniraUi.install("));
         assertTrue(source.contains("UI_SESSIONS.open(page, previousScreen)"));
-        assertTrue(source.contains("if (!UI_SESSIONS.ownsScreen(screen)) return false"));
+        String pages = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/ui/CommonUiPages.java"));
+        assertTrue(source.contains("CommonUiPages.close(screen, reason)"));
+        assertTrue(pages.contains("if (!host.ownsScreen(screen)) return false"));
         assertTrue(source.contains("UiContainerLayerHost.create(UI_BACKEND, page, current,"));
-        assertTrue(source.contains("UI_SESSIONS.screenRemoved(screen)"));
+        assertTrue(source.contains("CommonUiPages.removed(screen)"));
+        assertTrue(pages.contains("uiSessions().screenRemoved(screen)"));
     }
 
     @Test
     public void endTickObservesTheCurrentScreenBeforeAdvancingSessions() throws Exception {
         String source = bootstrap();
         int end = source.indexOf("if (event != BaniraClientTickEvent.END) return;");
-        int observe = source.indexOf("UI_SESSIONS.observeScreen(BaniraClientRuntime.currentScreen())");
+        int observe = source.indexOf("CommonUiPages.tick()");
         int tick = source.indexOf("UI_SESSIONS.tick()");
         assertTrue(end >= 0 && observe > end && tick > observe);
-        assertTrue(source.contains("if (hadConnection && !connected) UI_SESSIONS.disconnect()"));
+        assertTrue(source.contains("if (hadConnection && !connected) xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect()"));
+        String pages = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/ui/CommonUiPages.java"));
+        assertTrue(pages.contains("sessions.observeScreen(current)"));
+        assertTrue(pages.contains("NATIVE_SESSIONS.disconnect()"));
         assertTrue(source.contains("onClientLoggedOut(player ->"));
     }
 

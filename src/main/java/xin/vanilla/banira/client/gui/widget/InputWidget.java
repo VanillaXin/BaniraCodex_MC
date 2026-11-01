@@ -22,7 +22,6 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -851,20 +850,20 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (Screen.isCopy(keyCode)) {
-            BaniraClientRuntime.clipboard(getHighlighted());
+            AbstractGuiUtils.setClipboard(getHighlighted());
             return true;
         }
 
         if (Screen.isPaste(keyCode)) {
             if (this.editable) {
                 this.saveToHistory();
-                insertText(BaniraClientRuntime.clipboard());
+                insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
             }
             return true;
         }
 
         if (Screen.isCut(keyCode)) {
-            BaniraClientRuntime.clipboard(getHighlighted());
+            AbstractGuiUtils.setClipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");
@@ -1078,6 +1077,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         if (!this.shiftPressed) {
             this.updateHighlightPos(this.cursorPosition);
         }
+        this.updateDisplayPos();
+    }
+
+    public void setSelectionRange(int cursor, int anchor) {
+        this.cursorPosition = Mth.clamp(cursor, 0, value.length());
+        this.highlightPos = Mth.clamp(anchor, 0, value.length());
         this.updateDisplayPos();
     }
 

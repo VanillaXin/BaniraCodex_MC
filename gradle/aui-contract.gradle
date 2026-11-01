@@ -1,0 +1,42 @@
+import java.security.MessageDigest
+import java.util.zip.ZipFile
+
+repositories.exclusiveContent {
+    forRepository { project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' } }
+    filter { includeModule('com.sighs', 'ApricityUI-fabric-1.20.1') }
+}
+configurations.create('auiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+dependencies {
+    def local = providers.gradleProperty('banira.auiContractJar').orNull
+    if (local != null) {
+        def artifact = new File(local)
+        if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('AUI contract must be an existing absolute file')
+        auiContract files(artifact)
+    } else {
+        auiContract('com.sighs:ApricityUI-fabric-1.20.1:1.2.9') { version { strictly('1.2.9') } }
+    }
+    modCompileOnly files(configurations.auiContract)
+}
+def verify = tasks.register('verifyAuiContract') {
+    doLast {
+        def hash = MessageDigest.getInstance('SHA-256').digest(configurations.auiContract.singleFile.bytes).encodeHex().toString()
+        if (!hash.equalsIgnoreCase('7B3AC02AA6561B0EFA955A6D3B148A587E8B702E870714AF47DDE48FE1742CD2'))
+            throw new GradleException('AUI Fabric 1.20.1 contract SHA-256 mismatch')
+    }
+}
+tasks.named('compileJava') { dependsOn verify }
+tasks.withType(Test).configureEach {
+    dependsOn verify
+    doFirst {
+        // Loom's named copy matches the development Minecraft namespace.
+        def contracts = sourceSets.main.compileClasspath.files.findAll { artifact ->
+            if (!artifact.name.endsWith('.jar')) return false
+            new ZipFile(artifact).withCloseable { zip -> zip.getEntry('com/sighs/apricityui/screen/ApricityScreen.class') != null }
+        }
+        if (contracts.size() != 1) throw new GradleException('Expected one Loom-remapped AUI compile contract')
+        systemProperty 'banira.aui.contractJar', contracts[0].absolutePath
+    }
+}

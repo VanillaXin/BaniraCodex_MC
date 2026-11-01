@@ -165,7 +165,7 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }
 processResources {
     inputs.property "mod_id", project.mod_id
     inputs.property "mod_name", project.mod_name
@@ -304,3 +304,6 @@ tasks.named('test') {
 apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+apply from: 'gradle/aui-contract.gradle'
+apply from: 'gradle/aui-validation-output.gradle'

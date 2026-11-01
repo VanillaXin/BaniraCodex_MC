@@ -50,7 +50,9 @@ public class UiFabric20CoreWiringTest {
         assertTrue(source.contains("onTextureReload(event ->"));
         assertTrue(source.contains("AUI.reload()"));
         assertTrue(source.contains("UI_SESSIONS.reload()"));
-        assertFalse(source.contains("SharedHudHosts.register("));
+        assertEquals(2, source.split("SharedHudHosts.register\\(", -1).length - 1);
+        assertTrue(source.contains("SharedHudHosts.NOTIFICATIONS"));
+        assertTrue(source.contains("SharedHudHosts.UNREAD"));
     }
 
     @Test

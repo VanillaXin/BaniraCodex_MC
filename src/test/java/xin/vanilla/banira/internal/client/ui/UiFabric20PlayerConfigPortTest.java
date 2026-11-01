@@ -71,7 +71,7 @@ public class UiFabric20PlayerConfigPortTest {
         assertTrue(calls(bootstrap, "disconnectUiPages", "xin/vanilla/banira/internal/config/CustomConfig", "clearPlayerPreferencesClient") > 0);
         assertTrue(bootstrap.methods.stream().filter(method -> method.name.equals("disconnectUiPages"))
                 .anyMatch(method -> method.tryCatchBlocks.stream().anyMatch(block -> block.type == null)));
-        assertEquals(0, calls(bootstrap, null, "xin/vanilla/banira/internal/client/ui/SharedHudHosts", "register"));
+        assertEquals(2, calls(bootstrap, "init", "xin/vanilla/banira/internal/client/ui/SharedHudHosts", "register"));
     }
 
     @Test

@@ -22,6 +22,7 @@ public final class ProgressDomPresentation implements AutoCloseable {
     public void update(UiHudFrame frame) {
         if (closed || !dom.current()) return;
         Set<String> keep = new HashSet<>();
+        boolean rebuildOrder = false;
         UiDomAccess.Node root = dom.find("progress");
         for (UiHudFrame.Part part : frame.parts()) {
             keep.add(part.id());
@@ -31,6 +32,7 @@ public final class ProgressDomPresentation implements AutoCloseable {
                 entry.close();
                 nodes.remove(part.id());
                 entry = null;
+                rebuildOrder = true;
             }
             if (entry == null) {
                 entry = new PartNodes(dom.create(sprite ? "texture" : "div"), sprite);
@@ -84,7 +86,7 @@ public final class ProgressDomPresentation implements AutoCloseable {
             }
         }
         List<String> nextOrder = frame.parts().stream().map(UiHudFrame.Part::id).toList();
-        if (!order.equals(nextOrder)) {
+        if (rebuildOrder || !order.equals(nextOrder)) {
             for (String id : nextOrder) root.append(nodes.get(id).root);
             order = nextOrder;
         }

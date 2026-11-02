@@ -64,6 +64,19 @@ public final class BaniraCodexClientBootstrap {
 
     public static void init() {
         UI_SESSIONS.hudHost(UI_HUDS);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.install(UI_HUDS);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.NOTIFICATIONS,
+                () -> BaniraClientRuntime.hasConnection());
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.UNREAD,
+                () -> xin.vanilla.banira.client.notification.NotificationUnreadHud.isVisible()
+                        && xin.vanilla.banira.client.notification.NotificationMinimapBridge.selectedHost()
+                        == xin.vanilla.banira.common.enums.EnumNotificationHudHost.STANDALONE);
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.QUICK_ACTIONS,
+                () -> xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay.isSupportedInventoryScreen(net.minecraft.client.Minecraft.getInstance().screen));
+        xin.vanilla.banira.internal.client.ui.SharedHudHosts.register(xin.vanilla.banira.internal.client.ui.SharedHudHosts.POINTER,
+                () -> ClientConfig.get().useCustomCursor()
+                        && (net.minecraft.client.Minecraft.getInstance().screen instanceof xin.vanilla.banira.client.gui.BaniraScreen
+                        || UI_SESSIONS.ownsScreen(net.minecraft.client.Minecraft.getInstance().screen)));
         xin.vanilla.banira.api.client.ui.BaniraUi.install(new xin.vanilla.banira.api.client.ui.BaniraUi.Driver() {
             public void open(xin.vanilla.banira.api.client.ui.UiPageSpec page, Object previousScreen) {
                 UI_SESSIONS.open(page, previousScreen);

@@ -108,6 +108,45 @@ public class Notification extends NotificationData {
      * 首行文字顶部 GUI Y，用于 {@link #styleAtTextPoint}（文字相对通知垂直居中时与 {@link #bodyTop} 不同）
      */
     private transient double bodyTextTop;
+    private transient boolean auiLayout;
+    private transient List<TextHit> auiTextHits = List.of();
+    private transient boolean auiHitReady;
+
+    public record TextHit(ScreenCoordinate bounds, Style style) {
+    }
+
+    public boolean usesAuiLayout() {
+        return auiLayout;
+    }
+
+    public boolean supportsAuiText() {
+        return xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(richDrawLines);
+    }
+
+    public void auiLayout(boolean enabled) {
+        if (auiLayout != enabled) {
+            auiLayout = enabled;
+            auiTextHits = List.of();
+            auiHitReady = false;
+            updateRichLayout();
+        }
+    }
+
+    public void auiHitLayout(ScreenCoordinate card, ScreenCoordinate close, ScreenCoordinate body, List<TextHit> text) {
+        hitX = card.x();
+        hitY = card.y();
+        hitW = card.width();
+        hitH = card.height();
+        closeBtnLeft = close.x();
+        closeBtnTop = close.y();
+        closeBtnSize = close.width();
+        bodyLeft = body.x();
+        bodyTop = body.y();
+        bodyW = body.width();
+        bodyH = body.height();
+        auiTextHits = List.copyOf(text);
+        auiHitReady = true;
+    }
 
     private Notification(Component component) {
         super(component);
@@ -281,7 +320,8 @@ public class Notification extends NotificationData {
         this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         if (layoutMaxHeight > 0) {
-            int maxLines = Math.max(1, (int) ((layoutMaxHeight - padding() * 2) / font.lineHeight));
+            int maxLines = auiLayout ? xin.vanilla.banira.client.notification.NotificationBubbleLayout.lineLimit(layoutMaxHeight)
+                    : Math.max(1, (int) ((layoutMaxHeight - padding() * 2) / font.lineHeight));
             if (richDrawLines.size() > maxLines) {
                 richDrawLines = new ArrayList<>(richDrawLines.subList(0, maxLines));
                 richDrawLines.set(maxLines - 1, net.minecraft.network.chat.Component.literal("...").getVisualOrderText());
@@ -295,6 +335,11 @@ public class Notification extends NotificationData {
         double textH = this.richDrawLines.size() * lineH;
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
+        if (auiLayout) {
+            cachedWidth = Math.min(layoutMaxWidth > 0 ? layoutMaxWidth : sw,
+                    Math.max(120, cachedWidth + 2));
+            cachedHeight = xin.vanilla.banira.client.notification.NotificationBubbleLayout.height(richDrawLines.size());
+        }
     }
 
     public void fitToRegion(int width, int height) {
@@ -309,30 +354,60 @@ public class Notification extends NotificationData {
         if (animationState.started() && calculateProgress(nowMs) < 0) finished = true;
     }
 
+    public boolean acceptsInput(long nowMs) {
+        return !finished && animationState.acceptsInput(nowMs);
+    }
+
     public void renderInRegion(PoseStack stack,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
-        if (finished || nowMs < scheduledTime()) return;
-        if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
-        double progress = calculateProgress(nowMs);
-        if (progress < 0) {
-            finished = true;
-            return;
-        }
-        renderClip = region;
-        ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
-        applyAnimationEffect(coordinate, progress);
-        applyMergeAnimation(nowMs);
-        handlePositionTransition(coordinate, nowMs);
+        ScreenCoordinate coordinate = prepareInRegion(target, region, nowMs, AbstractGuiUtils.getFont().lineHeight);
+        if (coordinate == null) return;
         AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
         try {
             doRender(stack, coordinate);
         } finally {
             AbstractGuiUtils.popScissor();
         }
+    }
+
+    public ScreenCoordinate prepareInRegion(xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
+                                            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region,
+                                            long nowMs, int lineHeight) {
+        if (finished || nowMs < scheduledTime()) return null;
+        if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
+        double progress = calculateProgress(nowMs);
+        if (progress < 0) {
+            finished = true;
+            return null;
+        }
+        renderClip = region;
+        ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
+        applyAnimationEffect(coordinate, progress);
+        applyMergeAnimation(nowMs);
+        handlePositionTransition(coordinate, nowMs);
+        updateHitBounds(coordinate, lineHeight);
         lastY = coordinate.y();
         lastIndex = index;
         lastRenderTime = nowMs;
+        return coordinate;
+    }
+
+    private void updateHitBounds(ScreenCoordinate coordinate, int lineHeight) {
+        auiTextHits = List.of();
+        auiHitReady = false;
+        hitX = coordinate.x();
+        hitY = coordinate.y();
+        hitW = cachedWidth;
+        hitH = cachedHeight;
+        closeBtnLeft = hitX + hitW - padding() - CLOSE_BTN;
+        closeBtnTop = hitY + padding() + Math.max(0, (hitH - 2 * padding() - CLOSE_BTN) * .5);
+        closeBtnSize = CLOSE_BTN;
+        bodyLeft = hitX + padding();
+        bodyTop = hitY + padding();
+        bodyW = hitW - 2 * padding() - CLOSE_GAP - CLOSE_BTN;
+        bodyH = hitH - 2 * padding();
+        bodyTextTop = bodyTop + Math.max(0, (bodyH - richDrawLines.size() * lineHeight) * .5);
     }
 
     public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
@@ -542,6 +617,12 @@ public class Notification extends NotificationData {
     }
 
     private void doRender(PoseStack stack, ScreenCoordinate coordinate) {
+        paintPrepared(stack, coordinate, true);
+    }
+
+    public void paintPrepared(PoseStack stack, ScreenCoordinate coordinate, boolean nativeShell) {
+        auiTextHits = List.of();
+        auiHitReady = false;
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
@@ -563,13 +644,15 @@ public class Notification extends NotificationData {
                         ? ColorUtils.applyAlphaToArgb(this.richDefaultTextArgb, drawAlpha)
                         : this.richDefaultTextArgb;
 
-                ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
-                rect.rect().radius(this.radius());
-                BaseShapeWidget.drawShape(rect);
+                if (nativeShell) {
+                    ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
+                    rect.rect().radius(this.radius());
+                    BaseShapeWidget.drawShape(rect);
 
-                ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
-                rectBorder.rect().radius(this.radius()).border(this.borderSize());
-                BaseShapeWidget.drawShape(rectBorder);
+                    ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
+                    rectBorder.rect().radius(this.radius()).border(this.borderSize());
+                    BaseShapeWidget.drawShape(rectBorder);
+                }
 
                 Font font = AbstractGuiUtils.getFont();
                 float pad = (float) this.padding();
@@ -650,6 +733,14 @@ public class Notification extends NotificationData {
 
     @Nullable
     public Style styleAtTextPoint(double guiMouseX, double guiMouseY) {
+        if (auiHitReady) {
+            for (TextHit hit : auiTextHits) {
+                ScreenCoordinate b = hit.bounds();
+                if (isBodyHit(guiMouseX, guiMouseY) && guiMouseX >= b.x() && guiMouseX < b.x() + b.width()
+                        && guiMouseY >= b.y() && guiMouseY < b.y() + b.height()) return hit.style();
+            }
+            return null;
+        }
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }

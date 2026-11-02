@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.screen.ApricityScreen;
 import net.minecraft.client.Minecraft;
@@ -122,11 +123,25 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
                 sessions.reload();
                 return;
             }
-            view.access.prepare();
-            super.render(graphics, mouseX, mouseY, partialTick);
-            view.afterLayout();
-            view.access.render(graphics);
-            pointer.render(graphics, mouseX, mouseY);
+            float[] color = RenderSystem.getShaderColor().clone();
+            graphics.flush();
+            try {
+                // HTML and retained sprites own a neutral tint for this page pass.
+                RenderSystem.setShaderColor(1, 1, 1, 1);
+                view.access.prepare();
+                super.render(graphics, mouseX, mouseY, partialTick);
+                graphics.flush();
+                RenderSystem.setShaderColor(1, 1, 1, 1);
+                view.afterLayout();
+                view.access.render(graphics);
+                pointer.render(graphics, mouseX, mouseY);
+            } finally {
+                try {
+                    graphics.flush();
+                } finally {
+                    RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
+                }
+            }
         } catch (RuntimeException | LinkageError failure) {
             failed = true;
             LOGGER.warn("AUI renderer failed; returning to native interface", failure);

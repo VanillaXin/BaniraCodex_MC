@@ -175,17 +175,12 @@ public class EffectIconWidget extends BaseWidget {
                 + effectInstance.getDuration();
     }
 
-    private static String buildTooltipString(MobEffectInstance effectInstance) {
-        String displayName = EffectUtils.getEffectDisplayName(effectInstance);
-        String duration = effectInstance.getDuration() > 0
-                ? BaniraComponent.get().transClientAuto("effect_duration_ticks_seconds", effectInstance.getDuration(), EffectDurationModel.nominalSeconds(effectInstance.getDuration())).toString()
-                : "";
-        String amplifier = effectInstance.getAmplifier() >= 0
-                ? NumberUtils.intToRoman(effectInstance.getAmplifier() + 1)
-                : "";
-        StringBuilder tip = new StringBuilder(displayName);
-        if (!amplifier.isEmpty()) tip.append(" ").append(amplifier);
-        if (!duration.isEmpty()) tip.append("\n").append(duration);
+    private static String buildTooltipString(MobEffectInstance effect) {
+        String duration = effect.getDuration() != 0 ? EffectDurationModel.clockText(effect.getDuration()) : "";
+        String amplifier = effect.getAmplifier() >= 0 ? NumberUtils.intToRoman(effect.getAmplifier() + 1) : "";
+        StringBuilder tip = new StringBuilder(EffectUtils.getEffectDisplayName(effect));
+        if (!amplifier.isEmpty()) tip.append(' ').append(amplifier);
+        if (!duration.isEmpty()) tip.append('\n').append(duration);
         return tip.toString();
     }
 
@@ -245,7 +240,7 @@ public class EffectIconWidget extends BaseWidget {
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                Component durationString = BaniraComponent.get().literal(EffectDurationModel.ticksText(effectInstance.getDuration()));
+                Component durationString = BaniraComponent.get().literal(EffectDurationModel.clockText(effectInstance.getDuration()));
                 int durationWidth = font.width(durationString.toString());
                 float scale = EffectDurationModel.scaleToFit(durationWidth, width);
                 float fontX = x + (width - durationWidth * scale) / 2;

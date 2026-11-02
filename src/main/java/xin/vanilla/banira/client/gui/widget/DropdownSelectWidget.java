@@ -293,10 +293,13 @@ public class DropdownSelectWidget extends InputWidget {
      * 下拉浮层悬停时会显示与原先一致的悬浮提示。
      */
     public DropdownSelectWidget optionsEnum(Class<? extends Enum<?>> clazz) {
+        return optionEntries(enumOptions(clazz));
+    }
+
+    public static List<DropdownOption> enumOptions(Class<? extends Enum<?>> clazz) {
         Enum<?>[] constants = clazz.getEnumConstants();
         if (constants == null) {
-            this.optionEntries = new ArrayList<>();
-            return this;
+            return new ArrayList<>();
         }
         List<DropdownOption> list = new ArrayList<>();
         for (Enum<?> e : constants) {
@@ -322,8 +325,7 @@ public class DropdownSelectWidget extends InputWidget {
             Component tooltip = (dEnum != null && !dEnum.isEmpty()) ? dEnum : null;
             list.add(new DropdownOption(e.name(), dispLabel, icon, textures, tooltip));
         }
-        this.optionEntries = list;
-        return this;
+        return list;
     }
 
     /**

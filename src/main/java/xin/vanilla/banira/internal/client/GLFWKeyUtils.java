@@ -213,7 +213,7 @@ public final class GLFWKeyUtils {
         return generated.equals(inputKeys);
     }
 
-    private static List<String> parseDisplayString(String displayString) {
+    public static List<String> parseDisplayString(String displayString) {
         List<String> list = new ArrayList<>();
         if (StringUtils.isNullOrEmptyEx(displayString)) return list;
 

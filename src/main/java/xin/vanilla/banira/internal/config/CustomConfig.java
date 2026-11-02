@@ -24,6 +24,7 @@ public class CustomConfig {
     private static final Logger LOGGER = LogManager.getLogger();
 
     public static final String FILE_NAME = "common_config.json";
+    public static final String PLAYER_PREFERENCES_CONFIG = "banira_codex:player-preferences";
 
     @Getter
     private static JsonObject customConfig = new JsonObject();
@@ -183,6 +184,36 @@ public class CustomConfig {
 
     public static String getPlayerLanguageClient(String uuid) {
         return JsonUtils.getString(clientConfig, String.format("player.%s.language", uuid), "client");
+    }
+
+    public static java.util.Map<String, String> playerPreferencesSnapshot(String uuid) {
+        return java.util.Map.of("uuid", uuid, "language", getPlayerLanguage(uuid),
+                "notificationReceiveMode", getPlayerNotificationReceiveMode(uuid));
+    }
+
+    public static boolean applyPlayerPreferencesClient(java.util.Map<String, String> snapshot) {
+        if (snapshot == null) return false;
+        String uuid = snapshot.get("uuid"), language = snapshot.get("language"), mode = snapshot.get("notificationReceiveMode");
+        try {
+            if (uuid == null || !java.util.UUID.fromString(uuid).toString().equals(uuid)) return false;
+        } catch (IllegalArgumentException invalid) {
+            return false;
+        }
+        if (language == null || language.isBlank() || language.length() > 256 || mode == null) return false;
+        setPlayerLanguageClient(uuid, language);
+        setPlayerNotificationReceiveModeClient(uuid, mode);
+        return true;
+    }
+
+    public static java.util.Map<String, String> playerPreferencesClient(String uuid) {
+        JsonObject player = JsonUtils.getJsonObject(clientConfig, "player." + uuid, new JsonObject());
+        if (!player.has("language") || !player.has("notification_receive_mode")) return null;
+        return java.util.Map.of("language", getPlayerLanguageClient(uuid),
+                "notificationReceiveMode", getPlayerNotificationReceiveModeClient(uuid));
+    }
+
+    public static void clearPlayerPreferencesClient() {
+        clientConfig.remove("player");
     }
 
     public static void setPlayerLanguage(String uuid, String language) {

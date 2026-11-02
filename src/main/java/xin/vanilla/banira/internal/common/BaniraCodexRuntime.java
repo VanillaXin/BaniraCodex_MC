@@ -39,7 +39,7 @@ public final class BaniraCodexRuntime {
     private static void registerCommonLifecycle() {
         BaniraLifecycle.onCommonSetup(event -> {
             CustomConfig.loadCustomConfig(false);
-            ModLoadedPresenceStore.register(Banira.MOD_ID);
+            ModLoadedPresenceStore.register(Banira.MOD_ID, BaniraCodexRuntime::syncClientState);
         });
         BaniraEventBus.Save.onWorldSave(CustomConfig::saveCustomConfig);
     }
@@ -63,6 +63,15 @@ public final class BaniraCodexRuntime {
         });
     }
 
+    private static void syncClientState(Object receiver) {
+        if (!(receiver instanceof ServerPlayer)) return;
+        ServerPlayer player = (ServerPlayer) receiver;
+        PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), player);
+        PacketUtils.sendPacketToPlayer(new xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient(
+                CustomConfig.PLAYER_PREFERENCES_CONFIG,
+                CustomConfig.playerPreferencesSnapshot(player.getUUID().toString())), player);
+    }
+
     private static void registerPlayerLifecycle() {
         BaniraEventBus.Save.onPlayerSave(event -> {
             if (event.uuid() != null) {
@@ -74,12 +83,6 @@ public final class BaniraCodexRuntime {
             if (player != null) {
                 PlayerUtils.removeRemoteClientDataStatus(player);
                 PlayerOptionsManager.remove(player);
-            }
-        });
-        BaniraEventBus.Player.onLoggedIn(event -> {
-            ServerPlayer player = event.playerAs(ServerPlayer.class);
-            if (player != null) {
-                PacketUtils.sendPacketToPlayer(new NotificationTypesSyncToClient(ServerNotificationTypeRegistry.buildSyncEntries()), player);
             }
         });
     }

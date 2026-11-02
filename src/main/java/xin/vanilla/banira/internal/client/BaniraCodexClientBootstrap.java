@@ -88,13 +88,11 @@ public final class BaniraCodexClientBootstrap {
             }
 
             public void screenRemoved(Object screen) {
-                UI_SESSIONS.screenRemoved(screen);
+                xin.vanilla.banira.internal.client.ui.CommonUiPages.removed(screen);
             }
 
             public boolean closePage(Object screen, xin.vanilla.banira.api.client.ui.UiCloseReason reason) {
-                if (!UI_SESSIONS.ownsScreen(screen)) return false;
-                UI_SESSIONS.close(reason);
-                return true;
+                return xin.vanilla.banira.internal.client.ui.CommonUiPages.close(screen, reason);
             }
         });
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
@@ -133,14 +131,14 @@ public final class BaniraCodexClientBootstrap {
         BaniraClientEvents.Client.onClientTick(event -> {
             if (event != BaniraClientTickEvent.END) return;
             boolean connected = BaniraClientRuntime.hasConnection();
-            if (hadConnection && !connected) UI_SESSIONS.disconnect();
+            if (hadConnection && !connected) xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
             hadConnection = connected;
-            UI_SESSIONS.observeScreen(BaniraClientRuntime.currentScreen());
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.tick();
             UI_SESSIONS.tick();
             UI_HUDS.tick(connected);
         });
         BaniraClientEvents.Player.onClientLoggedOut(player -> {
-            UI_SESSIONS.disconnect();
+            xin.vanilla.banira.internal.client.ui.CommonUiPages.disconnect();
             hadConnection = false;
         });
         BaniraClientEvents.Client.onTextureReload(event -> {

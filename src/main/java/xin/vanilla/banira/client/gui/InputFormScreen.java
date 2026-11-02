@@ -8,6 +8,9 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -22,11 +25,16 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -34,10 +42,16 @@ import java.util.stream.Collectors;
 /**
  * 多字段输入表单界面：支持文本、下拉选择、数字滑块、文件路径与颜色等，带校验与提交/取消。
  */
-public class InputFormScreen extends BaniraScreen {
+public class InputFormScreen extends BaniraScreen implements UiNativePage {
     private static final int FORM_PANEL_PAD = 12;
 
     private final Args args;
+    private final FormUiSession uiSession;
+    private UiPageSpec uiPage;
+    private UiViewState uiState;
+    private boolean restoreUiDraft;
+    private long uiVersion;
+    private boolean nativeOnly;
     private final List<InputField> inputFields = new ArrayList<>();
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
     private Text runningErrorText = Text.empty();
@@ -52,12 +66,80 @@ public class InputFormScreen extends BaniraScreen {
     private ScrollbarWidget scrollbarWidget;
 
     public InputFormScreen(Args args) {
-        super(resolveScreenTitle(args));
-        Objects.requireNonNull(args);
-        args.validate();
-        this.args = args;
+        this(new FormUiSession(Objects.requireNonNull(args)), false);
+    }
+
+    public InputFormScreen(FormUiSession session) {
+        this(session, true);
+    }
+
+    private InputFormScreen(FormUiSession session, boolean restoreDraft) {
+        super(resolveScreenTitle(Objects.requireNonNull(session).args()));
+        this.args = session.args();
+        this.uiSession = session;
+        this.restoreUiDraft = restoreDraft;
         this.previousScreen(args.getParentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.getParentScreen(), null, null);
+    }
+
+    public FormUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:form";
+    }
+
+    protected boolean auiCompatible() {
+        if (nativeOnly) return false;
+        nativeOnly = getClass() != InputFormScreen.class || args.getWidgets().stream().anyMatch(widget -> widget.changed() != null);
+        return !nativeOnly;
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        if (!auiCompatible()) return null;
+        captureUiState(uiState);
+        if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
+                "banira_codex/ui/form.html", uiSession, previous -> this, this::getEffectiveTheme);
+        return uiPage;
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiDraft = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        for (int index = 0; index < inputFields.size(); index++) {
+            InputField field = inputFields.get(index);
+            if (field.input() instanceof DropdownSelectWidget && ((DropdownSelectWidget) field.input()).multiSelect()) {
+                uiSession.acceptNative(index, ((DropdownSelectWidget) field.input()).getSelectedValues());
+            } else {
+                String value = inputFieldValueString(field);
+                if (value != null) uiSession.acceptNative(index, value);
+            }
+            InputWidget input = field.input() != null ? field.input() : field.slider() != null ? field.slider().inlineInputWidget() : null;
+            if (state != null && input != null && input.focused())
+                state.selection("field:" + index + "/input", input.cursorPosition(), input.highlightPos());
+        }
+        if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() / ITEM_HEIGHT);
+        uiVersion = uiSession.version();
+    }
+
+    private void restoreUiDrafts() {
+        inputValues.clear();
+        dropdownInputValues.clear();
+        for (int index = 0; index < args.getWidgets().size(); index++) {
+            inputValues.add(uiSession.draft(index));
+            Widget widget = args.getWidgets().get(index);
+            if (widget.type() == WidgetType.DROPDOWN && widget.dropdownMultiSelect()) {
+                dropdownInputValues.put(index, new ArrayList<>(uiSession.get(index).asStrings()));
+            }
+        }
     }
 
     private static Component resolveScreenTitle(Args args) {
@@ -523,6 +605,7 @@ public class InputFormScreen extends BaniraScreen {
 
     @Override
     protected void initWidgets() {
+        if (restoreUiDraft) restoreUiDrafts();
         inputFields.clear();
         int w = width;
         int h = height;
@@ -559,8 +642,8 @@ public class InputFormScreen extends BaniraScreen {
         cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(this.previousScreen()));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
+        cancelButtonWidget.onClick(b -> onClose());
         addWidget(cancelButtonWidget);
 
         for (int i = 0; i < args.getWidgets().size(); i++) {
@@ -673,6 +756,7 @@ public class InputFormScreen extends BaniraScreen {
                 slider.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 slider.minValue(minVal).maxValue(maxVal).step(1.0);
                 slider.value(parsedVal);
+                if (restoreUiDraft) slider.editingText(currentValue);
                 slider.enabled(!widget.disabled());
 
                 int finalI = i;
@@ -722,31 +806,8 @@ public class InputFormScreen extends BaniraScreen {
                 pickerBtn.text(Text.literal("..."));
                 pickerBtn.enabled(!widget.disabled());
                 pickerBtn.onClick(b -> {
-                    if (widget.type() == WidgetType.FILE) {
-                        String[] exts = new String[0];
-                        if (StringUtils.isNotNullOrEmpty(widget.fileFilter())) {
-                            String[] parts = widget.fileFilter().split("[,;\\s]+");
-                            exts = new String[parts.length];
-                            for (int j = 0; j < parts.length; j++) {
-                                String p = parts[j].trim();
-                                exts[j] = p.startsWith("*") ? p : "*." + p;
-                            }
-                        }
-                        DialogUtils.chooseFileString(widget.title().content(), path -> {
-                            if (path != null) {
-                                pickerInput.value(path);
-                            }
-                        }, exts);
-                    } else if (widget.type() == WidgetType.COLOR) {
-                        DialogUtils.chooseRgbHex(widget.title().content(), color -> {
-                            if (color != null && !color.isEmpty()) {
-                                pickerInput.value(color);
-                            }
-                        });
-                    } else {
-                        Minecraft.getInstance().setScreen(Objects.requireNonNull(
-                                widget.picker().apply(this, pickerInput::value)));
-                    }
+                    captureUiState(uiState == null ? new UiViewState() : uiState);
+                    uiSession.pick(finalI);
                 });
 
                 inputField.input(pickerInput);
@@ -772,6 +833,19 @@ public class InputFormScreen extends BaniraScreen {
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight));
         scrollbarWidget.visible(scrollMode && maxScroll > 0);
         addWidget(scrollbarWidget);
+        if (uiState != null) {
+            scrollbarWidget.value(uiState.rowPosition() * ITEM_HEIGHT);
+            for (int index = 0; index < inputFields.size(); index++) {
+                InputField field = inputFields.get(index);
+                InputWidget input = field.input() != null ? field.input() : field.slider() != null ? field.slider().inlineInputWidget() : null;
+                if (input != null && uiState.focusedField().equals("field:" + index + "/input")) {
+                    requestFocus(input);
+                    input.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+                }
+            }
+        }
+        restoreUiDraft = false;
+        uiVersion = uiSession.version();
     }
 
     @Override
@@ -858,34 +932,14 @@ public class InputFormScreen extends BaniraScreen {
             return field.input().value();
         }
         if (field.slider() != null) {
-            return field.slider().valueString();
+            return field.slider().editingText();
         }
         return null;
     }
 
     private boolean canSubmit() {
-        Results results = buildResultsFromInputs(-1, null);
-        for (int index = 0; index < this.args.getWidgets().size(); index++) {
-            Widget widget = this.args.getWidgets().get(index);
-            if (index >= inputFields.size()) {
-                continue;
-            }
-            InputField field = inputFields.get(index);
-            boolean empty;
-            if (field.input() instanceof DropdownSelectWidget) {
-                empty = ((DropdownSelectWidget) field.input()).getSelectedValues().isEmpty();
-            } else {
-                empty = field.input() == null || StringUtils.isNullOrEmpty(field.input().value());
-            }
-            if (!widget.allowEmpty() && empty) {
-                return false;
-            }
-            results.curIndex(index).curName(widget.name());
-            if (StringUtils.isNotNullOrEmpty(widget.validator().apply(results))) {
-                return false;
-            }
-        }
-        return true;
+        captureUiState(null);
+        return uiSession.canSubmit();
     }
 
     /**
@@ -936,66 +990,22 @@ public class InputFormScreen extends BaniraScreen {
     }
 
     private void handleSubmit() {
-        Results results = new Results();
-        for (int i = 0; i < this.args.getWidgets().size() && i < this.inputFields.size(); i++) {
-            InputField field = inputFields.get(i);
-            String val = inputFieldValueString(field);
-            if (val != null) {
-                if (field.input() instanceof DropdownSelectWidget) {
-                    DropdownSelectWidget dropdown = (DropdownSelectWidget) field.input();
-                    if (dropdown.multiSelect()) {
-                        results.values(args.getWidgets().get(i).name(), i, dropdown.getSelectedValues());
-                    } else {
-                        results.value(args.getWidgets().get(i).name(), i, val);
-                    }
-                } else {
-                    results.value(args.getWidgets().get(i).name(), i, val);
-                }
-            }
-        }
-
-        if (!canSubmit()) {
-            for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
-                Widget widget = args.getWidgets().get(i);
-                InputField field = inputFields.get(i);
-                validateAndUpdateError(widget, i, inputFieldValueString(field), field.input());
+        captureUiState(null);
+        if (uiSession.submit()) {
+            if (!CommonUiPages.close(this, UiCloseReason.SUBMIT)) {
+                uiSession.close(UiCloseReason.SUBMIT);
+                Minecraft.getInstance().setScreen(previousScreen());
             }
             return;
         }
-
-        this.errorTextMap.clear();
-        for (int i = 0; i < args.getWidgets().size() && i < inputFields.size(); i++) {
-            Widget widget = args.getWidgets().get(i);
-            InputField field = inputFields.get(i);
-            results.curIndex(i).curName(widget.name());
-            String error = widget.validator().apply(results);
-            boolean hasError = StringUtils.isNotNullOrEmpty(error);
-            InputWidget errorTarget = field.input() != null ? field.input()
-                    : (field.slider() != null ? field.slider().inlineInputWidget() : null);
-            if (errorTarget != null) {
-                errorTarget.error(hasError);
-            }
-            if (hasError) {
-                Text errorTextItem = Text.literal(error).color(Color.argb(0xAAFF0000));
-                this.errorTextMap.put(i, errorTextItem);
-            } else {
-                this.errorTextMap.remove(i);
-            }
+        errorTextMap.clear();
+        uiSession.errors().forEach((index, message) -> errorTextMap.put(index, Text.literal(message).color(Color.argb(0xAAFF0000))));
+        for (int index = 0; index < inputFields.size(); index++) {
+            InputField field = inputFields.get(index);
+            InputWidget input = field.input() != null ? field.input() : field.slider() != null ? field.slider().inlineInputWidget() : null;
+            if (input != null) input.error(uiSession.errors().containsKey(index));
         }
-
-        if (this.errorTextMap.isEmpty()) {
-            try {
-                args.getCallback().accept(results);
-            } catch (Exception e) {
-                results.runningResult(e);
-            }
-
-            if (StringUtils.isNullOrEmptyEx(results.runningResult())) {
-                Minecraft.getInstance().setScreen(this.previousScreen());
-            } else {
-                this.runningErrorText = Text.literal(results.runningResult()).color(Color.argb(0xFFFF0000));
-            }
-        }
+        runningErrorText = Text.literal(uiSession.error()).color(Color.argb(0xFFFF0000));
     }
 
     @Override
@@ -1065,8 +1075,16 @@ public class InputFormScreen extends BaniraScreen {
 
     @Override
     protected void onRender(PoseStack stack, float partialTicks) {
+        if (uiVersion != uiSession.version()) {
+            for (int index = 0; index < inputFields.size(); index++) {
+                InputField field = inputFields.get(index);
+                if (field.input() != null && !(field.input() instanceof DropdownSelectWidget))
+                    field.input().value(uiSession.draft(index));
+            }
+            uiVersion = uiSession.version();
+        }
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
-            Minecraft.getInstance().setScreen(this.previousScreen());
+            onClose();
             return;
         }
 
@@ -1145,6 +1163,28 @@ public class InputFormScreen extends BaniraScreen {
             submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
             submitButtonWidget.enabled(canSubmit());
         }
+    }
+
+    @Override
+    protected void onMouseClicked(MouseClickedHandleArgs eventArgs) {
+        if (eventArgs.button() == GLFWKey.GLFW_MOUSE_BUTTON_4) {
+            onClose();
+            eventArgs.consumed(true);
+        }
+        super.onMouseClicked(eventArgs);
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
+    }
+
+    @Override
+    public void removed() {
+        CommonUiPages.removed(this);
+        super.removed();
     }
 
     @Override

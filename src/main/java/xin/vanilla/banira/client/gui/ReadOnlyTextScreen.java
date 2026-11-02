@@ -8,6 +8,8 @@ import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -17,6 +19,10 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.TextUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,7 +33,7 @@ import java.util.List;
 /**
  * 可滚动的只读长文本界面，适合帮助、规则说明和迁移提示。
  */
-public final class ReadOnlyTextScreen extends BaniraScreen {
+public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePage {
     private static final int MARGIN = 12;
     private static final int PADDING = 10;
     private static final int TITLE_HEIGHT = 18;
@@ -38,6 +44,9 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
     private static final int SCROLLBAR_GAP = 4;
 
     private final Args args;
+    private final TextUiSession uiSession;
+    private UiPageSpec uiPage;
+    private UiViewState uiState;
     private final List<FormattedCharSequence> lines = new ArrayList<>();
     private int contentX;
     private int contentY;
@@ -49,8 +58,35 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
     public ReadOnlyTextScreen(@Nonnull Args args) {
         super(args.title() != null ? args.title() : BaniraComponent.get().literal(""));
         this.args = args;
+        this.uiSession = new TextUiSession(args);
         previousScreen(args.parentScreen());
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
+    }
+
+    public TextUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:text";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
+                "banira_codex/ui/text.html", uiSession, previous -> this, this::getEffectiveTheme);
+        return uiPage;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        state.scrollOffset(scroll);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
     }
 
     /**
@@ -101,6 +137,7 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
         addWidget(close);
 
         rebuildLines();
+        if (uiState != null) scroll = Math.max(0, Math.min(maxScroll, (int) uiState.scrollOffset()));
     }
 
     private void rebuildLines() {
@@ -172,7 +209,15 @@ public final class ReadOnlyTextScreen extends BaniraScreen {
 
     @Override
     public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.USER_CLOSE)) return;
+        uiSession.close(UiCloseReason.USER_CLOSE);
         Minecraft.getInstance().setScreen(args.parentScreen());
+    }
+
+    @Override
+    public void removed() {
+        CommonUiPages.removed(this);
+        super.removed();
     }
 
     @Override

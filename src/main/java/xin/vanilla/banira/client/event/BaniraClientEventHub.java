@@ -2,6 +2,7 @@ package xin.vanilla.banira.client.event;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.event.*;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * 客户端公共事件入口；1.16.5 的 Forge/PoseStack 差异只在 adapter 内转换。
+ * 客户端公共事件入口；原生绘制差异只在 adapter 内转换。
  */
 public final class BaniraClientEventHub {
     private static final Logger LOGGER = LogManager.getLogger();

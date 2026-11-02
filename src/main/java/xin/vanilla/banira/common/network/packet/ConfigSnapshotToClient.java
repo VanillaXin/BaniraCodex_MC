@@ -50,12 +50,23 @@ public class ConfigSnapshotToClient implements NetworkPacket {
     }
 
     public static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx) {
-        ctx.enqueueWork(() -> {
-            if (!ctx.isClientSide()) {
-                return;
-            }
-            BaniraClientPacketDispatch.handle(packet);
+        Object origin = ctx.isClientSide() ? ctx.connectionKey() : null;
+        handle(packet, ctx, BaniraClientPacketDispatch::isCurrentConfigConnection, snapshot -> {
+            if (xin.vanilla.banira.internal.config.CustomConfig.PLAYER_PREFERENCES_CONFIG.equals(packet.configName()))
+                BaniraClientPacketDispatch.handlePlayerPreferences(snapshot, origin);
+            else BaniraClientPacketDispatch.handle(snapshot);
         });
+    }
+
+    static void handle(ConfigSnapshotToClient packet, BaniraNetworkContext ctx,
+                       java.util.function.Predicate<Object> currentConnection,
+                       java.util.function.Consumer<ConfigSnapshotToClient> apply) {
+        Object origin = ctx.isClientSide() ? ctx.connectionKey() : null;
+        if (origin != null) {
+            ctx.enqueueWork(() -> {
+                if (ctx.isClientSide() && currentConnection.test(origin)) apply.accept(packet);
+            });
+        }
         ctx.markHandled();
     }
 }

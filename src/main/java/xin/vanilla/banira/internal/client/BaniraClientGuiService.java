@@ -23,6 +23,7 @@ public final class BaniraClientGuiService {
         ManagedConfigFiles.poll(ManagedConfigFiles.Scope.CLIENT);
         NotificationManager.get().tickOutOfScreenClick();
         InputStateManager.handleClientTickEnd(noScreenOpen);
+        xin.vanilla.banira.client.gui.quickaction.CustomQuickActionManager.get().tickKeyBindings();
         NotificationUnreadHud.tick();
         NotificationLogScreen.openHotkeyScreenIfPressed();
     }

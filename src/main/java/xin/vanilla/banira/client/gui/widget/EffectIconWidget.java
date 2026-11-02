@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -93,8 +93,8 @@ public class EffectIconWidget extends BaseWidget {
 
     private void renderTooltip(PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
         String displayName = EffectUtils.getEffectDisplayName(effectInstance);
-        String duration = effectInstance.getDuration() > 0
-                ? BaniraComponent.get().transClientAuto("effect_duration_ticks_seconds", effectInstance.getDuration(), EffectDurationModel.nominalSeconds(effectInstance.getDuration())).toString()
+        String duration = effectInstance.getDuration() != 0
+                ? EffectDurationModel.clockText(effectInstance.getDuration())
                 : "";
         String amplifier = effectInstance.getAmplifier() >= 0
                 ? NumberUtils.intToRoman(effectInstance.getAmplifier() + 1)
@@ -182,7 +182,7 @@ public class EffectIconWidget extends BaseWidget {
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                Component durationString = BaniraComponent.get().literal(EffectDurationModel.ticksText(effectInstance.getDuration()));
+                Component durationString = BaniraComponent.get().literal(EffectDurationModel.clockText(effectInstance.getDuration()));
                 int durationWidth = font.width(durationString.toString());
                 float scale = EffectDurationModel.scaleToFit(durationWidth, width);
                 float fontX = x + (width - durationWidth * scale) / 2;

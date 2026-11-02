@@ -4,13 +4,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.util.FormattedCharSequence;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
@@ -20,25 +22,33 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.notification.NotificationDetailViewport;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.BaniraClientModSetup;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Notification 日志查看界面，横屏主从布局：左侧类型选择+简洁列表，右侧记录详情
  */
-public class NotificationLogScreen extends BaniraScreen {
+public class NotificationLogScreen extends BaniraScreen implements UiNativePage {
 
     private static final int LIST_ROW_HEIGHT = 24;
     private static final int PANEL_MARGIN = 12;
@@ -59,8 +69,12 @@ public class NotificationLogScreen extends BaniraScreen {
     private static final int DETAIL_AFTER_META_GAP = 8;
     private static final int META_COL_GAP = 12;
     private static final int META_ROW_GAP = 4;
+    private static final int META_FONT_SIZE = 10;
 
     private final Args args;
+    private final NotificationUiSession uiSession;
+    private UiViewState uiState;
+    private boolean restoreDetail;
     private int leftX, leftY, leftW, leftH;
     private int listX, listY, listW, listH;
     private int rightX, rightY, rightW, rightH;
@@ -119,7 +133,21 @@ public class NotificationLogScreen extends BaniraScreen {
     public NotificationLogScreen(Args args) {
         super(BaniraComponent.get().transClientAuto("notification_log_title").toVanilla());
         this.args = args != null ? args : new Args();
+        previousScreen(this.args.parentScreen());
+        uiSession = NotificationUiSession.history();
+        uiSession.attachNative(this);
+        if (this.args.parentScreen() instanceof ChatScreen) {
+            ChatScreen chat = (ChatScreen) this.args.parentScreen();
+            String draft = chat.children().stream().filter(EditBox.class::isInstance)
+                    .map(EditBox.class::cast).map(EditBox::getValue).findFirst().orElse("");
+            uiSession.onParentReturn(parent -> {
+                if (parent == chat && Minecraft.getInstance().screen == chat)
+                    chat.children().stream().filter(EditBox.class::isInstance).map(EditBox.class::cast)
+                            .findFirst().ifPresent(input -> input.setValue(draft));
+            });
+        }
         this.pendingSelectLogEntryId = this.args.selectLogEntryId();
+        uiSession.select(pendingSelectLogEntryId);
         BaniraScreen.inheritThemeAndSeason(this, this.args.parentScreen(), this.args.theme(), this.args.season());
     }
 
@@ -140,7 +168,49 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @Override
     protected void onInit() {
+        searchQuery = uiSession.query();
+        historyRevision = Long.MIN_VALUE;
         refreshHistory();
+    }
+
+    @Override
+    public NotificationUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:notification-log";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        scrollValue = state.rowPosition();
+        restoreDetail = true;
+        pendingSelectLogEntryId = 0;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        uiSession.query(searchQuery);
+        state.rowPosition(scrollValue);
+        if ((int) scrollValue < filteredEntries.size() && !filteredEntries.isEmpty())
+            state.scrollAnchor("notification:" + filteredEntries.get((int) scrollValue).id());
+        state.detailScroll(detailViewport.scrollRows() * font.lineHeight);
+        if (searchInput != null && searchInput.focused())
+            state.selection("search", searchInput.cursorPosition(), searchInput.highlightPos());
+    }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
     }
 
     private void applyPendingLogSelection() {
@@ -151,7 +221,7 @@ public class NotificationLogScreen extends BaniraScreen {
         pendingSelectLogEntryId = 0L;
         for (int i = 0; i < filteredEntries.size(); i++) {
             if (filteredEntries.get(i).id() == selectId) {
-                selectEntry(i);
+                selectedIndex = i;
                 int row = Math.max(0, i - visibleRows + 1);
                 scrollValue = row;
                 if (scrollbarWidget != null) {
@@ -164,14 +234,10 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     private boolean entryMatchesSearch(NotificationLogEntry e) {
-        if (searchQuery.isEmpty()) {
-            return true;
-        }
-        String q = searchQuery.toLowerCase(Locale.ROOT);
-        return buildSearchHaystack(e).toLowerCase(Locale.ROOT).contains(q);
+        return NotificationUiSession.matches(e, searchQuery);
     }
 
-    private static String componentPlainSingleLineForLog(@Nullable xin.vanilla.banira.common.data.Component c) {
+    private static String componentPlainSingleLineForLog(@Nullable Component c) {
         if (c == null) {
             return "";
         }
@@ -182,21 +248,9 @@ public class NotificationLogScreen extends BaniraScreen {
         return s.replace('\r', ' ').replace('\n', ' ');
     }
 
-    private String buildSearchHaystack(NotificationLogEntry e) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(componentPlainSingleLineForLog(e.component())).append('\n');
-        sb.append(e.source()).append('\n');
-        sb.append(e.notificationType() != null ? e.notificationType() : "").append('\n');
-        sb.append(e.style().name()).append('\n');
-        sb.append(e.positionName() != null ? e.positionName() : "").append('\n');
-        sb.append(e.animationName() != null ? e.animationName() : "").append('\n');
-        sb.append(e.durationTime()).append('\n');
-        sb.append(DateUtils.toDateTimeString(new Date(e.timestamp())));
-        return sb.toString();
-    }
-
     private void applySearchAndReselect(String raw) {
         searchQuery = raw == null ? "" : raw.trim();
+        uiSession.query(searchQuery);
         long prevId = selectedIndex >= 0 && selectedIndex < filteredEntries.size()
                 ? filteredEntries.get(selectedIndex).id() : -1L;
         filteredEntries = allLogEntries.stream()
@@ -216,6 +270,7 @@ public class NotificationLogScreen extends BaniraScreen {
             }
         }
         selectedIndex = -1;
+        uiSession.restoreSelection(0);
         scrollValue = 0;
         if (scrollbarWidget != null) {
             scrollbarWidget.value(0);
@@ -243,7 +298,7 @@ public class NotificationLogScreen extends BaniraScreen {
             detailContentLines = Collections.emptyList();
         }
         selectedIndex = index;
-        NotificationManager.get().markRead(filteredEntries.get(index).id());
+        uiSession.select(filteredEntries.get(index).id());
         refreshHistory();
     }
 
@@ -251,8 +306,7 @@ public class NotificationLogScreen extends BaniraScreen {
         NotificationManager manager = NotificationManager.get();
         long revision = manager.historyRevision();
         if (revision == historyRevision) return;
-        Long selectedId = selectedIndex >= 0 && selectedIndex < filteredEntries.size()
-                ? filteredEntries.get(selectedIndex).id() : null;
+        Long selectedId = uiSession.selectedId();
         int top = (int) scrollValue;
         Long topId = top > 0 && top < filteredEntries.size() ? filteredEntries.get(top).id() : null;
         allLogEntries = new ArrayList<>(manager.getLog());
@@ -299,7 +353,7 @@ public class NotificationLogScreen extends BaniraScreen {
         searchInput.id("notification_log_search");
         searchInput.bounds(new ScreenCoordinate(listX, leftY + PANEL_MARGIN + TOOLBAR_SIZE + TOOLBAR_GAP,
                 listW + SCROLL_GAP + SCROLL_W, SEARCH_BOX_H));
-        searchInput.text(Text.transAuto(BaniraCodex.MODID, "notification_log_search_hint"));
+        searchInput.text(Text.transAuto(Banira.MOD_ID, "notification_log_search_hint"));
         searchInput.onTextChanged(this::applySearchAndReselect);
         searchInput.value(searchQuery);
         addWidget(searchInput);
@@ -342,7 +396,7 @@ public class NotificationLogScreen extends BaniraScreen {
                 ButtonWidget.PresetStyle.CHECK, 0);
         markAllReadButton.enabled(NotificationManager.get().unreadCount() > 0);
         markAllReadButton.onClick(b -> {
-            NotificationManager.get().markAllRead();
+            uiSession.markAllRead();
             refreshHistory();
         });
         ButtonWidget positionBtn = toolbarButton("hud_position", "notification_hud_position",
@@ -350,6 +404,10 @@ public class NotificationLogScreen extends BaniraScreen {
         positionBtn.onClick(b -> Minecraft.getInstance().setScreen(new NotificationHudPositionScreen(this)));
 
         applyPendingLogSelection();
+        if (uiState != null && uiState.focusedField().equals("search")) {
+            requestFocus(searchInput);
+            searchInput.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+        }
     }
 
     private ButtonWidget toolbarButton(String id, String key, ButtonWidget.PresetStyle style, int index) {
@@ -375,9 +433,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     public static void openHotkeyScreenIfPressed() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen != null) {
-            return;
-        }
+        if (minecraft.screen != null) return;
         if (BaniraClientModSetup.NOTIFICATION_LOG_KEY.isDown()) {
             minecraft.setScreen(new NotificationLogScreen(null));
         } else if (BaniraClientModSetup.BANIRA_HUB_KEY.isDown()) {
@@ -431,7 +487,9 @@ public class NotificationLogScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(PoseStack graphics, float partialTicks) {
+        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
+        PoseStack stack = graphics;
         refreshHistory();
         BaniraColorConfig theme = getEffectiveTheme();
 
@@ -462,23 +520,24 @@ public class NotificationLogScreen extends BaniraScreen {
         for (int i = startIndex; i < endIndex; i++) {
             NotificationLogEntry entry = filteredEntries.get(i);
             int rowY = listY + (i - startIndex) * LIST_ROW_HEIGHT;
-            renderListRow(stack, entry, i, listX, rowY, listW, LIST_ROW_HEIGHT - 2, theme);
+            renderListRow(graphics, entry, i, listX, rowY, listW, LIST_ROW_HEIGHT - 2, theme);
         }
 
         if (filteredEntries.isEmpty()) {
-            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_empty")
+            FontDrawArgs emptyArgs = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_empty")
                             .stack(stack).font(font))
                     .x(listX + listW / 2 - 50).y(listY + listH / 2 - 8).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
             LabelWidget.drawLimitedText(emptyArgs);
         }
 
-        renderDetailPane(stack, theme);
+        renderDetailPane(graphics, theme);
 
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
     }
 
-    private void renderListRow(PoseStack stack, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
+    private void renderListRow(PoseStack graphics, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
+        PoseStack stack = graphics;
         boolean selected = index == selectedIndex;
         boolean hovered = index == listHoverIndex && !selected;
         int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.accent(), 0x40)
@@ -500,31 +559,31 @@ public class NotificationLogScreen extends BaniraScreen {
         int textX = x + 15;
         int textW = Math.max(1, w - 21);
         String language = Translator.getClientLanguage();
-        Component rowComponent = ColorUtils.readableVanillaComponentCopy(
+        net.minecraft.network.chat.Component rowComponent = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
         if (StringUtils.isNullOrEmptyEx(rowComponent.getString())) {
-            rowComponent = new TextComponent("-");
+            rowComponent = new net.minecraft.network.chat.TextComponent("-");
         }
         List<FormattedCharSequence> rowLines = font.split(rowComponent, Math.max(1, textW));
         if (!rowLines.isEmpty()) {
-            font.draw(stack, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
-                    selected ? theme.textPrimary() : theme.textSecondary());
+            xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.drawString(graphics, font, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
+                    selected ? theme.textPrimary() : theme.textSecondary(), false);
         }
     }
 
-    private void renderDetailPane(PoseStack stack, BaniraColorConfig theme) {
+    private void renderDetailPane(PoseStack graphics, BaniraColorConfig theme) {
         AbstractGuiUtils.pushScissor(rightX + 16, rightY + 16, Math.max(0, rightW - 32), Math.max(0, rightH - 32));
         try {
-            renderDetailContents(stack, theme);
+            renderDetailContents(graphics, theme);
         } finally {
             AbstractGuiUtils.popScissor();
         }
     }
 
-    private void renderDetailContents(PoseStack stack, BaniraColorConfig theme) {
+    private void renderDetailContents(PoseStack graphics, BaniraColorConfig theme) {
+        PoseStack stack = graphics;
         detailContentLines = Collections.emptyList();
         if (detailScrollbar != null) detailScrollbar.visible(false);
-
         int pad = 16;
         int x = rightX + pad;
         int y = rightY + pad;
@@ -534,7 +593,7 @@ public class NotificationLogScreen extends BaniraScreen {
             detailViewport.layout(x, y, 0, 0, font.lineHeight, 0);
             detailEntryId = Long.MIN_VALUE;
             metaHoverRegions.clear();
-            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(BaniraCodex.MODID, "notification_log_select_hint")
+            FontDrawArgs hint = FontDrawArgs.ofPopo(Text.transAuto(Banira.MOD_ID, "notification_log_select_hint")
                             .stack(stack).font(font))
                     .x(x + w / 2 - 60).y(y + rightH / 2 - 30).align(EnumAlignment.CENTER)
                     .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
@@ -543,7 +602,10 @@ public class NotificationLogScreen extends BaniraScreen {
         }
 
         NotificationLogEntry entry = filteredEntries.get(selectedIndex);
-        if (detailEntryId != entry.id()) { detailViewport.reset(); detailEntryId = entry.id(); }
+        if (detailEntryId != entry.id()) {
+            detailViewport.reset();
+            detailEntryId = entry.id();
+        }
         String timeStr = DateUtils.toDateTimeString(new Date(entry.timestamp())) + "  "
                 + BaniraComponent.get().transClientAuto(entry.read() ? "notification_log_read" : "notification_log_unread").toString();
 
@@ -560,7 +622,7 @@ public class NotificationLogScreen extends BaniraScreen {
         curY += DETAIL_AFTER_META_GAP;
 
         String language = Translator.getClientLanguage();
-        Component contentVanilla = ColorUtils.readableVanillaComponentCopy(
+        net.minecraft.network.chat.Component contentVanilla = ColorUtils.readableVanillaComponentCopy(
                 entry.component().toVanilla(language), theme.panelBg());
         if (contentVanilla != null && !StringUtils.isNullOrEmptyEx(contentVanilla.getString())) {
             int textWidth = Math.max(1, w - SCROLL_GAP - SCROLL_W);
@@ -570,6 +632,10 @@ public class NotificationLogScreen extends BaniraScreen {
             detailContentTop = curY;
             detailContentMaxLineW = textWidth;
             detailViewport.layout(x, curY, textWidth, contentHeight, font.lineHeight, detailContentLines.size());
+            if (restoreDetail && uiState != null) {
+                detailViewport.scrollTo(uiState.detailScroll() / font.lineHeight);
+                restoreDetail = false;
+            }
             if (detailScrollbar != null) {
                 detailScrollbar.bounds(new ScreenCoordinate(x + textWidth + SCROLL_GAP, curY,
                         SCROLL_W, contentHeight));
@@ -581,7 +647,7 @@ public class NotificationLogScreen extends BaniraScreen {
             AbstractGuiUtils.pushScissor(x, curY, textWidth, contentHeight);
             try {
                 for (int line = detailViewport.firstLine(); line < detailViewport.lastLineExclusive(); line++) {
-                    font.draw(stack, detailContentLines.get(line), x, detailViewport.lineY(line), textColor);
+                    xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.drawString(graphics, font, detailContentLines.get(line), x, detailViewport.lineY(line), textColor, false);
                 }
             } finally {
                 AbstractGuiUtils.popScissor();
@@ -589,7 +655,7 @@ public class NotificationLogScreen extends BaniraScreen {
             if (!isAnyDropdownSelectOpen()) {
                 Style hoverSt = styleAtDetailContentPoint(inputState.mouseX(), inputState.mouseY());
                 if (hoverSt != null && hoverSt.getHoverEvent() != null) {
-                    Component tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
+                    net.minecraft.network.chat.Component tipVanilla = NotificationStyleInteractionHelper.hoverTextOrNull(hoverSt);
                     if (tipVanilla != null) {
                         deferThemedTooltipWidget(theme, (int) inputState.mouseX(), (int) inputState.mouseY(),
                                 new Text(BaniraComponent.get().object(tipVanilla)));
@@ -613,13 +679,14 @@ public class NotificationLogScreen extends BaniraScreen {
         final BaniraColorConfig tipTheme = theme != null ? theme : getEffectiveTheme();
         final EnumSeason tipSeason = season();
         final boolean useTexture = tipTheme.tooltipUseTexture();
-        addDeferredTooltipRender(s -> {
-            s.pushPose();
-            s.last().pose().setIdentity();
-            TooltipWidget.drawPopupMessage(s,
-                    FontDrawArgs.ofPopo(tipText.stack(s).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
+        addDeferredTooltipRender(graphics -> {
+            PoseStack tipStack = graphics;
+            tipStack.pushPose();
+            tipStack.last().pose().setIdentity();
+            TooltipWidget.drawPopupMessage(tipStack,
+                    FontDrawArgs.ofPopo(tipText.stack(tipStack).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
                     tipTheme, tipSeason);
-            s.popPose();
+            tipStack.popPose();
         });
     }
 
@@ -661,19 +728,11 @@ public class NotificationLogScreen extends BaniraScreen {
         return h;
     }
 
-    private boolean metaLineTruncated(PoseStack stack, String line, int colW, BaniraColorConfig theme) {
+    private boolean metaLineTruncated(String line, int colW) {
         if (StringUtils.isNullOrEmptyEx(line)) {
             return false;
         }
-        FontDrawArgs base = FontDrawArgs.ofPopo(Text.literal(line).color(theme.textSecondary()).stack(stack).font(font))
-                .x(0).y(0).fontSize(10).wrap(false)
-                .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0)
-                .inScreen(false);
-        FontDrawArgs natural = base.clone().maxWidth(20000).position(EnumEllipsisPosition.NONE);
-        FontDrawArgs fitted = base.clone().maxWidth(colW).position(EnumEllipsisPosition.END);
-        int wNatural = LabelWidget.calculateLimitedTextSize(natural).key();
-        int wFitted = LabelWidget.calculateLimitedTextSize(fitted).key();
-        return wNatural > wFitted;
+        return font.width(line) > colW;
     }
 
     private int drawMetaPairRow(PoseStack stack, int x, int y, int colW, BaniraColorConfig theme,
@@ -681,20 +740,18 @@ public class NotificationLogScreen extends BaniraScreen {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
         FontDrawArgs a1 = FontDrawArgs.ofPopo(Text.literal(s1).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x).y(y).fontSize(10).maxWidth(colW).wrap(false)
+                .x(x).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z1 = LabelWidget.calculateLimitedTextSize(a1);
         FontDrawArgs a2 = FontDrawArgs.ofPopo(Text.literal(s2).color(theme.textSecondary()).stack(stack).font(font))
-                .x(x + colW + META_COL_GAP).y(y).fontSize(10).maxWidth(colW).wrap(false)
+                .x(x + colW + META_COL_GAP).y(y).fontSize(META_FONT_SIZE).maxWidth(colW).wrap(false)
                 .position(EnumEllipsisPosition.END)
                 .bgArgb(0).bgBorderRadius(0).bgBorderThickness(0);
-        KeyValue<Integer, Integer> z2 = LabelWidget.calculateLimitedTextSize(a2);
-        int rowH = Math.max(z1.value(), z2.value());
-        if (metaLineTruncated(stack, s1, colW, theme)) {
+        int rowH = META_FONT_SIZE;
+        if (metaLineTruncated(s1, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x, y, colW, rowH, value1));
         }
-        if (metaLineTruncated(stack, s2, colW, theme)) {
+        if (metaLineTruncated(s2, colW)) {
             metaHoverRegions.add(new MetaHoverRegion(x + colW + META_COL_GAP, y, colW, rowH, value2));
         }
         LabelWidget.drawLimitedText(a1);
@@ -716,7 +773,7 @@ public class NotificationLogScreen extends BaniraScreen {
 
     private boolean tryHandleDetailContentClick(double mouseX, double mouseY) {
         Style st = styleAtDetailContentPoint(mouseX, mouseY);
-        return st != null && NotificationStyleInteractionHelper.tryClickStyle(Minecraft.getInstance(), st);
+        return st != null && NotificationStyleInteractionHelper.tryClickStyle(minecraft, st);
     }
 
     @Override
@@ -730,11 +787,14 @@ public class NotificationLogScreen extends BaniraScreen {
 
     @Override
     public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
         if (args.parentScreen() != null) {
             Minecraft.getInstance().setScreen(args.parentScreen());
         } else {
             super.onClose();
         }
+        uiSession.afterParentReturn(Minecraft.getInstance().screen);
     }
 
     @Override

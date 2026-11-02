@@ -55,6 +55,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             boolean screenOpen = Minecraft.getInstance().screen != null;
             BaniraClientEventHub.dispatchRenderOverlayPreNative(HudOverlayElement.ALL, stack, tickDelta, screenOpen);
             BaniraClientEventHub.Client.fireRenderOverlayPostNative(HudOverlayElement.ALL, stack, tickDelta, screenOpen);
+            FabricAuiClientHooks.renderGame(stack);
         });
         ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             BaniraClientEventHub.Client.fireGuiChanged(new BaniraScreenOpenEvent(BaniraClientEventHub.screenInfo(screen)));
@@ -68,8 +69,10 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             BaniraClientGuiService.handleScreenPreRender(scr, mouseX, mouseY);
             BaniraClientEventHub.Client.fireDrawScreenPreNative(stack, scr, mouseX, mouseY, tickDelta);
         });
-        ScreenEvents.afterRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) ->
-                BaniraClientEventHub.Client.fireDrawScreenPostNative(stack, scr, mouseX, mouseY, tickDelta));
+        ScreenEvents.afterRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
+            BaniraClientEventHub.Client.fireDrawScreenPostNative(stack, scr, mouseX, mouseY, tickDelta);
+            FabricAuiClientHooks.renderScreen(scr, stack);
+        });
         ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) -> {
             BaniraMouseEvent event = BaniraMouseEvent.clicked(BaniraClientEventHub.screenInfo(scr), mouseX, mouseY, button);
             BaniraClientEventHub.dispatchMouseClickedPre(event, scr);

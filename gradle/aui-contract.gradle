@@ -1,0 +1,139 @@
+import java.security.MessageDigest
+import java.util.jar.JarFile
+import java.util.jar.JarOutputStream
+import java.util.zip.ZipEntry
+import org.objectweb.asm.*
+import org.objectweb.asm.commons.ClassRemapper
+import org.objectweb.asm.commons.Remapper
+
+buildscript {
+    repositories { mavenLocal(); mavenCentral() }
+    dependencies {
+        classpath 'org.ow2.asm:asm:9.7.1'
+        classpath 'org.ow2.asm:asm-commons:9.7.1'
+    }
+}
+
+repositories.exclusiveContent {
+    forRepository { project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' } }
+    filter { includeModule('com.sighs', 'ApricityUI-forge-1.18.2') }
+}
+configurations.create('auiReference') {
+    canBeConsumed = false
+    transitive = false
+}
+def localReference = providers.gradleProperty('banira.auiReferenceJar').orNull
+if (localReference != null) {
+    def artifact = new File(localReference)
+    if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('Invalid AUI declaration reference')
+    dependencies.add('auiReference', files(artifact))
+} else {
+    dependencies.add('auiReference', 'com.sighs:ApricityUI-forge-1.18.2:1.2.9') {
+        version { strictly('1.2.9') }
+    }
+}
+def referenceHash = 'D557E54540C71D87920056D1F36A05480E4FEF0E0063A1D61D18DC8E2BC81D8B'
+def declarations = layout.buildDirectory.file('aui-compile-api/fabric-1.16.5-declarations.jar')
+def generateDeclarations = tasks.register('generateAuiCompileDeclarations') {
+    inputs.files(configurations.auiReference)
+    outputs.file(declarations)
+    doLast {
+        def reference = configurations.auiReference.singleFile
+        if (!MessageDigest.getInstance('SHA-256').digest(reference.bytes).encodeHex().toString().equalsIgnoreCase(referenceHash)) {
+            throw new GradleException('Pinned AUI declaration reference SHA-256 mismatch')
+        }
+        def names = [
+                'com/mojang/blaze3d/vertex/PoseStack': 'com/mojang/blaze3d/vertex/PoseStack',
+                'com/mojang/math/Matrix4f': 'com/mojang/math/Matrix4f',
+                'net/minecraft/client/gui/screens/Screen': 'net/minecraft/client/gui/screens/Screen',
+                'net/minecraft/client/gui/Font': 'net/minecraft/client/gui/Font',
+                'net/minecraft/network/chat/Component': 'net/minecraft/network/chat/Component',
+                'net/minecraft/resources/ResourceLocation': 'net/minecraft/resources/ResourceLocation',
+                'net/minecraft/world/item/ItemStack': 'net/minecraft/world/item/ItemStack',
+                'net/minecraft/world/inventory/Slot': 'net/minecraft/world/inventory/Slot',
+                'net/minecraft/world/inventory/AbstractContainerMenu': 'net/minecraft/world/inventory/AbstractContainerMenu',
+                'java/lang/Record': 'java/lang/Object'
+        ]
+        def remapper = new Remapper() {
+            @Override String map(String name) { names.get(name, name) }
+        }
+        def target = declarations.get().asFile
+        target.parentFile.mkdirs()
+        new JarFile(reference).withCloseable { jar ->
+            new JarOutputStream(new FileOutputStream(target)).withCloseable { output ->
+                def marker = new ZipEntry('META-INF/banira-aui-compile-api.properties')
+                marker.time = 0
+                output.putNextEntry(marker)
+                output.write('compileOnly=true\nminecraft=1.16.5\n'.getBytes('UTF-8'))
+                output.closeEntry()
+                jar.entries().toList().findAll { it.name.startsWith('com/sighs/apricityui/') && it.name.endsWith('.class') }
+                        .sort { it.name }.each { entry ->
+                    def writer = new ClassWriter(0)
+                    def declaration = new ClassVisitor(Opcodes.ASM9, writer) {
+                        @Override void visit(int version, int access, String name, String signature, String parent, String[] interfaces) {
+                            super.visit(Opcodes.V1_8, access & ~Opcodes.ACC_RECORD, name, signature, parent, interfaces)
+                        }
+                        @Override void visitNestHost(String host) {}
+                        @Override void visitNestMember(String member) {}
+                        @Override void visitPermittedSubclass(String subclass) {}
+                        @Override RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) { null }
+                        @Override FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                            if ((access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) == 0) return null
+                            super.visitField(access, name, descriptor, signature, value)
+                        }
+                        @Override MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                            if (name == '<clinit>' || (access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) == 0) return null
+                            def method = super.visitMethod(access & ~Opcodes.ACC_NATIVE, name, descriptor, signature, exceptions)
+                            if ((access & Opcodes.ACC_ABSTRACT) == 0) {
+                                method.visitCode()
+                                method.visitTypeInsn(Opcodes.NEW, 'java/lang/UnsupportedOperationException')
+                                method.visitInsn(Opcodes.DUP)
+                                method.visitMethodInsn(Opcodes.INVOKESPECIAL, 'java/lang/UnsupportedOperationException', '<init>', '()V', false)
+                                method.visitInsn(Opcodes.ATHROW)
+                                int locals = (access & Opcodes.ACC_STATIC) == 0 ? 1 : 0
+                                Type.getArgumentTypes(descriptor).each { locals += it.size }
+                                method.visitMaxs(2, locals)
+                            }
+                            method.visitEnd()
+                            null
+                        }
+                    }
+                    jar.getInputStream(entry).withCloseable { input ->
+                        new ClassReader(input).accept(new ClassRemapper(declaration, remapper), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                    }
+                    def file = new ZipEntry(entry.name)
+                    file.time = 0
+                    output.putNextEntry(file)
+                    output.write(writer.toByteArray())
+                    output.closeEntry()
+                }
+            }
+        }
+    }
+}
+
+configurations.create('auiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+
+// Only declarations are adapted; the reference engine never enters game runtime.
+def localContract = providers.gradleProperty('banira.auiContractJar').orNull
+if (localContract != null) {
+    def artifact = new File(localContract)
+    if (!artifact.isAbsolute() || !artifact.isFile()) {
+        throw new GradleException('banira.auiContractJar must be an existing absolute file')
+    }
+    dependencies.add('auiContract', files(artifact))
+} else {
+    dependencies.add('auiContract', files(declarations).builtBy(generateDeclarations))
+}
+configurations.compileOnly.extendsFrom(configurations.auiContract)
+dependencies.add('testRuntimeOnly', files(declarations).builtBy(generateDeclarations))
+tasks.withType(Test).configureEach {
+    dependsOn generateDeclarations
+    doFirst {
+        systemProperty 'banira.aui.contractJar', configurations.auiReference.singleFile.absolutePath
+        systemProperty 'banira.aui.declarationsJar', declarations.get().asFile.absolutePath
+    }
+}

@@ -4,11 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import javax.annotation.Nonnull;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -24,7 +25,6 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.BiFunction;
@@ -993,6 +993,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         setCursorPosition(pos);
     }
 
+    public void setSelectionRange(int cursor, int anchor) {
+        this.cursorPosition = Mth.clamp(cursor, 0, value.length());
+        this.highlightPos = Mth.clamp(anchor, 0, value.length());
+        this.updateDisplayPos();
+    }
+
     /**
      * 移动光标
      */
@@ -1314,7 +1320,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 获取选中的文本
      */
-    @ParametersAreNonnullByDefault
+    @Nonnull
     public String getHighlighted() {
         int start = Math.min(this.cursorPosition, this.highlightPos);
         int end = Math.max(this.cursorPosition, this.highlightPos);

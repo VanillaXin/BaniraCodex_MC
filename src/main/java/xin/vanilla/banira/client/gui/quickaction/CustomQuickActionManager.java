@@ -17,12 +17,12 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.quickaction.*;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
+import xin.vanilla.banira.client.util.GLFWKeyUtils;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 
@@ -49,6 +49,7 @@ public final class CustomQuickActionManager {
 
     private final List<CustomQuickActionDefinition> definitions = new ArrayList<>();
     private final Set<String> registeredIds = new HashSet<>();
+    private final Set<String> activeKeyBindings = new HashSet<>();
     private final Map<String, BaniraQuickActionScreenFactory> screenFactories = new HashMap<>();
     private boolean hotReloadRegistered;
 
@@ -147,6 +148,39 @@ public final class CustomQuickActionManager {
                 return;
             }
         }
+    }
+
+    /**
+     * Fabric 没有无 Screen 的通用按键回调，因此在客户端 tick 上检测组合键的按下沿。
+     */
+    public synchronized void tickKeyBindings() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen != null) {
+            activeKeyBindings.clear();
+            return;
+        }
+        Set<String> currentlyPressed = new HashSet<>();
+        for (CustomQuickActionDefinition definition : definitions) {
+            if (!definition.isEnabled() || definition.getKeyChord() == null
+                    || definition.getKeyChord().trim().isEmpty()) {
+                continue;
+            }
+            List<Integer> keyCodes = GLFWKeyUtils.getKeyCodes(definition.getKeyChord().split("\\+"));
+            if (keyCodes.isEmpty()) {
+                continue;
+            }
+            boolean down = keyCodes.stream().allMatch(InputStateManager::isKeyPressing);
+            if (!down) {
+                continue;
+            }
+            String id = safeId(definition.getId());
+            currentlyPressed.add(id);
+            if (!activeKeyBindings.contains(id)) {
+                activate(definition, null);
+            }
+        }
+        activeKeyBindings.retainAll(currentlyPressed);
+        activeKeyBindings.addAll(currentlyPressed);
     }
 
     private synchronized void applyToRegistry() {

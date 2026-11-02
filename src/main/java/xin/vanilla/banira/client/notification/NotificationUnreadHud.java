@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.notification;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -97,18 +97,7 @@ public final class NotificationUnreadHud {
     }
 
     private static NotificationLogScreen historyScreen(ChatScreen chat) {
-        String draft = chat.children().stream().filter(EditBox.class::isInstance)
-                .map(EditBox.class::cast).map(EditBox::getValue).findFirst().orElse("");
-        return new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(chat)) {
-            @Override
-            public void onClose() {
-                super.onClose();
-                if (Minecraft.getInstance().screen == chat) {
-                    chat.children().stream().filter(EditBox.class::isInstance)
-                            .map(EditBox.class::cast).findFirst().ifPresent(input -> input.setValue(draft));
-                }
-            }
-        };
+        return new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(chat));
     }
 
     public static void render(PoseStack stack) {
@@ -116,9 +105,12 @@ public final class NotificationUnreadHud {
         int unread = NotificationManager.get().unreadCount();
         if (!canRender(mc) || NotificationMinimapBridge.selectedHost() != EnumNotificationHudHost.STANDALONE) return;
         ClientConfigView.NotificationHudView cfg = ClientConfig.get().notificationHud();
-        draw(stack, NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH),
+        xin.vanilla.banira.internal.client.ui.HudDrawList frame = new xin.vanilla.banira.internal.client.ui.HudDrawList();
+        frame.unread(NotificationHudState.position(cfg.x(), mc.getWindow().getGuiScaledWidth(), WIDTH),
                 NotificationHudState.position(cfg.y(), mc.getWindow().getGuiScaledHeight(), HEIGHT), unread,
                 ClientThemeManager.getEffectiveTheme());
+        if (!xin.vanilla.banira.internal.client.ui.SharedHudHosts.render(
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.UNREAD, stack, frame)) frame.renderNative(stack);
     }
 
     public static void draw(PoseStack stack, int x, int y, int unread, BaniraColorConfig theme) {
